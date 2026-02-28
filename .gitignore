@@ -32,3 +32,4 @@ progress.md
 *.njsproj
 *.sln
 *.sw?
+.vercel
