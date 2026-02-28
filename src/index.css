@@ -1,0 +1,243 @@
+@import "tailwindcss";
+@import "./styles/tokens.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-ink: #08080a;
+  --color-paper: #f5f3ef;
+  --color-parchment: #ece8e1;
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-850: #162032;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #060a14;
+
+  /* Signal palette — high-saturation for dark backgrounds */
+  --color-signal-red: #ff4d4d;
+  --color-signal-orange: #ff8c42;
+  --color-signal-amber: #ffbe0b;
+  --color-signal-emerald: #2dd4a8;
+  --color-signal-cyan: #22d3ee;
+  --color-signal-blue: #60a5fa;
+  --color-signal-violet: #a78bfa;
+  --color-signal-rose: #fb7185;
+
+  /* Response time scale */
+  --color-response-fast: #2dd4a8;
+  --color-response-ok: #ffbe0b;
+  --color-response-slow: #ff4d4d;
+  --color-response-critical: #dc2626;
+
+  /* Revenue scale */
+  --color-revenue-low: #1e3a5f;
+  --color-revenue-mid: #60a5fa;
+  --color-revenue-high: #bfdbfe;
+
+  /* Typography */
+  --font-display: "Instrument Serif", "Playfair Display", Georgia, serif;
+  --font-sans: "DM Sans", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+}
+
+/* Base */
+html {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "cv11", "ss01";
+}
+
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dark body {
+  background: var(--color-slate-950);
+  color: var(--color-slate-100);
+}
+
+/* Mapbox overrides for editorial feel */
+.mapboxgl-map {
+  font-family: var(--font-sans) !important;
+}
+.mapboxgl-ctrl-attrib {
+  font-size: 9px !important;
+  opacity: 0.5;
+}
+.mapboxgl-ctrl-attrib a {
+  color: inherit !important;
+}
+.mapboxgl-ctrl-group {
+  background: rgba(15, 23, 42, 0.85) !important;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+.mapboxgl-ctrl-group button {
+  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+}
+.mapboxgl-ctrl-group button + button {
+  border-top: none !important;
+}
+.mapboxgl-ctrl-group button span {
+  filter: invert(1) brightness(0.8);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(51, 65, 85, 0.5);
+}
+
+/* Animated count-up for stat values */
+@keyframes countFadeIn {
+  from { opacity: 0; transform: translateY(8px); filter: blur(4px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+.stat-value-enter {
+  animation: countFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Staggered fade-in for lists */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.stagger-in > * {
+  animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.stagger-in > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-in > *:nth-child(2) { animation-delay: 40ms; }
+.stagger-in > *:nth-child(3) { animation-delay: 80ms; }
+.stagger-in > *:nth-child(4) { animation-delay: 120ms; }
+.stagger-in > *:nth-child(5) { animation-delay: 160ms; }
+.stagger-in > *:nth-child(6) { animation-delay: 200ms; }
+.stagger-in > *:nth-child(7) { animation-delay: 240ms; }
+.stagger-in > *:nth-child(8) { animation-delay: 280ms; }
+.stagger-in > *:nth-child(9) { animation-delay: 320ms; }
+.stagger-in > *:nth-child(10) { animation-delay: 360ms; }
+.stagger-in > *:nth-child(n+11) { animation-delay: 400ms; }
+
+/* Hero reveal */
+@keyframes heroReveal {
+  from { opacity: 0; transform: translateY(30px); filter: blur(8px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+.hero-reveal {
+  animation: heroReveal 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.hero-reveal-delay-1 { animation-delay: 0.15s; }
+.hero-reveal-delay-2 { animation-delay: 0.3s; }
+.hero-reveal-delay-3 { animation-delay: 0.5s; }
+
+/* Pulse glow for live indicators */
+@keyframes pulseGlow {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 currentColor; }
+  50% { opacity: 0.7; box-shadow: 0 0 0 4px transparent; }
+}
+.pulse-live {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* Glass card effect */
+.glass-card {
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(12px) saturate(1.5);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.light .glass-card,
+:not(.dark) .glass-card {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* Noise texture overlay */
+.noise-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.025;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px;
+  z-index: 0;
+}
+
+/* Bar chart animation */
+@keyframes growWidth {
+  from { width: 0; }
+}
+.bar-grow {
+  animation: growWidth 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, transparent 25%, rgba(255,255,255,0.05) 50%, transparent 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Mapbox tooltip overrides */
+.datadiver-tooltip .mapboxgl-popup-content {
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #e2e8f0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+.datadiver-tooltip .mapboxgl-popup-tip {
+  border-top-color: rgba(15, 23, 42, 0.92);
+}
+.datadiver-tooltip .tooltip-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: #64748b;
+  margin-bottom: 2px;
+}
+.datadiver-tooltip .tooltip-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f1f5f9;
+}
