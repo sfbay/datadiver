@@ -34,6 +34,86 @@ const VISUALIZATIONS = [
     accentColor: '#60a5fa',
     number: '02',
   },
+  {
+    path: '/dispatch-911',
+    title: '911 Dispatch: Sensitive Calls',
+    subtitle: 'SFPD Temporal Pattern Analysis',
+    description:
+      'When do DV calls peak? How do suicide calls differ from the citywide average? Temporal analysis of calls where geography is stripped.',
+    stats: [
+      { label: 'Total records', value: '~7.5M' },
+      { label: 'Sensitive calls', value: '~181K' },
+      { label: 'Timestamps', value: '6 per call' },
+    ],
+    gradient: 'from-violet-500/20 via-purple-500/10 to-transparent',
+    borderGlow: 'hover:shadow-[0_0_40px_rgba(167,139,250,0.08)]',
+    accentColor: '#a78bfa',
+    number: '03',
+  },
+  {
+    path: '/311-cases',
+    title: '311 Service Requests',
+    subtitle: 'SF311 Civic Complaint Analysis',
+    description:
+      'Where do complaints concentrate? Discover hotspots, resolution patterns, and density anomalies across neighborhoods.',
+    stats: [
+      { label: 'Total records', value: '~8.4M' },
+      { label: 'Categories', value: '25' },
+      { label: 'Years of data', value: '18' },
+    ],
+    gradient: 'from-emerald-500/20 via-teal-500/10 to-transparent',
+    borderGlow: 'hover:shadow-[0_0_40px_rgba(16,185,129,0.08)]',
+    accentColor: '#10b981',
+    number: '04',
+  },
+  {
+    path: '/crime-incidents',
+    title: 'Crime Incidents',
+    subtitle: 'SFPD Reports & 911 Cross-Reference',
+    description:
+      'Where does crime cluster? Explore SFPD incident reports, resolution outcomes, and cross-reference with 911 dispatch calls.',
+    stats: [
+      { label: 'Categories', value: '~50' },
+      { label: '911 linked', value: '~60%' },
+      { label: 'Neighborhoods', value: '41' },
+    ],
+    gradient: 'from-red-500/20 via-orange-500/10 to-transparent',
+    borderGlow: 'hover:shadow-[0_0_40px_rgba(239,68,68,0.08)]',
+    accentColor: '#ef4444',
+    number: '05',
+  },
+  {
+    path: '/parking-citations',
+    title: 'Parking Citations',
+    subtitle: 'SFMTA Citation Analysis',
+    description:
+      'Where do tickets cluster? Explore citation patterns, violation hotspots, fine revenue, and out-of-state vehicles across the city.',
+    stats: [
+      { label: 'Total records', value: '~23.3M' },
+      { label: 'Violation types', value: '~40' },
+      { label: 'Revenue tracking', value: 'Yes' },
+    ],
+    gradient: 'from-orange-500/20 via-amber-500/10 to-transparent',
+    borderGlow: 'hover:shadow-[0_0_40px_rgba(249,115,22,0.08)]',
+    accentColor: '#f97316',
+    number: '06',
+  },
+  {
+    path: '/traffic-safety',
+    title: 'Traffic Safety',
+    subtitle: 'Vision Zero Crash & Speed Analysis',
+    description:
+      'Where do crashes happen? Analyze collision severity, pedestrian & cyclist risk, speed cameras, and road conditions for Vision Zero.',
+    stats: [
+      { label: 'Crash records', value: '~64K' },
+      { label: 'Camera sites', value: '~100+' },
+      { label: 'Severity levels', value: '4' },
+    ],
+    gradient: 'from-red-600/20 via-red-500/10 to-transparent',
+    borderGlow: 'hover:shadow-[0_0_40px_rgba(220,38,38,0.08)]',
+    accentColor: '#dc2626',
+    number: '07',
+  },
 ] as const
 
 function DataMotif() {

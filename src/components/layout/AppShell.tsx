@@ -26,6 +26,41 @@ const NAV_ITEMS = [
     description: 'Meter revenue & patterns',
     accentColor: '#60a5fa',
   },
+  {
+    path: '/dispatch-911',
+    label: '911 Dispatch',
+    shortLabel: '911',
+    description: 'Sensitive call temporal patterns',
+    accentColor: '#a78bfa',
+  },
+  {
+    path: '/311-cases',
+    label: '311 Cases',
+    shortLabel: '311',
+    description: '311 service request patterns',
+    accentColor: '#10b981',
+  },
+  {
+    path: '/crime-incidents',
+    label: 'Crime Incidents',
+    shortLabel: 'CI',
+    description: 'SFPD incidents & 911 cross-ref',
+    accentColor: '#ef4444',
+  },
+  {
+    path: '/parking-citations',
+    label: 'Parking Citations',
+    shortLabel: 'PC',
+    description: 'SFMTA citation patterns & fines',
+    accentColor: '#f97316',
+  },
+  {
+    path: '/traffic-safety',
+    label: 'Traffic Safety',
+    shortLabel: 'TS',
+    description: 'Vision Zero crash & speed analysis',
+    accentColor: '#dc2626',
+  },
 ] as const
 
 export default function AppShell({ children }: { children: ReactNode }) {

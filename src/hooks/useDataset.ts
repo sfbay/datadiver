@@ -6,6 +6,7 @@ interface UseDatasetResult<T> {
   data: T[]
   isLoading: boolean
   error: string | null
+  hitLimit: boolean
   refetch: () => void
 }
 
@@ -57,5 +58,7 @@ export function useDataset<T>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [datasetKey, paramsKey, refetchKey, ...deps])
 
-  return { data, isLoading, error, refetch }
+  const hitLimit = !isLoading && data.length > 0 && data.length === (params.$limit ?? 1000)
+
+  return { data, isLoading, error, hitLimit, refetch }
 }

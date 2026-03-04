@@ -17,6 +17,30 @@ interface AppState {
   /** Currently selected neighborhood (cross-view) */
   selectedNeighborhood: string | null
 
+  /** Time-of-day hour filter (null = all hours) */
+  timeOfDayFilter: { startHour: number; endHour: number } | null
+
+  /** Comparison period offset in days (null = off) */
+  comparisonPeriod: number | null
+
+  /** Selected incident call_number for detail panel (null = closed) */
+  selectedIncident: string | null
+
+  /** Selected 311 case service_request_id for detail panel (null = closed) */
+  selected311Case: string | null
+
+  /** Selected crime incident incident_id for detail panel (null = closed) */
+  selectedCrimeIncident: string | null
+
+  /** Selected parking meter post_id for detail panel (null = closed) */
+  selectedMeter: string | null
+
+  /** Selected parking citation citation_number for detail panel (null = closed) */
+  selectedCitation: string | null
+
+  /** Selected traffic crash unique_id for detail panel (null = closed) */
+  selectedCrash: string | null
+
   /** Loading state */
   isLoading: boolean
 
@@ -29,6 +53,14 @@ interface AppState {
   toggleSidebar: () => void
   setDateRange: (start: string, end: string) => void
   setSelectedNeighborhood: (neighborhood: string | null) => void
+  setTimeOfDayFilter: (filter: { startHour: number; endHour: number } | null) => void
+  setComparisonPeriod: (days: number | null) => void
+  setSelectedIncident: (callNumber: string | null) => void
+  setSelected311Case: (id: string | null) => void
+  setSelectedCrimeIncident: (id: string | null) => void
+  setSelectedMeter: (id: string | null) => void
+  setSelectedCitation: (id: string | null) => void
+  setSelectedCrash: (id: string | null) => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
 }
@@ -46,6 +78,14 @@ export const useAppStore = create<AppState>((set) => ({
     end: now.toISOString().split('T')[0],
   },
   selectedNeighborhood: null,
+  timeOfDayFilter: null,
+  comparisonPeriod: null,
+  selectedIncident: null,
+  selected311Case: null,
+  selectedCrimeIncident: null,
+  selectedMeter: null,
+  selectedCitation: null,
+  selectedCrash: null,
   isLoading: false,
   error: null,
 
@@ -59,6 +99,14 @@ export const useAppStore = create<AppState>((set) => ({
   toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
   setDateRange: (start, end) => set({ dateRange: { start, end } }),
   setSelectedNeighborhood: (neighborhood) => set({ selectedNeighborhood: neighborhood }),
+  setTimeOfDayFilter: (filter) => set({ timeOfDayFilter: filter }),
+  setComparisonPeriod: (days) => set({ comparisonPeriod: days }),
+  setSelectedIncident: (callNumber) => set({ selectedIncident: callNumber }),
+  setSelected311Case: (id) => set({ selected311Case: id }),
+  setSelectedCrimeIncident: (id) => set({ selectedCrimeIncident: id }),
+  setSelectedMeter: (id) => set({ selectedMeter: id }),
+  setSelectedCitation: (id) => set({ selectedCitation: id }),
+  setSelectedCrash: (id) => set({ selectedCrash: id }),
   setLoading: (loading) => set({ isLoading: loading }),
   setError: (error) => set({ error }),
 }))

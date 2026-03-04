@@ -1,15 +1,15 @@
 import { useRef, useEffect } from 'react'
 import * as d3 from 'd3'
 import { useAppStore } from '@/stores/appStore'
-import { responseTimeColor } from '@/utils/colors'
+import { fineAmountColor } from '@/utils/colors'
 
-interface ResponseHistogramProps {
-  data: number[] // response times in minutes
+interface FineHistogramProps {
+  data: number[] // fine amounts in dollars
   width?: number
   height?: number
 }
 
-export default function ResponseHistogram({ data, width = 300, height = 120 }: ResponseHistogramProps) {
+export default function FineHistogram({ data, width = 300, height = 120 }: FineHistogramProps) {
   const svgRef = useRef<SVGSVGElement>(null)
   const isDarkMode = useAppStore((s) => s.isDarkMode)
 
@@ -29,18 +29,18 @@ export default function ResponseHistogram({ data, width = 300, height = 120 }: R
       .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`)
 
-    // Clamp data for display
-    const clamped = data.map((d) => Math.min(d, 30))
+    // Clamp to $500
+    const clamped = data.map((d) => Math.min(d, 500))
 
-    const x = d3.scaleLinear().domain([0, 30]).range([0, w])
+    const x = d3.scaleLinear().domain([0, 500]).range([0, w])
 
-    const bins = d3.bin().domain([0, 30]).thresholds(20)(clamped)
+    const bins = d3.bin().domain([0, 500]).thresholds(20)(clamped)
 
     const y = d3.scaleLinear()
       .domain([0, d3.max(bins, (d) => d.length) || 0])
       .range([h, 0])
 
-    // Bars with color gradient based on response time
+    // Bars colored by fine amount
     g.selectAll('rect')
       .data(bins)
       .join('rect')
@@ -51,7 +51,7 @@ export default function ResponseHistogram({ data, width = 300, height = 120 }: R
       .attr('rx', 1.5)
       .attr('fill', (d) => {
         const midpoint = ((d.x0 ?? 0) + (d.x1 ?? 0)) / 2
-        return responseTimeColor(midpoint)
+        return fineAmountColor(midpoint)
       })
       .attr('opacity', 0.85)
       .transition()
@@ -61,10 +61,10 @@ export default function ResponseHistogram({ data, width = 300, height = 120 }: R
       .attr('y', (d) => y(d.length))
       .attr('height', (d) => h - y(d.length))
 
-    // X axis
+    // X axis — labeled in dollars
     const xAxis = d3.axisBottom(x)
-      .tickValues([0, 5, 10, 15, 20, 25, 30])
-      .tickFormat((d) => `${d}m`)
+      .tickValues([0, 50, 100, 200, 300, 500])
+      .tickFormat((d) => `$${d}`)
       .tickSize(0)
 
     g.append('g')

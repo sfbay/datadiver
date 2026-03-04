@@ -140,6 +140,8 @@ export interface ParkingMeter {
   on_offstreet_type: string
   jurisdiction: string
   pm_district_id: string
+  meter_vendor?: string
+  meter_model?: string
 }
 
 /** Computed types for visualizations */
@@ -177,8 +179,239 @@ export interface MeterRevenueRecord {
   capColor: string
 }
 
+/** Daily trend data point for comparison charts */
+export interface DailyTrendPoint {
+  day: string
+  callCount: number
+  avgResponseTime: number
+  medianResponseTime: number
+}
+
+/** Hourly aggregation row from Socrata server-side query */
+export interface HourlyAggRow {
+  hour: string
+  dow: string
+  call_count: string
+}
+
+/** Full incident detail with all 7 response timestamps */
+export interface IncidentDetail {
+  callNumber: string
+  callType: string
+  callTypeGroup: string
+  priority: string
+  neighborhood: string
+  district: string
+  address: string
+  timestamps: {
+    received: string | null
+    dispatch: string | null
+    response: string | null
+    onScene: string | null
+    transport: string | null
+    hospital: string | null
+    available: string | null
+  }
+}
+
+/** Server-side aggregation row for call type counts */
+export interface CallTypeAggRow {
+  call_type_final_desc: string
+  call_count: string
+  sensitive_call: string
+}
+
+/** Server-side aggregation row for disposition counts */
+export interface DispositionAggRow {
+  disposition: string
+  call_count: string
+}
+
+/** 311 Service Request (vw6y-z8j6) */
+export interface Cases311Record {
+  service_request_id: string
+  requested_datetime: string
+  updated_datetime: string
+  closed_date: string
+  status_description: string
+  service_name: string
+  service_subtype: string
+  service_details: string
+  address: string
+  lat: string
+  long: string
+  analysis_neighborhood: string
+  supervisor_district: string
+  police_district: string
+  source: string
+  agency_responsible: string
+  media_url: string
+  point: { type: string; coordinates: [number, number] }
+}
+
+/** Server-side aggregation row for 311 service category counts */
+export interface ServiceCategoryAggRow {
+  service_name: string
+  case_count: string
+}
+
+/** Server-side aggregation row for 311 neighborhood counts */
+export interface NeighborhoodAggRow311 {
+  analysis_neighborhood: string
+  case_count: string
+}
+
+/** Server-side aggregation row for parking revenue stats */
+export interface ParkingStatsAggRow {
+  total_revenue: string
+  total_count: string
+  unique_meters: string
+}
+
+/** Server-side aggregation row for parking payment type breakdown */
+export interface PaymentTypeAggRow {
+  payment_type: string
+  total_revenue: string
+  tx_count: string
+}
+
+/** Server-side aggregation row for police incident category counts */
+export interface IncidentCategoryAggRow {
+  incident_category: string
+  incident_count: string
+}
+
+/** Server-side aggregation row for police neighborhood counts */
+export interface NeighborhoodAggRowPolice {
+  analysis_neighborhood: string
+  incident_count: string
+}
+
+/** Server-side aggregation row for police resolution counts */
+export interface ResolutionAggRow {
+  resolution: string
+  incident_count: string
+}
+
+/** Parking Citation (ab4h-6ztd) */
+export interface ParkingCitationRecord {
+  citation_number: string
+  citation_issued_datetime: string
+  violation: string
+  violation_desc: string
+  citation_location: string
+  fine_amount: string
+  vehicle_plate_state: string
+  the_geom: { type: string; coordinates: [number, number] }
+  analysis_neighborhood: string
+  supervisor_districts: string
+}
+
+/** Server-side aggregation row for violation type counts + revenue */
+export interface ViolationTypeAggRow {
+  violation_desc: string
+  citation_count: string
+  total_fines: string
+  avg_fine: string
+}
+
+/** Server-side aggregation row for citation neighborhood counts + revenue */
+export interface NeighborhoodAggRowCitations {
+  analysis_neighborhood: string
+  citation_count: string
+  total_fines: string
+  avg_fine: string
+}
+
+/** Traffic Crash (ubvf-ztfx) */
+export interface TrafficCrashRecord {
+  unique_id: string
+  collision_datetime: string
+  collision_severity: string
+  type_of_collision: string
+  mviw: string
+  ped_action: string
+  weather_1: string
+  road_surface: string
+  road_cond_1: string
+  lighting: string
+  number_killed: string
+  number_injured: string
+  primary_rd: string
+  secondary_rd: string
+  analysis_neighborhood: string
+  supervisor_district: string
+  police_district: string
+  tb_latitude: string
+  tb_longitude: string
+  point: { type: string; coordinates: [number, number] }
+  dph_col_grp_description: string
+}
+
+/** Speed Camera Citations (d5uh-bk84) */
+export interface SpeedCameraRecord {
+  date: string
+  site_id: string
+  location: string
+  enforcement_type: string
+  posted_speed: string
+  avg_issued_speed: string
+  issued_warnings: string
+  issued_citations: string
+  _11_to_15_mph_over: string
+  _16_to_20_mph_over: string
+  _21_plus_mph_over: string
+  latitude: string
+  longitude: string
+  analysis_neighborhood: string
+}
+
+/** Red Light Camera Citations (uzmr-g2uc) */
+export interface RedLightCameraRecord {
+  intersection: string
+  directions_enforced: string
+  violation_type: string
+  month: string
+  count: string
+  point: { type: string; coordinates: [number, number] }
+  analysis_neighborhood: string
+}
+
+/** Pavement Condition Index (5aye-4rtt) */
+export interface PavementConditionRecord {
+  cnn: string
+  street_name: string
+  pci_score: string
+  from_street: string
+  to_street: string
+  pci_change_date: string
+  treatment_or_survey: string
+  latitude: string
+  longitude: string
+}
+
+/** Server-side aggregation row for crash severity counts */
+export interface CrashSeverityAggRow {
+  collision_severity: string
+  crash_count: string
+}
+
+/** Server-side aggregation row for crash mode counts */
+export interface CrashModeAggRow {
+  dph_col_grp_description: string
+  crash_count: string
+}
+
+/** Server-side aggregation row for crash neighborhood counts */
+export interface NeighborhoodAggRowCrashes {
+  analysis_neighborhood: string
+  crash_count: string
+  total_injured: string
+  total_killed: string
+}
+
 /** View state for URL serialization */
-export type ViewId = 'home' | 'emergency-response' | 'parking-revenue'
+export type ViewId = 'home' | 'emergency-response' | 'parking-revenue' | 'dispatch-911' | '311-cases' | 'crime-incidents' | 'parking-citations' | 'traffic-safety'
 
 export interface ViewState {
   view: ViewId

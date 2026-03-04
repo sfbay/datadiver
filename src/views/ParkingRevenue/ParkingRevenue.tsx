@@ -1,23 +1,59 @@
-import { useState, useMemo, useRef, useCallback } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import { useDataset } from '@/hooks/useDataset'
 import { useMapLayer } from '@/hooks/useMapLayer'
 import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { useAppStore } from '@/stores/appStore'
-import type { ParkingTransaction, ParkingMeter, MeterRevenueRecord } from '@/types/datasets'
+import type { ParkingTransaction, ParkingMeter, MeterRevenueRecord, ParkingStatsAggRow, PaymentTypeAggRow } from '@/types/datasets'
 import { formatCurrency, formatNumber } from '@/utils/time'
 import { PAYMENT_COLORS } from '@/utils/colors'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
 import StatCard from '@/components/ui/StatCard'
 import ExportButton from '@/components/export/ExportButton'
+import MeterDetailPanel from '@/components/ui/MeterDetailPanel'
+import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
+import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
+import { useDataFreshness } from '@/hooks/useDataFreshness'
+import { useTrendBaseline } from '@/hooks/useTrendBaseline'
+import type { TrendConfig } from '@/types/trends'
 
 type TimeGranularity = 'hour' | 'day' | 'week'
 
 export default function ParkingRevenue() {
-  const { dateRange } = useAppStore()
+  const { dateRange, selectedMeter, setSelectedMeter } = useAppStore()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [granularity, setGranularity] = useState<TimeGranularity>('day')
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
   const mapHandleRef = useRef<MapHandle>(null)
+
+  // Rehydrate detail from URL on mount
+  useEffect(() => {
+    const detailParam = searchParams.get('detail')
+    if (detailParam) setSelectedMeter(detailParam)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync detail to URL
+  useEffect(() => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (selectedMeter) next.set('detail', selectedMeter)
+      else next.delete('detail')
+      return next
+    }, { replace: true })
+  }, [selectedMeter, setSearchParams])
+
+  const freshness = useDataFreshness('parkingRevenue', 'session_start_dt', dateRange)
+
+  const trendConfig = useMemo((): TrendConfig => ({
+    datasetKey: 'parkingRevenue',
+    dateField: 'session_start_dt',
+    // No neighborhoodField — parking revenue is per-meter, no analysis_neighborhood
+    metrics: [
+      { selectExpr: 'SUM(gross_paid_amt)', alias: 'revenue', label: 'Revenue', format: (v) => formatCurrency(v) },
+    ],
+  }), [])
+  const trend = useTrendBaseline(trendConfig, dateRange)
 
   const { data: meters, isLoading: metersLoading } = useDataset<ParkingMeter>(
     'parkingMeters',
@@ -40,6 +76,29 @@ export default function ParkingRevenue() {
   const { data: transactions, isLoading, error } = useDataset<ParkingTransaction>(
     'parkingRevenue',
     { $where: revenueWhere, $limit: 10000, $order: 'session_start_dt DESC' },
+    [revenueWhere]
+  )
+
+  // Server-side aggregation for accurate totals (not capped by $limit)
+  const { data: statsAgg } = useDataset<ParkingStatsAggRow>(
+    'parkingRevenue',
+    {
+      $select: 'SUM(gross_paid_amt) as total_revenue, COUNT(*) as total_count, COUNT(DISTINCT post_id) as unique_meters',
+      $where: revenueWhere,
+    },
+    [revenueWhere]
+  )
+
+  // Server-side payment type breakdown
+  const { data: paymentAgg } = useDataset<PaymentTypeAggRow>(
+    'parkingRevenue',
+    {
+      $select: 'payment_type, SUM(gross_paid_amt) as total_revenue, COUNT(*) as tx_count',
+      $group: 'payment_type',
+      $where: revenueWhere,
+      $order: 'total_revenue DESC',
+      $limit: 20,
+    },
     [revenueWhere]
   )
 
@@ -70,17 +129,30 @@ export default function ParkingRevenue() {
     return Array.from(byMeter.values()).filter((m) => m.lat !== 0 && m.lng !== 0)
   }, [transactions, meterMap])
 
-  const stats = useMemo(() => {
-    const totalRevenue = transactions.reduce((sum, tx) => sum + (parseFloat(tx.gross_paid_amt) || 0), 0)
-    const totalTransactions = transactions.length
-    const uniqueMeters = new Set(transactions.map((tx) => tx.post_id)).size
+  // Use server-side aggregation for accurate headline stats
+  const serverStats = useMemo(() => {
+    if (statsAgg.length === 0) return null
+    const row = statsAgg[0]
+    const totalRevenue = parseFloat(row.total_revenue) || 0
+    const totalTransactions = parseInt(row.total_count, 10) || 0
+    const uniqueMeters = parseInt(row.unique_meters, 10) || 0
     const avgPerMeter = uniqueMeters > 0 ? totalRevenue / uniqueMeters : 0
-    const byPayment = new Map<string, number>()
-    for (const tx of transactions) {
-      const amt = parseFloat(tx.gross_paid_amt) || 0
-      const type = tx.payment_type || 'OTHER'
-      byPayment.set(type, (byPayment.get(type) || 0) + amt)
-    }
+    return { totalRevenue, totalTransactions, uniqueMeters, avgPerMeter }
+  }, [statsAgg])
+
+  // Server-side payment breakdown
+  const paymentBreakdown = useMemo(() => {
+    const totalRevenue = serverStats?.totalRevenue || 1
+    return paymentAgg.map((row) => ({
+      type: row.payment_type || 'OTHER',
+      amount: parseFloat(row.total_revenue) || 0,
+      count: parseInt(row.tx_count, 10) || 0,
+      pct: ((parseFloat(row.total_revenue) || 0) / totalRevenue) * 100,
+    }))
+  }, [paymentAgg, serverStats])
+
+  // Neighborhood ranking (requires meter join, so uses sample data)
+  const topNeighborhoods = useMemo(() => {
     const byNeighborhood = new Map<string, { revenue: number; lats: number[]; lngs: number[] }>()
     for (const m of meterRevenue) {
       const existing = byNeighborhood.get(m.neighborhood) || { revenue: 0, lats: [], lngs: [] }
@@ -89,7 +161,7 @@ export default function ParkingRevenue() {
       existing.lngs.push(m.lng)
       byNeighborhood.set(m.neighborhood, existing)
     }
-    const topNeighborhoods = Array.from(byNeighborhood.entries())
+    return Array.from(byNeighborhood.entries())
       .map(([name, d]) => ({
         name,
         revenue: d.revenue,
@@ -98,8 +170,7 @@ export default function ParkingRevenue() {
       }))
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 15)
-    return { totalRevenue, totalTransactions, avgPerMeter, uniqueMeters, byPayment, topNeighborhoods }
-  }, [meterRevenue, transactions])
+  }, [meterRevenue])
 
   // GeoJSON for map
   const geojson = useMemo((): GeoJSON.FeatureCollection | null => {
@@ -109,7 +180,7 @@ export default function ParkingRevenue() {
       features: meterRevenue.map((m) => ({
         type: 'Feature' as const,
         geometry: { type: 'Point' as const, coordinates: [m.lng, m.lat] },
-        properties: { revenue: m.totalRevenue, neighborhood: m.neighborhood, block: m.streetBlock },
+        properties: { revenue: m.totalRevenue, neighborhood: m.neighborhood, block: m.streetBlock, postId: m.postId, capColor: m.capColor },
       })),
     }
   }, [meterRevenue])
@@ -145,14 +216,14 @@ export default function ParkingRevenue() {
       source: 'revenue-data',
       minzoom: 13,
       paint: {
-        'circle-radius': ['interpolate', ['linear'], ['get', 'revenue'], 0, 2, maxRev, 8],
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, ['interpolate', ['linear'], ['get', 'revenue'], 0, 4, maxRev, 10], 16, ['interpolate', ['linear'], ['get', 'revenue'], 0, 6, maxRev, 14]],
         'circle-color': [
           'interpolate', ['linear'], ['get', 'revenue'],
-          0, '#1e3a5f', maxRev * 0.3, '#3b82f6', maxRev * 0.6, '#60a5fa', maxRev, '#bfdbfe',
+          0, '#0891b2', maxRev * 0.3, '#22d3ee', maxRev * 0.6, '#67e8f9', maxRev, '#ecfeff',
         ],
-        'circle-opacity': 0.7,
-        'circle-stroke-width': 0.5,
-        'circle-stroke-color': 'rgba(255,255,255,0.1)',
+        'circle-opacity': 0.85,
+        'circle-stroke-width': 1,
+        'circle-stroke-color': 'rgba(8,145,178,0.4)',
       },
     } as mapboxgl.AnyLayer,
   ], [maxRev])
@@ -172,7 +243,50 @@ export default function ParkingRevenue() {
     `
   })
 
-  const maxNeighborhoodRevenue = stats.topNeighborhoods.length > 0 ? stats.topNeighborhoods[0].revenue : 1
+  // Click to select meter for detail panel
+  useEffect(() => {
+    if (!mapInstance) return
+    const layer = 'revenue-circles'
+
+    const onClick = (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
+      const feature = e.features?.[0]
+      if (!feature) return
+      const postId = feature.properties?.postId as string
+      if (!postId) return
+      setSelectedMeter(postId)
+      const coords = (feature.geometry as GeoJSON.Point).coordinates
+      mapInstance.flyTo({ center: [coords[0], coords[1]], zoom: 17, duration: 800 })
+    }
+
+    const onCursorEnter = () => { mapInstance.getCanvas().style.cursor = 'pointer' }
+    const onCursorLeave = () => { mapInstance.getCanvas().style.cursor = '' }
+
+    try {
+      mapInstance.on('click', layer, onClick)
+      mapInstance.on('mouseenter', layer, onCursorEnter)
+      mapInstance.on('mouseleave', layer, onCursorLeave)
+    } catch {
+      // Layer may not exist yet; retry after a short delay
+      const timer = setTimeout(() => {
+        try {
+          mapInstance.on('click', layer, onClick)
+          mapInstance.on('mouseenter', layer, onCursorEnter)
+          mapInstance.on('mouseleave', layer, onCursorLeave)
+        } catch { /* ignored */ }
+      }, 500)
+      return () => clearTimeout(timer)
+    }
+
+    return () => {
+      try {
+        mapInstance.off('click', layer, onClick)
+        mapInstance.off('mouseenter', layer, onCursorEnter)
+        mapInstance.off('mouseleave', layer, onCursorLeave)
+      } catch { /* ignored */ }
+    }
+  }, [mapInstance, setSelectedMeter])
+
+  const maxNeighborhoodRevenue = topNeighborhoods.length > 0 ? topNeighborhoods[0].revenue : 1
 
   const handleMapReady = useCallback((map: mapboxgl.Map) => {
     setMapInstance(map)
@@ -191,9 +305,9 @@ export default function ParkingRevenue() {
                 SFMTA &middot; Meter Revenue Patterns
               </p>
             </div>
-            {!isLoading && transactions.length > 0 && (
+            {!isLoading && serverStats && (
               <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-signal-blue/80 bg-signal-blue/10 px-2 py-1 rounded-full">
-                {formatNumber(transactions.length)} transactions
+                {formatNumber(serverStats.totalTransactions)} transactions
               </span>
             )}
             {metersLoading && (
@@ -243,14 +357,26 @@ export default function ParkingRevenue() {
                 </div>
               </div>
             )}
-            {!isLoading && transactions.length > 0 && (
+
+            {!isLoading && !freshness.isLoading && !freshness.hasDataInRange && (
+              <DataFreshnessAlert
+                latestDate={freshness.latestDate}
+                suggestedRange={freshness.suggestedRange}
+                accentColor="#60a5fa"
+              />
+            )}
+
+            {!isLoading && serverStats && (
               <div className="absolute top-5 left-5 z-10 flex gap-2.5">
-                <StatCard label="Total Revenue" value={formatCurrency(stats.totalRevenue)} color="#60a5fa" delay={0} />
-                <StatCard label="Transactions" value={formatNumber(stats.totalTransactions)} color="#2dd4a8" delay={80} />
-                <StatCard label="Avg / Meter" value={formatCurrency(stats.avgPerMeter)} color="#ffbe0b" delay={160} />
-                <StatCard label="Active Meters" value={formatNumber(stats.uniqueMeters)} color="#a78bfa" delay={240} />
+                <StatCard label="Total Revenue" value={formatCurrency(serverStats.totalRevenue)} color="#60a5fa" delay={0}
+                  yoyDelta={trend.cityWideYoY ? trend.cityWideYoY.pct : null}
+                />
+                <StatCard label="Transactions" value={formatNumber(serverStats.totalTransactions)} color="#2dd4a8" delay={80} />
+                <StatCard label="Avg / Meter" value={formatCurrency(serverStats.avgPerMeter)} color="#ffbe0b" delay={160} />
+                <StatCard label="Active Meters" value={formatNumber(serverStats.uniqueMeters)} color="#a78bfa" delay={240} />
               </div>
             )}
+            <MeterDetailPanel />
           </MapView>
         </div>
 
@@ -261,34 +387,49 @@ export default function ParkingRevenue() {
               <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
             </div>
             <div className="space-y-3 mb-6 stagger-in">
-              {Array.from(stats.byPayment.entries()).sort((a, b) => b[1] - a[1]).map(([type, amount]) => {
-                const total = stats.totalRevenue || 1
-                const pct = (amount / total) * 100
-                const color = PAYMENT_COLORS[type as keyof typeof PAYMENT_COLORS] || '#64748b'
-                const label = type === 'COIN' ? 'Coin' : type === 'CREDIT CARD' ? 'Card' : type === 'SMRT' ? 'App' : type.charAt(0) + type.slice(1).toLowerCase().replace(/_/g, ' ')
+              {paymentBreakdown.map((entry) => {
+                const color = PAYMENT_COLORS[entry.type as keyof typeof PAYMENT_COLORS] || '#64748b'
+                const label = entry.type === 'COIN' ? 'Coin' : entry.type === 'CREDIT CARD' ? 'Card' : entry.type === 'SMRT' ? 'App' : entry.type.charAt(0) + entry.type.slice(1).toLowerCase().replace(/_/g, ' ')
                 return (
-                  <div key={type}>
+                  <div key={entry.type}>
                     <div className="flex justify-between items-baseline mb-1">
                       <span className="text-[12px] font-medium text-ink dark:text-slate-200">{label}</span>
                       <div className="flex items-baseline gap-2">
-                        <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">{pct.toFixed(0)}%</span>
-                        <span className="text-[12px] font-mono font-semibold tabular-nums" style={{ color }}>{formatCurrency(amount)}</span>
+                        <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">{entry.pct.toFixed(0)}%</span>
+                        <span className="text-[12px] font-mono font-semibold tabular-nums" style={{ color }}>{formatCurrency(entry.amount)}</span>
                       </div>
                     </div>
                     <div className="h-1 rounded-full bg-slate-100 dark:bg-white/[0.04] overflow-hidden">
-                      <div className="h-full rounded-full bar-grow" style={{ width: `${pct}%`, backgroundColor: color }} />
+                      <div className="h-full rounded-full bar-grow" style={{ width: `${entry.pct}%`, backgroundColor: color }} />
                     </div>
                   </div>
                 )
               })}
             </div>
 
+            {!trend.isLoading && trend.currentPeriods.length > 0 && (
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">Volume Trend</p>
+                  <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
+                </div>
+                <PeriodBreakdownChart
+                  current={trend.currentPeriods}
+                  priorYear={trend.priorYearPeriods}
+                  granularity={trend.granularity}
+                  accentColor="#60a5fa"
+                  width={240}
+                  height={130}
+                />
+              </div>
+            )}
+
             <div className="flex items-center gap-2 mb-3">
               <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">Top Neighborhoods</p>
               <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
             </div>
             <div className="space-y-0.5 stagger-in">
-              {stats.topNeighborhoods.map((ns, i) => {
+              {topNeighborhoods.map((ns, i) => {
                 const barWidth = (ns.revenue / maxNeighborhoodRevenue) * 100
                 return (
                   <div
