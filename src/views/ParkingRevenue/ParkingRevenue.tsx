@@ -13,6 +13,7 @@ import StatCard from '@/components/ui/StatCard'
 import ExportButton from '@/components/export/ExportButton'
 import MeterDetailPanel from '@/components/ui/MeterDetailPanel'
 import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
+import { SkeletonStatCards, SkeletonChart, SkeletonSidebarRows, SkeletonBreakdownList, MapLoadingIndicator } from '@/components/ui/Skeleton'
 import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
 import { useDataFreshness } from '@/hooks/useDataFreshness'
 import { useTrendBaseline } from '@/hooks/useTrendBaseline'
@@ -341,14 +342,7 @@ export default function ParkingRevenue() {
       <div id="pr-capture" className="flex-1 overflow-hidden flex">
         <div className="flex-1 relative">
           <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
-            {isLoading && (
-              <div className="absolute inset-0 flex items-center justify-center z-20 bg-slate-950/40 backdrop-blur-sm">
-                <div className="flex flex-col items-center gap-3">
-                  <div className="w-6 h-6 border-2 border-signal-blue border-t-transparent rounded-full animate-spin" />
-                  <span className="text-[11px] text-slate-400 font-mono uppercase tracking-wider">Loading revenue data</span>
-                </div>
-              </div>
-            )}
+            {isLoading && <MapLoadingIndicator label="Loading revenue data" color="#60a5fa" />}
             {error && (
               <div className="absolute inset-0 flex items-center justify-center z-20">
                 <div className="glass-card rounded-xl p-6 max-w-sm">
@@ -366,6 +360,7 @@ export default function ParkingRevenue() {
               />
             )}
 
+            {isLoading && <SkeletonStatCards count={4} />}
             {!isLoading && serverStats && (
               <div className="absolute top-5 left-5 z-10 flex gap-2.5">
                 <StatCard label="Total Revenue" value={formatCurrency(serverStats.totalRevenue)} color="#60a5fa" delay={0}
@@ -386,6 +381,7 @@ export default function ParkingRevenue() {
               <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">Payment Methods</p>
               <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
             </div>
+            {paymentBreakdown.length === 0 && (isLoading || !serverStats) && <SkeletonBreakdownList count={4} />}
             <div className="space-y-3 mb-6 stagger-in">
               {paymentBreakdown.map((entry) => {
                 const color = PAYMENT_COLORS[entry.type as keyof typeof PAYMENT_COLORS] || '#64748b'
@@ -428,6 +424,7 @@ export default function ParkingRevenue() {
               <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">Top Neighborhoods</p>
               <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
             </div>
+            {topNeighborhoods.length === 0 && isLoading && <SkeletonSidebarRows count={8} />}
             <div className="space-y-0.5 stagger-in">
               {topNeighborhoods.map((ns, i) => {
                 const barWidth = (ns.revenue / maxNeighborhoodRevenue) * 100

@@ -17,6 +17,7 @@ import ExportButton from '@/components/export/ExportButton'
 import HorizontalBarChart, { type BarDatum } from '@/components/charts/HorizontalBarChart'
 import CallTypeFilter, { type CallTypeEntry } from '@/components/filters/CallTypeFilter'
 import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
+import { Skeleton, SkeletonChart, SkeletonSidebarRows } from '@/components/ui/Skeleton'
 import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
 import { useDataFreshness } from '@/hooks/useDataFreshness'
 import { useTrendBaseline } from '@/hooks/useTrendBaseline'
@@ -313,15 +314,18 @@ export default function Dispatch911() {
       <div id="d911-capture" className="flex-1 overflow-hidden flex">
         {/* Scrollable chart area */}
         <div className="flex-1 overflow-y-auto p-6">
-          {/* Loading state */}
+          {/* Loading skeleton */}
           {isLoading && (
-            <div className="flex items-center justify-center py-16">
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-6 h-6 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
-                <span className="text-[11px] text-slate-400 font-mono uppercase tracking-wider">
-                  Loading dispatch data
-                </span>
+            <div className="max-w-4xl space-y-6">
+              <div className="flex gap-2.5 flex-wrap">
+                {Array.from({ length: 5 }, (_, i) => (
+                  <div key={i} className="glass-card rounded-xl px-4 py-3 min-w-[120px] animate-pulse" style={{ animationDelay: `${i * 60}ms` }}>
+                    <Skeleton className="h-2.5 w-16 mb-3" />
+                    <Skeleton className="h-6 w-20" />
+                  </div>
+                ))}
               </div>
+              <SkeletonChart width={640} height={200} />
             </div>
           )}
 
@@ -389,9 +393,7 @@ export default function Dispatch911() {
                   <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
                 </div>
                 {hourlyPattern.isLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="w-5 h-5 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
-                  </div>
+                  <SkeletonChart width={640} height={200} />
                 ) : (
                   <>
                     <HourlyHeatgrid grid={hourlyPattern.grid} width={640} height={240} />
@@ -501,9 +503,7 @@ export default function Dispatch911() {
                 onChange={setSelectedCallTypes}
               />
             ) : (
-              <div className="flex items-center justify-center py-8">
-                <div className="w-4 h-4 border-2 border-slate-300 dark:border-slate-600 border-t-transparent rounded-full animate-spin" />
-              </div>
+              <SkeletonSidebarRows count={10} />
             )}
           </div>
         </aside>

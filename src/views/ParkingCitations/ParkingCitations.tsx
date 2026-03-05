@@ -23,6 +23,7 @@ import TrendChart from '@/components/charts/TrendChart'
 import ViolationTypeFilter from '@/components/filters/ViolationTypeFilter'
 import CitationDetailPanel from '@/components/ui/CitationDetailPanel'
 import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
+import { SkeletonStatCards, SkeletonSidebarRows, MapLoadingIndicator } from '@/components/ui/Skeleton'
 import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
 import { useDataFreshness } from '@/hooks/useDataFreshness'
 import { useTrendBaseline } from '@/hooks/useTrendBaseline'
@@ -601,16 +602,7 @@ export default function ParkingCitations() {
         {/* Map hero */}
         <div className="flex-1 relative">
           <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
-            {isLoading && (
-              <div className="absolute inset-0 flex items-center justify-center z-20 bg-slate-950/40 backdrop-blur-sm">
-                <div className="flex flex-col items-center gap-3">
-                  <div className="w-6 h-6 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
-                  <span className="text-[11px] text-slate-400 font-mono uppercase tracking-wider">
-                    Loading citations
-                  </span>
-                </div>
-              </div>
-            )}
+            {isLoading && <MapLoadingIndicator label="Loading citations" color="#fb923c" />}
 
             {error && (
               <div className="absolute inset-0 flex items-center justify-center z-20">
@@ -631,6 +623,7 @@ export default function ParkingCitations() {
             )}
 
             {/* Stat cards — top left */}
+            {isLoading && <SkeletonStatCards count={4} />}
             {!isLoading && citationData.length > 0 && (
               <div className="absolute top-5 left-5 z-10 flex gap-2.5">
                 <StatCard
@@ -815,6 +808,7 @@ export default function ParkingCitations() {
                   </div>
                 )}
 
+                {isLoading && <SkeletonSidebarRows count={8} />}
                 <div className="space-y-0.5 stagger-in">
                   {neighborhoodEntries.slice(0, 30).map((ns) => {
                     const maxCount = neighborhoodEntries[0]?.citationCount || 1
