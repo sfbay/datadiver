@@ -60,6 +60,7 @@ export default function MeterDetailPanel() {
   const { selectedMeter, setSelectedMeter, dateRange } = useAppStore()
   const [detail, setDetail] = useState<MeterDetail | null>(null)
   const [transactions, setTransactions] = useState<RecentTransaction[]>([])
+  const [serverTotal, setServerTotal] = useState<{ revenue: number; count: number } | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
 
@@ -68,6 +69,7 @@ export default function MeterDetailPanel() {
     if (!selectedMeter) {
       setDetail(null)
       setTransactions([])
+      setServerTotal(null)
       return
     }
 
@@ -79,19 +81,34 @@ export default function MeterDetailPanel() {
       $limit: 1,
     })
 
+    const meterWhere = `post_id = '${selectedMeter}' AND session_start_dt >= '${dateRange.start}T00:00:00' AND session_start_dt <= '${dateRange.end}T23:59:59'`
+
     const txFetch = fetchDataset<ParkingTransaction>('parkingRevenue', {
-      $where: `post_id = '${selectedMeter}' AND session_start_dt >= '${dateRange.start}T00:00:00' AND session_start_dt <= '${dateRange.end}T23:59:59'`,
+      $where: meterWhere,
       $order: 'session_start_dt DESC',
       $limit: 8,
     })
 
-    Promise.all([meterFetch, txFetch])
-      .then(([meters, txs]) => {
+    // Server-side accurate totals for this meter
+    const aggFetch = fetchDataset<{ total_revenue: string; tx_count: string; avg_dur: string }>('parkingRevenue', {
+      $select: 'SUM(gross_paid_amt) as total_revenue, COUNT(*) as tx_count',
+      $where: meterWhere,
+      $limit: 1,
+    })
+
+    Promise.all([meterFetch, txFetch, aggFetch])
+      .then(([meters, txs, agg]) => {
         if (cancelled) return
         if (meters.length > 0) {
           setDetail(buildDetail(meters[0]))
         }
         setTransactions(txs.map(buildTransaction))
+        if (agg.length > 0) {
+          setServerTotal({
+            revenue: parseFloat(agg[0].total_revenue) || 0,
+            count: parseInt(agg[0].tx_count, 10) || 0,
+          })
+        }
       })
       .catch(() => {
         if (!cancelled) {
@@ -131,11 +148,11 @@ export default function MeterDetailPanel() {
 
   const capInfo = detail ? CAP_COLORS[detail.capColor] || { color: '#6b7280', label: 'Unknown' } : null
 
-  // Aggregate stats from fetched transactions
-  const txStats = transactions.length > 0
+  // Use server-side totals for revenue/count, client-side for avg duration
+  const txStats = serverTotal
     ? {
-        total: transactions.reduce((s, t) => s + t.amount, 0),
-        count: transactions.length,
+        total: serverTotal.revenue,
+        count: serverTotal.count,
         avgDuration: transactions.filter((t) => t.durationMinutes).reduce((s, t) => s + (t.durationMinutes || 0), 0) / (transactions.filter((t) => t.durationMinutes).length || 1),
       }
     : null

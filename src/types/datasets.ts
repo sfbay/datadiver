@@ -261,6 +261,13 @@ export interface NeighborhoodAggRow311 {
   case_count: string
 }
 
+/** Server-side per-meter aggregation row */
+export interface MeterAggRow {
+  post_id: string
+  total_revenue: string
+  tx_count: string
+}
+
 /** Server-side aggregation row for parking revenue stats */
 export interface ParkingStatsAggRow {
   total_revenue: string

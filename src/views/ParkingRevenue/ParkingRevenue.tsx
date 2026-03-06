@@ -5,7 +5,7 @@ import { useDataset } from '@/hooks/useDataset'
 import { useMapLayer } from '@/hooks/useMapLayer'
 import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { useAppStore } from '@/stores/appStore'
-import type { ParkingTransaction, ParkingMeter, MeterRevenueRecord, ParkingStatsAggRow, PaymentTypeAggRow } from '@/types/datasets'
+import type { ParkingMeter, MeterRevenueRecord, MeterAggRow, ParkingStatsAggRow, PaymentTypeAggRow } from '@/types/datasets'
 import { formatCurrency, formatNumber } from '@/utils/time'
 import { PAYMENT_COLORS } from '@/utils/colors'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
@@ -74,13 +74,20 @@ export default function ParkingRevenue() {
     return `session_start_dt >= '${dateRange.start}T00:00:00' AND session_start_dt <= '${dateRange.end}T23:59:59'`
   }, [dateRange])
 
-  const { data: transactions, isLoading, error } = useDataset<ParkingTransaction>(
+  // Server-side per-meter aggregation — accurate totals for map + tooltips
+  const { data: meterAgg, isLoading, error } = useDataset<MeterAggRow>(
     'parkingRevenue',
-    { $where: revenueWhere, $limit: 10000, $order: 'session_start_dt DESC' },
+    {
+      $select: 'post_id, SUM(gross_paid_amt) as total_revenue, COUNT(*) as tx_count',
+      $group: 'post_id',
+      $where: revenueWhere,
+      $order: 'total_revenue DESC',
+      $limit: 10000,
+    },
     [revenueWhere]
   )
 
-  // Server-side aggregation for accurate totals (not capped by $limit)
+  // Server-side aggregation for accurate headline totals
   const { data: statsAgg } = useDataset<ParkingStatsAggRow>(
     'parkingRevenue',
     {
@@ -103,32 +110,31 @@ export default function ParkingRevenue() {
     [revenueWhere]
   )
 
+  // Join server-side per-meter totals with meter inventory for lat/lng
   const meterRevenue = useMemo(() => {
-    const byMeter = new Map<string, MeterRevenueRecord>()
-    for (const tx of transactions) {
-      const meter = meterMap.get(tx.post_id)
-      const amount = parseFloat(tx.gross_paid_amt) || 0
-      if (amount <= 0) continue
-      const existing = byMeter.get(tx.post_id)
-      if (existing) {
-        existing.totalRevenue += amount
-        existing.transactionCount += 1
-        existing.avgTransaction = existing.totalRevenue / existing.transactionCount
-      } else {
-        const lat = meter ? parseFloat(meter.latitude) : 0
-        const lng = meter ? parseFloat(meter.longitude) : 0
-        byMeter.set(tx.post_id, {
-          postId: tx.post_id,
-          streetBlock: tx.street_block || meter?.street_name || 'Unknown',
-          totalRevenue: amount, transactionCount: 1, avgTransaction: amount,
-          lat, lng,
-          neighborhood: meter?.analysis_neighborhood || 'Unknown',
-          capColor: meter?.cap_color || 'Grey',
-        })
-      }
+    const results: MeterRevenueRecord[] = []
+    for (const row of meterAgg) {
+      const meter = meterMap.get(row.post_id)
+      if (!meter) continue
+      const lat = parseFloat(meter.latitude) || 0
+      const lng = parseFloat(meter.longitude) || 0
+      if (lat === 0 || lng === 0) continue
+      const revenue = parseFloat(row.total_revenue) || 0
+      const count = parseInt(row.tx_count, 10) || 0
+      if (revenue <= 0) continue
+      results.push({
+        postId: row.post_id,
+        streetBlock: meter.street_name || 'Unknown',
+        totalRevenue: revenue,
+        transactionCount: count,
+        avgTransaction: count > 0 ? revenue / count : 0,
+        lat, lng,
+        neighborhood: meter.analysis_neighborhood || 'Unknown',
+        capColor: meter.cap_color || 'Grey',
+      })
     }
-    return Array.from(byMeter.values()).filter((m) => m.lat !== 0 && m.lng !== 0)
-  }, [transactions, meterMap])
+    return results
+  }, [meterAgg, meterMap])
 
   // Use server-side aggregation for accurate headline stats
   const serverStats = useMemo(() => {
