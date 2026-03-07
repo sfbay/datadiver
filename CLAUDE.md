@@ -2,9 +2,11 @@
 
 ## Philosophy
 
-DataDiver exists to make civic data *legible*. San Francisco publishes millions of records across dozens of datasets on data.sfgov.org — emergency response times, 311 complaints, crime reports, parking citations, traffic crashes — but raw data doesn't change minds or inform decisions. Visualization does.
+DataDiver is the Bloomberg Terminal of civic data — a real-time intelligence surface designed to show us stories before they are stories.
 
-The project's core belief is that **public data should feel alive, not archival**. Every view answers a human question: *How fast do first responders reach my neighborhood? Where do parking tickets cluster? Are 311 complaints rising or falling?* The interface should reward curiosity — click a neighborhood, zoom into a block, compare this year to last year — without requiring technical literacy.
+San Francisco publishes millions of records across dozens of datasets on data.sfgov.org — emergency response times, 311 complaints, crime reports, parking citations, traffic crashes — but raw data doesn't change minds or inform decisions. A journalist shouldn't have to write SQL to notice that response times in the Tenderloin spiked 40% year-over-year. A neighborhood advocate shouldn't need a CSV to see that 311 graffiti complaints in the Mission are 2σ above the 12-month baseline. The data is public. The insight should be too.
+
+The project's core belief is that **public data should feel alive, not archival**. Every view answers a human question: *How fast do first responders reach my neighborhood? Where do parking tickets cluster? Are 311 complaints rising or falling?* The interface should reward curiosity — click a neighborhood, zoom into a block, compare this year to last year — and surface the anomalies, trends, and patterns that become tomorrow's headlines.
 
 ### Design Principles
 
