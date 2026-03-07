@@ -72,7 +72,7 @@ const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 export const useAppStore = create<AppState>((set) => ({
   currentView: 'home',
   isDarkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
-  isSidebarOpen: true,
+  isSidebarOpen: localStorage.getItem('dd-sidebar') !== 'collapsed',
   dateRange: {
     start: thirtyDaysAgo.toISOString().split('T')[0],
     end: now.toISOString().split('T')[0],
@@ -96,7 +96,11 @@ export const useAppStore = create<AppState>((set) => ({
       document.documentElement.classList.toggle('dark', next)
       return { isDarkMode: next }
     }),
-  toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
+  toggleSidebar: () => set((state) => {
+    const next = !state.isSidebarOpen
+    localStorage.setItem('dd-sidebar', next ? 'open' : 'collapsed')
+    return { isSidebarOpen: next }
+  }),
   setDateRange: (start, end) => set({ dateRange: { start, end } }),
   setSelectedNeighborhood: (neighborhood) => set({ selectedNeighborhood: neighborhood }),
   setTimeOfDayFilter: (filter) => set({ timeOfDayFilter: filter }),

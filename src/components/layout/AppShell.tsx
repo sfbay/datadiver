@@ -175,7 +175,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         )}
 
         {/* Footer controls */}
-        <div className={`border-t border-slate-200/50 dark:border-white/[0.04] ${isSidebarOpen ? 'p-3' : 'p-1.5'}`}>
+        <div className={`border-t border-slate-200/50 dark:border-white/[0.04] ${isSidebarOpen ? 'p-3 space-y-0.5' : 'p-1.5 space-y-0.5'}`}>
           <button
             onClick={toggleDarkMode}
             className={`
@@ -206,6 +206,37 @@ export default function AppShell({ children }: { children: ReactNode }) {
             </div>
             {isSidebarOpen && (
               <span className="text-[13px] font-medium">{isDarkMode ? 'Light' : 'Dark'}</span>
+            )}
+          </button>
+
+          {/* Collapse / expand toggle */}
+          <button
+            onClick={toggleSidebar}
+            className={`
+              w-full flex items-center rounded-lg
+              text-slate-400 dark:text-slate-600
+              hover:text-slate-600 dark:hover:text-slate-400
+              hover:bg-slate-50 dark:hover:bg-white/[0.03]
+              transition-all duration-200 text-sm
+              ${isSidebarOpen ? 'gap-3 px-3 py-2' : 'justify-center p-2.5'}
+            `}
+            aria-label={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={`transition-transform duration-300 ${isSidebarOpen ? '' : 'rotate-180'}`}
+            >
+              <path d="M10 3L5 8l5 5" />
+            </svg>
+            {isSidebarOpen && (
+              <span className="text-[13px] font-medium">Collapse</span>
             )}
           </button>
         </div>
