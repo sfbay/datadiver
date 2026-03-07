@@ -23,7 +23,7 @@ import HourlyHeatgrid from '@/components/charts/HourlyHeatgrid'
 import TrendChart from '@/components/charts/TrendChart'
 import CrashModeFilter from '@/components/filters/CrashModeFilter'
 import CrashDetailPanel from '@/components/ui/CrashDetailPanel'
-import { SkeletonStatCards, SkeletonSidebarRows, MapLoadingIndicator } from '@/components/ui/Skeleton'
+import { SkeletonStatCards, SkeletonSidebarRows, MapScanOverlay } from '@/components/ui/Skeleton'
 import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
 import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
 import { useDataFreshness } from '@/hooks/useDataFreshness'
@@ -774,7 +774,7 @@ export default function TrafficSafety() {
       <div id="ts-capture" className="flex-1 overflow-hidden flex">
         <div className="flex-1 relative">
           <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
-            {isLoading && <MapLoadingIndicator label="Loading crash data" color="#f87171" />}
+            {isLoading && <MapScanOverlay label="Scanning crashes" color="#f87171" />}
 
             {error && (
               <div className="absolute inset-0 flex items-center justify-center z-20">

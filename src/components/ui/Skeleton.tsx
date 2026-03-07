@@ -107,3 +107,46 @@ export function MapLoadingIndicator({ label = 'Loading data', color = '#94a3b8' 
     </div>
   )
 }
+
+/** Full-map radar scanning overlay — sonar rings + sweep line while data loads */
+export function MapScanOverlay({ color = '#06b6d4', label = 'Scanning' }: { color?: string; label?: string }) {
+  return (
+    <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center overflow-hidden">
+      {/* Concentric pulse rings */}
+      {[0, 1, 2, 3].map((i) => (
+        <div
+          key={i}
+          className="absolute rounded-full radar-ring"
+          style={{
+            width: `${120 + i * 120}px`,
+            height: `${120 + i * 120}px`,
+            border: `1px solid ${color}`,
+            animationDelay: `${i * 0.8}s`,
+          }}
+        />
+      ))}
+
+      {/* Rotating sweep line */}
+      <div
+        className="absolute w-[300px] h-[300px] rounded-full radar-sweep"
+        style={{
+          background: `conic-gradient(from 0deg, transparent 0deg, ${color}20 30deg, transparent 60deg)`,
+        }}
+      />
+
+      {/* Center dot */}
+      <div className="absolute w-3 h-3 rounded-full radar-center-dot" style={{ backgroundColor: color, boxShadow: `0 0 12px ${color}80` }} />
+
+      {/* Label */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2">
+        <div
+          className="w-1.5 h-1.5 rounded-full animate-pulse"
+          style={{ backgroundColor: color }}
+        />
+        <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-slate-400 dark:text-slate-500">
+          {label}
+        </span>
+      </div>
+    </div>
+  )
+}

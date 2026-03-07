@@ -22,7 +22,7 @@ import HourlyHeatgrid from '@/components/charts/HourlyHeatgrid'
 import TrendChart from '@/components/charts/TrendChart'
 import IncidentDetailPanel from '@/components/ui/IncidentDetailPanel'
 import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
-import { SkeletonStatCards, SkeletonChart, SkeletonSidebarRows, SkeletonBreakdownList, MapLoadingIndicator } from '@/components/ui/Skeleton'
+import { SkeletonStatCards, SkeletonChart, SkeletonSidebarRows, SkeletonBreakdownList, MapScanOverlay } from '@/components/ui/Skeleton'
 import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
 import { useDataFreshness } from '@/hooks/useDataFreshness'
 import { useTrendBaseline } from '@/hooks/useTrendBaseline'
@@ -506,7 +506,7 @@ export default function EmergencyResponse() {
         {/* Map — hero element */}
         <div className="flex-1 relative">
           <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
-            {isLoading && <MapLoadingIndicator label="Loading dispatch data" color="#f59e0b" />}
+            {isLoading && <MapScanOverlay label="Scanning dispatches" color="#f59e0b" />}
 
             {error && (
               <div className="absolute inset-0 flex items-center justify-center z-20">

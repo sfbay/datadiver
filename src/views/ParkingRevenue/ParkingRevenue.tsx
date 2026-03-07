@@ -13,7 +13,7 @@ import StatCard from '@/components/ui/StatCard'
 import ExportButton from '@/components/export/ExportButton'
 import MeterDetailPanel from '@/components/ui/MeterDetailPanel'
 import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
-import { SkeletonStatCards, SkeletonChart, SkeletonSidebarRows, SkeletonBreakdownList, MapLoadingIndicator } from '@/components/ui/Skeleton'
+import { SkeletonStatCards, SkeletonChart, SkeletonSidebarRows, SkeletonBreakdownList, MapScanOverlay } from '@/components/ui/Skeleton'
 import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
 import { useDataFreshness } from '@/hooks/useDataFreshness'
 import { useTrendBaseline } from '@/hooks/useTrendBaseline'
@@ -348,7 +348,7 @@ export default function ParkingRevenue() {
       <div id="pr-capture" className="flex-1 overflow-hidden flex">
         <div className="flex-1 relative">
           <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
-            {isLoading && <MapLoadingIndicator label="Loading revenue data" color="#60a5fa" />}
+            {isLoading && <MapScanOverlay label="Scanning meters" color="#06b6d4" />}
             {error && (
               <div className="absolute inset-0 flex items-center justify-center z-20">
                 <div className="glass-card rounded-xl p-6 max-w-sm">

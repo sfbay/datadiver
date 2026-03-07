@@ -217,6 +217,29 @@ body {
   background-size: 200% 100%;
 }
 
+/* Radar scan overlay */
+@keyframes radarRing {
+  0% { transform: scale(0.3); opacity: 0.6; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+@keyframes radarSweep {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes radarDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.7); }
+}
+.radar-ring {
+  animation: radarRing 3.2s ease-out infinite;
+}
+.radar-sweep {
+  animation: radarSweep 3s linear infinite;
+}
+.radar-center-dot {
+  animation: radarDot 2s ease-in-out infinite;
+}
+
 /* Mapbox tooltip overrides */
 .datadiver-tooltip .mapboxgl-popup-content {
   background: rgba(15, 23, 42, 0.92);
