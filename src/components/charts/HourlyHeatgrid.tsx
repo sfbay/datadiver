@@ -53,7 +53,7 @@ export default function HourlyHeatgrid({ grid, width = 240, height = 160 }: Hour
           .attr('width', cellW - 1)
           .attr('height', cellH - 1)
           .attr('rx', 1.5)
-          .attr('fill', value > 0 ? colorScale(value) : 'rgba(100,116,139,0.08)')
+          .attr('fill', value > 0 ? colorScale(value) : (isDarkMode ? 'rgba(148,163,184,0.08)' : 'rgba(100,116,139,0.08)'))
           .attr('opacity', 0)
           .attr('cursor', 'pointer')
           .on('click', () => {

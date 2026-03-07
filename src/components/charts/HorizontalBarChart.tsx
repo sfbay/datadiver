@@ -68,8 +68,8 @@ export default function HorizontalBarChart({
       .ease(d3.easeCubicOut)
       .attr('width', (d) => x(d.value))
 
-    const labelColor = isDarkMode ? '#64748b' : '#94a3b8'
-    const valueColor = isDarkMode ? '#94a3b8' : '#64748b'
+    const labelColor = isDarkMode ? '#94a3b8' : '#64748b'
+    const valueColor = isDarkMode ? '#cbd5e1' : '#334155'
 
     // Labels (left)
     g.selectAll('.bar-label')

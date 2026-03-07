@@ -59,7 +59,7 @@ export default function PeriodBreakdownChart({
       .range([h, 0])
       .nice()
 
-    const textColor = isDarkMode ? '#64748b' : '#94a3b8'
+    const textColor = isDarkMode ? '#94a3b8' : '#64748b'
     const bandwidth = x.bandwidth()
 
     // Ghost bars (prior year) — full bandwidth, behind
