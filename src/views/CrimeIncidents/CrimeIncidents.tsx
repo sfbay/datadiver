@@ -28,6 +28,7 @@ import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
 import { useDataFreshness } from '@/hooks/useDataFreshness'
 import { useTrendBaseline } from '@/hooks/useTrendBaseline'
 import type { TrendConfig } from '@/types/trends'
+import InfoTip from '@/components/ui/InfoTip'
 
 type MapMode = 'heatmap' | 'anomaly'
 type SidebarTab = 'categories' | 'neighborhoods'
@@ -633,19 +634,19 @@ export default function CrimeIncidents() {
             {!isLoading && incidentData.length > 0 && (
               <div className="absolute top-5 left-5 z-10 flex gap-2.5">
                 <StatCard
-                  label="Total Incidents" value={formatNumber(stats.total)} color="#ef4444" delay={0}
+                  label="Total Incidents" info="total-incidents" value={formatNumber(stats.total)} color="#ef4444" delay={0}
                   subtitle={comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined}
                   trend={comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined}
                   yoyDelta={!comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null}
                 />
                 <StatCard
-                  label="Top Category" value={stats.topCategory} color="#f59e0b" delay={80}
+                  label="Top Category" info="top-category" value={stats.topCategory} color="#f59e0b" delay={80}
                 />
                 <StatCard
-                  label="911 Linked" value={`${stats.linkedPct.toFixed(0)}%`} color="#a78bfa" delay={160}
+                  label="911 Linked" info="911-linked" value={`${stats.linkedPct.toFixed(0)}%`} color="#a78bfa" delay={160}
                 />
                 <StatCard
-                  label="Peak Hour" value={formatHour(stats.peakHour)} color="#60a5fa" delay={240}
+                  label="Peak Hour" info="peak-hour" value={formatHour(stats.peakHour)} color="#60a5fa" delay={240}
                 />
               </div>
             )}
@@ -686,7 +687,7 @@ export default function CrimeIncidents() {
             {mapMode === 'anomaly' && neighborhoodAnomalies.size > 0 && (
               <div className="absolute bottom-6 right-5 z-10 glass-card rounded-xl p-3">
                 <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
-                  Crime Anomaly
+                  Crime Anomaly<InfoTip term="anomaly-map" size={10} />
                 </p>
                 <div className="flex items-center gap-1">
                   <span className="text-[9px] font-mono text-blue-400">{'\u2212'}2\u03C3</span>

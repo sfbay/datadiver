@@ -29,6 +29,7 @@ import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
 import { useDataFreshness } from '@/hooks/useDataFreshness'
 import { useTrendBaseline } from '@/hooks/useTrendBaseline'
 import type { TrendConfig } from '@/types/trends'
+import InfoTip from '@/components/ui/InfoTip'
 
 type MapMode = 'heatmap' | 'anomaly'
 type SidebarTab = 'modes' | 'neighborhoods'
@@ -798,18 +799,18 @@ export default function TrafficSafety() {
             {!isLoading && crashData.length > 0 && (
               <div className="absolute top-5 left-5 z-10 flex gap-2.5">
                 <StatCard
-                  label="Total Crashes" value={formatNumber(stats.totalCrashes)} color="#dc2626" delay={0}
+                  label="Total Crashes" info="total-crashes" value={formatNumber(stats.totalCrashes)} color="#dc2626" delay={0}
                   subtitle={comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined}
                   trend={comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined}
                   yoyDelta={!comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null}
                 />
-                <StatCard label="Fatalities" value={String(stats.fatalities)} color="#7f1d1d" delay={80} />
+                <StatCard label="Fatalities" info="fatalities" value={String(stats.fatalities)} color="#7f1d1d" delay={80} />
                 <StatCard
-                  label="Injuries" value={formatNumber(stats.injuries)} color="#f59e0b" delay={160}
+                  label="Injuries" info="injuries" value={formatNumber(stats.injuries)} color="#f59e0b" delay={160}
                   subtitle={comparison.deltas ? `${formatDelta(comparison.deltas.injuries)} ${compLabel}` : undefined}
                   trend={comparison.deltas ? (comparison.deltas.injuries > 0 ? 'up' : comparison.deltas.injuries < 0 ? 'down' : 'neutral') : undefined}
                 />
-                <StatCard label="Ped/Bike %" value={`${stats.pedBikePct.toFixed(1)}%`} color="#3b82f6" delay={240} />
+                <StatCard label="Ped/Bike %" info="ped-bike-pct" value={`${stats.pedBikePct.toFixed(1)}%`} color="#3b82f6" delay={240} />
               </div>
             )}
 
@@ -854,7 +855,7 @@ export default function TrafficSafety() {
             {mapMode === 'anomaly' && neighborhoodAnomalies.size > 0 && (
               <div className="absolute bottom-6 right-5 z-10 glass-card rounded-xl p-3">
                 <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
-                  Crash Anomaly
+                  Crash Anomaly<InfoTip term="anomaly-map" size={10} />
                 </p>
                 <div className="flex items-center gap-1">
                   <span className="text-[9px] font-mono text-blue-400">−2σ</span>

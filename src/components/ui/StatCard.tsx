@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import InfoTip from '@/components/ui/InfoTip'
 
 interface StatCardProps {
   label: string
@@ -9,9 +10,11 @@ interface StatCardProps {
   trend?: 'up' | 'down' | 'neutral'
   yoyDelta?: number | null
   zScore?: number | null
+  /** Glossary key for an explanatory tooltip on the label */
+  info?: string
 }
 
-export default function StatCard({ label, value, color, subtitle, delay = 0, trend, yoyDelta, zScore }: StatCardProps) {
+export default function StatCard({ label, value, color, subtitle, delay = 0, trend, yoyDelta, zScore, info }: StatCardProps) {
   const [visible, setVisible] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -40,13 +43,21 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
     >
       {zScoreDot && (
         <div
-          className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full"
-          style={{ backgroundColor: zScoreDot }}
-          title={`z-score: ${zScore! >= 0 ? '+' : ''}${zScore!.toFixed(1)}σ`}
-        />
+          className="absolute top-2 right-2 group cursor-help"
+        >
+          <div
+            className="w-2 h-2 rounded-full"
+            style={{ backgroundColor: zScoreDot }}
+          />
+          <div className="hidden group-hover:block absolute top-full right-0 mt-1 z-50 w-48 px-2.5 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/[0.08] shadow-xl text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">
+            <span className="font-mono font-semibold" style={{ color: zScoreDot }}>{zScore! >= 0 ? '+' : ''}{zScore!.toFixed(1)}σ</span>
+            {' — '}This value is {Math.abs(zScore!) > 2 ? 'very ' : ''}{zScore! > 0 ? 'high' : 'low'} compared to the 12-month average for this area.
+          </div>
+        </div>
       )}
-      <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 mb-1.5 whitespace-nowrap">
+      <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 mb-1.5 whitespace-nowrap flex items-center">
         {label}
+        {info && <InfoTip term={info} size={10} />}
       </p>
       <p
         className="text-2xl font-bold font-mono tracking-tight leading-none"

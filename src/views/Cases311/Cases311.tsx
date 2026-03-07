@@ -28,6 +28,7 @@ import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
 import { useDataFreshness } from '@/hooks/useDataFreshness'
 import { useTrendBaseline } from '@/hooks/useTrendBaseline'
 import type { TrendConfig } from '@/types/trends'
+import InfoTip from '@/components/ui/InfoTip'
 
 type MapMode = 'heatmap' | 'anomaly'
 type SidebarTab = 'categories' | 'neighborhoods'
@@ -606,21 +607,21 @@ export default function Cases311() {
             {!isLoading && caseData.length > 0 && (
               <div className="absolute top-5 left-5 z-10 flex gap-2.5">
                 <StatCard
-                  label="Total Cases" value={formatNumber(stats.totalCases)} color="#10b981" delay={0}
+                  label="Total Cases" info="total-cases" value={formatNumber(stats.totalCases)} color="#10b981" delay={0}
                   subtitle={comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined}
                   trend={comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined}
                   yoyDelta={!comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null}
                 />
                 <StatCard
-                  label="Avg Resolution" value={formatResolution(stats.avgResolution)} color={resolutionTimeColor(stats.avgResolution)} delay={80}
+                  label="Avg Resolution" info="avg-resolution" value={formatResolution(stats.avgResolution)} color={resolutionTimeColor(stats.avgResolution)} delay={80}
                   subtitle={comparison.deltas ? `${formatDelta(comparison.deltas.avgResolution)} ${compLabel}` : undefined}
                   trend={comparison.deltas ? (comparison.deltas.avgResolution > 0 ? 'up' : comparison.deltas.avgResolution < 0 ? 'down' : 'neutral') : undefined}
                 />
                 <StatCard
-                  label="Open Cases" value={formatNumber(stats.openCases)} color="#f59e0b" delay={160}
+                  label="Open Cases" info="open-cases" value={formatNumber(stats.openCases)} color="#f59e0b" delay={160}
                 />
                 <StatCard
-                  label="Peak Hour" value={formatHour(stats.peakHour)} color="#60a5fa" delay={240}
+                  label="Peak Hour" info="peak-hour" value={formatHour(stats.peakHour)} color="#60a5fa" delay={240}
                 />
               </div>
             )}

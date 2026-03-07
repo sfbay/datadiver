@@ -28,6 +28,7 @@ import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
 import { useDataFreshness } from '@/hooks/useDataFreshness'
 import { useTrendBaseline } from '@/hooks/useTrendBaseline'
 import type { TrendConfig } from '@/types/trends'
+import InfoTip from '@/components/ui/InfoTip'
 
 type MapMode = 'heatmap' | 'anomaly'
 type SidebarTab = 'violations' | 'neighborhoods'
@@ -627,24 +628,24 @@ export default function ParkingCitations() {
             {!isLoading && citationData.length > 0 && (
               <div className="absolute top-5 left-5 z-10 flex gap-2.5">
                 <StatCard
-                  label="Fine Revenue" value={formatCurrency(totalRevenue)} color="#f97316" delay={0}
+                  label="Fine Revenue" info="fine-revenue" value={formatCurrency(totalRevenue)} color="#f97316" delay={0}
                   subtitle={comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined}
                   trend={comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined}
                 />
                 <StatCard
-                  label="Total Citations" value={formatNumber(totalCount ?? stats.totalCitations)} color="#fb923c" delay={80}
+                  label="Total Citations" info="total-citations" value={formatNumber(totalCount ?? stats.totalCitations)} color="#fb923c" delay={80}
                   yoyDelta={!comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null}
                 />
                 <StatCard
-                  label="Avg Fine" value={formatCurrency(stats.avgFine)} color="#f59e0b" delay={160}
+                  label="Avg Fine" info="avg-fine" value={formatCurrency(stats.avgFine)} color="#f59e0b" delay={160}
                   subtitle={comparison.deltas ? `${formatDelta(comparison.deltas.avgFine)} ${compLabel}` : undefined}
                   trend={comparison.deltas ? (comparison.deltas.avgFine > 0 ? 'up' : comparison.deltas.avgFine < 0 ? 'down' : 'neutral') : undefined}
                 />
                 <StatCard
-                  label="Out-of-State" value={`${stats.outOfStatePct.toFixed(1)}%`} color="#60a5fa" delay={240}
+                  label="Out-of-State" info="out-of-state" value={`${stats.outOfStatePct.toFixed(1)}%`} color="#60a5fa" delay={240}
                 />
                 <StatCard
-                  label="Peak Hour" value={formatHour(stats.peakHour)} color="#a78bfa" delay={320}
+                  label="Peak Hour" info="peak-hour" value={formatHour(stats.peakHour)} color="#a78bfa" delay={320}
                 />
               </div>
             )}
@@ -702,7 +703,7 @@ export default function ParkingCitations() {
             {mapMode === 'anomaly' && neighborhoodAnomalies.size > 0 && (
               <div className="absolute bottom-6 right-5 z-10 glass-card rounded-xl p-3">
                 <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
-                  Citation Anomaly
+                  Citation Anomaly<InfoTip term="anomaly-map" size={10} />
                 </p>
                 <div className="flex items-center gap-1">
                   <span className="text-[9px] font-mono text-blue-400">−2σ</span>

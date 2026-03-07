@@ -369,12 +369,12 @@ export default function ParkingRevenue() {
             {isLoading && <SkeletonStatCards count={4} />}
             {!isLoading && serverStats && (
               <div className="absolute top-5 left-5 z-10 flex gap-2.5">
-                <StatCard label="Total Revenue" value={formatCurrency(serverStats.totalRevenue)} color="#60a5fa" delay={0}
+                <StatCard label="Total Revenue" info="total-revenue" value={formatCurrency(serverStats.totalRevenue)} color="#60a5fa" delay={0}
                   yoyDelta={trend.cityWideYoY ? trend.cityWideYoY.pct : null}
                 />
-                <StatCard label="Transactions" value={formatNumber(serverStats.totalTransactions)} color="#2dd4a8" delay={80} />
-                <StatCard label="Avg / Meter" value={formatCurrency(serverStats.avgPerMeter)} color="#ffbe0b" delay={160} />
-                <StatCard label="Active Meters" value={formatNumber(serverStats.uniqueMeters)} color="#a78bfa" delay={240} />
+                <StatCard label="Transactions" info="transactions" value={formatNumber(serverStats.totalTransactions)} color="#2dd4a8" delay={80} />
+                <StatCard label="Avg / Meter" info="avg-per-meter" value={formatCurrency(serverStats.avgPerMeter)} color="#ffbe0b" delay={160} />
+                <StatCard label="Active Meters" info="active-meters" value={formatNumber(serverStats.uniqueMeters)} color="#a78bfa" delay={240} />
               </div>
             )}
             <MeterDetailPanel />

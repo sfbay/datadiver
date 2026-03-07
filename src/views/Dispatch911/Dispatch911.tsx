@@ -22,6 +22,7 @@ import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
 import { useDataFreshness } from '@/hooks/useDataFreshness'
 import { useTrendBaseline } from '@/hooks/useTrendBaseline'
 import type { TrendConfig } from '@/types/trends'
+import InfoTip from '@/components/ui/InfoTip'
 
 type SensitiveFilter = 'all' | 'sensitive' | 'non-sensitive'
 
@@ -354,7 +355,7 @@ export default function Dispatch911() {
               {/* Stat cards */}
               <div className="flex gap-2.5 flex-wrap">
                 <StatCard
-                  label="Total Calls"
+                  label="Total Calls" info="total-calls"
                   value={formatNumber(stats.total)}
                   color={accentColor}
                   delay={0}
@@ -371,13 +372,13 @@ export default function Dispatch911() {
                   trend={comparison.deltas ? (comparison.deltas.avg > 0 ? 'up' : comparison.deltas.avg < 0 ? 'down' : 'neutral') : undefined}
                 />
                 <StatCard
-                  label="Sensitive %"
+                  label="Sensitive %" info="sensitive-pct"
                   value={`${stats.sensitivePct.toFixed(1)}%`}
                   color="#a78bfa"
                   delay={160}
                 />
                 <StatCard
-                  label="Peak Hour"
+                  label="Peak Hour" info="peak-hour"
                   value={stats.peakHour >= 12 ? `${stats.peakHour === 12 ? 12 : stats.peakHour - 12}pm` : `${stats.peakHour === 0 ? 12 : stats.peakHour}am`}
                   color="#f59e0b"
                   delay={240}
@@ -388,7 +389,7 @@ export default function Dispatch911() {
               <div className="glass-card rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60">
-                    Call Volume by Hour & Day
+                    Call Volume by Hour & Day<InfoTip term="heatgrid" size={10} />
                   </p>
                   <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
                 </div>
@@ -411,7 +412,7 @@ export default function Dispatch911() {
               {!trend.isLoading && trend.currentPeriods.length > 0 && (
                 <div className="glass-card rounded-xl p-4">
                   <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
-                    Volume Trend
+                    Volume Trend<InfoTip term="period-trend" size={10} />
                   </p>
                   <PeriodBreakdownChart
                     current={trend.currentPeriods}

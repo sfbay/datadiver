@@ -530,17 +530,17 @@ export default function EmergencyResponse() {
             {!isLoading && responseData.length > 0 && (
               <div className="absolute top-5 left-5 z-10 flex gap-2.5">
                 <StatCard
-                  label="Avg Response" value={formatDuration(stats.avg)} color={responseTimeColor(stats.avg)} delay={0}
+                  label="Avg Response" info="avg-response" value={formatDuration(stats.avg)} color={responseTimeColor(stats.avg)} delay={0}
                   subtitle={comparison.deltas ? `${formatDelta(comparison.deltas.avg)} ${compLabel}` : undefined}
                   trend={comparison.deltas ? (comparison.deltas.avg > 0 ? 'up' : comparison.deltas.avg < 0 ? 'down' : 'neutral') : undefined}
                 />
                 <StatCard
-                  label="Median" value={formatDuration(stats.median)} color={responseTimeColor(stats.median)} delay={80}
+                  label="Median" info="median" value={formatDuration(stats.median)} color={responseTimeColor(stats.median)} delay={80}
                   subtitle={comparison.deltas ? `${formatDelta(comparison.deltas.median)} ${compLabel}` : undefined}
                   trend={comparison.deltas ? (comparison.deltas.median > 0 ? 'up' : comparison.deltas.median < 0 ? 'down' : 'neutral') : undefined}
                 />
                 <StatCard
-                  label="90th Pctl" value={formatDuration(stats.p90)} color={responseTimeColor(stats.p90)} delay={160}
+                  label="90th Pctl" info="90th-pctl" value={formatDuration(stats.p90)} color={responseTimeColor(stats.p90)} delay={160}
                   subtitle={comparison.deltas ? `${formatDelta(comparison.deltas.p90)} ${compLabel}` : undefined}
                   trend={comparison.deltas ? (comparison.deltas.p90 > 0 ? 'up' : comparison.deltas.p90 < 0 ? 'down' : 'neutral') : undefined}
                 />
@@ -552,7 +552,7 @@ export default function EmergencyResponse() {
                 />
                 {stats.apotCount > 0 && (
                   <StatCard
-                    label="Avg APOT"
+                    label="Avg APOT" info="avg-apot"
                     value={formatDuration(stats.apotAvg)}
                     color={stats.apotAvg > 20 ? '#ef4444' : stats.apotAvg > 10 ? '#f59e0b' : '#10b981'}
                     delay={320}
