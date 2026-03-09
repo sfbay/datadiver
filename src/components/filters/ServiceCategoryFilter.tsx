@@ -114,23 +114,35 @@ export default function ServiceCategoryFilter({ categories, selected, onChange }
                 }}
               />
 
-              {/* Checkbox indicator */}
-              <button
-                onClick={() => handleToggle(entry.serviceName)}
-                className={`
-                  relative flex-shrink-0 w-3 h-3 rounded-sm border transition-all cursor-pointer
-                  ${active
-                    ? 'bg-emerald-500 border-emerald-500'
-                    : 'border-slate-300 dark:border-slate-600'
-                  }
-                `}
-              >
-                {active && (
-                  <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
-                    <path d="M3 6l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              {/* Controls cluster: checkbox + solo */}
+              <div className="relative flex items-center gap-1 flex-shrink-0">
+                <button
+                  onClick={() => handleToggle(entry.serviceName)}
+                  className={`
+                    flex-shrink-0 w-3 h-3 rounded-sm border transition-all cursor-pointer
+                    ${active
+                      ? 'bg-emerald-500 border-emerald-500'
+                      : 'border-slate-300 dark:border-slate-600'
+                    }
+                  `}
+                >
+                  {active && (
+                    <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                      <path d="M3 6l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleSolo(entry.serviceName) }}
+                  title="Show only this category"
+                  className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150 p-0.5 rounded hover:bg-slate-200/60 dark:hover:bg-white/[0.08] cursor-pointer"
+                >
+                  <svg className="w-2.5 h-2.5 text-slate-400 dark:text-slate-500" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <circle cx="8" cy="8" r="3" />
+                    <path d="M8 1v2M8 13v2M1 8h2M13 8h2" strokeLinecap="round" />
                   </svg>
-                )}
-              </button>
+                </button>
+              </div>
 
               {/* Label (click to toggle) */}
               <button
@@ -138,18 +150,6 @@ export default function ServiceCategoryFilter({ categories, selected, onChange }
                 className="relative flex-1 min-w-0 text-[11px] text-ink dark:text-slate-300 truncate leading-tight cursor-pointer text-left"
               >
                 {entry.serviceName}
-              </button>
-
-              {/* Solo button (visible on hover) */}
-              <button
-                onClick={(e) => { e.stopPropagation(); handleSolo(entry.serviceName) }}
-                title="Show only this category"
-                className="relative flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150 p-0.5 rounded hover:bg-slate-200/60 dark:hover:bg-white/[0.08] cursor-pointer"
-              >
-                <svg className="w-3 h-3 text-slate-400 dark:text-slate-500" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <circle cx="8" cy="8" r="3" />
-                  <path d="M8 1v2M8 13v2M1 8h2M13 8h2" strokeLinecap="round" />
-                </svg>
               </button>
 
               {/* Count badge */}

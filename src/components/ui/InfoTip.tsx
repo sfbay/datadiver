@@ -80,6 +80,7 @@ export default function InfoTip({ term, text, size = 12 }: InfoTipProps) {
             border border-slate-200 dark:border-white/[0.08]
             shadow-xl shadow-black/10 dark:shadow-black/40
             text-[11px] leading-relaxed text-slate-600 dark:text-slate-300
+            normal-case tracking-normal whitespace-normal font-normal font-sans
             animate-in fade-in duration-150
             ${position === 'below'
               ? 'top-full mt-1.5 left-1/2 -translate-x-1/2'
