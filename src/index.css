@@ -226,10 +226,7 @@ body {
   50% { opacity: 0.3; transform: scale(0.6); }
 }
 .radar-sweep {
-  animation: radarSweep 4s linear infinite;
-}
-.radar-sweep-slow {
-  animation: radarSweep 6s linear infinite reverse;
+  animation: radarSweep 3.5s linear infinite;
 }
 .radar-center-dot {
   animation: radarDot 3s ease-in-out infinite;

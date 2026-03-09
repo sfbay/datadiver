@@ -108,36 +108,47 @@ export function MapLoadingIndicator({ label = 'Loading data', color = '#94a3b8' 
   )
 }
 
-/** Full-map radar sweep overlay — rotating glow beam while data loads */
+/** Full-map radar sweep overlay — sharp leading line with gradient trail */
 export function MapScanOverlay({ color = '#06b6d4', label = 'Scanning' }: { color?: string; label?: string }) {
   return (
     <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center overflow-hidden">
-      {/* Large rotating sweep — glowy conic gradient */}
+      {/* Outer ring */}
       <div
-        className="absolute rounded-full radar-sweep"
+        className="absolute rounded-full"
         style={{
-          width: '140%',
-          height: '140%',
-          background: `conic-gradient(from 0deg, transparent 0deg, ${color}08 15deg, ${color}18 35deg, ${color}30 45deg, transparent 70deg)`,
-          filter: `blur(2px)`,
+          width: '70%',
+          height: '70%',
+          border: `1px solid ${color}20`,
+          boxShadow: `0 0 15px ${color}08`,
         }}
       />
 
-      {/* Inner glow bloom — softer, slightly delayed */}
+      {/* Sweep: sharp leading edge + gradient trail fading ~60deg back */}
       <div
-        className="absolute rounded-full radar-sweep-slow"
+        className="absolute rounded-full radar-sweep"
         style={{
-          width: '80%',
-          height: '80%',
-          background: `conic-gradient(from 180deg, transparent 0deg, ${color}10 20deg, ${color}25 40deg, transparent 65deg)`,
-          filter: `blur(8px)`,
+          width: '70%',
+          height: '70%',
+          background: `conic-gradient(from 0deg, ${color}50 0deg, ${color}30 2deg, ${color}18 15deg, ${color}08 35deg, transparent 60deg, transparent 360deg)`,
+        }}
+      />
+
+      {/* Sweep line — thin bright radial line at the leading edge */}
+      <div
+        className="absolute radar-sweep"
+        style={{
+          width: '35%',
+          height: '1px',
+          background: `linear-gradient(to right, ${color}10, ${color}cc, ${color})`,
+          transformOrigin: 'left center',
+          boxShadow: `0 0 6px ${color}60`,
         }}
       />
 
       {/* Center glow dot */}
       <div
         className="absolute w-2 h-2 rounded-full radar-center-dot"
-        style={{ backgroundColor: color, boxShadow: `0 0 20px ${color}60, 0 0 60px ${color}20` }}
+        style={{ backgroundColor: color, boxShadow: `0 0 12px ${color}80, 0 0 40px ${color}30` }}
       />
 
       {/* Label */}
