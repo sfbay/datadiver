@@ -244,7 +244,7 @@ export default function MeterDetailPanel() {
             <>
               <div className="flex items-center gap-2 mb-2">
                 <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                  Period Stats
+                  {formatDate(dateRange.start, 'short')} – {formatDate(dateRange.end, 'short')}
                 </p>
                 <div className="flex-1 h-[1px] bg-slate-200 dark:bg-white/[0.08]" />
               </div>
