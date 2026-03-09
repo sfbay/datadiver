@@ -28,7 +28,7 @@ export function formatDuration(minutes: number): string {
 export function formatDate(date: Date | string, style: 'short' | 'long' = 'short'): string {
   const d = typeof date === 'string' ? new Date(date) : date
   if (style === 'short') {
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
   }
   return d.toLocaleDateString('en-US', {
     weekday: 'short',

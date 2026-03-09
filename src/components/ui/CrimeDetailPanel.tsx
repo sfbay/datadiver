@@ -199,53 +199,67 @@ export default function CrimeDetailPanel() {
             <div className="flex-1 h-[1px] bg-slate-200 dark:bg-white/[0.08]" />
           </div>
 
-          <div className="space-y-0">
-            {(() => {
-              // Check if all timestamps are on the same day — if so, show times instead of dates
-              const allTimes = POLICE_TIMELINE.map((s) => parseDateTime(detail.timestamps[s.key]))
-              const sameDay = allTimes.every((t, _, arr) =>
-                t && arr[0] && t.toDateString() === arr[0].toDateString()
-              )
+          {(() => {
+            const firstTime = parseDateTime(detail.timestamps.incident)
+            const allTimes = POLICE_TIMELINE.map((s) => parseDateTime(detail.timestamps[s.key]))
+            const sameDay = allTimes.every((t, _, arr) =>
+              t && arr[0] && t.toDateString() === arr[0].toDateString()
+            )
 
-              return POLICE_TIMELINE.map((step, i) => {
-                const ts = detail.timestamps[step.key]
-                const prevTs = i > 0 ? detail.timestamps[POLICE_TIMELINE[i - 1].key] : null
-                const elapsed = ts && prevTs ? diffHours(prevTs, ts) : null
-                const time = parseDateTime(ts)
+            return (
+              <>
+                {/* Date header */}
+                {firstTime && (
+                  <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400 mb-2">
+                    {firstTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                  </p>
+                )}
 
-                return (
-                  <div key={step.key} className="flex items-start gap-2.5 relative">
-                    <div className="flex flex-col items-center w-3 flex-shrink-0">
-                      <div className={`w-2 h-2 rounded-full flex-shrink-0 ${ts ? 'bg-red-500' : 'bg-slate-600/30'}`} />
-                      {i < POLICE_TIMELINE.length - 1 && (
-                        <div className={`w-px h-6 ${ts ? 'bg-red-500/30' : 'bg-slate-600/10'}`} />
-                      )}
-                    </div>
-                    <div className="flex-1 pb-1 -mt-0.5">
-                      <div className="flex items-baseline justify-between">
-                        <p className={`text-[11px] font-medium ${ts ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400 dark:text-slate-600'}`}>
-                          {step.label}
-                        </p>
-                        {time && (
-                          <p className="text-[10px] font-mono text-slate-700 dark:text-slate-300 tabular-nums">
-                            {sameDay
-                              ? time.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-                              : formatDate(time, 'short')
-                            }
-                          </p>
-                        )}
+                <div className="space-y-0">
+                  {POLICE_TIMELINE.map((step, i) => {
+                    const ts = detail.timestamps[step.key]
+                    const prevTs = i > 0 ? detail.timestamps[POLICE_TIMELINE[i - 1].key] : null
+                    const elapsed = ts && prevTs ? diffHours(prevTs, ts) : null
+                    const time = parseDateTime(ts)
+
+                    const timeStr = time
+                      ? sameDay
+                        ? time.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                        : time.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ' ' + time.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                      : null
+
+                    return (
+                      <div key={step.key} className="flex items-start gap-2.5 relative">
+                        <div className="flex flex-col items-center w-3 flex-shrink-0">
+                          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${ts ? 'bg-red-500' : 'bg-slate-600/30'}`} />
+                          {i < POLICE_TIMELINE.length - 1 && (
+                            <div className={`w-px h-6 ${ts ? 'bg-red-500/30' : 'bg-slate-600/10'}`} />
+                          )}
+                        </div>
+                        <div className="flex-1 pb-1 -mt-0.5">
+                          <div className="flex items-baseline justify-between">
+                            <p className={`text-[11px] font-medium ${ts ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400 dark:text-slate-600'}`}>
+                              {step.label}
+                            </p>
+                            {timeStr && (
+                              <p className="text-[10px] font-mono text-slate-700 dark:text-slate-300 tabular-nums">
+                                {timeStr}
+                              </p>
+                            )}
+                          </div>
+                          {elapsed !== null && elapsed > 0 && (
+                            <p className="text-[9px] font-mono text-red-500/70">
+                              +{elapsed < 1 ? `${Math.round(elapsed * 60)}min` : formatResolution(elapsed)}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      {elapsed !== null && elapsed > 0 && (
-                        <p className="text-[9px] font-mono text-red-500/70">
-                          +{elapsed < 1 ? `${Math.round(elapsed * 60)}min` : formatResolution(elapsed)}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )
-              })
-            })()}
-          </div>
+                    )
+                  })}
+                </div>
+              </>
+            )
+          })()}
 
           {/* Report lag summary */}
           {reportLag !== null && reportLag > 0 && (
@@ -321,13 +335,33 @@ export default function CrimeDetailPanel() {
 
                 {/* Dispatch timeline */}
                 <div className="pt-2 border-t border-slate-200 dark:border-white/[0.08]">
-                  <div className="space-y-0">
-                    {DISPATCH_TIMELINE.map((step, i) => {
+                  {(() => {
+                    const dispFirstTime = parseDateTime(dispatch.received_datetime ?? null)
+                    const dispAllTimes = DISPATCH_TIMELINE.map((s) => parseDateTime((dispatch[s.key as keyof typeof dispatch] as string) ?? null))
+                    const dispSameDay = dispAllTimes.every((t, _, arr) =>
+                      t && arr[0] && t.toDateString() === arr[0].toDateString()
+                    )
+
+                    return (
+                      <>
+                        {dispFirstTime && (
+                          <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400 mb-2">
+                            {dispFirstTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                          </p>
+                        )}
+                        <div className="space-y-0">
+                  {DISPATCH_TIMELINE.map((step, i) => {
                       const ts = dispatch[step.key as keyof typeof dispatch] as string | undefined
                       const prevKey = i > 0 ? DISPATCH_TIMELINE[i - 1].key : null
                       const prevTs = prevKey ? (dispatch[prevKey as keyof typeof dispatch] as string | undefined) : null
                       const elapsed = ts && prevTs ? diffHours(prevTs, ts) : null
                       const time = parseDateTime(ts ?? null)
+
+                      const timeStr = time
+                        ? dispSameDay
+                          ? time.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                          : time.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ' ' + time.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                        : null
 
                       return (
                         <div key={step.key} className="flex items-start gap-2.5 relative">
@@ -342,9 +376,9 @@ export default function CrimeDetailPanel() {
                               <p className={`text-[11px] font-medium ${ts ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400 dark:text-slate-600'}`}>
                                 {step.label}
                               </p>
-                              {time && (
+                              {timeStr && (
                                 <p className="text-[10px] font-mono text-slate-700 dark:text-slate-300 tabular-nums">
-                                  {time.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                                  {timeStr}
                                 </p>
                               )}
                             </div>
@@ -358,6 +392,9 @@ export default function CrimeDetailPanel() {
                       )
                     })}
                   </div>
+                      </>
+                    )
+                  })()}
                 </div>
 
                 {/* Dispatch → Report lag */}
