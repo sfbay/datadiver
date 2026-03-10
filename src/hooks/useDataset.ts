@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { fetchDataset, type SoQLParams } from '@/api/client'
 import type { DatasetKey } from '@/api/datasets'
+import { registerQuery, completeQuery } from '@/hooks/useLoadingProgress'
 
 interface UseDatasetResult<T> {
   data: T[]
@@ -29,6 +30,7 @@ export function useDataset<T>(
 
   useEffect(() => {
     let cancelled = false
+    registerQuery()
 
     async function load() {
       setIsLoading(true)
@@ -44,6 +46,7 @@ export function useDataset<T>(
           setError(err instanceof Error ? err.message : 'Failed to fetch data')
         }
       } finally {
+        completeQuery()
         if (!cancelled) {
           setIsLoading(false)
         }

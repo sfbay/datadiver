@@ -23,11 +23,12 @@ import TrendChart from '@/components/charts/TrendChart'
 import IncidentCategoryFilter from '@/components/filters/IncidentCategoryFilter'
 import CrimeDetailPanel from '@/components/ui/CrimeDetailPanel'
 import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
-import { SkeletonStatCards, SkeletonSidebarRows, MapScanOverlay } from '@/components/ui/Skeleton'
+import { SkeletonStatCards, SkeletonSidebarRows, MapScanOverlay, MapProgressBar } from '@/components/ui/Skeleton'
 import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
 import { useDataFreshness } from '@/hooks/useDataFreshness'
 import { useTrendBaseline } from '@/hooks/useTrendBaseline'
 import type { TrendConfig } from '@/types/trends'
+import { useProgressScope } from '@/hooks/useLoadingProgress'
 import InfoTip from '@/components/ui/InfoTip'
 
 type MapMode = 'heatmap' | 'anomaly'
@@ -539,6 +540,8 @@ export default function CrimeIncidents() {
     }
   }, [incidentData, mapInstance, selectedNeighborhood, setSelectedNeighborhood])
 
+  useProgressScope()
+
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
@@ -611,6 +614,7 @@ export default function CrimeIncidents() {
         <div className="flex-1 relative">
           <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
             {isLoading && <MapScanOverlay label="Scanning incidents" color="#f87171" />}
+            <MapProgressBar color="#f87171" />
 
             {error && (
               <div className="absolute inset-0 flex items-center justify-center z-20">

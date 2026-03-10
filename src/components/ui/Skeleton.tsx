@@ -1,3 +1,5 @@
+import { useLoadingProgress as useLoadingProgressHook } from '@/hooks/useLoadingProgress'
+
 interface SkeletonProps {
   className?: string
   style?: React.CSSProperties
@@ -123,27 +125,35 @@ export function MapScanOverlay({ color = '#06b6d4', label = 'Scanning' }: { colo
         }}
       />
 
-      {/* Sweep: sharp leading edge + gradient trail fading ~60deg back */}
+      {/* Sweep arm: conic gradient trail + leading line, both in one rotating container */}
       <div
         className="absolute rounded-full radar-sweep"
         style={{
           width: '70%',
           height: '70%',
-          background: `conic-gradient(from 0deg, ${color}50 0deg, ${color}30 2deg, ${color}18 15deg, ${color}08 35deg, transparent 60deg, transparent 360deg)`,
         }}
-      />
-
-      {/* Sweep line — thin bright radial line at the leading edge */}
-      <div
-        className="absolute radar-sweep"
-        style={{
-          width: '35%',
-          height: '1px',
-          background: `linear-gradient(to right, ${color}10, ${color}cc, ${color})`,
-          transformOrigin: 'left center',
-          boxShadow: `0 0 6px ${color}60`,
-        }}
-      />
+      >
+        {/* Gradient trail */}
+        <div
+          className="absolute inset-0 rounded-full"
+          style={{
+            background: `conic-gradient(from 0deg, ${color}50 0deg, ${color}30 2deg, ${color}18 15deg, ${color}08 35deg, transparent 60deg, transparent 360deg)`,
+          }}
+        />
+        {/* Leading line — positioned at center, pointing right (0deg) */}
+        <div
+          className="absolute"
+          style={{
+            top: '50%',
+            left: '50%',
+            width: '50%',
+            height: '1px',
+            marginTop: '-0.5px',
+            background: `linear-gradient(to right, ${color}20, ${color}cc, ${color})`,
+            boxShadow: `0 0 6px ${color}60`,
+          }}
+        />
+      </div>
 
       {/* Center glow dot */}
       <div
@@ -161,6 +171,41 @@ export function MapScanOverlay({ color = '#06b6d4', label = 'Scanning' }: { colo
           {label}
         </span>
       </div>
+    </div>
+  )
+}
+
+/** Slim progress band at the top of the map — shows real query completion progress */
+export function MapProgressBar({ color = '#06b6d4' }: { color?: string }) {
+  const { fraction, active, completed, total } = useLoadingProgressHook()
+
+  if (!active && fraction === 0) return null
+
+  return (
+    <div
+      className={`absolute top-0 left-0 right-0 z-20 h-1 overflow-hidden transition-opacity duration-500 ${
+        active ? 'opacity-100' : 'opacity-0'
+      }`}
+    >
+      {/* Track */}
+      <div className="absolute inset-0" style={{ backgroundColor: `${color}10` }} />
+      {/* Fill */}
+      <div
+        className="absolute inset-y-0 left-0 transition-all duration-700 ease-out"
+        style={{
+          width: `${Math.max(fraction * 100, active ? 3 : 0)}%`,
+          background: `linear-gradient(to right, ${color}60, ${color})`,
+          boxShadow: `0 0 12px ${color}40`,
+        }}
+      />
+      {/* Label */}
+      {active && total > 0 && (
+        <div className="absolute top-1.5 right-2 flex items-center gap-1.5">
+          <span className="text-[9px] font-mono tabular-nums text-slate-400 dark:text-slate-500">
+            {completed}/{total}
+          </span>
+        </div>
+      )}
     </div>
   )
 }

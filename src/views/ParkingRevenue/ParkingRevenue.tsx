@@ -13,11 +13,12 @@ import StatCard from '@/components/ui/StatCard'
 import ExportButton from '@/components/export/ExportButton'
 import MeterDetailPanel from '@/components/ui/MeterDetailPanel'
 import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
-import { SkeletonStatCards, SkeletonChart, SkeletonSidebarRows, SkeletonBreakdownList, MapScanOverlay } from '@/components/ui/Skeleton'
+import { SkeletonStatCards, SkeletonChart, SkeletonSidebarRows, SkeletonBreakdownList, MapScanOverlay, MapProgressBar } from '@/components/ui/Skeleton'
 import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
 import { useDataFreshness } from '@/hooks/useDataFreshness'
 import { useTrendBaseline } from '@/hooks/useTrendBaseline'
 import type { TrendConfig } from '@/types/trends'
+import { useProgressScope } from '@/hooks/useLoadingProgress'
 
 type TimeGranularity = 'hour' | 'day' | 'week'
 
@@ -299,6 +300,8 @@ export default function ParkingRevenue() {
     setMapInstance(map)
   }, [])
 
+  useProgressScope()
+
   return (
     <div className="h-full flex flex-col">
       <header className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl z-10">
@@ -349,6 +352,7 @@ export default function ParkingRevenue() {
         <div className="flex-1 relative">
           <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
             {isLoading && <MapScanOverlay label="Scanning meters" color="#06b6d4" />}
+            <MapProgressBar color="#06b6d4" />
             {error && (
               <div className="absolute inset-0 flex items-center justify-center z-20">
                 <div className="glass-card rounded-xl p-6 max-w-sm">
