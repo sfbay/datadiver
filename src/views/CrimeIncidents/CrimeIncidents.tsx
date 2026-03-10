@@ -13,7 +13,7 @@ import { formatDelta, formatNumber, formatHour } from '@/utils/time'
 import { coordsFromFields, extractCoordinates } from '@/utils/geo'
 import { resolutionColor } from '@/utils/colors'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
-import StatCard from '@/components/ui/StatCard'
+import CardTray, { type CardDef } from '@/components/ui/CardTray'
 import HorizontalBarChart, { type BarDatum } from '@/components/charts/HorizontalBarChart'
 import ExportButton from '@/components/export/ExportButton'
 import TimeOfDayFilter from '@/components/filters/TimeOfDayFilter'
@@ -273,6 +273,56 @@ export default function CrimeIncidents() {
       color: resolutionColor(r.resolution),
     }))
   }, [resolutionRows])
+
+  // Card tray definitions
+  const cardDefs = useMemo((): CardDef[] => {
+    const totalVal = totalCount ?? stats.total
+    return [
+      {
+        id: 'total',
+        label: 'Total Incidents',
+        shortLabel: 'Total',
+        value: formatNumber(totalVal),
+        color: '#ef4444',
+        delay: 0,
+        info: 'total-incidents',
+        defaultExpanded: true,
+        subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined,
+        trend: comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined,
+        yoyDelta: !comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null,
+      },
+      {
+        id: 'top-category',
+        label: 'Top Category',
+        shortLabel: 'Top Cat',
+        value: stats.topCategory,
+        color: '#f59e0b',
+        delay: 80,
+        info: 'top-category',
+        defaultExpanded: true,
+      },
+      {
+        id: '911-linked',
+        label: '911 Linked',
+        shortLabel: '911%',
+        value: `${stats.linkedPct.toFixed(0)}%`,
+        color: '#a78bfa',
+        delay: 160,
+        info: '911-linked',
+        defaultExpanded: true,
+      },
+      {
+        id: 'peak-hour',
+        label: 'Peak Hour',
+        shortLabel: 'Peak',
+        value: formatHour(stats.peakHour),
+        color: '#60a5fa',
+        delay: 240,
+        info: 'peak-hour',
+        defaultExpanded: false,
+      },
+    ]
+  }, [stats, totalCount, comparison.deltas, compLabel, trend.cityWideYoY])
 
   // Sidebar data
   const categoryEntries = useMemo(
@@ -634,25 +684,9 @@ export default function CrimeIncidents() {
             )}
 
             {/* Stat cards — top left */}
-            {isLoading && <SkeletonStatCards count={4} />}
+            {isLoading && <SkeletonStatCards count={3} />}
             {!isLoading && incidentData.length > 0 && (
-              <div className="absolute top-5 left-5 z-10 flex gap-2.5">
-                <StatCard
-                  label="Total Incidents" info="total-incidents" value={formatNumber(stats.total)} color="#ef4444" delay={0}
-                  subtitle={comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined}
-                  trend={comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined}
-                  yoyDelta={!comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null}
-                />
-                <StatCard
-                  label="Top Category" info="top-category" value={stats.topCategory} color="#f59e0b" delay={80}
-                />
-                <StatCard
-                  label="911 Linked" info="911-linked" value={`${stats.linkedPct.toFixed(0)}%`} color="#a78bfa" delay={160}
-                />
-                <StatCard
-                  label="Peak Hour" info="peak-hour" value={formatHour(stats.peakHour)} color="#60a5fa" delay={240}
-                />
-              </div>
+              <CardTray viewId="crimeIncidents" cards={cardDefs} />
             )}
 
             {/* Charts — bottom left */}
