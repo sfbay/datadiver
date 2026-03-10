@@ -228,6 +228,9 @@ body {
 .radar-sweep {
   animation: radarSweep 3.5s linear infinite;
 }
+.radar-sweep-fast {
+  animation: radarSweep 1.75s linear infinite;
+}
 .radar-center-dot {
   animation: radarDot 3s ease-in-out infinite;
 }

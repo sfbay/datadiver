@@ -109,30 +109,44 @@ export default function HorizontalBarChart({
 
       if (isTruncated) {
         let hoverTimer: ReturnType<typeof setTimeout> | null = null
+        let scrolling = false
+
+        const startScroll = () => {
+          textEl.text(d.label)
+          const fullWidth = (textEl.node()?.getComputedTextLength() ?? 0) + 4
+          const overflow = fullWidth - (margin.left - 10)
+          if (overflow <= 0) return
+          scrolling = true
+
+          const doScroll = () => {
+            if (!scrolling) return
+            textEl
+              .attr('x', -4)
+              .transition()
+              .duration(800) // ease into the scroll
+              .ease(d3.easeCubicIn)
+              .attr('x', -4 - overflow * 0.15)
+              .transition()
+              .duration(overflow * 40) // ~25px/sec — slow readable scroll
+              .ease(d3.easeLinear)
+              .attr('x', -4 - overflow)
+              .transition()
+              .duration(800)
+              .delay(300) // brief pause at end
+              .ease(d3.easeCubicOut)
+              .attr('x', -4)
+              .on('end', () => { if (scrolling) doScroll() })
+          }
+          doScroll()
+        }
 
         labelG.on('mouseenter', function () {
-          hoverTimer = setTimeout(() => {
-            // Show full text and animate it scrolling left
-            textEl.text(d.label)
-            const fullWidth = (textEl.node()?.getComputedTextLength() ?? 0) + 4
-            const overflow = fullWidth - (margin.left - 10)
-            if (overflow > 0) {
-              textEl
-                .transition()
-                .duration(overflow * 20) // speed: ~50px/sec
-                .ease(d3.easeLinear)
-                .attr('x', -4 - overflow)
-                .transition()
-                .duration(600)
-                .delay(400)
-                .attr('x', -4)
-                .on('end', () => textEl.text(displayText))
-            }
-          }, 500) // delay before scroll starts
+          hoverTimer = setTimeout(startScroll, 500)
         })
 
         labelG.on('mouseleave', function () {
           if (hoverTimer) clearTimeout(hoverTimer)
+          scrolling = false
           textEl.interrupt()
           textEl.attr('x', -4).text(displayText)
         })

@@ -24,7 +24,7 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
   }, [delay])
 
   const yoyText = yoyDelta != null
-    ? `${yoyDelta >= 0 ? '+' : ''}${yoyDelta.toFixed(1)}% YoY`
+    ? `${yoyDelta >= 0 ? '+' : ''}${yoyDelta.toFixed(1)}% vs last yr`
     : null
 
   const zScoreDot = zScore != null && Math.abs(zScore) > 1

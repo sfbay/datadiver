@@ -125,22 +125,21 @@ export function MapScanOverlay({ color = '#06b6d4', label = 'Scanning' }: { colo
         }}
       />
 
-      {/* Sweep arm: conic gradient trail + leading line, both in one rotating container */}
+      {/* Gradient trail — rotating sweep */}
       <div
         className="absolute rounded-full radar-sweep"
         style={{
           width: '70%',
           height: '70%',
+          background: `conic-gradient(from 0deg, ${color}50 0deg, ${color}30 2deg, ${color}18 15deg, ${color}08 35deg, transparent 60deg, transparent 360deg)`,
         }}
+      />
+
+      {/* Leading line — spins faster than the gradient trail */}
+      <div
+        className="absolute rounded-full radar-sweep-fast"
+        style={{ width: '70%', height: '70%' }}
       >
-        {/* Gradient trail */}
-        <div
-          className="absolute inset-0 rounded-full"
-          style={{
-            background: `conic-gradient(from 0deg, ${color}50 0deg, ${color}30 2deg, ${color}18 15deg, ${color}08 35deg, transparent 60deg, transparent 360deg)`,
-          }}
-        />
-        {/* Leading line — positioned at center, pointing right (0deg) */}
         <div
           className="absolute"
           style={{

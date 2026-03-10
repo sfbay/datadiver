@@ -74,7 +74,7 @@ export default function PeriodBreakdownChart({
         .attr('width', bandwidth)
         .attr('height', d => h - y(d))
         .attr('fill', accentColor)
-        .attr('opacity', 0.12)
+        .attr('opacity', isDarkMode ? 0.28 : 0.15)
         .attr('rx', 1.5)
     }
 
@@ -144,7 +144,7 @@ export default function PeriodBreakdownChart({
             <span className="text-[8px] font-mono text-slate-400">Current</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: accentColor, opacity: 0.12 }} />
+            <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: accentColor, opacity: 0.28 }} />
             <span className="text-[8px] font-mono text-slate-400">Prior Year</span>
           </div>
         </div>
