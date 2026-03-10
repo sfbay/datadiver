@@ -111,30 +111,40 @@ export default function HorizontalBarChart({
         let hoverTimer: ReturnType<typeof setTimeout> | null = null
         let scrolling = false
 
+        // Measure overflow once (hidden off-screen to avoid flash)
+        let overflow = 0
+        const measureEl = labelG.append('text')
+          .attr('x', -9999).attr('y', -9999)
+          .attr('font-size', '9px')
+          .attr('font-family', '"JetBrains Mono", monospace')
+          .text(d.label)
+        const fullWidth = (measureEl.node()?.getComputedTextLength() ?? 0) + 4
+        overflow = fullWidth - (margin.left - 10)
+        measureEl.remove()
+
         const startScroll = () => {
-          textEl.text(d.label)
-          const fullWidth = (textEl.node()?.getComputedTextLength() ?? 0) + 4
-          const overflow = fullWidth - (margin.left - 10)
           if (overflow <= 0) return
           scrolling = true
+          // Swap to full text but pre-offset so visually nothing changes
+          textEl.text(d.label).attr('x', -4 + overflow)
 
           const doScroll = () => {
             if (!scrolling) return
             textEl
+              .attr('x', -4 + overflow)
+              .transition()
+              .duration(1200)
+              .ease(d3.easeCubicOut)
               .attr('x', -4)
               .transition()
-              .duration(800) // ease into the scroll
-              .ease(d3.easeCubicIn)
-              .attr('x', -4 - overflow * 0.15)
-              .transition()
-              .duration(overflow * 40) // ~25px/sec — slow readable scroll
+              .duration(overflow * 40) // ~25px/sec
               .ease(d3.easeLinear)
               .attr('x', -4 - overflow)
               .transition()
-              .duration(800)
-              .delay(300) // brief pause at end
-              .ease(d3.easeCubicOut)
-              .attr('x', -4)
+              .duration(1200)
+              .delay(400)
+              .ease(d3.easeCubicInOut)
+              .attr('x', -4 + overflow)
               .on('end', () => { if (scrolling) doScroll() })
           }
           doScroll()
