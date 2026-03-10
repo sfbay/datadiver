@@ -21,6 +21,7 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
   const mapRef = useRef<mapboxgl.Map | null>(null)
   const [isReady, setIsReady] = useState(false)
   const isDarkMode = useAppStore((s) => s.isDarkMode)
+  const isSidebarOpen = useAppStore((s) => s.isSidebarOpen)
   const onMapReadyRef = useRef(onMapReady)
   onMapReadyRef.current = onMapReady
 
@@ -75,6 +76,13 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
       : 'mapbox://styles/mapbox/light-v11'
     mapRef.current.setStyle(style)
   }, [isDarkMode, isReady])
+
+  // Resize map when sidebar toggles — wait for CSS transition to finish
+  useEffect(() => {
+    if (!mapRef.current || !isReady) return
+    const timer = setTimeout(() => mapRef.current?.resize(), 520)
+    return () => clearTimeout(timer)
+  }, [isSidebarOpen, isReady])
 
   return (
     <div className={`relative w-full h-full ${className}`}>

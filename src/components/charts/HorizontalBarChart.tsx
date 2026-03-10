@@ -70,22 +70,74 @@ export default function HorizontalBarChart({
 
     const labelColor = isDarkMode ? '#94a3b8' : '#64748b'
     const valueColor = isDarkMode ? '#cbd5e1' : '#334155'
+    const maxLabelChars = Math.floor(margin.left / 7) // ~7px per mono char at 9px
+    const clipId = `label-clip-${Math.random().toString(36).slice(2, 8)}`
 
-    // Labels (left)
-    g.selectAll('.bar-label')
+    // Clip path for label area
+    svg.append('defs')
+      .append('clipPath')
+      .attr('id', clipId)
+      .append('rect')
+      .attr('x', -margin.left)
+      .attr('y', 0)
+      .attr('width', margin.left - 6)
+      .attr('height', height)
+
+    // Labels (left) — marquee scroll on hover for long labels
+    const labelGroups = g.selectAll<SVGGElement, (typeof sliced)[0]>('.bar-label-group')
       .data(sliced)
-      .join('text')
-      .attr('class', 'bar-label')
-      .attr('x', -4)
-      .attr('y', (d) => (y(d.label) ?? 0) + barHeight / 2)
-      .attr('dy', '0.35em')
-      .attr('text-anchor', 'end')
-      .attr('fill', labelColor)
-      .attr('font-size', '9px')
-      .attr('font-family', '"JetBrains Mono", monospace')
-      .text((d) => d.label.length > 12 ? d.label.slice(0, 11) + '\u2026' : d.label)
-      .append('title')
-      .text((d) => d.label)
+      .join('g')
+      .attr('class', 'bar-label-group')
+      .attr('clip-path', `url(#${clipId})`)
+
+    labelGroups.each(function (d) {
+      const labelG = d3.select(this)
+      const isTruncated = d.label.length > maxLabelChars
+      const displayText = isTruncated ? d.label.slice(0, maxLabelChars - 1) + '\u2026' : d.label
+      const yPos = (y(d.label) ?? 0) + barHeight / 2
+
+      const textEl = labelG.append('text')
+        .attr('x', -4)
+        .attr('y', yPos)
+        .attr('dy', '0.35em')
+        .attr('text-anchor', 'end')
+        .attr('fill', labelColor)
+        .attr('font-size', '9px')
+        .attr('font-family', '"JetBrains Mono", monospace')
+        .attr('cursor', isTruncated ? 'default' : null)
+        .text(displayText)
+
+      if (isTruncated) {
+        let hoverTimer: ReturnType<typeof setTimeout> | null = null
+
+        labelG.on('mouseenter', function () {
+          hoverTimer = setTimeout(() => {
+            // Show full text and animate it scrolling left
+            textEl.text(d.label)
+            const fullWidth = (textEl.node()?.getComputedTextLength() ?? 0) + 4
+            const overflow = fullWidth - (margin.left - 10)
+            if (overflow > 0) {
+              textEl
+                .transition()
+                .duration(overflow * 20) // speed: ~50px/sec
+                .ease(d3.easeLinear)
+                .attr('x', -4 - overflow)
+                .transition()
+                .duration(600)
+                .delay(400)
+                .attr('x', -4)
+                .on('end', () => textEl.text(displayText))
+            }
+          }, 500) // delay before scroll starts
+        })
+
+        labelG.on('mouseleave', function () {
+          if (hoverTimer) clearTimeout(hoverTimer)
+          textEl.interrupt()
+          textEl.attr('x', -4).text(displayText)
+        })
+      }
+    })
 
     // Value labels (right of bar)
     g.selectAll('.val-label')
