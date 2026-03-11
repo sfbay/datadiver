@@ -1131,7 +1131,7 @@ export default function TrafficSafety() {
                               {ns.totalKilled > 0 && <span className="text-red-400"> · {ns.totalKilled} killed</span>}
                               {nhTrend?.priorYearCount ? (
                                 <span className={nhTrend.yoyPct > 0 ? 'text-red-400' : nhTrend.yoyPct < 0 ? 'text-emerald-400' : ''}>
-                                  {' · '}{nhTrend.yoyPct >= 0 ? '+' : ''}{nhTrend.yoyPct.toFixed(0)}% YoY
+                                  {' · '}{nhTrend.yoyPct >= 0 ? '+' : ''}{nhTrend.yoyPct.toFixed(0)}% since last yr
                                 </span>
                               ) : null}
                               {zScore !== undefined && (

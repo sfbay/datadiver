@@ -868,7 +868,7 @@ export default function ParkingCitations() {
                               {ns.citationCount.toLocaleString()} citations · ${Math.round(ns.totalFines).toLocaleString()}
                               {nhTrend?.priorYearCount ? (
                                 <span className={nhTrend.yoyPct > 0 ? 'text-red-400' : nhTrend.yoyPct < 0 ? 'text-emerald-400' : ''}>
-                                  {' · '}{nhTrend.yoyPct >= 0 ? '+' : ''}{nhTrend.yoyPct.toFixed(0)}% YoY
+                                  {' · '}{nhTrend.yoyPct >= 0 ? '+' : ''}{nhTrend.yoyPct.toFixed(0)}% since last yr
                                 </span>
                               ) : null}
                               {zScore !== undefined && (

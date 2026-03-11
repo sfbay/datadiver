@@ -808,7 +808,7 @@ export default function Cases311() {
                                 if (nhTrend?.priorYearCount) {
                                   return (
                                     <span className={nhTrend.yoyPct > 0 ? 'text-red-400' : nhTrend.yoyPct < 0 ? 'text-emerald-400' : ''}>
-                                      {' · '}{nhTrend.yoyPct >= 0 ? '+' : ''}{nhTrend.yoyPct.toFixed(0)}% YoY
+                                      {' · '}{nhTrend.yoyPct >= 0 ? '+' : ''}{nhTrend.yoyPct.toFixed(0)}% since last yr
                                     </span>
                                   )
                                 }

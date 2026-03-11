@@ -874,7 +874,7 @@ export default function CrimeIncidents() {
                                 if (nhTrend?.priorYearCount) {
                                   return (
                                     <span className={nhTrend.yoyPct > 0 ? 'text-red-400' : nhTrend.yoyPct < 0 ? 'text-emerald-400' : ''}>
-                                      {' \u00B7 '}{nhTrend.yoyPct >= 0 ? '+' : ''}{nhTrend.yoyPct.toFixed(0)}% YoY
+                                      {' \u00B7 '}{nhTrend.yoyPct >= 0 ? '+' : ''}{nhTrend.yoyPct.toFixed(0)}% since last yr
                                     </span>
                                   )
                                 }
