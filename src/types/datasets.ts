@@ -29,6 +29,59 @@ export interface FireIncident {
   supervisor_district: string
   neighborhood_district: string
   point: { type: string; coordinates: [number, number] }
+  // Outcome fields
+  estimated_property_loss?: number
+  estimated_contents_loss?: number
+  fire_spread?: string
+  // Cause & Origin fields
+  ignition_cause?: string
+  ignition_factor_primary?: string
+  heat_source?: string
+  area_of_fire_origin?: string
+  // Detection & Protection fields
+  detectors_present?: string
+  detector_effectiveness?: string
+  automatic_extinguishing_system_present?: string
+  automatic_extinguishing_sytem_type?: string  // NOTE: Socrata field has this typo (missing 's' in "system")
+}
+
+/** Server-side aggregation row for fire casualty/loss totals */
+export interface FireCasualtyAggRow {
+  injuries: string
+  fatalities: string
+  total_loss: string
+}
+
+/** Server-side aggregation row for fire ignition cause counts */
+export interface FireCauseAggRow {
+  ignition_cause: string
+  cnt: string
+}
+
+/** Server-side aggregation row for fire property use counts */
+export interface FirePropertyUseAggRow {
+  property_use: string
+  cnt: string
+}
+
+/** Server-side aggregation row for fire detector presence counts */
+export interface FireDetectorAggRow {
+  detectors_present: string
+  cnt: string
+}
+
+/** Server-side aggregation row for fire neighborhood counts + casualties */
+export interface FireNeighborhoodAggRow {
+  neighborhood_district: string
+  cnt: string
+  injuries: string
+  fatalities: string
+}
+
+/** Server-side aggregation row for battery fire yearly trend */
+export interface BatteryTrendAggRow {
+  year: string
+  cnt: string
 }
 
 /** Fire/EMS Dispatched Calls (nuek-vuh3) */
@@ -418,91 +471,42 @@ export interface NeighborhoodAggRowCrashes {
   total_killed: string
 }
 
-// --- Campaign Finance types ---
-
-export interface CampaignTransaction {
-  filing_id_number: string
-  filer_name: string
-  filer_type: string
-  filer_nid: string
-  form_type: string
-  calculated_amount: string
-  calculated_date: string
-  transaction_last_name?: string
-  transaction_city?: string
-  transaction_state?: string
-  transaction_zip?: string
-  transaction_self?: boolean
-  transaction_description?: string
-  entity_code?: string
-  support_oppose_code?: string
-  candidate_last_name?: string
-  office_description?: string
-  district_number?: string
-  ballot_name?: string
-  ballot_number?: string
-  ballot_jurisdiction?: string
+/** Registered Business Location (g8m3-pdis) */
+export interface BusinessLocationRecord {
+  uniqueid: string
+  certificate_number: string
+  ttxid: string
+  ownership_name: string
+  dba_name: string
+  full_business_address: string
+  city: string
+  state: string
+  business_zip: string
+  dba_start_date: string
+  dba_end_date: string | null
+  location_start_date: string
+  location_end_date: string | null
+  naic_code: string
+  naic_code_description: string
+  parking_tax: boolean
+  transient_occupancy_tax: boolean
+  location: { type: string; coordinates: [number, number] } | null
 }
 
-export interface CampaignFilerAggRow {
-  filer_name: string
-  filer_type: string
-  filer_nid: string
-  total: string
-}
-
-export interface CampaignDonorGeoRow {
-  transaction_zip: string
-  total: string
+/** Server-side aggregation row for sector counts */
+export interface SectorAggRow {
+  naic_code_description: string
   cnt: string
 }
 
-export interface CampaignSourceAggRow {
-  entity_code: string
-  total: string
-  cnt: string
-}
-
-export interface CampaignTimelineRow {
-  period: string
-  total: string
-}
-
-export interface CampaignDonorRow {
-  transaction_last_name: string
-  total: string
-}
-
-export interface CampaignIERow {
-  filer_name: string
-  total: string
-}
-
-export interface CampaignSpendRow {
-  transaction_description: string
-  total: string
-}
-
-export interface CampaignStatTotals {
-  total: string
-  avg_amt: string
-}
-
-export interface CampaignCountRow {
-  cnt: string
-}
-
-export interface CampaignSelfFundRow {
-  total: string
-}
-
-export interface CampaignUniqueDonorRow {
-  transaction_last_name: string
+/** Monthly breakdown row for net formation chart */
+export interface BusinessMonthlyRow {
+  month: string
   cnt: string
 }
 
 /** View state for URL serialization */
-export type ViewId = 'home' | 'emergency-response' | 'parking-revenue' | 'dispatch-911' | '311-cases' | 'crime-incidents' | 'parking-citations' | 'traffic-safety' | 'campaign-finance'
+export type ViewId = 'home' | 'emergency-response' | 'parking-revenue' | 'dispatch-911' | '311-cases' | 'crime-incidents' | 'parking-citations' | 'traffic-safety' | 'business-activity'
 
 export interface ViewState {
   view: ViewId

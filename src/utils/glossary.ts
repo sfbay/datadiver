@@ -61,12 +61,29 @@ const GLOSSARY: Record<string, string> = {
   'anomaly-map':
     'Neighborhoods colored by how unusual their current activity is compared to their own 12-month baseline. Red = unusually high, blue = unusually low.',
 
-  // Campaign Finance
-  'cf-total-raised': 'Total monetary contributions received (Form A filings). Includes individual donors, committees, and self-funding.',
-  'cf-avg-contribution': 'Average contribution size. Lower averages suggest broader grassroots support; higher averages indicate reliance on large donors.',
-  'cf-unique-donors': 'Distinct contributor names in the filing period. Approximation — same person may appear with slightly different name spellings.',
-  'cf-small-donor-pct': 'Percentage of contributions under $100. A measure of grassroots funding strength.',
-  'cf-support-oppose': 'Support/oppose classification from independent expenditure (IE) filings. Committees must disclose whether spending supports or opposes a candidate or measure.',
+  // Business Activity
+  'net-change':
+    'New businesses opened minus businesses closed in the selected period. Positive means the city gained more businesses than it lost.',
+  'openings':
+    'Businesses that registered a new DBA (doing business as) start date in the selected period.',
+  'closures':
+    'Businesses whose DBA end date falls within the selected period. This indicates the business registration was terminated.',
+  'active-businesses':
+    'Total businesses currently registered with no end date — still operating as of the latest data update.',
+  'top-sector':
+    'The NAICS industry category with the most new business openings in the selected period.',
+  'dui-crashes':
+    'Crashes where the primary collision factor was driving under the influence of alcohol and/or drugs (California Vehicle Code 23152/23153).',
+
+  // Fire incidents
+  'fire-casualties':
+    'Total people injured or killed in fire incidents, including both civilians and fire personnel.',
+  'fire-property-loss':
+    'Estimated dollar value of property and contents destroyed or damaged by fire. Assessed by fire investigators on scene.',
+  'battery-fires':
+    'Fires caused by rechargeable batteries (primarily lithium-ion). Includes e-bike, e-scooter, and device charging fires. A growing trend in SF since 2020.',
+  'detection-rate':
+    'Percentage of fire incidents where smoke detectors were present in the building. Higher rates correlate with earlier detection and fewer casualties.',
 }
 
 export default GLOSSARY

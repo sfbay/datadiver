@@ -29,6 +29,9 @@ import { useDataFreshness } from '@/hooks/useDataFreshness'
 import { useTrendBaseline } from '@/hooks/useTrendBaseline'
 import type { TrendConfig } from '@/types/trends'
 import { useProgressScope } from '@/hooks/useLoadingProgress'
+import { useFireInsights } from '@/hooks/useFireInsights'
+import BatteryTrendChart from '@/components/charts/BatteryTrendChart'
+import HorizontalBarChart from '@/components/charts/HorizontalBarChart'
 
 type ServiceFilter = 'all' | 'fire' | 'ems' | 'transport'
 
@@ -104,6 +107,18 @@ export default function EmergencyResponse() {
   }), [])
   const trendExtraWhere = serviceClause || undefined
   const trend = useTrendBaseline(trendConfig, dateRange, trendExtraWhere)
+
+  const isFireMode = serviceFilter === 'fire'
+  const fireInsights = useFireInsights(isFireMode, dateRange)
+
+  const fireNeighborhoodLookup = useMemo(() => {
+    const map = new Map<string, typeof fireInsights.neighborhoodFires[0]>()
+    for (const f of fireInsights.neighborhoodFires) {
+      map.set(f.neighborhood, f)
+      map.set(f.neighborhood.toLowerCase(), f)
+    }
+    return map
+  }, [fireInsights.neighborhoodFires])
 
   const { data: rawData, isLoading, error, hitLimit } = useDataset<FireEMSDispatch>(
     'fireEMSDispatch',
@@ -208,6 +223,54 @@ export default function EmergencyResponse() {
     }
   }, [apotData, mapOverlay])
 
+  // Fire severity overlay GeoJSON (casualties)
+  const severityGeojson = useMemo(() => {
+    if (!isFireMode || fireInsights.severityOverlay.length === 0) return null
+    return {
+      type: 'FeatureCollection' as const,
+      features: fireInsights.severityOverlay
+        .filter(r => r.point?.coordinates)
+        .map(r => ({
+          type: 'Feature' as const,
+          geometry: { type: 'Point' as const, coordinates: r.point.coordinates },
+          properties: {
+            callNumber: r.call_number,
+            situation: r.primary_situation || '',
+            injuries: (r.civilian_injuries || 0) + (r.fire_injuries || 0),
+            fatalities: (r.civilian_fatalities || 0) + (r.fire_fatalities || 0),
+            loss: r.estimated_property_loss || 0,
+            address: r.address || '',
+            date: r.alarm_dttm || '',
+          },
+        })),
+    }
+  }, [isFireMode, fireInsights.severityOverlay])
+
+  // Battery fire overlay GeoJSON
+  const batteryGeojson = useMemo(() => {
+    if (!isFireMode || fireInsights.batteryOverlay.length === 0) return null
+    return {
+      type: 'FeatureCollection' as const,
+      features: fireInsights.batteryOverlay
+        .filter(r => r.point?.coordinates)
+        .map(r => ({
+          type: 'Feature' as const,
+          geometry: { type: 'Point' as const, coordinates: r.point.coordinates },
+          properties: {
+            callNumber: r.call_number,
+            situation: r.primary_situation || '',
+            factor: r.ignition_factor_primary || '',
+            origin: r.area_of_fire_origin || '',
+            property: r.property_use || '',
+            address: r.address || '',
+            date: r.alarm_dttm || '',
+            injuries: (r.civilian_injuries || 0) + (r.fire_injuries || 0),
+            loss: r.estimated_property_loss || 0,
+          },
+        })),
+    }
+  }, [isFireMode, fireInsights.batteryOverlay])
+
   // Heatmap + circle layers definition
   const mapLayers = useMemo((): mapboxgl.AnyLayer[] => [
     {
@@ -292,9 +355,39 @@ export default function EmergencyResponse() {
     } as mapboxgl.AnyLayer,
   ], [])
 
+  const severityLayers = useMemo((): mapboxgl.AnyLayer[] => isFireMode ? [{
+    id: 'fire-severity-points',
+    type: 'circle',
+    source: 'fire-severity',
+    paint: {
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 5, 14, 10],
+      'circle-color': '#ef4444',
+      'circle-stroke-color': '#ef4444',
+      'circle-stroke-width': 2,
+      'circle-opacity': 0.7,
+      'circle-stroke-opacity': 0.9,
+    },
+  } as mapboxgl.AnyLayer] : [], [isFireMode])
+
+  const batteryLayers = useMemo((): mapboxgl.AnyLayer[] => isFireMode ? [{
+    id: 'fire-battery-points',
+    type: 'circle',
+    source: 'fire-battery',
+    paint: {
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 4, 14, 8],
+      'circle-color': '#f59e0b',
+      'circle-stroke-color': '#f59e0b',
+      'circle-stroke-width': 2,
+      'circle-opacity': 0.6,
+      'circle-stroke-opacity': 0.8,
+    },
+  } as mapboxgl.AnyLayer] : [], [isFireMode])
+
   // Reactively bind data to map
   useMapLayer(mapInstance, 'response-data', geojson, mapLayers)
   useMapLayer(mapInstance, 'apot-data', apotGeojson, apotLayers)
+  useMapLayer(mapInstance, 'fire-severity', severityGeojson, severityLayers)
+  useMapLayer(mapInstance, 'fire-battery', batteryGeojson, batteryLayers)
 
   // Hover tooltip on circle layer
   useMapTooltip(mapInstance, 'response-points', (props) => {
@@ -336,6 +429,36 @@ export default function EmergencyResponse() {
     `
   })
 
+  // Fire severity tooltip
+  useMapTooltip(mapInstance, 'fire-severity-points', (props) => {
+    const injuries = Number(props.injuries || 0)
+    const fatalities = Number(props.fatalities || 0)
+    const loss = Number(props.loss || 0)
+    const casualties = []
+    if (injuries > 0) casualties.push(`${injuries} injured`)
+    if (fatalities > 0) casualties.push(`${fatalities} fatal`)
+    return `<div class="font-mono text-[10px]">
+      <div class="font-semibold text-red-400 mb-1">Fire with Casualties</div>
+      <div>${props.situation}</div>
+      <div class="text-red-300">${casualties.join(', ')}</div>
+      ${loss > 0 ? `<div>Loss: $${loss.toLocaleString()}</div>` : ''}
+      <div class="text-slate-400 mt-1">${props.address}</div>
+      <div class="text-slate-500">${props.date ? new Date(String(props.date)).toLocaleDateString() : ''}</div>
+    </div>`
+  })
+
+  // Battery fire tooltip
+  useMapTooltip(mapInstance, 'fire-battery-points', (props) => {
+    return `<div class="font-mono text-[10px]">
+      <div class="font-semibold text-amber-400 mb-1">Battery Fire</div>
+      <div>${props.factor || props.situation}</div>
+      ${props.origin ? `<div>Origin: ${props.origin}</div>` : ''}
+      ${props.property ? `<div>${props.property}</div>` : ''}
+      <div class="text-slate-400 mt-1">${props.address}</div>
+      <div class="text-slate-500">${props.date ? new Date(String(props.date)).toLocaleDateString() : ''}</div>
+    </div>`
+  })
+
   // Click handler on circle points for incident detail
   useEffect(() => {
     if (!mapInstance) return
@@ -370,6 +493,41 @@ export default function EmergencyResponse() {
       try { mapInstance.off('click', 'response-points', handleClick) } catch { /* */ }
     }
   }, [mapInstance, setSelectedIncident])
+
+  // Fire layer click handlers (separate effect for clean lifecycle)
+  useEffect(() => {
+    if (!mapInstance || !isFireMode) return
+
+    const handleFireClick = (e: mapboxgl.MapLayerMouseEvent) => {
+      if (!e.features || e.features.length === 0) return
+      const callNumber = e.features[0].properties?.callNumber
+      if (callNumber) setSelectedIncident(String(callNumber))
+    }
+
+    const tryAttachFire = () => {
+      try {
+        mapInstance.on('click', 'fire-severity-points', handleFireClick)
+        mapInstance.on('click', 'fire-battery-points', handleFireClick)
+        return true
+      } catch { return false }
+    }
+
+    if (!tryAttachFire()) {
+      const interval = setInterval(() => {
+        if (tryAttachFire()) clearInterval(interval)
+      }, 500)
+      return () => {
+        clearInterval(interval)
+        try { mapInstance.off('click', 'fire-severity-points', handleFireClick) } catch { /* */ }
+        try { mapInstance.off('click', 'fire-battery-points', handleFireClick) } catch { /* */ }
+      }
+    }
+
+    return () => {
+      try { mapInstance.off('click', 'fire-severity-points', handleFireClick) } catch { /* */ }
+      try { mapInstance.off('click', 'fire-battery-points', handleFireClick) } catch { /* */ }
+    }
+  }, [mapInstance, isFireMode, setSelectedIncident])
 
   const stats = useMemo(() => {
     if (responseData.length === 0) return { avg: 0, median: 0, total: 0, p90: 0, apotAvg: 0, apotCount: 0 }
@@ -448,8 +606,20 @@ export default function EmergencyResponse() {
       })
     }
 
+    // Battery fire trend tile (fire mode only)
+    if (isFireMode && fireInsights.batteryTrend.length > 0) {
+      tiles.push({
+        id: 'battery-trend',
+        label: 'Battery Fire Trend',
+        shortLabel: 'Battery',
+        color: '#f59e0b',
+        defaultExpanded: true,
+        render: () => <BatteryTrendChart data={fireInsights.batteryTrend} width={320} height={140} />,
+      })
+    }
+
     return tiles
-  }, [histogramData, comparisonPeriod, comparison.currentTrend, comparison.comparisonTrend, comparison.isLoading])
+  }, [histogramData, comparisonPeriod, comparison.currentTrend, comparison.comparisonTrend, comparison.isLoading, isFireMode, fireInsights.batteryTrend])
 
   const handleMapReady = useCallback((map: mapboxgl.Map) => {
     setMapInstance(map)
@@ -598,6 +768,43 @@ export default function EmergencyResponse() {
                     delay={320}
                   />
                 )}
+                {isFireMode && fireInsights.casualties && (
+                  <>
+                    <StatCard
+                      label="Casualties"
+                      info="fire-casualties"
+                      value={String(fireInsights.casualties.injuries + fireInsights.casualties.fatalities)}
+                      color="#ef4444"
+                      delay={400}
+                      subtitle={`${fireInsights.casualties.injuries} inj, ${fireInsights.casualties.fatalities} fatal`}
+                      yoyDelta={
+                        fireInsights.priorYearCasualties
+                          ? (() => {
+                              const prev = fireInsights.priorYearCasualties.injuries + fireInsights.priorYearCasualties.fatalities
+                              const curr = fireInsights.casualties!.injuries + fireInsights.casualties!.fatalities
+                              return prev > 0 ? ((curr - prev) / prev) * 100 : null
+                            })()
+                          : null
+                      }
+                    />
+                    <StatCard
+                      label="Est. Loss"
+                      info="fire-property-loss"
+                      value={fireInsights.casualties.totalLoss >= 1_000_000
+                        ? `$${(fireInsights.casualties.totalLoss / 1_000_000).toFixed(1)}M`
+                        : fireInsights.casualties.totalLoss >= 1_000
+                        ? `$${(fireInsights.casualties.totalLoss / 1_000).toFixed(0)}K`
+                        : `$${fireInsights.casualties.totalLoss.toLocaleString()}`}
+                      color="#f59e0b"
+                      delay={480}
+                      yoyDelta={
+                        fireInsights.priorYearCasualties && fireInsights.priorYearCasualties.totalLoss > 0
+                          ? ((fireInsights.casualties.totalLoss - fireInsights.priorYearCasualties.totalLoss) / fireInsights.priorYearCasualties.totalLoss) * 100
+                          : null
+                      }
+                    />
+                  </>
+                )}
               </div>
             )}
 
@@ -692,6 +899,22 @@ export default function EmergencyResponse() {
                                   </>
                                 )
                               })()}
+                              {isFireMode && (() => {
+                                const fireStat = fireNeighborhoodLookup.get(ns.neighborhood)
+                                  || fireNeighborhoodLookup.get(ns.neighborhood.toLowerCase())
+                                if (!fireStat) return null
+                                return (
+                                  <>
+                                    <span className="text-red-400/80"> · {fireStat.count} fires</span>
+                                    {fireStat.injuries > 0 && (
+                                      <span className="text-red-400"> · {fireStat.injuries} inj</span>
+                                    )}
+                                    {fireStat.fatalities > 0 && (
+                                      <span className="text-red-500 font-semibold"> · {fireStat.fatalities} fatal</span>
+                                    )}
+                                  </>
+                                )
+                              })()}
                             </p>
                           </div>
                           <div className="flex items-center gap-1.5 ml-2">
@@ -749,6 +972,83 @@ export default function EmergencyResponse() {
                       width={232}
                       height={130}
                     />
+                  </div>
+                )}
+
+                {/* Fire Insights — only when Fire filter active */}
+                {isFireMode && !fireInsights.isLoading && (fireInsights.causes.length > 0 || fireInsights.propertyTypes.length > 0) && (
+                  <div className="mt-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-red-400/80">
+                        Fire Insights
+                      </p>
+                      <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
+                    </div>
+
+                    {/* Top Causes */}
+                    {fireInsights.causes.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-[9px] font-mono uppercase tracking-[0.15em] text-slate-500 dark:text-slate-600 mb-2">
+                          Top Causes
+                        </p>
+                        <HorizontalBarChart
+                          data={fireInsights.causes.map(c => ({ label: c.label, value: c.count, color: '#ef4444' }))}
+                          width={232}
+                          height={100}
+                          maxBars={5}
+                        />
+                      </div>
+                    )}
+
+                    {/* Property Types */}
+                    {fireInsights.propertyTypes.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-[9px] font-mono uppercase tracking-[0.15em] text-slate-500 dark:text-slate-600 mb-2">
+                          Property Types
+                        </p>
+                        <HorizontalBarChart
+                          data={fireInsights.propertyTypes.map(p => ({ label: p.label, value: p.count, color: '#fb923c' }))}
+                          width={232}
+                          height={80}
+                          maxBars={4}
+                        />
+                      </div>
+                    )}
+
+                    {/* Detection Rate */}
+                    {fireInsights.detectionStats && (
+                      <div>
+                        <p className="text-[9px] font-mono uppercase tracking-[0.15em] text-slate-500 dark:text-slate-600 mb-2">
+                          Detection Rate
+                        </p>
+                        <div className="flex gap-2">
+                          <div className="flex-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-lg p-2 text-center">
+                            <p className="font-mono text-emerald-400 text-sm font-bold">
+                              {fireInsights.detectionStats.detectorsPresent}%
+                            </p>
+                            <p className="text-[8px] text-slate-500 dark:text-slate-600 mt-0.5">
+                              Detectors
+                            </p>
+                          </div>
+                          <div className="flex-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-lg p-2 text-center">
+                            <p className="font-mono text-amber-400 text-sm font-bold">
+                              {fireInsights.detectionStats.effectiveAlert}%
+                            </p>
+                            <p className="text-[8px] text-slate-500 dark:text-slate-600 mt-0.5">
+                              Effective
+                            </p>
+                          </div>
+                          <div className="flex-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-lg p-2 text-center">
+                            <p className="font-mono text-red-400 text-sm font-bold">
+                              {fireInsights.detectionStats.sprinklersPresent}%
+                            </p>
+                            <p className="text-[8px] text-slate-500 dark:text-slate-600 mt-0.5">
+                              Sprinklers
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </>

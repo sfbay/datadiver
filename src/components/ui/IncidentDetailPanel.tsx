@@ -4,6 +4,7 @@ import { fetchDataset } from '@/api/client'
 import type { FireEMSDispatch, IncidentDetail } from '@/types/datasets'
 import { parseDateTime, formatDate, formatDuration, diffMinutes } from '@/utils/time'
 import ShareLinkButton from '@/components/ui/ShareLinkButton'
+import { useFireIncidentCrossRef } from '@/hooks/useFireIncidentCrossRef'
 
 function buildDetail(record: FireEMSDispatch): IncidentDetail {
   return {
@@ -41,6 +42,7 @@ export default function IncidentDetailPanel() {
   const [detail, setDetail] = useState<IncidentDetail | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
+  const { fireIncident, isLoading: fireLoading } = useFireIncidentCrossRef(selectedIncident)
 
   // Fetch full record on selection
   useEffect(() => {
@@ -211,6 +213,156 @@ export default function IncidentDetailPanel() {
                   {formatDuration(diffMinutes(detail.timestamps.received, detail.timestamps.onScene) || 0)}
                 </p>
               </div>
+            </div>
+          )}
+
+          {/* Fire Incident Outcome — cross-referenced from wr8u-xric */}
+          {fireLoading && selectedIncident && (
+            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-white/[0.08]">
+              <div className="animate-pulse space-y-2">
+                <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-24" />
+                <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded w-full" />
+                <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded w-3/4" />
+              </div>
+            </div>
+          )}
+
+          {fireIncident && !fireLoading && (
+            <>
+              {/* Section 1: Fire Outcome */}
+              <div className="mt-3 pt-2 border-t border-slate-200 dark:border-white/[0.08]">
+                <div className="flex items-center gap-2 mb-2">
+                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-red-400">
+                    Fire Outcome
+                  </p>
+                  <div className="flex-1 h-[1px] bg-slate-200 dark:bg-white/[0.08]" />
+                </div>
+                <div className="space-y-1.5 text-[10px]">
+                  {fireIncident.number_of_alarms > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-500 dark:text-slate-400">Alarms</span>
+                      <span className="font-mono text-slate-800 dark:text-white">{fireIncident.number_of_alarms}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 dark:text-slate-400">Injuries</span>
+                    <span className={`font-mono ${(fireIncident.civilian_injuries + fireIncident.fire_injuries) > 0 ? 'text-red-400' : 'text-slate-800 dark:text-white'}`}>
+                      {(fireIncident.civilian_injuries || 0) + (fireIncident.fire_injuries || 0)}
+                      {fireIncident.civilian_injuries > 0 && ` (${fireIncident.civilian_injuries} civilian)`}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 dark:text-slate-400">Fatalities</span>
+                    <span className={`font-mono ${(fireIncident.civilian_fatalities + fireIncident.fire_fatalities) > 0 ? 'text-red-500 font-semibold' : 'text-slate-800 dark:text-white'}`}>
+                      {(fireIncident.civilian_fatalities || 0) + (fireIncident.fire_fatalities || 0)}
+                    </span>
+                  </div>
+                  {fireIncident.estimated_property_loss != null && fireIncident.estimated_property_loss > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-500 dark:text-slate-400">Est. Loss</span>
+                      <span className="font-mono text-slate-800 dark:text-white">
+                        ${((fireIncident.estimated_property_loss || 0) + (fireIncident.estimated_contents_loss || 0)).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                  {fireIncident.fire_spread && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-500 dark:text-slate-400">Spread</span>
+                      <span className="font-mono text-slate-800 dark:text-white text-right max-w-[55%]">{fireIncident.fire_spread}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Section 2: Cause & Origin */}
+              {(fireIncident.ignition_cause || fireIncident.area_of_fire_origin || fireIncident.heat_source) && (
+                <div className="mt-3 pt-2 border-t border-slate-200/50 dark:border-white/[0.04]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-signal-amber">
+                      Cause &amp; Origin
+                    </p>
+                    <div className="flex-1 h-[1px] bg-slate-200 dark:bg-white/[0.08]" />
+                  </div>
+                  <div className="space-y-1.5 text-[10px]">
+                    {fireIncident.ignition_cause && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 dark:text-slate-400">Cause</span>
+                        <span className="font-mono text-slate-800 dark:text-white text-right max-w-[55%]">{fireIncident.ignition_cause}</span>
+                      </div>
+                    )}
+                    {fireIncident.ignition_factor_primary && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 dark:text-slate-400">Factor</span>
+                        <span className="font-mono text-slate-800 dark:text-white text-right max-w-[55%]">{fireIncident.ignition_factor_primary}</span>
+                      </div>
+                    )}
+                    {fireIncident.heat_source && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 dark:text-slate-400">Heat Source</span>
+                        <span className={`font-mono text-right max-w-[55%] ${fireIncident.heat_source.includes('Rechargeable') ? 'text-amber-400 font-semibold' : 'text-slate-800 dark:text-white'}`}>
+                          {fireIncident.heat_source}
+                        </span>
+                      </div>
+                    )}
+                    {fireIncident.area_of_fire_origin && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 dark:text-slate-400">Origin</span>
+                        <span className="font-mono text-slate-800 dark:text-white text-right max-w-[55%]">{fireIncident.area_of_fire_origin}</span>
+                      </div>
+                    )}
+                    {fireIncident.property_use && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 dark:text-slate-400">Property</span>
+                        <span className="font-mono text-slate-800 dark:text-white text-right max-w-[55%]">{fireIncident.property_use}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Section 3: Detection & Protection */}
+              {(fireIncident.detectors_present || fireIncident.automatic_extinguishing_system_present) && (
+                <div className="mt-3 pt-2 border-t border-slate-200/50 dark:border-white/[0.04]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-signal-blue">
+                      Detection &amp; Protection
+                    </p>
+                    <div className="flex-1 h-[1px] bg-slate-200 dark:bg-white/[0.08]" />
+                  </div>
+                  <div className="space-y-1.5 text-[10px]">
+                    {fireIncident.detectors_present && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 dark:text-slate-400">Detectors</span>
+                        <span className={`font-mono ${fireIncident.detectors_present.includes('Present') && !fireIncident.detectors_present.includes('Not') ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {fireIncident.detectors_present}
+                        </span>
+                      </div>
+                    )}
+                    {fireIncident.detector_effectiveness && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 dark:text-slate-400">Effectiveness</span>
+                        <span className="font-mono text-slate-800 dark:text-white text-right max-w-[55%]">{fireIncident.detector_effectiveness}</span>
+                      </div>
+                    )}
+                    {fireIncident.automatic_extinguishing_system_present && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 dark:text-slate-400">Sprinklers</span>
+                        <span className={`font-mono ${fireIncident.automatic_extinguishing_system_present.includes('Present') && !fireIncident.automatic_extinguishing_system_present.includes('Not') ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {fireIncident.automatic_extinguishing_system_present}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {!fireIncident && !fireLoading && selectedIncident && detail && (
+            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-white/[0.08]">
+              <p className="text-[9px] font-mono text-slate-500 dark:text-slate-600 italic">
+                No fire report on file
+              </p>
             </div>
           )}
         </>
