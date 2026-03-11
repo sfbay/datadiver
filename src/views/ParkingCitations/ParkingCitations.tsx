@@ -865,12 +865,12 @@ export default function ParkingCitations() {
                               {ns.neighborhood}
                             </p>
                             <p className="text-[10px] text-slate-400 dark:text-slate-600 font-mono">
-                              {ns.citationCount.toLocaleString()} citations · ${Math.round(ns.totalFines).toLocaleString()}
                               {nhTrend?.priorYearCount ? (
                                 <span className={nhTrend.yoyPct > 0 ? 'text-red-400' : nhTrend.yoyPct < 0 ? 'text-emerald-400' : ''}>
-                                  {' · '}{nhTrend.yoyPct >= 0 ? '+' : ''}{nhTrend.yoyPct.toFixed(0)}% since last yr
+                                  {nhTrend.yoyPct >= 0 ? '+' : ''}{nhTrend.yoyPct.toFixed(0)}%{' · '}
                                 </span>
                               ) : null}
+                              {ns.citationCount.toLocaleString()} citations · ${Math.round(ns.totalFines).toLocaleString()}
                               {zScore !== undefined && (
                                 <span className={zScore > 1 ? 'text-red-400' : zScore < -1 ? 'text-blue-400' : ''}>
                                   {' · '}{zScore >= 0 ? '+' : ''}{zScore.toFixed(1)}σ

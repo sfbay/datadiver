@@ -27,6 +27,8 @@ export interface CardDef {
   info?: string
   /** If true, expanded by default on first visit */
   defaultExpanded?: boolean
+  /** Optional annual spark data for trend context */
+  sparkData?: { values: number[]; labels?: string[] }
 }
 
 type CardState = 'expanded' | 'minimized' | 'hidden'
@@ -257,6 +259,7 @@ export default function CardTray({ viewId, cards, className = '' }: CardTrayProp
                 yoyDelta={card.yoyDelta}
                 zScore={card.zScore}
                 info={card.info}
+                sparkData={card.sparkData}
               />
               {/* Minimize button — top-left on hover */}
               <button

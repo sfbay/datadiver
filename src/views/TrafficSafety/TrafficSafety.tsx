@@ -1126,14 +1126,14 @@ export default function TrafficSafety() {
                               {ns.neighborhood}
                             </p>
                             <p className="text-[10px] text-slate-400 dark:text-slate-600 font-mono">
+                              {nhTrend?.priorYearCount ? (
+                                <span className={nhTrend.yoyPct > 0 ? 'text-red-400' : nhTrend.yoyPct < 0 ? 'text-emerald-400' : ''}>
+                                  {nhTrend.yoyPct >= 0 ? '+' : ''}{nhTrend.yoyPct.toFixed(0)}%{' · '}
+                                </span>
+                              ) : null}
                               {ns.crashCount.toLocaleString()} crashes
                               {ns.totalInjured > 0 && <span className="text-amber-400"> · {ns.totalInjured} injured</span>}
                               {ns.totalKilled > 0 && <span className="text-red-400"> · {ns.totalKilled} killed</span>}
-                              {nhTrend?.priorYearCount ? (
-                                <span className={nhTrend.yoyPct > 0 ? 'text-red-400' : nhTrend.yoyPct < 0 ? 'text-emerald-400' : ''}>
-                                  {' · '}{nhTrend.yoyPct >= 0 ? '+' : ''}{nhTrend.yoyPct.toFixed(0)}% since last yr
-                                </span>
-                              ) : null}
                               {zScore !== undefined && (
                                 <span className={zScore > 1 ? 'text-red-400' : zScore < -1 ? 'text-blue-400' : ''}>
                                   {' · '}{zScore >= 0 ? '+' : ''}{zScore.toFixed(1)}σ

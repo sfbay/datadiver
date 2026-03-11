@@ -124,6 +124,13 @@ export default function AppShell({ children }: { children: ReactNode }) {
           )}
         </div>
 
+        {/* Date range picker — above nav for prominence */}
+        {isSidebarOpen && (
+          <div className="px-3 pt-3 pb-1 border-b border-slate-200/50 dark:border-white/[0.04]">
+            <DateRangePicker />
+          </div>
+        )}
+
         {/* Navigation */}
         <nav className={`flex-1 py-4 space-y-0.5 overflow-y-auto ${isSidebarOpen ? 'px-3' : 'px-1.5'}`}>
           {isSidebarOpen && (
@@ -180,13 +187,6 @@ export default function AppShell({ children }: { children: ReactNode }) {
             )
           })}
         </nav>
-
-        {/* Date range picker */}
-        {isSidebarOpen && (
-          <div className="px-1 py-2 border-t border-slate-200/50 dark:border-white/[0.04]">
-            <DateRangePicker />
-          </div>
-        )}
 
         {/* Footer controls */}
         <div className={`border-t border-slate-200/50 dark:border-white/[0.04] ${isSidebarOpen ? 'p-3 space-y-0.5' : 'p-1.5 space-y-0.5'}`}>

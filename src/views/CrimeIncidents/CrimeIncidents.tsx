@@ -868,18 +868,18 @@ export default function CrimeIncidents() {
                               {ns.neighborhood}
                             </p>
                             <p className="text-[10px] text-slate-400 dark:text-slate-600 font-mono">
-                              {ns.incidentCount.toLocaleString()} incidents
                               {(() => {
                                 const nhTrend = trend.neighborhoodMap.get(ns.neighborhood)
                                 if (nhTrend?.priorYearCount) {
                                   return (
                                     <span className={nhTrend.yoyPct > 0 ? 'text-red-400' : nhTrend.yoyPct < 0 ? 'text-emerald-400' : ''}>
-                                      {' \u00B7 '}{nhTrend.yoyPct >= 0 ? '+' : ''}{nhTrend.yoyPct.toFixed(0)}% since last yr
+                                      {nhTrend.yoyPct >= 0 ? '+' : ''}{nhTrend.yoyPct.toFixed(0)}%{' \u00B7 '}
                                     </span>
                                   )
                                 }
                                 return null
                               })()}
+                              {ns.incidentCount.toLocaleString()} incidents
                               {zScore !== undefined && (
                                 <span className={zScore > 1 ? 'text-red-400' : zScore < -1 ? 'text-blue-400' : ''}>
                                   {' \u00B7 '}{zScore >= 0 ? '+' : ''}{zScore.toFixed(1)}{'\u03C3'}

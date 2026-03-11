@@ -88,7 +88,7 @@ export default function TopRecipientsChart({ data, width = 600, height, onSelect
       .attr('fill', isDark ? '#cbd5e1' : '#475569')
       .attr('font-size', '11px')
       .attr('font-family', "'Inter', sans-serif")
-      .text(d => d.filerName.length > 25 ? d.filerName.slice(0, 23) + '…' : d.filerName)
+      .text(d => d.filerName.length > 30 ? d.filerName.slice(0, 28) + '…' : d.filerName)
       .style('cursor', onSelect ? 'pointer' : 'default')
       .on('click', (_, d) => onSelect?.(d))
 

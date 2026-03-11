@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import InfoTip from '@/components/ui/InfoTip'
+import SparkBars from '@/components/charts/SparkBars'
 
 interface StatCardProps {
   label: string
@@ -12,9 +13,11 @@ interface StatCardProps {
   zScore?: number | null
   /** Glossary key for an explanatory tooltip on the label */
   info?: string
+  /** Optional annual spark data: values for the last N years, last value = current period */
+  sparkData?: { values: number[]; labels?: string[] }
 }
 
-export default function StatCard({ label, value, color, subtitle, delay = 0, trend, yoyDelta, zScore, info }: StatCardProps) {
+export default function StatCard({ label, value, color, subtitle, delay = 0, trend, yoyDelta, zScore, info, sparkData }: StatCardProps) {
   const [visible, setVisible] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -24,7 +27,7 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
   }, [delay])
 
   const yoyText = yoyDelta != null
-    ? `${yoyDelta >= 0 ? '+' : ''}${yoyDelta.toFixed(1)}% vs last yr`
+    ? `${yoyDelta >= 0 ? '+' : ''}${yoyDelta.toFixed(1)}%`
     : null
 
   const zScoreDot = zScore != null && Math.abs(zScore) > 1
@@ -88,6 +91,17 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
             {yoyText}
           </span>
         </p>
+      )}
+      {sparkData && sparkData.values.length > 0 && (
+        <div className="mt-2">
+          <SparkBars
+            values={sparkData.values}
+            labels={sparkData.labels}
+            height={14}
+            accentColor={color}
+            className="w-full"
+          />
+        </div>
       )}
       {/* Accent line */}
       <div

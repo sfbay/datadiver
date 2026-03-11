@@ -127,13 +127,13 @@ export function useCampaignDetail(
         $group: 'period',
         $order: 'period',
       }),
-      // 3: Spending categories
+      // 3: Spending categories (grouped by FPPC transaction_code)
       fetchDataset<CampaignSpendRow>('campaignFinance', {
-        $select: 'transaction_description, SUM(calculated_amount) as total',
-        $where: `form_type='E' AND ${filerWhere} AND ${dateWhere} AND transaction_description IS NOT NULL`,
-        $group: 'transaction_description',
+        $select: 'transaction_code, SUM(calculated_amount) as total',
+        $where: `form_type='E' AND ${filerWhere} AND ${dateWhere}`,
+        $group: 'transaction_code',
         $order: 'total DESC',
-        $limit: 100,
+        $limit: 50,
       }),
       // 4: Entity donor geography
       fetchDataset<CampaignDonorGeoRow>('campaignFinance', {

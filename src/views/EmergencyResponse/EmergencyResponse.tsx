@@ -883,25 +883,24 @@ export default function EmergencyResponse() {
                               {ns.neighborhood}
                             </p>
                             <p className="text-[10px] text-slate-400 dark:text-slate-600 font-mono">
-                              {ns.totalIncidents} calls
                               {(() => {
                                 const nhTrend = trend.neighborhoodMap.get(ns.neighborhood)
-                                if (!nhTrend) return null
+                                if (!nhTrend || !nhTrend.priorYearCount) return null
                                 return (
                                   <>
-                                    {nhTrend.priorYearCount > 0 && (
-                                      <span className={nhTrend.yoyPct > 0 ? 'text-red-400' : nhTrend.yoyPct < 0 ? 'text-emerald-400' : ''}>
-                                        {' · '}{nhTrend.yoyPct >= 0 ? '+' : ''}{nhTrend.yoyPct.toFixed(0)}% since last yr
-                                      </span>
-                                    )}
+                                    <span className={nhTrend.yoyPct > 0 ? 'text-red-400' : nhTrend.yoyPct < 0 ? 'text-emerald-400' : ''}>
+                                      {nhTrend.yoyPct >= 0 ? '+' : ''}{nhTrend.yoyPct.toFixed(0)}%
+                                    </span>
                                     {Math.abs(nhTrend.zScore) > 1 && (
                                       <span className={nhTrend.zScore > 1 ? 'text-red-400' : 'text-blue-400'}>
-                                        {' · '}{nhTrend.zScore >= 0 ? '+' : ''}{nhTrend.zScore.toFixed(1)}σ
+                                        {' '}{nhTrend.zScore >= 0 ? '+' : ''}{nhTrend.zScore.toFixed(1)}σ
                                       </span>
                                     )}
+                                    {' · '}
                                   </>
                                 )
                               })()}
+                              {ns.totalIncidents} calls
                               {isFireMode && (() => {
                                 const fireStat = fireNeighborhoodLookup.get(ns.neighborhood)
                                   || fireNeighborhoodLookup.get(ns.neighborhood.toLowerCase())

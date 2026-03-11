@@ -566,7 +566,7 @@ export interface CampaignIERow {
 }
 
 export interface CampaignSpendRow {
-  transaction_description: string
+  transaction_code: string
   total: string
 }
 

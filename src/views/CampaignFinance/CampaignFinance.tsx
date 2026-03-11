@@ -125,9 +125,19 @@ export default function CampaignFinance() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div>
-              <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">
-                Campaign Finance
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">
+                  Campaign Finance
+                </h1>
+                {selectedEntity && (
+                  <button
+                    onClick={handleBack}
+                    className="text-slate-400 hover:text-ink dark:hover:text-white transition-colors text-xs font-mono"
+                  >
+                    ← Overview
+                  </button>
+                )}
+              </div>
               <p className="text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
                 SF Ethics Commission · {cycleName}
               </p>
@@ -233,20 +243,18 @@ export default function CampaignFinance() {
               {/* Level 2: Entity Detail */}
               {selectedEntity && (
                 <>
-                  {/* Back + entity header */}
-                  <div className="flex items-center gap-3">
+                  {/* Entity header */}
+                  <div>
                     <button
                       onClick={handleBack}
-                      className="text-slate-400 hover:text-ink dark:hover:text-white transition-colors text-sm"
+                      className="text-slate-400 hover:text-ink dark:hover:text-white transition-colors text-[10px] font-mono mb-1"
                     >
-                      ← Back
+                      ← Overview
                     </button>
-                    <div>
-                      <h2 className="text-lg font-semibold text-ink dark:text-white">{selectedEntity.filerName}</h2>
-                      <p className="text-[10px] font-mono text-slate-400">
-                        {selectedEntity.filerType} · {formatCurrency(selectedEntity.total)} raised
-                      </p>
-                    </div>
+                    <h2 className="text-lg font-semibold text-ink dark:text-white">{selectedEntity.filerName}</h2>
+                    <p className="text-[10px] font-mono text-slate-400">
+                      {selectedEntity.filerType} · {formatCurrency(selectedEntity.total)} raised
+                    </p>
                   </div>
 
                   {detail.isLoading ? (
@@ -292,7 +300,7 @@ export default function CampaignFinance() {
                           <div className="space-y-1.5">
                             {detail.spendingCategories.map((cat, i) => (
                               <div key={i} className="flex items-center gap-2">
-                                <span className="text-[10px] text-slate-600 dark:text-slate-300 w-28 truncate">{cat.category}</span>
+                                <span className={`text-[10px] w-40 truncate ${cat.category === 'Uncoded / Pass-through' ? 'text-amber-400/70 italic' : 'text-slate-600 dark:text-slate-300'}`}>{cat.category}</span>
                                 <div className="flex-1 h-3 bg-slate-200/50 dark:bg-slate-800/50 rounded-sm overflow-hidden">
                                   <div
                                     className="h-full rounded-sm bg-amber-500/60"
@@ -460,6 +468,13 @@ export default function CampaignFinance() {
           </div>
         </aside>
       </div>
+
+      {/* Data source attribution */}
+      <div className="px-6 py-2 text-[8px] font-mono text-slate-400/50 dark:text-slate-600 border-t border-slate-200/30 dark:border-white/[0.03]">
+        Source: SF Ethics Commission via data.sfgov.org (dataset pitq-e56w).
+        Local filings only — state-level FPPC/CAL-ACCESS filings not included.
+        Figures may differ from statewide totals reported by news organizations.
+      </div>
     </div>
   )
 }
@@ -486,7 +501,7 @@ function FilerRow({
       }`}
     >
       <div className="flex justify-between items-baseline mb-1">
-        <span className="text-[11px] text-slate-700 dark:text-slate-200 font-medium truncate max-w-[65%]">
+        <span className="text-[11px] text-slate-700 dark:text-slate-200 font-medium truncate max-w-[78%]">
           {filer.filer_name}
         </span>
         <span className="text-[10px] font-mono text-slate-400">

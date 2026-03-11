@@ -802,18 +802,18 @@ export default function Cases311() {
                               {ns.neighborhood}
                             </p>
                             <p className="text-[10px] text-slate-400 dark:text-slate-600 font-mono">
-                              {ns.caseCount.toLocaleString()} cases
                               {(() => {
                                 const nhTrend = trend.neighborhoodMap.get(ns.neighborhood)
                                 if (nhTrend?.priorYearCount) {
                                   return (
                                     <span className={nhTrend.yoyPct > 0 ? 'text-red-400' : nhTrend.yoyPct < 0 ? 'text-emerald-400' : ''}>
-                                      {' · '}{nhTrend.yoyPct >= 0 ? '+' : ''}{nhTrend.yoyPct.toFixed(0)}% since last yr
+                                      {nhTrend.yoyPct >= 0 ? '+' : ''}{nhTrend.yoyPct.toFixed(0)}%{' · '}
                                     </span>
                                   )
                                 }
                                 return null
                               })()}
+                              {ns.caseCount.toLocaleString()} cases
                               {zScore !== undefined && (
                                 <span className={zScore > 1 ? 'text-red-400' : zScore < -1 ? 'text-blue-400' : ''}>
                                   {' · '}{zScore >= 0 ? '+' : ''}{zScore.toFixed(1)}σ

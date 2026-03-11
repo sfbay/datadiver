@@ -1,6 +1,14 @@
 import type { CampaignIERow, CampaignDonorRow } from '@/types/datasets'
 import { formatCurrency } from './TopRecipientsChart'
 
+/** Convert ALL-CAPS names to Sentence Case (e.g., "GOLDMAN" → "Goldman") */
+function toSentenceCase(name: string): string {
+  if (!name) return name
+  return name.replace(/\b([A-Z])([A-Z]+)\b/g, (_, first, rest) =>
+    first + rest.toLowerCase()
+  )
+}
+
 interface Props {
   supportTotal: number
   opposeTotal: number
@@ -24,12 +32,12 @@ export default function ForAgainstSplit({
   topDonors, ieSupport, ieOppose,
 }: Props) {
   const supportFunders = [
-    ...topDonors.map(d => ({ name: d.transaction_last_name, amount: parseFloat(d.total) || 0 })),
-    ...ieSupport.map(d => ({ name: `IE: ${d.filer_name}`, amount: parseFloat(d.total) || 0 })),
+    ...topDonors.map(d => ({ name: toSentenceCase(d.transaction_last_name), amount: parseFloat(d.total) || 0 })),
+    ...ieSupport.map(d => ({ name: `IE: ${toSentenceCase(d.filer_name)}`, amount: parseFloat(d.total) || 0 })),
   ].sort((a, b) => b.amount - a.amount).slice(0, 7)
 
   const opposeFunders = ieOppose.map(d => ({
-    name: d.filer_name,
+    name: toSentenceCase(d.filer_name),
     amount: parseFloat(d.total) || 0,
   })).slice(0, 7)
 

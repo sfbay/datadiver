@@ -24,7 +24,7 @@ export default function ContributionTimeline({ data, width = 400, height = 160, 
     const svg = d3.select(svgRef.current)
     svg.selectAll('*').remove()
 
-    const margin = { top: 8, right: 8, bottom: 24, left: 50 }
+    const margin = { top: 8, right: 8, bottom: 32, left: 50 }
     const innerW = width - margin.left - margin.right
     const innerH = height - margin.top - margin.bottom
 
@@ -71,10 +71,11 @@ export default function ContributionTimeline({ data, width = 400, height = 160, 
       .attr('stroke', accentColor)
       .attr('stroke-width', 1.5)
 
-    // X axis
+    // X axis — JFMAMJJASOND single-letter months
+    const MONTH_LETTERS = 'JFMAMJJASOND'
     const xAxis = d3.axisBottom(x)
-      .ticks(Math.min(data.length, 6))
-      .tickFormat(d => d3.timeFormat('%b %y')(d as Date))
+      .ticks(d3.timeMonth.every(1))
+      .tickFormat(d => MONTH_LETTERS[(d as Date).getMonth()])
     const xAxisG = g.append('g')
       .attr('transform', `translate(0,${innerH})`)
       .call(xAxis)
@@ -83,6 +84,21 @@ export default function ContributionTimeline({ data, width = 400, height = 160, 
       .attr('font-size', '8px')
       .attr('font-family', "'JetBrains Mono', monospace")
     xAxisG.selectAll('.domain, .tick line').attr('stroke', isDark ? '#1e293b' : '#e2e8f0')
+
+    // Year labels below month letters (at January ticks or first tick)
+    const yearTicks = dates.filter(d => d.getMonth() === 0)
+    if (yearTicks.length === 0 && dates.length > 0) yearTicks.push(dates[0])
+    xAxisG.selectAll('text.year-label')
+      .data(yearTicks)
+      .join('text')
+      .attr('class', 'year-label')
+      .attr('x', d => x(d))
+      .attr('y', 20)
+      .attr('text-anchor', 'middle')
+      .attr('fill', isDark ? '#64748b' : '#94a3b8')
+      .attr('font-size', '7px')
+      .attr('font-family', "'JetBrains Mono', monospace")
+      .text(d => d.getFullYear().toString())
 
     // Y axis
     const yAxis = d3.axisLeft(y)

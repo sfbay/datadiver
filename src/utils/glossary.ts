@@ -47,7 +47,7 @@ const GLOSSARY: Record<string, string> = {
 
   // Trend indicators
   'yoy':
-    'Compares the current period to the same period one year ago. "+12% since last yr" means 12% more than the same timeframe last year. Helps distinguish seasonal patterns from real changes.',
+    'Compares the current period to the same period one year ago. A green "+12%" means 12% more than the same timeframe last year. Helps distinguish seasonal patterns from real changes.',
   'z-score':
     'How unusual this value is compared to the past 12 months. Measured in standard deviations (σ). Values above +1σ are notably high, below −1σ are notably low. Think of it as a "weirdness score."',
   'comparison':
