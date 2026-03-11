@@ -5,7 +5,7 @@ import { useDataset } from '@/hooks/useDataset'
 import { useMapLayer } from '@/hooks/useMapLayer'
 import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { useFireHourlyPattern } from '@/hooks/useHourlyPatternFactory'
-import { useComparisonData } from '@/hooks/useComparisonData'
+import { useFireComparisonData } from '@/hooks/useComparisonDataFactory'
 import { useAppStore } from '@/stores/appStore'
 import type { FireEMSDispatch, ResponseTimeRecord } from '@/types/datasets'
 import { diffMinutes, formatDelta } from '@/utils/time'
@@ -574,7 +574,7 @@ export default function EmergencyResponse() {
   const hourlyPattern = useFireHourlyPattern(dateRange, serviceClause || undefined)
 
   // Comparison period data
-  const comparison = useComparisonData(dateRange, whereClause, comparisonPeriod, rawData)
+  const comparison = useFireComparisonData(dateRange, whereClause, comparisonPeriod, rawData)
   const compLabel = comparisonPeriod ? `vs ${comparisonPeriod >= 360 ? '1yr' : `${comparisonPeriod}d`} ago` : ''
 
   const chartTiles = useMemo((): ChartTileDef[] => {
