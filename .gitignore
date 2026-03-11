@@ -33,3 +33,4 @@ progress.md
 *.sln
 *.sw?
 .vercel
+.worktrees
