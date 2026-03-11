@@ -162,6 +162,18 @@ export const DATASETS: Record<string, DatasetConfig> = {
     hasGeo: true,
     cacheTTL: 3_600_000,
   },
+
+  businessLocations: {
+    id: 'g8m3-pdis',
+    name: 'Registered Business Locations',
+    description: 'Business registrations with opening/closing dates and industry codes',
+    endpoint: `${BASE_URL}/g8m3-pdis.json`,
+    category: 'other',
+    hasGeo: true,
+    geoField: 'location',
+    defaultSort: 'dba_start_date DESC',
+    dateField: 'dba_start_date',
+  },
 } as const
 
 export type DatasetKey = keyof typeof DATASETS

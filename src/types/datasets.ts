@@ -418,6 +418,40 @@ export interface NeighborhoodAggRowCrashes {
   total_killed: string
 }
 
+/** Registered Business Location (g8m3-pdis) */
+export interface BusinessLocationRecord {
+  uniqueid: string
+  certificate_number: string
+  ttxid: string
+  ownership_name: string
+  dba_name: string
+  full_business_address: string
+  city: string
+  state: string
+  business_zip: string
+  dba_start_date: string
+  dba_end_date: string | null
+  location_start_date: string
+  location_end_date: string | null
+  naic_code: string
+  naic_code_description: string
+  parking_tax: boolean
+  transient_occupancy_tax: boolean
+  location: { type: string; coordinates: [number, number] } | null
+}
+
+/** Server-side aggregation row for sector counts */
+export interface SectorAggRow {
+  naic_code_description: string
+  cnt: string
+}
+
+/** Monthly breakdown row for net formation chart */
+export interface BusinessMonthlyRow {
+  month: string
+  cnt: string
+}
+
 /** View state for URL serialization */
 export type ViewId = 'home' | 'emergency-response' | 'parking-revenue' | 'dispatch-911' | '311-cases' | 'crime-incidents' | 'parking-citations' | 'traffic-safety'
 
