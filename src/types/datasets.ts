@@ -42,6 +42,46 @@ export interface FireIncident {
   detectors_present?: string
   detector_effectiveness?: string
   automatic_extinguishing_system_present?: string
+  automatic_extinguishing_sytem_type?: string  // NOTE: Socrata field has this typo (missing 's' in "system")
+}
+
+/** Server-side aggregation row for fire casualty/loss totals */
+export interface FireCasualtyAggRow {
+  injuries: string
+  fatalities: string
+  total_loss: string
+}
+
+/** Server-side aggregation row for fire ignition cause counts */
+export interface FireCauseAggRow {
+  ignition_cause: string
+  cnt: string
+}
+
+/** Server-side aggregation row for fire property use counts */
+export interface FirePropertyUseAggRow {
+  property_use: string
+  cnt: string
+}
+
+/** Server-side aggregation row for fire detector presence counts */
+export interface FireDetectorAggRow {
+  detectors_present: string
+  cnt: string
+}
+
+/** Server-side aggregation row for fire neighborhood counts + casualties */
+export interface FireNeighborhoodAggRow {
+  neighborhood_district: string
+  cnt: string
+  injuries: string
+  fatalities: string
+}
+
+/** Server-side aggregation row for battery fire yearly trend */
+export interface BatteryTrendAggRow {
+  year: string
+  cnt: string
 }
 
 /** Fire/EMS Dispatched Calls (nuek-vuh3) */
