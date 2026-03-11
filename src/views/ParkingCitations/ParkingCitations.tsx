@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
+import { useState, useMemo, useRef, useCallback, useEffect, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import { useDataset } from '@/hooks/useDataset'
@@ -30,6 +30,7 @@ import { useTrendBaseline } from '@/hooks/useTrendBaseline'
 import type { TrendConfig } from '@/types/trends'
 import { useProgressScope } from '@/hooks/useLoadingProgress'
 import InfoTip from '@/components/ui/InfoTip'
+import ChartTray, { type ChartTileDef } from '@/components/ui/ChartTray'
 
 type MapMode = 'heatmap' | 'anomaly'
 type SidebarTab = 'violations' | 'neighborhoods'
@@ -278,6 +279,73 @@ export default function ParkingCitations() {
       color: '#f97316',
     }))
   }, [violationEntries, sortByRevenue])
+
+  const chartTiles = useMemo((): ChartTileDef[] => {
+    const tiles: ChartTileDef[] = []
+
+    if (histogramData.length > 0) {
+      tiles.push({
+        id: 'fine-distribution',
+        label: 'Fine Amount Distribution',
+        shortLabel: 'Fines',
+        color: '#f97316',
+        defaultExpanded: true,
+        render: () => (
+          <FineHistogram data={histogramData} width={260} height={100} />
+        ),
+      })
+    }
+
+    if (topViolationBars.length > 0) {
+      tiles.push({
+        id: 'top-violations',
+        label: 'Top Violations',
+        shortLabel: 'Violations',
+        color: '#fb923c',
+        defaultExpanded: true,
+        render: () => (
+          <>
+            <div className="flex items-center justify-end -mt-1 mb-1">
+              <button
+                onClick={() => setSortByRevenue(!sortByRevenue)}
+                className="text-[9px] font-mono text-orange-500/70 hover:text-orange-400 transition-colors"
+              >
+                {sortByRevenue ? '$ Revenue' : '# Count'}
+              </button>
+            </div>
+            <HorizontalBarChart
+              data={topViolationBars}
+              width={260}
+              height={160}
+              maxBars={8}
+              valueFormatter={sortByRevenue ? (v) => `$${Math.round(v).toLocaleString()}` : (v) => v.toLocaleString()}
+            />
+          </>
+        ),
+      })
+    }
+
+    if (comparisonPeriod !== null && comparison.currentTrend.length > 0) {
+      tiles.push({
+        id: 'daily-trend',
+        label: `Daily Trend${comparison.isLoading ? ' (loading…)' : ''}`,
+        shortLabel: 'Trend',
+        color: '#f59e0b',
+        defaultExpanded: true,
+        render: () => (
+          <TrendChart
+            current={comparison.currentTrend}
+            comparison={comparison.comparisonTrend.length > 0 ? comparison.comparisonTrend : undefined}
+            width={260}
+            height={110}
+          />
+        ),
+      })
+    }
+
+    return tiles
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [histogramData, topViolationBars, sortByRevenue, comparisonPeriod, comparison.currentTrend, comparison.comparisonTrend, comparison.isLoading])
 
   const neighborhoodEntries = useMemo(() => {
     return neighborhoodRows
@@ -655,52 +723,8 @@ export default function ParkingCitations() {
             )}
 
             {/* Charts — bottom left */}
-            {!isLoading && histogramData.length > 0 && (
-              <div className="absolute bottom-6 left-5 z-10 flex flex-col gap-2.5">
-                <div className="glass-card rounded-xl p-3">
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
-                    Fine Amount Distribution
-                  </p>
-                  <FineHistogram data={histogramData} width={260} height={100} />
-                </div>
-
-                {topViolationBars.length > 0 && (
-                  <div className="glass-card rounded-xl p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60">
-                        Top Violations
-                      </p>
-                      <button
-                        onClick={() => setSortByRevenue(!sortByRevenue)}
-                        className="text-[9px] font-mono text-orange-500/70 hover:text-orange-400 transition-colors"
-                      >
-                        {sortByRevenue ? '$ Revenue' : '# Count'}
-                      </button>
-                    </div>
-                    <HorizontalBarChart
-                      data={topViolationBars}
-                      width={260}
-                      height={160}
-                      maxBars={8}
-                      valueFormatter={sortByRevenue ? (v) => `$${Math.round(v).toLocaleString()}` : (v) => v.toLocaleString()}
-                    />
-                  </div>
-                )}
-
-                {comparisonPeriod !== null && comparison.currentTrend.length > 0 && (
-                  <div className="glass-card rounded-xl p-3">
-                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
-                      Daily Trend {comparison.isLoading && '(loading…)'}
-                    </p>
-                    <TrendChart
-                      current={comparison.currentTrend}
-                      comparison={comparison.comparisonTrend.length > 0 ? comparison.comparisonTrend : undefined}
-                      width={260}
-                      height={110}
-                    />
-                  </div>
-                )}
-              </div>
+            {!isLoading && chartTiles.length > 0 && (
+              <ChartTray viewId="parkingCitations" tiles={chartTiles} />
             )}
 
             {/* Anomaly legend */}

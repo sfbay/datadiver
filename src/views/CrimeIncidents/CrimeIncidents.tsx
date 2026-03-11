@@ -14,6 +14,7 @@ import { coordsFromFields, extractCoordinates } from '@/utils/geo'
 import { resolutionColor } from '@/utils/colors'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
 import CardTray, { type CardDef } from '@/components/ui/CardTray'
+import ChartTray, { type ChartTileDef } from '@/components/ui/ChartTray'
 import HorizontalBarChart, { type BarDatum } from '@/components/charts/HorizontalBarChart'
 import ExportButton from '@/components/export/ExportButton'
 import TimeOfDayFilter from '@/components/filters/TimeOfDayFilter'
@@ -323,6 +324,47 @@ export default function CrimeIncidents() {
       },
     ]
   }, [stats, totalCount, comparison.deltas, compLabel, trend.cityWideYoY])
+
+  // Chart tray definitions (bottom-left overlay)
+  const chartTiles = useMemo((): ChartTileDef[] => {
+    const tiles: ChartTileDef[] = []
+    if (resolutionBarData.length > 0) {
+      tiles.push({
+        id: 'resolution',
+        label: 'Resolution Breakdown',
+        shortLabel: 'Resolution',
+        color: '#a78bfa',
+        defaultExpanded: true,
+        render: () => (
+          <HorizontalBarChart
+            data={resolutionBarData}
+            width={260}
+            height={resolutionBarData.length * 20 + 8}
+            maxBars={8}
+            valueFormatter={(v) => v.toLocaleString()}
+          />
+        ),
+      })
+    }
+    if (comparisonPeriod !== null && comparison.currentTrend.length > 0) {
+      tiles.push({
+        id: 'daily-trend',
+        label: `Daily Trend${comparison.isLoading ? ' (loading\u2026)' : ''}`,
+        shortLabel: 'Trend',
+        color: '#ef4444',
+        defaultExpanded: true,
+        render: () => (
+          <TrendChart
+            current={comparison.currentTrend}
+            comparison={comparison.comparisonTrend.length > 0 ? comparison.comparisonTrend : undefined}
+            width={260}
+            height={110}
+          />
+        ),
+      })
+    }
+    return tiles
+  }, [resolutionBarData, comparisonPeriod, comparison])
 
   // Sidebar data
   const categoryEntries = useMemo(
@@ -690,35 +732,8 @@ export default function CrimeIncidents() {
             )}
 
             {/* Charts — bottom left */}
-            {!isLoading && resolutionBarData.length > 0 && (
-              <div className="absolute bottom-6 left-5 z-10 flex flex-col gap-2.5">
-                <div className="glass-card rounded-xl p-3">
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
-                    Resolution Breakdown
-                  </p>
-                  <HorizontalBarChart
-                    data={resolutionBarData}
-                    width={260}
-                    height={resolutionBarData.length * 20 + 8}
-                    maxBars={8}
-                    valueFormatter={(v) => v.toLocaleString()}
-                  />
-                </div>
-
-                {comparisonPeriod !== null && comparison.currentTrend.length > 0 && (
-                  <div className="glass-card rounded-xl p-3">
-                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
-                      Daily Trend {comparison.isLoading && '(loading\u2026)'}
-                    </p>
-                    <TrendChart
-                      current={comparison.currentTrend}
-                      comparison={comparison.comparisonTrend.length > 0 ? comparison.comparisonTrend : undefined}
-                      width={260}
-                      height={110}
-                    />
-                  </div>
-                )}
-              </div>
+            {!isLoading && chartTiles.length > 0 && (
+              <ChartTray viewId="crimeIncidents" tiles={chartTiles} />
             )}
 
             {/* Anomaly legend */}

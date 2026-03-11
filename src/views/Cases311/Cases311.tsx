@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
+import { useState, useMemo, useRef, useCallback, useEffect, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import { useDataset } from '@/hooks/useDataset'
@@ -25,6 +25,7 @@ import CaseDetailPanel from '@/components/ui/CaseDetailPanel'
 import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
 import { SkeletonStatCards, SkeletonSidebarRows, MapScanOverlay, MapProgressBar } from '@/components/ui/Skeleton'
 import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
+import ChartTray, { type ChartTileDef } from '@/components/ui/ChartTray'
 import { useDataFreshness } from '@/hooks/useDataFreshness'
 import { useTrendBaseline } from '@/hooks/useTrendBaseline'
 import type { TrendConfig } from '@/types/trends'
@@ -248,6 +249,40 @@ export default function Cases311() {
     () => caseData.filter((c) => c.resolutionHours !== null).map((c) => c.resolutionHours!),
     [caseData]
   )
+
+  const chartTiles = useMemo((): ChartTileDef[] => {
+    const tiles: ChartTileDef[] = []
+    if (histogramData.length > 0) {
+      tiles.push({
+        id: 'resolution-histogram',
+        label: 'Resolution Time Distribution',
+        shortLabel: 'Resolution',
+        color: '#10b981',
+        defaultExpanded: true,
+        render: () => (
+          <ResolutionHistogram data={histogramData} width={260} height={100} />
+        ),
+      })
+    }
+    if (comparisonPeriod !== null && comparison.currentTrend.length > 0) {
+      tiles.push({
+        id: 'daily-trend',
+        label: `Daily Trend${comparison.isLoading ? ' (loading…)' : ''}`,
+        shortLabel: 'Trend',
+        color: '#60a5fa',
+        defaultExpanded: true,
+        render: () => (
+          <TrendChart
+            current={comparison.currentTrend}
+            comparison={comparison.comparisonTrend.length > 0 ? comparison.comparisonTrend : undefined}
+            width={260}
+            height={110}
+          />
+        ),
+      })
+    }
+    return tiles
+  }, [histogramData, comparisonPeriod, comparison.currentTrend, comparison.comparisonTrend, comparison.isLoading])
 
   // Sidebar data
   const categoryEntries = useMemo(
@@ -631,29 +666,8 @@ export default function Cases311() {
             )}
 
             {/* Charts — bottom left */}
-            {!isLoading && histogramData.length > 0 && (
-              <div className="absolute bottom-6 left-5 z-10 flex flex-col gap-2.5">
-                <div className="glass-card rounded-xl p-3">
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
-                    Resolution Time Distribution
-                  </p>
-                  <ResolutionHistogram data={histogramData} width={260} height={100} />
-                </div>
-
-                {comparisonPeriod !== null && comparison.currentTrend.length > 0 && (
-                  <div className="glass-card rounded-xl p-3">
-                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
-                      Daily Trend {comparison.isLoading && '(loading…)'}
-                    </p>
-                    <TrendChart
-                      current={comparison.currentTrend}
-                      comparison={comparison.comparisonTrend.length > 0 ? comparison.comparisonTrend : undefined}
-                      width={260}
-                      height={110}
-                    />
-                  </div>
-                )}
-              </div>
+            {!isLoading && chartTiles.length > 0 && (
+              <ChartTray viewId="cases311" tiles={chartTiles} />
             )}
 
             {/* Anomaly legend */}

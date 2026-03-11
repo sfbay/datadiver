@@ -24,6 +24,7 @@ import IncidentDetailPanel from '@/components/ui/IncidentDetailPanel'
 import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
 import { SkeletonStatCards, SkeletonChart, SkeletonSidebarRows, SkeletonBreakdownList, MapScanOverlay, MapProgressBar } from '@/components/ui/Skeleton'
 import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
+import ChartTray, { type ChartTileDef } from '@/components/ui/ChartTray'
 import { useDataFreshness } from '@/hooks/useDataFreshness'
 import { useTrendBaseline } from '@/hooks/useTrendBaseline'
 import type { TrendConfig } from '@/types/trends'
@@ -415,6 +416,41 @@ export default function EmergencyResponse() {
   const comparison = useComparisonData(dateRange, whereClause, comparisonPeriod, rawData)
   const compLabel = comparisonPeriod ? `vs ${comparisonPeriod >= 360 ? '1yr' : `${comparisonPeriod}d`} ago` : ''
 
+  const chartTiles = useMemo((): ChartTileDef[] => {
+    const tiles: ChartTileDef[] = []
+
+    if (histogramData.length > 0) {
+      tiles.push({
+        id: 'response-histogram',
+        label: 'Response Time Distribution',
+        shortLabel: 'Distribution',
+        color: '#f59e0b',
+        defaultExpanded: true,
+        render: () => <ResponseHistogram data={histogramData} width={260} height={100} />,
+      })
+    }
+
+    if (comparisonPeriod !== null && comparison.currentTrend.length > 0) {
+      tiles.push({
+        id: 'daily-trend',
+        label: `Daily Trend ${comparison.isLoading ? '(loading…)' : ''}`,
+        shortLabel: 'Trend',
+        color: '#3b82f6',
+        defaultExpanded: true,
+        render: () => (
+          <TrendChart
+            current={comparison.currentTrend}
+            comparison={comparison.comparisonTrend.length > 0 ? comparison.comparisonTrend : undefined}
+            width={260}
+            height={110}
+          />
+        ),
+      })
+    }
+
+    return tiles
+  }, [histogramData, comparisonPeriod, comparison.currentTrend, comparison.comparisonTrend, comparison.isLoading])
+
   const handleMapReady = useCallback((map: mapboxgl.Map) => {
     setMapInstance(map)
   }, [])
@@ -571,29 +607,8 @@ export default function EmergencyResponse() {
                 <SkeletonChart width={260} height={100} />
               </div>
             )}
-            {!isLoading && histogramData.length > 0 && (
-              <div className="absolute bottom-6 left-5 z-10 flex flex-col gap-2.5">
-                <div className="glass-card rounded-xl p-3">
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
-                    Response Time Distribution
-                  </p>
-                  <ResponseHistogram data={histogramData} width={260} height={100} />
-                </div>
-
-                {comparisonPeriod !== null && comparison.currentTrend.length > 0 && (
-                  <div className="glass-card rounded-xl p-3">
-                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
-                      Daily Trend {comparison.isLoading && '(loading…)'}
-                    </p>
-                    <TrendChart
-                      current={comparison.currentTrend}
-                      comparison={comparison.comparisonTrend.length > 0 ? comparison.comparisonTrend : undefined}
-                      width={260}
-                      height={110}
-                    />
-                  </div>
-                )}
-              </div>
+            {!isLoading && chartTiles.length > 0 && (
+              <ChartTray viewId="emergencyResponse" tiles={chartTiles} />
             )}
 
             {/* Incident detail panel */}

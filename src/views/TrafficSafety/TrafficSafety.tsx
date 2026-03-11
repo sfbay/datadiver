@@ -23,6 +23,7 @@ import HourlyHeatgrid from '@/components/charts/HourlyHeatgrid'
 import TrendChart from '@/components/charts/TrendChart'
 import CrashModeFilter from '@/components/filters/CrashModeFilter'
 import CrashDetailPanel from '@/components/ui/CrashDetailPanel'
+import ChartTray, { type ChartTileDef } from '@/components/ui/ChartTray'
 import { SkeletonStatCards, SkeletonSidebarRows, MapScanOverlay, MapProgressBar } from '@/components/ui/Skeleton'
 import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
 import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
@@ -306,6 +307,48 @@ export default function TrafficSafety() {
       color: m.mode.includes('Ped') ? '#dc2626' : m.mode.includes('Bike') ? '#f59e0b' : '#64748b',
     }))
   }, [modeEntries])
+
+  const chartTiles = useMemo<ChartTileDef[]>(() => {
+    const tiles: ChartTileDef[] = []
+    if (severityData.length > 0) {
+      tiles.push({
+        id: 'severity',
+        label: 'Severity Breakdown',
+        shortLabel: 'Severity',
+        color: '#ef4444',
+        defaultExpanded: true,
+        render: () => <SeverityBreakdown data={severityData} width={260} height={110} />,
+      })
+    }
+    if (modeBars.length > 0) {
+      tiles.push({
+        id: 'modes',
+        label: 'Crash Modes',
+        shortLabel: 'Modes',
+        color: '#64748b',
+        defaultExpanded: true,
+        render: () => <HorizontalBarChart data={modeBars} width={260} height={120} maxBars={6} />,
+      })
+    }
+    if (comparisonPeriod !== null && comparison.currentTrend.length > 0) {
+      tiles.push({
+        id: 'daily-trend',
+        label: `Daily Trend${comparison.isLoading ? ' (loading…)' : ''}`,
+        shortLabel: 'Trend',
+        color: '#3b82f6',
+        defaultExpanded: true,
+        render: () => (
+          <TrendChart
+            current={comparison.currentTrend}
+            comparison={comparison.comparisonTrend.length > 0 ? comparison.comparisonTrend : undefined}
+            width={260}
+            height={110}
+          />
+        ),
+      })
+    }
+    return tiles
+  }, [severityData, modeBars, comparisonPeriod, comparison.currentTrend, comparison.comparisonTrend, comparison.isLoading])
 
   const neighborhoodEntries = useMemo(() => {
     return neighborhoodRows
@@ -819,40 +862,8 @@ export default function TrafficSafety() {
             )}
 
             {/* Charts */}
-            {!isLoading && crashData.length > 0 && (
-              <div className="absolute bottom-6 left-5 z-10 flex flex-col gap-2.5">
-                {severityData.length > 0 && (
-                  <div className="glass-card rounded-xl p-3">
-                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
-                      Severity Breakdown
-                    </p>
-                    <SeverityBreakdown data={severityData} width={260} height={110} />
-                  </div>
-                )}
-
-                {modeBars.length > 0 && (
-                  <div className="glass-card rounded-xl p-3">
-                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
-                      Crash Modes
-                    </p>
-                    <HorizontalBarChart data={modeBars} width={260} height={120} maxBars={6} />
-                  </div>
-                )}
-
-                {comparisonPeriod !== null && comparison.currentTrend.length > 0 && (
-                  <div className="glass-card rounded-xl p-3">
-                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
-                      Daily Trend {comparison.isLoading && '(loading…)'}
-                    </p>
-                    <TrendChart
-                      current={comparison.currentTrend}
-                      comparison={comparison.comparisonTrend.length > 0 ? comparison.comparisonTrend : undefined}
-                      width={260}
-                      height={110}
-                    />
-                  </div>
-                )}
-              </div>
+            {!isLoading && crashData.length > 0 && chartTiles.length > 0 && (
+              <ChartTray viewId="trafficSafety" tiles={chartTiles} />
             )}
 
             {/* Anomaly legend */}
