@@ -125,45 +125,10 @@ export default function CardTray({ viewId, cards, className = '' }: CardTrayProp
   const hasExpanded = expandedCards.length > 0
 
   return (
-    <div className={`absolute top-5 left-5 z-10 flex flex-col gap-2 ${className}`}>
-      {/* Expanded stat cards */}
-      {hasExpanded && (
-        <div className="flex gap-2.5 flex-wrap">
-          {expandedCards.map((card) => (
-            <div key={card.id} className="group/card relative">
-              <StatCard
-                label={card.label}
-                value={card.value}
-                color={card.color}
-                delay={card.delay ?? 0}
-                subtitle={card.subtitle}
-                trend={card.trend}
-                yoyDelta={card.yoyDelta}
-                zScore={card.zScore}
-                info={card.info}
-              />
-              {/* Minimize button — top-left on hover */}
-              <button
-                onClick={() => toggleCard(card.id)}
-                className="absolute -top-1.5 -left-1.5 w-4 h-4 rounded-full
-                  bg-slate-800/80 border border-slate-600/50
-                  flex items-center justify-center
-                  opacity-0 group-hover/card:opacity-100 transition-opacity duration-150
-                  cursor-pointer z-10"
-                title="Minimize"
-              >
-                <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="#94a3b8" strokeWidth="1.5">
-                  <path d="M1.5 4h5" strokeLinecap="round" />
-                </svg>
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Minimized pills + controls row */}
-      {(minimizedCards.length > 0 || hiddenCards.length > 0) && (
-        <div className="flex flex-wrap items-center gap-1.5">
+    <div className={`absolute top-0 left-0 right-0 z-10 flex flex-col ${className}`}>
+      {/* Minimized pills — flush top bar */}
+      {(minimizedCards.length > 0 || hiddenCards.length > 0 || hasExpanded) && (
+        <div className="flex flex-wrap items-center gap-1.5 px-4 py-2">
           {minimizedCards.map((card) => {
             const trendArrow = card.yoyDelta != null
               ? card.yoyDelta > 0 ? '↑' : card.yoyDelta < 0 ? '↓' : '→'
@@ -182,20 +147,17 @@ export default function CardTray({ viewId, cards, className = '' }: CardTrayProp
                   transition-all duration-150 cursor-pointer group/pill"
                 title={`${card.label}: ${card.value} — click to expand`}
               >
-                {/* Trend indicator */}
                 {trendArrow && (
                   <span className="text-[9px] font-mono font-bold" style={{ color: trendColor ?? undefined }}>
                     {trendArrow}
                   </span>
                 )}
-                {/* Z-score dot */}
                 {!trendArrow && card.zScore != null && Math.abs(card.zScore) > 1 && (
                   <span
                     className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                     style={{ backgroundColor: card.zScore > 1 ? '#ef4444' : '#3b82f6' }}
                   />
                 )}
-                {/* Color accent dot (if no trend or z-score) */}
                 {!trendArrow && (card.zScore == null || Math.abs(card.zScore) <= 1) && (
                   <span
                     className="w-1.5 h-1.5 rounded-full flex-shrink-0 opacity-60"
@@ -273,6 +235,42 @@ export default function CardTray({ viewId, cards, className = '' }: CardTrayProp
           )}
         </div>
       )}
+
+      {/* Expanded stat cards — below the pill bar */}
+      {hasExpanded && (
+        <div className="flex gap-2.5 flex-wrap px-5 pb-2">
+          {expandedCards.map((card) => (
+            <div key={card.id} className="group/card relative">
+              <StatCard
+                label={card.label}
+                value={card.value}
+                color={card.color}
+                delay={card.delay ?? 0}
+                subtitle={card.subtitle}
+                trend={card.trend}
+                yoyDelta={card.yoyDelta}
+                zScore={card.zScore}
+                info={card.info}
+              />
+              {/* Minimize button — top-left on hover */}
+              <button
+                onClick={() => toggleCard(card.id)}
+                className="absolute -top-1.5 -left-1.5 w-4 h-4 rounded-full
+                  bg-slate-800/80 border border-slate-600/50
+                  flex items-center justify-center
+                  opacity-0 group-hover/card:opacity-100 transition-opacity duration-150
+                  cursor-pointer z-10"
+                title="Minimize"
+              >
+                <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="#94a3b8" strokeWidth="1.5">
+                  <path d="M1.5 4h5" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
     </div>
   )
 }

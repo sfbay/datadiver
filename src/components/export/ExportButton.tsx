@@ -24,7 +24,7 @@ export default function ExportButton({ targetSelector, filename = 'datadiver-exp
         scale: 2, // retina quality
         logging: false,
         // Capture Mapbox canvas properly
-        onclone: (clonedDoc) => {
+        onclone: (clonedDoc: Document) => {
           // Ensure the cloned document preserves dark mode class
           if (document.documentElement.classList.contains('dark')) {
             clonedDoc.documentElement.classList.add('dark')
