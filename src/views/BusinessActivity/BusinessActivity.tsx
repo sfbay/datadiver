@@ -103,19 +103,12 @@ export default function BusinessActivity() {
 
   const whereClause = useMemo(() => {
     const conditions: string[] = [SF_CITY_FILTER]
-    conditions.push(`dba_start_date >= '${dateRange.start}T00:00:00' OR (dba_end_date >= '${dateRange.start}T00:00:00' AND dba_end_date <= '${dateRange.end}T23:59:59')`)
+    conditions.push(`(dba_start_date >= '${dateRange.start}T00:00:00' AND dba_start_date <= '${dateRange.end}T23:59:59') OR (dba_end_date >= '${dateRange.start}T00:00:00' AND dba_end_date <= '${dateRange.end}T23:59:59')`)
     if (sectorClause) conditions.push(sectorClause)
-    if (selectedNeighborhood) {
-      // neighborhood filtering is client-side via point-in-polygon
-    }
     return conditions.map((c, i) => i === 0 ? c : `(${c})`).join(' AND ')
   }, [dateRange, sectorClause])
 
-  // Date-only clause for aggregation queries (no sector/neighborhood filter)
-  const dateClause = useMemo(() => {
-    return `${SF_CITY_FILTER} AND dba_start_date >= '${dateRange.start}T00:00:00' AND dba_start_date <= '${dateRange.end}T23:59:59'`
-  }, [dateRange])
-
+  // Openings clause: businesses that opened in the date range
   const openingsClause = useMemo(() => {
     return `${SF_CITY_FILTER} AND dba_start_date >= '${dateRange.start}T00:00:00' AND dba_start_date <= '${dateRange.end}T23:59:59'`
   }, [dateRange])
@@ -176,11 +169,11 @@ export default function BusinessActivity() {
     {
       $select: 'naic_code_description, count(*) as cnt',
       $group: 'naic_code_description',
-      $where: dateClause,
+      $where: openingsClause,
       $order: 'cnt DESC',
       $limit: 30,
     },
-    [dateClause]
+    [openingsClause]
   )
 
   // Monthly openings
@@ -253,36 +246,18 @@ export default function BusinessActivity() {
     [priorClosuresClause]
   )
 
-  // Prior-year counts for YoY
-  const priorCountClause = useMemo(() => {
-    const start = new Date(dateRange.start)
-    const end = new Date(dateRange.end)
-    start.setFullYear(start.getFullYear() - 1)
-    end.setFullYear(end.getFullYear() - 1)
-    const fmt = (d: Date) => d.toISOString().split('T')[0]
-    return `${SF_CITY_FILTER} AND dba_start_date >= '${fmt(start)}T00:00:00' AND dba_start_date <= '${fmt(end)}T23:59:59'`
-  }, [dateRange])
-
+  // Prior-year counts for YoY (reuse prior-year clause definitions from above)
   const { data: priorOpeningsCountRows } = useDataset<{ count: string }>(
     'businessLocations',
-    { $select: 'count(*) as count', $where: priorCountClause },
-    [priorCountClause]
+    { $select: 'count(*) as count', $where: priorOpeningsClause },
+    [priorOpeningsClause]
   )
   const priorOpeningsCount = priorOpeningsCountRows[0] ? parseInt(priorOpeningsCountRows[0].count, 10) : null
 
-  const priorClosureCountClause = useMemo(() => {
-    const start = new Date(dateRange.start)
-    const end = new Date(dateRange.end)
-    start.setFullYear(start.getFullYear() - 1)
-    end.setFullYear(end.getFullYear() - 1)
-    const fmt = (d: Date) => d.toISOString().split('T')[0]
-    return `${SF_CITY_FILTER} AND dba_end_date >= '${fmt(start)}T00:00:00' AND dba_end_date <= '${fmt(end)}T23:59:59'`
-  }, [dateRange])
-
   const { data: priorClosuresCountRows } = useDataset<{ count: string }>(
     'businessLocations',
-    { $select: 'count(*) as count', $where: priorClosureCountClause },
-    [priorClosureCountClause]
+    { $select: 'count(*) as count', $where: priorClosuresClause },
+    [priorClosuresClause]
   )
   const priorClosuresCount = priorClosuresCountRows[0] ? parseInt(priorClosuresCountRows[0].count, 10) : null
 
