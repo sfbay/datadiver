@@ -42,7 +42,9 @@ export default function IncidentDetailPanel() {
   const [detail, setDetail] = useState<IncidentDetail | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
-  const { fireIncident, isLoading: fireLoading } = useFireIncidentCrossRef(selectedIncident)
+  // Only cross-ref fire incidents — avoids wasted API calls for EMS/transport clicks
+  const isFireCall = detail?.callTypeGroup === 'Fire'
+  const { fireIncident, isLoading: fireLoading } = useFireIncidentCrossRef(isFireCall ? selectedIncident : null)
 
   // Fetch full record on selection
   useEffect(() => {
@@ -238,6 +240,12 @@ export default function IncidentDetailPanel() {
                   <div className="flex-1 h-[1px] bg-slate-200 dark:bg-white/[0.08]" />
                 </div>
                 <div className="space-y-1.5 text-[10px]">
+                  {fireIncident.primary_situation && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-500 dark:text-slate-400">Situation</span>
+                      <span className="font-mono text-slate-800 dark:text-white text-right max-w-[55%]">{fireIncident.primary_situation}</span>
+                    </div>
+                  )}
                   {fireIncident.number_of_alarms > 0 && (
                     <div className="flex justify-between">
                       <span className="text-slate-500 dark:text-slate-400">Alarms</span>

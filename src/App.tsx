@@ -11,6 +11,7 @@ import CrimeIncidents from '@/views/CrimeIncidents/CrimeIncidents'
 import ParkingCitations from '@/views/ParkingCitations/ParkingCitations'
 import TrafficSafety from '@/views/TrafficSafety/TrafficSafety'
 import BusinessActivity from '@/views/BusinessActivity/BusinessActivity'
+import CampaignFinance from '@/views/CampaignFinance/CampaignFinance'
 
 export default function App() {
   const isDarkMode = useAppStore((s) => s.isDarkMode)
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="/parking-citations" element={<ParkingCitations />} />
           <Route path="/traffic-safety" element={<TrafficSafety />} />
           <Route path="/business-activity" element={<BusinessActivity />} />
+          <Route path="/campaign-finance" element={<CampaignFinance />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppShell>

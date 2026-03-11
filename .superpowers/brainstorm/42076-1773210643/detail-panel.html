@@ -1,0 +1,107 @@
+<h2>Detail Panel: Fire Incident Enrichment</h2>
+<p class="subtitle">When a user clicks a fire dispatch point, the panel cross-references the Fire Incidents dataset to show outcome data below the existing response timeline.</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Inline Expansion</h3>
+      <p>Fire outcome data appears as a new section <strong>below</strong> the existing response timeline in the same panel. Collapsible sections: "Fire Outcome", "Cause & Origin", "Detection Systems".</p>
+      <div class="mockup" style="margin-top: 12px;">
+        <div class="mockup-header">IncidentDetailPanel — expanded</div>
+        <div class="mockup-body" style="font-family: monospace; font-size: 12px; line-height: 1.8; color: #cbd5e1; background: #0f172a; padding: 16px;">
+          <div style="color: #f59e0b; font-weight: bold; margin-bottom: 4px;">Incident #241089234</div>
+          <div style="color: #94a3b8;">Structure Fire &middot; Priority A</div>
+          <div style="border-left: 2px solid #334155; padding-left: 12px; margin: 12px 0;">
+            <div style="color: #60a5fa;">Received &rarr; 14:23:01</div>
+            <div style="color: #60a5fa;">On Scene &rarr; 14:28:44 <span style="color: #f59e0b;">(5m 43s)</span></div>
+            <div style="color: #475569;">Transport &rarr; &mdash;</div>
+          </div>
+          <div style="border-top: 1px solid #334155; padding-top: 12px; margin-top: 12px;">
+            <div style="color: #ef4444; font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Fire Outcome</div>
+            <div style="margin-top: 8px;">
+              <span style="color: #94a3b8;">Alarms:</span> <span style="color: #f8fafc;">2</span> &nbsp;
+              <span style="color: #94a3b8;">Injuries:</span> <span style="color: #ef4444;">1 civilian</span> &nbsp;
+              <span style="color: #94a3b8;">Fatalities:</span> <span style="color: #f8fafc;">0</span>
+            </div>
+            <div style="margin-top: 4px;">
+              <span style="color: #94a3b8;">Est. Loss:</span> <span style="color: #f8fafc;">$125,000</span>
+            </div>
+            <div style="margin-top: 4px;">
+              <span style="color: #94a3b8;">Spread:</span> <span style="color: #f8fafc;">Confined to room of origin</span>
+            </div>
+          </div>
+          <div style="border-top: 1px solid #1e293b; padding-top: 12px; margin-top: 12px;">
+            <div style="color: #f59e0b; font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Cause & Origin</div>
+            <div style="margin-top: 8px;">
+              <span style="color: #94a3b8;">Cause:</span> <span style="color: #f8fafc;">Unintentional &mdash; cooking</span>
+            </div>
+            <div style="margin-top: 4px;">
+              <span style="color: #94a3b8;">Origin:</span> <span style="color: #f8fafc;">Kitchen</span>
+            </div>
+            <div style="margin-top: 4px;">
+              <span style="color: #94a3b8;">Property:</span> <span style="color: #f8fafc;">Multifamily dwelling</span>
+            </div>
+          </div>
+          <div style="border-top: 1px solid #1e293b; padding-top: 12px; margin-top: 12px;">
+            <div style="color: #60a5fa; font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Detection & Protection</div>
+            <div style="margin-top: 8px;">
+              <span style="color: #94a3b8;">Detectors:</span> <span style="color: #10b981;">Present, alerted occupants</span>
+            </div>
+            <div style="margin-top: 4px;">
+              <span style="color: #94a3b8;">Sprinklers:</span> <span style="color: #ef4444;">Not present</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Tabbed Panel</h3>
+      <p>The detail panel gets two tabs: <strong>"Response"</strong> (existing timeline) and <strong>"Fire Report"</strong> (outcome, cause, detection). User switches between them.</p>
+      <div class="mockup" style="margin-top: 12px;">
+        <div class="mockup-header">IncidentDetailPanel — tabbed</div>
+        <div class="mockup-body" style="font-family: monospace; font-size: 12px; color: #cbd5e1; background: #0f172a; padding: 16px;">
+          <div style="color: #f59e0b; font-weight: bold; margin-bottom: 8px;">Incident #241089234</div>
+          <div style="display: flex; gap: 0; margin-bottom: 12px;">
+            <div style="padding: 6px 16px; background: #1e293b; color: #94a3b8; border-radius: 6px 0 0 0; font-size: 11px;">Response</div>
+            <div style="padding: 6px 16px; background: #334155; color: #f8fafc; border-radius: 0 6px 0 0; font-size: 11px; border-bottom: 2px solid #ef4444;">Fire Report</div>
+          </div>
+          <div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #1e293b;">
+              <span style="color: #94a3b8;">Severity</span>
+              <span style="color: #ef4444; font-weight: bold;">2-Alarm &middot; 1 Injury</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #1e293b;">
+              <span style="color: #94a3b8;">Property Loss</span>
+              <span style="color: #f8fafc;">$125,000</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #1e293b;">
+              <span style="color: #94a3b8;">Cause</span>
+              <span style="color: #f8fafc;">Cooking — unintentional</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #1e293b;">
+              <span style="color: #94a3b8;">Origin</span>
+              <span style="color: #f8fafc;">Kitchen, multifamily</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #1e293b;">
+              <span style="color: #94a3b8;">Spread</span>
+              <span style="color: #f8fafc;">Confined to room</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #1e293b;">
+              <span style="color: #94a3b8;">Detectors</span>
+              <span style="color: #10b981;">Present, effective</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+              <span style="color: #94a3b8;">Sprinklers</span>
+              <span style="color: #ef4444;">Not present</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

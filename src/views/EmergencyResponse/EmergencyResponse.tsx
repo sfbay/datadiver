@@ -506,10 +506,13 @@ export default function EmergencyResponse() {
 
     const tryAttachFire = () => {
       try {
-        mapInstance.on('click', 'fire-severity-points', handleFireClick)
-        mapInstance.on('click', 'fire-battery-points', handleFireClick)
-        return true
-      } catch { return false }
+        if (mapInstance.getLayer('fire-severity-points')) {
+          mapInstance.on('click', 'fire-severity-points', handleFireClick)
+          mapInstance.on('click', 'fire-battery-points', handleFireClick)
+          return true
+        }
+      } catch { /* layers not ready */ }
+      return false
     }
 
     if (!tryAttachFire()) {
