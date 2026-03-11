@@ -61,6 +61,13 @@ const NAV_ITEMS = [
     description: 'Vision Zero crash & speed analysis',
     accentColor: '#dc2626',
   },
+  {
+    path: '/business-activity',
+    label: 'Business Activity',
+    shortLabel: 'BA',
+    description: 'Business opening & closing trends',
+    accentColor: '#10b981',
+  },
 ] as const
 
 export default function AppShell({ children }: { children: ReactNode }) {

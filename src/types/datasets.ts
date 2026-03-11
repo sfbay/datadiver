@@ -453,7 +453,7 @@ export interface BusinessMonthlyRow {
 }
 
 /** View state for URL serialization */
-export type ViewId = 'home' | 'emergency-response' | 'parking-revenue' | 'dispatch-911' | '311-cases' | 'crime-incidents' | 'parking-citations' | 'traffic-safety'
+export type ViewId = 'home' | 'emergency-response' | 'parking-revenue' | 'dispatch-911' | '311-cases' | 'crime-incidents' | 'parking-citations' | 'traffic-safety' | 'business-activity'
 
 export interface ViewState {
   view: ViewId

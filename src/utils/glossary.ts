@@ -60,6 +60,20 @@ const GLOSSARY: Record<string, string> = {
     'Shows how volume changed over the selected date range. Faded bars behind the main bars show the same period one year ago for comparison.',
   'anomaly-map':
     'Neighborhoods colored by how unusual their current activity is compared to their own 12-month baseline. Red = unusually high, blue = unusually low.',
+
+  // Business Activity
+  'net-change':
+    'New businesses opened minus businesses closed in the selected period. Positive means the city gained more businesses than it lost.',
+  'openings':
+    'Businesses that registered a new DBA (doing business as) start date in the selected period.',
+  'closures':
+    'Businesses whose DBA end date falls within the selected period. This indicates the business registration was terminated.',
+  'active-businesses':
+    'Total businesses currently registered with no end date — still operating as of the latest data update.',
+  'top-sector':
+    'The NAICS industry category with the most new business openings in the selected period.',
+  'dui-crashes':
+    'Crashes where the primary collision factor was driving under the influence of alcohol and/or drugs (California Vehicle Code 23152/23153).',
 }
 
 export default GLOSSARY

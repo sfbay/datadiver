@@ -114,6 +114,22 @@ const VISUALIZATIONS = [
     accentColor: '#dc2626',
     number: '07',
   },
+  {
+    path: '/business-activity',
+    title: 'Business Activity',
+    subtitle: 'Opening & Closing Trends',
+    description:
+      'Where are businesses opening and closing? Track neighborhood economic vitality, sector shifts, and net formation trends across San Francisco.',
+    stats: [
+      { label: 'Business records', value: '~356K' },
+      { label: 'Active businesses', value: '~164K' },
+      { label: 'Industry sectors', value: '15+' },
+    ],
+    gradient: 'from-emerald-600/20 via-emerald-500/10 to-transparent',
+    borderGlow: 'hover:shadow-[0_0_40px_rgba(16,185,129,0.08)]',
+    accentColor: '#10b981',
+    number: '08',
+  },
 ] as const
 
 function DataMotif() {
