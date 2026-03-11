@@ -74,16 +74,36 @@ export function useCampaignDetail(
 
     const { start, end } = dateRange
     const dateWhere = `calculated_date >= '${start}T00:00:00' AND calculated_date <= '${end}T23:59:59'`
-    // Use filer_nid for stable grouping (filer_name can vary across filings)
-    const filerWhere = `filer_nid='${entity.filerNid}'`
+    const filerNid = escapeSoQL(entity.filerNid)
+    const filerWhere = `filer_nid='${filerNid}'`
 
-    // Determine IE match field based on entity type
+    // Build IE match clause — for measures, do a secondary lookup if ballotNumber not provided
     const isMeasure = entity.filerType === 'Primarily Formed Measure'
-    const ieMatchWhere = isMeasure && entity.ballotNumber
-      ? `ballot_number='${escapeSoQL(entity.ballotNumber)}'`
-      : entity.candidateLastName
-        ? `candidate_last_name='${escapeSoQL(entity.candidateLastName)}'`
-        : null
+
+    async function resolveIeMatchWhere(): Promise<string | null> {
+      if (isMeasure) {
+        // Use provided ballotNumber, or look it up from IE records
+        const bn = entity!.ballotNumber
+        if (bn) return `ballot_number='${escapeSoQL(bn)}'`
+        // Secondary lookup: find ballot_number from this filer's IE-related records
+        const rows = await fetchDataset<{ ballot_number: string }>('campaignFinance', {
+          $select: 'ballot_number',
+          $where: `${filerWhere} AND ballot_number IS NOT NULL AND ${dateWhere}`,
+          $limit: 1,
+        })
+        if (rows.length > 0 && rows[0].ballot_number) {
+          return `ballot_number='${escapeSoQL(rows[0].ballot_number)}'`
+        }
+        // Fallback: try parsing from filer name (e.g., "Yes on D" → "D")
+        const match = entity!.filerName.match(/\b(?:Yes|No|Support|Oppose)\s+(?:on\s+)?(?:Prop(?:osition)?\s+)?([A-Z])\b/i)
+        if (match) return `ballot_number='${match[1].toUpperCase()}'`
+        return null
+      }
+      if (entity!.candidateLastName) {
+        return `candidate_last_name='${escapeSoQL(entity!.candidateLastName)}'`
+      }
+      return null
+    }
 
     const queries: Promise<unknown>[] = [
       // 0: Source breakdown
@@ -125,33 +145,14 @@ export function useCampaignDetail(
       }),
     ]
 
-    // 5-6: IE support/oppose (only if we have a match field)
-    if (ieMatchWhere) {
-      queries.push(
-        fetchDataset<CampaignIERow>('campaignFinance', {
-          $select: 'filer_name, SUM(calculated_amount) as total',
-          $where: `(form_type='F496' OR form_type='F496P3' OR form_type='F465P3') AND support_oppose_code='S' AND ${ieMatchWhere} AND ${dateWhere}`,
-          $group: 'filer_name',
-          $order: 'total DESC',
-          $limit: 10,
-        }),
-        fetchDataset<CampaignIERow>('campaignFinance', {
-          $select: 'filer_name, SUM(calculated_amount) as total',
-          $where: `(form_type='F496' OR form_type='F496P3' OR form_type='F465P3') AND support_oppose_code='O' AND ${ieMatchWhere} AND ${dateWhere}`,
-          $group: 'filer_name',
-          $order: 'total DESC',
-          $limit: 10,
-        }),
-      )
-    }
-
-    Promise.all(queries)
-      .then((results) => {
+    // Fire base queries + resolve IE match in parallel, then fire IE queries
+    Promise.all([Promise.all(queries), resolveIeMatchWhere()])
+      .then(async ([baseResults, ieMatchWhere]) => {
         if (id !== abortRef.current) return
 
-        const [sources, donors, timeline, spending, geo, ...ieResults] = results as [
+        const [sources, donors, timeline, spending, geo] = baseResults as [
           CampaignSourceAggRow[], CampaignDonorRow[], CampaignTimelineRow[],
-          CampaignSpendRow[], CampaignDonorGeoRow[], ...CampaignIERow[][]
+          CampaignSpendRow[], CampaignDonorGeoRow[]
         ]
 
         setSourceBreakdown(sources)
@@ -160,13 +161,33 @@ export function useCampaignDetail(
         setSpendingCategories(categorizeSpending(spending))
         setEntityDonorGeo(geo)
 
-        if (ieResults.length >= 2) {
-          const supportRows = ieResults[0] as CampaignIERow[]
-          const opposeRows = ieResults[1] as CampaignIERow[]
-          setIeSupport(supportRows)
-          setIeOppose(opposeRows)
-          setIeSupportTotal(supportRows.reduce((sum, r) => sum + (parseFloat(r.total) || 0), 0))
-          setIeOpposeTotal(opposeRows.reduce((sum, r) => sum + (parseFloat(r.total) || 0), 0))
+        // Fire IE queries now that we have the match clause
+        if (ieMatchWhere) {
+          try {
+            const [supportRows, opposeRows] = await Promise.all([
+              fetchDataset<CampaignIERow>('campaignFinance', {
+                $select: 'filer_name, SUM(calculated_amount) as total',
+                $where: `(form_type='F496' OR form_type='F496P3' OR form_type='F465P3') AND support_oppose_code='S' AND ${ieMatchWhere} AND ${dateWhere}`,
+                $group: 'filer_name',
+                $order: 'total DESC',
+                $limit: 10,
+              }),
+              fetchDataset<CampaignIERow>('campaignFinance', {
+                $select: 'filer_name, SUM(calculated_amount) as total',
+                $where: `(form_type='F496' OR form_type='F496P3' OR form_type='F465P3') AND support_oppose_code='O' AND ${ieMatchWhere} AND ${dateWhere}`,
+                $group: 'filer_name',
+                $order: 'total DESC',
+                $limit: 10,
+              }),
+            ])
+            if (id !== abortRef.current) return
+            setIeSupport(supportRows)
+            setIeOppose(opposeRows)
+            setIeSupportTotal(supportRows.reduce((sum, r) => sum + (parseFloat(r.total) || 0), 0))
+            setIeOpposeTotal(opposeRows.reduce((sum, r) => sum + (parseFloat(r.total) || 0), 0))
+          } catch {
+            // IE lookup failure is non-critical
+          }
         } else {
           setIeSupport([])
           setIeOppose([])
@@ -181,7 +202,7 @@ export function useCampaignDetail(
         setError(err.message || 'Failed to load entity detail')
         setIsLoading(false)
       })
-  }, [entity?.filerNid, dateRange.start, dateRange.end])
+  }, [entity?.filerNid, entity?.filerType, entity?.candidateLastName, entity?.ballotNumber, dateRange.start, dateRange.end])
 
   return {
     sourceBreakdown, topDonors, ieSupport, ieOppose,

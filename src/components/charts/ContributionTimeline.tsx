@@ -75,14 +75,14 @@ export default function ContributionTimeline({ data, width = 400, height = 160, 
     const xAxis = d3.axisBottom(x)
       .ticks(Math.min(data.length, 6))
       .tickFormat(d => d3.timeFormat('%b %y')(d as Date))
-    g.append('g')
+    const xAxisG = g.append('g')
       .attr('transform', `translate(0,${innerH})`)
       .call(xAxis)
-      .selectAll('text')
-      .attr('fill', isDark ? '#64748b' : '#94a3b8')
+    xAxisG.selectAll('text')
+      .attr('fill', isDark ? '#94a3b8' : '#64748b')
       .attr('font-size', '8px')
       .attr('font-family', "'JetBrains Mono', monospace")
-    g.selectAll('.domain, .tick line').attr('stroke', isDark ? '#1e293b' : '#e2e8f0')
+    xAxisG.selectAll('.domain, .tick line').attr('stroke', isDark ? '#1e293b' : '#e2e8f0')
 
     // Y axis
     const yAxis = d3.axisLeft(y)
@@ -93,13 +93,13 @@ export default function ContributionTimeline({ data, width = 400, height = 160, 
         if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`
         return `$${v}`
       })
-    g.append('g')
+    const yAxisG = g.append('g')
       .call(yAxis)
-      .selectAll('text')
-      .attr('fill', isDark ? '#64748b' : '#94a3b8')
+    yAxisG.selectAll('text')
+      .attr('fill', isDark ? '#94a3b8' : '#64748b')
       .attr('font-size', '8px')
       .attr('font-family', "'JetBrains Mono', monospace")
-    g.selectAll('.domain, .tick line').attr('stroke', isDark ? '#1e293b' : '#e2e8f0')
+    yAxisG.selectAll('.domain, .tick line').attr('stroke', isDark ? '#1e293b' : '#e2e8f0')
   }, [data, width, height, accentColor, isDark])
 
   return <svg ref={svgRef} width={width} height={height} />

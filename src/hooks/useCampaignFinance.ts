@@ -53,6 +53,12 @@ export function useCampaignFinance(
     const id = ++abortRef.current
     setIsLoading(true)
     setError(null)
+    setStats(null)
+    setTopRecipients([])
+    setTimeline([])
+    setFundingSources([])
+    setDonorGeo([])
+    setYoY({ totalRaisedDelta: null, smallDonorDelta: null })
 
     const { start, end } = dateRange
     const dateWhere = `calculated_date >= '${start}T00:00:00' AND calculated_date <= '${end}T23:59:59'`

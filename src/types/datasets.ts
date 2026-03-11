@@ -547,7 +547,7 @@ export interface CampaignDonorGeoRow {
 export interface CampaignSourceAggRow {
   entity_code: string
   total: string
-  cnt: string
+  cnt?: string
 }
 
 export interface CampaignTimelineRow {
