@@ -60,6 +60,13 @@ const GLOSSARY: Record<string, string> = {
     'Shows how volume changed over the selected date range. Faded bars behind the main bars show the same period one year ago for comparison.',
   'anomaly-map':
     'Neighborhoods colored by how unusual their current activity is compared to their own 12-month baseline. Red = unusually high, blue = unusually low.',
+
+  // Campaign Finance
+  'cf-total-raised': 'Total monetary contributions received (Form A filings). Includes individual donors, committees, and self-funding.',
+  'cf-avg-contribution': 'Average contribution size. Lower averages suggest broader grassroots support; higher averages indicate reliance on large donors.',
+  'cf-unique-donors': 'Distinct contributor names in the filing period. Approximation — same person may appear with slightly different name spellings.',
+  'cf-small-donor-pct': 'Percentage of contributions under $100. A measure of grassroots funding strength.',
+  'cf-support-oppose': 'Support/oppose classification from independent expenditure (IE) filings. Committees must disclose whether spending supports or opposes a candidate or measure.',
 }
 
 export default GLOSSARY

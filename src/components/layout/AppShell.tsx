@@ -61,6 +61,13 @@ const NAV_ITEMS = [
     description: 'Vision Zero crash & speed analysis',
     accentColor: '#dc2626',
   },
+  {
+    path: '/campaign-finance',
+    label: 'Campaign Finance',
+    shortLabel: 'CF',
+    description: 'Campaign contributions & spending',
+    accentColor: '#14b8a6',
+  },
 ] as const
 
 export default function AppShell({ children }: { children: ReactNode }) {

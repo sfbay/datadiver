@@ -162,6 +162,16 @@ export const DATASETS: Record<string, DatasetConfig> = {
     hasGeo: true,
     cacheTTL: 3_600_000,
   },
+  campaignFinance: {
+    id: 'pitq-e56w',
+    name: 'Campaign Finance',
+    description: 'Campaign contributions, expenditures, and independent expenditure disclosures',
+    endpoint: `${BASE_URL}/pitq-e56w.json`,
+    category: 'other',
+    hasGeo: false,
+    defaultSort: 'calculated_date DESC',
+    dateField: 'calculated_date',
+  },
 } as const
 
 export type DatasetKey = keyof typeof DATASETS
