@@ -260,7 +260,7 @@ export default function Cases311() {
         color: '#10b981',
         defaultExpanded: true,
         render: () => (
-          <ResolutionHistogram data={histogramData} width={260} height={100} />
+          <ResolutionHistogram data={histogramData} width={320} height={100} />
         ),
       })
     }
@@ -275,7 +275,7 @@ export default function Cases311() {
           <TrendChart
             current={comparison.currentTrend}
             comparison={comparison.comparisonTrend.length > 0 ? comparison.comparisonTrend : undefined}
-            width={260}
+            width={320}
             height={110}
           />
         ),

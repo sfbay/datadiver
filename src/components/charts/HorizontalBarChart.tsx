@@ -33,7 +33,7 @@ export default function HorizontalBarChart({
     svg.selectAll('*').remove()
 
     const sliced = data.slice(0, maxBars)
-    const margin = { top: 4, right: 40, bottom: 4, left: 90 }
+    const margin = { top: 4, right: 40, bottom: 4, left: 110 }
     const w = width - margin.left - margin.right
     const h = height - margin.top - margin.bottom
     const barHeight = Math.min(h / sliced.length - 2, 18)

@@ -426,7 +426,7 @@ export default function EmergencyResponse() {
         shortLabel: 'Distribution',
         color: '#f59e0b',
         defaultExpanded: true,
-        render: () => <ResponseHistogram data={histogramData} width={260} height={100} />,
+        render: () => <ResponseHistogram data={histogramData} width={320} height={100} />,
       })
     }
 
@@ -441,7 +441,7 @@ export default function EmergencyResponse() {
           <TrendChart
             current={comparison.currentTrend}
             comparison={comparison.comparisonTrend.length > 0 ? comparison.comparisonTrend : undefined}
-            width={260}
+            width={320}
             height={110}
           />
         ),
@@ -604,7 +604,7 @@ export default function EmergencyResponse() {
             {/* Histogram + Trend — bottom left */}
             {isLoading && (
               <div className="absolute bottom-6 left-5 z-10">
-                <SkeletonChart width={260} height={100} />
+                <SkeletonChart width={320} height={100} />
               </div>
             )}
             {!isLoading && chartTiles.length > 0 && (

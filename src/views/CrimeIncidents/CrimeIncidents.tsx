@@ -338,7 +338,7 @@ export default function CrimeIncidents() {
         render: () => (
           <HorizontalBarChart
             data={resolutionBarData}
-            width={260}
+            width={320}
             height={resolutionBarData.length * 20 + 8}
             maxBars={8}
             valueFormatter={(v) => v.toLocaleString()}
@@ -357,7 +357,7 @@ export default function CrimeIncidents() {
           <TrendChart
             current={comparison.currentTrend}
             comparison={comparison.comparisonTrend.length > 0 ? comparison.comparisonTrend : undefined}
-            width={260}
+            width={320}
             height={110}
           />
         ),

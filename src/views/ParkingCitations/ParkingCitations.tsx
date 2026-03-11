@@ -291,7 +291,7 @@ export default function ParkingCitations() {
         color: '#f97316',
         defaultExpanded: true,
         render: () => (
-          <FineHistogram data={histogramData} width={260} height={100} />
+          <FineHistogram data={histogramData} width={320} height={100} />
         ),
       })
     }
@@ -315,7 +315,7 @@ export default function ParkingCitations() {
             </div>
             <HorizontalBarChart
               data={topViolationBars}
-              width={260}
+              width={320}
               height={160}
               maxBars={8}
               valueFormatter={sortByRevenue ? (v) => `$${Math.round(v).toLocaleString()}` : (v) => v.toLocaleString()}
@@ -336,7 +336,7 @@ export default function ParkingCitations() {
           <TrendChart
             current={comparison.currentTrend}
             comparison={comparison.comparisonTrend.length > 0 ? comparison.comparisonTrend : undefined}
-            width={260}
+            width={320}
             height={110}
           />
         ),

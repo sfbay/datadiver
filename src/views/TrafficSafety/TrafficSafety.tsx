@@ -317,7 +317,7 @@ export default function TrafficSafety() {
         shortLabel: 'Severity',
         color: '#ef4444',
         defaultExpanded: true,
-        render: () => <SeverityBreakdown data={severityData} width={260} height={110} />,
+        render: () => <SeverityBreakdown data={severityData} width={320} height={110} />,
       })
     }
     if (modeBars.length > 0) {
@@ -327,7 +327,7 @@ export default function TrafficSafety() {
         shortLabel: 'Modes',
         color: '#64748b',
         defaultExpanded: true,
-        render: () => <HorizontalBarChart data={modeBars} width={260} height={120} maxBars={6} />,
+        render: () => <HorizontalBarChart data={modeBars} width={320} height={120} maxBars={6} />,
       })
     }
     if (comparisonPeriod !== null && comparison.currentTrend.length > 0) {
@@ -341,7 +341,7 @@ export default function TrafficSafety() {
           <TrendChart
             current={comparison.currentTrend}
             comparison={comparison.comparisonTrend.length > 0 ? comparison.comparisonTrend : undefined}
-            width={260}
+            width={320}
             height={110}
           />
         ),
