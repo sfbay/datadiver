@@ -131,10 +131,10 @@ export default function CardTray({ viewId, cards, className = '' }: CardTrayProp
   const hasExpanded = expandedCards.length > 0
 
   return (
-    <div ref={trayRef} className={`absolute top-0 left-0 right-0 z-10 flex flex-col ${className}`}>
+    <div ref={trayRef} className={`absolute top-0 left-0 right-0 bottom-0 z-10 flex flex-col overflow-hidden pointer-events-none ${className}`}>
       {/* Minimized pills — flush top bar */}
       {(minimizedCards.length > 0 || hiddenCards.length > 0 || hasExpanded) && (
-        <div className="flex flex-wrap items-center gap-1.5 px-4 py-2">
+        <div className="flex flex-wrap items-center gap-1.5 px-4 py-2 pointer-events-auto">
           {minimizedCards.map((card) => {
             const trendArrow = card.yoyDelta != null
               ? card.yoyDelta > 0 ? '↑' : card.yoyDelta < 0 ? '↓' : '→'
@@ -244,7 +244,7 @@ export default function CardTray({ viewId, cards, className = '' }: CardTrayProp
 
       {/* Expanded stat cards — below the pill bar */}
       {hasExpanded && (
-        <div className="flex gap-2.5 flex-wrap px-5 pb-2">
+        <div className="flex gap-2.5 flex-wrap px-5 pb-2 pointer-events-auto">
           {expandedCards.map((card) => (
             <div key={card.id} className="group/card relative">
               <StatCard

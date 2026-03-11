@@ -117,10 +117,10 @@ export default function ChartTray({ viewId, tiles, className = '' }: ChartTrayPr
   const hasExpanded = expandedTiles.length > 0
 
   return (
-    <div ref={trayRef} className={`absolute bottom-0 left-0 right-0 z-10 flex flex-col-reverse ${className}`}>
+    <div ref={trayRef} className={`absolute bottom-0 left-0 right-0 top-0 z-10 flex flex-col-reverse overflow-hidden pointer-events-none ${className}`}>
       {/* Minimized pills — flush bottom bar */}
       {(minimizedTiles.length > 0 || hiddenTiles.length > 0 || hasExpanded) && (
-        <div className="flex flex-wrap items-center gap-1.5 px-4 py-2">
+        <div className="flex flex-wrap items-center gap-1.5 px-4 py-2 pointer-events-auto">
           {minimizedTiles.map((tile) => (
             <button
               key={tile.id}
@@ -208,7 +208,7 @@ export default function ChartTray({ viewId, tiles, className = '' }: ChartTrayPr
 
       {/* Expanded chart tiles — above the pill bar */}
       {hasExpanded && (
-        <div className="flex gap-2.5 flex-wrap px-5 pb-1">
+        <div className="flex gap-2.5 flex-wrap px-5 pb-1 pointer-events-auto">
           {expandedTiles.map((tile) => (
             <div key={tile.id} className="group/tile relative">
               <div className="glass-card rounded-xl p-3">

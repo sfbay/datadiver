@@ -20,8 +20,9 @@ export function useCompactViewport(
     const el = elRef.current
     if (!el) return
 
-    // Observe the offsetParent (map container) not the tray itself
-    const container = el.offsetParent as HTMLElement | null
+    // Observe the element itself (spans full map container via inset-0)
+    // Falls back to offsetParent if the element doesn't have explicit dimensions
+    const container = (el.offsetHeight > 0 ? el : el.offsetParent as HTMLElement | null)
     if (!container) return
 
     const check = () => {
