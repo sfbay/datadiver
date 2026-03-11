@@ -437,26 +437,26 @@ export default function EmergencyResponse() {
     const casualties = []
     if (injuries > 0) casualties.push(`${injuries} injured`)
     if (fatalities > 0) casualties.push(`${fatalities} fatal`)
-    return `<div class="font-mono text-[10px]">
-      <div class="font-semibold text-red-400 mb-1">Fire with Casualties</div>
-      <div>${props.situation}</div>
-      <div class="text-red-300">${casualties.join(', ')}</div>
-      ${loss > 0 ? `<div>Loss: $${loss.toLocaleString()}</div>` : ''}
-      <div class="text-slate-400 mt-1">${props.address}</div>
-      <div class="text-slate-500">${props.date ? new Date(String(props.date)).toLocaleDateString() : ''}</div>
-    </div>`
+    return `
+      <div style="font-weight:600;color:#f87171;margin-bottom:4px">Fire with Casualties</div>
+      <div style="color:#e2e8f0">${props.situation}</div>
+      <div style="color:#fca5a5">${casualties.join(', ')}</div>
+      ${loss > 0 ? `<div style="color:#e2e8f0">Loss: $${loss.toLocaleString()}</div>` : ''}
+      <div style="color:#94a3b8;margin-top:4px">${props.address}</div>
+      <div style="color:#64748b">${props.date ? new Date(String(props.date)).toLocaleDateString() : ''}</div>
+    `
   })
 
   // Battery fire tooltip
   useMapTooltip(mapInstance, 'fire-battery-points', (props) => {
-    return `<div class="font-mono text-[10px]">
-      <div class="font-semibold text-amber-400 mb-1">Battery Fire</div>
-      <div>${props.factor || props.situation}</div>
-      ${props.origin ? `<div>Origin: ${props.origin}</div>` : ''}
-      ${props.property ? `<div>${props.property}</div>` : ''}
-      <div class="text-slate-400 mt-1">${props.address}</div>
-      <div class="text-slate-500">${props.date ? new Date(String(props.date)).toLocaleDateString() : ''}</div>
-    </div>`
+    return `
+      <div style="font-weight:600;color:#fbbf24;margin-bottom:4px">Battery Fire</div>
+      <div style="color:#e2e8f0">${props.factor || props.situation}</div>
+      ${props.origin ? `<div style="color:#e2e8f0">Origin: ${props.origin}</div>` : ''}
+      ${props.property ? `<div style="color:#94a3b8">${props.property}</div>` : ''}
+      <div style="color:#94a3b8;margin-top:4px">${props.address}</div>
+      <div style="color:#64748b">${props.date ? new Date(String(props.date)).toLocaleDateString() : ''}</div>
+    `
   })
 
   // Click handler on circle points for incident detail
@@ -506,10 +506,13 @@ export default function EmergencyResponse() {
 
     const tryAttachFire = () => {
       try {
-        mapInstance.on('click', 'fire-severity-points', handleFireClick)
-        mapInstance.on('click', 'fire-battery-points', handleFireClick)
-        return true
-      } catch { return false }
+        if (mapInstance.getLayer('fire-severity-points')) {
+          mapInstance.on('click', 'fire-severity-points', handleFireClick)
+          mapInstance.on('click', 'fire-battery-points', handleFireClick)
+          return true
+        }
+      } catch { /* layers not ready */ }
+      return false
     }
 
     if (!tryAttachFire()) {

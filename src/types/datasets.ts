@@ -505,8 +505,91 @@ export interface BusinessMonthlyRow {
   cnt: string
 }
 
+// --- Campaign Finance types ---
+
+export interface CampaignTransaction {
+  filing_id_number: string
+  filer_name: string
+  filer_type: string
+  filer_nid: string
+  form_type: string
+  calculated_amount: string
+  calculated_date: string
+  transaction_last_name?: string
+  transaction_city?: string
+  transaction_state?: string
+  transaction_zip?: string
+  transaction_self?: boolean
+  transaction_description?: string
+  entity_code?: string
+  support_oppose_code?: string
+  candidate_last_name?: string
+  office_description?: string
+  district_number?: string
+  ballot_name?: string
+  ballot_number?: string
+  ballot_jurisdiction?: string
+}
+
+export interface CampaignFilerAggRow {
+  filer_name: string
+  filer_type: string
+  filer_nid: string
+  total: string
+}
+
+export interface CampaignDonorGeoRow {
+  transaction_zip: string
+  total: string
+  cnt: string
+}
+
+export interface CampaignSourceAggRow {
+  entity_code: string
+  total: string
+  cnt: string
+}
+
+export interface CampaignTimelineRow {
+  period: string
+  total: string
+}
+
+export interface CampaignDonorRow {
+  transaction_last_name: string
+  total: string
+}
+
+export interface CampaignIERow {
+  filer_name: string
+  total: string
+}
+
+export interface CampaignSpendRow {
+  transaction_description: string
+  total: string
+}
+
+export interface CampaignStatTotals {
+  total: string
+  avg_amt: string
+}
+
+export interface CampaignCountRow {
+  cnt: string
+}
+
+export interface CampaignSelfFundRow {
+  total: string
+}
+
+export interface CampaignUniqueDonorRow {
+  transaction_last_name: string
+  cnt: string
+}
+
 /** View state for URL serialization */
-export type ViewId = 'home' | 'emergency-response' | 'parking-revenue' | 'dispatch-911' | '311-cases' | 'crime-incidents' | 'parking-citations' | 'traffic-safety' | 'business-activity'
+export type ViewId = 'home' | 'emergency-response' | 'parking-revenue' | 'dispatch-911' | '311-cases' | 'crime-incidents' | 'parking-citations' | 'traffic-safety' | 'campaign-finance'
 
 export interface ViewState {
   view: ViewId
