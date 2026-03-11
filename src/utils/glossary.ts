@@ -74,6 +74,16 @@ const GLOSSARY: Record<string, string> = {
     'The NAICS industry category with the most new business openings in the selected period.',
   'dui-crashes':
     'Crashes where the primary collision factor was driving under the influence of alcohol and/or drugs (California Vehicle Code 23152/23153).',
+
+  // Fire incidents
+  'fire-casualties':
+    'Total people injured or killed in fire incidents, including both civilians and fire personnel.',
+  'fire-property-loss':
+    'Estimated dollar value of property and contents destroyed or damaged by fire. Assessed by fire investigators on scene.',
+  'battery-fires':
+    'Fires caused by rechargeable batteries (primarily lithium-ion). Includes e-bike, e-scooter, and device charging fires. A growing trend in SF since 2020.',
+  'detection-rate':
+    'Percentage of fire incidents where smoke detectors were present in the building. Higher rates correlate with earlier detection and fewer casualties.',
 }
 
 export default GLOSSARY
