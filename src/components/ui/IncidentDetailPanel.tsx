@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import { fetchDataset } from '@/api/client'
 import type { FireEMSDispatch, IncidentDetail } from '@/types/datasets'
 import { parseDateTime, formatDate, formatDuration, diffMinutes } from '@/utils/time'
-import ShareLinkButton from '@/components/ui/ShareLinkButton'
 import { useFireIncidentCrossRef } from '@/hooks/useFireIncidentCrossRef'
+import DetailPanelShell from '@/components/ui/DetailPanelShell'
 
 function buildDetail(record: FireEMSDispatch): IncidentDetail {
   return {
@@ -41,7 +41,6 @@ export default function IncidentDetailPanel() {
   const { selectedIncident, setSelectedIncident } = useAppStore()
   const [detail, setDetail] = useState<IncidentDetail | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const panelRef = useRef<HTMLDivElement>(null)
   // Only cross-ref fire incidents — avoids wasted API calls for EMS/transport clicks
   const isFireCall = detail?.callTypeGroup === 'Fire'
   const { fireIncident, isLoading: fireLoading } = useFireIncidentCrossRef(isFireCall ? selectedIncident : null)
@@ -75,21 +74,7 @@ export default function IncidentDetailPanel() {
     return () => { cancelled = true }
   }, [selectedIncident])
 
-  // Close on outside click
-  useEffect(() => {
-    if (!selectedIncident) return
-    const handler = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        setSelectedIncident(null)
-      }
-    }
-    // Delay to avoid catching the click that opened the panel
-    const timer = setTimeout(() => document.addEventListener('mousedown', handler), 100)
-    return () => {
-      clearTimeout(timer)
-      document.removeEventListener('mousedown', handler)
-    }
-  }, [selectedIncident, setSelectedIncident])
+  const onClose = useCallback(() => setSelectedIncident(null), [setSelectedIncident])
 
   const buildShareUrl = useCallback(() => {
     const url = new URL(window.location.href)
@@ -97,33 +82,16 @@ export default function IncidentDetailPanel() {
     return url.toString()
   }, [selectedIncident])
 
-  if (!selectedIncident) return null
-
   return (
-    <div
-      ref={panelRef}
-      className="absolute top-5 right-5 z-30 rounded-xl p-4 w-72 max-h-[80vh] overflow-y-auto animate-in fade-in slide-in-from-right-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/[0.08] shadow-xl shadow-black/20"
+    <DetailPanelShell
+      open={!!selectedIncident}
+      onClose={onClose}
+      isLoading={isLoading}
+      spinnerClass="border-signal-amber"
+      buildShareUrl={buildShareUrl}
+      shareAccentClass="text-signal-amber"
     >
-      {/* Top-right actions */}
-      <div className="absolute top-2 right-2 flex items-center gap-0.5">
-        <ShareLinkButton buildUrl={buildShareUrl} accentClass="text-signal-amber" />
-        <button
-          onClick={() => setSelectedIncident(null)}
-          className="w-6 h-6 flex items-center justify-center rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-all"
-        >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M2 2l8 8M10 2l-8 8" />
-          </svg>
-        </button>
-      </div>
-
-      {isLoading && (
-        <div className="flex items-center justify-center py-8">
-          <div className="w-5 h-5 border-2 border-signal-amber border-t-transparent rounded-full animate-spin" />
-        </div>
-      )}
-
-      {detail && !isLoading && (
+      {detail && (
         <>
           {/* Header info */}
           <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-1">
@@ -375,6 +343,6 @@ export default function IncidentDetailPanel() {
           )}
         </>
       )}
-    </div>
+    </DetailPanelShell>
   )
 }

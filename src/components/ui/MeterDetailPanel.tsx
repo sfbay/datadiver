@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import { fetchDataset } from '@/api/client'
 import type { ParkingMeter, ParkingTransaction } from '@/types/datasets'
 import { formatCurrency, formatNumber, formatDate, diffMinutes, formatDuration } from '@/utils/time'
 import { CAP_COLORS } from '@/utils/colors'
-import ShareLinkButton from '@/components/ui/ShareLinkButton'
+import DetailPanelShell from '@/components/ui/DetailPanelShell'
 
 interface MeterDetail {
   postId: string
@@ -62,7 +62,6 @@ export default function MeterDetailPanel() {
   const [transactions, setTransactions] = useState<RecentTransaction[]>([])
   const [serverTotal, setServerTotal] = useState<{ revenue: number; count: number } | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const panelRef = useRef<HTMLDivElement>(null)
 
   // Fetch meter metadata + recent transactions on selection
   useEffect(() => {
@@ -123,28 +122,13 @@ export default function MeterDetailPanel() {
     return () => { cancelled = true }
   }, [selectedMeter, dateRange])
 
-  // Close on outside click
-  useEffect(() => {
-    if (!selectedMeter) return
-    const handler = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        setSelectedMeter(null)
-      }
-    }
-    const timer = setTimeout(() => document.addEventListener('mousedown', handler), 100)
-    return () => {
-      clearTimeout(timer)
-      document.removeEventListener('mousedown', handler)
-    }
-  }, [selectedMeter, setSelectedMeter])
+  const onClose = useCallback(() => setSelectedMeter(null), [setSelectedMeter])
 
   const buildShareUrl = useCallback(() => {
     const url = new URL(window.location.href)
     if (selectedMeter) url.searchParams.set('detail', selectedMeter)
     return url.toString()
   }, [selectedMeter])
-
-  if (!selectedMeter) return null
 
   const capInfo = detail ? CAP_COLORS[detail.capColor] || { color: '#6b7280', label: 'Unknown' } : null
 
@@ -158,30 +142,15 @@ export default function MeterDetailPanel() {
     : null
 
   return (
-    <div
-      ref={panelRef}
-      className="absolute top-5 right-5 z-30 rounded-xl p-4 w-72 max-h-[80vh] overflow-y-auto animate-in fade-in slide-in-from-right-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/[0.08] shadow-xl shadow-black/20"
+    <DetailPanelShell
+      open={!!selectedMeter}
+      onClose={onClose}
+      isLoading={isLoading}
+      spinnerClass="border-cyan-400"
+      buildShareUrl={buildShareUrl}
+      shareAccentClass="text-cyan-500"
     >
-      {/* Top-right actions */}
-      <div className="absolute top-2 right-2 flex items-center gap-0.5">
-        <ShareLinkButton buildUrl={buildShareUrl} accentClass="text-cyan-500" />
-        <button
-          onClick={() => setSelectedMeter(null)}
-          className="w-6 h-6 flex items-center justify-center rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-all"
-        >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M2 2l8 8M10 2l-8 8" />
-          </svg>
-        </button>
-      </div>
-
-      {isLoading && (
-        <div className="flex items-center justify-center py-8">
-          <div className="w-5 h-5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
-        </div>
-      )}
-
-      {detail && !isLoading && (
+      {detail && (
         <>
           {/* Header */}
           <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-1">
@@ -308,6 +277,6 @@ export default function MeterDetailPanel() {
           )}
         </>
       )}
-    </div>
+    </DetailPanelShell>
   )
 }

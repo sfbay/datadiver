@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import { fetchDataset } from '@/api/client'
 import type { Cases311Record } from '@/types/datasets'
 import { parseDateTime, formatDate, formatResolution, diffHours } from '@/utils/time'
-import ShareLinkButton from '@/components/ui/ShareLinkButton'
+import DetailPanelShell from '@/components/ui/DetailPanelShell'
 
 interface CaseDetail {
   requestId: string
@@ -55,7 +55,6 @@ export default function CaseDetailPanel() {
   const { selected311Case, setSelected311Case } = useAppStore()
   const [detail, setDetail] = useState<CaseDetail | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const panelRef = useRef<HTMLDivElement>(null)
 
   // Fetch full record on selection (no $select restriction — get all fields)
   useEffect(() => {
@@ -86,20 +85,7 @@ export default function CaseDetailPanel() {
     return () => { cancelled = true }
   }, [selected311Case])
 
-  // Close on outside click
-  useEffect(() => {
-    if (!selected311Case) return
-    const handler = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        setSelected311Case(null)
-      }
-    }
-    const timer = setTimeout(() => document.addEventListener('mousedown', handler), 100)
-    return () => {
-      clearTimeout(timer)
-      document.removeEventListener('mousedown', handler)
-    }
-  }, [selected311Case, setSelected311Case])
+  const onClose = useCallback(() => setSelected311Case(null), [setSelected311Case])
 
   const buildShareUrl = useCallback(() => {
     const url = new URL(window.location.href)
@@ -107,38 +93,21 @@ export default function CaseDetailPanel() {
     return url.toString()
   }, [selected311Case])
 
-  if (!selected311Case) return null
-
   const isOpen = detail?.status === 'Open'
   const resolutionHours = detail?.timestamps.requested && detail?.timestamps.closed
     ? diffHours(detail.timestamps.requested, detail.timestamps.closed)
     : null
 
   return (
-    <div
-      ref={panelRef}
-      className="absolute top-5 right-5 z-30 rounded-xl p-4 w-72 max-h-[80vh] overflow-y-auto animate-in fade-in slide-in-from-right-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/[0.08] shadow-xl shadow-black/20"
+    <DetailPanelShell
+      open={!!selected311Case}
+      onClose={onClose}
+      isLoading={isLoading}
+      spinnerClass="border-emerald-400"
+      buildShareUrl={buildShareUrl}
+      shareAccentClass="text-emerald-500"
     >
-      {/* Top-right actions */}
-      <div className="absolute top-2 right-2 flex items-center gap-0.5">
-        <ShareLinkButton buildUrl={buildShareUrl} accentClass="text-emerald-500" />
-        <button
-          onClick={() => setSelected311Case(null)}
-          className="w-6 h-6 flex items-center justify-center rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-all"
-        >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M2 2l8 8M10 2l-8 8" />
-          </svg>
-        </button>
-      </div>
-
-      {isLoading && (
-        <div className="flex items-center justify-center py-8">
-          <div className="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
-        </div>
-      )}
-
-      {detail && !isLoading && (
+      {detail && (
         <>
           {/* Header info */}
           <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-1">
@@ -278,6 +247,6 @@ export default function CaseDetailPanel() {
           </div>
         </>
       )}
-    </div>
+    </DetailPanelShell>
   )
 }

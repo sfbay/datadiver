@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import { fetchDataset } from '@/api/client'
 import type { BusinessLocationRecord } from '@/types/datasets'
+import DetailPanelShell from '@/components/ui/DetailPanelShell'
 
 interface BusinessDetail {
   name: string
@@ -73,40 +74,28 @@ export default function BusinessDetailPanel() {
 
   const close = useCallback(() => setSelectedBusiness(null), [setSelectedBusiness])
 
-  if (!selectedBusiness) return null
-
   return (
-    <div className="absolute top-4 right-4 z-30 w-72 glass-card rounded-xl p-4 space-y-3">
-      {/* Close button */}
-      <button
-        onClick={close}
-        className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white/[0.06]
-          hover:bg-white/[0.12] flex items-center justify-center transition-colors"
-      >
-        <svg width="10" height="10" viewBox="0 0 10 10" stroke="#94a3b8" strokeWidth="1.5">
-          <path d="M2 2l6 6M8 2l-6 6" strokeLinecap="round" />
-        </svg>
-      </button>
-
-      {loading && (
-        <div className="text-[10px] font-mono text-slate-500 animate-pulse">Loading...</div>
-      )}
-
+    <DetailPanelShell
+      open={!!selectedBusiness}
+      onClose={close}
+      isLoading={loading}
+      spinnerClass="border-slate-400"
+    >
       {detail && (
         <>
           <div>
-            <p className="text-[13px] font-semibold text-slate-100">{detail.name}</p>
-            <p className="text-[10px] text-slate-400">{detail.owner}</p>
+            <p className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">{detail.name}</p>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400">{detail.owner}</p>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 mt-3">
             <div>
               <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500">Sector</p>
-              <p className="text-[11px] text-slate-300">{detail.sector}</p>
+              <p className="text-[11px] text-slate-700 dark:text-slate-300">{detail.sector}</p>
             </div>
             <div>
               <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500">Address</p>
-              <p className="text-[11px] text-slate-300">{detail.address}</p>
+              <p className="text-[11px] text-slate-700 dark:text-slate-300">{detail.address}</p>
             </div>
             <div className="flex gap-4">
               <div>
@@ -117,18 +106,18 @@ export default function BusinessDetailPanel() {
               </div>
               <div>
                 <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500">Duration</p>
-                <p className="text-[11px] text-slate-300">{detail.duration}</p>
+                <p className="text-[11px] text-slate-700 dark:text-slate-300">{detail.duration}</p>
               </div>
             </div>
             <div className="flex gap-4">
               <div>
                 <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500">Opened</p>
-                <p className="text-[11px] text-slate-300">{formatDate(detail.openedDate)}</p>
+                <p className="text-[11px] text-slate-700 dark:text-slate-300">{formatDate(detail.openedDate)}</p>
               </div>
               {detail.closedDate && (
                 <div>
                   <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500">Closed</p>
-                  <p className="text-[11px] text-slate-300">{formatDate(detail.closedDate)}</p>
+                  <p className="text-[11px] text-slate-700 dark:text-slate-300">{formatDate(detail.closedDate)}</p>
                 </div>
               )}
             </div>
@@ -149,6 +138,6 @@ export default function BusinessDetailPanel() {
           </div>
         </>
       )}
-    </div>
+    </DetailPanelShell>
   )
 }
