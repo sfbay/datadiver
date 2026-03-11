@@ -19,6 +19,7 @@ import type { FormationDataPoint } from '@/components/charts/NetFormationChart'
 import HorizontalBarChart from '@/components/charts/HorizontalBarChart'
 import BusinessDetailPanel from '@/components/ui/BusinessDetailPanel'
 import ExportButton from '@/components/export/ExportButton'
+import ComparisonToggle from '@/components/filters/ComparisonToggle'
 import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
 import { SkeletonStatCards, SkeletonSidebarRows, MapScanOverlay, MapProgressBar } from '@/components/ui/Skeleton'
 import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
@@ -816,6 +817,7 @@ export default function BusinessActivity() {
               ))}
             </div>
 
+            <ComparisonToggle />
             <ExportButton targetSelector="#ba-capture" filename="business-activity" />
           </div>
         </div>
