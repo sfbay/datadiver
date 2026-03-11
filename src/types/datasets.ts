@@ -29,6 +29,19 @@ export interface FireIncident {
   supervisor_district: string
   neighborhood_district: string
   point: { type: string; coordinates: [number, number] }
+  // Outcome fields
+  estimated_property_loss?: number
+  estimated_contents_loss?: number
+  fire_spread?: string
+  // Cause & Origin fields
+  ignition_cause?: string
+  ignition_factor_primary?: string
+  heat_source?: string
+  area_of_fire_origin?: string
+  // Detection & Protection fields
+  detectors_present?: string
+  detector_effectiveness?: string
+  automatic_extinguishing_system_present?: string
 }
 
 /** Fire/EMS Dispatched Calls (nuek-vuh3) */
