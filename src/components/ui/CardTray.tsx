@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import StatCard from '@/components/ui/StatCard'
+import { useCompactViewport } from '@/hooks/useCompactViewport'
 
 export interface CardDef {
   /** Unique id for persistence */
@@ -63,6 +64,8 @@ function saveCardStates(viewId: string, states: Record<string, CardState>) {
 }
 
 export default function CardTray({ viewId, cards, className = '' }: CardTrayProps) {
+  const trayRef = useRef<HTMLDivElement>(null)
+  const compact = useCompactViewport(trayRef)
   const [states, setStates] = useState<Record<string, CardState>>(() =>
     loadCardStates(viewId, cards)
   )
@@ -109,13 +112,16 @@ export default function CardTray({ viewId, cards, className = '' }: CardTrayProp
     })
   }, [])
 
+  // When compact, treat expanded as minimized for rendering (state unchanged)
   const expandedCards = useMemo(
-    () => cards.filter((c) => states[c.id] === 'expanded'),
-    [cards, states]
+    () => compact ? [] : cards.filter((c) => states[c.id] === 'expanded'),
+    [cards, states, compact]
   )
   const minimizedCards = useMemo(
-    () => cards.filter((c) => states[c.id] === 'minimized'),
-    [cards, states]
+    () => compact
+      ? cards.filter((c) => states[c.id] !== 'hidden')
+      : cards.filter((c) => states[c.id] === 'minimized'),
+    [cards, states, compact]
   )
   const hiddenCards = useMemo(
     () => cards.filter((c) => states[c.id] === 'hidden'),
@@ -125,7 +131,7 @@ export default function CardTray({ viewId, cards, className = '' }: CardTrayProp
   const hasExpanded = expandedCards.length > 0
 
   return (
-    <div className={`absolute top-0 left-0 right-0 z-10 flex flex-col ${className}`}>
+    <div ref={trayRef} className={`absolute top-0 left-0 right-0 z-10 flex flex-col ${className}`}>
       {/* Minimized pills — flush top bar */}
       {(minimizedCards.length > 0 || hiddenCards.length > 0 || hasExpanded) && (
         <div className="flex flex-wrap items-center gap-1.5 px-4 py-2">

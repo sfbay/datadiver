@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useMemo, type ReactNode } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef, type ReactNode } from 'react'
+import { useCompactViewport } from '@/hooks/useCompactViewport'
 
 export interface ChartTileDef {
   /** Unique id for persistence */
@@ -49,6 +50,8 @@ function saveTileStates(viewId: string, states: Record<string, TileState>) {
 }
 
 export default function ChartTray({ viewId, tiles, className = '' }: ChartTrayProps) {
+  const trayRef = useRef<HTMLDivElement>(null)
+  const compact = useCompactViewport(trayRef)
   const [states, setStates] = useState<Record<string, TileState>>(() =>
     loadTileStates(viewId, tiles)
   )
@@ -95,13 +98,16 @@ export default function ChartTray({ viewId, tiles, className = '' }: ChartTrayPr
     })
   }, [])
 
+  // When compact, treat expanded as minimized for rendering (state unchanged)
   const expandedTiles = useMemo(
-    () => tiles.filter((t) => states[t.id] === 'expanded'),
-    [tiles, states]
+    () => compact ? [] : tiles.filter((t) => states[t.id] === 'expanded'),
+    [tiles, states, compact]
   )
   const minimizedTiles = useMemo(
-    () => tiles.filter((t) => states[t.id] === 'minimized'),
-    [tiles, states]
+    () => compact
+      ? tiles.filter((t) => states[t.id] !== 'hidden')
+      : tiles.filter((t) => states[t.id] === 'minimized'),
+    [tiles, states, compact]
   )
   const hiddenTiles = useMemo(
     () => tiles.filter((t) => states[t.id] === 'hidden'),
@@ -111,7 +117,7 @@ export default function ChartTray({ viewId, tiles, className = '' }: ChartTrayPr
   const hasExpanded = expandedTiles.length > 0
 
   return (
-    <div className={`absolute bottom-0 left-0 right-0 z-10 flex flex-col-reverse ${className}`}>
+    <div ref={trayRef} className={`absolute bottom-0 left-0 right-0 z-10 flex flex-col-reverse ${className}`}>
       {/* Minimized pills — flush bottom bar */}
       {(minimizedTiles.length > 0 || hiddenTiles.length > 0 || hasExpanded) && (
         <div className="flex flex-wrap items-center gap-1.5 px-4 py-2">
