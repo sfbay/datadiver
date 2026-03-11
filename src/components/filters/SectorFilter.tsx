@@ -133,8 +133,9 @@ export default function SectorFilter({ categories, selected, onChange, zScores }
                 className="opacity-0 group-hover/row:opacity-60 hover:!opacity-100 transition-opacity"
                 title="Solo: show only Uncategorized"
               >
-                <svg className="w-2.5 h-2.5 text-slate-400" viewBox="0 0 10 10" fill="currentColor">
-                  <circle cx="5" cy="5" r="3" />
+                <svg className="w-2.5 h-2.5 text-slate-400 dark:text-slate-500" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <circle cx="8" cy="8" r="3" />
+                  <path d="M8 1v2M8 13v2M1 8h2M13 8h2" strokeLinecap="round" />
                 </svg>
               </button>
             </div>
