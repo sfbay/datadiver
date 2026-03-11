@@ -40,12 +40,14 @@ export default function TimeOfDayFilter({ hourTotals }: TimeOfDayFilterProps) {
     if (!dragging.current || dragStart.current === null) return
     dragging.current = false
     const start = dragStart.current
-    const end = h
     dragStart.current = null
-    if (start === 0 && end === 23) {
-      setTimeOfDayFilter(null)
-    } else {
-      setTimeOfDayFilter({ startHour: start, endHour: end })
+    // Only use drag handler for multi-hour ranges; single-hour handled by click
+    if (start !== h) {
+      if (start === 0 && h === 23) {
+        setTimeOfDayFilter(null)
+      } else {
+        setTimeOfDayFilter({ startHour: start, endHour: h })
+      }
     }
   }, [setTimeOfDayFilter])
 
@@ -83,7 +85,7 @@ export default function TimeOfDayFilter({ hourTotals }: TimeOfDayFilterProps) {
               key={h}
               onMouseDown={() => handleMouseDown(h)}
               onMouseUp={() => handleMouseUp(h)}
-              onClick={() => !dragging.current && handleClick(h)}
+              onClick={() => handleClick(h)}
               className={`
                 flex-1 h-7 rounded-sm transition-all duration-150 relative group
                 ${selected ? '' : 'opacity-25'}
