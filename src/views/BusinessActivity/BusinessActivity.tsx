@@ -37,11 +37,24 @@ const SELECT_FIELDS = 'uniqueid,dba_name,ownership_name,full_business_address,ci
 const SF_CITY_FILTER = "city = 'San Francisco'"
 
 export default function BusinessActivity() {
-  const { dateRange, selectedBusiness, setSelectedBusiness } = useAppStore()
+  const { dateRange, setDateRange, selectedBusiness, setSelectedBusiness } = useAppStore()
   const [searchParams, setSearchParams] = useSearchParams()
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('sectors')
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
   const mapHandleRef = useRef<MapHandle>(null)
+
+  // Widen to 12-month range if current range is < 90 days (business data is sparse at 30d)
+  useEffect(() => {
+    const start = new Date(dateRange.start)
+    const end = new Date(dateRange.end)
+    const days = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+    if (days < 90) {
+      const twelveMonthsAgo = new Date(end)
+      twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1)
+      setDateRange(twelveMonthsAgo.toISOString().split('T')[0], end.toISOString().split('T')[0])
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Deep-link: detail panel
   useEffect(() => {
@@ -108,13 +121,20 @@ export default function BusinessActivity() {
     return conditions.map((c, i) => i === 0 ? c : `(${c})`).join(' AND ')
   }, [dateRange, sectorClause])
 
-  // Openings clause: businesses that opened in the date range
+  // Openings clause: businesses that opened in the date range (with optional sector filter)
   const openingsClause = useMemo(() => {
-    return `${SF_CITY_FILTER} AND dba_start_date >= '${dateRange.start}T00:00:00' AND dba_start_date <= '${dateRange.end}T23:59:59'`
-  }, [dateRange])
+    const base = `${SF_CITY_FILTER} AND dba_start_date >= '${dateRange.start}T00:00:00' AND dba_start_date <= '${dateRange.end}T23:59:59'`
+    return sectorClause ? `${base} AND ${sectorClause}` : base
+  }, [dateRange, sectorClause])
 
   const closuresClause = useMemo(() => {
-    return `${SF_CITY_FILTER} AND dba_end_date >= '${dateRange.start}T00:00:00' AND dba_end_date <= '${dateRange.end}T23:59:59'`
+    const base = `${SF_CITY_FILTER} AND dba_end_date >= '${dateRange.start}T00:00:00' AND dba_end_date <= '${dateRange.end}T23:59:59'`
+    return sectorClause ? `${base} AND ${sectorClause}` : base
+  }, [dateRange, sectorClause])
+
+  // Date-only openings clause for sector aggregation (no sector filter, so all sectors visible)
+  const openingsDateOnlyClause = useMemo(() => {
+    return `${SF_CITY_FILTER} AND dba_start_date >= '${dateRange.start}T00:00:00' AND dba_start_date <= '${dateRange.end}T23:59:59'`
   }, [dateRange])
 
   // Data freshness detection
@@ -169,11 +189,11 @@ export default function BusinessActivity() {
     {
       $select: 'naic_code_description, count(*) as cnt',
       $group: 'naic_code_description',
-      $where: openingsClause,
+      $where: openingsDateOnlyClause,
       $order: 'cnt DESC',
       $limit: 30,
     },
-    [openingsClause]
+    [openingsDateOnlyClause]
   )
 
   // Monthly openings
@@ -329,13 +349,13 @@ export default function BusinessActivity() {
 
   const neighborhoodAnomalies = useMemo(() => {
     if (neighborhoodEntries.length === 0) return new Map<string, number>()
-    const counts = neighborhoodEntries.map((n) => n.total)
-    const mean = counts.reduce((a, b) => a + b, 0) / counts.length
-    const stdDev = Math.sqrt(counts.reduce((sum, c) => sum + (c - mean) ** 2, 0) / counts.length)
+    const values = neighborhoodEntries.map((n) => n.netChange)
+    const mean = values.reduce((a, b) => a + b, 0) / values.length
+    const stdDev = Math.sqrt(values.reduce((sum, c) => sum + (c - mean) ** 2, 0) / values.length)
     if (stdDev === 0) return new Map<string, number>()
     const map = new Map<string, number>()
     for (const n of neighborhoodEntries) {
-      map.set(n.neighborhood, (n.total - mean) / stdDev)
+      map.set(n.neighborhood, (n.netChange - mean) / stdDev)
     }
     return map
   }, [neighborhoodEntries])
@@ -474,14 +494,14 @@ export default function BusinessActivity() {
       color: '#64748b',
       delay: 240,
       info: 'active-businesses',
-      defaultExpanded: true,
+      defaultExpanded: false,
     },
     {
       id: 'top-sector',
       label: 'Top Sector',
       shortLabel: 'Sector',
       value: topSector || '...',
-      color: '#8b5cf6',
+      color: '#64748b',
       delay: 320,
       info: 'top-sector',
       defaultExpanded: false,

@@ -65,7 +65,7 @@ export default function BusinessDetailPanel() {
       if (rows[0]) setDetail(buildDetail(rows[0]))
       setLoading(false)
     }).catch(() => {
-      if (!cancelled) setLoading(false)
+      if (!cancelled) { setDetail(null); setLoading(false) }
     })
 
     return () => { cancelled = true }
