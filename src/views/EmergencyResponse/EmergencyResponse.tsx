@@ -4,7 +4,7 @@ import mapboxgl from 'mapbox-gl'
 import { useDataset } from '@/hooks/useDataset'
 import { useMapLayer } from '@/hooks/useMapLayer'
 import { useMapTooltip } from '@/hooks/useMapTooltip'
-import { useHourlyPattern } from '@/hooks/useHourlyPattern'
+import { useFireHourlyPattern } from '@/hooks/useHourlyPatternFactory'
 import { useComparisonData } from '@/hooks/useComparisonData'
 import { useAppStore } from '@/stores/appStore'
 import type { FireEMSDispatch, ResponseTimeRecord } from '@/types/datasets'
@@ -571,7 +571,7 @@ export default function EmergencyResponse() {
   const maxAvg = neighborhoodStats.length > 0 ? neighborhoodStats[0].avgResponseTime : 1
 
   // Hourly pattern for heatgrid and time-of-day filter
-  const hourlyPattern = useHourlyPattern(dateRange, serviceClause || undefined)
+  const hourlyPattern = useFireHourlyPattern(dateRange, serviceClause || undefined)
 
   // Comparison period data
   const comparison = useComparisonData(dateRange, whereClause, comparisonPeriod, rawData)

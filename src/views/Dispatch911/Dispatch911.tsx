@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useDataset } from '@/hooks/useDataset'
-import { useDispatchHourlyPattern } from '@/hooks/useDispatchHourlyPattern'
+import { useDispatchHourlyPattern } from '@/hooks/useHourlyPatternFactory'
 import { useDispatchComparisonData } from '@/hooks/useDispatchComparisonData'
 import { useAppStore } from '@/stores/appStore'
 import type { DispatchCall, CallTypeAggRow, DispositionAggRow } from '@/types/datasets'
