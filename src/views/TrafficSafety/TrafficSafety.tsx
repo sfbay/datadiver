@@ -13,7 +13,7 @@ import { formatDelta, formatNumber, formatHour } from '@/utils/time'
 import { coordsFromFields, extractCoordinates } from '@/utils/geo'
 import { CRASH_SEVERITY_COLORS } from '@/utils/colors'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
-import StatCard from '@/components/ui/StatCard'
+import CardTray, { type CardDef } from '@/components/ui/CardTray'
 import SeverityBreakdown from '@/components/charts/SeverityBreakdown'
 import HorizontalBarChart from '@/components/charts/HorizontalBarChart'
 import ExportButton from '@/components/export/ExportButton'
@@ -37,7 +37,9 @@ type MapMode = 'heatmap' | 'anomaly'
 type SidebarTab = 'modes' | 'neighborhoods'
 type Overlay = 'speed' | 'redlight' | 'pci'
 
-const SELECT_FIELDS = 'unique_id,collision_datetime,collision_severity,type_of_collision,dph_col_grp_description,number_killed,number_injured,primary_rd,secondary_rd,analysis_neighborhood,supervisor_district,police_district,tb_latitude,tb_longitude,point,ped_action,weather_1,road_surface,road_cond_1,lighting,mviw'
+const SELECT_FIELDS = 'unique_id,collision_datetime,collision_severity,type_of_collision,dph_col_grp_description,vz_pcf_group,number_killed,number_injured,primary_rd,secondary_rd,analysis_neighborhood,supervisor_district,police_district,tb_latitude,tb_longitude,point,ped_action,weather_1,road_surface,road_cond_1,lighting,mviw'
+
+const DUI_CODES = "'23152(a-g)','23153(a-g)'"
 
 export default function TrafficSafety() {
   const { dateRange, timeOfDayFilter, comparisonPeriod, selectedCrash, setSelectedCrash } = useAppStore()
@@ -177,6 +179,43 @@ export default function TrafficSafety() {
   )
   const totalCount = countRows[0] ? parseInt(countRows[0].count, 10) : null
 
+  // DUI crash count (server-side)
+  const duiWhere = useMemo(() => {
+    return `${whereClause} AND vz_pcf_group IN (${DUI_CODES})`
+  }, [whereClause])
+
+  const { data: duiCountRows } = useDataset<{ count: string; killed: string; injured: string }>(
+    'trafficCrashes',
+    {
+      $select: 'count(*) as count, SUM(number_killed) as killed, SUM(number_injured) as injured',
+      $where: duiWhere,
+    },
+    [duiWhere]
+  )
+  const duiCount = duiCountRows[0] ? parseInt(duiCountRows[0].count, 10) : 0
+  const duiKilled = duiCountRows[0] ? parseInt(duiCountRows[0].killed, 10) || 0 : 0
+  const duiInjured = duiCountRows[0] ? parseInt(duiCountRows[0].injured, 10) || 0 : 0
+
+  // DUI prior-year count for YoY
+  const duiPriorWhere = useMemo(() => {
+    const start = new Date(dateRange.start)
+    const end = new Date(dateRange.end)
+    start.setFullYear(start.getFullYear() - 1)
+    end.setFullYear(end.getFullYear() - 1)
+    const fmt = (d: Date) => d.toISOString().split('T')[0]
+    return `collision_datetime >= '${fmt(start)}T00:00:00' AND collision_datetime <= '${fmt(end)}T23:59:59' AND vz_pcf_group IN (${DUI_CODES})`
+  }, [dateRange])
+
+  const { data: duiPriorRows } = useDataset<{ count: string }>(
+    'trafficCrashes',
+    { $select: 'count(*) as count', $where: duiPriorWhere },
+    [duiPriorWhere]
+  )
+  const duiPriorCount = duiPriorRows[0] ? parseInt(duiPriorRows[0].count, 10) : null
+  const duiYoY = duiPriorCount && duiPriorCount > 0
+    ? ((duiCount - duiPriorCount) / duiPriorCount) * 100
+    : null
+
   const { data: modeRows } = useDataset<CrashModeAggRow>(
     'trafficCrashes',
     {
@@ -259,6 +298,7 @@ export default function TrafficSafety() {
           severity: record.collision_severity || 'Unknown',
           collisionType: record.type_of_collision || 'Unknown',
           mode: record.dph_col_grp_description || 'Unknown',
+          isDui: record.vz_pcf_group === '23152(a-g)' || record.vz_pcf_group === '23153(a-g)',
           killed: parseInt(record.number_killed, 10) || 0,
           injured: parseInt(record.number_injured, 10) || 0,
           primaryRd: record.primary_rd || '',
@@ -279,6 +319,69 @@ export default function TrafficSafety() {
     const pedBikePct = (pedBike / crashData.length) * 100
     return { totalCrashes: crashData.length, fatalities, injuries, pedBikePct, peakHour: hourlyPattern.peakHour }
   }, [crashData, hourlyPattern.peakHour])
+
+  // Card tray definitions
+  const cardDefs = useMemo((): CardDef[] => [
+    {
+      id: 'total',
+      label: 'Total Crashes',
+      shortLabel: 'Total',
+      value: formatNumber(totalCount ?? stats.totalCrashes),
+      color: '#dc2626',
+      delay: 0,
+      info: 'total-crashes',
+      defaultExpanded: true,
+      subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined,
+      trend: comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined,
+      yoyDelta: !comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null,
+    },
+    {
+      id: 'fatalities',
+      label: 'Fatalities',
+      shortLabel: 'Fatal',
+      value: String(stats.fatalities),
+      color: '#7f1d1d',
+      delay: 80,
+      info: 'fatalities',
+      defaultExpanded: true,
+    },
+    {
+      id: 'injuries',
+      label: 'Injuries',
+      shortLabel: 'Injuries',
+      value: formatNumber(stats.injuries),
+      color: '#f59e0b',
+      delay: 160,
+      info: 'injuries',
+      defaultExpanded: true,
+      subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.injuries)} ${compLabel}` : undefined,
+      trend: comparison.deltas ? (comparison.deltas.injuries > 0 ? 'up' : comparison.deltas.injuries < 0 ? 'down' : 'neutral') : undefined,
+    },
+    {
+      id: 'dui',
+      label: 'DUI Crashes',
+      shortLabel: 'DUI',
+      value: formatNumber(duiCount),
+      color: '#a855f7',
+      delay: 240,
+      info: 'dui-crashes',
+      defaultExpanded: true,
+      subtitle: duiKilled + duiInjured > 0
+        ? `${duiKilled > 0 ? `${duiKilled} killed` : ''}${duiKilled > 0 && duiInjured > 0 ? ' · ' : ''}${duiInjured > 0 ? `${duiInjured} injured` : ''}`
+        : undefined,
+      yoyDelta: duiYoY,
+    },
+    {
+      id: 'ped-bike',
+      label: 'Ped/Bike %',
+      shortLabel: 'Ped/Bike',
+      value: `${stats.pedBikePct.toFixed(1)}%`,
+      color: '#3b82f6',
+      delay: 320,
+      info: 'ped-bike-pct',
+      defaultExpanded: false,
+    },
+  ], [stats, totalCount, comparison.deltas, compLabel, trend.cityWideYoY, duiCount, duiKilled, duiInjured, duiYoY])
 
   // Sidebar data
   const modeEntries = useMemo(
@@ -393,6 +496,7 @@ export default function TrafficSafety() {
           secondaryRd: r.secondaryRd,
           neighborhood: r.neighborhood,
           collisionAt: r.collisionAt,
+          isDui: r.isDui ? 1 : 0,
         },
       })),
     }
@@ -439,6 +543,19 @@ export default function TrafficSafety() {
         'circle-opacity': 0.8,
         'circle-stroke-width': 1,
         'circle-stroke-color': 'rgba(255,255,255,0.2)',
+      },
+    } as mapboxgl.AnyLayer,
+    {
+      id: 'crash-dui-points',
+      type: 'circle',
+      source: 'crash-heatmap-data',
+      filter: ['==', ['get', 'isDui'], 1],
+      paint: {
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4, 13, 6, 16, 12],
+        'circle-color': '#a855f7',
+        'circle-opacity': 0.85,
+        'circle-stroke-width': 1.5,
+        'circle-stroke-color': 'rgba(168, 85, 247, 0.4)',
       },
     } as mapboxgl.AnyLayer,
   ], [])
@@ -620,6 +737,28 @@ export default function TrafficSafety() {
       <div style="color:#94a3b8">${props.neighborhood || 'Unknown'}</div>
       <div class="tooltip-label" style="margin-top:6px">Casualties</div>
       <div style="color:#94a3b8">Injured: ${props.injured || 0} · Killed: ${props.killed || 0}</div>
+      ${Number(props.isDui) === 1 ? '<div style="margin-top:6px;color:#a855f7;font-weight:600">⚠ DUI-Involved</div>' : ''}
+    `
+  })
+
+  useMapTooltip(mapInstance, 'crash-dui-points', (props) => {
+    const crashDate = props.collisionAt
+      ? new Date(String(props.collisionAt)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      : null
+    const crashTime = props.collisionAt
+      ? new Date(String(props.collisionAt)).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+      : null
+    const sevColor = CRASH_SEVERITY_COLORS[String(props.severity)] || '#64748b'
+    return `
+      <div style="color:#a855f7;font-weight:700;margin-bottom:4px">⚠ DUI-Involved Crash</div>
+      ${crashDate ? `<div style="color:#e2e8f0">${crashDate} · ${crashTime}</div>` : ''}
+      <div class="tooltip-label" style="margin-top:6px">Severity</div>
+      <div style="color:${sevColor};font-weight:600">${props.severity || 'Unknown'}</div>
+      <div class="tooltip-label" style="margin-top:4px">Location</div>
+      <div style="color:#94a3b8">${props.primaryRd || ''}${props.secondaryRd ? ` at ${props.secondaryRd}` : ''}</div>
+      <div style="color:#94a3b8">${props.neighborhood || 'Unknown'}</div>
+      <div class="tooltip-label" style="margin-top:6px">Casualties</div>
+      <div style="color:#94a3b8">Injured: ${props.injured || 0} · Killed: ${props.killed || 0}</div>
     `
   })
 
@@ -696,22 +835,27 @@ export default function TrafficSafety() {
       mapInstance.flyTo({ center: [coords[0], coords[1]], zoom: 17, duration: 800 })
     }
 
+    const layers = ['crash-points', 'crash-dui-points']
     const tryAttach = () => {
       try {
-        if (mapInstance.getLayer('crash-points')) {
-          mapInstance.on('click', 'crash-points', handleClick)
-          return true
+        let attached = 0
+        for (const layer of layers) {
+          if (mapInstance.getLayer(layer)) {
+            mapInstance.on('click', layer, handleClick)
+            attached++
+          }
         }
+        return attached > 0
       } catch { /* */ }
       return false
     }
 
     if (!tryAttach()) {
       const interval = setInterval(() => { if (tryAttach()) clearInterval(interval) }, 500)
-      return () => { clearInterval(interval); try { mapInstance.off('click', 'crash-points', handleClick) } catch { /* */ } }
+      return () => { clearInterval(interval); layers.forEach((l) => { try { mapInstance.off('click', l, handleClick) } catch { /* */ } }) }
     }
 
-    return () => { try { mapInstance.off('click', 'crash-points', handleClick) } catch { /* */ } }
+    return () => { layers.forEach((l) => { try { mapInstance.off('click', l, handleClick) } catch { /* */ } }) }
   }, [mapInstance, setSelectedCrash])
 
   const handleMapReady = useCallback((map: mapboxgl.Map) => { setMapInstance(map) }, [])
@@ -844,21 +988,7 @@ export default function TrafficSafety() {
             {/* Stat cards */}
             {isLoading && <SkeletonStatCards count={4} />}
             {!isLoading && crashData.length > 0 && (
-              <div className="absolute top-5 left-5 z-10 flex gap-2.5">
-                <StatCard
-                  label="Total Crashes" info="total-crashes" value={formatNumber(stats.totalCrashes)} color="#dc2626" delay={0}
-                  subtitle={comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined}
-                  trend={comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined}
-                  yoyDelta={!comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null}
-                />
-                <StatCard label="Fatalities" info="fatalities" value={String(stats.fatalities)} color="#7f1d1d" delay={80} />
-                <StatCard
-                  label="Injuries" info="injuries" value={formatNumber(stats.injuries)} color="#f59e0b" delay={160}
-                  subtitle={comparison.deltas ? `${formatDelta(comparison.deltas.injuries)} ${compLabel}` : undefined}
-                  trend={comparison.deltas ? (comparison.deltas.injuries > 0 ? 'up' : comparison.deltas.injuries < 0 ? 'down' : 'neutral') : undefined}
-                />
-                <StatCard label="Ped/Bike %" info="ped-bike-pct" value={`${stats.pedBikePct.toFixed(1)}%`} color="#3b82f6" delay={240} />
-              </div>
+              <CardTray viewId="trafficSafety" cards={cardDefs} />
             )}
 
             {/* Charts */}

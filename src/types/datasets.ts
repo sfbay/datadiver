@@ -353,6 +353,7 @@ export interface TrafficCrashRecord {
   tb_longitude: string
   point: { type: string; coordinates: [number, number] }
   dph_col_grp_description: string
+  vz_pcf_group: string
 }
 
 /** Speed Camera Citations (d5uh-bk84) */
