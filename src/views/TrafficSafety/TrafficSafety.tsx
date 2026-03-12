@@ -4,8 +4,8 @@ import mapboxgl from 'mapbox-gl'
 import { useDataset } from '@/hooks/useDataset'
 import { useMapLayer } from '@/hooks/useMapLayer'
 import { useMapTooltip } from '@/hooks/useMapTooltip'
-import { useCrashHourlyPattern } from '@/hooks/useCrashHourlyPattern'
-import { useCrashComparisonData } from '@/hooks/useCrashComparisonData'
+import { useCrashHourlyPattern } from '@/hooks/useHourlyPatternFactory'
+import { useCrashComparisonData } from '@/hooks/useComparisonDataFactory'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useAppStore } from '@/stores/appStore'
 import type { TrafficCrashRecord, CrashModeAggRow, NeighborhoodAggRowCrashes, SpeedCameraRecord, RedLightCameraRecord, PavementConditionRecord } from '@/types/datasets'
@@ -603,7 +603,7 @@ export default function TrafficSafety() {
       </header>
 
       {/* Time-of-day filter sub-header */}
-      {!hourlyPattern.isLoading && hourlyPattern.hourTotals.some((t) => t > 0) && (
+      {!hourlyPattern.isLoading && hourlyPattern.hourTotals.some((t: number) => t > 0) && (
         <div className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-2 bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl z-10">
           <div className="flex items-center gap-3">
             <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 whitespace-nowrap">
@@ -727,7 +727,7 @@ export default function TrafficSafety() {
                   </button>
                 )}
 
-                {!hourlyPattern.isLoading && hourlyPattern.grid.some((row) => row.some((v) => v > 0)) && (
+                {!hourlyPattern.isLoading && hourlyPattern.grid.some((row: number[]) => row.some((v: number) => v > 0)) && (
                   <div className="mb-4">
                     <HourlyHeatgrid grid={hourlyPattern.grid} width={264} height={160} />
                     <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-mono">

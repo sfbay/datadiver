@@ -154,16 +154,31 @@ export function useBusinessActivityData(params: UseBusinessActivityDataParams) {
     return top ? top.naic_code_description : null
   }, [sectorRows])
 
-  // Sector entries for sidebar
-  const sectorEntries = useMemo(
-    () => sectorRows
+  // Sector entries for sidebar (enrich server-side counts with client-side openings/closures/net)
+  const sectorEntries = useMemo(() => {
+    // Build per-sector openings/closures from client-side data
+    const sectorStats = new Map<string, { openings: number; closures: number }>()
+    for (const d of dataWithNeighborhoods) {
+      if (!d.sector || d.sector === 'Uncategorized') continue
+      const entry = sectorStats.get(d.sector) || { openings: 0, closures: 0 }
+      if (d.status === 'opened') entry.openings++
+      if (d.status === 'closed') entry.closures++
+      sectorStats.set(d.sector, entry)
+    }
+
+    return sectorRows
       .filter((r) => r.naic_code_description)
-      .map((r) => ({
-        sector: r.naic_code_description,
-        count: parseInt(r.cnt, 10) || 0,
-      })),
-    [sectorRows]
-  )
+      .map((r) => {
+        const stats = sectorStats.get(r.naic_code_description) || { openings: 0, closures: 0 }
+        return {
+          sector: r.naic_code_description,
+          count: parseInt(r.cnt, 10) || 0,
+          openings: stats.openings,
+          closures: stats.closures,
+          net: stats.openings - stats.closures,
+        }
+      })
+  }, [sectorRows, dataWithNeighborhoods])
 
   // Sector bars for chart tile
   const sectorBars = useMemo(() => {
