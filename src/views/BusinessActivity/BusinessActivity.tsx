@@ -8,15 +8,11 @@ import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useAppStore } from '@/stores/appStore'
 import type { BusinessLocationRecord, SectorAggRow, BusinessMonthlyRow } from '@/types/datasets'
 import { formatNumber } from '@/utils/time'
-import { extractCoordinates } from '@/utils/geo'
-import { BUSINESS_HEATMAP_LAYERS, ANOMALY_LAYERS } from './mapLayers'
-import { assignNeighborhoods } from '@/utils/pointInPolygon'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
-import CardTray, { type CardDef } from '@/components/ui/CardTray'
+import CardTray from '@/components/ui/CardTray'
 import ChartTray, { type ChartTileDef } from '@/components/ui/ChartTray'
 import SectorFilter from '@/components/filters/SectorFilter'
 import NetFormationChart from '@/components/charts/NetFormationChart'
-import type { FormationDataPoint } from '@/components/charts/NetFormationChart'
 import HorizontalBarChart from '@/components/charts/HorizontalBarChart'
 import BusinessDetailPanel from '@/components/ui/BusinessDetailPanel'
 import ExportButton from '@/components/export/ExportButton'
@@ -29,6 +25,8 @@ import { useTrendBaseline } from '@/hooks/useTrendBaseline'
 import type { TrendConfig } from '@/types/trends'
 import { useProgressScope } from '@/hooks/useLoadingProgress'
 import InfoTip from '@/components/ui/InfoTip'
+import { useBusinessActivityData } from './useBusinessActivityData'
+import { BUSINESS_HEATMAP_LAYERS, ANOMALY_LAYERS } from './mapLayers'
 
 type MapMode = 'heatmap' | 'anomaly'
 type SidebarTab = 'sectors' | 'neighborhoods'
@@ -111,15 +109,8 @@ export default function BusinessActivity() {
   // --- WHERE clause construction ---
   const sectorClause = useMemo(() => {
     if (selectedSectors.size === 0) return ''
-    const hasUncat = selectedSectors.has('Uncategorized')
-    const named = Array.from(selectedSectors).filter((c) => c !== 'Uncategorized')
-    const parts: string[] = []
-    if (named.length > 0) {
-      const escaped = named.map((c) => `'${c.replace(/'/g, "''")}'`)
-      parts.push(`naic_code_description IN (${escaped.join(',')})`)
-    }
-    if (hasUncat) parts.push('naic_code_description IS NULL')
-    return parts.length === 1 ? parts[0] : `(${parts.join(' OR ')})`
+    const escaped = Array.from(selectedSectors).map((c) => `'${c.replace(/'/g, "''")}'`)
+    return `naic_code_description IN (${escaped.join(',')})`
   }, [selectedSectors])
 
   const whereClause = useMemo(() => {
@@ -140,13 +131,9 @@ export default function BusinessActivity() {
     return sectorClause ? `${base} AND ${sectorClause}` : base
   }, [dateRange, sectorClause])
 
-  // Date-only clauses for sector aggregation (no sector filter, so all sectors visible)
+  // Date-only openings clause for sector aggregation (no sector filter, so all sectors visible)
   const openingsDateOnlyClause = useMemo(() => {
     return `${SF_CITY_FILTER} AND dba_start_date >= '${dateRange.start}T00:00:00' AND dba_start_date <= '${dateRange.end}T23:59:59'`
-  }, [dateRange])
-
-  const closuresDateOnlyClause = useMemo(() => {
-    return `${SF_CITY_FILTER} AND dba_end_date >= '${dateRange.start}T00:00:00' AND dba_end_date <= '${dateRange.end}T23:59:59'`
   }, [dateRange])
 
   // Data freshness detection
@@ -159,43 +146,12 @@ export default function BusinessActivity() {
   }), [])
   const trend = useTrendBaseline(trendConfig, dateRange, sectorClause || undefined)
 
-  // --- Primary data: split into openings + closures to avoid sort bias ---
-  const openingsWhere = useMemo(() => {
-    const base = `${SF_CITY_FILTER} AND dba_start_date >= '${dateRange.start}T00:00:00' AND dba_start_date <= '${dateRange.end}T23:59:59'`
-    return sectorClause ? `${base} AND ${sectorClause}` : base
-  }, [dateRange, sectorClause])
-
-  const closuresWhere = useMemo(() => {
-    const base = `${SF_CITY_FILTER} AND dba_end_date >= '${dateRange.start}T00:00:00' AND dba_end_date <= '${dateRange.end}T23:59:59'`
-    return sectorClause ? `${base} AND ${sectorClause}` : base
-  }, [dateRange, sectorClause])
-
-  const { data: openingsRaw, isLoading: openingsLoading } = useDataset<BusinessLocationRecord>(
+  // --- Primary data: business locations ---
+  const { data: rawData, isLoading, error, hitLimit } = useDataset<BusinessLocationRecord>(
     'businessLocations',
-    { $where: openingsWhere, $limit: 5000, $select: SELECT_FIELDS, $order: 'dba_start_date DESC' },
-    [openingsWhere]
+    { $where: whereClause, $limit: 5000, $select: SELECT_FIELDS },
+    [whereClause]
   )
-  const { data: closuresRaw, isLoading: closuresLoading } = useDataset<BusinessLocationRecord>(
-    'businessLocations',
-    { $where: closuresWhere, $limit: 5000, $select: SELECT_FIELDS, $order: 'dba_end_date DESC' },
-    [closuresWhere]
-  )
-  // Merge and deduplicate (a business can appear in both if it opened AND closed in the range)
-  const rawData = useMemo(() => {
-    const seen = new Set<string>()
-    const merged: BusinessLocationRecord[] = []
-    for (const r of openingsRaw) {
-      seen.add(r.uniqueid)
-      merged.push(r)
-    }
-    for (const r of closuresRaw) {
-      if (!seen.has(r.uniqueid)) merged.push(r)
-    }
-    return merged
-  }, [openingsRaw, closuresRaw])
-  const isLoading = openingsLoading || closuresLoading
-  const error = null as string | null
-  const hitLimit = rawData.length >= 10000
 
   // Server-side counts
   const { data: openingsCountRows } = useDataset<{ count: string }>(
@@ -226,8 +182,8 @@ export default function BusinessActivity() {
   )
   const totalCount = totalCountRows[0] ? parseInt(totalCountRows[0].count, 10) : null
 
-  // Sector aggregation: openings by sector
-  const { data: sectorOpeningRows } = useDataset<SectorAggRow>(
+  // Sector aggregation
+  const { data: sectorRows } = useDataset<SectorAggRow>(
     'businessLocations',
     {
       $select: 'naic_code_description, count(*) as cnt',
@@ -238,106 +194,6 @@ export default function BusinessActivity() {
     },
     [openingsDateOnlyClause]
   )
-
-  // Sector aggregation: closures by sector
-  const { data: sectorClosureRows } = useDataset<SectorAggRow>(
-    'businessLocations',
-    {
-      $select: 'naic_code_description, count(*) as cnt',
-      $group: 'naic_code_description',
-      $where: closuresDateOnlyClause,
-      $order: 'cnt DESC',
-      $limit: 30,
-    },
-    [closuresDateOnlyClause]
-  )
-
-  // Annual totals for spark context on stat cards (2019-2024, 6 years)
-  const { data: annualOpeningRows } = useDataset<{ yr: string; cnt: string }>(
-    'businessLocations',
-    {
-      $select: 'date_trunc_y(dba_start_date) as yr, count(*) as cnt',
-      $group: 'yr',
-      $where: `${SF_CITY_FILTER} AND dba_start_date >= '2019-01-01T00:00:00' AND dba_start_date < '2025-01-01T00:00:00'`,
-      $order: 'yr',
-      $limit: 10,
-    },
-    []
-  )
-
-  const { data: annualClosureRows } = useDataset<{ yr: string; cnt: string }>(
-    'businessLocations',
-    {
-      $select: 'date_trunc_y(dba_end_date) as yr, count(*) as cnt',
-      $group: 'yr',
-      $where: `${SF_CITY_FILTER} AND dba_end_date >= '2019-01-01T00:00:00' AND dba_end_date < '2025-01-01T00:00:00'`,
-      $order: 'yr',
-      $limit: 10,
-    },
-    []
-  )
-
-  // Compute annual spark data
-  const annualSparks = useMemo(() => {
-    const openings = annualOpeningRows.map((r) => parseInt(r.cnt, 10) || 0)
-    const closures = annualClosureRows.map((r) => parseInt(r.cnt, 10) || 0)
-    const labels = annualOpeningRows.map((r) => "'" + (r.yr?.slice(2, 4) || ''))
-    // Append current period values
-    const currentOpen = openingsCount ?? 0
-    const currentClose = closuresCount ?? 0
-    return {
-      openings: { values: [...openings, currentOpen], labels: [...labels, 'now'] },
-      closures: { values: [...closures, currentClose], labels: [...labels, 'now'] },
-    }
-  }, [annualOpeningRows, annualClosureRows, openingsCount, closuresCount])
-
-  // Historical closure baseline: closures by sector by year (2019-2023) for z-score computation
-  const { data: historicalClosureRows } = useDataset<{ naic_code_description: string; yr: string; cnt: string }>(
-    'businessLocations',
-    {
-      $select: 'naic_code_description, date_trunc_y(dba_end_date) as yr, count(*) as cnt',
-      $group: 'naic_code_description, yr',
-      $where: `${SF_CITY_FILTER} AND dba_end_date >= '2019-01-01T00:00:00' AND dba_end_date < '2024-01-01T00:00:00'`,
-      $limit: 500,
-    },
-    []
-  )
-
-  // Compute per-sector closure z-scores: current period vs 2019-2023 annual baseline
-  const sectorZScores = useMemo(() => {
-    if (historicalClosureRows.length === 0) return new Map<string, number>()
-
-    // Build per-sector annual closure counts from baseline period
-    const sectorYears = new Map<string, number[]>()
-    for (const r of historicalClosureRows) {
-      const key = r.naic_code_description || 'Uncategorized'
-      if (!sectorYears.has(key)) sectorYears.set(key, [])
-      sectorYears.get(key)!.push(parseInt(r.cnt, 10) || 0)
-    }
-
-    // Current period closures (from sectorClosureRows), annualized
-    const daySpan = Math.max(1, (new Date(dateRange.end).getTime() - new Date(dateRange.start).getTime()) / (1000 * 60 * 60 * 24))
-    const annualizeFactor = 365 / daySpan
-
-    const currentClosures = new Map<string, number>()
-    for (const r of sectorClosureRows) {
-      const key = r.naic_code_description || 'Uncategorized'
-      currentClosures.set(key, (parseInt(r.cnt, 10) || 0) * annualizeFactor)
-    }
-
-    const result = new Map<string, number>()
-    for (const [sector, years] of sectorYears) {
-      if (years.length < 3) continue // need enough data for meaningful stats
-      // Pad to 5 years if missing (zero-closure years don't appear in GROUP BY results)
-      while (years.length < 5) years.push(0)
-      const mean = years.reduce((a, b) => a + b, 0) / years.length
-      const std = Math.sqrt(years.reduce((sum, v) => sum + (v - mean) ** 2, 0) / years.length)
-      if (std === 0) continue
-      const current = currentClosures.get(sector) ?? 0
-      result.set(sector, (current - mean) / std)
-    }
-    return result
-  }, [historicalClosureRows, sectorClosureRows, dateRange])
 
   // Monthly openings
   const { data: monthlyOpeningRows } = useDataset<BusinessMonthlyRow>(
@@ -426,250 +282,36 @@ export default function BusinessActivity() {
 
   const { boundaries: neighborhoodBoundaries } = useNeighborhoodBoundaries()
 
-  // --- Computed data ---
-  const parsedData = useMemo(() => {
-    const rangeStart = new Date(dateRange.start)
-    const rangeEnd = new Date(dateRange.end)
-    return rawData
-      .map((record) => {
-        const coords = extractCoordinates(record.location)
-        if (!coords) return null
-        const startDate = new Date(record.dba_start_date)
-        const endDate = record.dba_end_date ? new Date(record.dba_end_date) : null
-        const status: 'opened' | 'closed' | 'active' =
-          startDate >= rangeStart && startDate <= rangeEnd ? 'opened'
-          : endDate && endDate >= rangeStart && endDate <= rangeEnd ? 'closed'
-          : 'active'
-        return {
-          uniqueId: record.uniqueid,
-          dbaName: record.dba_name || 'Unknown',
-          ownerName: record.ownership_name || '',
-          address: record.full_business_address || '',
-          sector: record.naic_code_description || 'Uncategorized',
-          status,
-          startDate: record.dba_start_date,
-          endDate: record.dba_end_date,
-          lat: coords.lat,
-          lng: coords.lng,
-        }
-      })
-      .filter((r): r is NonNullable<typeof r> => r !== null)
-  }, [rawData, dateRange])
-
-  // Assign neighborhoods via point-in-polygon
-  const dataWithNeighborhoods = useMemo(() => {
-    if (!neighborhoodBoundaries || parsedData.length === 0) return parsedData.map((d) => ({ ...d, neighborhood: 'Unknown' }))
-    return assignNeighborhoods(parsedData, neighborhoodBoundaries)
-  }, [parsedData, neighborhoodBoundaries])
-
-  // Apply client-side neighborhood filter
-  const filteredData = useMemo(() => {
-    if (!selectedNeighborhood) return dataWithNeighborhoods
-    return dataWithNeighborhoods.filter((d) => d.neighborhood === selectedNeighborhood)
-  }, [dataWithNeighborhoods, selectedNeighborhood])
-
-  // Neighborhood aggregation (client-side)
-  const neighborhoodEntries = useMemo(() => {
-    const map = new Map<string, { openings: number; closures: number; total: number }>()
-    for (const d of dataWithNeighborhoods) {
-      const entry = map.get(d.neighborhood) || { openings: 0, closures: 0, total: 0 }
-      entry.total++
-      if (d.status === 'opened') entry.openings++
-      if (d.status === 'closed') entry.closures++
-      map.set(d.neighborhood, entry)
-    }
-    return Array.from(map.entries())
-      .map(([neighborhood, stats]) => ({
-        neighborhood,
-        openings: stats.openings,
-        closures: stats.closures,
-        total: stats.total,
-        netChange: stats.openings - stats.closures,
-      }))
-      .filter((r) => r.neighborhood && r.neighborhood !== 'Unknown')
-      .sort((a, b) => b.total - a.total)
-  }, [dataWithNeighborhoods])
-
-  const neighborhoodAnomalies = useMemo(() => {
-    if (neighborhoodEntries.length === 0) return new Map<string, number>()
-    const values = neighborhoodEntries.map((n) => n.netChange)
-    const mean = values.reduce((a, b) => a + b, 0) / values.length
-    const stdDev = Math.sqrt(values.reduce((sum, c) => sum + (c - mean) ** 2, 0) / values.length)
-    if (stdDev === 0) return new Map<string, number>()
-    const map = new Map<string, number>()
-    for (const n of neighborhoodEntries) {
-      map.set(n.neighborhood, (n.netChange - mean) / stdDev)
-    }
-    return map
-  }, [neighborhoodEntries])
-
-  // Stats
-  const netChange = useMemo(() => {
-    if (openingsCount === null || closuresCount === null) return null
-    return openingsCount - closuresCount
-  }, [openingsCount, closuresCount])
-
-  const priorNetChange = useMemo(() => {
-    if (priorOpeningsCount === null || priorClosuresCount === null) return null
-    return priorOpeningsCount - priorClosuresCount
-  }, [priorOpeningsCount, priorClosuresCount])
-
-  const netYoY = useMemo(() => {
-    if (netChange === null || priorNetChange === null || priorNetChange === 0) return null
-    return ((netChange - priorNetChange) / Math.abs(priorNetChange)) * 100
-  }, [netChange, priorNetChange])
-
-  const openingsYoY = useMemo(() => {
-    if (openingsCount === null || priorOpeningsCount === null || priorOpeningsCount === 0) return null
-    return ((openingsCount - priorOpeningsCount) / priorOpeningsCount) * 100
-  }, [openingsCount, priorOpeningsCount])
-
-  const closuresYoY = useMemo(() => {
-    if (closuresCount === null || priorClosuresCount === null || priorClosuresCount === 0) return null
-    return ((closuresCount - priorClosuresCount) / priorClosuresCount) * 100
-  }, [closuresCount, priorClosuresCount])
-
-  const topSector = useMemo(() => {
-    if (sectorOpeningRows.length === 0) return null
-    const top = sectorOpeningRows.find((r) => r.naic_code_description)
-    return top ? top.naic_code_description : null
-  }, [sectorOpeningRows])
-
-  // Sector entries for sidebar — merge openings + closures per sector
-  const sectorEntries = useMemo(() => {
-    const map = new Map<string, { openings: number; closures: number }>()
-    for (const r of sectorOpeningRows) {
-      const key = r.naic_code_description || ''
-      const entry = map.get(key) || { openings: 0, closures: 0 }
-      entry.openings = parseInt(r.cnt, 10) || 0
-      map.set(key, entry)
-    }
-    for (const r of sectorClosureRows) {
-      const key = r.naic_code_description || ''
-      const entry = map.get(key) || { openings: 0, closures: 0 }
-      entry.closures = parseInt(r.cnt, 10) || 0
-      map.set(key, entry)
-    }
-    return Array.from(map.entries())
-      .map(([sector, stats]) => ({
-        sector: sector || 'Uncategorized',
-        count: stats.openings + stats.closures,
-        openings: stats.openings,
-        closures: stats.closures,
-        net: stats.openings - stats.closures,
-      }))
-      .sort((a, b) => b.count - a.count)
-  }, [sectorOpeningRows, sectorClosureRows])
-
-  // Sector bars for chart tile (categorized sectors only)
-  const sectorBars = useMemo(() => {
-    return sectorEntries
-      .filter((s) => s.sector !== 'Uncategorized')
-      .slice(0, 8)
-      .map((s) => ({
-        label: s.sector,
-        value: s.openings,
-      }))
-  }, [sectorEntries])
-
-  // Monthly formation data for NetFormationChart
-  const monthlyFormation = useMemo((): FormationDataPoint[] => {
-    const openMap = new Map<string, number>()
-    for (const r of monthlyOpeningRows) {
-      if (r.month) openMap.set(r.month, parseInt(r.cnt, 10) || 0)
-    }
-    const closeMap = new Map<string, number>()
-    for (const r of monthlyClosureRows) {
-      if (r.month) closeMap.set(r.month, parseInt(r.cnt, 10) || 0)
-    }
-    const allMonths = new Set([...openMap.keys(), ...closeMap.keys()])
-    return Array.from(allMonths)
-      .sort()
-      .map((month) => ({
-        month,
-        openings: openMap.get(month) || 0,
-        closures: closeMap.get(month) || 0,
-      }))
-  }, [monthlyOpeningRows, monthlyClosureRows])
-
-  // Prior-year formation data for ghost bars
-  const priorFormation = useMemo((): FormationDataPoint[] => {
-    const openMap = new Map<string, number>()
-    for (const r of priorOpeningRows) {
-      if (r.month) openMap.set(r.month, parseInt(r.cnt, 10) || 0)
-    }
-    const closeMap = new Map<string, number>()
-    for (const r of priorClosureRows) {
-      if (r.month) closeMap.set(r.month, parseInt(r.cnt, 10) || 0)
-    }
-    const allMonths = new Set([...openMap.keys(), ...closeMap.keys()])
-    return Array.from(allMonths)
-      .sort()
-      .map((month) => ({
-        month,
-        openings: openMap.get(month) || 0,
-        closures: closeMap.get(month) || 0,
-      }))
-  }, [priorOpeningRows, priorClosureRows])
-
-  // Card definitions
-  const cardDefs = useMemo((): CardDef[] => [
-    {
-      id: 'net-change',
-      label: 'Net Change',
-      shortLabel: 'Net',
-      value: netChange !== null ? (netChange >= 0 ? `+${formatNumber(netChange)}` : `${formatNumber(netChange)}`) : '...',
-      color: netChange !== null && netChange >= 0 ? '#10b981' : '#ef4444',
-      delay: 0,
-      info: 'net-change',
-      defaultExpanded: true,
-      yoyDelta: netYoY,
-    },
-    {
-      id: 'openings',
-      label: 'Openings',
-      shortLabel: 'Open',
-      value: openingsCount !== null ? formatNumber(openingsCount) : '...',
-      color: '#10b981',
-      delay: 80,
-      info: 'openings',
-      defaultExpanded: true,
-      yoyDelta: openingsYoY,
-      sparkData: annualSparks.openings.values.length > 1 ? annualSparks.openings : undefined,
-    },
-    {
-      id: 'closures',
-      label: 'Closures',
-      shortLabel: 'Close',
-      value: closuresCount !== null ? formatNumber(closuresCount) : '...',
-      color: '#ef4444',
-      delay: 160,
-      info: 'closures',
-      defaultExpanded: true,
-      yoyDelta: closuresYoY,
-      sparkData: annualSparks.closures.values.length > 1 ? annualSparks.closures : undefined,
-    },
-    {
-      id: 'active',
-      label: 'Active Businesses',
-      shortLabel: 'Active',
-      value: activeCount !== null ? formatNumber(activeCount) : '...',
-      color: '#64748b',
-      delay: 240,
-      info: 'active-businesses',
-      defaultExpanded: false,
-    },
-    {
-      id: 'top-sector',
-      label: 'Top Sector',
-      shortLabel: 'Sector',
-      value: topSector || '...',
-      color: '#64748b',
-      delay: 320,
-      info: 'top-sector',
-      defaultExpanded: false,
-    },
-  ], [netChange, netYoY, openingsCount, openingsYoY, closuresCount, closuresYoY, activeCount, topSector, annualSparks])
+  // --- Computed data (extracted to hook) ---
+  const {
+    dataWithNeighborhoods,
+    filteredData,
+    neighborhoodEntries,
+    neighborhoodAnomalies,
+    sectorEntries,
+    sectorBars,
+    monthlyFormation,
+    priorFormation,
+    cardDefs,
+    heatmapGeojson,
+    anomalyGeojson,
+  } = useBusinessActivityData({
+    rawData,
+    dateRange,
+    mapMode,
+    selectedNeighborhood,
+    neighborhoodBoundaries,
+    sectorRows,
+    monthlyOpeningRows,
+    monthlyClosureRows,
+    priorOpeningRows,
+    priorClosureRows,
+    openingsCount,
+    closuresCount,
+    activeCount,
+    priorOpeningsCount,
+    priorClosuresCount,
+  })
 
   // Chart tiles
   const chartTiles = useMemo<ChartTileDef[]>(() => {
@@ -694,7 +336,7 @@ export default function BusinessActivity() {
     if (sectorBars.length > 0) {
       tiles.push({
         id: 'top-sectors',
-        label: 'Top Sectors (coded)',
+        label: 'Top Sectors',
         shortLabel: 'Sectors',
         color: '#8b5cf6',
         defaultExpanded: true,
@@ -704,70 +346,48 @@ export default function BusinessActivity() {
     return tiles
   }, [monthlyFormation, priorFormation, sectorBars])
 
-  // --- Map GeoJSON: dual heatmap (openings green, closures red) ---
-  const buildFeatures = (records: typeof filteredData) =>
-    records.map((r) => ({
-      type: 'Feature' as const,
-      geometry: { type: 'Point' as const, coordinates: [r.lng, r.lat] },
-      properties: {
-        uniqueId: r.uniqueId,
-        dbaName: r.dbaName,
-        sector: r.sector,
-        status: r.status,
-        address: r.address,
-        neighborhood: r.neighborhood,
-        startDate: r.startDate,
-        endDate: r.endDate,
-      },
-    }))
-
+  // Build 3 separate GeoJSON sources for dual heatmap (green openings + red closures + colored circles)
   const openingsGeojson = useMemo((): GeoJSON.FeatureCollection | null => {
-    if (mapMode !== 'heatmap') return null
-    const opened = filteredData.filter((r) => r.status === 'opened')
-    if (opened.length === 0) return null
-    return { type: 'FeatureCollection', features: buildFeatures(opened) }
+    if (mapMode !== 'heatmap' || filteredData.length === 0) return null
+    const features = filteredData
+      .filter((r) => r.status === 'opened')
+      .map((r) => ({
+        type: 'Feature' as const,
+        geometry: { type: 'Point' as const, coordinates: [r.lng, r.lat] },
+        properties: { uniqueId: r.uniqueId, dbaName: r.dbaName, sector: r.sector, status: r.status, address: r.address, neighborhood: r.neighborhood, startDate: r.startDate, endDate: r.endDate },
+      }))
+    return { type: 'FeatureCollection', features }
   }, [filteredData, mapMode])
 
   const closuresGeojson = useMemo((): GeoJSON.FeatureCollection | null => {
-    if (mapMode !== 'heatmap') return null
-    const closed = filteredData.filter((r) => r.status === 'closed')
-    if (closed.length === 0) return null
-    return { type: 'FeatureCollection', features: buildFeatures(closed) }
+    if (mapMode !== 'heatmap' || filteredData.length === 0) return null
+    const features = filteredData
+      .filter((r) => r.status === 'closed')
+      .map((r) => ({
+        type: 'Feature' as const,
+        geometry: { type: 'Point' as const, coordinates: [r.lng, r.lat] },
+        properties: { uniqueId: r.uniqueId, dbaName: r.dbaName, sector: r.sector, status: r.status, address: r.address, neighborhood: r.neighborhood, startDate: r.startDate, endDate: r.endDate },
+      }))
+    return { type: 'FeatureCollection', features }
   }, [filteredData, mapMode])
 
-  // All points for circle layer (visible at high zoom)
   const allPointsGeojson = useMemo((): GeoJSON.FeatureCollection | null => {
     if (mapMode !== 'heatmap' || filteredData.length === 0) return null
-    return { type: 'FeatureCollection', features: buildFeatures(filteredData) }
-  }, [filteredData, mapMode])
-
-  const { openingsHeatLayers, closuresHeatLayers, pointsLayers } = BUSINESS_HEATMAP_LAYERS
-
-  // Anomaly choropleth
-  const anomalyGeojson = useMemo((): GeoJSON.FeatureCollection | null => {
-    if (mapMode !== 'anomaly' || !neighborhoodBoundaries || neighborhoodAnomalies.size === 0) return null
     return {
       type: 'FeatureCollection',
-      features: neighborhoodBoundaries.features.map((f) => ({
-        ...f,
-        properties: {
-          ...f.properties,
-          zScore: neighborhoodAnomalies.get(f.properties?.nhood ?? '') ?? 0,
-          businessCount: neighborhoodEntries.find((n) => n.neighborhood === f.properties?.nhood)?.total ?? 0,
-          openings: neighborhoodEntries.find((n) => n.neighborhood === f.properties?.nhood)?.openings ?? 0,
-          closures: neighborhoodEntries.find((n) => n.neighborhood === f.properties?.nhood)?.closures ?? 0,
-        },
+      features: filteredData.map((r) => ({
+        type: 'Feature' as const,
+        geometry: { type: 'Point' as const, coordinates: [r.lng, r.lat] },
+        properties: { uniqueId: r.uniqueId, dbaName: r.dbaName, sector: r.sector, status: r.status, address: r.address, neighborhood: r.neighborhood, startDate: r.startDate, endDate: r.endDate },
       })),
     }
-  }, [mapMode, neighborhoodBoundaries, neighborhoodAnomalies, neighborhoodEntries])
+  }, [filteredData, mapMode])
 
-  const anomalyLayers = ANOMALY_LAYERS
-
-  // Bind layers
-  useMapLayer(mapInstance, 'business-openings', openingsGeojson, openingsHeatLayers)
-  useMapLayer(mapInstance, 'business-closures', closuresGeojson, closuresHeatLayers)
-  useMapLayer(mapInstance, 'business-all-points', allPointsGeojson, pointsLayers)
-  useMapLayer(mapInstance, 'neighborhood-anomaly', anomalyGeojson, anomalyLayers)
+  // Bind layers (3 sources for dual heatmap + anomaly choropleth)
+  useMapLayer(mapInstance, 'business-openings', openingsGeojson, BUSINESS_HEATMAP_LAYERS.openingsHeatLayers)
+  useMapLayer(mapInstance, 'business-closures', closuresGeojson, BUSINESS_HEATMAP_LAYERS.closuresHeatLayers)
+  useMapLayer(mapInstance, 'business-all-points', allPointsGeojson, BUSINESS_HEATMAP_LAYERS.pointsLayers)
+  useMapLayer(mapInstance, 'neighborhood-anomaly', anomalyGeojson, ANOMALY_LAYERS)
 
   // Tooltips
   useMapTooltip(mapInstance, 'business-points', (props) => {
@@ -1024,7 +644,6 @@ export default function BusinessActivity() {
                     categories={sectorEntries}
                     selected={selectedSectors}
                     onChange={setSelectedSectors}
-                    zScores={sectorZScores}
                   />
                 )}
               </>
@@ -1092,11 +711,6 @@ export default function BusinessActivity() {
                               {ns.neighborhood}
                             </p>
                             <p className="text-[10px] text-slate-400 dark:text-slate-600 font-mono">
-                              {nhTrend?.priorYearCount ? (
-                                <span className={nhTrend.yoyPct > 0 ? 'text-emerald-400' : nhTrend.yoyPct < 0 ? 'text-red-400' : ''}>
-                                  {nhTrend.yoyPct >= 0 ? '+' : ''}{nhTrend.yoyPct.toFixed(0)}%{' · '}
-                                </span>
-                              ) : null}
                               {ns.total.toLocaleString()} businesses
                               {ns.openings > 0 && <span className="text-emerald-400"> · {ns.openings} opened</span>}
                               {ns.closures > 0 && <span className="text-red-400"> · {ns.closures} closed</span>}
@@ -1104,6 +718,11 @@ export default function BusinessActivity() {
                               <span className={ns.netChange >= 0 ? 'text-emerald-400' : 'text-red-400'}>
                                 {ns.netChange >= 0 ? '+' : ''}{ns.netChange}
                               </span>
+                              {nhTrend?.priorYearCount ? (
+                                <span className={nhTrend.yoyPct > 0 ? 'text-emerald-400' : nhTrend.yoyPct < 0 ? 'text-red-400' : ''}>
+                                  {' · '}{nhTrend.yoyPct >= 0 ? '+' : ''}{nhTrend.yoyPct.toFixed(0)}% since last yr
+                                </span>
+                              ) : null}
                               {zScore !== undefined && (
                                 <span className={zScore > 1 ? 'text-red-400' : zScore < -1 ? 'text-blue-400' : ''}>
                                   {' · '}{zScore >= 0 ? '+' : ''}{zScore.toFixed(1)}{'\u03C3'}
