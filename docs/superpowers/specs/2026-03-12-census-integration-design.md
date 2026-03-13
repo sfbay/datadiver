@@ -157,6 +157,7 @@ Block groups have core tables (population, income, race/ethnicity, housing tenur
 - Each circle = one scatter plot dot (visual consistency)
 - Implemented with D3 force layout (force-x, force-y for geographic positioning, force-collide for overlap prevention)
 - Works at neighborhood level (41 circles). Not available at tract/block group level.
+- **Zoom behavior:** Cartogram toggle is hidden/disabled when map is zoomed past neighborhood level (z12+). If user zooms in while cartogram is active, auto-switch to choropleth mode.
 
 **Correlation Scatter Plot (right panel):**
 - X-axis: active demographic variable (synced with map)
@@ -170,19 +171,22 @@ Block groups have core tables (population, income, race/ethnicity, housing tenur
 
 Pre-computed civic metrics (fast, neighborhood-level GROUP BY for current date range):
 
-| Metric | Dataset | Query Pattern |
-|--------|---------|---------------|
-| Crime Incidents | `wg3w-h783` | `COUNT(*) GROUP BY analysis_neighborhood` |
-| 311 Cases | `vw6y-z8j6` | `COUNT(*) GROUP BY analysis_neighborhood` |
-| Avg Response Time | `nuek-vuh3` | `AVG(response_time) GROUP BY neighborhoods_analysis_boundaries` |
-| Fire Incidents | `nuek-vuh3` | `COUNT(*) WHERE fire_type IS NOT NULL GROUP BY neighborhood_district` |
-| Traffic Crashes | `ubvf-ztfx` | `COUNT(*) GROUP BY analysis_neighborhood` |
-| Crash Injuries | `ubvf-ztfx` | `SUM(number_injured) GROUP BY analysis_neighborhood` |
-| Parking Citations | `ab4h-6ztd` | `COUNT(*) GROUP BY analysis_neighborhood` |
-| Parking Revenue | `imvp-dq3v` | `SUM(session_amount) GROUP BY analysis_neighborhood` |
-| Business Openings | `g8m3-pdis` | `COUNT(*) WHERE ... GROUP BY analysis_neighborhood` |
+| Metric | Dataset | Query Pattern | Notes |
+|--------|---------|---------------|-------|
+| Crime Incidents | `wg3w-h783` | `COUNT(*) GROUP BY analysis_neighborhood` | |
+| 311 Cases | `vw6y-z8j6` | `COUNT(*) GROUP BY analysis_neighborhood` | |
+| Avg Response Time | `nuek-vuh3` | Client-side: fetch raw records, compute `diffMinutes(received_dttm, on_scene_dttm)`, average per neighborhood | SoQL cannot compute `AVG(date1 - date2)` — no server-side `response_time` column |
+| Fire Incidents | `wr8u-xric` | `COUNT(*) GROUP BY neighborhood_district` | Separate dataset from EMS dispatch |
+| Traffic Crashes | `ubvf-ztfx` | `COUNT(*) GROUP BY analysis_neighborhood` | |
+| Crash Injuries | `ubvf-ztfx` | `SUM(number_injured) GROUP BY analysis_neighborhood` | |
+| Parking Citations | `ab4h-6ztd` | `COUNT(*) GROUP BY analysis_neighborhood` | |
+| Parking Revenue | `imvp-dq3v` | `SUM(gross_paid_amount) GROUP BY meter_event_type` | Revenue dataset lacks `analysis_neighborhood` — requires join through meter inventory (`8vzz-qzz9`) or client-side enrichment via meter location. Deferred to implementation. |
+| Business Openings | `g8m3-pdis` | `COUNT(*) WHERE ... GROUP BY analysis_neighborhood` | |
 
-"Custom metric" option: user picks dataset + aggregation. Fires live Socrata query.
+**Special cases:**
+- **Avg Response Time** requires client-side aggregation (~5K records per date range). This is an exception to the server-side aggregation pattern but unavoidable — SoQL has no date-diff function.
+- **Parking Revenue** lacks a neighborhood field. The implementation will determine the best approach: either a two-query join through meter inventory, or skipping this metric until the Explorer can handle multi-dataset joins.
+- **Custom metric** option is deferred to a follow-up phase. The pre-computed set covers the primary use cases. Adding a query builder UI is significant scope that should be specced separately.
 
 Census × Census correlations: any Census variable can be Y-axis (income vs education, rent burden vs LEP rate, etc.).
 
@@ -332,10 +336,11 @@ Census Bureau API (api.census.gov)
 
 ### Tract and Block Group Boundary GeoJSON
 
-- Census tract boundaries: available from DataSF or Census TIGER/Line shapefiles
-- Block group boundaries: Census TIGER/Line
+- Census tract boundaries: available from DataSF or Census TIGER/Line shapefiles (~200KB for SF)
+- Block group boundaries: Census TIGER/Line (~500KB-1MB for SF)
 - Loaded as static GeoJSON assets, lazy-loaded by zoom level
 - Separate from the demographic data (geometry vs. attributes)
+- Ship as static assets in `src/data/` (not fetched from CDN). Total ~1.5MB for all boundary files — acceptable for a data-dense app.
 
 ### No Zustand Store
 
@@ -469,7 +474,7 @@ Every Census element displays source attribution:
 - **Sidebar context panel:** "ACS 2020-2024 · Census Bureau"
 - **Scatter plot:** Source for both axes (e.g., "X: Census Bureau ACS · Y: SF Open Data via Socrata")
 
-The `DataSourceLine` component is systematized and retrofitted across all existing views as part of this work.
+The `DataSourceLine` component is built as part of this work for Census elements. Retrofitting it across all existing views is a separate, smaller task tracked independently to keep this spec focused.
 
 ---
 
@@ -520,13 +525,12 @@ interface CensusVariableConfig {
 ### CensusData (per geographic unit)
 
 ```typescript
-interface CensusData {
+type CensusData = {
   geoId: string              // tract/block group/neighborhood ID
   geoType: 'tract' | 'blockgroup' | 'neighborhood'
   name: string
   population: number
-  [key in CensusVariable]?: number
-}
+} & Partial<Record<CensusVariable, number>>
 ```
 
 ### NeighborhoodCensusData (aggregated)
@@ -551,16 +555,19 @@ interface TractMapping {
 ### UnderlayPresets
 
 ```typescript
-const UNDERLAY_PRESETS: Record<ViewId, CensusVariable[]> = {
-  crimeIncidents: ['medianIncome', 'pctAsian', 'populationDensity'],  // Race uses sub-picker
-  cases311: ['rentBurden', 'lepRate', 'pctHispanic'],
-  trafficSafety: ['medianAge', 'populationDensity', 'pctTransit'],
-  emergencyResponse: ['rentBurden', 'pctOver65', 'pctBlack'],
-  parkingCitations: ['medianIncome', 'renterPct', 'pctDriveAlone'],
-  parkingRevenue: ['medianIncome', 'populationDensity'],
-  businessActivity: ['medianIncome', 'pctBachelorsPlus', 'pctAsian'],
+// ViewId uses kebab-case: 'crime-incidents', '311-cases', etc.
+const UNDERLAY_PRESETS: Partial<Record<ViewId, CensusVariable[]>> = {
+  'crime-incidents': ['medianIncome', 'pctAsian', 'populationDensity'],  // Race uses sub-picker
+  '311-cases': ['rentBurden', 'lepRate', 'pctHispanic'],
+  'traffic-safety': ['medianAge', 'populationDensity', 'pctTransit'],
+  'emergency-response': ['rentBurden', 'pctOver65', 'pctBlack'],
+  'parking-citations': ['medianIncome', 'renterPct', 'pctDriveAlone'],
+  'parking-revenue': ['medianIncome', 'populationDensity'],
+  'business-activity': ['medianIncome', 'pctBachelorsPlus', 'pctAsian'],
 }
 ```
+
+`Partial<Record<...>>` because chart-centric views (dispatch-911, campaign-finance) don't have map underlays.
 
 Note: Race/Ethnicity presets above show a specific group as the default, but selecting the preset opens the sub-picker so users can switch to any group.
 
@@ -594,12 +601,24 @@ The following modules from `../social/resonate/src/lib/census/` are ported and a
 
 ---
 
+## Dark Mode
+
+All new components must support dark mode (DataDiver's default). Key considerations:
+
+- **Choropleth color ramps:** Designed for dark-v11 basemap. The purple→teal→amber income scale reads well on dark backgrounds. Light mode inverts to muted versions.
+- **Demographic cards:** Use `bg-white/5 dark:bg-white/5` (already dark-first). Light mode: `bg-slate-50`.
+- **Scatter plot:** Axis text uses `isDark ? '#cbd5e1' : '#475569'` pattern (matching TopRecipientsChart convention, not the inverted ContributionTimeline pattern).
+- **Underlay legend/picker:** Glass-card style with `backdrop-blur` — works on both themes.
+- **Cartogram circles:** Stroke colors adjust for contrast on each background.
+
+---
+
 ## Edge Cases
 
 - **Tracts straddling neighborhood boundaries:** Handled by weighted allocation in crosswalk. Population and counts use `weightedSum()`, rates use `weightedAvg()` with population weights.
 - **Block group variables missing:** Some ACS tables unavailable at block group level. UI hides unavailable variables when zoomed to block group resolution.
 - **Zero-population tracts:** Some tracts (parks, industrial) have near-zero population. Exclude from scatter plot and cartogram to avoid division-by-zero and outlier distortion.
-- **Margin of error:** ACS estimates include MOE. Not displayed by default but available on hover/detail for transparency. Small-population tracts may have large MOE — consider visual indicator (dashed border?) for low-confidence estimates.
+- **Margin of error:** ACS estimates include MOE. Deferred — not displayed in v1. Follow-up work can add MOE on hover/detail for transparency if users request it.
 - **Census data without API key:** App uses static JSON only. Fully functional. Background refresh simply doesn't fire.
 - **Stale static data:** After annual ACS release (January), static JSON may be one vintage behind. Acceptable — data is 5-year rolling average, year-to-year changes are small. Update static files in next deploy.
 
@@ -608,10 +627,10 @@ The following modules from `../social/resonate/src/lib/census/` are ported and a
 ## Implementation Sequence
 
 1. **Port Census infrastructure** from resonate (client, mapping, aggregator, types)
-2. **Generate static JSON** files at 3 resolution levels
-3. **Build `useCensusData` hook** with static + background refresh pattern
-4. **Build Demographics Explorer** view (proves data pipeline end-to-end)
-5. **Build underlay system** (`DemographicUnderlay`, `UnderlayPicker`) and wire into existing views
-6. **Build `NeighborhoodCensusContext`** sidebar section and wire into existing views
-7. **Build `DataSourceLine`** and retrofit across all views
-8. **Acquire boundary GeoJSON** for tracts and block groups
+2. **Acquire boundary GeoJSON** for tracts and block groups (Census TIGER/Line → simplified GeoJSON)
+3. **Generate static JSON** files at 3 resolution levels
+4. **Build `useCensusData` hook** with static + background refresh pattern
+5. **Build Demographics Explorer** view (proves data pipeline end-to-end)
+6. **Build underlay system** (`DemographicUnderlay`, `UnderlayPicker`) and wire into existing views
+7. **Build `NeighborhoodCensusContext`** sidebar section and wire into existing views
+8. **Build `DataSourceLine`** for Census elements (retrofit to other views is a separate task)
