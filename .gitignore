@@ -34,3 +34,4 @@ progress.md
 *.sw?
 .vercel
 .worktrees
+.superpowers
