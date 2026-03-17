@@ -1,4 +1,11 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
+import type { CensusVariable } from '@/types/census'
+import { useCensusData } from '@/hooks/useCensusData'
+import { useDemographicUnderlay } from '@/components/maps/DemographicUnderlay'
+import UnderlayPicker from '@/components/maps/UnderlayPicker'
+import NeighborhoodCensusContext from '@/components/ui/NeighborhoodCensusContext'
+import { UNDERLAY_PRESETS } from '@/utils/censusVariables'
+import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useSearchParams } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import { useDataset } from '@/hooks/useDataset'
@@ -53,6 +60,7 @@ export default function EmergencyResponse() {
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('neighborhoods')
   const [mapOverlay, setMapOverlay] = useState<MapOverlay>('response')
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState<string | null>(null)
   const mapHandleRef = useRef<MapHandle>(null)
 
   // Deep-link: rehydrate detail panel from URL on mount
@@ -120,6 +128,35 @@ export default function EmergencyResponse() {
     }
     return map
   }, [fireInsights.neighborhoodFires])
+
+  // Neighborhood boundaries + Census demographic underlay
+  const { boundaries: neighborhoodBoundaries } = useNeighborhoodBoundaries()
+  const [underlayVariable, setUnderlayVariable] = useState<CensusVariable | null>(null)
+  const { neighborhoods: censusNeighborhoods } = useCensusData()
+
+  useDemographicUnderlay({
+    map: mapInstance,
+    variable: underlayVariable,
+    censusData: censusNeighborhoods,
+    boundaries: neighborhoodBoundaries,
+    geoIdProperty: 'nhood',
+    opacity: 0.2,
+    beforeLayerId: 'response-heat',
+  })
+
+  const cityAvg = useMemo(() => {
+    if (censusNeighborhoods.length === 0) return undefined
+    const totalPop = censusNeighborhoods.reduce((s, n) => s + n.population, 0)
+    if (totalPop === 0) return undefined
+    const avg: Record<string, number> = {}
+    for (const key of ['medianIncome', 'povertyRate', 'rentBurden', 'lepRate', 'renterPct'] as const) {
+      const vals = censusNeighborhoods.filter(n => (n as any)[key] !== undefined)
+      if (vals.length > 0) {
+        avg[key] = vals.reduce((s, n) => s + ((n as any)[key] as number) * n.population, 0) / totalPop
+      }
+    }
+    return avg as any
+  }, [censusNeighborhoods])
 
   const { data: rawData, isLoading, error, hitLimit } = useDataset<FireEMSDispatch>(
     'fireEMSDispatch',
@@ -570,6 +607,15 @@ export default function EmergencyResponse() {
               <ChartTray viewId="emergencyResponse" tiles={chartTiles} />
             )}
 
+            {/* Demographic underlay picker */}
+            <div className="absolute top-4 right-4 z-20">
+              <UnderlayPicker
+                presets={UNDERLAY_PRESETS['emergency-response'] ?? []}
+                activeVariable={underlayVariable}
+                onSelect={setUnderlayVariable}
+              />
+            </div>
+
             {/* Incident detail panel */}
             <IncidentDetailPanel />
           </MapView>
@@ -604,6 +650,25 @@ export default function EmergencyResponse() {
                   <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
                 </div>
 
+                {selectedNeighborhood && (
+                  <button
+                    onClick={() => setSelectedNeighborhood(null)}
+                    className="mb-3 text-[10px] font-mono text-blue-500 hover:text-blue-400 transition-colors"
+                  >
+                    {'\u2190'} Clear: {selectedNeighborhood}
+                  </button>
+                )}
+
+                {selectedNeighborhood && (
+                  <NeighborhoodCensusContext
+                    neighborhood={selectedNeighborhood}
+                    censusData={censusNeighborhoods.find(n => n.name === selectedNeighborhood)}
+                    cityAverages={cityAvg}
+                    civicCount={neighborhoodStats.find(n => n.neighborhood === selectedNeighborhood)?.totalIncidents}
+                    civicLabel="Incidents"
+                  />
+                )}
+
                 {neighborhoodStats.length === 0 && !isLoading && (
                   <p className="text-xs text-slate-400 dark:text-slate-600 italic">
                     No data for selected filters.
@@ -618,9 +683,14 @@ export default function EmergencyResponse() {
                       <div
                         key={ns.neighborhood}
                         onClick={() => {
+                          setSelectedNeighborhood(selectedNeighborhood === ns.neighborhood ? null : ns.neighborhood)
                           mapInstance?.flyTo({ center: [ns.centerLng, ns.centerLat], zoom: 14, duration: 1200 })
                         }}
-                        className="relative py-2 px-3 rounded-lg cursor-pointer hover:bg-white/80 dark:hover:bg-white/[0.04] transition-all duration-200"
+                        className={`relative py-2 px-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                          selectedNeighborhood === ns.neighborhood
+                            ? 'bg-blue-500/10 ring-1 ring-blue-500/30'
+                            : 'hover:bg-white/80 dark:hover:bg-white/[0.04]'
+                        }`}
                       >
                         <div
                           className="absolute inset-y-0 left-0 rounded-lg opacity-[0.06] bar-grow"
