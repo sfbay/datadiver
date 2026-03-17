@@ -75,6 +75,13 @@ const NAV_ITEMS = [
     description: 'Campaign contributions & spending',
     accentColor: '#14b8a6',
   },
+  {
+    path: '/demographics',
+    label: 'Demographics',
+    shortLabel: 'DM',
+    description: 'Census demographics & civic correlations',
+    accentColor: '#7c3aed',
+  },
 ] as const
 
 export default function AppShell({ children }: { children: ReactNode }) {
