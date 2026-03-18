@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+import { useAppStore } from '@/stores/appStore'
 
 const VISUALIZATIONS = [
   {
@@ -132,60 +133,64 @@ const VISUALIZATIONS = [
 
 export default function Home() {
   const navigate = useNavigate()
+  const isDarkMode = useAppStore((s) => s.isDarkMode)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     requestAnimationFrame(() => setMounted(true))
   }, [])
 
+  const heroBg = isDarkMode ? '/dana-dark-hero-bg.png' : '/dana-light-hero-bg.png'
+
   return (
     <div className="h-full overflow-y-auto">
       <div className="max-w-5xl mx-auto px-8 py-16 relative">
-        {/* Hero */}
-        <header className="mb-20 relative z-10">
-          <div className="flex items-start gap-10 md:gap-16">
-            <div className="flex-1 min-w-0">
-              <div className={`transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-                <div className="flex items-center gap-2.5 mb-6">
-                  <div className="h-[1px] w-8 bg-signal-blue/60" />
-                  <p className="text-[11px] font-mono tracking-[0.25em] uppercase text-signal-blue">
-                    San Francisco Open Data
-                  </p>
-                </div>
-              </div>
+        {/* Hero — full-width background with Dana on right, text on left */}
+        <header className="mb-20 relative z-10 overflow-hidden rounded-3xl">
+          {/* Background image */}
+          <div
+            className={`absolute inset-0 transition-opacity duration-1000 ${mounted ? 'opacity-100' : 'opacity-0'}`}
+            style={{
+              backgroundImage: `url(${heroBg})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'right center',
+              backgroundRepeat: 'no-repeat',
+            }}
+          />
+          {/* Subtle fade on left edge so text reads clearly */}
+          <div className="absolute inset-0 bg-gradient-to-r from-white/80 via-white/40 to-transparent dark:from-slate-950/85 dark:via-slate-950/40 dark:to-transparent" />
 
-              <h1
-                className={`font-display text-6xl md:text-[5.5rem] text-ink dark:text-white leading-[0.95] mb-6 transition-all duration-1000 delay-150 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
-              >
-                <em className="not-italic">Dive beneath</em>
-                <br />
-                <span className="text-slate-300 dark:text-slate-600">the surface.</span>
-              </h1>
-
-              <p
-                className={`text-lg text-slate-500 dark:text-slate-400 max-w-xl leading-relaxed transition-all duration-1000 delay-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
-              >
-                Civic data made visible. Explore emergency response patterns, revenue flows,
-                and the stories hidden in San Francisco's public datasets.
-              </p>
-
-              <div className={`flex items-center gap-4 mt-6 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-signal-emerald/80">
-                  <span className="w-1.5 h-1.5 rounded-full bg-signal-emerald pulse-live" />
-                  Live data from data.sfgov.org
-                </span>
+          {/* Text content — constrained to left ~50% */}
+          <div className="relative py-16 px-10 md:py-20 md:px-14 max-w-[55%]">
+            <div className={`transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+              <div className="flex items-center gap-2.5 mb-6">
+                <div className="h-[1px] w-8 bg-signal-blue/60" />
+                <p className="text-[11px] font-mono tracking-[0.25em] uppercase text-signal-blue">
+                  San Francisco Open Data
+                </p>
               </div>
             </div>
 
-            <div
-              className={`hidden md:block flex-shrink-0 w-56 lg:w-72 transition-all duration-1000 delay-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
+            <h1
+              className={`font-display text-5xl md:text-7xl lg:text-[5.5rem] text-ink dark:text-white leading-[0.95] mb-6 transition-all duration-1000 delay-150 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
             >
-              <img
-                src="/dana-diving.png"
-                alt="Dana the Data Diving Harbor Seal"
-                className="w-full h-auto"
-                style={{ filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.08))' }}
-              />
+              <em className="not-italic">Dive beneath</em>
+              <br />
+              <span className="text-slate-300 dark:text-slate-600">the surface.</span>
+            </h1>
+
+            <p
+              className={`text-lg text-slate-500 dark:text-slate-400 max-w-md leading-relaxed transition-all duration-1000 delay-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+            >
+              Civic data made visible. Explore emergency response patterns, revenue flows,
+              and the stories hidden in San Francisco's public datasets.
+            </p>
+
+            <div className={`flex items-center gap-4 mt-6 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-signal-emerald/80">
+                <span className="w-1.5 h-1.5 rounded-full bg-signal-emerald pulse-live" />
+                Live data from data.sfgov.org
+              </span>
             </div>
           </div>
         </header>
