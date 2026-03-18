@@ -152,12 +152,34 @@ export default function BusinessActivity() {
   }), [])
   const trend = useTrendBaseline(trendConfig, dateRange, sectorClause || undefined)
 
-  // --- Primary data: business locations ---
-  const { data: rawData, isLoading, error, hitLimit } = useDataset<BusinessLocationRecord>(
+  // --- Primary data: split into openings + closures to avoid sort bias ---
+  // A single query with (start_date OR end_date) + ORDER BY start_date would
+  // cut off closures at the row limit. Two queries with correct sort per field.
+  const { data: openingsRaw, isLoading: openingsLoading, error: openingsError, hitLimit: openingsHitLimit } = useDataset<BusinessLocationRecord>(
     'businessLocations',
-    { $where: whereClause, $limit: 5000, $select: SELECT_FIELDS },
-    [whereClause]
+    { $where: openingsClause, $limit: 3000, $select: SELECT_FIELDS, $order: 'dba_start_date DESC' },
+    [openingsClause]
   )
+  const { data: closuresRaw, isLoading: closuresLoading, error: closuresError } = useDataset<BusinessLocationRecord>(
+    'businessLocations',
+    { $where: closuresClause, $limit: 3000, $select: SELECT_FIELDS, $order: 'dba_end_date DESC' },
+    [closuresClause]
+  )
+  const rawData = useMemo(() => {
+    // Deduplicate: a business that opened AND closed in range appears in both queries
+    const seen = new Set<string>()
+    const merged: BusinessLocationRecord[] = []
+    for (const r of [...openingsRaw, ...closuresRaw]) {
+      if (!seen.has(r.uniqueid)) {
+        seen.add(r.uniqueid)
+        merged.push(r)
+      }
+    }
+    return merged
+  }, [openingsRaw, closuresRaw])
+  const isLoading = openingsLoading || closuresLoading
+  const error = openingsError || closuresError
+  const hitLimit = openingsHitLimit
 
   // Server-side counts
   const { data: openingsCountRows } = useDataset<{ count: string }>(
