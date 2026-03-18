@@ -176,7 +176,7 @@ export default function Home() {
             >
               <em className="not-italic">Dive beneath</em>
               <br />
-              <span className="text-slate-300 dark:text-slate-600">the surface.</span>
+              <span className="text-slate-300 dark:text-slate-400">the surface.</span>
             </h1>
 
             <p
