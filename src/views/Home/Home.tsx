@@ -208,7 +208,7 @@ export default function Home() {
                 onClick={() => navigate(viz.path)}
                 className={`
                   group text-left overflow-hidden relative
-                  rounded-[2rem] rounded-bl-none rounded-tr-none
+                  rounded-[2rem] rounded-bl-none
                   transition-all duration-500
                   ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
                 `}
