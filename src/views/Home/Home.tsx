@@ -208,7 +208,7 @@ export default function Home() {
                 onClick={() => navigate(viz.path)}
                 className={`
                   group text-left overflow-hidden relative
-                  rounded-3xl rounded-bl-none
+                  rounded-[2rem] rounded-bl-none rounded-tr-none
                   transition-all duration-500
                   ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
                 `}
@@ -216,56 +216,61 @@ export default function Home() {
               >
                 {/* Frosted glass backdrop — colored radial glow + noise */}
                 <div
-                  className="absolute inset-0 transition-opacity duration-500"
+                  className="absolute inset-0 transition-all duration-500 group-hover:opacity-100 opacity-70"
                   style={{
                     background: `
-                      radial-gradient(ellipse at 70% 30%, ${viz.accentColor}18 0%, transparent 70%),
-                      radial-gradient(ellipse at 20% 80%, ${viz.accentColor}0c 0%, transparent 60%),
+                      radial-gradient(ellipse at 70% 30%, ${viz.accentColor}1a 0%, transparent 70%),
+                      radial-gradient(ellipse at 20% 80%, ${viz.accentColor}10 0%, transparent 60%),
                       linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.65) 100%)
                     `,
                   }}
                 />
                 <div
-                  className="absolute inset-0 opacity-30 group-hover:opacity-50 transition-opacity duration-500"
+                  className="absolute inset-0 opacity-25 group-hover:opacity-70 transition-all duration-500"
                   style={{
                     background: `
-                      radial-gradient(ellipse at 70% 30%, ${viz.accentColor}28 0%, transparent 60%),
-                      radial-gradient(ellipse at 20% 80%, ${viz.accentColor}18 0%, transparent 50%)
+                      radial-gradient(ellipse at 70% 30%, ${viz.accentColor}30 0%, transparent 60%),
+                      radial-gradient(ellipse at 20% 80%, ${viz.accentColor}20 0%, transparent 50%)
                     `,
                   }}
                 />
                 {/* Dark mode base */}
-                <div className="absolute inset-0 hidden dark:block" style={{
+                <div className="absolute inset-0 hidden dark:block transition-all duration-500 group-hover:opacity-100 opacity-80" style={{
                   background: `
-                    radial-gradient(ellipse at 70% 30%, ${viz.accentColor}15 0%, transparent 60%),
-                    radial-gradient(ellipse at 20% 80%, ${viz.accentColor}0a 0%, transparent 50%),
+                    radial-gradient(ellipse at 70% 30%, ${viz.accentColor}18 0%, transparent 60%),
+                    radial-gradient(ellipse at 20% 80%, ${viz.accentColor}10 0%, transparent 50%),
                     linear-gradient(135deg, rgba(15,23,42,0.92) 0%, rgba(15,23,42,0.85) 100%)
+                  `,
+                }} />
+                <div className="absolute inset-0 hidden dark:block opacity-0 group-hover:opacity-60 transition-all duration-500" style={{
+                  background: `
+                    radial-gradient(ellipse at 60% 40%, ${viz.accentColor}30 0%, transparent 50%)
                   `,
                 }} />
                 {/* Noise texture overlay */}
                 <div className="absolute inset-0 noise-bg opacity-60 dark:opacity-40" />
 
-                {/* Notched corner — arrow lives here */}
+                {/* Notched top-right corner — arrow lives here */}
                 <div
-                  className="absolute top-0 left-0 w-11 h-11 flex items-center justify-center z-20
-                    rounded-br-2xl
+                  className="absolute top-0 right-0 w-12 h-12 flex items-center justify-center z-20
+                    rounded-bl-[1.5rem]
                     transition-all duration-300
-                    group-hover:w-12 group-hover:h-12 group-hover:shadow-lg"
+                    group-hover:w-14 group-hover:h-14 group-hover:shadow-lg"
                   style={{
                     backgroundColor: viz.accentColor,
                     boxShadow: `0 2px 8px ${viz.accentColor}40`,
                   }}
                 >
                   <svg
-                    className="w-4 h-4 text-white transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                    viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                    className="w-5 h-5 text-white transition-transform duration-300 group-hover:translate-x-0.5"
+                    viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
                   >
-                    <path d="M3 13L13 3M13 3H6M13 3v7" />
+                    <path d="M3 8h10M10 4.5L13.5 8 10 11.5" />
                   </svg>
                 </div>
 
                 {/* Content */}
-                <div className="relative p-6 pl-16">
+                <div className="relative p-6 pr-16">
                   {/* Badge + Title */}
                   <div className="flex items-start gap-3 mb-4">
                     <div
