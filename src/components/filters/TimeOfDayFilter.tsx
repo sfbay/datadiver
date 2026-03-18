@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import { formatHour } from '@/utils/time'
 
@@ -16,24 +16,39 @@ const PRESETS = [
   { label: 'Shift Chg', start: 7, end: 8 },
 ] as const
 
+/** Check if hour `h` is in the range [start, end], handling wrap-around */
+function hourInRange(h: number, start: number, end: number): boolean {
+  if (start <= end) return h >= start && h <= end
+  return h >= start || h <= end
+}
+
 export default function TimeOfDayFilter({ hourTotals }: TimeOfDayFilterProps) {
   const { timeOfDayFilter, setTimeOfDayFilter } = useAppStore()
   const dragging = useRef(false)
   const dragStart = useRef<number | null>(null)
+  const [dragPreview, setDragPreview] = useState<{ start: number; end: number } | null>(null)
 
   const maxCount = Math.max(...hourTotals, 1)
 
   const isHourSelected = (h: number): boolean => {
     if (!timeOfDayFilter) return true
-    const { startHour, endHour } = timeOfDayFilter
-    if (startHour <= endHour) return h >= startHour && h <= endHour
-    // Wrap-around (e.g., 22-6)
-    return h >= startHour || h <= endHour
+    return hourInRange(h, timeOfDayFilter.startHour, timeOfDayFilter.endHour)
+  }
+
+  const isHourInPreview = (h: number): boolean => {
+    if (!dragPreview) return false
+    return hourInRange(h, dragPreview.start, dragPreview.end)
   }
 
   const handleMouseDown = useCallback((h: number) => {
     dragging.current = true
     dragStart.current = h
+    setDragPreview({ start: h, end: h })
+  }, [])
+
+  const handleMouseEnter = useCallback((h: number) => {
+    if (!dragging.current || dragStart.current === null) return
+    setDragPreview({ start: dragStart.current, end: h })
   }, [])
 
   const handleMouseUp = useCallback((h: number) => {
@@ -41,7 +56,7 @@ export default function TimeOfDayFilter({ hourTotals }: TimeOfDayFilterProps) {
     dragging.current = false
     const start = dragStart.current
     dragStart.current = null
-    // Only use drag handler for multi-hour ranges; single-hour handled by click
+    setDragPreview(null)
     if (start !== h) {
       if (start === 0 && h === 23) {
         setTimeOfDayFilter(null)
@@ -58,6 +73,12 @@ export default function TimeOfDayFilter({ hourTotals }: TimeOfDayFilterProps) {
       setTimeOfDayFilter({ startHour: h, endHour: h })
     }
   }, [timeOfDayFilter, setTimeOfDayFilter])
+
+  const handleMouseLeave = useCallback(() => {
+    dragging.current = false
+    dragStart.current = null
+    setDragPreview(null)
+  }, [])
 
   const handlePreset = useCallback((start: number | null, end: number | null) => {
     if (start === null || end === null) {
@@ -76,22 +97,35 @@ export default function TimeOfDayFilter({ hourTotals }: TimeOfDayFilterProps) {
   return (
     <div className="flex flex-col gap-2">
       {/* Hour blocks */}
-      <div className="flex gap-px" onMouseLeave={() => { dragging.current = false }}>
+      <div className="flex gap-px" onMouseLeave={handleMouseLeave}>
         {Array.from({ length: 24 }, (_, h) => {
           const intensity = hourTotals[h] / maxCount
           const selected = isHourSelected(h)
+          const inPreview = isHourInPreview(h)
           return (
             <button
               key={h}
               onMouseDown={() => handleMouseDown(h)}
+              onMouseEnter={() => handleMouseEnter(h)}
               onMouseUp={() => handleMouseUp(h)}
               onClick={() => handleClick(h)}
               className={`
-                flex-1 h-7 rounded-sm transition-all duration-150 relative group
-                ${selected ? '' : 'opacity-25'}
+                flex-1 h-7 rounded-sm transition-all relative group
+                ${dragPreview
+                  ? inPreview
+                    ? 'opacity-100 ring-1 ring-inset ring-amber-400/60'
+                    : 'opacity-20'
+                  : selected
+                    ? 'opacity-100'
+                    : 'opacity-25'
+                }
+                ${inPreview ? 'scale-y-110' : ''}
               `}
               style={{
-                backgroundColor: `rgba(251, 191, 36, ${0.15 + intensity * 0.7})`,
+                backgroundColor: inPreview
+                  ? `rgba(251, 191, 36, ${0.35 + intensity * 0.55})`
+                  : `rgba(251, 191, 36, ${0.15 + intensity * 0.7})`,
+                transitionDuration: dragPreview ? '50ms' : '150ms',
               }}
               title={`${formatHour(h)}: ${hourTotals[h]} calls`}
             >
@@ -105,8 +139,14 @@ export default function TimeOfDayFilter({ hourTotals }: TimeOfDayFilterProps) {
         })}
       </div>
 
-      {/* Bottom spacing for hour labels */}
-      <div className="h-3" />
+      {/* Drag hint */}
+      <div className="h-3 relative">
+        {dragPreview && dragPreview.start !== dragPreview.end && (
+          <span className="absolute left-1/2 -translate-x-1/2 top-0 text-[9px] font-mono text-amber-400/80 animate-pulse">
+            {formatHour(dragPreview.start)} – {formatHour(dragPreview.end)}
+          </span>
+        )}
+      </div>
 
       {/* Presets */}
       <div className="flex gap-1 flex-wrap">
