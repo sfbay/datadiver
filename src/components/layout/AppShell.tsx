@@ -109,16 +109,19 @@ export default function AppShell({ children }: { children: ReactNode }) {
         <div className={`flex items-center gap-3 py-5 border-b border-slate-200/50 dark:border-white/[0.04] ${isSidebarOpen ? 'px-5' : 'px-2.5 justify-center'}`}>
           <button
             onClick={toggleSidebar}
-            className="group relative flex items-center justify-center w-8 h-8 rounded-lg
-              bg-gradient-to-br from-signal-blue via-signal-violet to-signal-blue
-              shadow-lg shadow-signal-blue/20
-              hover:shadow-signal-blue/40
+            className="group relative flex items-center justify-center w-8 h-8 rounded-full
+              overflow-hidden
+              shadow-lg shadow-slate-500/10 dark:shadow-black/30
+              hover:shadow-slate-500/20 dark:hover:shadow-black/50
+              ring-1 ring-slate-200/50 dark:ring-white/10
               transition-all duration-300"
             aria-label="Toggle sidebar"
           >
-            <span className="text-white font-display text-base font-normal italic leading-none translate-y-[0.5px]">
-              D
-            </span>
+            <img
+              src={isDarkMode ? '/dana-badge-mono.png' : '/dana-badge.png'}
+              alt="DataDiver"
+              className="w-full h-full object-cover"
+            />
           </button>
           {isSidebarOpen && (
             <div className="flex flex-col min-w-0">

@@ -439,8 +439,8 @@ export default function EmergencyResponse() {
       },
       {
         id: '90th-pctl',
-        label: '90th Pctl',
-        shortLabel: 'P90',
+        label: 'Slowest 10%',
+        shortLabel: '90th',
         value: formatDuration(stats.p90),
         color: responseTimeColor(stats.p90),
         delay: 160,
@@ -465,8 +465,8 @@ export default function EmergencyResponse() {
     if (stats.apotCount > 0) {
       cards.push({
         id: 'avg-apot',
-        label: 'Avg APOT',
-        shortLabel: 'APOT',
+        label: 'Avg On-Scene',
+        shortLabel: 'Scene',
         value: formatDuration(stats.apotAvg),
         color: stats.apotAvg > 20 ? '#ef4444' : stats.apotAvg > 10 ? '#f59e0b' : '#10b981',
         delay: 320,
@@ -585,7 +585,7 @@ export default function EmergencyResponse() {
                         : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
                     }`}
                   >
-                    {mode === 'response' ? 'Response' : 'APOT'}
+                    {mode === 'response' ? 'Response' : 'On-Scene'}
                   </button>
                 ))}
               </div>
