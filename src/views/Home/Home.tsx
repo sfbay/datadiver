@@ -6,6 +6,7 @@ const VISUALIZATIONS = [
     path: '/emergency-response',
     title: 'Emergency Response Times',
     subtitle: 'SFFD / EMS Dispatch Analysis',
+    badge: 'ER',
     description:
       'How fast do first responders reach you? Map response time inequities across 41 neighborhoods.',
     stats: [
@@ -13,15 +14,13 @@ const VISUALIZATIONS = [
       { label: 'Records/yr', value: '~600K' },
       { label: 'Neighborhoods', value: '41' },
     ],
-    gradient: 'from-red-500/20 via-orange-500/10 to-transparent',
-    borderGlow: 'hover:shadow-[0_0_40px_rgba(255,77,77,0.08)]',
     accentColor: '#ff4d4d',
-    number: '01',
   },
   {
     path: '/parking-revenue',
     title: 'Parking Meter Revenue',
     subtitle: 'SFMTA Revenue Patterns',
+    badge: 'PR',
     description:
       'Where does the city earn from parking? Uncover revenue flows, payment trends, and meter utilization.',
     stats: [
@@ -29,15 +28,13 @@ const VISUALIZATIONS = [
       { label: 'Detail level', value: 'Every session' },
       { label: 'Meter types', value: '6' },
     ],
-    gradient: 'from-blue-500/20 via-cyan-500/10 to-transparent',
-    borderGlow: 'hover:shadow-[0_0_40px_rgba(96,165,250,0.08)]',
     accentColor: '#60a5fa',
-    number: '02',
   },
   {
     path: '/dispatch-911',
     title: '911 Dispatch: Sensitive Calls',
     subtitle: 'SFPD Temporal Pattern Analysis',
+    badge: '911',
     description:
       'When do domestic violence calls peak? How do crisis calls differ from the citywide average? Temporal analysis of calls where geography is protected.',
     stats: [
@@ -45,15 +42,13 @@ const VISUALIZATIONS = [
       { label: 'Sensitive calls', value: '~181K' },
       { label: 'Timestamps', value: '6 per call' },
     ],
-    gradient: 'from-violet-500/20 via-purple-500/10 to-transparent',
-    borderGlow: 'hover:shadow-[0_0_40px_rgba(167,139,250,0.08)]',
     accentColor: '#a78bfa',
-    number: '03',
   },
   {
     path: '/311-cases',
     title: '311 Service Requests',
     subtitle: 'SF311 Civic Complaint Analysis',
+    badge: '311',
     description:
       'Where do complaints concentrate? Discover hotspots, resolution patterns, and density anomalies across neighborhoods.',
     stats: [
@@ -61,15 +56,13 @@ const VISUALIZATIONS = [
       { label: 'Categories', value: '25' },
       { label: 'Years of data', value: '18' },
     ],
-    gradient: 'from-emerald-500/20 via-teal-500/10 to-transparent',
-    borderGlow: 'hover:shadow-[0_0_40px_rgba(16,185,129,0.08)]',
     accentColor: '#10b981',
-    number: '04',
   },
   {
     path: '/crime-incidents',
     title: 'Crime Incidents',
     subtitle: 'SFPD Reports & 911 Cross-Reference',
+    badge: 'CI',
     description:
       'Where does crime cluster? Explore SFPD incident reports, resolution outcomes, and cross-reference with 911 dispatch calls.',
     stats: [
@@ -77,15 +70,13 @@ const VISUALIZATIONS = [
       { label: '911 linked', value: '~60%' },
       { label: 'Neighborhoods', value: '41' },
     ],
-    gradient: 'from-red-500/20 via-orange-500/10 to-transparent',
-    borderGlow: 'hover:shadow-[0_0_40px_rgba(239,68,68,0.08)]',
     accentColor: '#ef4444',
-    number: '05',
   },
   {
     path: '/parking-citations',
     title: 'Parking Citations',
     subtitle: 'SFMTA Citation Analysis',
+    badge: 'PC',
     description:
       'Where do tickets cluster? Explore citation patterns, violation hotspots, fine revenue, and out-of-state vehicles across the city.',
     stats: [
@@ -93,15 +84,13 @@ const VISUALIZATIONS = [
       { label: 'Violation types', value: '~40' },
       { label: 'Revenue tracking', value: 'Yes' },
     ],
-    gradient: 'from-orange-500/20 via-amber-500/10 to-transparent',
-    borderGlow: 'hover:shadow-[0_0_40px_rgba(249,115,22,0.08)]',
     accentColor: '#f97316',
-    number: '06',
   },
   {
     path: '/traffic-safety',
     title: 'Traffic Safety',
     subtitle: 'Vision Zero Crash & Speed Analysis',
+    badge: 'TS',
     description:
       'Where do crashes happen? Analyze collision severity, pedestrian & cyclist risk, speed cameras, and road conditions for Vision Zero.',
     stats: [
@@ -109,42 +98,35 @@ const VISUALIZATIONS = [
       { label: 'Camera sites', value: '~100+' },
       { label: 'Severity levels', value: '4' },
     ],
-    gradient: 'from-red-600/20 via-red-500/10 to-transparent',
-    borderGlow: 'hover:shadow-[0_0_40px_rgba(220,38,38,0.08)]',
     accentColor: '#dc2626',
-    number: '07',
   },
   {
     path: '/business-activity',
     title: 'Business Activity',
     subtitle: 'Opening & Closing Trends',
+    badge: 'BA',
     description:
       'Where are businesses opening and closing? Track neighborhood economic vitality, sector shifts, and net formation trends across San Francisco.',
     stats: [
-      { label: 'Business records', value: '~356K' },
-      { label: 'Active businesses', value: '~164K' },
-      { label: 'Industry sectors', value: '15+' },
+      { label: 'Records', value: '~356K' },
+      { label: 'Active', value: '~164K' },
+      { label: 'Sectors', value: '15+' },
     ],
-    gradient: 'from-emerald-600/20 via-emerald-500/10 to-transparent',
-    borderGlow: 'hover:shadow-[0_0_40px_rgba(16,185,129,0.08)]',
     accentColor: '#10b981',
-    number: '08',
   },
   {
     path: '/demographics',
     title: 'Demographics Explorer',
     subtitle: 'U.S. Census Bureau · ACS Estimates',
+    badge: 'DM',
     description:
-      'How do neighborhoods compare? Explore income, race, language, education, and housing across SF — and correlate demographics with civic outcomes like crime and 311 cases.',
+      'How do neighborhoods compare? Explore income, race, language, education, and housing across SF — and correlate demographics with civic outcomes.',
     stats: [
       { label: 'Neighborhoods', value: '37' },
       { label: 'Variables', value: '35' },
       { label: 'Source', value: 'ACS 5-yr' },
     ],
-    gradient: 'from-violet-600/20 via-purple-500/10 to-transparent',
-    borderGlow: 'hover:shadow-[0_0_40px_rgba(124,58,237,0.08)]',
     accentColor: '#7c3aed',
-    number: '09',
   },
 ] as const
 
@@ -162,7 +144,6 @@ export default function Home() {
         {/* Hero */}
         <header className="mb-20 relative z-10">
           <div className="flex items-start gap-10 md:gap-16">
-            {/* Text */}
             <div className="flex-1 min-w-0">
               <div className={`transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
                 <div className="flex items-center gap-2.5 mb-6">
@@ -196,14 +177,13 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Dana */}
             <div
               className={`hidden md:block flex-shrink-0 w-56 lg:w-72 transition-all duration-1000 delay-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
             >
               <img
                 src="/dana-diving.png"
                 alt="Dana the Data Diving Harbor Seal"
-                className="w-full h-auto drop-shadow-lg"
+                className="w-full h-auto"
                 style={{ filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.08))' }}
               />
             </div>
@@ -221,41 +201,81 @@ export default function Home() {
             <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
           </div>
 
-          <div className="grid gap-5 md:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-2">
             {VISUALIZATIONS.map((viz, idx) => (
               <button
                 key={viz.path}
                 onClick={() => navigate(viz.path)}
                 className={`
-                  group text-left rounded-2xl overflow-hidden relative
-                  border border-slate-200/80 dark:border-white/[0.06]
-                  bg-white/70 dark:bg-white/[0.03]
-                  backdrop-blur-sm
-                  ${viz.borderGlow}
-                  hover:border-slate-300/80 dark:hover:border-white/[0.1]
+                  group text-left overflow-hidden relative
+                  rounded-3xl rounded-bl-none
                   transition-all duration-500
                   ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
                 `}
                 style={{ transitionDelay: `${600 + idx * 100}ms` }}
               >
-                {/* Resting accent glow (subtle) */}
+                {/* Frosted glass backdrop — colored radial glow + noise */}
                 <div
-                  className="absolute inset-0 bg-gradient-to-br opacity-40 group-hover:opacity-100 transition-opacity duration-500"
+                  className="absolute inset-0 transition-opacity duration-500"
                   style={{
-                    backgroundImage: `linear-gradient(to bottom right, ${viz.accentColor}12, ${viz.accentColor}06, transparent)`,
+                    background: `
+                      radial-gradient(ellipse at 70% 30%, ${viz.accentColor}18 0%, transparent 70%),
+                      radial-gradient(ellipse at 20% 80%, ${viz.accentColor}0c 0%, transparent 60%),
+                      linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.65) 100%)
+                    `,
                   }}
                 />
+                <div
+                  className="absolute inset-0 opacity-30 group-hover:opacity-50 transition-opacity duration-500"
+                  style={{
+                    background: `
+                      radial-gradient(ellipse at 70% 30%, ${viz.accentColor}28 0%, transparent 60%),
+                      radial-gradient(ellipse at 20% 80%, ${viz.accentColor}18 0%, transparent 50%)
+                    `,
+                  }}
+                />
+                {/* Dark mode base */}
+                <div className="absolute inset-0 hidden dark:block" style={{
+                  background: `
+                    radial-gradient(ellipse at 70% 30%, ${viz.accentColor}15 0%, transparent 60%),
+                    radial-gradient(ellipse at 20% 80%, ${viz.accentColor}0a 0%, transparent 50%),
+                    linear-gradient(135deg, rgba(15,23,42,0.92) 0%, rgba(15,23,42,0.85) 100%)
+                  `,
+                }} />
+                {/* Noise texture overlay */}
+                <div className="absolute inset-0 noise-bg opacity-60 dark:opacity-40" />
 
-                <div className="relative p-6">
-                  {/* Number + Title */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <span
-                        className="text-[10px] font-mono tracking-widest block mb-2"
-                        style={{ color: viz.accentColor + '99' }}
-                      >
-                        {viz.number}
-                      </span>
+                {/* Notched corner — arrow lives here */}
+                <div
+                  className="absolute top-0 left-0 w-11 h-11 flex items-center justify-center z-20
+                    rounded-br-2xl
+                    transition-all duration-300
+                    group-hover:w-12 group-hover:h-12 group-hover:shadow-lg"
+                  style={{
+                    backgroundColor: viz.accentColor,
+                    boxShadow: `0 2px 8px ${viz.accentColor}40`,
+                  }}
+                >
+                  <svg
+                    className="w-4 h-4 text-white transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                    viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  >
+                    <path d="M3 13L13 3M13 3H6M13 3v7" />
+                  </svg>
+                </div>
+
+                {/* Content */}
+                <div className="relative p-6 pl-16">
+                  {/* Badge + Title */}
+                  <div className="flex items-start gap-3 mb-4">
+                    <div
+                      className="flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center
+                        text-[10px] font-mono font-bold tracking-wider text-white/90"
+                      style={{ backgroundColor: viz.accentColor + '30' }}
+                    >
+                      {viz.badge}
+                    </div>
+                    <div className="min-w-0">
                       <h3 className="font-display text-xl italic text-ink dark:text-white leading-tight">
                         {viz.title}
                       </h3>
@@ -263,12 +283,6 @@ export default function Home() {
                         {viz.subtitle}
                       </p>
                     </div>
-                    <span
-                      className="text-lg mt-1 transition-transform duration-300 group-hover:translate-x-1"
-                      style={{ color: viz.accentColor + '80' }}
-                    >
-                      &rarr;
-                    </span>
                   </div>
 
                   <p className="text-[13px] text-slate-500 dark:text-slate-400 leading-relaxed mb-5">
@@ -276,10 +290,10 @@ export default function Home() {
                   </p>
 
                   {/* Data stats */}
-                  <div className="grid grid-cols-3 gap-3 pt-4 border-t border-slate-200/50 dark:border-white/[0.04]">
+                  <div className="grid grid-cols-3 gap-3 pt-4 border-t border-slate-300/20 dark:border-white/[0.06]">
                     {viz.stats.map((stat) => (
                       <div key={stat.label}>
-                        <p className="text-[9px] font-mono uppercase tracking-wider text-slate-400/60 dark:text-slate-600">
+                        <p className="text-[9px] font-mono uppercase tracking-wider text-slate-400/60 dark:text-slate-500">
                           {stat.label}
                         </p>
                         <p className="text-sm font-mono font-semibold text-ink dark:text-white mt-0.5">
@@ -289,12 +303,6 @@ export default function Home() {
                     ))}
                   </div>
                 </div>
-
-                {/* Left accent bar */}
-                <div
-                  className="absolute left-0 top-0 bottom-0 w-[3px] opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                  style={{ backgroundColor: viz.accentColor }}
-                />
               </button>
             ))}
           </div>
