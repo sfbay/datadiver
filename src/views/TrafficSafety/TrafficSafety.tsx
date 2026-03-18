@@ -1,4 +1,10 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
+import type { CensusVariable } from '@/types/census'
+import { useCensusData } from '@/hooks/useCensusData'
+import { useDemographicUnderlay } from '@/components/maps/DemographicUnderlay'
+import UnderlayPicker from '@/components/maps/UnderlayPicker'
+import NeighborhoodCensusContext from '@/components/ui/NeighborhoodCensusContext'
+import { UNDERLAY_PRESETS } from '@/utils/censusVariables'
 import { useSearchParams } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import { useDataset } from '@/hooks/useDataset'
@@ -286,6 +292,34 @@ export default function TrafficSafety() {
   const comparison = useCrashComparisonData(dateRange, whereClause, comparisonPeriod, rawData)
   const compLabel = comparisonPeriod ? `vs ${comparisonPeriod >= 360 ? '1yr' : `${comparisonPeriod}d`} ago` : ''
   const { boundaries: neighborhoodBoundaries } = useNeighborhoodBoundaries()
+
+  // Census demographic underlay
+  const [underlayVariable, setUnderlayVariable] = useState<CensusVariable | null>(null)
+  const { neighborhoods: censusNeighborhoods } = useCensusData()
+
+  useDemographicUnderlay({
+    map: mapInstance,
+    variable: underlayVariable,
+    censusData: censusNeighborhoods,
+    boundaries: neighborhoodBoundaries,
+    geoIdProperty: 'nhood',
+    opacity: 0.2,
+    beforeLayerId: 'crash-heat',
+  })
+
+  const cityAvg = useMemo(() => {
+    if (censusNeighborhoods.length === 0) return undefined
+    const totalPop = censusNeighborhoods.reduce((s, n) => s + n.population, 0)
+    if (totalPop === 0) return undefined
+    const avg: Record<string, number> = {}
+    for (const key of ['medianIncome', 'povertyRate', 'rentBurden', 'lepRate', 'renterPct'] as const) {
+      const vals = censusNeighborhoods.filter(n => (n as any)[key] !== undefined)
+      if (vals.length > 0) {
+        avg[key] = vals.reduce((s, n) => s + ((n as any)[key] as number) * n.population, 0) / totalPop
+      }
+    }
+    return avg as any
+  }, [censusNeighborhoods])
 
   // --- Computed data (extracted to hook) ---
   const {
@@ -670,6 +704,15 @@ export default function TrafficSafety() {
               </div>
             )}
 
+            {/* Demographic underlay picker */}
+            <div className="absolute top-4 right-4 z-20">
+              <UnderlayPicker
+                presets={UNDERLAY_PRESETS['traffic-safety'] ?? []}
+                activeVariable={underlayVariable}
+                onSelect={setUnderlayVariable}
+              />
+            </div>
+
             <CrashDetailPanel />
           </MapView>
         </div>
@@ -725,6 +768,16 @@ export default function TrafficSafety() {
                   >
                     ← Clear filter: {selectedNeighborhood}
                   </button>
+                )}
+
+                {selectedNeighborhood && (
+                  <NeighborhoodCensusContext
+                    neighborhood={selectedNeighborhood}
+                    censusData={censusNeighborhoods.find(n => n.name === selectedNeighborhood)}
+                    cityAverages={cityAvg}
+                    civicCount={neighborhoodEntries.find(n => n.neighborhood === selectedNeighborhood)?.crashCount}
+                    civicLabel="Crashes"
+                  />
                 )}
 
                 {!hourlyPattern.isLoading && hourlyPattern.grid.some((row: number[]) => row.some((v: number) => v > 0)) && (

@@ -130,6 +130,22 @@ const VISUALIZATIONS = [
     accentColor: '#10b981',
     number: '08',
   },
+  {
+    path: '/demographics',
+    title: 'Demographics Explorer',
+    subtitle: 'U.S. Census Bureau · ACS Estimates',
+    description:
+      'How do neighborhoods compare? Explore income, race, language, education, and housing across SF — and correlate demographics with civic outcomes like crime and 311 cases.',
+    stats: [
+      { label: 'Neighborhoods', value: '37' },
+      { label: 'Variables', value: '35' },
+      { label: 'Source', value: 'ACS 5-yr' },
+    ],
+    gradient: 'from-violet-600/20 via-purple-500/10 to-transparent',
+    borderGlow: 'hover:shadow-[0_0_40px_rgba(124,58,237,0.08)]',
+    accentColor: '#7c3aed',
+    number: '09',
+  },
 ] as const
 
 function DataMotif() {
