@@ -632,6 +632,11 @@ export default function TrafficSafety() {
             </div>
 
             <ComparisonToggle />
+              <UnderlayPicker
+                presets={UNDERLAY_PRESETS['traffic-safety'] ?? []}
+                activeVariable={underlayVariable}
+                onSelect={setUnderlayVariable}
+              />
             <ExportButton targetSelector="#ts-capture" filename="traffic-safety" />
           </div>
         </div>
@@ -704,15 +709,6 @@ export default function TrafficSafety() {
                 <p className="text-[9px] text-slate-500 mt-1">below avg → above avg</p>
               </div>
             )}
-
-            {/* Demographic underlay picker */}
-            <div className="absolute top-4 right-4 z-20">
-              <UnderlayPicker
-                presets={UNDERLAY_PRESETS['traffic-safety'] ?? []}
-                activeVariable={underlayVariable}
-                onSelect={setUnderlayVariable}
-              />
-            </div>
 
             <CrashDetailPanel />
           </MapView>

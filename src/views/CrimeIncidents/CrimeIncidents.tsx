@@ -716,6 +716,11 @@ export default function CrimeIncidents() {
               ))}
             </div>
             <ComparisonToggle />
+              <UnderlayPicker
+                presets={UNDERLAY_PRESETS['crime-incidents'] ?? []}
+                activeVariable={underlayVariable}
+                onSelect={setUnderlayVariable}
+              />
             <ExportButton targetSelector="#crime-capture" filename="crime-incidents" />
           </div>
         </div>
@@ -789,15 +794,6 @@ export default function CrimeIncidents() {
                 <p className="text-[9px] text-slate-500 mt-1">below avg {'\u2192'} above avg</p>
               </div>
             )}
-
-            {/* Demographic underlay picker */}
-            <div className="absolute top-4 right-4 z-20">
-              <UnderlayPicker
-                presets={UNDERLAY_PRESETS['crime-incidents'] ?? []}
-                activeVariable={underlayVariable}
-                onSelect={setUnderlayVariable}
-              />
-            </div>
 
             {/* Crime detail panel */}
             <CrimeDetailPanel />

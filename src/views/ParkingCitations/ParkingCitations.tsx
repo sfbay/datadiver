@@ -18,7 +18,7 @@ import type { ParkingCitationRecord, ViolationTypeAggRow, NeighborhoodAggRowCita
 import { formatCurrency, formatDelta, formatNumber, formatHour } from '@/utils/time'
 import { extractCoordinates } from '@/utils/geo'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
-import StatCard from '@/components/ui/StatCard'
+import CardTray, { type CardDef } from '@/components/ui/CardTray'
 import FineHistogram from '@/components/charts/FineHistogram'
 import HorizontalBarChart from '@/components/charts/HorizontalBarChart'
 import ExportButton from '@/components/export/ExportButton'
@@ -29,7 +29,7 @@ import TrendChart from '@/components/charts/TrendChart'
 import ViolationTypeFilter from '@/components/filters/ViolationTypeFilter'
 import CitationDetailPanel from '@/components/ui/CitationDetailPanel'
 import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
-import { SkeletonStatCards, SkeletonSidebarRows, MapScanOverlay, MapProgressBar } from '@/components/ui/Skeleton'
+import { SkeletonSidebarRows, MapScanOverlay, MapProgressBar } from '@/components/ui/Skeleton'
 import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
 import { useDataFreshness } from '@/hooks/useDataFreshness'
 import { useTrendBaseline } from '@/hooks/useTrendBaseline'
@@ -637,6 +637,65 @@ export default function ParkingCitations() {
     }
   }, [citationData, mapInstance, selectedNeighborhood, setSelectedNeighborhood])
 
+  // Card tray definitions
+  const cardDefs = useMemo((): CardDef[] => [
+    {
+      id: 'fine-revenue',
+      label: 'Fine Revenue',
+      shortLabel: 'Revenue',
+      value: formatCurrency(totalRevenue),
+      color: '#f97316',
+      delay: 0,
+      info: 'fine-revenue',
+      defaultExpanded: true,
+      subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined,
+      trend: comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined,
+    },
+    {
+      id: 'total-citations',
+      label: 'Total Citations',
+      shortLabel: 'Total',
+      value: formatNumber(totalCount ?? stats.totalCitations),
+      color: '#fb923c',
+      delay: 80,
+      info: 'total-citations',
+      defaultExpanded: true,
+      yoyDelta: !comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null,
+    },
+    {
+      id: 'avg-fine',
+      label: 'Avg Fine',
+      shortLabel: 'Avg',
+      value: formatCurrency(stats.avgFine),
+      color: '#f59e0b',
+      delay: 160,
+      info: 'avg-fine',
+      defaultExpanded: true,
+      subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.avgFine)} ${compLabel}` : undefined,
+      trend: comparison.deltas ? (comparison.deltas.avgFine > 0 ? 'up' : comparison.deltas.avgFine < 0 ? 'down' : 'neutral') : undefined,
+    },
+    {
+      id: 'out-of-state',
+      label: 'Out-of-State',
+      shortLabel: 'OOS',
+      value: `${stats.outOfStatePct.toFixed(1)}%`,
+      color: '#60a5fa',
+      delay: 240,
+      info: 'out-of-state',
+      defaultExpanded: false,
+    },
+    {
+      id: 'peak-hour',
+      label: 'Peak Hour',
+      shortLabel: 'Peak',
+      value: formatHour(stats.peakHour),
+      color: '#a78bfa',
+      delay: 320,
+      info: 'peak-hour',
+      defaultExpanded: false,
+    },
+  ], [totalRevenue, totalCount, stats, comparison.deltas, compLabel, trend.cityWideYoY])
+
   useProgressScope()
 
   return (
@@ -685,6 +744,11 @@ export default function ParkingCitations() {
               ))}
             </div>
             <ComparisonToggle />
+              <UnderlayPicker
+                presets={UNDERLAY_PRESETS['parking-citations'] ?? []}
+                activeVariable={underlayVariable}
+                onSelect={setUnderlayVariable}
+              />
             <ExportButton targetSelector="#pc-capture" filename="parking-citations" />
           </div>
         </div>
@@ -731,30 +795,8 @@ export default function ParkingCitations() {
             )}
 
             {/* Stat cards — top left */}
-            {isLoading && <SkeletonStatCards count={4} />}
             {!isLoading && citationData.length > 0 && (
-              <div className="absolute top-5 left-5 z-10 flex gap-2.5">
-                <StatCard
-                  label="Fine Revenue" info="fine-revenue" value={formatCurrency(totalRevenue)} color="#f97316" delay={0}
-                  subtitle={comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined}
-                  trend={comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined}
-                />
-                <StatCard
-                  label="Total Citations" info="total-citations" value={formatNumber(totalCount ?? stats.totalCitations)} color="#fb923c" delay={80}
-                  yoyDelta={!comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null}
-                />
-                <StatCard
-                  label="Avg Fine" info="avg-fine" value={formatCurrency(stats.avgFine)} color="#f59e0b" delay={160}
-                  subtitle={comparison.deltas ? `${formatDelta(comparison.deltas.avgFine)} ${compLabel}` : undefined}
-                  trend={comparison.deltas ? (comparison.deltas.avgFine > 0 ? 'up' : comparison.deltas.avgFine < 0 ? 'down' : 'neutral') : undefined}
-                />
-                <StatCard
-                  label="Out-of-State" info="out-of-state" value={`${stats.outOfStatePct.toFixed(1)}%`} color="#60a5fa" delay={240}
-                />
-                <StatCard
-                  label="Peak Hour" info="peak-hour" value={formatHour(stats.peakHour)} color="#a78bfa" delay={320}
-                />
-              </div>
+              <CardTray viewId="parkingCitations" cards={cardDefs} />
             )}
 
             {/* Charts — bottom left */}
@@ -780,15 +822,6 @@ export default function ParkingCitations() {
                 <p className="text-[9px] text-slate-500 mt-1">below avg → above avg</p>
               </div>
             )}
-
-            {/* Demographic underlay picker */}
-            <div className="absolute top-4 right-4 z-20">
-              <UnderlayPicker
-                presets={UNDERLAY_PRESETS['parking-citations'] ?? []}
-                activeVariable={underlayVariable}
-                onSelect={setUnderlayVariable}
-              />
-            </div>
 
             {/* Citation detail panel */}
             <CitationDetailPanel />

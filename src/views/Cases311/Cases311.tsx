@@ -19,7 +19,7 @@ import { diffHours, formatResolution, formatDelta, formatNumber, formatHour } fr
 import { coordsFromFields, extractCoordinates } from '@/utils/geo'
 import { resolutionTimeColor } from '@/utils/colors'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
-import StatCard from '@/components/ui/StatCard'
+import CardTray, { type CardDef } from '@/components/ui/CardTray'
 import ResolutionHistogram from '@/components/charts/ResolutionHistogram'
 import ExportButton from '@/components/export/ExportButton'
 import TimeOfDayFilter from '@/components/filters/TimeOfDayFilter'
@@ -29,7 +29,7 @@ import TrendChart from '@/components/charts/TrendChart'
 import ServiceCategoryFilter from '@/components/filters/ServiceCategoryFilter'
 import CaseDetailPanel from '@/components/ui/CaseDetailPanel'
 import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
-import { SkeletonStatCards, SkeletonSidebarRows, MapScanOverlay, MapProgressBar } from '@/components/ui/Skeleton'
+import { SkeletonSidebarRows, MapScanOverlay, MapProgressBar } from '@/components/ui/Skeleton'
 import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
 import ChartTray, { type ChartTileDef } from '@/components/ui/ChartTray'
 import { useDataFreshness } from '@/hooks/useDataFreshness'
@@ -583,6 +583,55 @@ export default function Cases311() {
     }
   }, [caseData, mapInstance, selectedNeighborhood, setSelectedNeighborhood])
 
+  // Card tray definitions
+  const cardDefs = useMemo((): CardDef[] => [
+    {
+      id: 'total-cases',
+      label: 'Total Cases',
+      shortLabel: 'Total',
+      value: formatNumber(stats.totalCases),
+      color: '#10b981',
+      delay: 0,
+      info: 'total-cases',
+      defaultExpanded: true,
+      subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined,
+      trend: comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined,
+      yoyDelta: !comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null,
+    },
+    {
+      id: 'avg-resolution',
+      label: 'Avg Resolution',
+      shortLabel: 'Avg Res',
+      value: formatResolution(stats.avgResolution),
+      color: resolutionTimeColor(stats.avgResolution),
+      delay: 80,
+      info: 'avg-resolution',
+      defaultExpanded: true,
+      subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.avgResolution)} ${compLabel}` : undefined,
+      trend: comparison.deltas ? (comparison.deltas.avgResolution > 0 ? 'up' : comparison.deltas.avgResolution < 0 ? 'down' : 'neutral') : undefined,
+    },
+    {
+      id: 'open-cases',
+      label: 'Open Cases',
+      shortLabel: 'Open',
+      value: formatNumber(stats.openCases),
+      color: '#f59e0b',
+      delay: 160,
+      info: 'open-cases',
+      defaultExpanded: true,
+    },
+    {
+      id: 'peak-hour',
+      label: 'Peak Hour',
+      shortLabel: 'Peak',
+      value: formatHour(stats.peakHour),
+      color: '#60a5fa',
+      delay: 240,
+      info: 'peak-hour',
+      defaultExpanded: false,
+    },
+  ], [stats, comparison.deltas, compLabel, trend.cityWideYoY])
+
   useProgressScope()
 
   return (
@@ -632,6 +681,11 @@ export default function Cases311() {
               ))}
             </div>
             <ComparisonToggle />
+              <UnderlayPicker
+                presets={UNDERLAY_PRESETS['311-cases'] ?? []}
+                activeVariable={underlayVariable}
+                onSelect={setUnderlayVariable}
+              />
             <ExportButton targetSelector="#c311-capture" filename="311-cases" />
           </div>
         </div>
@@ -677,27 +731,8 @@ export default function Cases311() {
             )}
 
             {/* Stat cards — top left */}
-            {isLoading && <SkeletonStatCards count={4} />}
             {!isLoading && caseData.length > 0 && (
-              <div className="absolute top-5 left-5 z-10 flex gap-2.5">
-                <StatCard
-                  label="Total Cases" info="total-cases" value={formatNumber(stats.totalCases)} color="#10b981" delay={0}
-                  subtitle={comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined}
-                  trend={comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined}
-                  yoyDelta={!comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null}
-                />
-                <StatCard
-                  label="Avg Resolution" info="avg-resolution" value={formatResolution(stats.avgResolution)} color={resolutionTimeColor(stats.avgResolution)} delay={80}
-                  subtitle={comparison.deltas ? `${formatDelta(comparison.deltas.avgResolution)} ${compLabel}` : undefined}
-                  trend={comparison.deltas ? (comparison.deltas.avgResolution > 0 ? 'up' : comparison.deltas.avgResolution < 0 ? 'down' : 'neutral') : undefined}
-                />
-                <StatCard
-                  label="Open Cases" info="open-cases" value={formatNumber(stats.openCases)} color="#f59e0b" delay={160}
-                />
-                <StatCard
-                  label="Peak Hour" info="peak-hour" value={formatHour(stats.peakHour)} color="#60a5fa" delay={240}
-                />
-              </div>
+              <CardTray viewId="cases311" cards={cardDefs} />
             )}
 
             {/* Charts — bottom left */}
@@ -723,15 +758,6 @@ export default function Cases311() {
                 <p className="text-[9px] text-slate-500 mt-1">below avg → above avg</p>
               </div>
             )}
-
-            {/* Demographic underlay picker */}
-            <div className="absolute top-4 right-4 z-20">
-              <UnderlayPicker
-                presets={UNDERLAY_PRESETS['311-cases'] ?? []}
-                activeVariable={underlayVariable}
-                onSelect={setUnderlayVariable}
-              />
-            </div>
 
             {/* Case detail panel */}
             <CaseDetailPanel />

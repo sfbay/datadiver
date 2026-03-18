@@ -20,7 +20,7 @@ import { formatDuration, formatNumber } from '@/utils/time'
 import { responseTimeColor, apotTimeColor } from '@/utils/colors'
 import { RESPONSE_HEATMAP_LAYERS, APOT_LAYERS, FIRE_SEVERITY_LAYER, FIRE_BATTERY_LAYER } from './mapLayers'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
-import StatCard from '@/components/ui/StatCard'
+import CardTray, { type CardDef } from '@/components/ui/CardTray'
 import ResponseHistogram from '@/components/charts/ResponseHistogram'
 import ExportButton from '@/components/export/ExportButton'
 import TimeOfDayFilter from '@/components/filters/TimeOfDayFilter'
@@ -29,7 +29,7 @@ import HourlyHeatgrid from '@/components/charts/HourlyHeatgrid'
 import TrendChart from '@/components/charts/TrendChart'
 import IncidentDetailPanel from '@/components/ui/IncidentDetailPanel'
 import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
-import { SkeletonStatCards, SkeletonChart, SkeletonSidebarRows, SkeletonBreakdownList, MapScanOverlay, MapProgressBar } from '@/components/ui/Skeleton'
+import { SkeletonChart, SkeletonSidebarRows, SkeletonBreakdownList, MapScanOverlay, MapProgressBar } from '@/components/ui/Skeleton'
 import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
 import ChartTray, { type ChartTileDef } from '@/components/ui/ChartTray'
 import { useDataFreshness } from '@/hooks/useDataFreshness'
@@ -410,6 +410,110 @@ export default function EmergencyResponse() {
     return tiles
   }, [histogramData, comparisonPeriod, comparison.currentTrend, comparison.comparisonTrend, comparison.isLoading, isFireMode, fireInsights.batteryTrend])
 
+  // Card tray definitions
+  const cardDefs = useMemo((): CardDef[] => {
+    const cards: CardDef[] = [
+      {
+        id: 'avg-response',
+        label: 'Avg Response',
+        shortLabel: 'Avg',
+        value: formatDuration(stats.avg),
+        color: responseTimeColor(stats.avg),
+        delay: 0,
+        info: 'avg-response',
+        defaultExpanded: true,
+        subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.avg)} ${compLabel}` : undefined,
+        trend: comparison.deltas ? (comparison.deltas.avg > 0 ? 'up' : comparison.deltas.avg < 0 ? 'down' : 'neutral') : undefined,
+      },
+      {
+        id: 'median',
+        label: 'Median',
+        shortLabel: 'Med',
+        value: formatDuration(stats.median),
+        color: responseTimeColor(stats.median),
+        delay: 80,
+        info: 'median',
+        defaultExpanded: true,
+        subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.median)} ${compLabel}` : undefined,
+        trend: comparison.deltas ? (comparison.deltas.median > 0 ? 'up' : comparison.deltas.median < 0 ? 'down' : 'neutral') : undefined,
+      },
+      {
+        id: '90th-pctl',
+        label: '90th Pctl',
+        shortLabel: 'P90',
+        value: formatDuration(stats.p90),
+        color: responseTimeColor(stats.p90),
+        delay: 160,
+        info: '90th-pctl',
+        defaultExpanded: true,
+        subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.p90)} ${compLabel}` : undefined,
+        trend: comparison.deltas ? (comparison.deltas.p90 > 0 ? 'up' : comparison.deltas.p90 < 0 ? 'down' : 'neutral') : undefined,
+      },
+      {
+        id: 'incidents',
+        label: 'Incidents',
+        shortLabel: 'Inc',
+        value: formatNumber(stats.total),
+        color: '#60a5fa',
+        delay: 240,
+        defaultExpanded: false,
+        subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined,
+        trend: comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined,
+        yoyDelta: !comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null,
+      },
+    ]
+    if (stats.apotCount > 0) {
+      cards.push({
+        id: 'avg-apot',
+        label: 'Avg APOT',
+        shortLabel: 'APOT',
+        value: formatDuration(stats.apotAvg),
+        color: stats.apotAvg > 20 ? '#ef4444' : stats.apotAvg > 10 ? '#f59e0b' : '#10b981',
+        delay: 320,
+        info: 'avg-apot',
+        defaultExpanded: false,
+      })
+    }
+    if (isFireMode && fireInsights.casualties) {
+      const currTotal = fireInsights.casualties.injuries + fireInsights.casualties.fatalities
+      cards.push({
+        id: 'casualties',
+        label: 'Casualties',
+        shortLabel: 'Cas',
+        value: String(currTotal),
+        color: '#ef4444',
+        delay: 400,
+        info: 'fire-casualties',
+        defaultExpanded: false,
+        subtitle: `${fireInsights.casualties.injuries} inj, ${fireInsights.casualties.fatalities} fatal`,
+        yoyDelta: fireInsights.priorYearCasualties
+          ? (() => {
+              const prev = fireInsights.priorYearCasualties!.injuries + fireInsights.priorYearCasualties!.fatalities
+              return prev > 0 ? ((currTotal - prev) / prev) * 100 : null
+            })()
+          : null,
+      })
+      cards.push({
+        id: 'est-loss',
+        label: 'Est. Loss',
+        shortLabel: 'Loss',
+        value: fireInsights.casualties.totalLoss >= 1_000_000
+          ? `$${(fireInsights.casualties.totalLoss / 1_000_000).toFixed(1)}M`
+          : fireInsights.casualties.totalLoss >= 1_000
+          ? `$${(fireInsights.casualties.totalLoss / 1_000).toFixed(0)}K`
+          : `$${fireInsights.casualties.totalLoss.toLocaleString()}`,
+        color: '#f59e0b',
+        delay: 480,
+        info: 'fire-property-loss',
+        defaultExpanded: false,
+        yoyDelta: fireInsights.priorYearCasualties && fireInsights.priorYearCasualties.totalLoss > 0
+          ? ((fireInsights.casualties.totalLoss - fireInsights.priorYearCasualties.totalLoss) / fireInsights.priorYearCasualties.totalLoss) * 100
+          : null,
+      })
+    }
+    return cards
+  }, [stats, comparison.deltas, compLabel, trend.cityWideYoY, isFireMode, fireInsights.casualties, fireInsights.priorYearCasualties])
+
   const handleMapReady = useCallback((map: mapboxgl.Map) => {
     setMapInstance(map)
   }, [])
@@ -447,6 +551,11 @@ export default function EmergencyResponse() {
 
           <div className="flex items-center gap-2">
             <ComparisonToggle />
+              <UnderlayPicker
+                presets={UNDERLAY_PRESETS['emergency-response'] ?? []}
+                activeVariable={underlayVariable}
+                onSelect={setUnderlayVariable}
+              />
             <ExportButton targetSelector="#er-capture" filename="emergency-response" />
             <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-lg p-0.5">
               {(['all', 'fire', 'ems', 'transport'] as const).map((filter) => (
@@ -525,76 +634,8 @@ export default function EmergencyResponse() {
             )}
 
             {/* Stat cards — top left */}
-            {isLoading && <SkeletonStatCards count={4} />}
             {!isLoading && responseData.length > 0 && (
-              <div className="absolute top-5 left-5 z-10 flex gap-2.5">
-                <StatCard
-                  label="Avg Response" info="avg-response" value={formatDuration(stats.avg)} color={responseTimeColor(stats.avg)} delay={0}
-                  subtitle={comparison.deltas ? `${formatDelta(comparison.deltas.avg)} ${compLabel}` : undefined}
-                  trend={comparison.deltas ? (comparison.deltas.avg > 0 ? 'up' : comparison.deltas.avg < 0 ? 'down' : 'neutral') : undefined}
-                />
-                <StatCard
-                  label="Median" info="median" value={formatDuration(stats.median)} color={responseTimeColor(stats.median)} delay={80}
-                  subtitle={comparison.deltas ? `${formatDelta(comparison.deltas.median)} ${compLabel}` : undefined}
-                  trend={comparison.deltas ? (comparison.deltas.median > 0 ? 'up' : comparison.deltas.median < 0 ? 'down' : 'neutral') : undefined}
-                />
-                <StatCard
-                  label="90th Pctl" info="90th-pctl" value={formatDuration(stats.p90)} color={responseTimeColor(stats.p90)} delay={160}
-                  subtitle={comparison.deltas ? `${formatDelta(comparison.deltas.p90)} ${compLabel}` : undefined}
-                  trend={comparison.deltas ? (comparison.deltas.p90 > 0 ? 'up' : comparison.deltas.p90 < 0 ? 'down' : 'neutral') : undefined}
-                />
-                <StatCard
-                  label="Incidents" value={formatNumber(stats.total)} color="#60a5fa" delay={240}
-                  subtitle={comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined}
-                  trend={comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined}
-                  yoyDelta={!comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null}
-                />
-                {stats.apotCount > 0 && (
-                  <StatCard
-                    label="Avg APOT" info="avg-apot"
-                    value={formatDuration(stats.apotAvg)}
-                    color={stats.apotAvg > 20 ? '#ef4444' : stats.apotAvg > 10 ? '#f59e0b' : '#10b981'}
-                    delay={320}
-                  />
-                )}
-                {isFireMode && fireInsights.casualties && (
-                  <>
-                    <StatCard
-                      label="Casualties"
-                      info="fire-casualties"
-                      value={String(fireInsights.casualties.injuries + fireInsights.casualties.fatalities)}
-                      color="#ef4444"
-                      delay={400}
-                      subtitle={`${fireInsights.casualties.injuries} inj, ${fireInsights.casualties.fatalities} fatal`}
-                      yoyDelta={
-                        fireInsights.priorYearCasualties
-                          ? (() => {
-                              const prev = fireInsights.priorYearCasualties.injuries + fireInsights.priorYearCasualties.fatalities
-                              const curr = fireInsights.casualties!.injuries + fireInsights.casualties!.fatalities
-                              return prev > 0 ? ((curr - prev) / prev) * 100 : null
-                            })()
-                          : null
-                      }
-                    />
-                    <StatCard
-                      label="Est. Loss"
-                      info="fire-property-loss"
-                      value={fireInsights.casualties.totalLoss >= 1_000_000
-                        ? `$${(fireInsights.casualties.totalLoss / 1_000_000).toFixed(1)}M`
-                        : fireInsights.casualties.totalLoss >= 1_000
-                        ? `$${(fireInsights.casualties.totalLoss / 1_000).toFixed(0)}K`
-                        : `$${fireInsights.casualties.totalLoss.toLocaleString()}`}
-                      color="#f59e0b"
-                      delay={480}
-                      yoyDelta={
-                        fireInsights.priorYearCasualties && fireInsights.priorYearCasualties.totalLoss > 0
-                          ? ((fireInsights.casualties.totalLoss - fireInsights.priorYearCasualties.totalLoss) / fireInsights.priorYearCasualties.totalLoss) * 100
-                          : null
-                      }
-                    />
-                  </>
-                )}
-              </div>
+              <CardTray viewId="emergencyResponse" cards={cardDefs} />
             )}
 
             {/* Histogram + Trend — bottom left */}
@@ -606,15 +647,6 @@ export default function EmergencyResponse() {
             {!isLoading && chartTiles.length > 0 && (
               <ChartTray viewId="emergencyResponse" tiles={chartTiles} />
             )}
-
-            {/* Demographic underlay picker */}
-            <div className="absolute top-4 right-4 z-20">
-              <UnderlayPicker
-                presets={UNDERLAY_PRESETS['emergency-response'] ?? []}
-                activeVariable={underlayVariable}
-                onSelect={setUnderlayVariable}
-              />
-            </div>
 
             {/* Incident detail panel */}
             <IncidentDetailPanel />

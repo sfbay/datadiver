@@ -16,11 +16,11 @@ import type { ParkingMeter, MeterRevenueRecord, MeterAggRow, ParkingStatsAggRow,
 import { formatCurrency, formatNumber } from '@/utils/time'
 import { PAYMENT_COLORS } from '@/utils/colors'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
-import StatCard from '@/components/ui/StatCard'
+import CardTray, { type CardDef } from '@/components/ui/CardTray'
 import ExportButton from '@/components/export/ExportButton'
 import MeterDetailPanel from '@/components/ui/MeterDetailPanel'
 import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
-import { SkeletonStatCards, SkeletonChart, SkeletonSidebarRows, SkeletonBreakdownList, MapScanOverlay, MapProgressBar } from '@/components/ui/Skeleton'
+import { SkeletonChart, SkeletonSidebarRows, SkeletonBreakdownList, MapScanOverlay, MapProgressBar } from '@/components/ui/Skeleton'
 import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
 import { useDataFreshness } from '@/hooks/useDataFreshness'
 import { useTrendBaseline } from '@/hooks/useTrendBaseline'
@@ -337,6 +337,54 @@ export default function ParkingRevenue() {
     setMapInstance(map)
   }, [])
 
+  // Card tray definitions
+  const cardDefs = useMemo((): CardDef[] => {
+    if (!serverStats) return []
+    return [
+      {
+        id: 'total-revenue',
+        label: 'Total Revenue',
+        shortLabel: 'Revenue',
+        value: formatCurrency(serverStats.totalRevenue),
+        color: '#60a5fa',
+        delay: 0,
+        info: 'total-revenue',
+        defaultExpanded: true,
+        yoyDelta: trend.cityWideYoY ? trend.cityWideYoY.pct : null,
+      },
+      {
+        id: 'transactions',
+        label: 'Transactions',
+        shortLabel: 'Txns',
+        value: formatNumber(serverStats.totalTransactions),
+        color: '#2dd4a8',
+        delay: 80,
+        info: 'transactions',
+        defaultExpanded: true,
+      },
+      {
+        id: 'avg-per-meter',
+        label: 'Avg / Meter',
+        shortLabel: 'Avg/Meter',
+        value: formatCurrency(serverStats.avgPerMeter),
+        color: '#ffbe0b',
+        delay: 160,
+        info: 'avg-per-meter',
+        defaultExpanded: true,
+      },
+      {
+        id: 'active-meters',
+        label: 'Active Meters',
+        shortLabel: 'Meters',
+        value: formatNumber(serverStats.uniqueMeters),
+        color: '#a78bfa',
+        delay: 240,
+        info: 'active-meters',
+        defaultExpanded: false,
+      },
+    ]
+  }, [serverStats, trend.cityWideYoY])
+
   useProgressScope()
 
   return (
@@ -365,6 +413,11 @@ export default function ParkingRevenue() {
             )}
           </div>
           <div className="flex items-center gap-2">
+              <UnderlayPicker
+                presets={UNDERLAY_PRESETS['parking-revenue'] ?? []}
+                activeVariable={underlayVariable}
+                onSelect={setUnderlayVariable}
+              />
             <ExportButton targetSelector="#pr-capture" filename="parking-revenue" />
             <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-lg p-0.5">
               {(['hour', 'day', 'week'] as const).map((g) => (
@@ -407,26 +460,9 @@ export default function ParkingRevenue() {
               />
             )}
 
-            {isLoading && <SkeletonStatCards count={4} />}
             {!isLoading && serverStats && (
-              <div className="absolute top-5 left-5 z-10 flex gap-2.5">
-                <StatCard label="Total Revenue" info="total-revenue" value={formatCurrency(serverStats.totalRevenue)} color="#60a5fa" delay={0}
-                  yoyDelta={trend.cityWideYoY ? trend.cityWideYoY.pct : null}
-                />
-                <StatCard label="Transactions" info="transactions" value={formatNumber(serverStats.totalTransactions)} color="#2dd4a8" delay={80} />
-                <StatCard label="Avg / Meter" info="avg-per-meter" value={formatCurrency(serverStats.avgPerMeter)} color="#ffbe0b" delay={160} />
-                <StatCard label="Active Meters" info="active-meters" value={formatNumber(serverStats.uniqueMeters)} color="#a78bfa" delay={240} />
-              </div>
+              <CardTray viewId="parkingRevenue" cards={cardDefs} />
             )}
-            {/* Demographic underlay picker */}
-            <div className="absolute top-4 right-4 z-20">
-              <UnderlayPicker
-                presets={UNDERLAY_PRESETS['parking-revenue'] ?? []}
-                activeVariable={underlayVariable}
-                onSelect={setUnderlayVariable}
-              />
-            </div>
-
             <MeterDetailPanel />
           </MapView>
         </div>

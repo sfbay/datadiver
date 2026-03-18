@@ -582,6 +582,11 @@ export default function BusinessActivity() {
             </div>
 
             <ComparisonToggle />
+              <UnderlayPicker
+                presets={UNDERLAY_PRESETS['business-activity'] ?? []}
+                activeVariable={underlayVariable}
+                onSelect={setUnderlayVariable}
+              />
             <ExportButton targetSelector="#ba-capture" filename="business-activity" />
           </div>
         </div>
@@ -640,15 +645,6 @@ export default function BusinessActivity() {
                 <p className="text-[9px] text-slate-500 mt-1">below avg {'\u2192'} above avg</p>
               </div>
             )}
-
-            {/* Demographic underlay picker */}
-            <div className="absolute top-4 right-4 z-20">
-              <UnderlayPicker
-                presets={UNDERLAY_PRESETS['business-activity'] ?? []}
-                activeVariable={underlayVariable}
-                onSelect={setUnderlayVariable}
-              />
-            </div>
 
             <BusinessDetailPanel />
           </MapView>
