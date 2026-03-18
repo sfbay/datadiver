@@ -82,6 +82,7 @@ const NAV_ITEMS = [
     description: 'Census demographics & civic correlations',
     accentColor: '#7c3aed',
   },
+  { path: '/live-feeds', label: 'Live Feeds', shortLabel: 'LIVE', description: 'Scanner radio feeds — SFPD, SFFD, EMS', accentColor: '#f59e0b' },
 ] as const
 
 export default function AppShell({ children }: { children: ReactNode }) {
@@ -163,7 +164,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
               >
                 {/* Accent indicator */}
                 <div className={`
-                  flex-shrink-0 flex items-center justify-center
+                  relative flex-shrink-0 flex items-center justify-center
                   rounded-md text-[10px] font-mono font-bold tracking-wider
                   transition-all duration-200
                   ${isSidebarOpen ? 'w-8 h-8' : 'w-7 h-7'}
@@ -178,6 +179,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
                 } : undefined}
                 >
                   {item.shortLabel}
+                  {item.path === '/live-feeds' && (
+                    <span className="pulse-live absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-red-500" />
+                  )}
                 </div>
                 {isSidebarOpen && (
                   <div className="flex flex-col min-w-0">

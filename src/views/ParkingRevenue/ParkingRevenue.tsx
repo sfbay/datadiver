@@ -26,15 +26,15 @@ import { useDataFreshness } from '@/hooks/useDataFreshness'
 import { useTrendBaseline } from '@/hooks/useTrendBaseline'
 import type { TrendConfig } from '@/types/trends'
 import { useProgressScope } from '@/hooks/useLoadingProgress'
+import ScannerFeedChips from '@/components/ui/ScannerFeedChips'
 
 type TimeGranularity = 'hour' | 'day' | 'week'
 
 export default function ParkingRevenue() {
-  const { dateRange, selectedMeter, setSelectedMeter } = useAppStore()
+  const { dateRange, selectedMeter, setSelectedMeter, selectedNeighborhood, setSelectedNeighborhood } = useAppStore()
   const [searchParams, setSearchParams] = useSearchParams()
   const [granularity, setGranularity] = useState<TimeGranularity>('day')
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
-  const [selectedNeighborhood, setSelectedNeighborhood] = useState<string | null>(null)
   const mapHandleRef = useRef<MapHandle>(null)
 
   // Rehydrate detail from URL on mount
@@ -491,12 +491,15 @@ export default function ParkingRevenue() {
             )}
 
             {selectedNeighborhood && (
-              <NeighborhoodCensusContext
-                neighborhood={selectedNeighborhood}
-                censusData={censusNeighborhoods.find(n => n.name === selectedNeighborhood)}
-                cityAverages={cityAvg}
-                civicLabel="Revenue"
-              />
+              <>
+                <NeighborhoodCensusContext
+                  neighborhood={selectedNeighborhood}
+                  censusData={censusNeighborhoods.find(n => n.name === selectedNeighborhood)}
+                  cityAverages={cityAvg}
+                  civicLabel="Revenue"
+                />
+                <ScannerFeedChips neighborhood={selectedNeighborhood} serviceFilter="police" />
+              </>
             )}
 
             {topNeighborhoods.length === 0 && isLoading && <SkeletonSidebarRows count={8} />}

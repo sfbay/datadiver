@@ -37,6 +37,7 @@ import { useTrendBaseline } from '@/hooks/useTrendBaseline'
 import type { TrendConfig } from '@/types/trends'
 import { useProgressScope } from '@/hooks/useLoadingProgress'
 import InfoTip from '@/components/ui/InfoTip'
+import ScannerFeedChips from '@/components/ui/ScannerFeedChips'
 
 type MapMode = 'heatmap' | 'anomaly'
 type SidebarTab = 'categories' | 'neighborhoods'
@@ -858,13 +859,16 @@ export default function CrimeIncidents() {
                 )}
 
                 {selectedNeighborhood && (
-                  <NeighborhoodCensusContext
-                    neighborhood={selectedNeighborhood}
-                    censusData={censusNeighborhoods.find(n => n.name === selectedNeighborhood)}
-                    cityAverages={cityAvg}
-                    civicCount={neighborhoodEntries.find(n => n.neighborhood === selectedNeighborhood)?.incidentCount}
-                    civicLabel="Incidents"
-                  />
+                  <>
+                    <NeighborhoodCensusContext
+                      neighborhood={selectedNeighborhood}
+                      censusData={censusNeighborhoods.find(n => n.name === selectedNeighborhood)}
+                      cityAverages={cityAvg}
+                      civicCount={neighborhoodEntries.find(n => n.neighborhood === selectedNeighborhood)?.incidentCount}
+                      civicLabel="Incidents"
+                    />
+                    <ScannerFeedChips neighborhood={selectedNeighborhood} serviceFilter="police" />
+                  </>
                 )}
 
                 {/* Heatgrid in sidebar */}

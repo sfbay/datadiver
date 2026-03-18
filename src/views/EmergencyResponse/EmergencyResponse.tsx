@@ -40,6 +40,7 @@ import { useFireInsights } from '@/hooks/useFireInsights'
 import BatteryTrendChart from '@/components/charts/BatteryTrendChart'
 import HorizontalBarChart from '@/components/charts/HorizontalBarChart'
 import { useEmergencyResponseData } from './useEmergencyResponseData'
+import ScannerFeedChips from '@/components/ui/ScannerFeedChips'
 
 type ServiceFilter = 'all' | 'fire' | 'ems' | 'transport'
 
@@ -54,13 +55,12 @@ type SidebarTab = 'neighborhoods' | 'patterns'
 type MapOverlay = 'response' | 'apot'
 
 export default function EmergencyResponse() {
-  const { dateRange, timeOfDayFilter, comparisonPeriod, selectedIncident, setSelectedIncident } = useAppStore()
+  const { dateRange, timeOfDayFilter, comparisonPeriod, selectedIncident, setSelectedIncident, selectedNeighborhood, setSelectedNeighborhood } = useAppStore()
   const [searchParams, setSearchParams] = useSearchParams()
   const [serviceFilter, setServiceFilter] = useState<ServiceFilter>('all')
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('neighborhoods')
   const [mapOverlay, setMapOverlay] = useState<MapOverlay>('response')
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
-  const [selectedNeighborhood, setSelectedNeighborhood] = useState<string | null>(null)
   const mapHandleRef = useRef<MapHandle>(null)
 
   // Deep-link: rehydrate detail panel from URL on mount
@@ -651,22 +651,22 @@ export default function EmergencyResponse() {
                 </div>
 
                 {selectedNeighborhood && (
-                  <button
-                    onClick={() => setSelectedNeighborhood(null)}
-                    className="mb-3 text-[10px] font-mono text-blue-500 hover:text-blue-400 transition-colors"
-                  >
-                    {'\u2190'} Clear: {selectedNeighborhood}
-                  </button>
-                )}
-
-                {selectedNeighborhood && (
-                  <NeighborhoodCensusContext
-                    neighborhood={selectedNeighborhood}
-                    censusData={censusNeighborhoods.find(n => n.name === selectedNeighborhood)}
-                    cityAverages={cityAvg}
-                    civicCount={neighborhoodStats.find(n => n.neighborhood === selectedNeighborhood)?.totalIncidents}
-                    civicLabel="Incidents"
-                  />
+                  <>
+                    <button
+                      onClick={() => setSelectedNeighborhood(null)}
+                      className="mb-3 text-[10px] font-mono text-blue-500 hover:text-blue-400 transition-colors"
+                    >
+                      {'\u2190'} Clear: {selectedNeighborhood}
+                    </button>
+                    <NeighborhoodCensusContext
+                      neighborhood={selectedNeighborhood}
+                      censusData={censusNeighborhoods.find(n => n.name === selectedNeighborhood)}
+                      cityAverages={cityAvg}
+                      civicCount={neighborhoodStats.find(n => n.neighborhood === selectedNeighborhood)?.totalIncidents}
+                      civicLabel="Incidents"
+                    />
+                    <ScannerFeedChips neighborhood={selectedNeighborhood} serviceFilter={['fire', 'ems']} />
+                  </>
                 )}
 
                 {neighborhoodStats.length === 0 && !isLoading && (
