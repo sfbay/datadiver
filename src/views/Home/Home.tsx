@@ -161,7 +161,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-white/50 dark:bg-slate-950/50 md:hidden" />
 
           {/* Text content — left side on desktop, full width with overlay on mobile */}
-          <div className="relative py-14 px-8 md:py-20 md:px-14 md:max-w-[50%]">
+          <div className="relative py-8 px-8 md:py-10 md:px-14 md:max-w-[50%]">
             <div className={`transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
               <div className="flex items-center gap-2.5 mb-6">
                 <div className="h-[1px] w-8 bg-signal-blue/60" />
