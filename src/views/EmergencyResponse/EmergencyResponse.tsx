@@ -709,7 +709,7 @@ export default function EmergencyResponse() {
 
                 {isLoading && <SkeletonSidebarRows count={8} />}
                 <div className="space-y-0.5 stagger-in">
-                  {neighborhoodStats.slice(0, 25).map((ns) => {
+                  {neighborhoodStats.slice(0, 41).map((ns) => {
                     const barWidth = (ns.avgResponseTime / maxAvg) * 100
                     return (
                       <div

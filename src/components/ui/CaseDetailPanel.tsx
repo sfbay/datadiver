@@ -233,14 +233,29 @@ export default function CaseDetailPanel() {
               <p className="text-[10px] text-slate-700 dark:text-slate-300">{detail.agency}</p>
             </div>
             {detail.mediaUrl && (
-              <div>
+              <div className="mt-2">
+                <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Attached Image</p>
                 <a
                   href={detail.mediaUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[10px] font-mono text-emerald-500 hover:text-emerald-400 transition-colors underline"
+                  className="block rounded-lg overflow-hidden ring-1 ring-slate-200/50 dark:ring-white/10 hover:ring-emerald-500/40 transition-all"
                 >
-                  View attached media →
+                  <img
+                    src={detail.mediaUrl}
+                    alt="311 case attachment"
+                    className="w-full h-auto max-h-48 object-cover bg-slate-100 dark:bg-white/5"
+                    onError={(e) => {
+                      // If image fails to load (non-image media), fall back to link
+                      const target = e.currentTarget
+                      target.style.display = 'none'
+                      const fallback = target.nextElementSibling as HTMLElement | null
+                      if (fallback) fallback.style.display = ''
+                    }}
+                  />
+                  <span className="text-[10px] font-mono text-emerald-500 px-2 py-1.5 block" style={{ display: 'none' }}>
+                    View attached media →
+                  </span>
                 </a>
               </div>
             )}
