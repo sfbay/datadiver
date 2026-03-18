@@ -147,21 +147,21 @@ export default function Home() {
       <div className="max-w-5xl mx-auto px-8 py-16 relative">
         {/* Hero — full-width background with Dana on right, text on left */}
         <header className="mb-20 relative z-10 overflow-hidden rounded-3xl">
-          {/* Background image */}
-          <div
-            className={`absolute inset-0 transition-opacity duration-1000 ${mounted ? 'opacity-100' : 'opacity-0'}`}
-            style={{
-              backgroundImage: `url(${heroBg})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'right center',
-              backgroundRepeat: 'no-repeat',
-            }}
+          {/* Background image — pushed hard right so Dana clears the text */}
+          <img
+            src={heroBg}
+            alt=""
+            aria-hidden="true"
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${mounted ? 'opacity-100' : 'opacity-0'}`}
+            style={{ objectPosition: '85% center' }}
           />
-          {/* Subtle fade on left edge so text reads clearly */}
-          <div className="absolute inset-0 bg-gradient-to-r from-white/80 via-white/40 to-transparent dark:from-slate-950/85 dark:via-slate-950/40 dark:to-transparent" />
+          {/* Gradient overlay — stronger on left for text, fades to transparent on right */}
+          <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/60 via-45% to-transparent dark:from-slate-950/95 dark:via-slate-950/60 dark:via-45% dark:to-transparent" />
+          {/* Extra overlay on narrow screens where text and Dana overlap */}
+          <div className="absolute inset-0 bg-white/50 dark:bg-slate-950/50 md:hidden" />
 
-          {/* Text content — constrained to left ~50% */}
-          <div className="relative py-16 px-10 md:py-20 md:px-14 max-w-[55%]">
+          {/* Text content — left side on desktop, full width with overlay on mobile */}
+          <div className="relative py-14 px-8 md:py-20 md:px-14 md:max-w-[50%]">
             <div className={`transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
               <div className="flex items-center gap-2.5 mb-6">
                 <div className="h-[1px] w-8 bg-signal-blue/60" />
