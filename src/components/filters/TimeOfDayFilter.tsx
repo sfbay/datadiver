@@ -48,20 +48,26 @@ export default function TimeOfDayFilter({ hourTotals }: TimeOfDayFilterProps) {
 
   const handleMouseEnter = useCallback((h: number) => {
     if (!dragging.current || dragStart.current === null) return
-    setDragPreview({ start: dragStart.current, end: h })
+    const anchor = dragStart.current
+    // Normalize: always put the lower hour as start for intuitive bi-directional drag
+    const lo = Math.min(anchor, h)
+    const hi = Math.max(anchor, h)
+    setDragPreview({ start: lo, end: hi })
   }, [])
 
   const handleMouseUp = useCallback((h: number) => {
     if (!dragging.current || dragStart.current === null) return
     dragging.current = false
-    const start = dragStart.current
+    const anchor = dragStart.current
     dragStart.current = null
     setDragPreview(null)
-    if (start !== h) {
-      if (start === 0 && h === 23) {
+    if (anchor !== h) {
+      const lo = Math.min(anchor, h)
+      const hi = Math.max(anchor, h)
+      if (lo === 0 && hi === 23) {
         setTimeOfDayFilter(null)
       } else {
-        setTimeOfDayFilter({ startHour: start, endHour: h })
+        setTimeOfDayFilter({ startHour: lo, endHour: hi })
       }
     }
   }, [setTimeOfDayFilter])
