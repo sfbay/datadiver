@@ -31,6 +31,7 @@ import { useTrendBaseline } from '@/hooks/useTrendBaseline'
 import type { TrendConfig } from '@/types/trends'
 import { useProgressScope } from '@/hooks/useLoadingProgress'
 import InfoTip from '@/components/ui/InfoTip'
+import ScannerFeedChips from '@/components/ui/ScannerFeedChips'
 
 type MapMode = 'heatmap' | 'anomaly'
 type SidebarTab = 'categories' | 'neighborhoods'
@@ -746,6 +747,10 @@ export default function Cases311() {
                   >
                     ← Clear filter: {selectedNeighborhood}
                   </button>
+                )}
+
+                {selectedNeighborhood && (
+                  <ScannerFeedChips neighborhood={selectedNeighborhood} serviceFilter={['police', 'fire']} />
                 )}
 
                 {/* Heatgrid in sidebar */}

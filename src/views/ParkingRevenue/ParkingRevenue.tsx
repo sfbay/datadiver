@@ -19,11 +19,12 @@ import { useDataFreshness } from '@/hooks/useDataFreshness'
 import { useTrendBaseline } from '@/hooks/useTrendBaseline'
 import type { TrendConfig } from '@/types/trends'
 import { useProgressScope } from '@/hooks/useLoadingProgress'
+import ScannerFeedChips from '@/components/ui/ScannerFeedChips'
 
 type TimeGranularity = 'hour' | 'day' | 'week'
 
 export default function ParkingRevenue() {
-  const { dateRange, selectedMeter, setSelectedMeter } = useAppStore()
+  const { dateRange, selectedMeter, setSelectedMeter, selectedNeighborhood } = useAppStore()
   const [searchParams, setSearchParams] = useSearchParams()
   const [granularity, setGranularity] = useState<TimeGranularity>('day')
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
@@ -434,6 +435,9 @@ export default function ParkingRevenue() {
               <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">Top Neighborhoods</p>
               <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
             </div>
+            {selectedNeighborhood && (
+              <ScannerFeedChips neighborhood={selectedNeighborhood} serviceFilter="police" />
+            )}
             {topNeighborhoods.length === 0 && isLoading && <SkeletonSidebarRows count={8} />}
             <div className="space-y-0.5 stagger-in">
               {topNeighborhoods.map((ns, i) => {

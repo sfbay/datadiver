@@ -31,6 +31,7 @@ import { useTrendBaseline } from '@/hooks/useTrendBaseline'
 import type { TrendConfig } from '@/types/trends'
 import { useProgressScope } from '@/hooks/useLoadingProgress'
 import InfoTip from '@/components/ui/InfoTip'
+import ScannerFeedChips from '@/components/ui/ScannerFeedChips'
 import { useTrafficSafetyData } from './useTrafficSafetyData'
 import { CRASH_HEATMAP_LAYERS, ANOMALY_LAYERS, SPEED_CAM_LAYERS, RED_LIGHT_LAYERS, PCI_LAYERS } from './mapLayers'
 
@@ -725,6 +726,10 @@ export default function TrafficSafety() {
                   >
                     ← Clear filter: {selectedNeighborhood}
                   </button>
+                )}
+
+                {selectedNeighborhood && (
+                  <ScannerFeedChips neighborhood={selectedNeighborhood} serviceFilter={['police', 'fire']} />
                 )}
 
                 {!hourlyPattern.isLoading && hourlyPattern.grid.some((row: number[]) => row.some((v: number) => v > 0)) && (

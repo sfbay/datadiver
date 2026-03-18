@@ -33,6 +33,7 @@ import { useFireInsights } from '@/hooks/useFireInsights'
 import BatteryTrendChart from '@/components/charts/BatteryTrendChart'
 import HorizontalBarChart from '@/components/charts/HorizontalBarChart'
 import { useEmergencyResponseData } from './useEmergencyResponseData'
+import ScannerFeedChips from '@/components/ui/ScannerFeedChips'
 
 type ServiceFilter = 'all' | 'fire' | 'ems' | 'transport'
 
@@ -47,7 +48,7 @@ type SidebarTab = 'neighborhoods' | 'patterns'
 type MapOverlay = 'response' | 'apot'
 
 export default function EmergencyResponse() {
-  const { dateRange, timeOfDayFilter, comparisonPeriod, selectedIncident, setSelectedIncident } = useAppStore()
+  const { dateRange, timeOfDayFilter, comparisonPeriod, selectedIncident, setSelectedIncident, selectedNeighborhood } = useAppStore()
   const [searchParams, setSearchParams] = useSearchParams()
   const [serviceFilter, setServiceFilter] = useState<ServiceFilter>('all')
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('neighborhoods')
@@ -603,6 +604,10 @@ export default function EmergencyResponse() {
                   </p>
                   <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
                 </div>
+
+                {selectedNeighborhood && (
+                  <ScannerFeedChips neighborhood={selectedNeighborhood} serviceFilter={['fire', 'ems']} />
+                )}
 
                 {neighborhoodStats.length === 0 && !isLoading && (
                   <p className="text-xs text-slate-400 dark:text-slate-600 italic">

@@ -31,6 +31,7 @@ import type { TrendConfig } from '@/types/trends'
 import { useProgressScope } from '@/hooks/useLoadingProgress'
 import InfoTip from '@/components/ui/InfoTip'
 import ChartTray, { type ChartTileDef } from '@/components/ui/ChartTray'
+import ScannerFeedChips from '@/components/ui/ScannerFeedChips'
 
 type MapMode = 'heatmap' | 'anomaly'
 type SidebarTab = 'violations' | 'neighborhoods'
@@ -809,6 +810,10 @@ export default function ParkingCitations() {
                   >
                     ← Clear filter: {selectedNeighborhood}
                   </button>
+                )}
+
+                {selectedNeighborhood && (
+                  <ScannerFeedChips neighborhood={selectedNeighborhood} serviceFilter="police" />
                 )}
 
                 {!hourlyPattern.isLoading && hourlyPattern.grid.some((row) => row.some((v) => v > 0)) && (
