@@ -1,0 +1,204 @@
+{
+  "raceId": "member-board-of-supervisors-district-1",
+  "title": "MEMBER, BOARD OF SUPERVISORS, DISTRICT 1",
+  "totalRounds": 4,
+  "rounds": [
+    {
+      "round": 1,
+      "candidates": [
+        {
+          "name": "CONNIE CHAN",
+          "votes": 16670,
+          "percentage": 0.46990000000000004,
+          "transfer": 207,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "MARJAN PHILHOUR",
+          "votes": 14755,
+          "percentage": 0.41590000000000005,
+          "transfer": 294,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "JEN NOSSOKOFF",
+          "votes": 1810,
+          "percentage": 0.051,
+          "transfer": 90,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "JEREMIAH BOEHNER",
+          "votes": 1344,
+          "percentage": 0.0379,
+          "transfer": 148,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "SHERMAN D'SILVA",
+          "votes": 899,
+          "percentage": 0.0253,
+          "transfer": -899,
+          "isEliminated": true,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 35478,
+      "exhausted": 0,
+      "overvotes": 47,
+      "blanks": 3732
+    },
+    {
+      "round": 2,
+      "candidates": [
+        {
+          "name": "CONNIE CHAN",
+          "votes": 16877,
+          "percentage": 0.4779,
+          "transfer": 163,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "MARJAN PHILHOUR",
+          "votes": 15049,
+          "percentage": 0.4261,
+          "transfer": 563,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "JEN NOSSOKOFF",
+          "votes": 1900,
+          "percentage": 0.0538,
+          "transfer": 277,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "JEREMIAH BOEHNER",
+          "votes": 1492,
+          "percentage": 0.042199999999999994,
+          "transfer": -1492,
+          "isEliminated": true,
+          "isLeader": false
+        },
+        {
+          "name": "SHERMAN D'SILVA",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 35318,
+      "exhausted": 157,
+      "overvotes": 50,
+      "blanks": 3732
+    },
+    {
+      "round": 3,
+      "candidates": [
+        {
+          "name": "CONNIE CHAN",
+          "votes": 17040,
+          "percentage": 0.4892,
+          "transfer": 760,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "MARJAN PHILHOUR",
+          "votes": 15612,
+          "percentage": 0.4482,
+          "transfer": 887,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "JEN NOSSOKOFF",
+          "votes": 2177,
+          "percentage": 0.0625,
+          "transfer": -2177,
+          "isEliminated": true,
+          "isLeader": false
+        },
+        {
+          "name": "JEREMIAH BOEHNER",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "SHERMAN D'SILVA",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 34829,
+      "exhausted": 644,
+      "overvotes": 52,
+      "blanks": 3732
+    },
+    {
+      "round": 4,
+      "candidates": [
+        {
+          "name": "CONNIE CHAN",
+          "votes": 17800,
+          "percentage": 0.519,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "MARJAN PHILHOUR",
+          "votes": 16499,
+          "percentage": 0.48100000000000004,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "JEN NOSSOKOFF",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "JEREMIAH BOEHNER",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "SHERMAN D'SILVA",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 34299,
+      "exhausted": 1172,
+      "overvotes": 54,
+      "blanks": 3732
+    }
+  ],
+  "winner": "CONNIE CHAN"
+}

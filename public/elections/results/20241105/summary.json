@@ -1,0 +1,2199 @@
+{
+  "election": {
+    "date": "2024-11-05",
+    "dateCode": "20241105",
+    "type": "general",
+    "label": "November 5, 2024 General Election",
+    "races": [
+      {
+        "id": "president-and-vice-president",
+        "title": "PRESIDENT AND VICE PRESIDENT",
+        "type": "federal",
+        "isRCV": false
+      },
+      {
+        "id": "united-states-senator",
+        "title": "UNITED STATES SENATOR",
+        "type": "federal",
+        "isRCV": false
+      },
+      {
+        "id": "united-states-senator-partial-term",
+        "title": "UNITED STATES SENATOR PARTIAL TERM",
+        "type": "federal",
+        "isRCV": false
+      },
+      {
+        "id": "united-states-representative-district-2",
+        "title": "UNITED STATES REPRESENTATIVE, DISTRICT 2",
+        "type": "federal",
+        "isRCV": false
+      },
+      {
+        "id": "united-states-representative-district-11",
+        "title": "UNITED STATES REPRESENTATIVE, DISTRICT 11",
+        "type": "federal",
+        "isRCV": false
+      },
+      {
+        "id": "united-states-representative-district-12",
+        "title": "UNITED STATES REPRESENTATIVE, DISTRICT 12",
+        "type": "federal",
+        "isRCV": false
+      },
+      {
+        "id": "united-states-representative-district-15",
+        "title": "UNITED STATES REPRESENTATIVE, DISTRICT 15",
+        "type": "federal",
+        "isRCV": false
+      },
+      {
+        "id": "state-senator-district-7",
+        "title": "STATE SENATOR, DISTRICT 7",
+        "type": "state",
+        "isRCV": false
+      },
+      {
+        "id": "state-senator-district-11",
+        "title": "STATE SENATOR, DISTRICT 11",
+        "type": "state",
+        "isRCV": false
+      },
+      {
+        "id": "state-assembly-member-district-12",
+        "title": "STATE ASSEMBLY MEMBER, DISTRICT 12",
+        "type": "state",
+        "isRCV": false
+      },
+      {
+        "id": "state-assembly-member-district-17",
+        "title": "STATE ASSEMBLY MEMBER, DISTRICT 17",
+        "type": "state",
+        "isRCV": false
+      },
+      {
+        "id": "state-assembly-member-district-18",
+        "title": "STATE ASSEMBLY MEMBER, DISTRICT 18",
+        "type": "state",
+        "isRCV": false
+      },
+      {
+        "id": "state-assembly-member-district-19",
+        "title": "STATE ASSEMBLY MEMBER, DISTRICT 19",
+        "type": "state",
+        "isRCV": false
+      },
+      {
+        "id": "member-board-of-education",
+        "title": "MEMBER, BOARD OF EDUCATION",
+        "type": "local",
+        "isRCV": false
+      },
+      {
+        "id": "trustee-community-college-board",
+        "title": "TRUSTEE, COMMUNITY COLLEGE BOARD",
+        "type": "local",
+        "isRCV": false
+      },
+      {
+        "id": "bart-board-of-directors-district-7",
+        "title": "BART BOARD OF DIRECTORS, DISTRICT 7",
+        "type": "local",
+        "isRCV": false
+      },
+      {
+        "id": "bart-board-of-directors-district-9",
+        "title": "BART BOARD OF DIRECTORS, DISTRICT 9",
+        "type": "local",
+        "isRCV": false
+      },
+      {
+        "id": "mayor",
+        "title": "MAYOR",
+        "type": "local",
+        "isRCV": true
+      },
+      {
+        "id": "member-board-of-supervisors-district-1",
+        "title": "MEMBER, BOARD OF SUPERVISORS, DISTRICT 1",
+        "type": "local",
+        "isRCV": true
+      },
+      {
+        "id": "member-board-of-supervisors-district-3",
+        "title": "MEMBER, BOARD OF SUPERVISORS, DISTRICT 3",
+        "type": "local",
+        "isRCV": true
+      },
+      {
+        "id": "member-board-of-supervisors-district-5",
+        "title": "MEMBER, BOARD OF SUPERVISORS, DISTRICT 5",
+        "type": "local",
+        "isRCV": true
+      },
+      {
+        "id": "member-board-of-supervisors-district-7",
+        "title": "MEMBER, BOARD OF SUPERVISORS, DISTRICT 7",
+        "type": "local",
+        "isRCV": true
+      },
+      {
+        "id": "member-board-of-supervisors-district-9",
+        "title": "MEMBER, BOARD OF SUPERVISORS, DISTRICT 9",
+        "type": "local",
+        "isRCV": true
+      },
+      {
+        "id": "member-board-of-supervisors-district-11",
+        "title": "MEMBER, BOARD OF SUPERVISORS, DISTRICT 11",
+        "type": "local",
+        "isRCV": true
+      },
+      {
+        "id": "city-attorney",
+        "title": "CITY ATTORNEY",
+        "type": "local",
+        "isRCV": true
+      },
+      {
+        "id": "district-attorney",
+        "title": "DISTRICT ATTORNEY",
+        "type": "local",
+        "isRCV": true
+      },
+      {
+        "id": "sheriff",
+        "title": "SHERIFF",
+        "type": "local",
+        "isRCV": true
+      },
+      {
+        "id": "treasurer",
+        "title": "TREASURER",
+        "type": "local",
+        "isRCV": true
+      },
+      {
+        "id": "proposition-2",
+        "title": "PROPOSITION 2",
+        "type": "measure",
+        "isRCV": false
+      },
+      {
+        "id": "proposition-3",
+        "title": "PROPOSITION 3",
+        "type": "measure",
+        "isRCV": false
+      },
+      {
+        "id": "proposition-4",
+        "title": "PROPOSITION 4",
+        "type": "measure",
+        "isRCV": false
+      },
+      {
+        "id": "proposition-5",
+        "title": "PROPOSITION 5",
+        "type": "measure",
+        "isRCV": false
+      },
+      {
+        "id": "proposition-6",
+        "title": "PROPOSITION 6",
+        "type": "measure",
+        "isRCV": false
+      },
+      {
+        "id": "proposition-32",
+        "title": "PROPOSITION 32",
+        "type": "measure",
+        "isRCV": false
+      },
+      {
+        "id": "proposition-33",
+        "title": "PROPOSITION 33",
+        "type": "measure",
+        "isRCV": false
+      },
+      {
+        "id": "proposition-34",
+        "title": "PROPOSITION 34",
+        "type": "measure",
+        "isRCV": false
+      },
+      {
+        "id": "proposition-35",
+        "title": "PROPOSITION 35",
+        "type": "measure",
+        "isRCV": false
+      },
+      {
+        "id": "proposition-36",
+        "title": "PROPOSITION 36",
+        "type": "measure",
+        "isRCV": false
+      },
+      {
+        "id": "measure-a",
+        "title": "MEASURE A",
+        "type": "measure",
+        "isRCV": false
+      },
+      {
+        "id": "measure-b",
+        "title": "MEASURE B",
+        "type": "measure",
+        "isRCV": false
+      },
+      {
+        "id": "measure-c",
+        "title": "MEASURE C",
+        "type": "measure",
+        "isRCV": false
+      },
+      {
+        "id": "measure-d",
+        "title": "MEASURE D",
+        "type": "measure",
+        "isRCV": false
+      },
+      {
+        "id": "measure-e",
+        "title": "MEASURE E",
+        "type": "measure",
+        "isRCV": false
+      },
+      {
+        "id": "measure-f",
+        "title": "MEASURE F",
+        "type": "measure",
+        "isRCV": false
+      },
+      {
+        "id": "measure-g",
+        "title": "MEASURE G",
+        "type": "measure",
+        "isRCV": false
+      },
+      {
+        "id": "measure-h",
+        "title": "MEASURE H",
+        "type": "measure",
+        "isRCV": false
+      },
+      {
+        "id": "measure-i",
+        "title": "MEASURE I",
+        "type": "measure",
+        "isRCV": false
+      },
+      {
+        "id": "measure-j",
+        "title": "MEASURE J",
+        "type": "measure",
+        "isRCV": false
+      },
+      {
+        "id": "measure-k",
+        "title": "MEASURE K",
+        "type": "measure",
+        "isRCV": false
+      },
+      {
+        "id": "measure-l",
+        "title": "MEASURE L",
+        "type": "measure",
+        "isRCV": false
+      },
+      {
+        "id": "measure-m",
+        "title": "MEASURE M",
+        "type": "measure",
+        "isRCV": false
+      },
+      {
+        "id": "measure-n",
+        "title": "MEASURE N",
+        "type": "measure",
+        "isRCV": false
+      },
+      {
+        "id": "measure-o",
+        "title": "MEASURE O",
+        "type": "measure",
+        "isRCV": false
+      }
+    ],
+    "hasRCV": true
+  },
+  "registration": {
+    "totalRegistered": 522265,
+    "totalBallotsCast": 412231,
+    "turnoutPct": 0.789313854077911,
+    "electionDayBallots": 58688,
+    "vbmBallots": 353543
+  },
+  "races": [
+    {
+      "id": "president-and-vice-president",
+      "title": "PRESIDENT AND VICE PRESIDENT",
+      "type": "federal",
+      "isRCV": false,
+      "totalBallotsCast": 402997,
+      "candidates": [
+        {
+          "name": "KAMALA D. HARRIS / TIM WALZ",
+          "totalVotes": 323719,
+          "electionDayVotes": 42467,
+          "vbmVotes": 281252,
+          "percentage": 0.803278932597513,
+          "isWinner": true
+        },
+        {
+          "name": "DONALD J. TRUMP / JD VANCE",
+          "totalVotes": 62594,
+          "electionDayVotes": 11689,
+          "vbmVotes": 50905,
+          "percentage": 0.155321255493217,
+          "isWinner": false
+        },
+        {
+          "name": "JILL STEIN / RUDOLPH WARE",
+          "totalVotes": 6896,
+          "electionDayVotes": 1335,
+          "vbmVotes": 5561,
+          "percentage": 0.0171117899140688,
+          "isWinner": false
+        },
+        {
+          "name": "ROBERT F. KENNEDY JR. / NICOLE SHANAHAN",
+          "totalVotes": 4239,
+          "electionDayVotes": 777,
+          "vbmVotes": 3462,
+          "percentage": 0.01051868872473,
+          "isWinner": false
+        },
+        {
+          "name": "CLAUDIA DE LA CRUZ / KARINA GARCIA",
+          "totalVotes": 3645,
+          "electionDayVotes": 654,
+          "vbmVotes": 2991,
+          "percentage": 0.00904473234292067,
+          "isWinner": false
+        },
+        {
+          "name": "CHASE OLIVER / MIKE TER MAAT",
+          "totalVotes": 1871,
+          "electionDayVotes": 341,
+          "vbmVotes": 1530,
+          "percentage": 0.00464271446189426,
+          "isWinner": false
+        },
+        {
+          "name": "Write-in",
+          "totalVotes": 33,
+          "electionDayVotes": 3,
+          "vbmVotes": 30,
+          "percentage": 0.0000818864656560719,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "united-states-senator",
+      "title": "UNITED STATES SENATOR",
+      "type": "federal",
+      "isRCV": false,
+      "totalBallotsCast": 377353,
+      "candidates": [
+        {
+          "name": "ADAM B. SCHIFF",
+          "totalVotes": 310932,
+          "electionDayVotes": 39166,
+          "vbmVotes": 271766,
+          "percentage": 0.823981788935029,
+          "isWinner": true
+        },
+        {
+          "name": "STEVE GARVEY",
+          "totalVotes": 66421,
+          "electionDayVotes": 11802,
+          "vbmVotes": 54619,
+          "percentage": 0.176018211064971,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "united-states-senator-partial-term",
+      "title": "UNITED STATES SENATOR PARTIAL TERM",
+      "type": "federal",
+      "isRCV": false,
+      "totalBallotsCast": 373058,
+      "candidates": [
+        {
+          "name": "ADAM B. SCHIFF",
+          "totalVotes": 307511,
+          "electionDayVotes": 38556,
+          "vbmVotes": 268955,
+          "percentage": 0.824298098419013,
+          "isWinner": true
+        },
+        {
+          "name": "STEVE GARVEY",
+          "totalVotes": 65547,
+          "electionDayVotes": 11521,
+          "vbmVotes": 54026,
+          "percentage": 0.175701901580987,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "united-states-representative-district-2",
+      "title": "UNITED STATES REPRESENTATIVE, DISTRICT 2",
+      "type": "federal",
+      "isRCV": false,
+      "totalBallotsCast": 0,
+      "candidates": [
+        {
+          "name": "JARED HUFFMAN",
+          "totalVotes": 0,
+          "electionDayVotes": 0,
+          "vbmVotes": 0,
+          "percentage": 0,
+          "isWinner": true
+        },
+        {
+          "name": "CHRIS COULOMBE",
+          "totalVotes": 0,
+          "electionDayVotes": 0,
+          "vbmVotes": 0,
+          "percentage": 0,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "united-states-representative-district-11",
+      "title": "UNITED STATES REPRESENTATIVE, DISTRICT 11",
+      "type": "federal",
+      "isRCV": false,
+      "totalBallotsCast": 339111,
+      "candidates": [
+        {
+          "name": "NANCY PELOSI",
+          "totalVotes": 274796,
+          "electionDayVotes": 34993,
+          "vbmVotes": 239803,
+          "percentage": 0.810342336285169,
+          "isWinner": true
+        },
+        {
+          "name": "BRUCE LOU",
+          "totalVotes": 64315,
+          "electionDayVotes": 11535,
+          "vbmVotes": 52780,
+          "percentage": 0.189657663714831,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "united-states-representative-district-12",
+      "title": "UNITED STATES REPRESENTATIVE, DISTRICT 12",
+      "type": "federal",
+      "isRCV": false,
+      "totalBallotsCast": 0,
+      "candidates": [
+        {
+          "name": "JENNIFER TRAN",
+          "totalVotes": 0,
+          "electionDayVotes": 0,
+          "vbmVotes": 0,
+          "percentage": 0,
+          "isWinner": true
+        },
+        {
+          "name": "LATEEFAH SIMON",
+          "totalVotes": 0,
+          "electionDayVotes": 0,
+          "vbmVotes": 0,
+          "percentage": 0,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "united-states-representative-district-15",
+      "title": "UNITED STATES REPRESENTATIVE, DISTRICT 15",
+      "type": "federal",
+      "isRCV": false,
+      "totalBallotsCast": 36150,
+      "candidates": [
+        {
+          "name": "KEVIN MULLIN",
+          "totalVotes": 25287,
+          "electionDayVotes": 2642,
+          "vbmVotes": 22645,
+          "percentage": 0.699502074688797,
+          "isWinner": true
+        },
+        {
+          "name": "ANNA CHENG KRAMER",
+          "totalVotes": 10863,
+          "electionDayVotes": 1318,
+          "vbmVotes": 9545,
+          "percentage": 0.300497925311203,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "state-senator-district-7",
+      "title": "STATE SENATOR, DISTRICT 7",
+      "type": "state",
+      "isRCV": false,
+      "totalBallotsCast": 0,
+      "candidates": [
+        {
+          "name": "JOVANKA BECKLES",
+          "totalVotes": 0,
+          "electionDayVotes": 0,
+          "vbmVotes": 0,
+          "percentage": 0,
+          "isWinner": true
+        },
+        {
+          "name": "JESSE ARREGUIN",
+          "totalVotes": 0,
+          "electionDayVotes": 0,
+          "vbmVotes": 0,
+          "percentage": 0,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "state-senator-district-11",
+      "title": "STATE SENATOR, DISTRICT 11",
+      "type": "state",
+      "isRCV": false,
+      "totalBallotsCast": 369067,
+      "candidates": [
+        {
+          "name": "SCOTT WIENER",
+          "totalVotes": 291123,
+          "electionDayVotes": 36684,
+          "vbmVotes": 254439,
+          "percentage": 0.788807994212433,
+          "isWinner": true
+        },
+        {
+          "name": "YVETTE CORKREAN",
+          "totalVotes": 77944,
+          "electionDayVotes": 13268,
+          "vbmVotes": 64676,
+          "percentage": 0.211192005787567,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "state-assembly-member-district-12",
+      "title": "STATE ASSEMBLY MEMBER, DISTRICT 12",
+      "type": "state",
+      "isRCV": false,
+      "totalBallotsCast": 0,
+      "candidates": [
+        {
+          "name": "DAMON CONNOLLY",
+          "totalVotes": 0,
+          "electionDayVotes": 0,
+          "vbmVotes": 0,
+          "percentage": 0,
+          "isWinner": true
+        },
+        {
+          "name": "ANDY PODSHADLEY",
+          "totalVotes": 0,
+          "electionDayVotes": 0,
+          "vbmVotes": 0,
+          "percentage": 0,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "state-assembly-member-district-17",
+      "title": "STATE ASSEMBLY MEMBER, DISTRICT 17",
+      "type": "state",
+      "isRCV": false,
+      "totalBallotsCast": 200390,
+      "candidates": [
+        {
+          "name": "MATT HANEY",
+          "totalVotes": 169490,
+          "electionDayVotes": 20787,
+          "vbmVotes": 148703,
+          "percentage": 0.845800688657119,
+          "isWinner": true
+        },
+        {
+          "name": "MANUEL NORIS-BARRERA",
+          "totalVotes": 30900,
+          "electionDayVotes": 5537,
+          "vbmVotes": 25363,
+          "percentage": 0.154199311342881,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "state-assembly-member-district-18",
+      "title": "STATE ASSEMBLY MEMBER, DISTRICT 18",
+      "type": "state",
+      "isRCV": false,
+      "totalBallotsCast": 0,
+      "candidates": [
+        {
+          "name": "MIA BONTA",
+          "totalVotes": 0,
+          "electionDayVotes": 0,
+          "vbmVotes": 0,
+          "percentage": 0,
+          "isWinner": true
+        },
+        {
+          "name": "ANDRE SANDFORD",
+          "totalVotes": 0,
+          "electionDayVotes": 0,
+          "vbmVotes": 0,
+          "percentage": 0,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "state-assembly-member-district-19",
+      "title": "STATE ASSEMBLY MEMBER, DISTRICT 19",
+      "type": "state",
+      "isRCV": false,
+      "totalBallotsCast": 152336,
+      "candidates": [
+        {
+          "name": "CATHERINE STEFANI",
+          "totalVotes": 95423,
+          "electionDayVotes": 11155,
+          "vbmVotes": 84268,
+          "percentage": 0.626398224976368,
+          "isWinner": true
+        },
+        {
+          "name": "DAVID E. LEE",
+          "totalVotes": 56913,
+          "electionDayVotes": 8159,
+          "vbmVotes": 48754,
+          "percentage": 0.373601775023632,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "member-board-of-education",
+      "title": "MEMBER, BOARD OF EDUCATION",
+      "type": "local",
+      "isRCV": false,
+      "totalBallotsCast": 1012778,
+      "candidates": [
+        {
+          "name": "JAIME HULING",
+          "totalVotes": 168659,
+          "electionDayVotes": 16708,
+          "vbmVotes": 151951,
+          "percentage": 0.166531066038164,
+          "isWinner": true
+        },
+        {
+          "name": "PARAG GUPTA",
+          "totalVotes": 139340,
+          "electionDayVotes": 15069,
+          "vbmVotes": 124271,
+          "percentage": 0.137581977491612,
+          "isWinner": false
+        },
+        {
+          "name": "SUPRYIA RAY",
+          "totalVotes": 127834,
+          "electionDayVotes": 13303,
+          "vbmVotes": 114531,
+          "percentage": 0.126221146193934,
+          "isWinner": false
+        },
+        {
+          "name": "MATT ALEXANDER",
+          "totalVotes": 122698,
+          "electionDayVotes": 13892,
+          "vbmVotes": 108806,
+          "percentage": 0.121149945990138,
+          "isWinner": false
+        },
+        {
+          "name": "JOHN JERSIN",
+          "totalVotes": 122450,
+          "electionDayVotes": 12705,
+          "vbmVotes": 109745,
+          "percentage": 0.12090507495226,
+          "isWinner": false
+        },
+        {
+          "name": "VIRGINIA CHEUNG",
+          "totalVotes": 101017,
+          "electionDayVotes": 12521,
+          "vbmVotes": 88496,
+          "percentage": 0.0997424904569412,
+          "isWinner": false
+        },
+        {
+          "name": "ANN HSU",
+          "totalVotes": 81044,
+          "electionDayVotes": 10433,
+          "vbmVotes": 70611,
+          "percentage": 0.0800214854588074,
+          "isWinner": false
+        },
+        {
+          "name": "MIN CHANG",
+          "totalVotes": 48550,
+          "electionDayVotes": 5920,
+          "vbmVotes": 42630,
+          "percentage": 0.0479374551974865,
+          "isWinner": false
+        },
+        {
+          "name": "LAURANCE LEM LEE",
+          "totalVotes": 45736,
+          "electionDayVotes": 5637,
+          "vbmVotes": 40099,
+          "percentage": 0.0451589588241451,
+          "isWinner": false
+        },
+        {
+          "name": "MADDY KRANTZ",
+          "totalVotes": 33165,
+          "electionDayVotes": 5990,
+          "vbmVotes": 27175,
+          "percentage": 0.0327465644000956,
+          "isWinner": false
+        },
+        {
+          "name": "LEFTERIS ELEFTHERIOU",
+          "totalVotes": 22285,
+          "electionDayVotes": 3628,
+          "vbmVotes": 18657,
+          "percentage": 0.0220038349964158,
+          "isWinner": false
+        },
+        {
+          "name": "Write-in",
+          "totalVotes": 0,
+          "electionDayVotes": 0,
+          "vbmVotes": 0,
+          "percentage": 0,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "trustee-community-college-board",
+      "title": "TRUSTEE, COMMUNITY COLLEGE BOARD",
+      "type": "local",
+      "isRCV": false,
+      "totalBallotsCast": 823294,
+      "candidates": [
+        {
+          "name": "HEATHER McCARTY",
+          "totalVotes": 162477,
+          "electionDayVotes": 17418,
+          "vbmVotes": 145059,
+          "percentage": 0.197349913882526,
+          "isWinner": true
+        },
+        {
+          "name": "ALIYA CHISTI",
+          "totalVotes": 149638,
+          "electionDayVotes": 14058,
+          "vbmVotes": 135580,
+          "percentage": 0.181755241748391,
+          "isWinner": false
+        },
+        {
+          "name": "ALAN WONG",
+          "totalVotes": 140951,
+          "electionDayVotes": 16087,
+          "vbmVotes": 124864,
+          "percentage": 0.17120372552211,
+          "isWinner": false
+        },
+        {
+          "name": "LUIS ZAMORA",
+          "totalVotes": 117682,
+          "electionDayVotes": 11778,
+          "vbmVotes": 105904,
+          "percentage": 0.142940431972054,
+          "isWinner": false
+        },
+        {
+          "name": "RUTH FERGUSON",
+          "totalVotes": 114132,
+          "electionDayVotes": 11373,
+          "vbmVotes": 102759,
+          "percentage": 0.138628485085522,
+          "isWinner": false
+        },
+        {
+          "name": "LEANNA C. LOUIE",
+          "totalVotes": 50353,
+          "electionDayVotes": 6787,
+          "vbmVotes": 43566,
+          "percentage": 0.0611604117119765,
+          "isWinner": false
+        },
+        {
+          "name": "BEN KAPLAN",
+          "totalVotes": 49320,
+          "electionDayVotes": 7320,
+          "vbmVotes": 42000,
+          "percentage": 0.0599056958996422,
+          "isWinner": false
+        },
+        {
+          "name": "JULIO J. RAMOS",
+          "totalVotes": 38741,
+          "electionDayVotes": 6184,
+          "vbmVotes": 32557,
+          "percentage": 0.0470560941777785,
+          "isWinner": false
+        },
+        {
+          "name": "Write-in",
+          "totalVotes": 0,
+          "electionDayVotes": 0,
+          "vbmVotes": 0,
+          "percentage": 0,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "bart-board-of-directors-district-7",
+      "title": "BART BOARD OF DIRECTORS, DISTRICT 7",
+      "type": "local",
+      "isRCV": false,
+      "totalBallotsCast": 9832,
+      "candidates": [
+        {
+          "name": "VICTOR E. FLORES",
+          "totalVotes": 5844,
+          "electionDayVotes": 851,
+          "vbmVotes": 4993,
+          "percentage": 0.594385679414158,
+          "isWinner": true
+        },
+        {
+          "name": "DANA LANG",
+          "totalVotes": 3988,
+          "electionDayVotes": 477,
+          "vbmVotes": 3511,
+          "percentage": 0.405614320585842,
+          "isWinner": false
+        },
+        {
+          "name": "Write-in",
+          "totalVotes": 0,
+          "electionDayVotes": 0,
+          "vbmVotes": 0,
+          "percentage": 0,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "bart-board-of-directors-district-9",
+      "title": "BART BOARD OF DIRECTORS, DISTRICT 9",
+      "type": "local",
+      "isRCV": false,
+      "totalBallotsCast": 137887,
+      "candidates": [
+        {
+          "name": "EDWARD WRIGHT",
+          "totalVotes": 86966,
+          "electionDayVotes": 10675,
+          "vbmVotes": 76291,
+          "percentage": 0.630704852524168,
+          "isWinner": true
+        },
+        {
+          "name": "JOE SANGIRARDI",
+          "totalVotes": 50905,
+          "electionDayVotes": 5954,
+          "vbmVotes": 44951,
+          "percentage": 0.369179110431005,
+          "isWinner": false
+        },
+        {
+          "name": "Write-in",
+          "totalVotes": 16,
+          "electionDayVotes": 1,
+          "vbmVotes": 15,
+          "percentage": 0.000116037044826561,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "mayor",
+      "title": "MAYOR",
+      "type": "local",
+      "isRCV": true,
+      "totalBallotsCast": 389086,
+      "candidates": [
+        {
+          "name": "DANIEL LURIE",
+          "totalVotes": 102547,
+          "electionDayVotes": 11661,
+          "vbmVotes": 90886,
+          "percentage": 0.263558699105082,
+          "isWinner": true
+        },
+        {
+          "name": "LONDON BREED",
+          "totalVotes": 94772,
+          "electionDayVotes": 12676,
+          "vbmVotes": 82096,
+          "percentage": 0.243575970351028,
+          "isWinner": false
+        },
+        {
+          "name": "AARON PESKIN",
+          "totalVotes": 89055,
+          "electionDayVotes": 12227,
+          "vbmVotes": 76828,
+          "percentage": 0.228882560667822,
+          "isWinner": false
+        },
+        {
+          "name": "MARK FARRELL",
+          "totalVotes": 71987,
+          "electionDayVotes": 10362,
+          "vbmVotes": 61625,
+          "percentage": 0.185015652066638,
+          "isWinner": false
+        },
+        {
+          "name": "AHSHA SAFAÍ",
+          "totalVotes": 11366,
+          "electionDayVotes": 1661,
+          "vbmVotes": 9705,
+          "percentage": 0.0292120508062485,
+          "isWinner": false
+        },
+        {
+          "name": "ELLEN LEE ZHOU",
+          "totalVotes": 8610,
+          "electionDayVotes": 1824,
+          "vbmVotes": 6786,
+          "percentage": 0.0221287838678338,
+          "isWinner": false
+        },
+        {
+          "name": "DYLAN HIRSCH-SHELL",
+          "totalVotes": 2866,
+          "electionDayVotes": 526,
+          "vbmVotes": 2340,
+          "percentage": 0.00736598078573889,
+          "isWinner": false
+        },
+        {
+          "name": "KEITH FREEDMAN",
+          "totalVotes": 2051,
+          "electionDayVotes": 599,
+          "vbmVotes": 1452,
+          "percentage": 0.00527132818965473,
+          "isWinner": false
+        },
+        {
+          "name": "NELSON MEI",
+          "totalVotes": 1760,
+          "electionDayVotes": 492,
+          "vbmVotes": 1268,
+          "percentage": 0.00452342155718787,
+          "isWinner": false
+        },
+        {
+          "name": "SHAHRAM SHARIATI",
+          "totalVotes": 1581,
+          "electionDayVotes": 467,
+          "vbmVotes": 1114,
+          "percentage": 0.00406336902381479,
+          "isWinner": false
+        },
+        {
+          "name": "HENRY FLYNN",
+          "totalVotes": 1293,
+          "electionDayVotes": 311,
+          "vbmVotes": 982,
+          "percentage": 0.00332317276900223,
+          "isWinner": false
+        },
+        {
+          "name": "PAUL YBARRA ROBERTSON",
+          "totalVotes": 793,
+          "electionDayVotes": 246,
+          "vbmVotes": 547,
+          "percentage": 0.00203810982661931,
+          "isWinner": false
+        },
+        {
+          "name": "JON SODERSTROM",
+          "totalVotes": 401,
+          "electionDayVotes": 116,
+          "vbmVotes": 285,
+          "percentage": 0.0010306204797911,
+          "isWinner": false
+        },
+        {
+          "name": "Write-in",
+          "totalVotes": 4,
+          "electionDayVotes": 0,
+          "vbmVotes": 4,
+          "percentage": 0.0000102805035390633,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "member-board-of-supervisors-district-1",
+      "title": "MEMBER, BOARD OF SUPERVISORS, DISTRICT 1",
+      "type": "local",
+      "isRCV": true,
+      "totalBallotsCast": 35405,
+      "candidates": [
+        {
+          "name": "CONNIE CHAN",
+          "totalVotes": 16636,
+          "electionDayVotes": 2117,
+          "vbmVotes": 14519,
+          "percentage": 0.46987713599774,
+          "isWinner": true
+        },
+        {
+          "name": "MARJAN PHILHOUR",
+          "totalVotes": 14740,
+          "electionDayVotes": 1804,
+          "vbmVotes": 12936,
+          "percentage": 0.416325377771501,
+          "isWinner": false
+        },
+        {
+          "name": "JEN NOSSOKOFF",
+          "totalVotes": 1796,
+          "electionDayVotes": 259,
+          "vbmVotes": 1537,
+          "percentage": 0.0507272984041802,
+          "isWinner": false
+        },
+        {
+          "name": "JEREMIAH BOEHNER",
+          "totalVotes": 1340,
+          "electionDayVotes": 215,
+          "vbmVotes": 1125,
+          "percentage": 0.037847761615591,
+          "isWinner": false
+        },
+        {
+          "name": "SHERMAN D'SILVA",
+          "totalVotes": 893,
+          "electionDayVotes": 138,
+          "vbmVotes": 755,
+          "percentage": 0.0252224262109871,
+          "isWinner": false
+        },
+        {
+          "name": "Write-in",
+          "totalVotes": 0,
+          "electionDayVotes": 0,
+          "vbmVotes": 0,
+          "percentage": 0,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "member-board-of-supervisors-district-3",
+      "title": "MEMBER, BOARD OF SUPERVISORS, DISTRICT 3",
+      "type": "local",
+      "isRCV": true,
+      "totalBallotsCast": 28652,
+      "candidates": [
+        {
+          "name": "DANNY SAUTER",
+          "totalVotes": 11261,
+          "electionDayVotes": 1409,
+          "vbmVotes": 9852,
+          "percentage": 0.393026664805249,
+          "isWinner": true
+        },
+        {
+          "name": "SHARON LAI",
+          "totalVotes": 8456,
+          "electionDayVotes": 1204,
+          "vbmVotes": 7252,
+          "percentage": 0.295127739773838,
+          "isWinner": false
+        },
+        {
+          "name": "MOE JAMIL",
+          "totalVotes": 3733,
+          "electionDayVotes": 584,
+          "vbmVotes": 3149,
+          "percentage": 0.130287588999023,
+          "isWinner": false
+        },
+        {
+          "name": "MATTHEW SUSK",
+          "totalVotes": 2780,
+          "electionDayVotes": 518,
+          "vbmVotes": 2262,
+          "percentage": 0.0970263855926288,
+          "isWinner": false
+        },
+        {
+          "name": "WENDY HA CHAU",
+          "totalVotes": 1554,
+          "electionDayVotes": 352,
+          "vbmVotes": 1202,
+          "percentage": 0.0542370515147285,
+          "isWinner": false
+        },
+        {
+          "name": "EDUARD NAVARRO",
+          "totalVotes": 868,
+          "electionDayVotes": 197,
+          "vbmVotes": 671,
+          "percentage": 0.030294569314533,
+          "isWinner": false
+        },
+        {
+          "name": "Write-in",
+          "totalVotes": 0,
+          "electionDayVotes": 0,
+          "vbmVotes": 0,
+          "percentage": 0,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "member-board-of-supervisors-district-5",
+      "title": "MEMBER, BOARD OF SUPERVISORS, DISTRICT 5",
+      "type": "local",
+      "isRCV": true,
+      "totalBallotsCast": 29399,
+      "candidates": [
+        {
+          "name": "DEAN PRESTON",
+          "totalVotes": 11941,
+          "electionDayVotes": 1615,
+          "vbmVotes": 10326,
+          "percentage": 0.406170277900609,
+          "isWinner": true
+        },
+        {
+          "name": "BILAL MAHMOOD",
+          "totalVotes": 11720,
+          "electionDayVotes": 1419,
+          "vbmVotes": 10301,
+          "percentage": 0.398653015408687,
+          "isWinner": false
+        },
+        {
+          "name": "SCOTTY JACOBS",
+          "totalVotes": 2756,
+          "electionDayVotes": 401,
+          "vbmVotes": 2355,
+          "percentage": 0.0937446851933739,
+          "isWinner": false
+        },
+        {
+          "name": "AUTUMN HOPE LOOIJEN",
+          "totalVotes": 2549,
+          "electionDayVotes": 452,
+          "vbmVotes": 2097,
+          "percentage": 0.0867036293751488,
+          "isWinner": false
+        },
+        {
+          "name": "ALLEN JONES",
+          "totalVotes": 433,
+          "electionDayVotes": 93,
+          "vbmVotes": 340,
+          "percentage": 0.014728392122181,
+          "isWinner": false
+        },
+        {
+          "name": "Write-in",
+          "totalVotes": 0,
+          "electionDayVotes": 0,
+          "vbmVotes": 0,
+          "percentage": 0,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "member-board-of-supervisors-district-7",
+      "title": "MEMBER, BOARD OF SUPERVISORS, DISTRICT 7",
+      "type": "local",
+      "isRCV": true,
+      "totalBallotsCast": 37076,
+      "candidates": [
+        {
+          "name": "MYRNA MELGAR",
+          "totalVotes": 17453,
+          "electionDayVotes": 1974,
+          "vbmVotes": 15479,
+          "percentage": 0.470735785953177,
+          "isWinner": true
+        },
+        {
+          "name": "MATT BOSCHETTO",
+          "totalVotes": 13364,
+          "electionDayVotes": 1561,
+          "vbmVotes": 11803,
+          "percentage": 0.360448807854137,
+          "isWinner": false
+        },
+        {
+          "name": "STEPHEN MARTIN-PINTO",
+          "totalVotes": 5039,
+          "electionDayVotes": 817,
+          "vbmVotes": 4222,
+          "percentage": 0.135910022656166,
+          "isWinner": false
+        },
+        {
+          "name": "EDWARD S. YEE",
+          "totalVotes": 1220,
+          "electionDayVotes": 160,
+          "vbmVotes": 1060,
+          "percentage": 0.0329053835365196,
+          "isWinner": false
+        },
+        {
+          "name": "Write-in",
+          "totalVotes": 0,
+          "electionDayVotes": 0,
+          "vbmVotes": 0,
+          "percentage": 0,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "member-board-of-supervisors-district-9",
+      "title": "MEMBER, BOARD OF SUPERVISORS, DISTRICT 9",
+      "type": "local",
+      "isRCV": true,
+      "totalBallotsCast": 32618,
+      "candidates": [
+        {
+          "name": "JACKIE FIELDER",
+          "totalVotes": 13822,
+          "electionDayVotes": 1818,
+          "vbmVotes": 12004,
+          "percentage": 0.42375375559507,
+          "isWinner": true
+        },
+        {
+          "name": "TREVOR CHANDLER",
+          "totalVotes": 9028,
+          "electionDayVotes": 858,
+          "vbmVotes": 8170,
+          "percentage": 0.276779692194494,
+          "isWinner": false
+        },
+        {
+          "name": "ROBERTO HERNANDEZ",
+          "totalVotes": 6571,
+          "electionDayVotes": 979,
+          "vbmVotes": 5592,
+          "percentage": 0.201453185357778,
+          "isWinner": false
+        },
+        {
+          "name": "STEPHEN JON TORRES",
+          "totalVotes": 1129,
+          "electionDayVotes": 179,
+          "vbmVotes": 950,
+          "percentage": 0.034612790483782,
+          "isWinner": false
+        },
+        {
+          "name": "JAIME GUTIERREZ",
+          "totalVotes": 918,
+          "electionDayVotes": 155,
+          "vbmVotes": 763,
+          "percentage": 0.0281439695873444,
+          "isWinner": false
+        },
+        {
+          "name": "JULIAN BERMUDEZ",
+          "totalVotes": 592,
+          "electionDayVotes": 109,
+          "vbmVotes": 483,
+          "percentage": 0.0181494880127537,
+          "isWinner": false
+        },
+        {
+          "name": "H. BROWN",
+          "totalVotes": 558,
+          "electionDayVotes": 99,
+          "vbmVotes": 459,
+          "percentage": 0.017107118768778,
+          "isWinner": false
+        },
+        {
+          "name": "Write-in",
+          "totalVotes": 0,
+          "electionDayVotes": 0,
+          "vbmVotes": 0,
+          "percentage": 0,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "member-board-of-supervisors-district-11",
+      "title": "MEMBER, BOARD OF SUPERVISORS, DISTRICT 11",
+      "type": "local",
+      "isRCV": true,
+      "totalBallotsCast": 27658,
+      "candidates": [
+        {
+          "name": "MICHAEL LAI",
+          "totalVotes": 8578,
+          "electionDayVotes": 883,
+          "vbmVotes": 7695,
+          "percentage": 0.310145346735122,
+          "isWinner": true
+        },
+        {
+          "name": "CHYANNE CHEN",
+          "totalVotes": 8216,
+          "electionDayVotes": 775,
+          "vbmVotes": 7441,
+          "percentage": 0.297056909393304,
+          "isWinner": false
+        },
+        {
+          "name": "ERNEST \"EJ\" JONES",
+          "totalVotes": 5359,
+          "electionDayVotes": 602,
+          "vbmVotes": 4757,
+          "percentage": 0.193759490924868,
+          "isWinner": false
+        },
+        {
+          "name": "OSCAR FLORES",
+          "totalVotes": 2867,
+          "electionDayVotes": 486,
+          "vbmVotes": 2381,
+          "percentage": 0.103658977511028,
+          "isWinner": false
+        },
+        {
+          "name": "ADLAH CHISTI",
+          "totalVotes": 1423,
+          "electionDayVotes": 136,
+          "vbmVotes": 1287,
+          "percentage": 0.0514498517607925,
+          "isWinner": false
+        },
+        {
+          "name": "JOSE MORALES",
+          "totalVotes": 618,
+          "electionDayVotes": 111,
+          "vbmVotes": 507,
+          "percentage": 0.0223443488321643,
+          "isWinner": false
+        },
+        {
+          "name": "ROGER K. MARENCO",
+          "totalVotes": 597,
+          "electionDayVotes": 76,
+          "vbmVotes": 521,
+          "percentage": 0.0215850748427218,
+          "isWinner": false
+        },
+        {
+          "name": "Write-in",
+          "totalVotes": 0,
+          "electionDayVotes": 0,
+          "vbmVotes": 0,
+          "percentage": 0,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "city-attorney",
+      "title": "CITY ATTORNEY",
+      "type": "local",
+      "isRCV": true,
+      "totalBallotsCast": 327561,
+      "candidates": [
+        {
+          "name": "DAVID CHIU",
+          "totalVotes": 271916,
+          "electionDayVotes": 31172,
+          "vbmVotes": 240744,
+          "percentage": 0.83012324422016,
+          "isWinner": true
+        },
+        {
+          "name": "RICHARD T. WOON",
+          "totalVotes": 55645,
+          "electionDayVotes": 10578,
+          "vbmVotes": 45067,
+          "percentage": 0.169876755779839,
+          "isWinner": false
+        },
+        {
+          "name": "Write-in",
+          "totalVotes": 0,
+          "electionDayVotes": 0,
+          "vbmVotes": 0,
+          "percentage": 0,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "district-attorney",
+      "title": "DISTRICT ATTORNEY",
+      "type": "local",
+      "isRCV": true,
+      "totalBallotsCast": 345702,
+      "candidates": [
+        {
+          "name": "BROOKE JENKINS",
+          "totalVotes": 228100,
+          "electionDayVotes": 27839,
+          "vbmVotes": 200261,
+          "percentage": 0.659816836466089,
+          "isWinner": true
+        },
+        {
+          "name": "RYAN KHOJASTEH",
+          "totalVotes": 117602,
+          "electionDayVotes": 16591,
+          "vbmVotes": 101011,
+          "percentage": 0.340183163533911,
+          "isWinner": false
+        },
+        {
+          "name": "Write-in",
+          "totalVotes": 0,
+          "electionDayVotes": 0,
+          "vbmVotes": 0,
+          "percentage": 0,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "sheriff",
+      "title": "SHERIFF",
+      "type": "local",
+      "isRCV": true,
+      "totalBallotsCast": 313519,
+      "candidates": [
+        {
+          "name": "PAUL MIYAMOTO",
+          "totalVotes": 250337,
+          "electionDayVotes": 29164,
+          "vbmVotes": 221173,
+          "percentage": 0.798474733588714,
+          "isWinner": true
+        },
+        {
+          "name": "MICHAEL JUAN",
+          "totalVotes": 63182,
+          "electionDayVotes": 10927,
+          "vbmVotes": 52255,
+          "percentage": 0.201525266411286,
+          "isWinner": false
+        },
+        {
+          "name": "Write-in",
+          "totalVotes": 0,
+          "electionDayVotes": 0,
+          "vbmVotes": 0,
+          "percentage": 0,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "treasurer",
+      "title": "TREASURER",
+      "type": "local",
+      "isRCV": true,
+      "totalBallotsCast": 300411,
+      "candidates": [
+        {
+          "name": "JOSÉ CISNEROS",
+          "totalVotes": 300411,
+          "electionDayVotes": 38446,
+          "vbmVotes": 261965,
+          "percentage": 1,
+          "isWinner": true
+        },
+        {
+          "name": "Write-in",
+          "totalVotes": 0,
+          "electionDayVotes": 0,
+          "vbmVotes": 0,
+          "percentage": 0,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "proposition-2",
+      "title": "PROPOSITION 2",
+      "type": "measure",
+      "isRCV": false,
+      "totalBallotsCast": 382405,
+      "candidates": [
+        {
+          "name": "YES",
+          "totalVotes": 290905,
+          "electionDayVotes": 40653,
+          "vbmVotes": 250252,
+          "percentage": 0.760724885919379,
+          "isWinner": true
+        },
+        {
+          "name": "NO",
+          "totalVotes": 91500,
+          "electionDayVotes": 11846,
+          "vbmVotes": 79654,
+          "percentage": 0.239275114080621,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "proposition-3",
+      "title": "PROPOSITION 3",
+      "type": "measure",
+      "isRCV": false,
+      "totalBallotsCast": 386935,
+      "candidates": [
+        {
+          "name": "YES",
+          "totalVotes": 327877,
+          "electionDayVotes": 44205,
+          "vbmVotes": 283672,
+          "percentage": 0.847369713259333,
+          "isWinner": true
+        },
+        {
+          "name": "NO",
+          "totalVotes": 59058,
+          "electionDayVotes": 9017,
+          "vbmVotes": 50041,
+          "percentage": 0.152630286740667,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "proposition-4",
+      "title": "PROPOSITION 4",
+      "type": "measure",
+      "isRCV": false,
+      "totalBallotsCast": 384034,
+      "candidates": [
+        {
+          "name": "YES",
+          "totalVotes": 307522,
+          "electionDayVotes": 42532,
+          "vbmVotes": 264990,
+          "percentage": 0.800767640365176,
+          "isWinner": true
+        },
+        {
+          "name": "NO",
+          "totalVotes": 76512,
+          "electionDayVotes": 10103,
+          "vbmVotes": 66409,
+          "percentage": 0.199232359634824,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "proposition-5",
+      "title": "PROPOSITION 5",
+      "type": "measure",
+      "isRCV": false,
+      "totalBallotsCast": 378276,
+      "candidates": [
+        {
+          "name": "YES",
+          "totalVotes": 236111,
+          "electionDayVotes": 34470,
+          "vbmVotes": 201641,
+          "percentage": 0.624176527191786,
+          "isWinner": true
+        },
+        {
+          "name": "NO",
+          "totalVotes": 142165,
+          "electionDayVotes": 17354,
+          "vbmVotes": 124811,
+          "percentage": 0.375823472808214,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "proposition-6",
+      "title": "PROPOSITION 6",
+      "type": "measure",
+      "isRCV": false,
+      "totalBallotsCast": 374079,
+      "candidates": [
+        {
+          "name": "YES",
+          "totalVotes": 250157,
+          "electionDayVotes": 33542,
+          "vbmVotes": 216615,
+          "percentage": 0.668727728634861,
+          "isWinner": true
+        },
+        {
+          "name": "NO",
+          "totalVotes": 123922,
+          "electionDayVotes": 17516,
+          "vbmVotes": 106406,
+          "percentage": 0.331272271365139,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "proposition-32",
+      "title": "PROPOSITION 32",
+      "type": "measure",
+      "isRCV": false,
+      "totalBallotsCast": 382251,
+      "candidates": [
+        {
+          "name": "YES",
+          "totalVotes": 271306,
+          "electionDayVotes": 37883,
+          "vbmVotes": 233423,
+          "percentage": 0.709758771069271,
+          "isWinner": true
+        },
+        {
+          "name": "NO",
+          "totalVotes": 110945,
+          "electionDayVotes": 14866,
+          "vbmVotes": 96079,
+          "percentage": 0.290241228930729,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "proposition-33",
+      "title": "PROPOSITION 33",
+      "type": "measure",
+      "isRCV": false,
+      "totalBallotsCast": 378859,
+      "candidates": [
+        {
+          "name": "NO",
+          "totalVotes": 217308,
+          "electionDayVotes": 25481,
+          "vbmVotes": 191827,
+          "percentage": 0.573585423600865,
+          "isWinner": true
+        },
+        {
+          "name": "YES",
+          "totalVotes": 161551,
+          "electionDayVotes": 26335,
+          "vbmVotes": 135216,
+          "percentage": 0.426414576399135,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "proposition-34",
+      "title": "PROPOSITION 34",
+      "type": "measure",
+      "isRCV": false,
+      "totalBallotsCast": 364553,
+      "candidates": [
+        {
+          "name": "NO",
+          "totalVotes": 191865,
+          "electionDayVotes": 24614,
+          "vbmVotes": 167251,
+          "percentage": 0.526302074046846,
+          "isWinner": true
+        },
+        {
+          "name": "YES",
+          "totalVotes": 172688,
+          "electionDayVotes": 25032,
+          "vbmVotes": 147656,
+          "percentage": 0.473697925953154,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "proposition-35",
+      "title": "PROPOSITION 35",
+      "type": "measure",
+      "isRCV": false,
+      "totalBallotsCast": 371179,
+      "candidates": [
+        {
+          "name": "YES",
+          "totalVotes": 290384,
+          "electionDayVotes": 39332,
+          "vbmVotes": 251052,
+          "percentage": 0.782328741658337,
+          "isWinner": true
+        },
+        {
+          "name": "NO",
+          "totalVotes": 80795,
+          "electionDayVotes": 10846,
+          "vbmVotes": 69949,
+          "percentage": 0.217671258341663,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "proposition-36",
+      "title": "PROPOSITION 36",
+      "type": "measure",
+      "isRCV": false,
+      "totalBallotsCast": 378818,
+      "candidates": [
+        {
+          "name": "YES",
+          "totalVotes": 241916,
+          "electionDayVotes": 30870,
+          "vbmVotes": 211046,
+          "percentage": 0.638607457934945,
+          "isWinner": true
+        },
+        {
+          "name": "NO",
+          "totalVotes": 136902,
+          "electionDayVotes": 20400,
+          "vbmVotes": 116502,
+          "percentage": 0.361392542065055,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "measure-a",
+      "title": "MEASURE A",
+      "type": "measure",
+      "isRCV": false,
+      "totalBallotsCast": 377297,
+      "candidates": [
+        {
+          "name": "BONDS - YES",
+          "totalVotes": 282968,
+          "electionDayVotes": 39874,
+          "vbmVotes": 243094,
+          "percentage": 0.749987410448533,
+          "isWinner": true
+        },
+        {
+          "name": "BONDS - NO",
+          "totalVotes": 94329,
+          "electionDayVotes": 11521,
+          "vbmVotes": 82808,
+          "percentage": 0.250012589551467,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "measure-b",
+      "title": "MEASURE B",
+      "type": "measure",
+      "isRCV": false,
+      "totalBallotsCast": 376637,
+      "candidates": [
+        {
+          "name": "BONDS - YES",
+          "totalVotes": 274187,
+          "electionDayVotes": 37320,
+          "vbmVotes": 236867,
+          "percentage": 0.727987425558296,
+          "isWinner": true
+        },
+        {
+          "name": "BONDS - NO",
+          "totalVotes": 102450,
+          "electionDayVotes": 13575,
+          "vbmVotes": 88875,
+          "percentage": 0.272012574441704,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "measure-c",
+      "title": "MEASURE C",
+      "type": "measure",
+      "isRCV": false,
+      "totalBallotsCast": 370366,
+      "candidates": [
+        {
+          "name": "YES",
+          "totalVotes": 225704,
+          "electionDayVotes": 31184,
+          "vbmVotes": 194520,
+          "percentage": 0.609407991014294,
+          "isWinner": true
+        },
+        {
+          "name": "NO",
+          "totalVotes": 144662,
+          "electionDayVotes": 18470,
+          "vbmVotes": 126192,
+          "percentage": 0.390592008985706,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "measure-d",
+      "title": "MEASURE D",
+      "type": "measure",
+      "isRCV": false,
+      "totalBallotsCast": 366327,
+      "candidates": [
+        {
+          "name": "NO",
+          "totalVotes": 207604,
+          "electionDayVotes": 27829,
+          "vbmVotes": 179775,
+          "percentage": 0.566717713955018,
+          "isWinner": true
+        },
+        {
+          "name": "YES",
+          "totalVotes": 158723,
+          "electionDayVotes": 20811,
+          "vbmVotes": 137912,
+          "percentage": 0.433282286044982,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "measure-e",
+      "title": "MEASURE E",
+      "type": "measure",
+      "isRCV": false,
+      "totalBallotsCast": 363854,
+      "candidates": [
+        {
+          "name": "YES",
+          "totalVotes": 192540,
+          "electionDayVotes": 27650,
+          "vbmVotes": 164890,
+          "percentage": 0.529168292776773,
+          "isWinner": true
+        },
+        {
+          "name": "NO",
+          "totalVotes": 171314,
+          "electionDayVotes": 20725,
+          "vbmVotes": 150589,
+          "percentage": 0.470831707223227,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "measure-f",
+      "title": "MEASURE F",
+      "type": "measure",
+      "isRCV": false,
+      "totalBallotsCast": 361671,
+      "candidates": [
+        {
+          "name": "NO",
+          "totalVotes": 197836,
+          "electionDayVotes": 25839,
+          "vbmVotes": 171997,
+          "percentage": 0.547005427584739,
+          "isWinner": true
+        },
+        {
+          "name": "YES",
+          "totalVotes": 163835,
+          "electionDayVotes": 22483,
+          "vbmVotes": 141352,
+          "percentage": 0.452994572415261,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "measure-g",
+      "title": "MEASURE G",
+      "type": "measure",
+      "isRCV": false,
+      "totalBallotsCast": 370824,
+      "candidates": [
+        {
+          "name": "YES",
+          "totalVotes": 217807,
+          "electionDayVotes": 31637,
+          "vbmVotes": 186170,
+          "percentage": 0.58735950208185,
+          "isWinner": true
+        },
+        {
+          "name": "NO",
+          "totalVotes": 153017,
+          "electionDayVotes": 18370,
+          "vbmVotes": 134647,
+          "percentage": 0.41264049791815,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "measure-h",
+      "title": "MEASURE H",
+      "type": "measure",
+      "isRCV": false,
+      "totalBallotsCast": 365942,
+      "candidates": [
+        {
+          "name": "YES",
+          "totalVotes": 192601,
+          "electionDayVotes": 27895,
+          "vbmVotes": 164706,
+          "percentage": 0.526315645648764,
+          "isWinner": true
+        },
+        {
+          "name": "NO",
+          "totalVotes": 173341,
+          "electionDayVotes": 21186,
+          "vbmVotes": 152155,
+          "percentage": 0.473684354351236,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "measure-i",
+      "title": "MEASURE I",
+      "type": "measure",
+      "isRCV": false,
+      "totalBallotsCast": 363459,
+      "candidates": [
+        {
+          "name": "YES",
+          "totalVotes": 261318,
+          "electionDayVotes": 36322,
+          "vbmVotes": 224996,
+          "percentage": 0.718975180144115,
+          "isWinner": true
+        },
+        {
+          "name": "NO",
+          "totalVotes": 102141,
+          "electionDayVotes": 12235,
+          "vbmVotes": 89906,
+          "percentage": 0.281024819855885,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "measure-j",
+      "title": "MEASURE J",
+      "type": "measure",
+      "isRCV": false,
+      "totalBallotsCast": 362785,
+      "candidates": [
+        {
+          "name": "YES",
+          "totalVotes": 297972,
+          "electionDayVotes": 39413,
+          "vbmVotes": 258559,
+          "percentage": 0.821345976266935,
+          "isWinner": true
+        },
+        {
+          "name": "NO",
+          "totalVotes": 64813,
+          "electionDayVotes": 9108,
+          "vbmVotes": 55705,
+          "percentage": 0.178654023733065,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "measure-k",
+      "title": "MEASURE K",
+      "type": "measure",
+      "isRCV": false,
+      "totalBallotsCast": 376489,
+      "candidates": [
+        {
+          "name": "YES",
+          "totalVotes": 206042,
+          "electionDayVotes": 27931,
+          "vbmVotes": 178111,
+          "percentage": 0.547272297464202,
+          "isWinner": true
+        },
+        {
+          "name": "NO",
+          "totalVotes": 170447,
+          "electionDayVotes": 22755,
+          "vbmVotes": 147692,
+          "percentage": 0.452727702535798,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "measure-l",
+      "title": "MEASURE L",
+      "type": "measure",
+      "isRCV": false,
+      "totalBallotsCast": 369575,
+      "candidates": [
+        {
+          "name": "YES",
+          "totalVotes": 210375,
+          "electionDayVotes": 27438,
+          "vbmVotes": 182937,
+          "percentage": 0.569234932016505,
+          "isWinner": true
+        },
+        {
+          "name": "NO",
+          "totalVotes": 159200,
+          "electionDayVotes": 21876,
+          "vbmVotes": 137324,
+          "percentage": 0.430765067983495,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "measure-m",
+      "title": "MEASURE M",
+      "type": "measure",
+      "isRCV": false,
+      "totalBallotsCast": 342310,
+      "candidates": [
+        {
+          "name": "YES",
+          "totalVotes": 237930,
+          "electionDayVotes": 29184,
+          "vbmVotes": 208746,
+          "percentage": 0.695071718617627,
+          "isWinner": true
+        },
+        {
+          "name": "NO",
+          "totalVotes": 104380,
+          "electionDayVotes": 16536,
+          "vbmVotes": 87844,
+          "percentage": 0.304928281382373,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "measure-n",
+      "title": "MEASURE N",
+      "type": "measure",
+      "isRCV": false,
+      "totalBallotsCast": 363432,
+      "candidates": [
+        {
+          "name": "YES",
+          "totalVotes": 187979,
+          "electionDayVotes": 27083,
+          "vbmVotes": 160896,
+          "percentage": 0.517232934909419,
+          "isWinner": true
+        },
+        {
+          "name": "NO",
+          "totalVotes": 175453,
+          "electionDayVotes": 21601,
+          "vbmVotes": 153852,
+          "percentage": 0.482767065090581,
+          "isWinner": false
+        }
+      ]
+    },
+    {
+      "id": "measure-o",
+      "title": "MEASURE O",
+      "type": "measure",
+      "isRCV": false,
+      "totalBallotsCast": 373249,
+      "candidates": [
+        {
+          "name": "YES",
+          "totalVotes": 312914,
+          "electionDayVotes": 40800,
+          "vbmVotes": 272114,
+          "percentage": 0.838351877700945,
+          "isWinner": true
+        },
+        {
+          "name": "NO",
+          "totalVotes": 60335,
+          "electionDayVotes": 9490,
+          "vbmVotes": 50845,
+          "percentage": 0.161648122299055,
+          "isWinner": false
+        }
+      ]
+    }
+  ]
+}

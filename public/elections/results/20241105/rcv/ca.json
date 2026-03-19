@@ -1,0 +1,33 @@
+{
+  "raceId": "city-attorney",
+  "title": "CITY ATTORNEY",
+  "totalRounds": 1,
+  "rounds": [
+    {
+      "round": 1,
+      "candidates": [
+        {
+          "name": "DAVID CHIU",
+          "votes": 272857,
+          "percentage": 0.8289,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "RICHARD T. WOON",
+          "votes": 56317,
+          "percentage": 0.1711,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 329174,
+      "exhausted": 0,
+      "overvotes": 205,
+      "blanks": 80726
+    }
+  ],
+  "winner": "DAVID CHIU"
+}

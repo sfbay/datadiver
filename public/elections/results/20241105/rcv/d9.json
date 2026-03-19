@@ -1,0 +1,398 @@
+{
+  "raceId": "member-board-of-supervisors-district-1",
+  "title": "MEMBER, BOARD OF SUPERVISORS, DISTRICT 1",
+  "totalRounds": 6,
+  "rounds": [
+    {
+      "round": 1,
+      "candidates": [
+        {
+          "name": "JACKIE FIELDER",
+          "votes": 13844,
+          "percentage": 0.423,
+          "transfer": 61,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "TREVOR CHANDLER",
+          "votes": 9042,
+          "percentage": 0.2763,
+          "transfer": 136,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "ROBERTO HERNANDEZ",
+          "votes": 6606,
+          "percentage": 0.2018,
+          "transfer": 47,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "STEPHEN JON TORRES",
+          "votes": 1140,
+          "percentage": 0.0348,
+          "transfer": 36,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "JAIME GUTIERREZ",
+          "votes": 931,
+          "percentage": 0.028399999999999998,
+          "transfer": 53,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "JULIAN BERMUDEZ",
+          "votes": 600,
+          "percentage": 0.0183,
+          "transfer": 90,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "H. BROWN",
+          "votes": 568,
+          "percentage": 0.0174,
+          "transfer": -568,
+          "isEliminated": true,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 32731,
+      "exhausted": 0,
+      "overvotes": 140,
+      "blanks": 4220
+    },
+    {
+      "round": 2,
+      "candidates": [
+        {
+          "name": "JACKIE FIELDER",
+          "votes": 13905,
+          "percentage": 0.4267,
+          "transfer": 59,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "TREVOR CHANDLER",
+          "votes": 9178,
+          "percentage": 0.2817,
+          "transfer": 135,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "ROBERTO HERNANDEZ",
+          "votes": 6653,
+          "percentage": 0.20420000000000002,
+          "transfer": 91,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "STEPHEN JON TORRES",
+          "votes": 1176,
+          "percentage": 0.0361,
+          "transfer": 98,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "JAIME GUTIERREZ",
+          "votes": 984,
+          "percentage": 0.0302,
+          "transfer": 96,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "JULIAN BERMUDEZ",
+          "votes": 690,
+          "percentage": 0.0212,
+          "transfer": -690,
+          "isEliminated": true,
+          "isLeader": false
+        },
+        {
+          "name": "H. BROWN",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 32586,
+      "exhausted": 142,
+      "overvotes": 143,
+      "blanks": 4220
+    },
+    {
+      "round": 3,
+      "candidates": [
+        {
+          "name": "JACKIE FIELDER",
+          "votes": 13964,
+          "percentage": 0.4313,
+          "transfer": 162,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "TREVOR CHANDLER",
+          "votes": 9313,
+          "percentage": 0.2877,
+          "transfer": 176,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "ROBERTO HERNANDEZ",
+          "votes": 6744,
+          "percentage": 0.20829999999999999,
+          "transfer": 310,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "STEPHEN JON TORRES",
+          "votes": 1274,
+          "percentage": 0.0394,
+          "transfer": 125,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "JAIME GUTIERREZ",
+          "votes": 1080,
+          "percentage": 0.0334,
+          "transfer": -1080,
+          "isEliminated": true,
+          "isLeader": false
+        },
+        {
+          "name": "JULIAN BERMUDEZ",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "H. BROWN",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 32375,
+      "exhausted": 352,
+      "overvotes": 144,
+      "blanks": 4220
+    },
+    {
+      "round": 4,
+      "candidates": [
+        {
+          "name": "JACKIE FIELDER",
+          "votes": 14126,
+          "percentage": 0.44049999999999995,
+          "transfer": 577,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "TREVOR CHANDLER",
+          "votes": 9489,
+          "percentage": 0.2959,
+          "transfer": 241,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "ROBERTO HERNANDEZ",
+          "votes": 7054,
+          "percentage": 0.22,
+          "transfer": 315,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "STEPHEN JON TORRES",
+          "votes": 1399,
+          "percentage": 0.0436,
+          "transfer": -1399,
+          "isEliminated": true,
+          "isLeader": false
+        },
+        {
+          "name": "JAIME GUTIERREZ",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "JULIAN BERMUDEZ",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "H. BROWN",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 32068,
+      "exhausted": 650,
+      "overvotes": 153,
+      "blanks": 4220
+    },
+    {
+      "round": 5,
+      "candidates": [
+        {
+          "name": "JACKIE FIELDER",
+          "votes": 14703,
+          "percentage": 0.4623,
+          "transfer": 2843,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "TREVOR CHANDLER",
+          "votes": 9730,
+          "percentage": 0.306,
+          "transfer": 2133,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "ROBERTO HERNANDEZ",
+          "votes": 7369,
+          "percentage": 0.23170000000000002,
+          "transfer": -7369,
+          "isEliminated": true,
+          "isLeader": false
+        },
+        {
+          "name": "STEPHEN JON TORRES",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "JAIME GUTIERREZ",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "JULIAN BERMUDEZ",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "H. BROWN",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 31802,
+      "exhausted": 914,
+      "overvotes": 155,
+      "blanks": 4220
+    },
+    {
+      "round": 6,
+      "candidates": [
+        {
+          "name": "JACKIE FIELDER",
+          "votes": 17546,
+          "percentage": 0.5966,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "TREVOR CHANDLER",
+          "votes": 11863,
+          "percentage": 0.40340000000000004,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "ROBERTO HERNANDEZ",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "STEPHEN JON TORRES",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "JAIME GUTIERREZ",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "JULIAN BERMUDEZ",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "H. BROWN",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 29409,
+      "exhausted": 3285,
+      "overvotes": 177,
+      "blanks": 4220
+    }
+  ],
+  "winner": "JACKIE FIELDER"
+}

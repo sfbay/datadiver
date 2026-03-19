@@ -1,0 +1,293 @@
+{
+  "raceId": "member-board-of-supervisors-district-1",
+  "title": "MEMBER, BOARD OF SUPERVISORS, DISTRICT 1",
+  "totalRounds": 5,
+  "rounds": [
+    {
+      "round": 1,
+      "candidates": [
+        {
+          "name": "DANNY SAUTER",
+          "votes": 11272,
+          "percentage": 0.392,
+          "transfer": 254,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "SHARON LAI",
+          "votes": 8489,
+          "percentage": 0.2952,
+          "transfer": 120,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "MOE JAMIL",
+          "votes": 3753,
+          "percentage": 0.1305,
+          "transfer": 100,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "MATTHEW SUSK",
+          "votes": 2800,
+          "percentage": 0.0974,
+          "transfer": 154,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "WENDY HA CHAU",
+          "votes": 1565,
+          "percentage": 0.054400000000000004,
+          "transfer": 96,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "EDUARD NAVARRO",
+          "votes": 879,
+          "percentage": 0.030600000000000002,
+          "transfer": -879,
+          "isEliminated": true,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 28758,
+      "exhausted": 0,
+      "overvotes": 76,
+      "blanks": 4838
+    },
+    {
+      "round": 2,
+      "candidates": [
+        {
+          "name": "DANNY SAUTER",
+          "votes": 11526,
+          "percentage": 0.40299999999999997,
+          "transfer": 277,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "SHARON LAI",
+          "votes": 8609,
+          "percentage": 0.301,
+          "transfer": 586,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "MOE JAMIL",
+          "votes": 3853,
+          "percentage": 0.13470000000000001,
+          "transfer": 307,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "MATTHEW SUSK",
+          "votes": 2954,
+          "percentage": 0.1033,
+          "transfer": 126,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "WENDY HA CHAU",
+          "votes": 1661,
+          "percentage": 0.0581,
+          "transfer": -1661,
+          "isEliminated": true,
+          "isLeader": false
+        },
+        {
+          "name": "EDUARD NAVARRO",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 28603,
+      "exhausted": 153,
+      "overvotes": 78,
+      "blanks": 4838
+    },
+    {
+      "round": 3,
+      "candidates": [
+        {
+          "name": "DANNY SAUTER",
+          "votes": 11803,
+          "percentage": 0.418,
+          "transfer": 909,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "SHARON LAI",
+          "votes": 9195,
+          "percentage": 0.3256,
+          "transfer": 343,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "MOE JAMIL",
+          "votes": 4160,
+          "percentage": 0.14730000000000001,
+          "transfer": 959,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "MATTHEW SUSK",
+          "votes": 3080,
+          "percentage": 0.1091,
+          "transfer": -3080,
+          "isEliminated": true,
+          "isLeader": false
+        },
+        {
+          "name": "WENDY HA CHAU",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "EDUARD NAVARRO",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 28238,
+      "exhausted": 510,
+      "overvotes": 86,
+      "blanks": 4838
+    },
+    {
+      "round": 4,
+      "candidates": [
+        {
+          "name": "DANNY SAUTER",
+          "votes": 12712,
+          "percentage": 0.4645,
+          "transfer": 1344,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "SHARON LAI",
+          "votes": 9538,
+          "percentage": 0.34850000000000003,
+          "transfer": 1974,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "MOE JAMIL",
+          "votes": 5119,
+          "percentage": 0.187,
+          "transfer": -5119,
+          "isEliminated": true,
+          "isLeader": false
+        },
+        {
+          "name": "MATTHEW SUSK",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "WENDY HA CHAU",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "EDUARD NAVARRO",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 27369,
+      "exhausted": 1376,
+      "overvotes": 89,
+      "blanks": 4838
+    },
+    {
+      "round": 5,
+      "candidates": [
+        {
+          "name": "DANNY SAUTER",
+          "votes": 14056,
+          "percentage": 0.5497,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "SHARON LAI",
+          "votes": 11512,
+          "percentage": 0.45030000000000003,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "MOE JAMIL",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "MATTHEW SUSK",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "WENDY HA CHAU",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "EDUARD NAVARRO",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 25568,
+      "exhausted": 3166,
+      "overvotes": 100,
+      "blanks": 4838
+    }
+  ],
+  "winner": "DANNY SAUTER"
+}
