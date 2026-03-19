@@ -182,14 +182,17 @@ export default function Home() {
             <p
               className={`text-lg text-slate-500 dark:text-slate-400 max-w-md leading-relaxed transition-all duration-1000 delay-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
             >
-              Civic data made visible. Explore emergency response patterns, revenue flows,
-              and the stories hidden in San Francisco's public datasets.
+              Civic data brought to life. Explore trends, patterns and flow to reveal
+              stories with impact hidden in public datasets.
             </p>
 
             <div className={`flex items-center gap-4 mt-6 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
               <span className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-signal-emerald/80">
                 <span className="w-1.5 h-1.5 rounded-full bg-signal-emerald pulse-live" />
-                Live data from data.sfgov.org
+                Live data from data.sf.org
+              </span>
+              <span className="text-[10px] font-mono text-slate-400/60 dark:text-slate-500/60">
+                Created by Jesse Garnier · SF State Journalism
               </span>
             </div>
           </div>
