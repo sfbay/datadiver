@@ -6,7 +6,10 @@ import StatCard from '@/components/ui/StatCard'
 import CardTray, { type CardDef } from '@/components/ui/CardTray'
 import DepartmentBars from '@/components/charts/DepartmentBars'
 import SpendingTrend from '@/components/charts/SpendingTrend'
+import VendorDetailPanel from '@/components/ui/VendorDetailPanel'
+import HorizontalBarChart, { type BarDatum } from '@/components/charts/HorizontalBarChart'
 import { useBudgetVsActual, useBudgetTotals, useSpendingTrend, useDepartmentSpending } from '@/hooks/useBudgetData'
+import { useVendorSearch, useTopVendors } from '@/hooks/useVendorSearch'
 import { getCurrentFiscalYear, formatFiscalYear, formatBudgetAmount, formatBudgetFull } from '@/utils/fiscalYear'
 import type { FiscalYear } from '@/types/budget'
 
@@ -104,7 +107,7 @@ export default function CityBudget() {
       {/* Tab content */}
       <div id="budget-capture" className="flex-1 overflow-hidden">
         {activeTab === 'overview' && <BudgetOverview fiscalYear={fiscalYear} />}
-        {activeTab === 'search' && <SearchPlaceholder />}
+        {activeTab === 'search' && <VendorSearchTab fiscalYear={fiscalYear} />}
         {activeTab === 'advertising' && <AdvertisingPlaceholder />}
       </div>
     </div>
@@ -348,18 +351,178 @@ function BudgetOverview({ fiscalYear }: { fiscalYear: FiscalYear }) {
   )
 }
 
-// ── Placeholder tabs (Chunk 3 & 4) ─────────────────────────
+// ── Vendor Search Tab ───────────────────────────────────────
 
-function SearchPlaceholder() {
+function VendorSearchTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
+  const [query, setQuery] = useState('')
+  const [selectedVendor, setSelectedVendor] = useState<string | null>(null)
+  const search = useVendorSearch(query, fiscalYear)
+  const topVendors = useTopVendors(fiscalYear, 20)
+
+  const hasResults = search.vendors.length > 0 || search.departments.length > 0 || search.categories.length > 0
+  const showSearch = query.length >= 2
+
+  // Concentration chart data
+  const concentrationBars = useMemo((): BarDatum[] => {
+    return topVendors.data.map((v) => ({
+      label: v.vendor,
+      value: parseFloat(v.total_paid) || 0,
+      color: ACCENT,
+    }))
+  }, [topVendors.data])
+
+  const totalTopSpend = useMemo(
+    () => topVendors.data.reduce((sum, v) => sum + (parseFloat(v.total_paid) || 0), 0),
+    [topVendors.data]
+  )
+
   return (
-    <div className="p-6 space-y-6">
-      <div className="glass-card rounded-xl p-4">
-        <div className="h-10 rounded-lg bg-slate-100/80 dark:bg-white/[0.04] border border-slate-200/50 dark:border-white/[0.06]" />
+    <div className="h-full flex overflow-hidden relative">
+      <div className="flex-1 overflow-y-auto p-6">
+        <div className="max-w-4xl space-y-6">
+          {/* Search input */}
+          <div className="glass-card rounded-xl p-4">
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search vendors, departments, spending categories…"
+              className="w-full h-10 rounded-lg bg-slate-100/80 dark:bg-white/[0.04] border border-slate-200/50 dark:border-white/[0.06] px-4 text-sm text-ink dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500/50 transition-all font-mono"
+            />
+            {search.isLoading && (
+              <p className="text-[10px] font-mono text-slate-400 mt-2">Searching…</p>
+            )}
+          </div>
+
+          {/* Search results */}
+          {showSearch && hasResults && (
+            <div className="space-y-4">
+              {/* Vendor results */}
+              {search.vendors.length > 0 && (
+                <div>
+                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                    Vendors ({search.vendors.length})
+                  </p>
+                  <div className="space-y-1">
+                    {search.vendors.map((v) => (
+                      <button
+                        key={v.vendor}
+                        onClick={() => setSelectedVendor(v.vendor)}
+                        className="w-full text-left glass-card rounded-lg p-3 hover:bg-white/60 dark:hover:bg-white/[0.04] transition-all group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-ink dark:text-white font-medium truncate max-w-[400px]">
+                            {v.vendor}
+                          </span>
+                          <span className="text-sm font-mono text-sky-500 tabular-nums">
+                            {formatBudgetAmount(parseFloat(v.total_paid) || 0)}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-0.5">
+                          {v.payment_count} payments
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Department results */}
+              {search.departments.length > 0 && (
+                <div>
+                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                    Departments ({search.departments.length})
+                  </p>
+                  <div className="space-y-1">
+                    {search.departments.map((d) => (
+                      <div key={d.department} className="glass-card rounded-lg p-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-ink dark:text-white">{d.department}</span>
+                          <span className="text-sm font-mono text-violet-400 tabular-nums">
+                            {formatBudgetAmount(parseFloat(d.total) || 0)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Category results */}
+              {search.categories.length > 0 && (
+                <div>
+                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                    Spending Categories ({search.categories.length})
+                  </p>
+                  <div className="space-y-1">
+                    {search.categories.map((c) => (
+                      <div key={c.sub_object} className="glass-card rounded-lg p-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-ink dark:text-white">{c.sub_object}</span>
+                          <span className="text-sm font-mono text-amber-400 tabular-nums">
+                            {formatBudgetAmount(parseFloat(c.total) || 0)}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{c.count} vouchers</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* No results */}
+          {showSearch && !hasResults && !search.isLoading && (
+            <p className="text-sm text-slate-400 text-center py-8 font-mono">
+              No results for "{query}"
+            </p>
+          )}
+
+          {/* Default: vendor concentration chart */}
+          {!showSearch && (
+            <div className="space-y-6">
+              <div className="glass-card rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60">
+                    Top 20 Vendors by Total Spend
+                  </p>
+                  {totalTopSpend > 0 && (
+                    <span className="text-[10px] font-mono text-slate-400">
+                      {formatBudgetFull(totalTopSpend)} total
+                    </span>
+                  )}
+                </div>
+                {topVendors.isLoading ? (
+                  <SkeletonChart height={400} />
+                ) : (
+                  <HorizontalBarChart
+                    data={concentrationBars}
+                    width={600}
+                    height={Math.min(concentrationBars.length * 22 + 10, 500)}
+                    maxBars={20}
+                    valueFormatter={(v) => formatBudgetAmount(v)}
+                  />
+                )}
+              </div>
+
+              {/* Source attribution */}
+              <p className="text-[9px] font-mono text-slate-400/60 dark:text-slate-600">
+                Source: SF Controller — Vendor Payments ({' '}
+                <span className="tabular-nums">n9pm-xkyq</span>) · data.sfgov.org
+              </p>
+            </div>
+          )}
+        </div>
       </div>
-      <SkeletonSidebarRows count={8} />
+
+      {/* Vendor detail panel */}
+      <VendorDetailPanel vendor={selectedVendor} onClose={() => setSelectedVendor(null)} />
     </div>
   )
 }
+
+// ── Placeholder tab (Chunk 4) ───────────────────────────────
 
 function AdvertisingPlaceholder() {
   return (
