@@ -1,8 +1,13 @@
-import { useState, useCallback } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import ExportButton from '@/components/export/ExportButton'
-import { SkeletonChart, SkeletonSidebarRows } from '@/components/ui/Skeleton'
-import { getCurrentFiscalYear, formatFiscalYear } from '@/utils/fiscalYear'
+import { Skeleton, SkeletonChart, SkeletonSidebarRows } from '@/components/ui/Skeleton'
+import StatCard from '@/components/ui/StatCard'
+import CardTray, { type CardDef } from '@/components/ui/CardTray'
+import DepartmentBars from '@/components/charts/DepartmentBars'
+import SpendingTrend from '@/components/charts/SpendingTrend'
+import { useBudgetVsActual, useBudgetTotals, useSpendingTrend, useDepartmentSpending } from '@/hooks/useBudgetData'
+import { getCurrentFiscalYear, formatFiscalYear, formatBudgetAmount, formatBudgetFull } from '@/utils/fiscalYear'
 import type { FiscalYear } from '@/types/budget'
 
 type BudgetTab = 'overview' | 'search' | 'advertising'
@@ -49,11 +54,16 @@ export default function CityBudget() {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header bar */}
-      <div className="flex-shrink-0 flex items-center justify-between px-6 py-3 border-b border-slate-200/50 dark:border-white/[0.04] bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm">
+      <header className="flex-shrink-0 flex items-center justify-between px-6 py-3 border-b border-slate-200/50 dark:border-white/[0.04] bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl z-10">
         <div className="flex items-center gap-4">
-          <h1 className="font-display text-xl italic text-ink dark:text-white tracking-tight">
-            City Budget
-          </h1>
+          <div>
+            <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none tracking-tight">
+              City Budget
+            </h1>
+            <p className="text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
+              SF Controller · {formatFiscalYear(fiscalYear)}
+            </p>
+          </div>
 
           {/* Tab switcher */}
           <div className="flex gap-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-lg p-0.5">
@@ -87,13 +97,13 @@ export default function CityBudget() {
             ))}
           </select>
 
-          <ExportButton />
+          <ExportButton targetSelector="#budget-capture" filename="city-budget" />
         </div>
-      </div>
+      </header>
 
       {/* Tab content */}
-      <div className="flex-1 overflow-y-auto p-6">
-        {activeTab === 'overview' && <OverviewPlaceholder fiscalYear={fiscalYear} />}
+      <div id="budget-capture" className="flex-1 overflow-hidden">
+        {activeTab === 'overview' && <BudgetOverview fiscalYear={fiscalYear} />}
         {activeTab === 'search' && <SearchPlaceholder />}
         {activeTab === 'advertising' && <AdvertisingPlaceholder />}
       </div>
@@ -101,26 +111,248 @@ export default function CityBudget() {
   )
 }
 
-/** Placeholder for Overview tab — will be populated in Chunk 2 */
-function OverviewPlaceholder({ fiscalYear }: { fiscalYear: FiscalYear }) {
+// ── Budget Overview Tab ─────────────────────────────────────
+
+function BudgetOverview({ fiscalYear }: { fiscalYear: FiscalYear }) {
+  const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null)
+  const [trendMode, setTrendMode] = useState<'absolute' | 'percent'>('absolute')
+
+  const totals = useBudgetTotals(fiscalYear)
+  const bva = useBudgetVsActual(fiscalYear)
+  const trend = useSpendingTrend(undefined, undefined)
+  const deptSpending = useDepartmentSpending(fiscalYear)
+
+  // Find largest department
+  const largestDept = useMemo(() => {
+    if (bva.data.length === 0) return '—'
+    return bva.data[0].department
+  }, [bva.data])
+
+  // Build card definitions
+  const cards = useMemo((): CardDef[] => {
+    if (totals.isLoading) return []
+    return [
+      {
+        id: 'total-budget',
+        label: 'Total Budget',
+        shortLabel: 'Budget',
+        value: formatBudgetAmount(totals.budget),
+        color: ACCENT,
+        defaultExpanded: true,
+        info: 'budget-total',
+      },
+      {
+        id: 'total-spending',
+        label: 'Total Spending',
+        shortLabel: 'Spending',
+        value: formatBudgetAmount(totals.spending),
+        color: '#a78bfa',
+        subtitle: `${totals.spendingPct.toFixed(1)}% of budget`,
+        defaultExpanded: true,
+      },
+      {
+        id: 'largest-dept',
+        label: 'Largest Department',
+        shortLabel: 'Top Dept',
+        value: largestDept.length > 20 ? largestDept.slice(0, 19) + '…' : largestDept,
+        color: '#f59e0b',
+        defaultExpanded: true,
+      },
+      {
+        id: 'yoy-growth',
+        label: 'YoY Spending Growth',
+        shortLabel: 'YoY',
+        value: `${totals.yoyGrowth >= 0 ? '+' : ''}${totals.yoyGrowth.toFixed(1)}%`,
+        color: totals.yoyGrowth > 0 ? '#ef4444' : '#22c55e',
+        trend: totals.yoyGrowth > 0 ? 'up' : totals.yoyGrowth < 0 ? 'down' : 'neutral',
+        yoyDelta: totals.yoyGrowth,
+        defaultExpanded: true,
+      },
+    ]
+  }, [totals, largestDept])
+
+  const handleSelectDepartment = useCallback((dept: string) => {
+    setSelectedDepartment((prev) => (prev === dept ? null : dept))
+  }, [])
+
+  // Department sidebar list
+  const deptList = useMemo(() => {
+    if (deptSpending.data.length === 0) return []
+    const maxVal = parseFloat(deptSpending.data[0]?.total) || 1
+    return deptSpending.data.map((r) => ({
+      name: r.department,
+      amount: parseFloat(r.total) || 0,
+      pct: ((parseFloat(r.total) || 0) / maxVal) * 100,
+    }))
+  }, [deptSpending.data])
+
   return (
-    <div className="space-y-6">
-      <p className="text-sm text-slate-500 dark:text-slate-400 font-mono">
-        {formatFiscalYear(fiscalYear)} · Overview
-      </p>
-      <div className="grid grid-cols-2 gap-4">
-        <SkeletonChart height={200} />
-        <SkeletonChart height={200} />
+    <div className="h-full flex overflow-hidden">
+      {/* Main chart area */}
+      <div className="flex-1 overflow-y-auto p-6">
+        {/* Loading state */}
+        {totals.isLoading && (
+          <div className="max-w-4xl space-y-6">
+            <div className="flex gap-2.5 flex-wrap">
+              {Array.from({ length: 4 }, (_, i) => (
+                <div key={i} className="glass-card rounded-xl px-4 py-3 min-w-[140px] animate-pulse" style={{ animationDelay: `${i * 60}ms` }}>
+                  <Skeleton className="h-2.5 w-16 mb-3" />
+                  <Skeleton className="h-6 w-24" />
+                </div>
+              ))}
+            </div>
+            <SkeletonChart height={300} />
+          </div>
+        )}
+
+        {/* Error state */}
+        {totals.error && (
+          <div className="flex items-center justify-center py-16">
+            <div className="glass-card rounded-xl p-6 max-w-sm">
+              <p className="text-sm font-medium text-red-400 mb-1">Data Error</p>
+              <p className="text-xs text-slate-400">{totals.error}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Main content */}
+        {!totals.isLoading && !totals.error && (
+          <div className="max-w-4xl space-y-6">
+            {/* Stat cards */}
+            <CardTray viewId="cityBudget" cards={cards} />
+
+            {/* Department breakdown chart */}
+            <div className="glass-card rounded-xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500">
+                  Department Spending vs Budget
+                </p>
+                {selectedDepartment && (
+                  <button
+                    onClick={() => setSelectedDepartment(null)}
+                    className="text-[10px] font-mono text-slate-400 hover:text-ink dark:hover:text-white transition-colors"
+                  >
+                    ← All departments
+                  </button>
+                )}
+              </div>
+              {bva.isLoading ? (
+                <SkeletonChart height={400} />
+              ) : (
+                <DepartmentBars
+                  data={bva.data}
+                  width={700}
+                  height={Math.min(bva.data.length * 23 + 20, 600)}
+                  maxBars={20}
+                  onSelectDepartment={handleSelectDepartment}
+                  selectedDepartment={selectedDepartment}
+                />
+              )}
+            </div>
+
+            {/* Spending trends chart */}
+            <div className="glass-card rounded-xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500">
+                  Spending Trends (FY2000–Present)
+                </p>
+                <div className="flex gap-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-md p-0.5">
+                  {(['absolute', 'percent'] as const).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => setTrendMode(m)}
+                      className={`px-2 py-0.5 text-[10px] font-mono rounded transition-all
+                        ${trendMode === m
+                          ? 'bg-white dark:bg-white/10 text-ink dark:text-white shadow-sm'
+                          : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                        }`}
+                    >
+                      {m === 'absolute' ? '$' : '%'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {trend.isLoading ? (
+                <SkeletonChart height={250} />
+              ) : (
+                <SpendingTrend
+                  data={trend.data}
+                  width={700}
+                  height={300}
+                  topN={8}
+                  highlightDepartment={selectedDepartment}
+                  mode={trendMode}
+                />
+              )}
+            </div>
+
+            {/* Source attribution */}
+            <p className="text-[9px] font-mono text-slate-400/60 dark:text-slate-600">
+              Source: SF Controller — Budget ({' '}
+              <span className="tabular-nums">xdgd-c79v</span>) · Spending & Revenue ({' '}
+              <span className="tabular-nums">bpnb-jwfb</span>) · data.sfgov.org
+            </p>
+          </div>
+        )}
       </div>
-      <SkeletonSidebarRows count={6} />
+
+      {/* Right sidebar — department list */}
+      <aside className="w-72 flex-shrink-0 border-l border-slate-200/50 dark:border-white/[0.04] bg-white/30 dark:bg-slate-900/30 overflow-y-auto">
+        <div className="p-4">
+          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500 mb-3">
+            Departments by Spending
+          </p>
+
+          {deptSpending.isLoading ? (
+            <SkeletonSidebarRows count={12} />
+          ) : (
+            <div className="space-y-0.5">
+              {deptList.map((dept) => (
+                <button
+                  key={dept.name}
+                  onClick={() => handleSelectDepartment(dept.name)}
+                  className={`w-full text-left px-2 py-1.5 rounded-md transition-all duration-150 group
+                    ${selectedDepartment === dept.name
+                      ? 'bg-sky-500/10 dark:bg-sky-400/10'
+                      : 'hover:bg-slate-50 dark:hover:bg-white/[0.02]'
+                    }`}
+                >
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className={`text-[10px] truncate max-w-[160px] ${
+                      selectedDepartment === dept.name
+                        ? 'text-sky-600 dark:text-sky-400 font-medium'
+                        : 'text-slate-600 dark:text-slate-400'
+                    }`}>
+                      {dept.name}
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-500 tabular-nums ml-2">
+                      {formatBudgetAmount(dept.amount)}
+                    </span>
+                  </div>
+                  <div className="h-1 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${dept.pct}%`,
+                        backgroundColor: selectedDepartment === dept.name ? ACCENT : `${ACCENT}60`,
+                      }}
+                    />
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </aside>
     </div>
   )
 }
 
-/** Placeholder for Search tab — will be populated in Chunk 3 */
+// ── Placeholder tabs (Chunk 3 & 4) ─────────────────────────
+
 function SearchPlaceholder() {
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       <div className="glass-card rounded-xl p-4">
         <div className="h-10 rounded-lg bg-slate-100/80 dark:bg-white/[0.04] border border-slate-200/50 dark:border-white/[0.06]" />
       </div>
@@ -129,10 +361,9 @@ function SearchPlaceholder() {
   )
 }
 
-/** Placeholder for Advertising tab — will be populated in Chunk 4 */
 function AdvertisingPlaceholder() {
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       <p className="text-sm text-slate-500 dark:text-slate-400 font-mono">
         Advertising & Media Tracker
       </p>
