@@ -52,7 +52,7 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
             className="w-2 h-2 rounded-full"
             style={{ backgroundColor: zScoreDot }}
           />
-          <div className="hidden group-hover:block absolute top-full right-0 mt-1 z-50 w-48 px-2.5 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/[0.08] shadow-xl text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">
+          <div className="hidden group-hover:block absolute top-full right-0 mt-1 w-48 px-2.5 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/[0.08] shadow-xl text-[11px] leading-relaxed text-slate-600 dark:text-slate-300" style={{ zIndex: 999 }}>
             <span className="font-mono font-semibold" style={{ color: zScoreDot }}>{zScore! >= 0 ? '+' : ''}{zScore!.toFixed(1)}σ</span>
             {' — '}This value is {Math.abs(zScore!) > 2 ? 'very ' : ''}{zScore! > 0 ? 'high' : 'low'} compared to the 12-month average for this area.
           </div>

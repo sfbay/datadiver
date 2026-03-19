@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import html2canvas from 'html2canvas'
 
 interface ExportButtonProps {
-  /** CSS selector or ref for the element to capture */
+  /** CSS selector for the element to capture */
   targetSelector: string
   /** Filename prefix for the exported PNG */
   filename?: string
@@ -17,27 +17,74 @@ export default function ExportButton({ targetSelector, filename = 'datadiver-exp
 
     setIsExporting(true)
     try {
-      const canvas = await html2canvas(target as HTMLElement, {
+      // Get the Mapbox canvas if present — html2canvas can't render WebGL
+      const mapCanvas = target.querySelector('.mapboxgl-canvas') as HTMLCanvasElement | null
+      const rect = (target as HTMLElement).getBoundingClientRect()
+
+      // Create a compositing canvas at 2x resolution
+      const outCanvas = document.createElement('canvas')
+      const scale = 2
+      outCanvas.width = rect.width * scale
+      outCanvas.height = rect.height * scale
+      const ctx = outCanvas.getContext('2d')
+      if (!ctx) throw new Error('Canvas context failed')
+      ctx.scale(scale, scale)
+
+      // Layer 1: Mapbox canvas (if present)
+      if (mapCanvas) {
+        const mapRect = mapCanvas.getBoundingClientRect()
+        const offsetX = mapRect.left - rect.left
+        const offsetY = mapRect.top - rect.top
+        ctx.drawImage(mapCanvas, offsetX, offsetY, mapRect.width, mapRect.height)
+      }
+
+      // Layer 2: HTML overlay (stat cards, sidebars, etc.)
+      const htmlCanvas = await html2canvas(target as HTMLElement, {
         useCORS: true,
         allowTaint: true,
         backgroundColor: null,
-        scale: 2, // retina quality
+        scale,
         logging: false,
-        // Capture Mapbox canvas properly
+        // Skip the Mapbox canvas — we already captured it above
+        ignoreElements: (el) => el.classList?.contains('mapboxgl-canvas'),
         onclone: (clonedDoc: Document) => {
-          // Ensure the cloned document preserves dark mode class
           if (document.documentElement.classList.contains('dark')) {
             clonedDoc.documentElement.classList.add('dark')
           }
         },
       })
 
+      // Composite HTML on top of the map
+      ctx.drawImage(htmlCanvas, 0, 0, rect.width, rect.height)
+
+      // Download
       const link = document.createElement('a')
       link.download = `${filename}-${new Date().toISOString().split('T')[0]}.png`
-      link.href = canvas.toDataURL('image/png')
+      link.href = outCanvas.toDataURL('image/png')
       link.click()
     } catch (err) {
       console.error('Export failed:', err)
+      // Fallback: try basic html2canvas without compositing
+      try {
+        const canvas = await html2canvas(target as HTMLElement, {
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: null,
+          scale: 2,
+          logging: false,
+          onclone: (clonedDoc: Document) => {
+            if (document.documentElement.classList.contains('dark')) {
+              clonedDoc.documentElement.classList.add('dark')
+            }
+          },
+        })
+        const link = document.createElement('a')
+        link.download = `${filename}-${new Date().toISOString().split('T')[0]}.png`
+        link.href = canvas.toDataURL('image/png')
+        link.click()
+      } catch (fallbackErr) {
+        console.error('Fallback export also failed:', fallbackErr)
+      }
     } finally {
       setIsExporting(false)
     }

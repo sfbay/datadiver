@@ -43,7 +43,7 @@ export default function InfoTip({ term, text, size = 12 }: InfoTipProps) {
   }, [open])
 
   return (
-    <span className="relative inline-flex items-center">
+    <span className="relative inline-flex items-center" style={{ zIndex: open ? 999 : 'auto' }}>
       <button
         ref={triggerRef}
         onClick={() => setOpen(!open)}
@@ -75,7 +75,7 @@ export default function InfoTip({ term, text, size = 12 }: InfoTipProps) {
         <div
           ref={tipRef}
           className={`
-            absolute z-50 w-56 px-3 py-2.5 rounded-lg
+            absolute w-56 px-3 py-2.5 rounded-lg
             bg-white dark:bg-slate-800
             border border-slate-200 dark:border-white/[0.08]
             shadow-xl shadow-black/10 dark:shadow-black/40

@@ -133,7 +133,7 @@ export default function CardTray({ viewId, cards, className = '' }: CardTrayProp
   const hasExpanded = expandedCards.length > 0
 
   return (
-    <div ref={trayRef} className={`absolute top-0 left-0 right-0 bottom-0 z-10 flex flex-col overflow-hidden pointer-events-none ${className}`}>
+    <div ref={trayRef} className={`absolute top-0 left-0 right-0 z-10 flex flex-col pointer-events-none ${className}`}>
       {/* Minimized pills — flush top bar */}
       {(minimizedCards.length > 0 || hiddenCards.length > 0 || hasExpanded) && (
         <div className="flex flex-wrap items-center gap-1.5 px-4 py-2 pointer-events-auto">
