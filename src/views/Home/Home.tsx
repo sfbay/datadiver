@@ -153,7 +153,7 @@ export default function Home() {
             alt=""
             aria-hidden="true"
             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${mounted ? 'opacity-100' : 'opacity-0'}`}
-            style={{ objectPosition: '60% center' }}
+            style={{ objectPosition: '55% center' }}
           />
           {/* Gradient overlay — stronger on left for text, fades to transparent on right */}
           <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/60 via-45% to-transparent dark:from-slate-950/95 dark:via-slate-950/60 dark:via-45% dark:to-transparent" />
@@ -161,7 +161,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-white/50 dark:bg-slate-950/50 md:hidden" />
 
           {/* Text content — left side on desktop, full width with overlay on mobile */}
-          <div className="relative py-8 px-8 md:py-10 md:px-14 md:max-w-[50%]">
+          <div className="relative py-6 px-8 md:py-8 md:px-14 md:max-w-[50%]">
             <div className={`transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
               <div className="flex items-center gap-2.5 mb-6">
                 <div className="h-[1px] w-8 bg-signal-blue/60" />
