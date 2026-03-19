@@ -102,7 +102,7 @@ const NAV_ITEMS = [
 export default function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
   const location = useLocation()
-  const { isDarkMode, toggleDarkMode, isSidebarOpen, toggleSidebar } = useAppStore()
+  const { isDarkMode, toggleDarkMode, isSidebarOpen, toggleSidebar, dateRange } = useAppStore()
   useUrlSync()
 
   return (
@@ -149,11 +149,26 @@ export default function AppShell({ children }: { children: ReactNode }) {
           )}
         </div>
 
-        {/* Date range picker — above nav for prominence */}
-        {isSidebarOpen && (
+        {/* Date range picker — full when open, compact indicator when collapsed */}
+        {isSidebarOpen ? (
           <div className="px-3 pt-3 pb-1 border-b border-slate-200/50 dark:border-white/[0.04]">
             <DateRangePicker />
           </div>
+        ) : (
+          <button
+            onClick={toggleSidebar}
+            className="flex flex-col items-center gap-0.5 py-3 border-b border-slate-200/50 dark:border-white/[0.04]
+              text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+            title={`${new Date(dateRange.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${new Date(dateRange.end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+          >
+            <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="3" width="12" height="11" rx="1.5" />
+              <path d="M5 1.5v2M11 1.5v2M2 7h12" />
+            </svg>
+            <span className="text-[7px] font-mono leading-tight">
+              {new Date(dateRange.start).toLocaleDateString('en-US', { month: 'short' })}–{new Date(dateRange.end).toLocaleDateString('en-US', { month: 'short' })}
+            </span>
+          </button>
         )}
 
         {/* Navigation */}
