@@ -15,6 +15,7 @@ import CampaignFinance from '@/views/CampaignFinance/CampaignFinance'
 import Demographics from '@/views/Demographics/Demographics'
 import CityBudget from '@/views/CityBudget/CityBudget'
 import LiveFeeds from '@/views/LiveFeeds/LiveFeeds'
+import Elections from '@/views/Elections/Elections'
 
 export default function App() {
   const isDarkMode = useAppStore((s) => s.isDarkMode)
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="/campaign-finance" element={<CampaignFinance />} />
           <Route path="/demographics" element={<Demographics />} />
           <Route path="/city-budget" element={<CityBudget />} />
+          <Route path="/elections" element={<Elections />} />
           <Route path="/live-feeds" element={<LiveFeeds />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

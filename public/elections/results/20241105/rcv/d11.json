@@ -1,0 +1,398 @@
+{
+  "raceId": "member-board-of-supervisors-district-1",
+  "title": "MEMBER, BOARD OF SUPERVISORS, DISTRICT 1",
+  "totalRounds": 6,
+  "rounds": [
+    {
+      "round": 1,
+      "candidates": [
+        {
+          "name": "CHYANNE CHEN",
+          "votes": 8249,
+          "percentage": 0.2954,
+          "transfer": 48,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "MICHAEL LAI",
+          "votes": 8675,
+          "percentage": 0.3106,
+          "transfer": 106,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "ERNEST \"EJ\" JONES",
+          "votes": 5441,
+          "percentage": 0.1948,
+          "transfer": 82,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "OSCAR FLORES",
+          "votes": 2896,
+          "percentage": 0.10369999999999999,
+          "transfer": 101,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "ADLAH CHISTI",
+          "votes": 1434,
+          "percentage": 0.0513,
+          "transfer": 53,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "JOSE MORALES",
+          "votes": 629,
+          "percentage": 0.0225,
+          "transfer": 73,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "ROGER K. MARENCO",
+          "votes": 604,
+          "percentage": 0.0216,
+          "transfer": -604,
+          "isEliminated": true,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 27928,
+      "exhausted": 0,
+      "overvotes": 160,
+      "blanks": 4186
+    },
+    {
+      "round": 2,
+      "candidates": [
+        {
+          "name": "CHYANNE CHEN",
+          "votes": 8297,
+          "percentage": 0.2986,
+          "transfer": 58,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "MICHAEL LAI",
+          "votes": 8781,
+          "percentage": 0.316,
+          "transfer": 98,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "ERNEST \"EJ\" JONES",
+          "votes": 5523,
+          "percentage": 0.19879999999999998,
+          "transfer": 105,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "OSCAR FLORES",
+          "votes": 2997,
+          "percentage": 0.1079,
+          "transfer": 201,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "ADLAH CHISTI",
+          "votes": 1487,
+          "percentage": 0.0535,
+          "transfer": 31,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "JOSE MORALES",
+          "votes": 702,
+          "percentage": 0.0253,
+          "transfer": -702,
+          "isEliminated": true,
+          "isLeader": false
+        },
+        {
+          "name": "ROGER K. MARENCO",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 27787,
+      "exhausted": 139,
+      "overvotes": 162,
+      "blanks": 4186
+    },
+    {
+      "round": 3,
+      "candidates": [
+        {
+          "name": "CHYANNE CHEN",
+          "votes": 8355,
+          "percentage": 0.303,
+          "transfer": 381,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "MICHAEL LAI",
+          "votes": 8879,
+          "percentage": 0.322,
+          "transfer": 286,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "ERNEST \"EJ\" JONES",
+          "votes": 5628,
+          "percentage": 0.2041,
+          "transfer": 327,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "OSCAR FLORES",
+          "votes": 3198,
+          "percentage": 0.11599999999999999,
+          "transfer": 218,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "ADLAH CHISTI",
+          "votes": 1518,
+          "percentage": 0.055,
+          "transfer": -1518,
+          "isEliminated": true,
+          "isLeader": false
+        },
+        {
+          "name": "JOSE MORALES",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "ROGER K. MARENCO",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 27578,
+      "exhausted": 344,
+      "overvotes": 166,
+      "blanks": 4186
+    },
+    {
+      "round": 4,
+      "candidates": [
+        {
+          "name": "CHYANNE CHEN",
+          "votes": 8736,
+          "percentage": 0.32030000000000003,
+          "transfer": 426,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "MICHAEL LAI",
+          "votes": 9165,
+          "percentage": 0.3361,
+          "transfer": 1070,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "ERNEST \"EJ\" JONES",
+          "votes": 5955,
+          "percentage": 0.2184,
+          "transfer": 598,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "OSCAR FLORES",
+          "votes": 3416,
+          "percentage": 0.1253,
+          "transfer": -3416,
+          "isEliminated": true,
+          "isLeader": false
+        },
+        {
+          "name": "ADLAH CHISTI",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "JOSE MORALES",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "ROGER K. MARENCO",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 27272,
+      "exhausted": 644,
+      "overvotes": 172,
+      "blanks": 4186
+    },
+    {
+      "round": 5,
+      "candidates": [
+        {
+          "name": "CHYANNE CHEN",
+          "votes": 9162,
+          "percentage": 0.3531,
+          "transfer": 2839,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "MICHAEL LAI",
+          "votes": 10235,
+          "percentage": 0.3944,
+          "transfer": 1568,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "ERNEST \"EJ\" JONES",
+          "votes": 6553,
+          "percentage": 0.2525,
+          "transfer": -6553,
+          "isEliminated": true,
+          "isLeader": false
+        },
+        {
+          "name": "OSCAR FLORES",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "ADLAH CHISTI",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "JOSE MORALES",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "ROGER K. MARENCO",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 25950,
+      "exhausted": 1949,
+      "overvotes": 189,
+      "blanks": 4186
+    },
+    {
+      "round": 6,
+      "candidates": [
+        {
+          "name": "CHYANNE CHEN",
+          "votes": 12001,
+          "percentage": 0.5042,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "MICHAEL LAI",
+          "votes": 11803,
+          "percentage": 0.49579999999999996,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "ERNEST \"EJ\" JONES",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "OSCAR FLORES",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "ADLAH CHISTI",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "JOSE MORALES",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "ROGER K. MARENCO",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 23804,
+      "exhausted": 4080,
+      "overvotes": 204,
+      "blanks": 4186
+    }
+  ],
+  "winner": "CHYANNE CHEN"
+}

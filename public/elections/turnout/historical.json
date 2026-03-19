@@ -1,0 +1,933 @@
+[
+  {
+    "date": "2024-03-05",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.4661
+  },
+  {
+    "date": "2022-11-08",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.6232
+  },
+  {
+    "date": "2022-06-07",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.4637
+  },
+  {
+    "date": "2022-04-19",
+    "type": "Special",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.29309999999999997
+  },
+  {
+    "date": "2022-02-15",
+    "type": "Special",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.3601
+  },
+  {
+    "date": "2021-09-14",
+    "type": "Special",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.6795
+  },
+  {
+    "date": "2020-11-03",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.8633
+  },
+  {
+    "date": "2020-03-03",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.6056
+  },
+  {
+    "date": "2019-11-05",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.4164
+  },
+  {
+    "date": "2018-11-06",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.7448999999999999
+  },
+  {
+    "date": "2018-06-05",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.5261
+  },
+  {
+    "date": "2016-11-08",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.8070999999999999
+  },
+  {
+    "date": "2016-06-07",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.5659000000000001
+  },
+  {
+    "date": "2015-11-03",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.4545
+  },
+  {
+    "date": "2014-11-04",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.5303
+  },
+  {
+    "date": "2014-06-03",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.297
+  },
+  {
+    "date": "2013-11-05",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.293
+  },
+  {
+    "date": "2012-11-06",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.7256
+  },
+  {
+    "date": "2012-06-05",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.30829999999999996
+  },
+  {
+    "date": "2011-11-08",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.42469999999999997
+  },
+  {
+    "date": "2010-11-02",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.6102000000000001
+  },
+  {
+    "date": "2010-06-08",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.3472
+  },
+  {
+    "date": "2009-11-03",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.22579999999999997
+  },
+  {
+    "date": "2009-05-19",
+    "type": "Special",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.2807
+  },
+  {
+    "date": "2008-11-04",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.8125
+  },
+  {
+    "date": "2008-06-03",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.4022
+  },
+  {
+    "date": "2008-04-08",
+    "type": "Special",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.2488
+  },
+  {
+    "date": "2008-02-05",
+    "type": "Special",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.6475
+  },
+  {
+    "date": "2007-11-06",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.35619999999999996
+  },
+  {
+    "date": "2006-11-07",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.6065999999999999
+  },
+  {
+    "date": "2006-06-06",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.3711
+  },
+  {
+    "date": "2005-11-08",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.5361
+  },
+  {
+    "date": "2004-11-02",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.7431
+  },
+  {
+    "date": "2004-03-02",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.4251
+  },
+  {
+    "date": "2003-12-09",
+    "type": "Special",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.5446
+  },
+  {
+    "date": "2003-11-04",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.4567
+  },
+  {
+    "date": "2003-10-07",
+    "type": "Special",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.5916
+  },
+  {
+    "date": "2002-12-10",
+    "type": "Special",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.38380000000000003
+  },
+  {
+    "date": "2002-11-05",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.5008
+  },
+  {
+    "date": "2002-03-05",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.34149999999999997
+  },
+  {
+    "date": "2001-12-10",
+    "type": "Special",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.16579999999999998
+  },
+  {
+    "date": "2001-11-06",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.2962
+  },
+  {
+    "date": "2000-12-12",
+    "type": "Special",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.32549999999999996
+  },
+  {
+    "date": "2000-11-07",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.6659
+  },
+  {
+    "date": "2000-03-07",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.449
+  },
+  {
+    "date": "1999-12-14",
+    "type": "Special",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.48840000000000006
+  },
+  {
+    "date": "1999-11-02",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.4495
+  },
+  {
+    "date": "1998-11-03",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.5585
+  },
+  {
+    "date": "1998-06-02",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.4623
+  },
+  {
+    "date": "1997-11-04",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.3041
+  },
+  {
+    "date": "1997-06-03",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.43520000000000003
+  },
+  {
+    "date": "1996-11-05",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.6197
+  },
+  {
+    "date": "1996-03-26",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.4047
+  },
+  {
+    "date": "1995-12-12",
+    "type": "Special",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.4656
+  },
+  {
+    "date": "1995-11-07",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.5186
+  },
+  {
+    "date": "1994-11-08",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.5539999999999999
+  },
+  {
+    "date": "1994-06-07",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.32049999999999995
+  },
+  {
+    "date": "1993-11-02",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.3721
+  },
+  {
+    "date": "1993-06-15",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.2011
+  },
+  {
+    "date": "1992-11-03",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.6901
+  },
+  {
+    "date": "1992-06-02",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.4218
+  },
+  {
+    "date": "1991-12-10",
+    "type": "Special",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.5073
+  },
+  {
+    "date": "1991-11-05",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.47609999999999997
+  },
+  {
+    "date": "1990-11-06",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.5778
+  },
+  {
+    "date": "1990-06-05",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.4158
+  },
+  {
+    "date": "1989-11-07",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.4484
+  },
+  {
+    "date": "1988-11-08",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.6707
+  },
+  {
+    "date": "1988-06-07",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.4833
+  },
+  {
+    "date": "1987-12-08",
+    "type": "Special",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.4036
+  },
+  {
+    "date": "1987-11-03",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.5118
+  },
+  {
+    "date": "1987-06-02",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.256
+  },
+  {
+    "date": "1987-04-07",
+    "type": "Special",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.3971
+  },
+  {
+    "date": "1986-11-04",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.6139
+  },
+  {
+    "date": "1986-06-03",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.39649999999999996
+  },
+  {
+    "date": "1985-11-05",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.2702
+  },
+  {
+    "date": "1984-11-06",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.7039
+  },
+  {
+    "date": "1984-06-05",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.48100000000000004
+  },
+  {
+    "date": "1983-11-08",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.45990000000000003
+  },
+  {
+    "date": "1983-04-26",
+    "type": "Special",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.47240000000000004
+  },
+  {
+    "date": "1982-11-02",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.6338
+  },
+  {
+    "date": "1982-06-08",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.512
+  },
+  {
+    "date": "1981-11-03",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.2522
+  },
+  {
+    "date": "1980-11-04",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.6570999999999999
+  },
+  {
+    "date": "1980-08-19",
+    "type": "Special",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.3479
+  },
+  {
+    "date": "1980-06-03",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.5115999999999999
+  },
+  {
+    "date": "1979-12-11",
+    "type": "Special",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.5191
+  },
+  {
+    "date": "1979-11-06",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.5506
+  },
+  {
+    "date": "1978-11-07",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.5725
+  },
+  {
+    "date": "1978-06-06",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.5811999999999999
+  },
+  {
+    "date": "1977-11-08",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.5175
+  },
+  {
+    "date": "1977-08-02",
+    "type": "Special",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.5307999999999999
+  },
+  {
+    "date": "1976-11-02",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.7311
+  },
+  {
+    "date": "1976-06-08",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.6711
+  },
+  {
+    "date": "1975-12-11",
+    "type": "Special",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.6642
+  },
+  {
+    "date": "1975-11-04",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.727
+  },
+  {
+    "date": "1974-11-05",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.6195
+  },
+  {
+    "date": "1974-06-04",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.5666
+  },
+  {
+    "date": "1973-11-06",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.6
+  },
+  {
+    "date": "1972-11-07",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.7431
+  },
+  {
+    "date": "1972-06-06",
+    "type": "Primary",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.6375
+  },
+  {
+    "date": "1968-11-05",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.8201999999999999
+  },
+  {
+    "date": "1964-11-03",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.8503000000000001
+  },
+  {
+    "date": "1960-11-08",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.8608
+  },
+  {
+    "date": "1956-11-06",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.8623000000000001
+  },
+  {
+    "date": "1954-11-02",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.6907
+  },
+  {
+    "date": "1952-11-04",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.8472
+  },
+  {
+    "date": "1950-11-07",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.7261
+  },
+  {
+    "date": "1948-11-02",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.7811
+  },
+  {
+    "date": "1946-11-05",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.6288
+  },
+  {
+    "date": "1944-11-07",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.8682
+  },
+  {
+    "date": "1942-11-03",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.6265
+  },
+  {
+    "date": "1940-11-05",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.8220000000000001
+  },
+  {
+    "date": "1938-11-08",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.7559999999999999
+  },
+  {
+    "date": "1936-11-03",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.8552
+  },
+  {
+    "date": "1934-11-06",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.5715
+  },
+  {
+    "date": "1932-11-08",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.8312
+  },
+  {
+    "date": "1930-11-04",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.6940000000000001
+  },
+  {
+    "date": "1928-11-06",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.7890999999999999
+  },
+  {
+    "date": "1926-11-02",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.5871999999999999
+  },
+  {
+    "date": "1924-11-04",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.7275
+  },
+  {
+    "date": "1922-11-07",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.6673
+  },
+  {
+    "date": "1920-11-02",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.7361
+  },
+  {
+    "date": "1918-11-05",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.5882999999999999
+  },
+  {
+    "date": "1916-11-07",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.8427
+  },
+  {
+    "date": "1914-11-03",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.831
+  },
+  {
+    "date": "1912-11-05",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.7844
+  },
+  {
+    "date": "1910-11-08",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0
+  },
+  {
+    "date": "1908-11-03",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.5451
+  },
+  {
+    "date": "1906-11-06",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0
+  },
+  {
+    "date": "1903-11-03",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.3429
+  },
+  {
+    "date": "1903-09-29",
+    "type": "Special",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.3713
+  },
+  {
+    "date": "1902-11-04",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.3761
+  },
+  {
+    "date": "1899-11-07",
+    "type": "General",
+    "registered": 0,
+    "ballotsCast": 0,
+    "turnoutPct": 0.3157
+  }
+]

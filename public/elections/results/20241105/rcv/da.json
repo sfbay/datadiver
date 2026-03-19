@@ -1,0 +1,33 @@
+{
+  "raceId": "district-attorney",
+  "title": "DISTRICT ATTORNEY",
+  "totalRounds": 1,
+  "rounds": [
+    {
+      "round": 1,
+      "candidates": [
+        {
+          "name": "BROOKE JENKINS",
+          "votes": 228999,
+          "percentage": 0.6592,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "RYAN KHOJASTEH",
+          "votes": 118375,
+          "percentage": 0.3408,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 347374,
+      "exhausted": 0,
+      "overvotes": 257,
+      "blanks": 62474
+    }
+  ],
+  "winner": "BROOKE JENKINS"
+}

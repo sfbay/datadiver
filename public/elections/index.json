@@ -1,0 +1,1376 @@
+{
+  "generated": "2026-03-19T14:16:20.297Z",
+  "elections": [
+    {
+      "date": "2024-11-05",
+      "dateCode": "20241105",
+      "type": "general",
+      "label": "November 5, 2024 General Election",
+      "races": [
+        {
+          "id": "president-and-vice-president",
+          "title": "PRESIDENT AND VICE PRESIDENT",
+          "type": "federal",
+          "isRCV": false
+        },
+        {
+          "id": "united-states-senator",
+          "title": "UNITED STATES SENATOR",
+          "type": "federal",
+          "isRCV": false
+        },
+        {
+          "id": "united-states-senator-partial-term",
+          "title": "UNITED STATES SENATOR PARTIAL TERM",
+          "type": "federal",
+          "isRCV": false
+        },
+        {
+          "id": "united-states-representative-district-2",
+          "title": "UNITED STATES REPRESENTATIVE, DISTRICT 2",
+          "type": "federal",
+          "isRCV": false
+        },
+        {
+          "id": "united-states-representative-district-11",
+          "title": "UNITED STATES REPRESENTATIVE, DISTRICT 11",
+          "type": "federal",
+          "isRCV": false
+        },
+        {
+          "id": "united-states-representative-district-12",
+          "title": "UNITED STATES REPRESENTATIVE, DISTRICT 12",
+          "type": "federal",
+          "isRCV": false
+        },
+        {
+          "id": "united-states-representative-district-15",
+          "title": "UNITED STATES REPRESENTATIVE, DISTRICT 15",
+          "type": "federal",
+          "isRCV": false
+        },
+        {
+          "id": "state-senator-district-7",
+          "title": "STATE SENATOR, DISTRICT 7",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "state-senator-district-11",
+          "title": "STATE SENATOR, DISTRICT 11",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "state-assembly-member-district-12",
+          "title": "STATE ASSEMBLY MEMBER, DISTRICT 12",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "state-assembly-member-district-17",
+          "title": "STATE ASSEMBLY MEMBER, DISTRICT 17",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "state-assembly-member-district-18",
+          "title": "STATE ASSEMBLY MEMBER, DISTRICT 18",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "state-assembly-member-district-19",
+          "title": "STATE ASSEMBLY MEMBER, DISTRICT 19",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "member-board-of-education",
+          "title": "MEMBER, BOARD OF EDUCATION",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "trustee-community-college-board",
+          "title": "TRUSTEE, COMMUNITY COLLEGE BOARD",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "bart-board-of-directors-district-7",
+          "title": "BART BOARD OF DIRECTORS, DISTRICT 7",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "bart-board-of-directors-district-9",
+          "title": "BART BOARD OF DIRECTORS, DISTRICT 9",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "mayor",
+          "title": "MAYOR",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "member-board-of-supervisors-district-1",
+          "title": "MEMBER, BOARD OF SUPERVISORS, DISTRICT 1",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "member-board-of-supervisors-district-3",
+          "title": "MEMBER, BOARD OF SUPERVISORS, DISTRICT 3",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "member-board-of-supervisors-district-5",
+          "title": "MEMBER, BOARD OF SUPERVISORS, DISTRICT 5",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "member-board-of-supervisors-district-7",
+          "title": "MEMBER, BOARD OF SUPERVISORS, DISTRICT 7",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "member-board-of-supervisors-district-9",
+          "title": "MEMBER, BOARD OF SUPERVISORS, DISTRICT 9",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "member-board-of-supervisors-district-11",
+          "title": "MEMBER, BOARD OF SUPERVISORS, DISTRICT 11",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "city-attorney",
+          "title": "CITY ATTORNEY",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "district-attorney",
+          "title": "DISTRICT ATTORNEY",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "sheriff",
+          "title": "SHERIFF",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "treasurer",
+          "title": "TREASURER",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "proposition-2",
+          "title": "PROPOSITION 2",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-3",
+          "title": "PROPOSITION 3",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-4",
+          "title": "PROPOSITION 4",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-5",
+          "title": "PROPOSITION 5",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-6",
+          "title": "PROPOSITION 6",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-32",
+          "title": "PROPOSITION 32",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-33",
+          "title": "PROPOSITION 33",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-34",
+          "title": "PROPOSITION 34",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-35",
+          "title": "PROPOSITION 35",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-36",
+          "title": "PROPOSITION 36",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-a",
+          "title": "MEASURE A",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-b",
+          "title": "MEASURE B",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-c",
+          "title": "MEASURE C",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-d",
+          "title": "MEASURE D",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-e",
+          "title": "MEASURE E",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-f",
+          "title": "MEASURE F",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-g",
+          "title": "MEASURE G",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-h",
+          "title": "MEASURE H",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-i",
+          "title": "MEASURE I",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-j",
+          "title": "MEASURE J",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-k",
+          "title": "MEASURE K",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-l",
+          "title": "MEASURE L",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-m",
+          "title": "MEASURE M",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-n",
+          "title": "MEASURE N",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-o",
+          "title": "MEASURE O",
+          "type": "measure",
+          "isRCV": false
+        }
+      ],
+      "hasRCV": true
+    },
+    {
+      "date": "2024-03-05",
+      "dateCode": "20240305",
+      "type": "primary",
+      "label": "March 5, 2024 Primary Election",
+      "races": [
+        {
+          "id": "president-of-the-united-states-dem",
+          "title": "PRESIDENT OF THE UNITED STATES-DEM",
+          "type": "federal",
+          "isRCV": false
+        },
+        {
+          "id": "president-of-the-united-states-rep-xd-xa-rep",
+          "title": "PRESIDENT OF THE UNITED STATES-REP  &#xD;&#xA;REP",
+          "type": "federal",
+          "isRCV": false
+        },
+        {
+          "id": "president-of-the-united-states-ai",
+          "title": "PRESIDENT OF THE UNITED STATES-AI",
+          "type": "federal",
+          "isRCV": false
+        },
+        {
+          "id": "president-of-the-united-states-grn-xd-xa-grn",
+          "title": "PRESIDENT OF THE UNITED STATES-GRN  &#xD;&#xA;GRN",
+          "type": "federal",
+          "isRCV": false
+        },
+        {
+          "id": "president-of-the-united-states-pf-xd-xa-pf",
+          "title": "PRESIDENT OF THE UNITED STATES-PF  &#xD;&#xA;PF",
+          "type": "federal",
+          "isRCV": false
+        },
+        {
+          "id": "president-of-the-united-states-lib",
+          "title": "PRESIDENT OF THE UNITED STATES-LIB",
+          "type": "federal",
+          "isRCV": false
+        },
+        {
+          "id": "dem-ccc-district-17-xd-xa-dem",
+          "title": "DEM CCC DISTRICT 17  &#xD;&#xA;DEM",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "dem-ccc-district-19-xd-xa-dem",
+          "title": "DEM CCC DISTRICT 19  &#xD;&#xA;DEM",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "rep-ccc-district-17-xd-xa-rep",
+          "title": "REP CCC DISTRICT 17  &#xD;&#xA;REP",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "rep-ccc-district-19-xd-xa-rep",
+          "title": "REP CCC DISTRICT 19  &#xD;&#xA;REP",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "united-states-senator",
+          "title": "UNITED STATES SENATOR",
+          "type": "federal",
+          "isRCV": false
+        },
+        {
+          "id": "united-states-senator-partial-term",
+          "title": "UNITED STATES SENATOR PARTIAL TERM",
+          "type": "federal",
+          "isRCV": false
+        },
+        {
+          "id": "united-states-representative-district-2",
+          "title": "UNITED STATES REPRESENTATIVE, DISTRICT 2",
+          "type": "federal",
+          "isRCV": false
+        },
+        {
+          "id": "united-states-representative-district-11",
+          "title": "UNITED STATES REPRESENTATIVE, DISTRICT 11",
+          "type": "federal",
+          "isRCV": false
+        },
+        {
+          "id": "united-states-representative-district-12",
+          "title": "UNITED STATES REPRESENTATIVE, DISTRICT 12",
+          "type": "federal",
+          "isRCV": false
+        },
+        {
+          "id": "united-states-representative-district-15",
+          "title": "UNITED STATES REPRESENTATIVE, DISTRICT 15",
+          "type": "federal",
+          "isRCV": false
+        },
+        {
+          "id": "state-senator-district-7",
+          "title": "STATE SENATOR, DISTRICT 7",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "state-senator-district-11",
+          "title": "STATE SENATOR, DISTRICT 11",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "state-assembly-member-district-12",
+          "title": "STATE ASSEMBLY MEMBER, DISTRICT 12",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "state-assembly-member-district-17",
+          "title": "STATE ASSEMBLY MEMBER, DISTRICT 17",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "state-assembly-member-district-18",
+          "title": "STATE ASSEMBLY MEMBER, DISTRICT 18",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "state-assembly-member-district-19",
+          "title": "STATE ASSEMBLY MEMBER, DISTRICT 19",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "judge-of-the-superior-court-seat-1",
+          "title": "JUDGE OF THE SUPERIOR COURT, SEAT 1",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "judge-of-the-superior-court-seat-13",
+          "title": "JUDGE OF THE SUPERIOR COURT, SEAT 13",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-1",
+          "title": "Proposition 1",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-a",
+          "title": "Measure A",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-b",
+          "title": "Measure B",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-c",
+          "title": "Measure C",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-d",
+          "title": "Measure D",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-e",
+          "title": "Measure E",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-f",
+          "title": "Measure F",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-g",
+          "title": "Measure G",
+          "type": "measure",
+          "isRCV": false
+        }
+      ],
+      "hasRCV": false
+    },
+    {
+      "date": "2022-11-08",
+      "dateCode": "20221108",
+      "type": "general",
+      "label": "November 8, 2022 General Election",
+      "races": [
+        {
+          "id": "governor",
+          "title": "GOVERNOR",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "lieutenant-governor",
+          "title": "LIEUTENANT GOVERNOR",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "secretary-of-state",
+          "title": "SECRETARY OF STATE",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "controller",
+          "title": "CONTROLLER",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "treasurer",
+          "title": "TREASURER",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "attorney-general",
+          "title": "ATTORNEY GENERAL",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "insurance-commissioner",
+          "title": "INSURANCE COMMISSIONER",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "board-of-equalization",
+          "title": "BOARD OF EQUALIZATION",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "united-states-senator",
+          "title": "UNITED STATES SENATOR",
+          "type": "federal",
+          "isRCV": false
+        },
+        {
+          "id": "united-states-senator-partial-term",
+          "title": "UNITED STATES SENATOR PARTIAL TERM",
+          "type": "federal",
+          "isRCV": false
+        },
+        {
+          "id": "us-house-of-rep-district-2",
+          "title": "US HOUSE OF REP DISTRICT 2",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "us-house-of-rep-district-11",
+          "title": "US HOUSE OF REP DISTRICT 11",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "us-house-of-rep-district-12",
+          "title": "US HOUSE OF REP DISTRICT 12",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "us-house-of-rep-district-15",
+          "title": "US HOUSE OF REP DISTRICT 15",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "state-senator-district-2",
+          "title": "STATE SENATOR DISTRICT 2",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "state-assembly-member-district-12",
+          "title": "STATE ASSEMBLY MEMBER DISTRICT 12",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "state-assembly-member-district-17",
+          "title": "STATE ASSEMBLY MEMBER DISTRICT 17",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "state-assembly-member-district-18",
+          "title": "STATE ASSEMBLY MEMBER DISTRICT 18",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "state-assembly-member-district-19",
+          "title": "STATE ASSEMBLY MEMBER DISTRICT 19",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "for-chief-justice-of-california-patricia-guerrero",
+          "title": "FOR CHIEF JUSTICE OF CALIFORNIA (PATRICIA GUERRERO)",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "for-associate-justice-of-the-supreme-court-goodwin-liu",
+          "title": "FOR ASSOCIATE JUSTICE OF THE SUPREME COURT (GOODWIN LIU)",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "for-associate-justice-of-the-supreme-court-martin-j-jenkins",
+          "title": "FOR ASSOCIATE JUSTICE OF THE SUPREME COURT (MARTIN J. JENKINS)",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "for-associate-justice-of-the-supreme-court-joshua-p-groban",
+          "title": "FOR ASSOCIATE JUSTICE OF THE SUPREME COURT (JOSHUA P. GROBAN)",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "for-associate-justice-court-of-appeal-district-1-division-2-therese-m-stewart",
+          "title": "FOR ASSOCIATE JUSTICE COURT OF APPEAL DISTRICT 1, DIVISION 2 (THERESE M. STEWART)",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "for-presiding-justice-court-of-appeal-district-1-division-3-alison-m-tucher",
+          "title": "FOR PRESIDING JUSTICE COURT OF APPEAL DISTRICT 1, DIVISION 3 (ALISON M. TUCHER)",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "for-associate-justice-court-of-appeal-district-1-division-3-victor-a-rodriguez",
+          "title": "FOR ASSOCIATE JUSTICE COURT OF APPEAL DISTRICT 1, DIVISION 3 (VICTOR A.RODRIGUEZ)",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "for-associate-justice-court-of-appeal-district-1-division-3-ioana-petrou",
+          "title": "FOR ASSOCIATE JUSTICE COURT OF APPEAL DISTRICT 1, DIVISION 3 (IOANA PETROU)",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "for-associate-justice-court-of-appeal-district-1-division-3-carin-t-fujisaki",
+          "title": "FOR ASSOCIATE JUSTICE COURT OF APPEAL DISTRICT 1, DIVISION 3 (CARIN T. FUJISAKI)",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "for-associate-justice-court-of-appeal-district-1-division-4-tracie-l-brown",
+          "title": "FOR ASSOCIATE JUSTICE COURT OF APPEAL DISTRICT 1, DIVISION 4 (TRACIE L. BROWN)",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "for-associate-justice-court-of-appeal-district-1-division-4-jeremy-m-goldman",
+          "title": "FOR ASSOCIATE JUSTICE COURT OF APPEAL DISTRICT 1, DIVISION 4 (JEREMY M. GOLDMAN)",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "for-presiding-justice-court-of-appeal-district-1-division-5-teri-l-jackson",
+          "title": "FOR PRESIDING JUSTICE COURT OF APPEAL DISTRICT 1, DIVISION 5 (TERI L. JACKSON)",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "for-associate-justice-court-of-appeal-district-1-division-5-gordon-b-burns",
+          "title": "FOR ASSOCIATE JUSTICE COURT OF APPEAL DISTRICT 1, DIVISION 5 (GORDON B. BURNS)",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "superintendent-of-public-instruction",
+          "title": "SUPERINTENDENT OF PUBLIC INSTRUCTION",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "member-boe",
+          "title": "MEMBER, BoE",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "bart-director-district-8",
+          "title": "BART DIRECTOR DISTRICT 8",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "member-community-college-board-term-ending-january-8-2027",
+          "title": "MEMBER, COMMUNITY COLLEGE BOARD (term ending January 8, 2027)",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "member-community-college-board-remainder-of-the-current-term-ending-january-8-2025",
+          "title": "MEMBER, COMMUNITY COLLEGE BOARD (remainder of the current term ending January 8, 2025)",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "assessor-recorder",
+          "title": "ASSESSOR-RECORDER",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "district-attorney",
+          "title": "DISTRICT ATTORNEY",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "public-defender",
+          "title": "PUBLIC DEFENDER",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "board-of-supervisors-district-2",
+          "title": "BOARD OF SUPERVISORS DISTRICT 2",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "board-of-supervisors-district-4",
+          "title": "BOARD OF SUPERVISORS DISTRICT 4",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "board-of-supervisors-district-6",
+          "title": "BOARD OF SUPERVISORS DISTRICT 6",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "board-of-supervisors-district-8",
+          "title": "BOARD OF SUPERVISORS DISTRICT 8",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "board-of-supervisors-district-10",
+          "title": "BOARD OF SUPERVISORS DISTRICT 10",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "proposition-1",
+          "title": "PROPOSITION 1",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-26",
+          "title": "PROPOSITION 26",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-27",
+          "title": "PROPOSITION 27",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-28",
+          "title": "PROPOSITION 28",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-29",
+          "title": "PROPOSITION 29",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-30",
+          "title": "PROPOSITION 30",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-31",
+          "title": "PROPOSITION 31",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-a",
+          "title": "Measure A",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-b",
+          "title": "Measure B",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-c",
+          "title": "Measure C",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-d",
+          "title": "Measure D",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-e",
+          "title": "Measure E",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-f",
+          "title": "Measure F",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-g",
+          "title": "Measure G",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-h",
+          "title": "Measure H",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-i",
+          "title": "Measure I",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-j",
+          "title": "Measure J",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-l",
+          "title": "Measure L",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-m",
+          "title": "Measure M",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-n",
+          "title": "Measure N",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "measure-o",
+          "title": "Measure O",
+          "type": "measure",
+          "isRCV": false
+        }
+      ],
+      "hasRCV": true
+    },
+    {
+      "date": "2022-06-07",
+      "dateCode": "20220607",
+      "type": "primary",
+      "label": "June 7, 2022 Primary Election",
+      "races": [
+        {
+          "id": "governor",
+          "title": "GOVERNOR",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "lieutenant-governor",
+          "title": "LIEUTENANT GOVERNOR",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "secretary-of-state",
+          "title": "SECRETARY OF STATE",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "controller",
+          "title": "CONTROLLER",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "treasurer",
+          "title": "TREASURER",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "attorney-general",
+          "title": "ATTORNEY GENERAL",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "insurance-commissioner",
+          "title": "INSURANCE COMMISSIONER",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "board-of-equalization",
+          "title": "BOARD OF EQUALIZATION",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "united-states-senator",
+          "title": "UNITED STATES SENATOR",
+          "type": "federal",
+          "isRCV": false
+        },
+        {
+          "id": "united-states-senator-partial-term",
+          "title": "UNITED STATES SENATOR PARTIAL TERM",
+          "type": "federal",
+          "isRCV": false
+        },
+        {
+          "id": "us-house-of-rep-district-2",
+          "title": "US HOUSE OF REP DISTRICT 2",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "us-house-of-rep-district-11",
+          "title": "US HOUSE OF REP DISTRICT 11",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "us-house-of-rep-district-12",
+          "title": "US HOUSE OF REP DISTRICT 12",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "us-house-of-rep-district-15",
+          "title": "US HOUSE OF REP DISTRICT 15",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "state-assembly-member-district-12",
+          "title": "STATE ASSEMBLY MEMBER DISTRICT 12",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "state-assembly-member-district-18",
+          "title": "STATE ASSEMBLY MEMBER DISTRICT 18",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "state-assembly-member-district-19",
+          "title": "STATE ASSEMBLY MEMBER DISTRICT 19",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "state-assembly-member-district-17",
+          "title": "STATE ASSEMBLY MEMBER DISTRICT 17",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "superintendent-of-public-instruction",
+          "title": "SUPERINTENDENT OF PUBLIC INSTRUCTION",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "city-attorney",
+          "title": "CITY ATTORNEY",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "muni-and-street-safety-bond",
+          "title": "MUNI AND STREET SAFETY BOND",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "building-inspection-commission",
+          "title": "BUILDING INSPECTION COMMISSION",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "recall-timelines-and-vacancy-appointments",
+          "title": "RECALL TIMELINES AND VACANCY APPOINTMENTS",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "office-of-victim-and-witness-rights-legal-services-for-domestic-violence-victims",
+          "title": "OFFICE OF VICTIM AND WITNESS RIGHTS; LEGAL SERVICES FOR DOMESTIC VIOLENCE VICTIMS",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "behested-payments",
+          "title": "BEHESTED PAYMENTS",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "refuse-collection-and-disposal",
+          "title": "REFUSE COLLECTION AND DISPOSAL",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "public-health-emergency-leave",
+          "title": "PUBLIC HEALTH EMERGENCY LEAVE",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "recall-measure-regarding-chesa-boudin",
+          "title": "RECALL MEASURE REGARDING CHESA BOUDIN",
+          "type": "local",
+          "isRCV": false
+        }
+      ],
+      "hasRCV": true
+    },
+    {
+      "date": "2020-11-03",
+      "dateCode": "20201103",
+      "type": "general",
+      "label": "November 3, 2020 General Election",
+      "races": [
+        {
+          "id": "president-and-vice-president",
+          "title": "PRESIDENT AND VICE PRESIDENT",
+          "type": "federal",
+          "isRCV": false
+        },
+        {
+          "id": "us-house-of-rep-district-12",
+          "title": "US House of Rep District 12",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "us-house-of-rep-district-13",
+          "title": "US House of Rep District 13",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "us-house-of-rep-district-14",
+          "title": "US House of Rep District 14",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "state-senator-district-11",
+          "title": "State Senator District 11",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "state-assembly-member-district-17",
+          "title": "STATE ASSEMBLY MEMBER District 17",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "state-assembly-member-district-19",
+          "title": "STATE ASSEMBLY MEMBER District 19",
+          "type": "state",
+          "isRCV": false
+        },
+        {
+          "id": "board-of-education",
+          "title": "BOARD OF EDUCATION",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "community-college-board",
+          "title": "COMMUNITY COLLEGE BOARD",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "bart-director-district-7",
+          "title": "BART DIRECTOR DISTRICT 7",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "bart-director-district-9",
+          "title": "BART DIRECTOR DISTRICT 9",
+          "type": "local",
+          "isRCV": false
+        },
+        {
+          "id": "board-of-supervisors-district-1",
+          "title": "BOARD OF SUPERVISORS DISTRICT 1",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "board-of-supervisors-district-3",
+          "title": "BOARD OF SUPERVISORS DISTRICT 3",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "board-of-supervisors-district-5",
+          "title": "BOARD OF SUPERVISORS DISTRICT 5",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "board-of-supervisors-district-7",
+          "title": "BOARD OF SUPERVISORS DISTRICT 7",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "board-of-supervisors-district-9",
+          "title": "BOARD OF SUPERVISORS DISTRICT 9",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "board-of-supervisors-district-11",
+          "title": "BOARD OF SUPERVISORS DISTRICT 11",
+          "type": "local",
+          "isRCV": true
+        },
+        {
+          "id": "proposition-14",
+          "title": "Proposition 14",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-15",
+          "title": "Proposition 15",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-16",
+          "title": "Proposition 16",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-17",
+          "title": "Proposition 17",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-18",
+          "title": "Proposition 18",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-19",
+          "title": "Proposition 19",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-20",
+          "title": "Proposition 20",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-21",
+          "title": "Proposition 21",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-22",
+          "title": "Proposition 22",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-23",
+          "title": "Proposition 23",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-24",
+          "title": "Proposition 24",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-25",
+          "title": "Proposition 25",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-a",
+          "title": "Proposition A",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-b",
+          "title": "Proposition B",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-c",
+          "title": "Proposition C",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-d",
+          "title": "Proposition D",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-e",
+          "title": "Proposition E",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-f",
+          "title": "Proposition F",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-g",
+          "title": "Proposition G",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-h",
+          "title": "Proposition H",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-i",
+          "title": "Proposition I",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-j",
+          "title": "Proposition J",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-k",
+          "title": "Proposition K",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-l",
+          "title": "Proposition L",
+          "type": "measure",
+          "isRCV": false
+        },
+        {
+          "id": "proposition-rr",
+          "title": "Proposition RR",
+          "type": "measure",
+          "isRCV": false
+        }
+      ],
+      "hasRCV": true
+    }
+  ]
+}

@@ -1,0 +1,204 @@
+{
+  "raceId": "member-board-of-supervisors-district-1",
+  "title": "MEMBER, BOARD OF SUPERVISORS, DISTRICT 1",
+  "totalRounds": 4,
+  "rounds": [
+    {
+      "round": 1,
+      "candidates": [
+        {
+          "name": "BILAL MAHMOOD",
+          "votes": 11840,
+          "percentage": 0.3987,
+          "transfer": 56,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "DEAN PRESTON",
+          "votes": 12012,
+          "percentage": 0.4045,
+          "transfer": 72,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "SCOTTY JACOBS",
+          "votes": 2796,
+          "percentage": 0.0941,
+          "transfer": 93,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "AUTUMN HOPE LOOIJEN",
+          "votes": 2606,
+          "percentage": 0.08779999999999999,
+          "transfer": 85,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "ALLEN JONES",
+          "votes": 444,
+          "percentage": 0.015,
+          "transfer": -444,
+          "isEliminated": true,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 29698,
+      "exhausted": 0,
+      "overvotes": 79,
+      "blanks": 4628
+    },
+    {
+      "round": 2,
+      "candidates": [
+        {
+          "name": "BILAL MAHMOOD",
+          "votes": 11896,
+          "percentage": 0.40240000000000004,
+          "transfer": 864,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "DEAN PRESTON",
+          "votes": 12084,
+          "percentage": 0.40880000000000005,
+          "transfer": 355,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "SCOTTY JACOBS",
+          "votes": 2889,
+          "percentage": 0.0977,
+          "transfer": 818,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "AUTUMN HOPE LOOIJEN",
+          "votes": 2691,
+          "percentage": 0.091,
+          "transfer": -2691,
+          "isEliminated": true,
+          "isLeader": false
+        },
+        {
+          "name": "ALLEN JONES",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 29560,
+      "exhausted": 136,
+      "overvotes": 81,
+      "blanks": 4628
+    },
+    {
+      "round": 3,
+      "candidates": [
+        {
+          "name": "BILAL MAHMOOD",
+          "votes": 12760,
+          "percentage": 0.4414,
+          "transfer": 1981,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "DEAN PRESTON",
+          "votes": 12439,
+          "percentage": 0.4303,
+          "transfer": 638,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "SCOTTY JACOBS",
+          "votes": 3707,
+          "percentage": 0.1282,
+          "transfer": -3707,
+          "isEliminated": true,
+          "isLeader": false
+        },
+        {
+          "name": "AUTUMN HOPE LOOIJEN",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "ALLEN JONES",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 28906,
+      "exhausted": 783,
+      "overvotes": 88,
+      "blanks": 4628
+    },
+    {
+      "round": 4,
+      "candidates": [
+        {
+          "name": "BILAL MAHMOOD",
+          "votes": 14741,
+          "percentage": 0.5299,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "DEAN PRESTON",
+          "votes": 13077,
+          "percentage": 0.47009999999999996,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "SCOTTY JACOBS",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "AUTUMN HOPE LOOIJEN",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "ALLEN JONES",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 27818,
+      "exhausted": 1851,
+      "overvotes": 108,
+      "blanks": 4628
+    }
+  ],
+  "winner": "BILAL MAHMOOD"
+}

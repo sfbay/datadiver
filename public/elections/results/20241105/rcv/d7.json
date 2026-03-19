@@ -1,0 +1,131 @@
+{
+  "raceId": "member-board-of-supervisors-district-1",
+  "title": "MEMBER, BOARD OF SUPERVISORS, DISTRICT 1",
+  "totalRounds": 3,
+  "rounds": [
+    {
+      "round": 1,
+      "candidates": [
+        {
+          "name": "MYRNA MELGAR",
+          "votes": 17532,
+          "percentage": 0.4698,
+          "transfer": 239,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "MATT BOSCHETTO",
+          "votes": 13407,
+          "percentage": 0.3593,
+          "transfer": 280,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "STEPHEN MARTIN-PINTO",
+          "votes": 5135,
+          "percentage": 0.1376,
+          "transfer": 243,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "EDWARD S. YEE",
+          "votes": 1244,
+          "percentage": 0.0333,
+          "transfer": -1244,
+          "isEliminated": true,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 37318,
+      "exhausted": 0,
+      "overvotes": 26,
+      "blanks": 5502
+    },
+    {
+      "round": 2,
+      "candidates": [
+        {
+          "name": "MYRNA MELGAR",
+          "votes": 17771,
+          "percentage": 0.4824,
+          "transfer": 1145,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "MATT BOSCHETTO",
+          "votes": 13687,
+          "percentage": 0.3716,
+          "transfer": 2809,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "STEPHEN MARTIN-PINTO",
+          "votes": 5378,
+          "percentage": 0.146,
+          "transfer": -5378,
+          "isEliminated": true,
+          "isLeader": false
+        },
+        {
+          "name": "EDWARD S. YEE",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 36836,
+      "exhausted": 480,
+      "overvotes": 28,
+      "blanks": 5502
+    },
+    {
+      "round": 3,
+      "candidates": [
+        {
+          "name": "MYRNA MELGAR",
+          "votes": 18916,
+          "percentage": 0.5342,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "MATT BOSCHETTO",
+          "votes": 16496,
+          "percentage": 0.4658,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "STEPHEN MARTIN-PINTO",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "EDWARD S. YEE",
+          "votes": 0,
+          "percentage": 0,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 35412,
+      "exhausted": 1900,
+      "overvotes": 32,
+      "blanks": 5502
+    }
+  ],
+  "winner": "MYRNA MELGAR"
+}

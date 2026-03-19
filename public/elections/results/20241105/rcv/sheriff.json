@@ -1,0 +1,33 @@
+{
+  "raceId": "sheriff",
+  "title": "SHERIFF",
+  "totalRounds": 1,
+  "rounds": [
+    {
+      "round": 1,
+      "candidates": [
+        {
+          "name": "PAUL MIYAMOTO",
+          "votes": 251096,
+          "percentage": 0.7975,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": true
+        },
+        {
+          "name": "MICHAEL JUAN",
+          "votes": 63768,
+          "percentage": 0.2025,
+          "transfer": 0,
+          "isEliminated": false,
+          "isLeader": false
+        }
+      ],
+      "continuingTotal": 314864,
+      "exhausted": 0,
+      "overvotes": 252,
+      "blanks": 94989
+    }
+  ],
+  "winner": "PAUL MIYAMOTO"
+}

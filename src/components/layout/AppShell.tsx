@@ -89,6 +89,13 @@ const NAV_ITEMS = [
     description: 'Budget, spending, vendor & ad tracking',
     accentColor: '#0ea5e9',
   },
+  {
+    path: '/elections',
+    label: 'Elections',
+    shortLabel: 'EL',
+    description: 'Live results, RCV & historical playback',
+    accentColor: '#6366f1',
+  },
   { path: '/live-feeds', label: 'Live Feeds', shortLabel: 'LIVE', description: 'Scanner radio feeds — SFPD, SFFD, EMS', accentColor: '#f59e0b' },
 ] as const
 
