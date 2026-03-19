@@ -189,7 +189,7 @@ export default function Home() {
             <div className={`flex items-center gap-4 mt-6 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
               <span className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-signal-emerald/80">
                 <span className="w-1.5 h-1.5 rounded-full bg-signal-emerald pulse-live" />
-                Live data from data.sf.org
+                Live data from datasf.sfgov.org
               </span>
               <span className="text-[10px] font-mono text-slate-400/60 dark:text-slate-500/60">
                 Created by Jesse Garnier · SF State Journalism
