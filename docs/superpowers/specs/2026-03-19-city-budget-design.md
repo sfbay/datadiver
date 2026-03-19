@@ -68,18 +68,38 @@ This taxonomy is consistent across Budget, Spending, and Vendor Payments, enabli
 - Fund type filter (General Fund, Enterprise, Special Revenue)
 - Revenue/Spending toggle
 
-### View 2: Vendor Explorer (route: `/city-budget/vendors` or tab within)
+### View 2: Vendor & Spending Search (route: `/city-budget/search` or tab within)
 
-**Hero metrics:**
-- Total Vendor Payments (FY)
-- Unique Vendors
-- Top Vendor (name + amount)
-- Nonprofit %
+**The "big search box" — search-first interaction model.**
 
-**Main panel:**
-- Searchable vendor table with sparkline trends
+Unlike other DataDiver views that start with a map/chart and drill down, this tab leads with a prominent search input. The user types a question — a vendor name, a spending category, a department, a keyword — and the data assembles around the answer. This is the Bloomberg Terminal model: query first, visualization second.
+
+**Search box behavior:**
+- Full-width, prominent placement at top of the view
+- Searches across: vendor names, department names, sub_object descriptions, contract titles, program names
+- Autocomplete suggestions as you type (top vendors, departments, categories)
+- Results grouped by type: Vendors, Departments, Spending Categories, Contracts
+- Each result card shows: total amount, fiscal year range, sparkline trend, click to expand
+
+**Example queries a journalist would type:**
+- "advertising" → all advertising spending across all layers
+- "Most Likely To" → vendor profile with payment history
+- "DPH consulting" → Department of Public Health consulting spend
+- "police overtime" → SFPD overtime spending trend
+- "airport marketing" → SFO marketing contracts and payments
+- "homeless" → all homeless services spending across agencies
+
+**Hero metrics (update based on search context):**
+- Total matching spend
+- # Vendors / # Departments involved
+- Time range of results
+- Largest single payment
+
+**Results panel:**
+- Searchable/filterable vendor table with sparkline trends
 - Click vendor → payment history, departments served, contract links
 - Vendor concentration chart: top 20 vendors = X% of all spend
+- Toggle: table view vs chart view vs timeline view
 
 **Anomaly sidebar:**
 - Flagged vendors (see Anomaly Detection below)
@@ -103,6 +123,29 @@ This taxonomy is consistent across Budget, Spending, and Vendor Payments, enabli
 - **Zero** direct payments to Facebook/Meta, Google Ads, Twitter/X, TikTok, or Nextdoor
 - **P-cards** (procurement credit cards via US Bank) are used for small digital ad buys — shows up as the bank, not the platform, making social media spend nearly untraceable in voucher data
 - **Agencies** bundle digital campaign costs (including platform ad buys) into their invoices
+
+**Media classification taxonomy:**
+
+Vendors in the advertising space need classification into tiers for meaningful analysis. A journalist needs to distinguish major metro dailies from community ethnic press from digital agencies from hidden P-card buys.
+
+| Category | Examples | Why it matters |
+|----------|---------|----------------|
+| **Major metro print** | SF Chronicle, SF Examiner, Daily Journal Corp | Largest traditional spend; legal notice monopoly |
+| **Community & ethnic press** | Sing Tao, El Mensajero, Bay Area Reporter, World Journal, El Tecolote, SF Neighborhood Newspaper Assoc | Equity lens — how much reaches non-English communities? |
+| **Radio & TV** | Univision, Comcast/Effectv, iHeart, KTSF, Entercom, Audacy | Broadcast reach |
+| **Out-of-home / transit** | CBS Outdoor, Clear Channel, Titan Outdoor, Intersection Media | Physical public space advertising |
+| **Full-service agencies** | Zeba Consulting, Most Likely To, O'Rorke, Great Kolor, Civic Edge | May include digital/social — spend is opaque |
+| **Digital/interactive agencies** | CKR Interactive, Better World Advertising | Likely running platform campaigns |
+| **Recruitment advertising** | Advance Recruitment Solutions, LinkedIn Corp | Job listings, not public comms |
+| **Direct social platforms** | LinkedIn Corporation | Only confirmed direct platform vendor |
+| **P-card (untraceable digital)** | P-CARD ONLY US BANK N.A. | Almost certainly direct-to-platform social/digital — no agency invoices, no newspaper invoices, no billboard buys use P-cards. The purchase method reveals the purchase type. |
+| **Production / print** | A&A Flag & Banner, Art Sign & Banner, Epic Productions | Physical production, not media placement |
+
+This taxonomy enables:
+- Media mix pie chart (where does the ad money actually go?)
+- Equity analysis (what % reaches ethnic/community media vs major dailies?)
+- Transparency score per department (high P-card % = low transparency)
+- Digital shift tracking (is agency + P-card share growing over time?)
 
 **Known advertising/marketing agency registry:**
 
