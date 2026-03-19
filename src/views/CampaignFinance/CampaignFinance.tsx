@@ -150,8 +150,8 @@ export default function CampaignFinance() {
             )}
           </div>
           <div className="flex items-center gap-2">
-            {/* Election cycle quick-select */}
-            <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-lg p-0.5">
+            {/* Election cycle quick-select — dates are controlled here, not sidebar picker */}
+            <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-lg p-0.5" title="Campaign finance data is organized by election cycle">
               {SF_ELECTIONS.slice(0, 4).map((e) => (
                 <button
                   key={e.date}

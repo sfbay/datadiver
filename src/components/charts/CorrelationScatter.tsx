@@ -314,33 +314,32 @@ export default function CorrelationScatter({
     Math.abs(pearsonR) >= 0.4 ? '#f59e0b' : '#94a3b8'
 
   return (
-    <div ref={containerRef} className="relative select-none">
+    <div ref={containerRef} className="relative select-none overflow-visible">
       <svg ref={svgRef} className="w-full overflow-visible" />
 
-      {/* Tooltip */}
+      {/* Tooltip — flips below bubble when near top edge, always above parent overflow */}
       {tooltip.visible && (
         <div
-          className="absolute z-20 pointer-events-none"
+          className="absolute pointer-events-none"
           style={{
-            left: tooltip.x + 10,
-            top: tooltip.y - 10,
-            transform: 'translateY(-100%)',
+            left: Math.min(tooltip.x + 10, width - 140),
+            top: tooltip.y < 60 ? tooltip.y + 15 : tooltip.y - 10,
+            transform: tooltip.y < 60 ? 'none' : 'translateY(-100%)',
+            zIndex: 50,
           }}
         >
           <div className={`
-            text-xs rounded-lg px-2.5 py-1.5 shadow-lg border
-            ${isDark
-              ? 'bg-slate-800/95 border-slate-700 text-slate-200'
-              : 'bg-white/95 border-slate-200 text-slate-700'}
+            text-xs rounded-lg px-2.5 py-1.5 shadow-xl border backdrop-blur-sm
+            bg-slate-900/95 border-slate-700 text-slate-200
           `}>
             <div className="font-medium font-display mb-0.5">{tooltip.name}</div>
             <div className="font-mono text-[10px] space-y-0.5">
               <div>
-                <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>{xLabel}: </span>
+                <span className="text-slate-400">{xLabel}: </span>
                 <span>{formatTooltipValue(tooltip.xVal, xLabel)}</span>
               </div>
               <div>
-                <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>{yLabel}: </span>
+                <span className="text-slate-400">{yLabel}: </span>
                 <span>{formatTooltipValue(tooltip.yVal, yLabel)}</span>
               </div>
             </div>
