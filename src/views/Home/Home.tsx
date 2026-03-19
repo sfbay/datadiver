@@ -153,7 +153,7 @@ export default function Home() {
             alt=""
             aria-hidden="true"
             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${mounted ? 'opacity-100' : 'opacity-0'}`}
-            style={{ objectPosition: '65% center' }}
+            style={{ objectPosition: '62% center' }}
           />
           {/* Gradient overlay — stronger on left for text, fades to transparent on right */}
           <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/60 via-45% to-transparent dark:from-slate-950/95 dark:via-slate-950/60 dark:via-45% dark:to-transparent" />
