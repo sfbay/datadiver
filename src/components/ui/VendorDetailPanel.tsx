@@ -29,11 +29,13 @@ export default function VendorDetailPanel({ vendor, onClose }: VendorDetailPanel
   const [deptData, setDeptData] = useState<VendorDepartmentRow[]>([])
   const [contractData, setContractData] = useState<VendorContractRow[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [nonProfit, setNonProfit] = useState(false)
 
   useEffect(() => {
     if (!vendor) return
     setIsLoading(true)
+    setError(null)
     const escaped = vendor.replace(/'/g, "''")
 
     Promise.all([
@@ -73,7 +75,8 @@ export default function VendorDetailPanel({ vendor, onClose }: VendorDetailPanel
       setContractData(contracts)
       setNonProfit(npCheck.length > 0)
       setIsLoading(false)
-    }).catch(() => {
+    }).catch((err) => {
+      setError(err instanceof Error ? err.message : 'Failed to load vendor details')
       setIsLoading(false)
     })
   }, [vendor])
@@ -96,7 +99,13 @@ export default function VendorDetailPanel({ vendor, onClose }: VendorDetailPanel
       spinnerClass="border-sky-400"
       widthClass="w-80"
     >
-      {vendor && (
+      {vendor && error && (
+        <div className="py-4">
+          <p className="text-sm font-medium text-red-400 mb-1">Failed to load</p>
+          <p className="text-xs text-slate-400">{error}</p>
+        </div>
+      )}
+      {vendor && !error && (
         <div className="space-y-4">
           {/* Header */}
           <div>

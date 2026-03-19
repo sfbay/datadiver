@@ -609,6 +609,11 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
     ]
   }, [ad])
 
+  const maxPcardTotal = useMemo(
+    () => Math.max(...ad.departments.map((d) => d.pcard_total), 1),
+    [ad.departments]
+  )
+
   const handleExportCSV = useCallback(() => {
     const rows = ad.vendors.map((v) => ({
       vendor: v.vendor,
@@ -741,7 +746,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                       <div className="h-1 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full bg-red-500/60"
-                          style={{ width: `${ad.departments[0]?.pcard_total ? (d.pcard_total / ad.departments[0].pcard_total) * 100 : 0}%` }}
+                          style={{ width: `${(d.pcard_total / maxPcardTotal) * 100}%` }}
                         />
                       </div>
                     </div>

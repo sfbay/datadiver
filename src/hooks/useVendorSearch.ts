@@ -1,8 +1,7 @@
 /** Vendor search hook — searches vendor names, departments, sub_objects via Socrata LIKE */
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { fetchDataset } from '@/api/client'
-import type { DatasetKey } from '@/api/datasets'
 import type { FiscalYear, VendorAggRow, DepartmentAggRow, SubObjectAggRow } from '@/types/budget'
 
 export interface VendorSearchResults {

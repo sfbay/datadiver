@@ -69,7 +69,7 @@ export function useAdvertisingData(fiscalYear?: FiscalYear): AdvertisingData {
     // These are matched by classifyVendor — fetch top vendors matching agency patterns
     const agencyPromise = fetchDataset<RawVendorAgg>('vendorPayments', {
       $select: 'vendor, department, SUM(vouchers_paid) as total_paid, COUNT(*) as payment_count',
-      $where: `(UPPER(vendor) LIKE '%ZEBA CONSULTING%' OR UPPER(vendor) LIKE '%MOST LIKELY TO%' OR UPPER(vendor) LIKE '%CKR INTERACTIVE%' OR UPPER(vendor) LIKE '%O\\'RORKE%' OR UPPER(vendor) LIKE '%GREAT KOLOR%' OR UPPER(vendor) LIKE '%CIVIC EDGE%' OR UPPER(vendor) LIKE '%BETTER WORLD ADVERTISING%' OR UPPER(vendor) LIKE '%PROMOTION MARKETING%') AND sub_object != 'Advertising'${fyClause}`,
+      $where: `(UPPER(vendor) LIKE '%ZEBA CONSULTING%' OR UPPER(vendor) LIKE '%MOST LIKELY TO%' OR UPPER(vendor) LIKE '%CKR INTERACTIVE%' OR UPPER(vendor) LIKE '%O''RORKE%' OR UPPER(vendor) LIKE '%GREAT KOLOR%' OR UPPER(vendor) LIKE '%CIVIC EDGE%' OR UPPER(vendor) LIKE '%BETTER WORLD ADVERTISING%' OR UPPER(vendor) LIKE '%PROMOTION MARKETING%') AND sub_object != 'Advertising'${fyClause}`,
       $group: 'vendor, department',
       $order: 'total_paid DESC',
       $limit: 100,
