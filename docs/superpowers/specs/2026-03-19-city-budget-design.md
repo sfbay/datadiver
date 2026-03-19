@@ -277,10 +277,10 @@ Applicable across all budget views.
 - Sole source correlation
 - Flagging UI (badge system on vendors/departments)
 
-## Open Questions
+## Decisions (confirmed 2026-03-19)
 
-1. **Single view or multiple routes?** One `/city-budget` with tabs, or separate `/budget`, `/vendors`, `/advertising`?
-2. **Fiscal year picker:** Replace date range picker, or add a separate control?
-3. **Historical depth:** Show all years (FY2000+) or default to recent 5 with expand?
-4. **Anomaly threshold:** 2σ is standard but may generate too many flags. User-adjustable?
-5. **Export format:** CSV only, or also PDF report generation?
+1. **Single `/city-budget` with tabs** (Overview, Search, Advertising). Shared FY context + anomaly system.
+2. **Fiscal year dropdown** coexists with global date range picker. FY dropdown auto-sets July 1–June 30. Manual date adjustment shows "Custom."
+3. **Default: current + prior FY.** "Show all years" toggle expands to FY2000+. Trend charts always show full history.
+4. **Sensitivity slider** — 1σ–4σ, default 2σ, persisted in URL params.
+5. **CSV export** for MVP. Journalists need raw data in Excel/Sheets. PNG screenshot via existing ExportButton.

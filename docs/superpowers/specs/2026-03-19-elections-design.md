@@ -253,10 +253,10 @@ The elections view connects to existing DataDiver infrastructure:
 - Real-time map updates
 - Remaining ballot counter
 
-## Open Questions
+## Decisions (confirmed 2026-03-19)
 
-1. **Precinct boundary changes over time** — precincts get redistricted. Historical precinct results may not map to current boundaries. Aggregate to neighborhood level for cross-era comparison?
-2. **RCV data format** — need to inspect actual Excel structure from SF Elections to confirm parsing approach. Do all elections since RCV adoption (2004) have machine-readable round data?
-3. **Live scraping legality** — sfelections.org doesn't have a public API. Is polling their results page acceptable? (Likely yes for public government data, but worth confirming.)
-4. **Data volume** — 514 precincts × 30 years × multiple races = significant static JSON. CDN/lazy-loading strategy needed.
-5. **The 1996 connection** — should the view include a special "origin story" easter egg acknowledging that one of SF's first live election websites was hand-built at SFSU in 1996?
+1. **Neighborhoods for cross-era, precincts for single-election.** Neighborhoods are stable across redistricting cycles. Time Machine uses neighborhoods. Single-election views use actual precinct boundaries at street-level zoom.
+2. **Process 5 most recent elections first** to confirm Excel structure, then work backwards. If older RCV data is PDF-only, start Time Machine from first machine-readable election.
+3. **Respectful polling** of sfelections.org (~60s interval). Public government data, no restrictions. May reach out to SF Elections for undocumented API/feed.
+4. **Lazy-load by election.** Manifest loads on mount (~metadata only). Neighborhood-level results (~50KB/election) preloaded for Time Machine. Precinct-level (~500KB/election) loads on zoom. Total neighborhood archive: ~1.5MB for 30 elections.
+5. **Subtle mention** in footer or info section: "One of San Francisco's first live election results websites was hand-built at SFSU in 1996. DataDiver continues that tradition."
