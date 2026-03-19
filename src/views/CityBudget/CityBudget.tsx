@@ -10,6 +10,9 @@ import VendorDetailPanel from '@/components/ui/VendorDetailPanel'
 import HorizontalBarChart, { type BarDatum } from '@/components/charts/HorizontalBarChart'
 import { useBudgetVsActual, useBudgetTotals, useSpendingTrend, useDepartmentSpending } from '@/hooks/useBudgetData'
 import { useVendorSearch, useTopVendors } from '@/hooks/useVendorSearch'
+import { useAdvertisingData } from '@/hooks/useAdvertisingData'
+import { MEDIA_CATEGORIES, type MediaCategory } from '@/utils/mediaClassification'
+import { exportToCSV } from '@/utils/csvExport'
 import { getCurrentFiscalYear, formatFiscalYear, formatBudgetAmount, formatBudgetFull } from '@/utils/fiscalYear'
 import type { FiscalYear } from '@/types/budget'
 
@@ -108,7 +111,7 @@ export default function CityBudget() {
       <div id="budget-capture" className="flex-1 overflow-hidden">
         {activeTab === 'overview' && <BudgetOverview fiscalYear={fiscalYear} />}
         {activeTab === 'search' && <VendorSearchTab fiscalYear={fiscalYear} />}
-        {activeTab === 'advertising' && <AdvertisingPlaceholder />}
+        {activeTab === 'advertising' && <AdvertisingTab fiscalYear={fiscalYear} />}
       </div>
     </div>
   )
@@ -522,16 +525,286 @@ function VendorSearchTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
   )
 }
 
-// ── Placeholder tab (Chunk 4) ───────────────────────────────
+// ── Advertising & Media Tracker Tab ─────────────────────────
 
-function AdvertisingPlaceholder() {
+function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
+  const ad = useAdvertisingData(fiscalYear)
+
+  // Media mix: aggregate by category
+  const mediaMix = useMemo(() => {
+    const catMap = new Map<MediaCategory, number>()
+    for (const v of ad.vendors) {
+      const amt = parseFloat(v.total_paid) || 0
+      catMap.set(v.category, (catMap.get(v.category) || 0) + amt)
+    }
+    return [...catMap.entries()]
+      .map(([cat, total]) => ({
+        category: cat,
+        total,
+        label: MEDIA_CATEGORIES[cat].label,
+        color: MEDIA_CATEGORIES[cat].color,
+      }))
+      .sort((a, b) => b.total - a.total)
+  }, [ad.vendors])
+
+  // Vendor breakdown bars
+  const vendorBars = useMemo((): BarDatum[] => {
+    // Aggregate by vendor (across departments)
+    const vendorMap = new Map<string, { total: number; category: MediaCategory }>()
+    for (const v of ad.vendors) {
+      const amt = parseFloat(v.total_paid) || 0
+      const entry = vendorMap.get(v.vendor) || { total: 0, category: v.category }
+      entry.total += amt
+      vendorMap.set(v.vendor, entry)
+    }
+    return [...vendorMap.entries()]
+      .sort((a, b) => b[1].total - a[1].total)
+      .slice(0, 20)
+      .map(([name, { total, category }]) => ({
+        label: name,
+        value: total,
+        color: MEDIA_CATEGORIES[category].color,
+      }))
+  }, [ad.vendors])
+
+  // Cards
+  const cards = useMemo((): CardDef[] => {
+    if (ad.isLoading) return []
+    return [
+      {
+        id: 'total-ad-spend',
+        label: 'Total Ad Spend',
+        shortLabel: 'Ad Total',
+        value: formatBudgetAmount(ad.totalAdSpend),
+        color: ACCENT,
+        defaultExpanded: true,
+      },
+      {
+        id: 'top-ad-dept',
+        label: 'Top Ad Department',
+        shortLabel: 'Top Dept',
+        value: ad.topDepartment.length > 18 ? ad.topDepartment.slice(0, 17) + '…' : ad.topDepartment,
+        color: '#a78bfa',
+        defaultExpanded: true,
+      },
+      {
+        id: 'pcard-spend',
+        label: 'P-Card Ad Spend',
+        shortLabel: 'P-Card',
+        value: formatBudgetAmount(ad.totalPcardSpend),
+        color: '#ef4444',
+        subtitle: ad.totalAdSpend > 0
+          ? `${((ad.totalPcardSpend / ad.totalAdSpend) * 100).toFixed(1)}% of ad spend`
+          : undefined,
+        defaultExpanded: true,
+      },
+      {
+        id: 'vendor-count',
+        label: 'Ad Vendors',
+        shortLabel: 'Vendors',
+        value: String(new Set(ad.vendors.map((v) => v.vendor)).size),
+        color: '#f59e0b',
+        defaultExpanded: true,
+      },
+    ]
+  }, [ad])
+
+  const handleExportCSV = useCallback(() => {
+    const rows = ad.vendors.map((v) => ({
+      vendor: v.vendor,
+      department: v.department,
+      total_paid: v.total_paid,
+      payments: v.payment_count,
+      detection_layer: v.layer,
+      media_category: MEDIA_CATEGORIES[v.category].label,
+    }))
+    exportToCSV(rows, `sf-advertising-${fiscalYear ? `fy${fiscalYear}` : 'all'}`)
+  }, [ad.vendors, fiscalYear])
+
   return (
-    <div className="p-6 space-y-6">
-      <p className="text-sm text-slate-500 dark:text-slate-400 font-mono">
-        Advertising & Media Tracker
-      </p>
-      <SkeletonChart height={200} />
-      <SkeletonSidebarRows count={6} />
+    <div className="h-full flex overflow-hidden">
+      {/* Main content */}
+      <div className="flex-1 overflow-y-auto p-6">
+        {/* Loading */}
+        {ad.isLoading && (
+          <div className="max-w-4xl space-y-6">
+            <div className="flex gap-2.5 flex-wrap">
+              {Array.from({ length: 4 }, (_, i) => (
+                <div key={i} className="glass-card rounded-xl px-4 py-3 min-w-[140px] animate-pulse" style={{ animationDelay: `${i * 60}ms` }}>
+                  <Skeleton className="h-2.5 w-16 mb-3" />
+                  <Skeleton className="h-6 w-24" />
+                </div>
+              ))}
+            </div>
+            <SkeletonChart height={300} />
+          </div>
+        )}
+
+        {/* Error */}
+        {ad.error && (
+          <div className="flex items-center justify-center py-16">
+            <div className="glass-card rounded-xl p-6 max-w-sm">
+              <p className="text-sm font-medium text-red-400 mb-1">Data Error</p>
+              <p className="text-xs text-slate-400">{ad.error}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Content */}
+        {!ad.isLoading && !ad.error && (
+          <div className="max-w-4xl space-y-6">
+            {/* Cards + CSV button */}
+            <div className="flex items-start justify-between">
+              <CardTray viewId="cityBudgetAd" cards={cards} />
+              <button
+                onClick={handleExportCSV}
+                className="flex-shrink-0 ml-4 mt-1 flex items-center gap-1.5 text-[10px] font-mono text-slate-400 hover:text-ink dark:hover:text-white bg-slate-100/80 dark:bg-white/[0.04] rounded-md px-2.5 py-1.5 transition-colors"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                  <path d="M6 1v7M3 5l3 3 3-3M2 10h8" />
+                </svg>
+                CSV
+              </button>
+            </div>
+
+            {/* Media mix breakdown */}
+            <div className="glass-card rounded-xl p-4">
+              <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-3">
+                Media Mix
+              </p>
+              <div className="space-y-2">
+                {mediaMix.map((m) => (
+                  <div key={m.category}>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: m.color }} />
+                        <span className="text-[10px] text-slate-600 dark:text-slate-300">{m.label}</span>
+                      </div>
+                      <span className="text-[10px] font-mono text-slate-500 tabular-nums">
+                        {formatBudgetAmount(m.total)}
+                      </span>
+                    </div>
+                    <div className="h-1.5 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${ad.totalAdSpend > 0 ? (m.total / ad.totalAdSpend) * 100 : 0}%`,
+                          backgroundColor: m.color,
+                          opacity: 0.7,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Top ad vendors */}
+            <div className="glass-card rounded-xl p-4">
+              <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-3">
+                Top Advertising Vendors (color = media category)
+              </p>
+              <HorizontalBarChart
+                data={vendorBars}
+                width={600}
+                height={Math.min(vendorBars.length * 22 + 10, 500)}
+                maxBars={20}
+                valueFormatter={(v) => formatBudgetAmount(v)}
+              />
+            </div>
+
+            {/* P-card transparency callout */}
+            <div className="glass-card rounded-xl p-4 border border-red-500/20">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 rounded-full bg-red-500" />
+                <p className="text-xs font-semibold text-red-400">P-Card Transparency</p>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
+                These purchases are made via procurement cards (US Bank) and do not identify the specific platform or media outlet.
+                They may include Facebook/Instagram boosts, Google Ads, and other digital advertising that is nearly invisible in city financial data.
+              </p>
+              {/* Department P-card breakdown */}
+              <div className="space-y-1.5">
+                {ad.departments
+                  .filter((d) => d.pcard_total > 0)
+                  .map((d) => (
+                    <div key={d.department}>
+                      <div className="flex items-center justify-between text-[10px] mb-0.5">
+                        <span className="text-slate-600 dark:text-slate-300 truncate max-w-[300px]">{d.department}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-red-400 tabular-nums">{formatBudgetAmount(d.pcard_total)}</span>
+                          <span className="font-mono text-slate-400 tabular-nums">
+                            ({(100 - d.transparency_pct).toFixed(0)}% opaque)
+                          </span>
+                        </div>
+                      </div>
+                      <div className="h-1 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-red-500/60"
+                          style={{ width: `${ad.departments[0]?.pcard_total ? (d.pcard_total / ad.departments[0].pcard_total) * 100 : 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+
+            {/* Source attribution */}
+            <p className="text-[9px] font-mono text-slate-400/60 dark:text-slate-600">
+              Source: SF Controller — Vendor Payments ({' '}
+              <span className="tabular-nums">n9pm-xkyq</span>) · Three-layer detection:
+              sub_object tagging + agency registry + P-card flagging · data.sfgov.org
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Right sidebar — departments by ad spend */}
+      <aside className="w-72 flex-shrink-0 border-l border-slate-200/50 dark:border-white/[0.04] bg-white/30 dark:bg-slate-900/30 overflow-y-auto">
+        <div className="p-4">
+          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500 mb-3">
+            Departments by Ad Spend
+          </p>
+
+          {ad.isLoading ? (
+            <SkeletonSidebarRows count={10} />
+          ) : (
+            <div className="space-y-0.5">
+              {ad.departments.map((dept) => (
+                <div key={dept.department} className="px-2 py-1.5 rounded-md">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className="text-[10px] text-slate-600 dark:text-slate-400 truncate max-w-[140px]">
+                      {dept.department}
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-500 tabular-nums ml-2">
+                      {formatBudgetAmount(dept.total)}
+                    </span>
+                  </div>
+                  <div className="h-1 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden flex">
+                    {/* Transparent portion */}
+                    <div
+                      className="h-full bg-sky-500/50"
+                      style={{ width: `${dept.transparency_pct * (ad.departments[0]?.total ? dept.total / ad.departments[0].total : 0)}%` }}
+                    />
+                    {/* P-card (opaque) portion */}
+                    {dept.pcard_total > 0 && (
+                      <div
+                        className="h-full bg-red-500/50"
+                        style={{ width: `${(100 - dept.transparency_pct) * (ad.departments[0]?.total ? dept.total / ad.departments[0].total : 0)}%` }}
+                      />
+                    )}
+                  </div>
+                  {dept.pcard_total > 0 && (
+                    <p className="text-[8px] font-mono text-red-400/60 mt-0.5">
+                      {(100 - dept.transparency_pct).toFixed(0)}% P-card
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </aside>
     </div>
   )
 }
