@@ -82,6 +82,13 @@ const NAV_ITEMS = [
     description: 'Census demographics & civic correlations',
     accentColor: '#7c3aed',
   },
+  {
+    path: '/city-budget',
+    label: 'City Budget',
+    shortLabel: 'BU',
+    description: 'Budget, spending, vendor & ad tracking',
+    accentColor: '#0ea5e9',
+  },
   { path: '/live-feeds', label: 'Live Feeds', shortLabel: 'LIVE', description: 'Scanner radio feeds — SFPD, SFFD, EMS', accentColor: '#f59e0b' },
 ] as const
 

@@ -13,6 +13,7 @@ import TrafficSafety from '@/views/TrafficSafety/TrafficSafety'
 import BusinessActivity from '@/views/BusinessActivity/BusinessActivity'
 import CampaignFinance from '@/views/CampaignFinance/CampaignFinance'
 import Demographics from '@/views/Demographics/Demographics'
+import CityBudget from '@/views/CityBudget/CityBudget'
 import LiveFeeds from '@/views/LiveFeeds/LiveFeeds'
 
 export default function App() {
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="/business-activity" element={<BusinessActivity />} />
           <Route path="/campaign-finance" element={<CampaignFinance />} />
           <Route path="/demographics" element={<Demographics />} />
+          <Route path="/city-budget" element={<CityBudget />} />
           <Route path="/live-feeds" element={<LiveFeeds />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

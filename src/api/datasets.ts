@@ -185,6 +185,43 @@ export const DATASETS: Record<string, DatasetConfig> = {
     defaultSort: 'calculated_date DESC',
     dateField: 'calculated_date',
   },
+
+  // ── City Budget & Spending ────────────────────────────────
+  budget: {
+    id: 'xdgd-c79v',
+    name: 'Budget',
+    description: 'Planned appropriations by department, program, and object',
+    endpoint: `${BASE_URL}/xdgd-c79v.json`,
+    category: 'other',
+    hasGeo: false,
+  },
+
+  spendingRevenue: {
+    id: 'bpnb-jwfb',
+    name: 'Spending & Revenue',
+    description: 'Actual spending and revenue by department, program, and object',
+    endpoint: `${BASE_URL}/bpnb-jwfb.json`,
+    category: 'other',
+    hasGeo: false,
+  },
+
+  vendorPayments: {
+    id: 'n9pm-xkyq',
+    name: 'Vendor Payments (Vouchers)',
+    description: 'Individual payments to vendors with department and contract detail',
+    endpoint: `${BASE_URL}/n9pm-xkyq.json`,
+    category: 'other',
+    hasGeo: false,
+  },
+
+  supplierContracts: {
+    id: 'cqi5-hm2d',
+    name: 'Supplier Contracts',
+    description: 'Contract awards with utilization and remaining amounts',
+    endpoint: `${BASE_URL}/cqi5-hm2d.json`,
+    category: 'other',
+    hasGeo: false,
+  },
 } as const
 
 export type DatasetKey = keyof typeof DATASETS
