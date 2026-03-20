@@ -15,6 +15,8 @@ import { ACCENT, buildCandidateColorMap, turnoutColor } from '@/utils/electionCo
 import type { Race, Candidate } from '@/types/elections'
 import RCVRoundChart from '@/components/charts/RCVRoundChart'
 import RCVSankey from '@/components/charts/RCVSankey'
+import ElectionTimeline from '@/components/filters/ElectionTimeline'
+import { useElectionTimeline } from '@/hooks/useElectionTimeline'
 
 type MapMode = 'results' | 'turnout' | 'margin'
 type SidebarTab = 'races' | 'neighborhoods'
@@ -33,6 +35,7 @@ export default function Elections() {
 
   const [rcvViewMode, setRcvViewMode] = useState<'rounds' | 'sankey'>('rounds')
   const [rcvActiveRound, setRcvActiveRound] = useState<number | undefined>(undefined)
+  const [timeMachineActive, setTimeMachineActive] = useState(false)
 
   const mapMode = (searchParams.get('map_mode') as MapMode) || 'results'
 
@@ -95,6 +98,17 @@ export default function Elections() {
   const rcvSlug = activeRace?.isRCV ? activeRace.id : null
   const { data: rcvData } = useRCVRounds(activeElection, rcvSlug)
 
+  // ── Time Machine ───────────────────────────────────────────────────
+  const timeline = useElectionTimeline({ enabled: timeMachineActive })
+
+  // When Time Machine is active, override the displayed results
+  const displayResults = timeMachineActive && timeline.activeResults
+    ? timeline.activeResults
+    : results
+  const displayElectionLabel = timeMachineActive && timeline.activeElection
+    ? timeline.activeElection.label
+    : results?.election.label || ''
+
   // ── Geo data ──────────────────────────────────────────────────────
   const { boundaries: neighborhoodBoundaries } = useNeighborhoodBoundaries()
   const { precincts, precinctToNeighborhood } = usePrecinctBoundaries()
@@ -112,7 +126,7 @@ export default function Elections() {
   // the precinct→neighborhood mapping + the Neigh22 property on the GeoJSON.
 
   const neighborhoodChoropleth = useMemo((): GeoJSON.FeatureCollection | null => {
-    if (!neighborhoodBoundaries || !activeRace || !results) return null
+    if (!neighborhoodBoundaries || !activeRace || !displayResults) return null
 
     const winner = activeRace.candidates.find((c) => c.isWinner)
     if (!winner) return null
@@ -133,18 +147,18 @@ export default function Elections() {
         winnerColor,
         winnerName: winner.name,
         margin,
-        turnoutPct: results.registration.turnoutPct,
+        turnoutPct: displayResults.registration.turnoutPct,
       },
     }))
 
     return { type: 'FeatureCollection', features }
-  }, [neighborhoodBoundaries, activeRace, results, candidateColors])
+  }, [neighborhoodBoundaries, activeRace, displayResults, candidateColors])
 
   // Turnout choropleth — uses neighborhood boundaries colored by city turnout
   const turnoutChoropleth = useMemo((): GeoJSON.FeatureCollection | null => {
-    if (!neighborhoodBoundaries || !results) return null
+    if (!neighborhoodBoundaries || !displayResults) return null
 
-    const pct = results.registration.turnoutPct
+    const pct = displayResults.registration.turnoutPct
     const color = turnoutColor(pct)
 
     const features = neighborhoodBoundaries.features.map((f) => ({
@@ -157,7 +171,7 @@ export default function Elections() {
     }))
 
     return { type: 'FeatureCollection', features }
-  }, [neighborhoodBoundaries, results])
+  }, [neighborhoodBoundaries, displayResults])
 
   // Choose which choropleth to show based on map mode
   const activeChoropleth = mapMode === 'turnout' ? turnoutChoropleth : neighborhoodChoropleth
@@ -277,7 +291,8 @@ export default function Elections() {
 
   // ── Card definitions ──────────────────────────────────────────────
   const cardDefs = useMemo((): CardDef[] => {
-    if (!results || !activeRace) return []
+    const r = displayResults
+    if (!r || !activeRace) return []
     const winner = activeRace.candidates.find((c) => c.isWinner)
     const topTwo = [...activeRace.candidates].sort((a, b) => b.totalVotes - a.totalVotes)
     const margin = topTwo.length >= 2
@@ -298,10 +313,10 @@ export default function Elections() {
         id: 'turnout',
         label: 'Turnout',
         shortLabel: 'Turnout',
-        value: `${(results.registration.turnoutPct * 100).toFixed(1)}%`,
-        color: turnoutColor(results.registration.turnoutPct),
+        value: `${(r.registration.turnoutPct * 100).toFixed(1)}%`,
+        color: turnoutColor(r.registration.turnoutPct),
         defaultExpanded: true,
-        subtitle: `${results.registration.totalBallotsCast.toLocaleString()} ballots`,
+        subtitle: `${r.registration.totalBallotsCast.toLocaleString()} ballots`,
       },
     ]
 
@@ -320,7 +335,7 @@ export default function Elections() {
       id: 'registered',
       label: 'Registered',
       shortLabel: 'Reg',
-      value: results.registration.totalRegistered.toLocaleString(),
+      value: r.registration.totalRegistered.toLocaleString(),
       color: '#64748b',
     })
 
@@ -336,14 +351,14 @@ export default function Elections() {
     }
 
     return cards
-  }, [results, activeRace, candidateColors, rcvData])
+  }, [displayResults, activeRace, candidateColors, rcvData])
 
   // ── Filtered races for sidebar ────────────────────────────────────
   const filteredRaces = useMemo(() => {
-    if (!results) return []
-    if (raceFilter === 'all') return results.races
-    return results.races.filter((r) => r.type === raceFilter)
-  }, [results, raceFilter])
+    if (!displayResults) return []
+    if (raceFilter === 'all') return displayResults.races
+    return displayResults.races.filter((r) => r.type === raceFilter)
+  }, [displayResults, raceFilter])
 
   const electionMeta = useMemo(() => {
     if (!manifest || !activeElection) return null
@@ -352,13 +367,13 @@ export default function Elections() {
 
   // Count races by type for filter badges
   const raceCounts = useMemo(() => {
-    if (!results) return {} as Record<RaceFilter, number>
-    const counts: Record<string, number> = { all: results.races.length }
-    for (const r of results.races) {
+    if (!displayResults) return {} as Record<RaceFilter, number>
+    const counts: Record<string, number> = { all: displayResults.races.length }
+    for (const r of displayResults.races) {
       counts[r.type] = (counts[r.type] || 0) + 1
     }
     return counts as Record<RaceFilter, number>
-  }, [results])
+  }, [displayResults])
 
   return (
     <div className="h-full flex flex-col">
@@ -374,15 +389,15 @@ export default function Elections() {
                 SF Dept of Elections &middot; Results &amp; RCV
               </p>
             </div>
-            {!isLoading && results && (
+            {!isLoading && displayResults && (
               <div className="flex items-center gap-1.5">
                 <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-indigo-500/80 bg-indigo-500/10 px-2 py-1 rounded-full">
                   <span className="w-1 h-1 rounded-full bg-indigo-500" />
-                  {results.races.length} races
+                  {displayResults.races.length} races
                 </span>
-                {results.races.filter((r) => r.isRCV).length > 0 && (
+                {displayResults.races.filter((r) => r.isRCV).length > 0 && (
                   <span className="text-[10px] font-mono text-indigo-400/80 bg-indigo-400/10 px-2 py-1 rounded-full">
-                    {results.races.filter((r) => r.isRCV).length} RCV
+                    {displayResults.races.filter((r) => r.isRCV).length} RCV
                   </span>
                 )}
               </div>
@@ -433,19 +448,46 @@ export default function Elections() {
               ))}
             </div>
 
+            {/* Time Machine toggle */}
+            <button
+              onClick={() => setTimeMachineActive(!timeMachineActive)}
+              className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all duration-200 border ${
+                timeMachineActive
+                  ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30'
+                  : 'text-slate-400 border-slate-200 dark:border-white/10 hover:text-slate-300 hover:border-white/20'
+              }`}
+              title="Cross-election playback"
+            >
+              Time Machine
+            </button>
+
             <ExportButton targetSelector="#elections-capture" filename="elections" />
           </div>
         </div>
       </header>
 
+      {/* Time Machine banner */}
+      {timeMachineActive && (
+        <div className="flex-shrink-0 px-6 py-1.5 bg-indigo-500/10 border-b border-indigo-500/20 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+          <p className="text-[10px] font-mono text-indigo-400">
+            TIME MACHINE — {displayElectionLabel}
+          </p>
+          {timeline.isLoading && (
+            <span className="text-[10px] font-mono text-slate-500 ml-auto">Loading…</span>
+          )}
+        </div>
+      )}
+
       {/* Content */}
-      <div id="elections-capture" className="flex-1 overflow-hidden flex">
+      <div id="elections-capture" className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 overflow-hidden flex">
         {/* Map area */}
         <div className="flex-1 relative">
           <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
             {/* Stat cards */}
             {isLoading && <SkeletonStatCards count={4} />}
-            {!isLoading && results && cardDefs.length > 0 && (
+            {!isLoading && displayResults && cardDefs.length > 0 && (
               <CardTray viewId="elections" cards={cardDefs} />
             )}
 
@@ -507,7 +549,7 @@ export default function Elections() {
             {/* Neighborhood detail panel */}
             <NeighborhoodElectionPanel
               neighborhood={selectedNeighborhood}
-              results={results}
+              results={displayResults}
               candidateColors={candidateColors}
               onClose={() => setSelectedNeighborhood(null)}
             />
@@ -665,6 +707,20 @@ export default function Elections() {
             </p>
           </div>
         </aside>
+      </div>
+
+      {/* Time Machine timeline scrubber */}
+      {timeMachineActive && timeline.elections.length > 1 && (
+        <ElectionTimeline
+          elections={timeline.elections}
+          activeIndex={timeline.activeIndex}
+          onIndexChange={timeline.setActiveIndex}
+          isPlaying={timeline.isPlaying}
+          onPlayToggle={timeline.togglePlay}
+          speed={timeline.speed}
+          onSpeedChange={timeline.setSpeed}
+        />
+      )}
       </div>
     </div>
   )
