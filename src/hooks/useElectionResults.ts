@@ -1,5 +1,5 @@
 /**
- * Election data hooks — lazy-load static JSON from /elections/
+ * Election data hooks — lazy-load static JSON from /data/elections/
  *
  * Unlike other DataDiver views that use useDataset (Socrata SODA API),
  * election data comes from pre-built static JSON files. These hooks
@@ -84,13 +84,13 @@ function useStaticJSON<T>(url: string | null): {
 
 /** Load the election manifest (list of all elections + their races) */
 export function useElectionManifest() {
-  return useStaticJSON<ElectionManifest>('/elections/index.json')
+  return useStaticJSON<ElectionManifest>('/data/elections/index.json')
 }
 
 /** Load results for a specific election */
 export function useElectionResults(dateCode: string | null) {
   const url = useMemo(
-    () => (dateCode ? `/elections/results/${dateCode}/summary.json` : null),
+    () => (dateCode ? `/data/elections/results/${dateCode}/summary.json` : null),
     [dateCode],
   )
   return useStaticJSON<ElectionResults>(url)
@@ -101,7 +101,7 @@ export function useRCVRounds(dateCode: string | null, raceSlug: string | null) {
   const url = useMemo(
     () =>
       dateCode && raceSlug
-        ? `/elections/results/${dateCode}/rcv/${raceSlug}.json`
+        ? `/data/elections/results/${dateCode}/rcv/${raceSlug}.json`
         : null,
     [dateCode, raceSlug],
   )
@@ -110,10 +110,10 @@ export function useRCVRounds(dateCode: string | null, raceSlug: string | null) {
 
 /** Load historical turnout data */
 export function useTurnoutHistory() {
-  return useStaticJSON<TurnoutRecord[]>('/elections/turnout/historical.json')
+  return useStaticJSON<TurnoutRecord[]>('/data/elections/turnout/historical.json')
 }
 
 /** Load ballot propositions */
 export function useBallotPropositions() {
-  return useStaticJSON<BallotProposition[]>('/elections/propositions/index.json')
+  return useStaticJSON<BallotProposition[]>('/data/elections/propositions/index.json')
 }

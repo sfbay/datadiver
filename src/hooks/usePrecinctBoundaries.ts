@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 
-const PRECINCT_GEOJSON_URL = '/elections/geo/precincts.geojson'
-const PRECINCT_NHOOD_MAP_URL = '/elections/geo/precinct_neighborhood_map.json'
+const PRECINCT_GEOJSON_URL = '/data/elections/geo/precincts.geojson'
+const PRECINCT_NHOOD_MAP_URL = '/data/elections/geo/precinct_neighborhood_map.json'
 
 let cachedPrecincts: GeoJSON.FeatureCollection | null = null
 let cachedPrecinctMap: Record<string, string> | null = null

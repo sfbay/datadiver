@@ -19,7 +19,7 @@ import { execSync } from 'child_process'
 import * as shapefile from 'shapefile'
 
 const BASE_URL = 'https://sfelections.org/tools/election_data/datasets'
-const OUT_DIR = join(import.meta.dirname, '..', 'public', 'elections', 'geo')
+const OUT_DIR = join(import.meta.dirname, '..', 'public', 'data', 'elections', 'geo')
 const TMP_DIR = join(import.meta.dirname, '..', '.tmp-shp')
 
 function ensureDir(dir: string) {

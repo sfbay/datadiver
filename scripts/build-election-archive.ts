@@ -29,7 +29,7 @@ import type { ElectionManifest, ElectionMeta, TurnoutRecord, BallotProposition }
 // ── Configuration ───────────────────────────────────────────────────
 
 const BASE_URL = 'https://sfelections.org'
-const OUT_DIR = join(import.meta.dirname, '..', 'public', 'elections')
+const OUT_DIR = join(import.meta.dirname, '..', 'public', 'data', 'elections')
 
 const ELECTIONS = [
   {
