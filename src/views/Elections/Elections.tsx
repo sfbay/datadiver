@@ -9,20 +9,15 @@ export default function Elections() {
   const selectedElection = searchParams.get('election') || null
 
   const { data: manifest, isLoading: manifestLoading } = useElectionManifest()
-  const { data: results, isLoading: resultsLoading } = useElectionResults(selectedElection)
 
-  // Default to most recent election
+  // Default to most recent election when none selected
   const activeElection = useMemo(() => {
     if (selectedElection) return selectedElection
     return manifest?.elections[0]?.dateCode ?? null
   }, [selectedElection, manifest])
 
-  // Auto-select first election once manifest loads
-  const { data: activeResults, isLoading: activeLoading } = useElectionResults(
-    activeElection !== selectedElection ? activeElection : null,
-  )
-  const displayResults = selectedElection ? results : activeResults
-  const isLoading = manifestLoading || resultsLoading || activeLoading
+  const { data: displayResults, isLoading: resultsLoading } = useElectionResults(activeElection)
+  const isLoading = manifestLoading || resultsLoading
 
   return (
     <div className="h-full flex flex-col">

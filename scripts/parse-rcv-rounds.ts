@@ -29,11 +29,12 @@ function parseVotes(text: string): number {
   return parseInt(cleaned, 10) || 0
 }
 
-/** Parse a percentage string like "26.33%" → 0.2633 */
+/** Parse a percentage string like "26.33%" → 0.2633, rounded to avoid float artifacts */
 function parsePct(text: string): number {
   const cleaned = text.replace('%', '').trim()
   if (!cleaned || cleaned === '') return 0
-  return parseFloat(cleaned) / 100 || 0
+  const raw = parseFloat(cleaned) / 100
+  return Math.round(raw * 10000) / 10000 || 0
 }
 
 export function parseRCVRounds(html: string, raceId: string, raceTitle: string): RCVContest {

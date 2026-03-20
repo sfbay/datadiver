@@ -41,7 +41,7 @@
         {
           "name": "WENDY HA CHAU",
           "votes": 1565,
-          "percentage": 0.054400000000000004,
+          "percentage": 0.0544,
           "transfer": 96,
           "isEliminated": false,
           "isLeader": false
@@ -49,7 +49,7 @@
         {
           "name": "EDUARD NAVARRO",
           "votes": 879,
-          "percentage": 0.030600000000000002,
+          "percentage": 0.0306,
           "transfer": -879,
           "isEliminated": true,
           "isLeader": false
@@ -66,7 +66,7 @@
         {
           "name": "DANNY SAUTER",
           "votes": 11526,
-          "percentage": 0.40299999999999997,
+          "percentage": 0.403,
           "transfer": 277,
           "isEliminated": false,
           "isLeader": true
@@ -82,7 +82,7 @@
         {
           "name": "MOE JAMIL",
           "votes": 3853,
-          "percentage": 0.13470000000000001,
+          "percentage": 0.1347,
           "transfer": 307,
           "isEliminated": false,
           "isLeader": false
@@ -139,7 +139,7 @@
         {
           "name": "MOE JAMIL",
           "votes": 4160,
-          "percentage": 0.14730000000000001,
+          "percentage": 0.1473,
           "transfer": 959,
           "isEliminated": false,
           "isLeader": false
@@ -188,7 +188,7 @@
         {
           "name": "SHARON LAI",
           "votes": 9538,
-          "percentage": 0.34850000000000003,
+          "percentage": 0.3485,
           "transfer": 1974,
           "isEliminated": false,
           "isLeader": false
@@ -245,7 +245,7 @@
         {
           "name": "SHARON LAI",
           "votes": 11512,
-          "percentage": 0.45030000000000003,
+          "percentage": 0.4503,
           "transfer": 0,
           "isEliminated": false,
           "isLeader": false

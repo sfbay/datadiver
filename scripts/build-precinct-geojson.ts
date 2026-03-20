@@ -6,12 +6,12 @@
  *
  * Source: sfelections.org/tools/election_data/datasets/
  * Output: public/elections/geo/precincts.geojson
- *         public/elections/geo/precinct_district_map.json
+ *         public/elections/geo/precinct_neighborhood_map.json
  *
  * Run: npx tsx scripts/build-precinct-geojson.ts
  */
 
-import { writeFileSync, mkdirSync, existsSync, createWriteStream, unlinkSync } from 'fs'
+import { writeFileSync, mkdirSync, existsSync, createWriteStream, rmSync } from 'fs'
 import { join } from 'path'
 import { pipeline } from 'stream/promises'
 import { Readable } from 'stream'
@@ -115,52 +115,31 @@ async function processPrecinctShapefile() {
     console.log('  → Sample properties:', JSON.stringify(features[0].properties))
   }
 
+  // Build precinct→neighborhood lookup from GeoJSON properties
+  // The shapefile includes Neigh22 (neighborhood) and Supe22 (supervisor district)
+  // on each precinct polygon, so no external mapping file is needed.
+  const precinctNeighborhood: Record<string, string> = {}
+  for (const f of features) {
+    const prec = f.properties?.Prec_2025
+    const nhood = f.properties?.Neigh22
+    if (prec && nhood) {
+      precinctNeighborhood[String(prec)] = nhood
+    }
+  }
+  const nhoodPath = join(OUT_DIR, 'precinct_neighborhood_map.json')
+  writeFileSync(nhoodPath, JSON.stringify(precinctNeighborhood, null, 2))
+  console.log(`  ✓ Wrote ${nhoodPath} (${Object.keys(precinctNeighborhood).length} mappings)`)
+
   // Cleanup
   try {
-    execSync(`rm -rf "${TMP_DIR}"`, { stdio: 'pipe' })
+    rmSync(TMP_DIR, { recursive: true, force: true })
   } catch {
     // ignore
   }
 }
 
-async function processDistrictPrecinctMap() {
-  console.log('\n━━ District-Precinct Cross Reference ━━')
-
-  const url = `${BASE_URL}/PDMJ001_DistPctExtract_20240418.txt`
-  console.log(`  Fetching: ${url}`)
-  const res = await fetch(url)
-  if (!res.ok) {
-    console.log(`  → ${res.status} ${res.statusText}`)
-    return
-  }
-
-  const text = await res.text()
-  const lines = text.trim().split('\n')
-  console.log(`  → ${lines.length} lines, first line: ${lines[0].substring(0, 100)}`)
-
-  // Parse — format varies, let's detect
-  const mapping: Record<string, string> = {}
-  for (let i = 1; i < lines.length; i++) {
-    const cols = lines[i].split('\t')
-    if (cols.length >= 2) {
-      // Assume: precinct_id, district_id, ...
-      const precinct = cols[0].trim()
-      const district = cols[1].trim()
-      if (precinct && district) {
-        mapping[precinct] = district
-      }
-    }
-  }
-
-  ensureDir(OUT_DIR)
-  const outPath = join(OUT_DIR, 'precinct_district_map.json')
-  writeFileSync(outPath, JSON.stringify(mapping, null, 2))
-  console.log(`  ✓ Wrote ${outPath} (${Object.keys(mapping).length} mappings)`)
-}
-
 async function main() {
   await processPrecinctShapefile()
-  await processDistrictPrecinctMap()
   console.log('\nDone!')
 }
 

@@ -9,7 +9,7 @@
         {
           "name": "CONNIE CHAN",
           "votes": 16670,
-          "percentage": 0.46990000000000004,
+          "percentage": 0.4699,
           "transfer": 207,
           "isEliminated": false,
           "isLeader": true
@@ -17,7 +17,7 @@
         {
           "name": "MARJAN PHILHOUR",
           "votes": 14755,
-          "percentage": 0.41590000000000005,
+          "percentage": 0.4159,
           "transfer": 294,
           "isEliminated": false,
           "isLeader": false
@@ -82,7 +82,7 @@
         {
           "name": "JEREMIAH BOEHNER",
           "votes": 1492,
-          "percentage": 0.042199999999999994,
+          "percentage": 0.0422,
           "transfer": -1492,
           "isEliminated": true,
           "isLeader": false
@@ -164,7 +164,7 @@
         {
           "name": "MARJAN PHILHOUR",
           "votes": 16499,
-          "percentage": 0.48100000000000004,
+          "percentage": 0.481,
           "transfer": 0,
           "isEliminated": false,
           "isLeader": false

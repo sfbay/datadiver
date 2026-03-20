@@ -41,7 +41,7 @@
         {
           "name": "AHSHA SAFAÍ",
           "votes": 11425,
-          "percentage": 0.029300000000000003,
+          "percentage": 0.0293,
           "transfer": 0,
           "isEliminated": false,
           "isLeader": false
@@ -81,7 +81,7 @@
         {
           "name": "SHAHRAM SHARIATI",
           "votes": 1613,
-          "percentage": 0.0040999999999999995,
+          "percentage": 0.0041,
           "transfer": 0,
           "isEliminated": false,
           "isLeader": false
@@ -89,7 +89,7 @@
         {
           "name": "HENRY FLYNN",
           "votes": 1319,
-          "percentage": 0.0034000000000000002,
+          "percentage": 0.0034,
           "transfer": 0,
           "isEliminated": false,
           "isLeader": false
@@ -170,7 +170,7 @@
         {
           "name": "AHSHA SAFAÍ",
           "votes": 11425,
-          "percentage": 0.029300000000000003,
+          "percentage": 0.0293,
           "transfer": 0,
           "isEliminated": false,
           "isLeader": false
@@ -210,7 +210,7 @@
         {
           "name": "SHAHRAM SHARIATI",
           "votes": 1613,
-          "percentage": 0.0040999999999999995,
+          "percentage": 0.0041,
           "transfer": 0,
           "isEliminated": false,
           "isLeader": false
@@ -218,7 +218,7 @@
         {
           "name": "HENRY FLYNN",
           "votes": 1319,
-          "percentage": 0.0034000000000000002,
+          "percentage": 0.0034,
           "transfer": 0,
           "isEliminated": false,
           "isLeader": false
@@ -299,7 +299,7 @@
         {
           "name": "AHSHA SAFAÍ",
           "votes": 11425,
-          "percentage": 0.029300000000000003,
+          "percentage": 0.0293,
           "transfer": 29,
           "isEliminated": false,
           "isLeader": false
@@ -339,7 +339,7 @@
         {
           "name": "SHAHRAM SHARIATI",
           "votes": 1613,
-          "percentage": 0.0040999999999999995,
+          "percentage": 0.0041,
           "transfer": 11,
           "isEliminated": false,
           "isLeader": false
@@ -347,7 +347,7 @@
         {
           "name": "HENRY FLYNN",
           "votes": 1319,
-          "percentage": 0.0034000000000000002,
+          "percentage": 0.0034,
           "transfer": 34,
           "isEliminated": false,
           "isLeader": false
@@ -412,7 +412,7 @@
         {
           "name": "AARON PESKIN",
           "votes": 89240,
-          "percentage": 0.22870000000000001,
+          "percentage": 0.2287,
           "transfer": 133,
           "isEliminated": false,
           "isLeader": false
@@ -476,7 +476,7 @@
         {
           "name": "HENRY FLYNN",
           "votes": 1353,
-          "percentage": 0.0034999999999999996,
+          "percentage": 0.0035,
           "transfer": 32,
           "isEliminated": false,
           "isLeader": false
@@ -541,7 +541,7 @@
         {
           "name": "AARON PESKIN",
           "votes": 89373,
-          "percentage": 0.22920000000000001,
+          "percentage": 0.2292,
           "transfer": 125,
           "isEliminated": false,
           "isLeader": false
@@ -549,7 +549,7 @@
         {
           "name": "MARK FARRELL",
           "votes": 72259,
-          "percentage": 0.18530000000000002,
+          "percentage": 0.1853,
           "transfer": 309,
           "isEliminated": false,
           "isLeader": false
@@ -557,7 +557,7 @@
         {
           "name": "AHSHA SAFAÍ",
           "votes": 11490,
-          "percentage": 0.029500000000000002,
+          "percentage": 0.0295,
           "transfer": 64,
           "isEliminated": false,
           "isLeader": false
@@ -581,7 +581,7 @@
         {
           "name": "KEITH FREEDMAN",
           "votes": 2180,
-          "percentage": 0.005600000000000001,
+          "percentage": 0.0056,
           "transfer": 149,
           "isEliminated": false,
           "isLeader": false
@@ -694,7 +694,7 @@
         {
           "name": "ELLEN LEE ZHOU",
           "votes": 8873,
-          "percentage": 0.022799999999999997,
+          "percentage": 0.0228,
           "transfer": 188,
           "isEliminated": false,
           "isLeader": false
@@ -702,7 +702,7 @@
         {
           "name": "DYLAN HIRSCH-SHELL",
           "votes": 3052,
-          "percentage": 0.0078000000000000005,
+          "percentage": 0.0078,
           "transfer": 133,
           "isEliminated": false,
           "isLeader": false
@@ -799,7 +799,7 @@
         {
           "name": "AARON PESKIN",
           "votes": 89648,
-          "percentage": 0.23010000000000003,
+          "percentage": 0.2301,
           "transfer": 216,
           "isEliminated": false,
           "isLeader": false
@@ -815,7 +815,7 @@
         {
           "name": "AHSHA SAFAÍ",
           "votes": 11944,
-          "percentage": 0.030699999999999998,
+          "percentage": 0.0307,
           "transfer": 98,
           "isEliminated": false,
           "isLeader": false
@@ -831,7 +831,7 @@
         {
           "name": "DYLAN HIRSCH-SHELL",
           "votes": 3185,
-          "percentage": 0.008199999999999999,
+          "percentage": 0.0082,
           "transfer": 440,
           "isEliminated": false,
           "isLeader": false
@@ -928,7 +928,7 @@
         {
           "name": "AARON PESKIN",
           "votes": 89864,
-          "percentage": 0.23079999999999998,
+          "percentage": 0.2308,
           "transfer": 234,
           "isEliminated": false,
           "isLeader": false
@@ -936,7 +936,7 @@
         {
           "name": "MARK FARRELL",
           "votes": 72905,
-          "percentage": 0.18719999999999998,
+          "percentage": 0.1872,
           "transfer": 533,
           "isEliminated": false,
           "isLeader": false
@@ -944,7 +944,7 @@
         {
           "name": "AHSHA SAFAÍ",
           "votes": 12042,
-          "percentage": 0.030899999999999997,
+          "percentage": 0.0309,
           "transfer": 150,
           "isEliminated": false,
           "isLeader": false
@@ -952,7 +952,7 @@
         {
           "name": "ELLEN LEE ZHOU",
           "votes": 9450,
-          "percentage": 0.024300000000000002,
+          "percentage": 0.0243,
           "transfer": 299,
           "isEliminated": false,
           "isLeader": false
@@ -960,7 +960,7 @@
         {
           "name": "DYLAN HIRSCH-SHELL",
           "votes": 3625,
-          "percentage": 0.009300000000000001,
+          "percentage": 0.0093,
           "transfer": 314,
           "isEliminated": false,
           "isLeader": false
@@ -968,7 +968,7 @@
         {
           "name": "KEITH FREEDMAN",
           "votes": 2539,
-          "percentage": 0.006500000000000001,
+          "percentage": 0.0065,
           "transfer": -2539,
           "isEliminated": true,
           "isLeader": false
@@ -1081,7 +1081,7 @@
         {
           "name": "ELLEN LEE ZHOU",
           "votes": 9749,
-          "percentage": 0.025099999999999997,
+          "percentage": 0.0251,
           "transfer": 345,
           "isEliminated": false,
           "isLeader": false
@@ -1170,7 +1170,7 @@
         {
           "name": "DANIEL LURIE",
           "votes": 104455,
-          "percentage": 0.26890000000000003,
+          "percentage": 0.2689,
           "transfer": 2291,
           "isEliminated": false,
           "isLeader": true
@@ -1186,7 +1186,7 @@
         {
           "name": "AARON PESKIN",
           "votes": 90810,
-          "percentage": 0.23379999999999998,
+          "percentage": 0.2338,
           "transfer": 1209,
           "isEliminated": false,
           "isLeader": false
@@ -1210,7 +1210,7 @@
         {
           "name": "ELLEN LEE ZHOU",
           "votes": 10094,
-          "percentage": 0.026000000000000002,
+          "percentage": 0.026,
           "transfer": -10094,
           "isEliminated": true,
           "isLeader": false
@@ -1299,7 +1299,7 @@
         {
           "name": "DANIEL LURIE",
           "votes": 106746,
-          "percentage": 0.27649999999999997,
+          "percentage": 0.2765,
           "transfer": 2616,
           "isEliminated": false,
           "isLeader": true
@@ -1557,7 +1557,7 @@
         {
           "name": "DANIEL LURIE",
           "votes": 150595,
-          "percentage": 0.40840000000000004,
+          "percentage": 0.4084,
           "transfer": 31769,
           "isEliminated": false,
           "isLeader": true
@@ -1565,7 +1565,7 @@
         {
           "name": "LONDON BREED",
           "votes": 113865,
-          "percentage": 0.30879999999999996,
+          "percentage": 0.3088,
           "transfer": 35248,
           "isEliminated": false,
           "isLeader": false

@@ -159,11 +159,29 @@ async function processElection(election: (typeof ELECTIONS)[number]): Promise<El
       writeJSON(join(rcvDir, `${rcvRace.slug}.json`), rcvData)
       rcvCount++
       console.log(`  → RCV ${rcvRace.slug}: ${rcvData.totalRounds} rounds, winner: ${rcvData.winner}`)
+
+      // Fix isWinner: for RCV races, the XML's first-choice plurality leader
+      // may not be the final RCV winner. Cross-reference with round data.
+      if (rcvData.winner && matchingRace) {
+        const race = results.races.find((r) => r.id === raceId)
+        if (race) {
+          const rcvWinnerName = rcvData.winner.toUpperCase()
+          race.candidates.forEach((c) => {
+            c.isWinner = c.name.toUpperCase() === rcvWinnerName
+          })
+        }
+      }
     } catch (err) {
       console.log(`  ✗ RCV parse error for ${rcvRace.slug}: ${(err as Error).message}`)
     }
   }
   console.log(`  → ${rcvCount} RCV contests processed`)
+
+  // Re-write summary.json with corrected RCV winners
+  if (rcvCount > 0) {
+    writeJSON(join(resultDir, 'summary.json'), results)
+    console.log(`  → Re-wrote summary.json with RCV-corrected winners`)
+  }
 
   return results.election
 }
@@ -188,10 +206,12 @@ async function processHistoricalTurnout() {
     const cols = lines[i].split('\t')
     if (cols.length < 4) continue
 
+    // Numbers may be quoted: "500,856" — strip quotes and commas
+    const clean = (s: string) => s.replace(/[",]/g, '').trim()
     const dateStr = cols[0].trim()
-    const registered = parseInt(cols[1].replace(/,/g, ''), 10) || 0
-    const ballotsCast = parseInt(cols[2].replace(/,/g, ''), 10) || 0
-    const turnoutPctStr = cols[3].replace('%', '').trim()
+    const registered = parseInt(clean(cols[1]), 10) || 0
+    const ballotsCast = parseInt(clean(cols[2]), 10) || 0
+    const turnoutPctStr = cols[3].replace(/["%]/g, '').trim()
     const turnoutPct = parseFloat(turnoutPctStr) / 100 || 0
 
     // Parse date like "3/5/2024" → "2024-03-05"

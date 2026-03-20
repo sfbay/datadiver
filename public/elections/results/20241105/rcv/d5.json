@@ -33,7 +33,7 @@
         {
           "name": "AUTUMN HOPE LOOIJEN",
           "votes": 2606,
-          "percentage": 0.08779999999999999,
+          "percentage": 0.0878,
           "transfer": 85,
           "isEliminated": false,
           "isLeader": false
@@ -58,7 +58,7 @@
         {
           "name": "BILAL MAHMOOD",
           "votes": 11896,
-          "percentage": 0.40240000000000004,
+          "percentage": 0.4024,
           "transfer": 864,
           "isEliminated": false,
           "isLeader": true
@@ -66,7 +66,7 @@
         {
           "name": "DEAN PRESTON",
           "votes": 12084,
-          "percentage": 0.40880000000000005,
+          "percentage": 0.4088,
           "transfer": 355,
           "isEliminated": false,
           "isLeader": false
@@ -164,7 +164,7 @@
         {
           "name": "DEAN PRESTON",
           "votes": 13077,
-          "percentage": 0.47009999999999996,
+          "percentage": 0.4701,
           "transfer": 0,
           "isEliminated": false,
           "isLeader": false

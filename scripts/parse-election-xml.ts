@@ -84,7 +84,7 @@ function classifyRace(title: string): RaceMeta['type'] {
   const t = title.toUpperCase()
   if (t.includes('PRESIDENT') || t.includes('UNITED STATES')) return 'federal'
   if (t.includes('STATE') || t.includes('GOVERNOR') || t.includes('ASSEMBLY')) return 'state'
-  if (t.startsWith('PROP') || t.startsWith('MEASURE') || /^[A-Z]\s*[-–]/.test(t)) return 'measure'
+  if (/^PROP(OSITION)?\b/.test(t) || t.startsWith('MEASURE')) return 'measure'
   return 'local'
 }
 

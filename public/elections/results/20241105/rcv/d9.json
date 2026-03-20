@@ -41,7 +41,7 @@
         {
           "name": "JAIME GUTIERREZ",
           "votes": 931,
-          "percentage": 0.028399999999999998,
+          "percentage": 0.0284,
           "transfer": 53,
           "isEliminated": false,
           "isLeader": false
@@ -90,7 +90,7 @@
         {
           "name": "ROBERTO HERNANDEZ",
           "votes": 6653,
-          "percentage": 0.20420000000000002,
+          "percentage": 0.2042,
           "transfer": 91,
           "isEliminated": false,
           "isLeader": false
@@ -155,7 +155,7 @@
         {
           "name": "ROBERTO HERNANDEZ",
           "votes": 6744,
-          "percentage": 0.20829999999999999,
+          "percentage": 0.2083,
           "transfer": 310,
           "isEliminated": false,
           "isLeader": false
@@ -204,7 +204,7 @@
         {
           "name": "JACKIE FIELDER",
           "votes": 14126,
-          "percentage": 0.44049999999999995,
+          "percentage": 0.4405,
           "transfer": 577,
           "isEliminated": false,
           "isLeader": true
@@ -285,7 +285,7 @@
         {
           "name": "ROBERTO HERNANDEZ",
           "votes": 7369,
-          "percentage": 0.23170000000000002,
+          "percentage": 0.2317,
           "transfer": -7369,
           "isEliminated": true,
           "isLeader": false
@@ -342,7 +342,7 @@
         {
           "name": "TREVOR CHANDLER",
           "votes": 11863,
-          "percentage": 0.40340000000000004,
+          "percentage": 0.4034,
           "transfer": 0,
           "isEliminated": false,
           "isLeader": false
