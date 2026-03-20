@@ -394,22 +394,28 @@ function VendorSearchTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
   )
 
   return (
-    <div className="h-full flex overflow-hidden relative">
-      <div className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-4xl space-y-6">
-          {/* Search input */}
-          <div className="glass-card rounded-xl p-4">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search vendors, departments, spending categories…"
-              className="w-full h-10 rounded-lg bg-slate-100/80 dark:bg-white/[0.04] border border-slate-200/50 dark:border-white/[0.06] px-4 text-sm text-ink dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500/50 transition-all font-mono"
-            />
-            {search.isLoading && (
-              <p className="text-[10px] font-mono text-slate-400 mt-2">Searching…</p>
-            )}
-          </div>
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* Search input — always full width at top */}
+      <div className="flex-shrink-0 p-6 pb-0">
+        <div className="glass-card rounded-xl p-4 max-w-4xl">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search vendors, departments, spending categories…"
+            className="w-full h-10 rounded-lg bg-slate-100/80 dark:bg-white/[0.04] border border-slate-200/50 dark:border-white/[0.06] px-4 text-sm text-ink dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500/50 transition-all font-mono"
+          />
+          {search.isLoading && (
+            <p className="text-[10px] font-mono text-slate-400 mt-2">Searching…</p>
+          )}
+        </div>
+      </div>
+
+      {/* Two-column layout: results left, detail right */}
+      <div className="flex-1 flex overflow-hidden">
+        <div className={`overflow-y-auto p-6 pt-4 transition-all duration-300 ${selectedVendor ? 'w-1/2 flex-shrink-0' : 'flex-1'}`}>
+          <div className={selectedVendor ? '' : 'max-w-4xl'}>
+            <div className="space-y-6">
 
           {/* Search results */}
           {showSearch && hasResults && (
@@ -530,11 +536,16 @@ function VendorSearchTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
               </p>
             </div>
           )}
+          </div>
         </div>
-      </div>
 
-      {/* Vendor detail panel */}
-      <VendorDetailPanel vendor={selectedVendor} onClose={() => setSelectedVendor(null)} />
+        {/* Vendor detail — right column when a vendor is selected */}
+        {selectedVendor && (
+          <div className="w-1/2 flex-shrink-0 border-l border-slate-200/50 dark:border-white/[0.04] overflow-y-auto">
+            <VendorDetailPanel vendor={selectedVendor} onClose={() => setSelectedVendor(null)} inline />
+          </div>
+        )}
+      </div>
     </div>
   )
 }

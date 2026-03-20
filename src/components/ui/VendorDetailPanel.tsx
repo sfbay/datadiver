@@ -9,6 +9,8 @@ import type { VendorDepartmentRow } from '@/types/budget'
 interface VendorDetailPanelProps {
   vendor: string | null
   onClose: () => void
+  /** Render as inline content instead of a slide-in overlay */
+  inline?: boolean
 }
 
 interface VendorYearRow {
@@ -24,7 +26,7 @@ interface VendorContractRow {
   total_paid: string
 }
 
-export default function VendorDetailPanel({ vendor, onClose }: VendorDetailPanelProps) {
+export default function VendorDetailPanel({ vendor, onClose, inline }: VendorDetailPanelProps) {
   const [yearData, setYearData] = useState<VendorYearRow[]>([])
   const [deptData, setDeptData] = useState<VendorDepartmentRow[]>([])
   const [contractData, setContractData] = useState<VendorContractRow[]>([])
@@ -91,14 +93,8 @@ export default function VendorDetailPanel({ vendor, onClose }: VendorDetailPanel
     [deptData]
   )
 
-  return (
-    <DetailPanelShell
-      open={vendor !== null}
-      onClose={onClose}
-      isLoading={isLoading}
-      spinnerClass="border-sky-400"
-      widthClass="w-80"
-    >
+  const content = (
+    <>
       {vendor && error && (
         <div className="py-4">
           <p className="text-sm font-medium text-red-400 mb-1">Failed to load</p>
@@ -199,6 +195,39 @@ export default function VendorDetailPanel({ vendor, onClose }: VendorDetailPanel
           )}
         </div>
       )}
+    </>
+  )
+
+  if (inline) {
+    if (!vendor) return null
+    return (
+      <div className="p-5">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60">Vendor Detail</p>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-200 transition-colors" title="Close">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <path d="M3 3l8 8M11 3l-8 8" />
+            </svg>
+          </button>
+        </div>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <span className="w-5 h-5 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : content}
+      </div>
+    )
+  }
+
+  return (
+    <DetailPanelShell
+      open={vendor !== null}
+      onClose={onClose}
+      isLoading={isLoading}
+      spinnerClass="border-sky-400"
+      widthClass="w-80"
+    >
+      {content}
     </DetailPanelShell>
   )
 }
