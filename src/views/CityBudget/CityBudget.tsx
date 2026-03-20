@@ -224,8 +224,22 @@ function BudgetOverview({ fiscalYear }: { fiscalYear: FiscalYear }) {
         {/* Main content */}
         {!totals.isLoading && !totals.error && (
           <div className="max-w-4xl space-y-6">
-            {/* Stat cards */}
-            <CardTray viewId="cityBudget" cards={cards} />
+            {/* Stat cards — inline for chart-centric view (not absolute overlay) */}
+            <div className="flex flex-wrap gap-2.5">
+              {cards.map((card) => (
+                <div key={card.id} className="glass-card rounded-xl px-4 py-3 min-w-[120px]">
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 mb-1.5 whitespace-nowrap">
+                    {card.label}
+                  </p>
+                  <p className="text-2xl font-bold font-mono tracking-tight leading-none" style={{ color: card.color }}>
+                    {card.value}
+                  </p>
+                  {card.subtitle && (
+                    <p className="text-[10px] font-mono text-slate-400 mt-1">{card.subtitle}</p>
+                  )}
+                </div>
+              ))}
+            </div>
 
             {/* Department breakdown chart */}
             <div className="glass-card rounded-xl p-4">

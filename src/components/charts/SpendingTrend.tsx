@@ -90,7 +90,7 @@ export default function SpendingTrend({
     const svg = d3.select(svgRef.current)
     svg.selectAll('*').remove()
 
-    const margin = { top: 12, right: 100, bottom: 28, left: 60 }
+    const margin = { top: 12, right: 140, bottom: 28, left: 60 }
     const w = width - margin.left - margin.right
     const h = height - margin.top - margin.bottom
 
@@ -179,7 +179,7 @@ export default function SpendingTrend({
         .attr('fill', isHighlighted ? (isDarkMode ? '#e2e8f0' : '#334155') : (isDarkMode ? '#475569' : '#94a3b8'))
         .attr('font-size', '8px')
         .attr('font-family', '"JetBrains Mono", monospace')
-        .text(s.department.length > 12 ? s.department.slice(0, 11) + '…' : s.department)
+        .text(s.department.length > 18 ? s.department.slice(0, 17) + '…' : s.department)
         .append('title')
         .text(s.department)
     }
