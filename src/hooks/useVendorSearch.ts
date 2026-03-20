@@ -21,7 +21,7 @@ export function useVendorSearch(query: string, fiscalYear?: FiscalYear): VendorS
   const [categories, setCategories] = useState<SubObjectAggRow[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const timerRef = useRef<ReturnType<typeof setTimeout>>()
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(null)
 
   useEffect(() => {
     if (!query || query.length < 2) {
