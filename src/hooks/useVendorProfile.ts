@@ -76,13 +76,15 @@ export function useVendorProfile(vendor: string | null, fiscalYear?: FiscalYear)
     setError(null)
 
     const escaped = vendor.replace(/'/g, "''")
+    const spending = "revenue_or_spending = 'Spending'"
+    const vendorBase = `vendor = '${escaped}' AND ${spending}`
     const fyClause = fiscalYear ? ` AND fiscal_year = '${fiscalYear}'` : ''
 
     Promise.all([
       // Annual spending history
       fetchDataset<VendorYearRow>('vendorPayments', {
         $select: 'fiscal_year, SUM(vouchers_paid) as total_paid, COUNT(*) as payment_count',
-        $where: `vendor = '${escaped}'`,
+        $where: vendorBase,
         $group: 'fiscal_year',
         $order: 'fiscal_year ASC',
         $limit: 50,
@@ -90,7 +92,7 @@ export function useVendorProfile(vendor: string | null, fiscalYear?: FiscalYear)
       // Department breakdown (current FY or all-time)
       fetchDataset<VendorDeptBreakdown>('vendorPayments', {
         $select: 'department, SUM(vouchers_paid) as total_paid, COUNT(*) as payment_count',
-        $where: `vendor = '${escaped}'${fyClause}`,
+        $where: `${vendorBase}${fyClause}`,
         $group: 'department',
         $order: 'total_paid DESC',
         $limit: 20,
@@ -98,22 +100,25 @@ export function useVendorProfile(vendor: string | null, fiscalYear?: FiscalYear)
       // Category breakdown (character/object hierarchy)
       fetchDataset<VendorCategoryRow>('vendorPayments', {
         $select: 'character, object, SUM(vouchers_paid) as total_paid',
-        $where: `vendor = '${escaped}'${fyClause}`,
+        $where: `${vendorBase}${fyClause}`,
         $group: 'character, object',
         $order: 'total_paid DESC',
         $limit: 20,
       }),
       // Contract inventory from supplierContracts dataset
+      // Use exact match for short names to avoid over-matching (e.g., "SF" matching everything)
       fetchDataset<VendorContractRow>('supplierContracts', {
         $select: 'contract_no, contract_title, department, agreed_amt, pmt_amt, remaining_amt, sole_source_flg, term_end_date',
-        $where: `UPPER(prime_contractor) LIKE '%${escaped.toUpperCase()}%'`,
+        $where: escaped.length >= 6
+          ? `UPPER(prime_contractor) LIKE '%${escaped.toUpperCase()}%'`
+          : `UPPER(prime_contractor) = '${escaped.toUpperCase()}'`,
         $order: 'pmt_amt DESC',
         $limit: 20,
       }),
       // Nonprofit check
       fetchDataset<{ non_profit_indicator: string }>('vendorPayments', {
         $select: 'non_profit_indicator',
-        $where: `vendor = '${escaped}' AND non_profit_indicator = 'Y'`,
+        $where: `vendor = '${escaped}' AND ${spending} AND non_profit_indicator = 'Y'`,
         $limit: 1,
       }),
     ])
@@ -207,7 +212,7 @@ export function useVendorPayments(vendor: string | null) {
 
     fetchDataset<VendorPaymentRow>('vendorPayments', {
       $select: 'fiscal_year, department, sub_object, vouchers_paid, voucher, purchase_order',
-      $where: `vendor = '${escaped}'`,
+      $where: `vendor = '${escaped}' AND revenue_or_spending = 'Spending'`,
       $order: 'fiscal_year DESC, vouchers_paid DESC',
       $limit: PAGE_SIZE,
       $offset: page * PAGE_SIZE,
@@ -255,7 +260,7 @@ export function useVendorMonthlySpend(vendor: string | null) {
 
     fetchDataset<MonthlySpendRow>('vendorPayments', {
       $select: "fiscal_year, date_extract_m(vouchers_paid_distribution_date) as month, SUM(vouchers_paid) as total_paid",
-      $where: `vendor = '${escaped}' AND vouchers_paid_distribution_date IS NOT NULL`,
+      $where: `vendor = '${escaped}' AND revenue_or_spending = 'Spending' AND vouchers_paid_distribution_date IS NOT NULL`,
       $group: 'fiscal_year, month',
       $order: 'fiscal_year ASC, month ASC',
       $limit: 500,

@@ -33,6 +33,7 @@ export function useVendorLandscape(
   const [priorData, setPriorData] = useState<VendorAggRow[]>([])
   const [departments, setDepartments] = useState<DepartmentAggRow[]>([])
   const [categories, setCategories] = useState<CharacterAggRow[]>([])
+  const [totalVendorCount, setTotalVendorCount] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -43,17 +44,19 @@ export function useVendorLandscape(
     setIsLoading(true)
     setError(null)
 
-    // Build filter clauses for vendor queries
-    const clauses: string[] = []
+    // Build filter clauses — always include revenue_or_spending = 'Spending' (matches useBudgetData pattern)
+    const spendingFilter = "revenue_or_spending = 'Spending'"
+    const clauses: string[] = [spendingFilter]
     if (department) clauses.push(`department = '${department.replace(/'/g, "''")}'`)
     if (category) clauses.push(`character = '${category.replace(/'/g, "''")}'`)
-    const filterClause = clauses.length > 0 ? ` AND ${clauses.join(' AND ')}` : ''
+    const vendorWhere = (fy: number) => `fiscal_year = '${fy}' AND ${clauses.join(' AND ')}`
+    const baseWhere = (fy: number) => `fiscal_year = '${fy}' AND ${spendingFilter}`
 
     Promise.all([
       // Current FY vendors
       fetchDataset<VendorAggRow>('vendorPayments', {
         $select: 'vendor, SUM(vouchers_paid) as total_paid, COUNT(*) as payment_count',
-        $where: `fiscal_year = '${fiscalYear}'${filterClause}`,
+        $where: vendorWhere(fiscalYear),
         $group: 'vendor',
         $order: 'total_paid DESC',
         $limit: 500,
@@ -61,7 +64,7 @@ export function useVendorLandscape(
       // Prior FY vendors (for ghost bars + YoY)
       fetchDataset<VendorAggRow>('vendorPayments', {
         $select: 'vendor, SUM(vouchers_paid) as total_paid, COUNT(*) as payment_count',
-        $where: `fiscal_year = '${fiscalYear - 1}'${filterClause}`,
+        $where: vendorWhere(fiscalYear - 1),
         $group: 'vendor',
         $order: 'total_paid DESC',
         $limit: 500,
@@ -69,7 +72,7 @@ export function useVendorLandscape(
       // Department list for filter dropdown (unfiltered by dept/category)
       fetchDataset<DepartmentAggRow>('vendorPayments', {
         $select: 'department, SUM(vouchers_paid) as total',
-        $where: `fiscal_year = '${fiscalYear}'`,
+        $where: baseWhere(fiscalYear),
         $group: 'department',
         $order: 'total DESC',
         $limit: 50,
@@ -77,18 +80,24 @@ export function useVendorLandscape(
       // Category (character) list for filter dropdown
       fetchDataset<CharacterAggRow>('vendorPayments', {
         $select: 'character, SUM(vouchers_paid) as total',
-        $where: `fiscal_year = '${fiscalYear}'`,
+        $where: baseWhere(fiscalYear),
         $group: 'character',
         $order: 'total DESC',
         $limit: 30,
       }),
+      // Total vendor count (for "showing top 500 of N" indicator)
+      fetchDataset<{ count: string }>('vendorPayments', {
+        $select: 'COUNT(DISTINCT vendor) as count',
+        $where: baseWhere(fiscalYear),
+      }),
     ])
-      .then(([current, prior, depts, cats]) => {
+      .then(([current, prior, depts, cats, countResult]) => {
         if (cancelled) return
         setCurrentData(current)
         setPriorData(prior)
         setDepartments(depts)
         setCategories(cats)
+        setTotalVendorCount(countResult[0] ? parseInt(countResult[0].count, 10) : null)
       })
       .catch((err) => {
         if (cancelled) return
@@ -153,6 +162,7 @@ export function useVendorLandscape(
     vendors,
     departments,
     categories,
+    totalVendorCount,
     isLoading,
     error,
   }

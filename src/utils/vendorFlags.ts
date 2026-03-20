@@ -1,7 +1,7 @@
 /** Vendor anomaly flag computation — automated investigative signals */
 
 import type { VendorLandscapeItem } from '@/hooks/useVendorLandscape'
-import type { VendorContractRow } from '@/hooks/useVendorProfile'
+import type { VendorContractRow, MonthlySpendRow } from '@/hooks/useVendorProfile'
 
 // ── Flag types ─────────────────────────────────────────────
 
@@ -23,9 +23,9 @@ export interface FlagThresholds {
   megaThreshold: number
   /** Sole-source payment concentration percentage */
   soleSourcePct: number
-  /** FY-end clustering: % of payments in May-June */
+  /** FY-end clustering: % of payments in May-June per fiscal year */
   fyEndPct: number
-  /** Split purchase thresholds (amounts to check proximity to) */
+  /** Split purchase thresholds (individual payment amounts to check proximity to) */
   splitThresholds: number[]
 }
 
@@ -37,36 +37,49 @@ export const DEFAULT_THRESHOLDS: FlagThresholds = {
   splitThresholds: [10_000, 75_000],
 }
 
+// ── Pre-computed cohort stats (avoids O(n²)) ───────────────
+
+export interface CohortStats {
+  yoyMean: number
+  yoySigma: number
+  sampleSize: number
+}
+
+export function computeCohortStats(allVendors: VendorLandscapeItem[]): CohortStats {
+  const deltas = allVendors
+    .filter((v) => v.yoyDelta !== null && !v.isNew && !v.isDeparted && v.priorTotal > 0)
+    .map((v) => v.yoyDelta!)
+
+  if (deltas.length < 5) return { yoyMean: 0, yoySigma: 0, sampleSize: deltas.length }
+
+  const mean = deltas.reduce((s, d) => s + d, 0) / deltas.length
+  const variance = deltas.reduce((s, d) => s + (d - mean) ** 2, 0) / deltas.length
+  return { yoyMean: mean, yoySigma: Math.sqrt(variance), sampleSize: deltas.length }
+}
+
 // ── Landscape-level flags (computed from VendorLandscapeItem) ──
 
 export function computeLandscapeFlags(
   vendor: VendorLandscapeItem,
-  allVendors: VendorLandscapeItem[],
+  cohort: CohortStats,
   thresholds = DEFAULT_THRESHOLDS,
 ): VendorFlag[] {
   const flags: VendorFlag[] = []
 
   // 1. Spending spike — YoY increase significantly above the cohort norm
-  if (vendor.yoyDelta !== null && vendor.priorTotal > 0 && !vendor.isNew && !vendor.isDeparted) {
-    // Compute mean and σ of YoY deltas across vendors with prior year data
-    const deltas = allVendors
-      .filter((v) => v.yoyDelta !== null && !v.isNew && !v.isDeparted && v.priorTotal > 0)
-      .map((v) => v.yoyDelta!)
-
-    if (deltas.length >= 5) {
-      const mean = deltas.reduce((s, d) => s + d, 0) / deltas.length
-      const variance = deltas.reduce((s, d) => s + (d - mean) ** 2, 0) / deltas.length
-      const sigma = Math.sqrt(variance)
-
-      if (sigma > 0 && vendor.yoyDelta! > mean + thresholds.spikeSigma * sigma) {
-        const sigmaVal = ((vendor.yoyDelta! - mean) / sigma).toFixed(1)
-        flags.push({
-          type: 'spending-spike',
-          label: `${sigmaVal}σ spike`,
-          detail: `YoY increase of ${vendor.yoyDelta!.toFixed(0)}% is ${sigmaVal}σ above the cohort mean`,
-          severity: 'red',
-        })
-      }
+  if (
+    vendor.yoyDelta !== null && vendor.priorTotal > 0 &&
+    !vendor.isNew && !vendor.isDeparted &&
+    cohort.sampleSize >= 5 && cohort.yoySigma > 0
+  ) {
+    if (vendor.yoyDelta > cohort.yoyMean + thresholds.spikeSigma * cohort.yoySigma) {
+      const sigmaVal = ((vendor.yoyDelta - cohort.yoyMean) / cohort.yoySigma).toFixed(1)
+      flags.push({
+        type: 'spending-spike',
+        label: `${sigmaVal}σ spike`,
+        detail: `YoY increase of ${vendor.yoyDelta.toFixed(0)}% is ${sigmaVal}σ above the cohort mean`,
+        severity: 'red',
+      })
     }
   }
 
@@ -137,47 +150,64 @@ export function computeContractFlags(
   return flags
 }
 
-// ── Payment pattern flags (need monthly payment data) ──
+// ── Payment pattern flags (per-FY monthly data) ────────────
 
 export function computePaymentPatternFlags(
-  monthlyTotals: { month: number; total: number }[],
+  monthlyData: MonthlySpendRow[],
+  individualPayments: { vouchers_paid: string }[],
   thresholds = DEFAULT_THRESHOLDS,
 ): VendorFlag[] {
   const flags: VendorFlag[] = []
 
-  if (monthlyTotals.length === 0) return flags
+  // 5. FY-end clustering — check per fiscal year, flag if ANY FY exceeds threshold
+  if (monthlyData.length > 0) {
+    // Group by fiscal year
+    const byFY = new Map<string, { total: number; fyEnd: number }>()
+    for (const r of monthlyData) {
+      const month = parseInt(r.month, 10)
+      const total = parseFloat(r.total_paid) || 0
+      if (!byFY.has(r.fiscal_year)) byFY.set(r.fiscal_year, { total: 0, fyEnd: 0 })
+      const entry = byFY.get(r.fiscal_year)!
+      entry.total += total
+      if (month === 5 || month === 6) entry.fyEnd += total
+    }
 
-  const totalAnnual = monthlyTotals.reduce((s, m) => s + m.total, 0)
-  if (totalAnnual === 0) return flags
-
-  // 5. FY-end clustering — >40% of payments in May-June (months 5,6)
-  const fyEndTotal = monthlyTotals
-    .filter((m) => m.month === 5 || m.month === 6)
-    .reduce((s, m) => s + m.total, 0)
-
-  const fyEndPct = (fyEndTotal / totalAnnual) * 100
-  if (fyEndPct > thresholds.fyEndPct) {
-    flags.push({
-      type: 'fy-end-clustering',
-      label: 'End-of-year clustering',
-      detail: `${fyEndPct.toFixed(0)}% of annual payments concentrated in May-June`,
-      severity: 'amber',
-    })
+    // Check each FY independently
+    let worstFY = ''
+    let worstPct = 0
+    for (const [fy, { total, fyEnd }] of byFY) {
+      if (total === 0) continue
+      const pct = (fyEnd / total) * 100
+      if (pct > worstPct) {
+        worstPct = pct
+        worstFY = fy
+      }
+    }
+    if (worstPct > thresholds.fyEndPct) {
+      flags.push({
+        type: 'fy-end-clustering',
+        label: 'End-of-year clustering',
+        detail: `FY${worstFY}: ${worstPct.toFixed(0)}% of payments in May-June`,
+        severity: 'amber',
+      })
+    }
   }
 
-  // 6. Split purchase pattern — multiple payments just below thresholds
-  for (const threshold of thresholds.splitThresholds) {
-    const lowerBound = threshold * 0.85 // 85-100% of threshold
-    const nearThreshold = monthlyTotals.filter(
-      (m) => m.total >= lowerBound && m.total < threshold,
-    )
-    if (nearThreshold.length >= 3) {
-      flags.push({
-        type: 'split-purchase',
-        label: 'Potential split purchases',
-        detail: `${nearThreshold.length} payments just below ${formatDollar(threshold)} threshold`,
-        severity: 'red',
-      })
+  // 6. Split purchase pattern — check individual payment amounts near thresholds
+  if (individualPayments.length > 0) {
+    const amounts = individualPayments.map((p) => parseFloat(p.vouchers_paid) || 0).filter((a) => a > 0)
+
+    for (const threshold of thresholds.splitThresholds) {
+      const lowerBound = threshold * 0.85 // 85-100% of threshold
+      const nearThreshold = amounts.filter((a) => a >= lowerBound && a < threshold)
+      if (nearThreshold.length >= 3) {
+        flags.push({
+          type: 'split-purchase',
+          label: 'Potential split purchases',
+          detail: `${nearThreshold.length} individual payments between ${formatDollar(lowerBound)} and ${formatDollar(threshold)}`,
+          severity: 'red',
+        })
+      }
     }
   }
 

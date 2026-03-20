@@ -11,7 +11,7 @@ import { useVendorProfile, useVendorPayments, useVendorMonthlySpend, type Vendor
 import { exportToCSV } from '@/utils/csvExport'
 import { Skeleton, SkeletonChart } from '@/components/ui/Skeleton'
 import { formatBudgetAmount, formatBudgetFull, formatFiscalYear } from '@/utils/fiscalYear'
-import { computeContractFlags, type VendorFlag } from '@/utils/vendorFlags'
+import { computeContractFlags, computePaymentPatternFlags, type VendorFlag } from '@/utils/vendorFlags'
 import type { FiscalYear } from '@/types/budget'
 
 const ACCENT = '#0ea5e9'
@@ -32,6 +32,18 @@ export default function VendorProfile({ vendor, fiscalYear, onBack }: VendorProf
   const contractFlags = useMemo(
     () => computeContractFlags(profile.contractData),
     [profile.contractData],
+  )
+
+  // Payment pattern flags (FY-end clustering, split purchases)
+  const patternFlags = useMemo(
+    () => computePaymentPatternFlags(monthlySpend.data, payments.payments),
+    [monthlySpend.data, payments.payments],
+  )
+
+  // All profile flags combined
+  const allProfileFlags = useMemo(
+    () => [...contractFlags, ...patternFlags],
+    [contractFlags, patternFlags],
   )
 
   // CSV export
@@ -88,9 +100,9 @@ export default function VendorProfile({ vendor, fiscalYear, onBack }: VendorProf
             </p>
           )}
           {/* Anomaly flags */}
-          {contractFlags.length > 0 && (
+          {allProfileFlags.length > 0 && (
             <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-              {contractFlags.map((f) => (
+              {allProfileFlags.map((f) => (
                 <span
                   key={`${f.type}-${f.detail.slice(0, 20)}`}
                   className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded"
@@ -290,6 +302,7 @@ function SpendingTimeline({
   data: { fiscal_year: string; total_paid: string; payment_count: string }[]
   currentFY: FiscalYear
 }) {
+  const containerRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const isDarkMode = useAppStore((s) => s.isDarkMode)
 
@@ -301,12 +314,12 @@ function SpendingTimeline({
   )
 
   useEffect(() => {
-    if (!svgRef.current || points.length < 2) return
+    if (!svgRef.current || !containerRef.current || points.length < 2) return
 
     const svg = d3.select(svgRef.current)
     svg.selectAll('*').remove()
 
-    const width = 460
+    const width = containerRef.current.clientWidth || 460
     const height = 180
     const margin = { top: 12, right: 16, bottom: 28, left: 52 }
     const w = width - margin.left - margin.right
@@ -411,7 +424,11 @@ function SpendingTimeline({
     return <p className="text-xs text-slate-400 font-mono py-4">Insufficient data for timeline</p>
   }
 
-  return <svg ref={svgRef} className="w-full" />
+  return (
+    <div ref={containerRef} className="w-full">
+      <svg ref={svgRef} className="w-full" />
+    </div>
+  )
 }
 
 // ── Metric Card ────────────────────────────────────────────

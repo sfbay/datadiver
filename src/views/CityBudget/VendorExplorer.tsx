@@ -11,7 +11,7 @@ import { useVendorLandscape, type VendorLandscapeItem, type VendorLandscapeFilte
 import VendorProfile from '@/views/CityBudget/VendorProfile'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { formatBudgetAmount, formatBudgetFull, formatFiscalYear, getCurrentFiscalYear } from '@/utils/fiscalYear'
-import { computeLandscapeFlags, filterBySensitivity, type VendorFlag } from '@/utils/vendorFlags'
+import { computeLandscapeFlags, computeCohortStats, filterBySensitivity, type VendorFlag } from '@/utils/vendorFlags'
 import type { FiscalYear } from '@/types/budget'
 
 const ACCENT = '#0ea5e9'
@@ -91,10 +91,18 @@ export default function VendorExplorer({ fiscalYear }: { fiscalYear: FiscalYear 
   // The effective FY used for data queries — animated FY overrides URL FY during playback
   const effectiveFY = animatedFY ?? fiscalYear
 
-  // Play/pause interval
+  // Data (must be declared before play effect which depends on landscape.isLoading)
+  const filters: VendorLandscapeFilters = useMemo(() => ({
+    department: deptFilter || undefined,
+    category: categoryFilter || undefined,
+  }), [deptFilter, categoryFilter])
+
+  const landscape = useVendorLandscape(effectiveFY, filters, showDeparted)
+
+  // Play/pause interval — gated on data loading to avoid query storm
   useEffect(() => {
-    if (!isPlaying) return
-    const timer = setInterval(() => {
+    if (!isPlaying || landscape.isLoading) return
+    const timer = setTimeout(() => {
       setAnimatedFY((prev) => {
         const next = (prev ?? MIN_FY) + 1
         if (next > maxFY) {
@@ -104,8 +112,8 @@ export default function VendorExplorer({ fiscalYear }: { fiscalYear: FiscalYear 
         return next
       })
     }, PLAY_INTERVAL_MS)
-    return () => clearInterval(timer)
-  }, [isPlaying, maxFY])
+    return () => clearTimeout(timer)
+  }, [isPlaying, maxFY, landscape.isLoading])
 
   const handlePlay = useCallback(() => {
     setAnimatedFY(MIN_FY)
@@ -126,14 +134,6 @@ export default function VendorExplorer({ fiscalYear }: { fiscalYear: FiscalYear 
     setAnimatedFY(null)
     setIsPlaying(false)
   }, [])
-
-  // Data
-  const filters: VendorLandscapeFilters = useMemo(() => ({
-    department: deptFilter || undefined,
-    category: categoryFilter || undefined,
-  }), [deptFilter, categoryFilter])
-
-  const landscape = useVendorLandscape(effectiveFY, filters, showDeparted)
 
   // Client-side filtering and sorting
   const filtered = useMemo(() => {
@@ -189,16 +189,18 @@ export default function VendorExplorer({ fiscalYear }: { fiscalYear: FiscalYear 
     [setParam],
   )
 
-  // Compute flags for each vendor
+  // Pre-compute cohort stats once (O(n)), then compute per-vendor flags (O(1) each)
+  const cohort = useMemo(() => computeCohortStats(filtered), [filtered])
+
   const vendorFlags = useMemo(() => {
     const flagMap = new Map<string, VendorFlag[]>()
     for (const v of filtered) {
-      const raw = computeLandscapeFlags(v, filtered)
+      const raw = computeLandscapeFlags(v, cohort)
       const visible = filterBySensitivity(raw, sensitivity)
       if (visible.length > 0) flagMap.set(v.vendor, visible)
     }
     return flagMap
-  }, [filtered, sensitivity])
+  }, [filtered, cohort, sensitivity])
 
   // Track which vendors are new (for entrance animation)
   const newVendorSet = useMemo(() => {
@@ -409,7 +411,11 @@ export default function VendorExplorer({ fiscalYear }: { fiscalYear: FiscalYear 
 
             {/* Footer stats */}
             <div className="py-3 text-[10px] font-mono text-slate-400/60 dark:text-slate-500/60">
-              Showing {filtered.length} vendor{filtered.length !== 1 ? 's' : ''} · {formatBudgetFull(totalFilteredSpend)} total
+              Showing {filtered.length === 500 ? 'top 500' : filtered.length} vendor{filtered.length !== 1 ? 's' : ''}
+              {landscape.totalVendorCount !== null && landscape.totalVendorCount > filtered.length && (
+                <> of {landscape.totalVendorCount.toLocaleString()}</>
+              )}
+              {' '}· {formatBudgetFull(totalFilteredSpend)} total
             </div>
 
             {/* Source attribution */}
