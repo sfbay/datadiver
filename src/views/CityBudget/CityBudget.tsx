@@ -674,7 +674,21 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
           <div className="max-w-4xl space-y-6">
             {/* Cards + CSV button */}
             <div className="flex items-start justify-between">
-              <CardTray viewId="cityBudgetAd" cards={cards} />
+              <div className="flex flex-wrap gap-2.5">
+                {cards.map((card) => (
+                  <div key={card.id} className="glass-card rounded-xl px-4 py-3 min-w-[120px]">
+                    <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 mb-1.5 whitespace-nowrap">
+                      {card.label}
+                    </p>
+                    <p className="text-2xl font-bold font-mono tracking-tight leading-none" style={{ color: card.color }}>
+                      {card.value}
+                    </p>
+                    {card.subtitle && (
+                      <p className="text-[10px] font-mono text-slate-400 mt-1">{card.subtitle}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
               <button
                 onClick={handleExportCSV}
                 className="flex-shrink-0 ml-4 mt-1 flex items-center gap-1.5 text-[10px] font-mono text-slate-400 hover:text-ink dark:hover:text-white bg-slate-100/80 dark:bg-white/[0.04] rounded-md px-2.5 py-1.5 transition-colors"
