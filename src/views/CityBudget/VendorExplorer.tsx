@@ -8,7 +8,7 @@
 import { useMemo, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useVendorLandscape, type VendorLandscapeItem, type VendorLandscapeFilters } from '@/hooks/useVendorLandscape'
-import VendorDetailPanel from '@/components/ui/VendorDetailPanel'
+import VendorProfile from '@/views/CityBudget/VendorProfile'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { formatBudgetAmount, formatBudgetFull } from '@/utils/fiscalYear'
 import type { FiscalYear } from '@/types/budget'
@@ -134,22 +134,14 @@ export default function VendorExplorer({ fiscalYear }: { fiscalYear: FiscalYear 
     return computeScaleCap(allValues)
   }, [filtered])
 
-  // ── Level 2: Vendor Profile (placeholder — Phase 2 replaces this) ──
+  // ── Level 2: Vendor Profile ──────────────────────────────────
   if (selectedVendor) {
     return (
-      <div className="h-full flex flex-col overflow-hidden">
-        <div className="flex-shrink-0 px-6 py-3 border-b border-slate-200/50 dark:border-white/[0.04]">
-          <button
-            onClick={() => selectVendor(null)}
-            className="text-xs font-mono text-slate-400 hover:text-ink dark:hover:text-white transition-colors"
-          >
-            ← Back to vendor list
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          <VendorDetailPanel vendor={selectedVendor} onClose={() => selectVendor(null)} inline />
-        </div>
-      </div>
+      <VendorProfile
+        vendor={selectedVendor}
+        fiscalYear={fiscalYear}
+        onBack={() => selectVendor(null)}
+      />
     )
   }
 
