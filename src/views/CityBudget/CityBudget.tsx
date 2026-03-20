@@ -739,9 +739,11 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
               </p>
               <HorizontalBarChart
                 data={vendorBars}
-                width={600}
-                height={Math.min(vendorBars.length * 22 + 10, 500)}
-                maxBars={20}
+                width={700}
+                height={Math.min(vendorBars.length * 22 + 10, 550)}
+                maxBars={25}
+                labelWidth={200}
+                capPercentile={85}
                 valueFormatter={(v) => formatBudgetAmount(v)}
               />
             </div>

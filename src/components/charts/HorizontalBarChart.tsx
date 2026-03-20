@@ -14,6 +14,10 @@ interface HorizontalBarChartProps {
   height?: number
   maxBars?: number
   valueFormatter?: (v: number) => string
+  /** Left margin in px — wider for long labels (default 150) */
+  labelWidth?: number
+  /** Cap outlier bars at this percentile to prevent scale compression (0 = off) */
+  capPercentile?: number
 }
 
 export default function HorizontalBarChart({
@@ -22,6 +26,8 @@ export default function HorizontalBarChart({
   height = 200,
   maxBars = 10,
   valueFormatter = (v) => String(v),
+  labelWidth = 150,
+  capPercentile = 0,
 }: HorizontalBarChartProps) {
   const svgRef = useRef<SVGSVGElement>(null)
   const isDarkMode = useAppStore((s) => s.isDarkMode)
@@ -33,7 +39,7 @@ export default function HorizontalBarChart({
     svg.selectAll('*').remove()
 
     const sliced = data.slice(0, maxBars)
-    const margin = { top: 4, right: 40, bottom: 4, left: 150 }
+    const margin = { top: 4, right: 40, bottom: 4, left: labelWidth }
     const w = width - margin.left - margin.right
     const h = height - margin.top - margin.bottom
     const barHeight = Math.min(h / sliced.length - 2, 18)
@@ -44,17 +50,28 @@ export default function HorizontalBarChart({
       .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`)
 
-    const maxVal = d3.max(sliced, (d) => d.value) || 1
-    const x = d3.scaleLinear().domain([0, maxVal]).range([0, w])
+    const rawMax = d3.max(sliced, (d) => d.value) || 1
+    // Cap the scale if an outlier compresses other bars
+    let scaleCap = rawMax
+    if (capPercentile > 0 && sliced.length >= 3) {
+      const sorted = [...sliced].sort((a, b) => a.value - b.value)
+      const idx = Math.floor(sorted.length * capPercentile / 100)
+      const pVal = sorted[Math.min(idx, sorted.length - 1)].value
+      if (pVal > 0 && rawMax > pVal * 2) {
+        scaleCap = pVal * 1.3 // cap at 130% of the percentile value
+      }
+    }
+    const x = d3.scaleLinear().domain([0, scaleCap]).range([0, w])
     const y = d3.scaleBand()
       .domain(sliced.map((d) => d.label))
       .range([0, sliced.length * (barHeight + 2)])
       .padding(0.1)
 
-    // Bars
-    g.selectAll('rect')
+    // Bars — capped bars get a diagonal break pattern at the end
+    g.selectAll('.bar')
       .data(sliced)
       .join('rect')
+      .attr('class', 'bar')
       .attr('x', 0)
       .attr('y', (d) => y(d.label) ?? 0)
       .attr('width', 0)
@@ -66,7 +83,25 @@ export default function HorizontalBarChart({
       .duration(500)
       .delay((_, i) => i * 30)
       .ease(d3.easeCubicOut)
-      .attr('width', (d) => x(d.value))
+      .attr('width', (d) => Math.min(x(d.value), w))
+
+    // Break indicator for capped bars (diagonal hash marks)
+    if (scaleCap < rawMax) {
+      sliced.filter((d) => d.value > scaleCap).forEach((d) => {
+        const yPos = (y(d.label) ?? 0)
+        const breakX = w - 3
+        g.append('line')
+          .attr('x1', breakX).attr('y1', yPos + 2)
+          .attr('x2', breakX + 4).attr('y2', yPos + barHeight - 2)
+          .attr('stroke', isDarkMode ? '#0f172a' : '#fff')
+          .attr('stroke-width', 2)
+        g.append('line')
+          .attr('x1', breakX - 3).attr('y1', yPos + 2)
+          .attr('x2', breakX + 1).attr('y2', yPos + barHeight - 2)
+          .attr('stroke', isDarkMode ? '#0f172a' : '#fff')
+          .attr('stroke-width', 2)
+      })
+    }
 
     const labelColor = isDarkMode ? '#94a3b8' : '#64748b'
     const valueColor = isDarkMode ? '#cbd5e1' : '#334155'
