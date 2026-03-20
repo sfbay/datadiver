@@ -19,6 +19,7 @@ import ElectionTimeline from '@/components/filters/ElectionTimeline'
 import { useElectionTimeline } from '@/hooks/useElectionTimeline'
 import BallotMeasureExplorer from '@/components/charts/BallotMeasureExplorer'
 import { useBallotPropositions } from '@/hooks/useElectionResults'
+import { toSentenceCase } from '@/utils/format'
 
 type MapMode = 'results' | 'turnout' | 'margin'
 type SidebarTab = 'races' | 'neighborhoods' | 'measures'
@@ -190,7 +191,7 @@ export default function Elections() {
           ...f.properties,
           fillColor,
           fillOpacity,
-          winnerName: winner?.name || 'TBD',
+          winnerName: winner ? toSentenceCase(winner.name) : 'TBD',
           margin: cityMargin,
           turnoutPct: cityTurnout,
           district,
@@ -314,7 +315,7 @@ export default function Elections() {
         id: 'winner',
         label: 'Winner',
         shortLabel: 'Winner',
-        value: winner ? winner.name.split(' ').pop() || winner.name : 'TBD',
+        value: winner ? toSentenceCase(winner.name.split(' ').pop() || winner.name) : 'TBD',
         color: winner ? candidateColors.get(winner.name) || ACCENT : ACCENT,
         defaultExpanded: true,
         subtitle: winner ? `${(winner.percentage * 100).toFixed(1)}%` : undefined,
@@ -600,7 +601,7 @@ export default function Elections() {
                         style={{ backgroundColor: candidateColors.get(c.name) || '#64748b' }}
                       />
                       <span className="text-[10px] text-slate-400 truncate max-w-[120px]">
-                        {c.name.split(',')[0]}
+                        {toSentenceCase(c.name.split(',')[0])}
                       </span>
                       <span className="text-[10px] font-mono text-slate-500 ml-auto">
                         {(c.percentage * 100).toFixed(1)}%
@@ -686,7 +687,7 @@ export default function Elections() {
                                 style={{ backgroundColor: candidateColors.get(winner.name) || '#64748b' }}
                               />
                               <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                                {winner.name}
+                                {toSentenceCase(winner.name)}
                               </p>
                               <span className="text-xs font-mono text-slate-400 ml-auto">
                                 {(winner.percentage * 100).toFixed(1)}%
@@ -917,7 +918,7 @@ function NeighborhoodElectionPanel({
                       style={{ backgroundColor: candidateColors.get(c.name) || '#64748b' }}
                     />
                     <span className={`text-[10px] truncate flex-1 ${c.isWinner ? 'text-white font-semibold' : 'text-slate-400'}`}>
-                      {c.name}
+                      {toSentenceCase(c.name)}
                     </span>
                     <span className="text-[10px] font-mono text-slate-500">
                       {(c.percentage * 100).toFixed(1)}%
