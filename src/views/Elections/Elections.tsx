@@ -14,6 +14,7 @@ import { SkeletonStatCards, SkeletonSidebarRows } from '@/components/ui/Skeleton
 import { ACCENT, buildCandidateColorMap, turnoutColor } from '@/utils/electionColors'
 import type { Race, Candidate } from '@/types/elections'
 import RCVRoundChart from '@/components/charts/RCVRoundChart'
+import RCVSankey from '@/components/charts/RCVSankey'
 
 type MapMode = 'results' | 'turnout' | 'margin'
 type SidebarTab = 'races' | 'neighborhoods'
@@ -29,6 +30,9 @@ export default function Elections() {
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('races')
   const [raceFilter, setRaceFilter] = useState<RaceFilter>('all')
   const mapHandleRef = useRef<MapHandle>(null)
+
+  const [rcvViewMode, setRcvViewMode] = useState<'rounds' | 'sankey'>('rounds')
+  const [rcvActiveRound, setRcvActiveRound] = useState<number | undefined>(undefined)
 
   const mapMode = (searchParams.get('map_mode') as MapMode) || 'results'
 
@@ -445,23 +449,58 @@ export default function Elections() {
               <CardTray viewId="elections" cards={cardDefs} />
             )}
 
-            {/* RCV chart overlay — bottom-left when an RCV race is selected */}
+            {/* RCV visualization panel — bottom-left when an RCV race is selected */}
             {!isLoading && activeRace?.isRCV && rcvData && (
-              <div className="absolute bottom-6 left-5 z-10 glass-card rounded-xl p-4 max-w-md">
+              <div className="absolute bottom-6 left-5 z-10 glass-card rounded-xl p-4" style={{ maxWidth: rcvViewMode === 'sankey' ? 620 : 420 }}>
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
                     RCV
                   </span>
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
+                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 flex-1">
                     {rcvData.totalRounds} Rounds &middot; Winner: {rcvData.winner.split(' ').pop()}
                   </p>
+                  {/* View toggle */}
+                  <div className="flex items-center gap-0.5 bg-slate-800/60 rounded-md p-0.5">
+                    <button
+                      onClick={() => setRcvViewMode('rounds')}
+                      className={`px-2 py-0.5 rounded text-[9px] font-mono transition-all ${
+                        rcvViewMode === 'rounds'
+                          ? 'bg-indigo-500/20 text-indigo-400'
+                          : 'text-slate-500 hover:text-slate-300'
+                      }`}
+                    >
+                      Rounds
+                    </button>
+                    <button
+                      onClick={() => setRcvViewMode('sankey')}
+                      className={`px-2 py-0.5 rounded text-[9px] font-mono transition-all ${
+                        rcvViewMode === 'sankey'
+                          ? 'bg-indigo-500/20 text-indigo-400'
+                          : 'text-slate-500 hover:text-slate-300'
+                      }`}
+                    >
+                      Flow
+                    </button>
+                  </div>
                 </div>
-                <RCVRoundChart
-                  rcvData={rcvData}
-                  candidateColors={candidateColors}
-                  width={380}
-                  height={180}
-                />
+
+                {rcvViewMode === 'rounds' ? (
+                  <RCVRoundChart
+                    rcvData={rcvData}
+                    candidateColors={candidateColors}
+                    width={400}
+                    height={220}
+                    currentRound={rcvActiveRound}
+                    onRoundChange={setRcvActiveRound}
+                  />
+                ) : (
+                  <RCVSankey
+                    rcvData={rcvData}
+                    candidateColors={candidateColors}
+                    width={600}
+                    height={300}
+                  />
+                )}
               </div>
             )}
 

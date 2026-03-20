@@ -1,0 +1,310 @@
+/**
+ * RCV Sankey Diagram — Vote transfer flow visualization
+ *
+ * Shows how votes flow from eliminated candidates to remaining ones
+ * across RCV rounds. Since the raw data only has per-candidate totals
+ * per round (not source→destination mappings), we infer transfers:
+ * when a candidate is eliminated, their lost votes are distributed
+ * proportionally among candidates who gained votes that round.
+ */
+import { useMemo, useState } from 'react'
+import type { RCVContest, RCVRound } from '@/types/elections'
+
+interface RCVSankeyProps {
+  rcvData: RCVContest
+  candidateColors: Map<string, string>
+  width?: number
+  height?: number
+}
+
+interface SankeyNode {
+  name: string
+  round: number
+  x: number
+  y: number
+  height: number
+  color: string
+  votes: number
+  eliminated: boolean
+}
+
+interface SankeyLink {
+  source: SankeyNode
+  target: SankeyNode
+  value: number
+  color: string
+}
+
+export default function RCVSankey({
+  rcvData,
+  candidateColors,
+  width = 600,
+  height = 400,
+}: RCVSankeyProps) {
+  const [hoveredCandidate, setHoveredCandidate] = useState<string | null>(null)
+
+  const { nodes, links, roundLabels } = useMemo(() => {
+    const rounds = rcvData.rounds
+    if (rounds.length < 2) return { nodes: [], links: [], roundLabels: [] }
+
+    // Only show rounds where something meaningful happens (elimination)
+    // Limit to 8 rounds max for readability
+    const significantRounds: number[] = [0]
+    for (let i = 1; i < rounds.length; i++) {
+      const hasElimination = rounds[i].candidates.some((c) => c.isEliminated)
+      if (hasElimination || i === rounds.length - 1) {
+        significantRounds.push(i)
+      }
+    }
+    const displayRounds = significantRounds.slice(0, 8)
+
+    const padding = { top: 20, bottom: 20, left: 10, right: 10 }
+    const colWidth = (width - padding.left - padding.right) / displayRounds.length
+    const nodeWidth = 12
+    const nodeGap = 4
+    const maxVotes = Math.max(...rounds[0].candidates.map((c) => c.votes))
+
+    // Build active candidates per display round (exclude eliminated with 0 votes)
+    const activePerRound = displayRounds.map((ri) => {
+      return rounds[ri].candidates
+        .filter((c) => c.votes > 0 || c.isEliminated)
+        .sort((a, b) => b.votes - a.votes)
+    })
+
+    // Create nodes
+    const allNodes: SankeyNode[] = []
+    const nodeMap = new Map<string, SankeyNode>() // key: "name|roundIdx"
+
+    for (let di = 0; di < displayRounds.length; di++) {
+      const candidates = activePerRound[di]
+      const totalHeight = height - padding.top - padding.bottom
+      const totalVotesInRound = candidates.reduce((s, c) => s + c.votes, 0)
+      let yOffset = padding.top
+
+      for (const c of candidates) {
+        const nodeH = Math.max((c.votes / totalVotesInRound) * totalHeight - nodeGap, 2)
+        const node: SankeyNode = {
+          name: c.name,
+          round: di,
+          x: padding.left + di * colWidth,
+          y: yOffset,
+          height: nodeH,
+          color: candidateColors.get(c.name) || '#64748b',
+          votes: c.votes,
+          eliminated: c.isEliminated,
+        }
+        allNodes.push(node)
+        nodeMap.set(`${c.name}|${di}`, node)
+        yOffset += nodeH + nodeGap
+      }
+    }
+
+    // Add exhausted ballot node at each round
+    for (let di = 0; di < displayRounds.length; di++) {
+      const ri = displayRounds[di]
+      const exhausted = rounds[ri].exhausted
+      if (exhausted > 0) {
+        const totalVotesInRound = activePerRound[di].reduce((s, c) => s + c.votes, 0) + exhausted
+        const totalHeight = height - padding.top - padding.bottom
+        const nodeH = Math.max((exhausted / totalVotesInRound) * totalHeight - nodeGap, 2)
+        const node: SankeyNode = {
+          name: '__exhausted__',
+          round: di,
+          x: padding.left + di * colWidth,
+          y: height - padding.bottom - nodeH,
+          height: nodeH,
+          color: '#475569',
+          votes: exhausted,
+          eliminated: false,
+        }
+        allNodes.push(node)
+        nodeMap.set(`__exhausted__|${di}`, node)
+      }
+    }
+
+    // Create links between consecutive display rounds
+    const allLinks: SankeyLink[] = []
+
+    for (let di = 0; di < displayRounds.length - 1; di++) {
+      const currRoundIdx = displayRounds[di]
+      const nextRoundIdx = displayRounds[di + 1]
+      const currCandidates = rounds[currRoundIdx].candidates
+      const nextCandidates = rounds[nextRoundIdx].candidates
+
+      for (const curr of currCandidates) {
+        const sourceNode = nodeMap.get(`${curr.name}|${di}`)
+        if (!sourceNode || sourceNode.votes === 0) continue
+
+        // Find this candidate in the next round
+        const next = nextCandidates.find((c) => c.name === curr.name)
+
+        if (next && next.votes > 0) {
+          // Candidate continues: link from curr to next
+          const targetNode = nodeMap.get(`${curr.name}|${di + 1}`)
+          if (targetNode) {
+            allLinks.push({
+              source: sourceNode,
+              target: targetNode,
+              value: Math.min(curr.votes, next.votes),
+              color: sourceNode.color,
+            })
+          }
+        } else {
+          // Candidate eliminated or has 0 votes — distribute to gainers
+          const gainers = nextCandidates
+            .filter((c) => {
+              const prevC = currCandidates.find((cc) => cc.name === c.name)
+              return prevC && c.votes > prevC.votes
+            })
+          const totalGain = gainers.reduce((s, c) => {
+            const prevC = currCandidates.find((cc) => cc.name === c.name)
+            return s + (c.votes - (prevC?.votes || 0))
+          }, 0)
+
+          for (const gainer of gainers) {
+            const prevC = currCandidates.find((cc) => cc.name === gainer.name)
+            const gain = gainer.votes - (prevC?.votes || 0)
+            const proportion = totalGain > 0 ? gain / totalGain : 0
+            const transferAmount = Math.round(curr.votes * proportion)
+
+            if (transferAmount > 0) {
+              const targetNode = nodeMap.get(`${gainer.name}|${di + 1}`)
+              if (targetNode) {
+                allLinks.push({
+                  source: sourceNode,
+                  target: targetNode,
+                  value: transferAmount,
+                  color: sourceNode.color,
+                })
+              }
+            }
+          }
+
+          // Exhausted portion
+          const exhaustedNode = nodeMap.get(`__exhausted__|${di + 1}`)
+          const totalTransferred = allLinks
+            .filter((l) => l.source === sourceNode)
+            .reduce((s, l) => s + l.value, 0)
+          const exhaustedAmount = curr.votes - totalTransferred
+          if (exhaustedAmount > 0 && exhaustedNode) {
+            allLinks.push({
+              source: sourceNode,
+              target: exhaustedNode,
+              value: exhaustedAmount,
+              color: '#475569',
+            })
+          }
+        }
+      }
+    }
+
+    const labels = displayRounds.map((ri) => `R${ri + 1}`)
+
+    return { nodes: allNodes, links: allLinks, roundLabels: labels }
+  }, [rcvData, candidateColors, width, height])
+
+  if (nodes.length === 0) {
+    return <p className="text-[10px] text-slate-500 font-mono">No RCV rounds to visualize</p>
+  }
+
+  // Build SVG path for Sankey links (cubic bezier)
+  const linkPath = (link: SankeyLink): string => {
+    const x0 = link.source.x + 12
+    const y0 = link.source.y + link.source.height / 2
+    const x1 = link.target.x
+    const y1 = link.target.y + link.target.height / 2
+    const mx = (x0 + x1) / 2
+    return `M${x0},${y0} C${mx},${y0} ${mx},${y1} ${x1},${y1}`
+  }
+
+  return (
+    <div className="relative" style={{ width }}>
+      <svg width={width} height={height}>
+        {/* Links */}
+        {links.map((link, i) => {
+          const isHovered = hoveredCandidate === link.source.name || hoveredCandidate === link.target.name
+          const opacity = hoveredCandidate
+            ? isHovered ? 0.5 : 0.05
+            : 0.25
+          return (
+            <path
+              key={i}
+              d={linkPath(link)}
+              fill="none"
+              stroke={link.color}
+              strokeWidth={Math.max(link.value / 5000, 1)}
+              strokeOpacity={opacity}
+              style={{ transition: 'stroke-opacity 0.2s' }}
+            />
+          )
+        })}
+
+        {/* Nodes */}
+        {nodes.map((node, i) => {
+          const isHovered = hoveredCandidate === node.name
+          const dimmed = hoveredCandidate && !isHovered
+          return (
+            <g
+              key={i}
+              onMouseEnter={() => node.name !== '__exhausted__' && setHoveredCandidate(node.name)}
+              onMouseLeave={() => setHoveredCandidate(null)}
+              style={{ cursor: node.name !== '__exhausted__' ? 'pointer' : 'default' }}
+            >
+              <rect
+                x={node.x}
+                y={node.y}
+                width={12}
+                height={node.height}
+                rx={2}
+                fill={node.color}
+                opacity={dimmed ? 0.2 : node.eliminated ? 0.4 : 0.9}
+                style={{ transition: 'opacity 0.2s' }}
+              />
+              {/* Label on first round */}
+              {node.round === 0 && node.name !== '__exhausted__' && node.height > 12 && (
+                <text
+                  x={node.x - 4}
+                  y={node.y + node.height / 2}
+                  textAnchor="end"
+                  fill={dimmed ? '#334155' : '#94a3b8'}
+                  fontSize={9}
+                  fontFamily="Inter, system-ui, sans-serif"
+                  dominantBaseline="middle"
+                  style={{ transition: 'fill 0.2s' }}
+                >
+                  {node.name.length > 12 ? node.name.split(' ').pop() : node.name}
+                </text>
+              )}
+            </g>
+          )
+        })}
+
+        {/* Round labels */}
+        {roundLabels.map((label, i) => {
+          const colWidth = (width - 20) / roundLabels.length
+          return (
+            <text
+              key={label}
+              x={10 + i * colWidth + 6}
+              y={12}
+              fill="#64748b"
+              fontSize={9}
+              fontFamily="JetBrains Mono, monospace"
+            >
+              {label}
+            </text>
+          )
+        })}
+      </svg>
+
+      {/* Hovered candidate info */}
+      {hoveredCandidate && (
+        <div className="absolute top-2 right-2 glass-card rounded-lg px-3 py-2 text-[10px] font-mono">
+          <span style={{ color: candidateColors.get(hoveredCandidate) || '#94a3b8' }}>
+            {hoveredCandidate}
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
