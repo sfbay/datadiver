@@ -7,10 +7,12 @@ import DepartmentBars from '@/components/charts/DepartmentBars'
 import SpendingTrend from '@/components/charts/SpendingTrend'
 import HorizontalBarChart, { type BarDatum } from '@/components/charts/HorizontalBarChart'
 import VendorExplorer from '@/views/CityBudget/VendorExplorer'
+import VendorProfile from '@/views/CityBudget/VendorProfile'
 import { useBudgetVsActual, useBudgetTotals, useSpendingTrend, useDepartmentSpending } from '@/hooks/useBudgetData'
-import { useAdvertisingData } from '@/hooks/useAdvertisingData'
+import { useAdvertisingData, type AdVendorRow } from '@/hooks/useAdvertisingData'
 import { MEDIA_CATEGORIES, type MediaCategory } from '@/utils/mediaClassification'
 import { exportToCSV } from '@/utils/csvExport'
+import { toSentenceCase } from '@/utils/format'
 import { getCurrentFiscalYear, formatFiscalYear, formatBudgetAmount } from '@/utils/fiscalYear'
 import type { FiscalYear } from '@/types/budget'
 
@@ -369,13 +371,122 @@ function BudgetOverview({ fiscalYear }: { fiscalYear: FiscalYear }) {
 
 // ── Advertising & Media Tracker Tab ─────────────────────────
 
+/** Drill-down state encoded in URL search params */
+interface AdDrilldown {
+  category: MediaCategory | null  // adCategory param
+  dept: string | null             // adDept param
+  vendor: string | null           // adVendor param
+}
+
 function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
+  const [searchParams, setSearchParams] = useSearchParams()
   const ad = useAdvertisingData(fiscalYear)
 
-  // Media mix: aggregate by category
+  // ── Drill-down state from URL ────────────────────────────
+  const drilldown = useMemo((): AdDrilldown => ({
+    category: (searchParams.get('adCategory') as MediaCategory) || null,
+    dept: searchParams.get('adDept') || null,
+    vendor: searchParams.get('adVendor') || null,
+  }), [searchParams])
+
+  const isDrilledDown = drilldown.category !== null || drilldown.dept !== null
+
+  // ── Navigation helpers ───────────────────────────────────
+  const navigateToCategory = useCallback((cat: MediaCategory) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('adCategory', cat)
+      next.delete('adDept')
+      next.delete('adVendor')
+      return next
+    }, { replace: false })
+  }, [setSearchParams])
+
+  const navigateToDept = useCallback((dept: string) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('adDept', dept)
+      next.delete('adCategory')
+      next.delete('adVendor')
+      return next
+    }, { replace: false })
+  }, [setSearchParams])
+
+  const navigateToVendor = useCallback((vendor: string) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('adVendor', vendor)
+      return next
+    }, { replace: false })
+  }, [setSearchParams])
+
+  const navigateToRoot = useCallback(() => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('adCategory')
+      next.delete('adDept')
+      next.delete('adVendor')
+      return next
+    }, { replace: false })
+  }, [setSearchParams])
+
+  const navigateUp = useCallback(() => {
+    if (drilldown.vendor) {
+      // Pop vendor, keep category/dept
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete('adVendor')
+        return next
+      }, { replace: false })
+    } else {
+      navigateToRoot()
+    }
+  }, [drilldown.vendor, setSearchParams, navigateToRoot])
+
+  // ── Filtered vendor data ─────────────────────────────────
+  const filteredVendors = useMemo(() => {
+    let filtered = ad.vendors
+    if (drilldown.category) {
+      filtered = filtered.filter((v) => v.category === drilldown.category)
+    }
+    if (drilldown.dept) {
+      filtered = filtered.filter((v) => v.department === drilldown.dept)
+    }
+    return filtered
+  }, [ad.vendors, drilldown.category, drilldown.dept])
+
+  // Aggregate filtered vendors by vendor name (across departments)
+  const aggregatedVendors = useMemo(() => {
+    const map = new Map<string, { total: number; category: MediaCategory; departments: Set<string>; payments: number }>()
+    for (const v of filteredVendors) {
+      const amt = parseFloat(v.total_paid) || 0
+      const entry = map.get(v.vendor) || { total: 0, category: v.category, departments: new Set<string>(), payments: 0 }
+      entry.total += amt
+      entry.departments.add(v.department)
+      entry.payments += parseInt(v.payment_count, 10) || 0
+      map.set(v.vendor, entry)
+    }
+    return [...map.entries()]
+      .map(([name, { total, category, departments, payments }]) => ({
+        vendor: name,
+        total,
+        category,
+        departments: [...departments],
+        payments,
+      }))
+      .sort((a, b) => b.total - a.total)
+  }, [filteredVendors])
+
+  const filteredTotal = useMemo(
+    () => filteredVendors.reduce((s, v) => s + (parseFloat(v.total_paid) || 0), 0),
+    [filteredVendors]
+  )
+
+  // ── Top-level aggregations (unchanged from original) ─────
   const mediaMix = useMemo(() => {
+    const source = drilldown.dept ? filteredVendors : ad.vendors
     const catMap = new Map<MediaCategory, number>()
-    for (const v of ad.vendors) {
+    for (const v of source) {
       const amt = parseFloat(v.total_paid) || 0
       catMap.set(v.category, (catMap.get(v.category) || 0) + amt)
     }
@@ -387,11 +498,9 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
         color: MEDIA_CATEGORIES[cat].color,
       }))
       .sort((a, b) => b.total - a.total)
-  }, [ad.vendors])
+  }, [ad.vendors, filteredVendors, drilldown.dept])
 
-  // Vendor breakdown bars
   const vendorBars = useMemo((): BarDatum[] => {
-    // Aggregate by vendor (across departments)
     const vendorMap = new Map<string, { total: number; category: MediaCategory }>()
     for (const v of ad.vendors) {
       const amt = parseFloat(v.total_paid) || 0
@@ -409,9 +518,70 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
       }))
   }, [ad.vendors])
 
-  // Cards
+  // Cards — adapt to drill-down context
   const cards = useMemo((): CardDef[] => {
     if (ad.isLoading) return []
+
+    if (drilldown.category) {
+      const catInfo = MEDIA_CATEGORIES[drilldown.category]
+      return [
+        {
+          id: 'cat-total',
+          label: `${catInfo.label} Spend`,
+          shortLabel: 'Total',
+          value: formatBudgetAmount(filteredTotal),
+          color: catInfo.color,
+          defaultExpanded: true,
+        },
+        {
+          id: 'cat-vendors',
+          label: 'Vendors',
+          shortLabel: 'Vendors',
+          value: String(aggregatedVendors.length),
+          color: '#f59e0b',
+          defaultExpanded: true,
+        },
+        {
+          id: 'cat-pct',
+          label: '% of Ad Spend',
+          shortLabel: 'Share',
+          value: ad.totalAdSpend > 0 ? `${((filteredTotal / ad.totalAdSpend) * 100).toFixed(1)}%` : '—',
+          color: '#a78bfa',
+          defaultExpanded: true,
+        },
+      ]
+    }
+
+    if (drilldown.dept) {
+      const deptInfo = ad.departments.find((d) => d.department === drilldown.dept)
+      return [
+        {
+          id: 'dept-total',
+          label: 'Dept Ad Spend',
+          shortLabel: 'Total',
+          value: formatBudgetAmount(filteredTotal),
+          color: ACCENT,
+          defaultExpanded: true,
+        },
+        {
+          id: 'dept-vendors',
+          label: 'Ad Vendors',
+          shortLabel: 'Vendors',
+          value: String(aggregatedVendors.length),
+          color: '#f59e0b',
+          defaultExpanded: true,
+        },
+        {
+          id: 'dept-pcard',
+          label: 'P-Card %',
+          shortLabel: 'P-Card',
+          value: deptInfo ? `${(100 - deptInfo.transparency_pct).toFixed(0)}%` : '—',
+          color: '#ef4444',
+          defaultExpanded: true,
+        },
+      ]
+    }
+
     return [
       {
         id: 'total-ad-spend',
@@ -449,7 +619,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
         defaultExpanded: true,
       },
     ]
-  }, [ad])
+  }, [ad, drilldown, filteredTotal, aggregatedVendors.length])
 
   const maxPcardTotal = useMemo(
     () => Math.max(...ad.departments.map((d) => d.pcard_total), 1),
@@ -457,7 +627,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
   )
 
   const handleExportCSV = useCallback(() => {
-    const rows = ad.vendors.map((v) => ({
+    const rows = (isDrilledDown ? filteredVendors : ad.vendors).map((v) => ({
       vendor: v.vendor,
       department: v.department,
       total_paid: v.total_paid,
@@ -466,12 +636,35 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
       media_category: MEDIA_CATEGORIES[v.category].label,
     }))
     exportToCSV(rows, `sf-advertising-${fiscalYear ? `fy${fiscalYear}` : 'all'}`)
-  }, [ad.vendors, fiscalYear])
+  }, [ad.vendors, filteredVendors, isDrilledDown, fiscalYear])
+
+  // ── Vendor profile view ──────────────────────────────────
+  if (drilldown.vendor) {
+    return (
+      <div className="h-full flex flex-col overflow-hidden">
+        <div className="flex-shrink-0 px-6 pt-4 pb-2">
+          <AdBreadcrumb drilldown={drilldown} onNavigateRoot={navigateToRoot} onNavigateUp={navigateUp} />
+        </div>
+        <VendorProfile
+          vendor={drilldown.vendor}
+          fiscalYear={fiscalYear}
+          onBack={navigateUp}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="h-full flex overflow-hidden">
       {/* Main content */}
       <div className="flex-1 overflow-y-auto p-6">
+        {/* Breadcrumb */}
+        {isDrilledDown && (
+          <div className="mb-4">
+            <AdBreadcrumb drilldown={drilldown} onNavigateRoot={navigateToRoot} onNavigateUp={navigateUp} />
+          </div>
+        )}
+
         {/* Loading */}
         {ad.isLoading && (
           <div className="max-w-4xl space-y-6">
@@ -499,7 +692,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
 
         {/* Content */}
         {!ad.isLoading && !ad.error && (
-          <div className="max-w-4xl space-y-6">
+          <div className="max-w-4xl space-y-6 transition-opacity duration-200">
             {/* Cards + CSV button */}
             <div className="flex items-start justify-between">
               <div className="flex flex-wrap gap-2.5">
@@ -528,89 +721,167 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
               </button>
             </div>
 
-            {/* Media mix breakdown */}
-            <div className="glass-card rounded-xl p-4">
-              <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-3">
-                Media Mix
-              </p>
-              <div className="space-y-2">
-                {mediaMix.map((m) => (
-                  <div key={m.category}>
-                    <div className="flex items-center justify-between mb-0.5">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: m.color }} />
-                        <span className="text-[10px] text-slate-600 dark:text-slate-300">{m.label}</span>
-                      </div>
-                      <span className="text-[10px] font-mono text-slate-500 tabular-nums">
-                        {formatBudgetAmount(m.total)}
-                      </span>
-                    </div>
-                    <div className="h-1.5 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${ad.totalAdSpend > 0 ? (m.total / ad.totalAdSpend) * 100 : 0}%`,
-                          backgroundColor: m.color,
-                          opacity: 0.7,
-                        }}
-                      />
+            {/* ── Drilled-down view: filtered vendor list ──── */}
+            {isDrilledDown && (
+              <>
+                {/* Media mix for department drill-down */}
+                {drilldown.dept && (
+                  <div className="glass-card rounded-xl p-4">
+                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-3">
+                      Media Mix — {drilldown.dept}
+                    </p>
+                    <div className="space-y-2">
+                      {mediaMix.map((m) => (
+                        <button
+                          key={m.category}
+                          onClick={() => navigateToCategory(m.category)}
+                          className="w-full text-left group"
+                        >
+                          <div className="flex items-center justify-between mb-0.5">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: m.color }} />
+                              <span className="text-[10px] text-slate-600 dark:text-slate-300 group-hover:text-ink dark:group-hover:text-white transition-colors">
+                                {m.label}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-mono text-slate-500 tabular-nums">
+                                {formatBudgetAmount(m.total)}
+                              </span>
+                              <svg className="w-3 h-3 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path d="M9 5l7 7-7 7" />
+                              </svg>
+                            </div>
+                          </div>
+                          <div className="h-1.5 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{
+                                width: `${filteredTotal > 0 ? (m.total / filteredTotal) * 100 : 0}%`,
+                                backgroundColor: m.color,
+                                opacity: 0.7,
+                              }}
+                            />
+                          </div>
+                        </button>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
+                )}
 
-            {/* Top ad vendors */}
-            <div className="glass-card rounded-xl p-4">
-              <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-3">
-                Top Advertising Vendors (color = media category)
-              </p>
-              <HorizontalBarChart
-                data={vendorBars}
-                width={700}
-                height={Math.min(vendorBars.length * 22 + 10, 550)}
-                maxBars={25}
-                labelWidth={200}
-                capPercentile={85}
-                valueFormatter={(v) => formatBudgetAmount(v)}
-              />
-            </div>
+                {/* Filtered vendor list */}
+                <FilteredVendorList
+                  vendors={aggregatedVendors}
+                  onSelectVendor={navigateToVendor}
+                  title={
+                    drilldown.category
+                      ? `${MEDIA_CATEGORIES[drilldown.category].label} Vendors`
+                      : drilldown.dept
+                        ? `Ad Vendors — ${drilldown.dept}`
+                        : 'Vendors'
+                  }
+                />
+              </>
+            )}
 
-            {/* P-card transparency callout */}
-            <div className="glass-card rounded-xl p-4 border border-red-500/20">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-2 h-2 rounded-full bg-red-500" />
-                <p className="text-xs font-semibold text-red-400">P-Card Transparency</p>
-              </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
-                These purchases are made via procurement cards (US Bank) and do not identify the specific platform or media outlet.
-                They may include Facebook/Instagram boosts, Google Ads, and other digital advertising that is nearly invisible in city financial data.
-              </p>
-              {/* Department P-card breakdown */}
-              <div className="space-y-1.5">
-                {ad.departments
-                  .filter((d) => d.pcard_total > 0)
-                  .map((d) => (
-                    <div key={d.department}>
-                      <div className="flex items-center justify-between text-[10px] mb-0.5">
-                        <span className="text-slate-600 dark:text-slate-300 truncate max-w-[300px]">{d.department}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-red-400 tabular-nums">{formatBudgetAmount(d.pcard_total)}</span>
-                          <span className="font-mono text-slate-400 tabular-nums">
-                            ({(100 - d.transparency_pct).toFixed(0)}% opaque)
-                          </span>
+            {/* ── Top-level view (no drill-down) ──────────── */}
+            {!isDrilledDown && (
+              <>
+                {/* Media mix breakdown */}
+                <div className="glass-card rounded-xl p-4">
+                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-3">
+                    Media Mix
+                  </p>
+                  <div className="space-y-2">
+                    {mediaMix.map((m) => (
+                      <button
+                        key={m.category}
+                        onClick={() => navigateToCategory(m.category)}
+                        className="w-full text-left group"
+                      >
+                        <div className="flex items-center justify-between mb-0.5">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: m.color }} />
+                            <span className="text-[10px] text-slate-600 dark:text-slate-300 group-hover:text-ink dark:group-hover:text-white transition-colors">
+                              {m.label}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-mono text-slate-500 tabular-nums">
+                              {formatBudgetAmount(m.total)}
+                            </span>
+                            <svg className="w-3 h-3 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                              <path d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
                         </div>
-                      </div>
-                      <div className="h-1 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-red-500/60"
-                          style={{ width: `${(d.pcard_total / maxPcardTotal) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
+                        <div className="h-1.5 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${ad.totalAdSpend > 0 ? (m.total / ad.totalAdSpend) * 100 : 0}%`,
+                              backgroundColor: m.color,
+                              opacity: 0.7,
+                            }}
+                          />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Top ad vendors */}
+                <div className="glass-card rounded-xl p-4">
+                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-3">
+                    Top Advertising Vendors (color = media category)
+                  </p>
+                  <HorizontalBarChart
+                    data={vendorBars}
+                    width={700}
+                    height={Math.min(vendorBars.length * 22 + 10, 550)}
+                    maxBars={25}
+                    labelWidth={200}
+                    capPercentile={85}
+                    valueFormatter={(v) => formatBudgetAmount(v)}
+                  />
+                </div>
+
+                {/* P-card transparency callout */}
+                <div className="glass-card rounded-xl p-4 border border-red-500/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-2 h-2 rounded-full bg-red-500" />
+                    <p className="text-xs font-semibold text-red-400">P-Card Transparency</p>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
+                    These purchases are made via procurement cards (US Bank) and do not identify the specific platform or media outlet.
+                    They may include Facebook/Instagram boosts, Google Ads, and other digital advertising that is nearly invisible in city financial data.
+                  </p>
+                  <div className="space-y-1.5">
+                    {ad.departments
+                      .filter((d) => d.pcard_total > 0)
+                      .map((d) => (
+                        <div key={d.department}>
+                          <div className="flex items-center justify-between text-[10px] mb-0.5">
+                            <span className="text-slate-600 dark:text-slate-300 truncate max-w-[300px]">{d.department}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-red-400 tabular-nums">{formatBudgetAmount(d.pcard_total)}</span>
+                              <span className="font-mono text-slate-400 tabular-nums">
+                                ({(100 - d.transparency_pct).toFixed(0)}% opaque)
+                              </span>
+                            </div>
+                          </div>
+                          <div className="h-1 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-red-500/60"
+                              style={{ width: `${(d.pcard_total / maxPcardTotal) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* Source attribution */}
             <p className="text-[9px] font-mono text-slate-400/60 dark:text-slate-600">
@@ -634,9 +905,21 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
           ) : (
             <div className="space-y-0.5">
               {ad.departments.map((dept) => (
-                <div key={dept.department} className="px-2 py-1.5 rounded-md">
+                <button
+                  key={dept.department}
+                  onClick={() => navigateToDept(dept.department)}
+                  className={`w-full text-left px-2 py-1.5 rounded-md transition-all duration-150 group
+                    ${drilldown.dept === dept.department
+                      ? 'bg-sky-500/10 dark:bg-sky-400/10'
+                      : 'hover:bg-slate-50 dark:hover:bg-white/[0.02]'
+                    }`}
+                >
                   <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-[10px] text-slate-600 dark:text-slate-400 truncate max-w-[140px]">
+                    <span className={`text-[10px] truncate max-w-[140px] ${
+                      drilldown.dept === dept.department
+                        ? 'text-sky-600 dark:text-sky-400 font-medium'
+                        : 'text-slate-600 dark:text-slate-400'
+                    }`}>
                       {dept.department}
                     </span>
                     <span className="text-[10px] font-mono text-slate-500 tabular-nums ml-2">
@@ -644,12 +927,10 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                     </span>
                   </div>
                   <div className="h-1 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden flex">
-                    {/* Transparent portion */}
                     <div
                       className="h-full bg-sky-500/50"
                       style={{ width: `${dept.transparency_pct * (ad.departments[0]?.total ? dept.total / ad.departments[0].total : 0)}%` }}
                     />
-                    {/* P-card (opaque) portion */}
                     {dept.pcard_total > 0 && (
                       <div
                         className="h-full bg-red-500/50"
@@ -662,12 +943,184 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                       {(100 - dept.transparency_pct).toFixed(0)}% P-card
                     </p>
                   )}
-                </div>
+                </button>
               ))}
             </div>
           )}
         </div>
       </aside>
+    </div>
+  )
+}
+
+// ── Breadcrumb Navigation ───────────────────────────────────
+
+function AdBreadcrumb({
+  drilldown,
+  onNavigateRoot,
+  onNavigateUp,
+}: {
+  drilldown: AdDrilldown
+  onNavigateRoot: () => void
+  onNavigateUp: () => void
+}) {
+  const segments: { label: string; onClick: () => void; isCurrent: boolean }[] = [
+    { label: 'Advertising & Media', onClick: onNavigateRoot, isCurrent: !drilldown.category && !drilldown.dept && !drilldown.vendor },
+  ]
+
+  if (drilldown.category) {
+    const catLabel = MEDIA_CATEGORIES[drilldown.category]?.label || drilldown.category
+    segments.push({
+      label: catLabel,
+      onClick: onNavigateUp,
+      isCurrent: !drilldown.vendor,
+    })
+  }
+
+  if (drilldown.dept) {
+    segments.push({
+      label: drilldown.dept,
+      onClick: onNavigateUp,
+      isCurrent: !drilldown.vendor,
+    })
+  }
+
+  if (drilldown.vendor) {
+    segments.push({
+      label: toSentenceCase(drilldown.vendor),
+      onClick: () => {},
+      isCurrent: true,
+    })
+  }
+
+  return (
+    <nav className="flex items-center gap-1 text-[11px] font-mono">
+      {segments.map((seg, i) => (
+        <span key={i} className="flex items-center gap-1 animate-[fadeSlideIn_200ms_ease-out_both]" style={{ animationDelay: `${i * 50}ms` }}>
+          {i > 0 && <span className="text-slate-300 dark:text-slate-600">›</span>}
+          {seg.isCurrent ? (
+            <span className="text-ink dark:text-white font-medium">{seg.label}</span>
+          ) : (
+            <button
+              onClick={seg.onClick}
+              className="text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors"
+            >
+              {seg.label}
+            </button>
+          )}
+        </span>
+      ))}
+    </nav>
+  )
+}
+
+// ── Filtered Vendor List ────────────────────────────────────
+
+function FilteredVendorList({
+  vendors,
+  onSelectVendor,
+  title,
+}: {
+  vendors: { vendor: string; total: number; category: MediaCategory; departments: string[]; payments: number }[]
+  onSelectVendor: (vendor: string) => void
+  title: string
+}) {
+  const [sortBy, setSortBy] = useState<'amount' | 'name' | 'payments'>('amount')
+
+  const sorted = useMemo(() => {
+    const list = [...vendors]
+    if (sortBy === 'name') list.sort((a, b) => a.vendor.localeCompare(b.vendor))
+    else if (sortBy === 'payments') list.sort((a, b) => b.payments - a.payments)
+    // default: already sorted by amount
+    return list
+  }, [vendors, sortBy])
+
+  const maxTotal = sorted[0]?.total || 1
+
+  return (
+    <div className="glass-card rounded-xl p-4">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60">
+          {title}
+        </p>
+        <div className="flex gap-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-md p-0.5">
+          {(['amount', 'name', 'payments'] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setSortBy(s)}
+              className={`px-2 py-0.5 text-[9px] font-mono rounded transition-all
+                ${sortBy === s
+                  ? 'bg-white dark:bg-white/10 text-ink dark:text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                }`}
+            >
+              {s === 'amount' ? '$' : s === 'name' ? 'A–Z' : '#'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        {sorted.map((v, i) => (
+          <button
+            key={v.vendor}
+            onClick={() => onSelectVendor(v.vendor)}
+            className="w-full text-left px-2 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-all duration-150 group"
+            style={{ animationDelay: `${i * 20}ms` }}
+          >
+            <div className="flex items-center justify-between mb-0.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-[9px] font-mono text-slate-300 dark:text-slate-600 w-5 text-right flex-shrink-0">
+                  {i + 1}
+                </span>
+                <div className="w-2 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: MEDIA_CATEGORIES[v.category].color }} />
+                <span className="text-[11px] text-slate-700 dark:text-slate-200 group-hover:text-ink dark:group-hover:text-white transition-colors truncate">
+                  {toSentenceCase(v.vendor)}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 flex-shrink-0 ml-3">
+                <span className="text-[9px] font-mono text-slate-400 tabular-nums">
+                  {v.payments} pmt{v.payments !== 1 ? 's' : ''}
+                </span>
+                <span className="text-[10px] font-mono text-ink dark:text-white tabular-nums font-medium">
+                  {formatBudgetAmount(v.total)}
+                </span>
+                <svg className="w-3 h-3 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+            {/* Spend bar */}
+            <div className="ml-7 h-1 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${(v.total / maxTotal) * 100}%`,
+                  backgroundColor: MEDIA_CATEGORIES[v.category].color,
+                  opacity: 0.6,
+                }}
+              />
+            </div>
+            {/* Department tags */}
+            {v.departments.length > 0 && (
+              <div className="ml-7 mt-1 flex flex-wrap gap-1">
+                {v.departments.slice(0, 3).map((d) => (
+                  <span key={d} className="text-[8px] font-mono text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-1.5 py-0.5 rounded">
+                    {d.length > 20 ? d.slice(0, 19) + '…' : d}
+                  </span>
+                ))}
+                {v.departments.length > 3 && (
+                  <span className="text-[8px] font-mono text-slate-400">+{v.departments.length - 3}</span>
+                )}
+              </div>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {vendors.length === 0 && (
+        <p className="text-xs text-slate-400 font-mono py-4 text-center">No vendors found</p>
+      )}
     </div>
   )
 }
