@@ -5,15 +5,17 @@
  *  Level 3: Payment Detail — individual voucher view (Phase 5)
  */
 
-import { useMemo, useCallback } from 'react'
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useVendorLandscape, type VendorLandscapeItem, type VendorLandscapeFilters } from '@/hooks/useVendorLandscape'
 import VendorProfile from '@/views/CityBudget/VendorProfile'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { formatBudgetAmount, formatBudgetFull } from '@/utils/fiscalYear'
+import { formatBudgetAmount, formatBudgetFull, formatFiscalYear, getCurrentFiscalYear } from '@/utils/fiscalYear'
 import type { FiscalYear } from '@/types/budget'
 
 const ACCENT = '#0ea5e9'
+const MIN_FY = 2007
+const PLAY_INTERVAL_MS = 1500
 
 // ── Filter types ───────────────────────────────────────────
 
@@ -79,13 +81,58 @@ export default function VendorExplorer({ fiscalYear }: { fiscalYear: FiscalYear 
     [setParam],
   )
 
+  // ── FY Scrubber animation state ──────────────────────────
+  const maxFY = getCurrentFiscalYear()
+  const [animatedFY, setAnimatedFY] = useState<FiscalYear | null>(null)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const prevVendorSetRef = useRef<Set<string>>(new Set())
+
+  // The effective FY used for data queries — animated FY overrides URL FY during playback
+  const effectiveFY = animatedFY ?? fiscalYear
+
+  // Play/pause interval
+  useEffect(() => {
+    if (!isPlaying) return
+    const timer = setInterval(() => {
+      setAnimatedFY((prev) => {
+        const next = (prev ?? MIN_FY) + 1
+        if (next > maxFY) {
+          setIsPlaying(false)
+          return prev
+        }
+        return next
+      })
+    }, PLAY_INTERVAL_MS)
+    return () => clearInterval(timer)
+  }, [isPlaying, maxFY])
+
+  const handlePlay = useCallback(() => {
+    setAnimatedFY(MIN_FY)
+    setIsPlaying(true)
+  }, [])
+
+  const handlePause = useCallback(() => {
+    setIsPlaying(false)
+  }, [])
+
+  const handleScrubStep = useCallback((fy: FiscalYear) => {
+    const clamped = Math.max(MIN_FY, Math.min(fy, maxFY))
+    setAnimatedFY(clamped)
+    setIsPlaying(false)
+  }, [maxFY])
+
+  const handleScrubReset = useCallback(() => {
+    setAnimatedFY(null)
+    setIsPlaying(false)
+  }, [])
+
   // Data
   const filters: VendorLandscapeFilters = useMemo(() => ({
     department: deptFilter || undefined,
     category: categoryFilter || undefined,
   }), [deptFilter, categoryFilter])
 
-  const landscape = useVendorLandscape(fiscalYear, filters, showDeparted)
+  const landscape = useVendorLandscape(effectiveFY, filters, showDeparted)
 
   // Client-side filtering and sorting
   const filtered = useMemo(() => {
@@ -134,6 +181,17 @@ export default function VendorExplorer({ fiscalYear }: { fiscalYear: FiscalYear 
     return computeScaleCap(allValues)
   }, [filtered])
 
+  // Track which vendors are new (for entrance animation)
+  const newVendorSet = useMemo(() => {
+    const currentSet = new Set(filtered.map((v) => v.vendor))
+    const entering = new Set<string>()
+    for (const name of currentSet) {
+      if (!prevVendorSetRef.current.has(name)) entering.add(name)
+    }
+    prevVendorSetRef.current = currentSet
+    return entering
+  }, [filtered])
+
   // ── Level 2: Vendor Profile ──────────────────────────────────
   if (selectedVendor) {
     return (
@@ -148,6 +206,7 @@ export default function VendorExplorer({ fiscalYear }: { fiscalYear: FiscalYear 
   // ── Level 1: Vendor Landscape ──────────────────────────────
   return (
     <div className="h-full flex flex-col overflow-hidden">
+      <AnimationStyles />
       {/* Search + filter bar */}
       <div className="flex-shrink-0 px-6 py-4 space-y-3 border-b border-slate-200/50 dark:border-white/[0.04]">
         {/* Search input */}
@@ -263,6 +322,19 @@ export default function VendorExplorer({ fiscalYear }: { fiscalYear: FiscalYear 
         {/* Vendor bars */}
         {!landscape.isLoading && !landscape.error && (
           <>
+            {/* FY Scrubber */}
+            <FYScrubber
+              currentFY={effectiveFY}
+              minFY={MIN_FY}
+              maxFY={maxFY}
+              isPlaying={isPlaying}
+              isAnimating={animatedFY !== null}
+              onPlay={handlePlay}
+              onPause={handlePause}
+              onStep={handleScrubStep}
+              onReset={handleScrubReset}
+            />
+
             {/* Legend */}
             <div className="flex items-center gap-4 py-2 mb-1">
               <div className="flex items-center gap-1.5">
@@ -286,6 +358,8 @@ export default function VendorExplorer({ fiscalYear }: { fiscalYear: FiscalYear 
                   item={v}
                   rank={sortBy === 'spend' && !searchQuery ? i + 1 : undefined}
                   scaleCap={scaleCap}
+                  isEntering={newVendorSet.has(v.vendor)}
+                  animDelay={i * 15}
                   onClick={() => selectVendor(v.vendor)}
                 />
               ))}
@@ -321,11 +395,15 @@ function VendorBarRow({
   item,
   rank,
   scaleCap,
+  isEntering,
+  animDelay = 0,
   onClick,
 }: {
   item: VendorLandscapeItem
   rank?: number
   scaleCap: number
+  isEntering?: boolean
+  animDelay?: number
   onClick: () => void
 }) {
   const barPct = scaleCap > 0 ? Math.min((item.total / scaleCap) * 100, 100) : 0
@@ -340,6 +418,9 @@ function VendorBarRow({
           ? 'opacity-40 hover:opacity-60'
           : 'hover:bg-slate-50/50 dark:hover:bg-white/[0.03]'
         }`}
+      style={isEntering ? {
+        animation: `vendorBarEnter 400ms ease-out ${animDelay}ms both`,
+      } : undefined}
     >
       {/* Rank or badge */}
       <div className="w-8 flex-shrink-0 text-right">
@@ -448,3 +529,138 @@ function VendorBarRow({
     </button>
   )
 }
+
+// ── FY Scrubber ────────────────────────────────────────────
+
+function FYScrubber({
+  currentFY,
+  minFY,
+  maxFY,
+  isPlaying,
+  isAnimating,
+  onPlay,
+  onPause,
+  onStep,
+  onReset,
+}: {
+  currentFY: FiscalYear
+  minFY: FiscalYear
+  maxFY: FiscalYear
+  isPlaying: boolean
+  isAnimating: boolean
+  onPlay: () => void
+  onPause: () => void
+  onStep: (fy: FiscalYear) => void
+  onReset: () => void
+}) {
+  const progress = maxFY > minFY ? ((currentFY - minFY) / (maxFY - minFY)) * 100 : 0
+
+  return (
+    <div className="py-3 space-y-2">
+      {/* Controls row */}
+      <div className="flex items-center gap-3">
+        {/* Play / Pause button */}
+        <button
+          onClick={isPlaying ? onPause : onPlay}
+          className="flex items-center justify-center w-7 h-7 rounded-md bg-sky-500/10 hover:bg-sky-500/20 text-sky-500 transition-colors"
+          title={isPlaying ? 'Pause' : 'Play through fiscal years'}
+        >
+          {isPlaying ? (
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+              <rect x="2" y="2" width="3" height="8" rx="0.5" />
+              <rect x="7" y="2" width="3" height="8" rx="0.5" />
+            </svg>
+          ) : (
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+              <path d="M3 1.5v9l7.5-4.5L3 1.5z" />
+            </svg>
+          )}
+        </button>
+
+        {/* Step back */}
+        <button
+          onClick={() => onStep(currentFY - 1)}
+          disabled={currentFY <= minFY}
+          className="text-slate-400 hover:text-ink dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M8.5 3.5L5 7l3.5 3.5" />
+          </svg>
+        </button>
+
+        {/* Year display */}
+        <span className="text-sm font-mono font-semibold text-ink dark:text-white tabular-nums min-w-[80px] text-center">
+          {formatFiscalYear(currentFY)}
+        </span>
+
+        {/* Step forward */}
+        <button
+          onClick={() => onStep(currentFY + 1)}
+          disabled={currentFY >= maxFY}
+          className="text-slate-400 hover:text-ink dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5.5 3.5L9 7l-3.5 3.5" />
+          </svg>
+        </button>
+
+        {/* Reset button (shows when animating) */}
+        {isAnimating && !isPlaying && (
+          <button
+            onClick={onReset}
+            className="text-[10px] font-mono text-slate-400 hover:text-ink dark:hover:text-white transition-colors ml-1"
+          >
+            Reset
+          </button>
+        )}
+
+        {/* Playing indicator */}
+        {isPlaying && (
+          <span className="text-[9px] font-mono text-sky-400 animate-pulse ml-auto">
+            {currentFY - minFY + 1} / {maxFY - minFY + 1}
+          </span>
+        )}
+      </div>
+
+      {/* Progress bar */}
+      <div
+        className="h-1 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden cursor-pointer"
+        onClick={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect()
+          const pct = (e.clientX - rect.left) / rect.width
+          const fy = Math.round(minFY + pct * (maxFY - minFY))
+          onStep(fy)
+        }}
+      >
+        <div
+          className="h-full rounded-full transition-all duration-300"
+          style={{
+            width: `${progress}%`,
+            backgroundColor: ACCENT,
+            opacity: 0.6,
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
+// ── CSS keyframes for bar entrance animation ───────────────
+
+const AnimationStyles = () => (
+  <style>{`
+    @keyframes vendorBarEnter {
+      0% {
+        opacity: 0;
+        transform: translateX(-12px) scaleX(0.95);
+      }
+      100% {
+        opacity: 1;
+        transform: translateX(0) scaleX(1);
+      }
+    }
+  `}</style>
+)
+
+// Inject styles once — rendered at the top of the vendor landscape
+export { AnimationStyles }
