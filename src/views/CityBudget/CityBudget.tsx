@@ -537,6 +537,7 @@ function VendorSearchTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
             </div>
           )}
           </div>
+          </div>
         </div>
 
         {/* Vendor detail — right column when a vendor is selected */}
