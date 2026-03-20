@@ -11,6 +11,7 @@ import { useVendorLandscape, type VendorLandscapeItem, type VendorLandscapeFilte
 import VendorProfile from '@/views/CityBudget/VendorProfile'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { formatBudgetAmount, formatBudgetFull, formatFiscalYear, getCurrentFiscalYear } from '@/utils/fiscalYear'
+import { computeLandscapeFlags, filterBySensitivity, type VendorFlag } from '@/utils/vendorFlags'
 import type { FiscalYear } from '@/types/budget'
 
 const ACCENT = '#0ea5e9'
@@ -181,6 +182,24 @@ export default function VendorExplorer({ fiscalYear }: { fiscalYear: FiscalYear 
     return computeScaleCap(allValues)
   }, [filtered])
 
+  // Anomaly flag sensitivity (0-100, URL-synced)
+  const sensitivity = parseInt(searchParams.get('sens') || '50', 10)
+  const setSensitivity = useCallback(
+    (val: number) => setParam('sens', val === 50 ? null : String(val)),
+    [setParam],
+  )
+
+  // Compute flags for each vendor
+  const vendorFlags = useMemo(() => {
+    const flagMap = new Map<string, VendorFlag[]>()
+    for (const v of filtered) {
+      const raw = computeLandscapeFlags(v, filtered)
+      const visible = filterBySensitivity(raw, sensitivity)
+      if (visible.length > 0) flagMap.set(v.vendor, visible)
+    }
+    return flagMap
+  }, [filtered, sensitivity])
+
   // Track which vendors are new (for entrance animation)
   const newVendorSet = useMemo(() => {
     const currentSet = new Set(filtered.map((v) => v.vendor))
@@ -285,6 +304,21 @@ export default function VendorExplorer({ fiscalYear }: { fiscalYear: FiscalYear 
             />
             Show departed
           </label>
+
+          {/* Sensitivity slider */}
+          <div className="flex items-center gap-1.5 ml-2">
+            <span className="text-[9px] font-mono text-slate-400 dark:text-slate-500">Flags</span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={25}
+              value={sensitivity}
+              onChange={(e) => setSensitivity(parseInt(e.target.value, 10))}
+              className="w-16 h-1 accent-sky-500"
+              title={`Flag sensitivity: ${sensitivity}%`}
+            />
+          </div>
         </div>
       </div>
 
@@ -358,6 +392,7 @@ export default function VendorExplorer({ fiscalYear }: { fiscalYear: FiscalYear 
                   item={v}
                   rank={sortBy === 'spend' && !searchQuery ? i + 1 : undefined}
                   scaleCap={scaleCap}
+                  flags={vendorFlags.get(v.vendor)}
                   isEntering={newVendorSet.has(v.vendor)}
                   animDelay={i * 15}
                   onClick={() => selectVendor(v.vendor)}
@@ -395,6 +430,7 @@ function VendorBarRow({
   item,
   rank,
   scaleCap,
+  flags,
   isEntering,
   animDelay = 0,
   onClick,
@@ -402,6 +438,7 @@ function VendorBarRow({
   item: VendorLandscapeItem
   rank?: number
   scaleCap: number
+  flags?: VendorFlag[]
   isEntering?: boolean
   animDelay?: number
   onClick: () => void
@@ -515,6 +552,31 @@ function VendorBarRow({
             ? '−100%'
             : `${item.yoyDelta > 0 ? '+' : ''}${item.yoyDelta.toFixed(0)}%`}
       </span>
+
+      {/* Anomaly flag badges */}
+      {flags && flags.length > 0 && (
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+          {flags.slice(0, 2).map((f) => (
+            <span
+              key={f.type}
+              className="text-[7px] font-mono font-bold px-1 py-0.5 rounded whitespace-nowrap"
+              style={{
+                backgroundColor: f.severity === 'red' ? 'rgba(239,68,68,0.1)'
+                  : f.severity === 'amber' ? 'rgba(245,158,11,0.1)'
+                  : f.severity === 'green' ? 'rgba(34,197,94,0.1)'
+                  : 'rgba(148,163,184,0.1)',
+                color: f.severity === 'red' ? '#ef4444'
+                  : f.severity === 'amber' ? '#f59e0b'
+                  : f.severity === 'green' ? '#22c55e'
+                  : '#94a3b8',
+              }}
+              title={f.detail}
+            >
+              {f.label}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Drill-down chevron */}
       {!item.isDeparted && (

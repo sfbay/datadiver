@@ -10,6 +10,7 @@ import { useAppStore } from '@/stores/appStore'
 import { useVendorProfile, type VendorContractRow } from '@/hooks/useVendorProfile'
 import { Skeleton, SkeletonChart } from '@/components/ui/Skeleton'
 import { formatBudgetAmount, formatBudgetFull, formatFiscalYear } from '@/utils/fiscalYear'
+import { computeContractFlags, type VendorFlag } from '@/utils/vendorFlags'
 import type { FiscalYear } from '@/types/budget'
 
 const ACCENT = '#0ea5e9'
@@ -23,6 +24,12 @@ interface VendorProfileProps {
 export default function VendorProfile({ vendor, fiscalYear, onBack }: VendorProfileProps) {
   const profile = useVendorProfile(vendor, fiscalYear)
   const { metrics } = profile
+
+  // Contract-level anomaly flags
+  const contractFlags = useMemo(
+    () => computeContractFlags(profile.contractData),
+    [profile.contractData],
+  )
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -61,6 +68,28 @@ export default function VendorProfile({ vendor, fiscalYear, onBack }: VendorProf
             <p className="text-[10px] font-mono text-slate-400 dark:text-slate-500 mt-0.5">
               {formatBudgetFull(metrics.lifetimeTotal)} lifetime · {metrics.fiscalYears} fiscal years · {metrics.contractCount} contract{metrics.contractCount !== 1 ? 's' : ''}
             </p>
+          )}
+          {/* Anomaly flags */}
+          {contractFlags.length > 0 && (
+            <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+              {contractFlags.map((f) => (
+                <span
+                  key={`${f.type}-${f.detail.slice(0, 20)}`}
+                  className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded"
+                  style={{
+                    backgroundColor: f.severity === 'red' ? 'rgba(239,68,68,0.1)'
+                      : f.severity === 'amber' ? 'rgba(245,158,11,0.1)'
+                      : 'rgba(148,163,184,0.1)',
+                    color: f.severity === 'red' ? '#ef4444'
+                      : f.severity === 'amber' ? '#f59e0b'
+                      : '#94a3b8',
+                  }}
+                  title={f.detail}
+                >
+                  {f.label}
+                </span>
+              ))}
+            </div>
           )}
         </div>
       </div>
