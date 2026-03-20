@@ -564,7 +564,6 @@ export default function Elections() {
                     rcvData={rcvData}
                     candidateColors={candidateColors}
                     width={400}
-                    height={220}
                     currentRound={rcvActiveRound}
                     onRoundChange={setRcvActiveRound}
                   />
