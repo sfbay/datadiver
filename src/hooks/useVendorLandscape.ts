@@ -44,13 +44,13 @@ export function useVendorLandscape(
     setIsLoading(true)
     setError(null)
 
-    // Build filter clauses — always include revenue_or_spending = 'Spending' (matches useBudgetData pattern)
-    const spendingFilter = "revenue_or_spending = 'Spending'"
-    const clauses: string[] = [spendingFilter]
+    // Build filter clauses — vendorPayments dataset is spending-only (no revenue_or_spending column)
+    const clauses: string[] = []
     if (department) clauses.push(`department = '${department.replace(/'/g, "''")}'`)
     if (category) clauses.push(`character = '${category.replace(/'/g, "''")}'`)
-    const vendorWhere = (fy: number) => `fiscal_year = '${fy}' AND ${clauses.join(' AND ')}`
-    const baseWhere = (fy: number) => `fiscal_year = '${fy}' AND ${spendingFilter}`
+    const filterSuffix = clauses.length > 0 ? ` AND ${clauses.join(' AND ')}` : ''
+    const vendorWhere = (fy: number) => `fiscal_year = '${fy}'${filterSuffix}`
+    const baseWhere = (fy: number) => `fiscal_year = '${fy}'`
 
     Promise.all([
       // Current FY vendors

@@ -76,8 +76,8 @@ export function useVendorProfile(vendor: string | null, fiscalYear?: FiscalYear)
     setError(null)
 
     const escaped = vendor.replace(/'/g, "''")
-    const spending = "revenue_or_spending = 'Spending'"
-    const vendorBase = `vendor = '${escaped}' AND ${spending}`
+    // vendorPayments is a spending-only dataset — no revenue_or_spending column
+    const vendorBase = `vendor = '${escaped}'`
     const fyClause = fiscalYear ? ` AND fiscal_year = '${fiscalYear}'` : ''
 
     Promise.all([
@@ -118,7 +118,7 @@ export function useVendorProfile(vendor: string | null, fiscalYear?: FiscalYear)
       // Nonprofit check
       fetchDataset<{ non_profit_indicator: string }>('vendorPayments', {
         $select: 'non_profit_indicator',
-        $where: `vendor = '${escaped}' AND ${spending} AND non_profit_indicator = 'Y'`,
+        $where: `vendor = '${escaped}' AND non_profit_indicator = 'Y'`,
         $limit: 1,
       }),
     ])
@@ -212,7 +212,7 @@ export function useVendorPayments(vendor: string | null) {
 
     fetchDataset<VendorPaymentRow>('vendorPayments', {
       $select: 'fiscal_year, department, sub_object, vouchers_paid, voucher, purchase_order',
-      $where: `vendor = '${escaped}' AND revenue_or_spending = 'Spending'`,
+      $where: `vendor = '${escaped}'`,
       $order: 'fiscal_year DESC, vouchers_paid DESC',
       $limit: PAGE_SIZE,
       $offset: page * PAGE_SIZE,
@@ -260,7 +260,7 @@ export function useVendorMonthlySpend(vendor: string | null) {
 
     fetchDataset<MonthlySpendRow>('vendorPayments', {
       $select: "fiscal_year, date_extract_m(vouchers_paid_distribution_date) as month, SUM(vouchers_paid) as total_paid",
-      $where: `vendor = '${escaped}' AND revenue_or_spending = 'Spending' AND vouchers_paid_distribution_date IS NOT NULL`,
+      $where: `vendor = '${escaped}' AND vouchers_paid_distribution_date IS NOT NULL`,
       $group: 'fiscal_year, month',
       $order: 'fiscal_year ASC, month ASC',
       $limit: 500,
