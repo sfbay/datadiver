@@ -51,6 +51,7 @@ export default function VendorProfile({ vendor, fiscalYear, onBack }: VendorProf
     if (payments.payments.length === 0) return
     const rows = payments.payments.map((p) => ({
       fiscal_year: p.fiscal_year,
+      payment_date: p.vouchers_paid_distribution_date || '',
       department: p.department,
       category: p.sub_object,
       amount: p.vouchers_paid,
@@ -688,6 +689,7 @@ function PaymentTable({
         <thead>
           <tr className="text-slate-400 dark:text-slate-500 border-b border-slate-200/50 dark:border-white/[0.04]">
             <th className="text-left py-1.5 pr-3 font-medium">FY</th>
+            <th className="text-left py-1.5 pr-3 font-medium">Date</th>
             <th className="text-left py-1.5 pr-3 font-medium">Department</th>
             <th className="text-left py-1.5 pr-3 font-medium">Category</th>
             <th className="text-right py-1.5 pr-3 font-medium">Amount</th>
@@ -702,6 +704,11 @@ function PaymentTable({
               className="border-b border-slate-100/50 dark:border-white/[0.02] hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors"
             >
               <td className="py-1.5 pr-3 text-slate-500 tabular-nums">FY{p.fiscal_year}</td>
+              <td className="py-1.5 pr-3 text-slate-400 tabular-nums whitespace-nowrap">
+                {p.vouchers_paid_distribution_date
+                  ? new Date(p.vouchers_paid_distribution_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })
+                  : '—'}
+              </td>
               <td className="py-1.5 pr-3 text-slate-600 dark:text-slate-300 truncate max-w-[160px]" title={p.department}>
                 {p.department}
               </td>

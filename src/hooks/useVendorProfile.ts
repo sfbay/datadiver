@@ -42,6 +42,7 @@ export interface VendorPaymentRow {
   vouchers_paid: string
   voucher: string
   purchase_order: string
+  vouchers_paid_distribution_date: string | null
 }
 
 // ── Computed metrics ───────────────────────────────────────
@@ -211,7 +212,7 @@ export function useVendorPayments(vendor: string | null) {
     const escaped = vendor.replace(/'/g, "''")
 
     fetchDataset<VendorPaymentRow>('vendorPayments', {
-      $select: 'fiscal_year, department, sub_object, vouchers_paid, voucher, purchase_order',
+      $select: 'fiscal_year, department, sub_object, vouchers_paid, voucher, purchase_order, vouchers_paid_distribution_date',
       $where: `vendor = '${escaped}'`,
       $order: 'fiscal_year DESC, vouchers_paid DESC',
       $limit: PAGE_SIZE,
