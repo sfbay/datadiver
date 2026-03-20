@@ -94,10 +94,11 @@ export default function CityBudget() {
           <select
             value={fiscalYear}
             onChange={(e) => setFiscalYear(parseInt(e.target.value, 10))}
-            className="text-xs font-mono bg-slate-100/80 dark:bg-white/[0.04] border border-slate-200/50 dark:border-white/[0.06] rounded-md px-2 py-1.5 text-ink dark:text-white"
+            className="text-xs font-mono bg-slate-100/80 dark:bg-slate-800 border border-slate-200/50 dark:border-white/[0.06] rounded-md px-2 py-1.5 text-ink dark:text-white"
+            style={{ colorScheme: 'dark' }}
           >
             {Array.from({ length: getCurrentFiscalYear() - 2009 }, (_, i) => getCurrentFiscalYear() - i).map((fy) => (
-              <option key={fy} value={fy}>
+              <option key={fy} value={fy} className="bg-white dark:bg-slate-800 text-ink dark:text-white">
                 {formatFiscalYear(fy)}
               </option>
             ))}
