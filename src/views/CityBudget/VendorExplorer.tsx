@@ -40,15 +40,20 @@ const SORT_OPTIONS: Record<VendorSort, string> = {
 
 // ── Scale-break computation ────────────────────────────────
 
-function computeScaleCap(values: number[], percentile = 85): number {
+/** Compute a scale cap using the median of the top-N visible vendors.
+ *  This ensures the middle of the displayed list has bars at ~50% width,
+ *  with the top vendors capped (break marks) and the bottom vendors
+ *  showing proportionally thin bars. Produces readable differentiation
+ *  across the full displayed range. */
+function computeScaleCap(values: number[]): number {
   const positive = values.filter((v) => v > 0)
   if (positive.length < 3) return Math.max(...positive, 1)
-  const sorted = [...positive].sort((a, b) => a - b)
-  const idx = Math.floor(sorted.length * percentile / 100)
-  const pVal = sorted[Math.min(idx, sorted.length - 1)]
-  const rawMax = sorted[sorted.length - 1]
-  if (pVal > 0 && rawMax > pVal * 2) return pVal * 1.3
-  return rawMax
+  const sorted = [...positive].sort((a, b) => b - a) // descending
+  // Use the value at position 10 (or mid-point for fewer items) as the anchor
+  const anchorIdx = Math.min(9, Math.floor(sorted.length / 2))
+  const anchor = sorted[anchorIdx]
+  // Scale so the anchor value fills ~55% of the bar width
+  return anchor > 0 ? anchor / 0.55 : sorted[0]
 }
 
 // ── Main component ─────────────────────────────────────────
