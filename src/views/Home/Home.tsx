@@ -129,6 +129,20 @@ const VISUALIZATIONS = [
     ],
     accentColor: '#7c3aed',
   },
+  {
+    path: '/elections',
+    title: 'Elections',
+    subtitle: 'SF Dept of Elections · Results & RCV',
+    badge: 'EL',
+    description:
+      'How does your neighborhood vote? Explore ranked choice voting rounds, ballot measures, and play back decades of election results on an interactive map.',
+    stats: [
+      { label: 'Elections', value: '5+' },
+      { label: 'RCV rounds', value: 'All' },
+      { label: 'Measures', value: '1961–now' },
+    ],
+    accentColor: '#6366f1',
+  },
 ] as const
 
 export default function Home() {

@@ -17,9 +17,11 @@ import RCVRoundChart from '@/components/charts/RCVRoundChart'
 import RCVSankey from '@/components/charts/RCVSankey'
 import ElectionTimeline from '@/components/filters/ElectionTimeline'
 import { useElectionTimeline } from '@/hooks/useElectionTimeline'
+import BallotMeasureExplorer from '@/components/charts/BallotMeasureExplorer'
+import { useBallotPropositions } from '@/hooks/useElectionResults'
 
 type MapMode = 'results' | 'turnout' | 'margin'
-type SidebarTab = 'races' | 'neighborhoods'
+type SidebarTab = 'races' | 'neighborhoods' | 'measures'
 type RaceFilter = 'all' | 'federal' | 'state' | 'local' | 'measure'
 
 export default function Elections() {
@@ -97,6 +99,9 @@ export default function Elections() {
   // RCV data for the active race
   const rcvSlug = activeRace?.isRCV ? activeRace.id : null
   const { data: rcvData } = useRCVRounds(activeElection, rcvSlug)
+
+  // ── Ballot measures ────────────────────────────────────────────────
+  const { data: ballotMeasures } = useBallotPropositions()
 
   // ── Time Machine ───────────────────────────────────────────────────
   const timeline = useElectionTimeline({ enabled: timeMachineActive })
@@ -585,7 +590,7 @@ export default function Elections() {
         <aside className="w-80 flex-shrink-0 border-l border-slate-200/50 dark:border-white/[0.04] overflow-y-auto bg-white/50 dark:bg-slate-900/30 backdrop-blur-xl flex flex-col">
           {/* Tab bar */}
           <div className="flex border-b border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
-            {([['races', 'Races'], ['neighborhoods', 'Neighborhoods']] as const).map(([key, label]) => (
+            {([['races', 'Races'], ['neighborhoods', 'Neighborhoods'], ['measures', 'Measures']] as const).map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setSidebarTab(key)}
@@ -680,6 +685,16 @@ export default function Elections() {
                                 ))}
                             </div>
                           )}
+                          {/* Campaign Finance cross-link */}
+                          {isActive && winner && race.type === 'local' && (
+                            <a
+                              href={`/campaign-finance?search=${encodeURIComponent(winner.name.split(',')[0])}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="block mt-1.5 text-[9px] font-mono text-indigo-400/70 hover:text-indigo-400 transition-colors"
+                            >
+                              See who funded this campaign →
+                            </a>
+                          )}
                         </button>
                       )
                     })}
@@ -695,15 +710,22 @@ export default function Elections() {
                 mapInstance={mapInstance}
               />
             )}
+
+            {sidebarTab === 'measures' && ballotMeasures && (
+              <BallotMeasureExplorer measures={ballotMeasures} />
+            )}
           </div>
 
-          {/* Data source attribution */}
+          {/* Data source attribution + 1996 SFSU nod */}
           <div className="flex-shrink-0 px-4 py-3 border-t border-slate-200/50 dark:border-white/[0.04]">
             <p className="text-[9px] text-slate-400 dark:text-slate-600">
               Source: SF Dept of Elections &middot; sfelections.org
               {electionMeta && (
                 <> &middot; {electionMeta.type.charAt(0).toUpperCase() + electionMeta.type.slice(1)} election</>
               )}
+            </p>
+            <p className="text-[8px] text-slate-500/60 dark:text-slate-700 mt-1 italic">
+              One of SF's first live election results websites was hand-built at SFSU in 1996. DataDiver continues that tradition.
             </p>
           </div>
         </aside>
