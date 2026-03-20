@@ -24,19 +24,37 @@ const CANDIDATE_PALETTE = [
   '#22d3ee', // cyan-light
 ]
 
-/** Deterministic color for a candidate name */
-export function candidateColor(name: string, index: number): string {
-  return CANDIDATE_PALETTE[index % CANDIDATE_PALETTE.length]
+/** Simple string hash → stable index */
+function hashName(name: string): number {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) {
+    hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0
+  }
+  return Math.abs(hash)
 }
 
-/** Build a Map<candidateName, color> for a race's candidates (preserves ordering) */
+/** Deterministic color for a candidate name (hashed, not index-based) */
+export function candidateColor(name: string): string {
+  return CANDIDATE_PALETTE[hashName(name) % CANDIDATE_PALETTE.length]
+}
+
+/** Build a Map<candidateName, color> for a race's candidates (name-hashed, stable across orderings) */
 export function buildCandidateColorMap(
   candidates: { name: string }[]
 ): Map<string, string> {
   const map = new Map<string, string>()
-  candidates.forEach((c, i) => {
-    map.set(c.name, candidateColor(c.name, i))
-  })
+  // Use index-based assignment to avoid hash collisions within a single race,
+  // but hash-based for cross-race stability
+  const usedColors = new Set<string>()
+  for (const c of candidates) {
+    let color = candidateColor(c.name)
+    // If hash collision within this race, fall back to next unused color
+    if (usedColors.has(color)) {
+      color = CANDIDATE_PALETTE.find((p) => !usedColors.has(p)) || color
+    }
+    usedColors.add(color)
+    map.set(c.name, color)
+  }
   return map
 }
 

@@ -30,14 +30,16 @@ export default function RCVRoundChart({
   const [internalRound, setInternalRound] = useState(totalRounds - 1)
   const [isPlaying, setIsPlaying] = useState(false)
   const playTimer = useRef<ReturnType<typeof setInterval> | null>(null)
+  const onRoundChangeRef = useRef(onRoundChange)
+  onRoundChangeRef.current = onRoundChange
 
   const activeRound = controlledRound ?? internalRound
   const setActiveRound = useCallback((r: number) => {
     setInternalRound(r)
-    onRoundChange?.(r)
-  }, [onRoundChange])
+    onRoundChangeRef.current?.(r)
+  }, [])
 
-  // Auto-play
+  // Auto-play — uses ref to avoid stale closure on onRoundChange
   useEffect(() => {
     if (!isPlaying) {
       if (playTimer.current) clearInterval(playTimer.current)
@@ -50,12 +52,12 @@ export default function RCVRoundChart({
           setIsPlaying(false)
           return totalRounds - 1
         }
-        onRoundChange?.(next)
+        onRoundChangeRef.current?.(next)
         return next
       })
     }, 1200)
     return () => { if (playTimer.current) clearInterval(playTimer.current) }
-  }, [isPlaying, totalRounds, onRoundChange])
+  }, [isPlaying, totalRounds])
 
   const round = rcvData.rounds[activeRound]
   const candidates = useMemo(() => {

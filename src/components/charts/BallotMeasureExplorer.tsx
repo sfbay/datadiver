@@ -128,12 +128,12 @@ export default function BallotMeasureExplorer({ measures }: BallotMeasureExplore
 
       {/* Measures list */}
       <div className="space-y-1.5 max-h-[400px] overflow-y-auto">
-        {filtered.slice(0, 100).map((m, i) => {
+        {filtered.slice(0, 200).map((m, i) => {
           const year = new Date(m.date).getFullYear()
           return (
             <div
               key={`${m.date}-${m.letter}-${i}`}
-              className="group py-1.5 px-2 rounded-lg hover:bg-white/[0.04] transition-colors"
+              className="group py-1.5 px-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.04] transition-colors"
             >
               <div className="flex items-center gap-2">
                 <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
@@ -146,12 +146,12 @@ export default function BallotMeasureExplorer({ measures }: BallotMeasureExplore
                 <span className="text-[10px] font-mono text-slate-500">{year}</span>
                 <span className="text-[10px] font-mono text-indigo-400">{m.letter}</span>
               </div>
-              <p className="text-[11px] text-slate-300 mt-0.5 leading-tight">
+              <p className="text-[11px] text-slate-700 dark:text-slate-300 mt-0.5 leading-tight">
                 {m.title}
               </p>
               {/* Yes % bar */}
               <div className="flex items-center gap-2 mt-1">
-                <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                <div className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all duration-300"
                     style={{
@@ -167,6 +167,11 @@ export default function BallotMeasureExplorer({ measures }: BallotMeasureExplore
             </div>
           )
         })}
+        {filtered.length > 200 && (
+          <p className="text-[9px] font-mono text-slate-500 text-center py-2">
+            Showing 200 of {filtered.length} measures
+          </p>
+        )}
       </div>
     </div>
   )

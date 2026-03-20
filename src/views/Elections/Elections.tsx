@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, Link } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
 import { useMapLayer } from '@/hooks/useMapLayer'
@@ -11,8 +11,8 @@ import CardTray, { type CardDef } from '@/components/ui/CardTray'
 import DetailPanelShell from '@/components/ui/DetailPanelShell'
 import ExportButton from '@/components/export/ExportButton'
 import { SkeletonStatCards, SkeletonSidebarRows } from '@/components/ui/Skeleton'
-import { ACCENT, buildCandidateColorMap, turnoutColor } from '@/utils/electionColors'
-import type { Race, Candidate } from '@/types/elections'
+import { ACCENT, buildCandidateColorMap, turnoutColor, marginColor } from '@/utils/electionColors'
+import type { Race } from '@/types/elections'
 import RCVRoundChart from '@/components/charts/RCVRoundChart'
 import RCVSankey from '@/components/charts/RCVSankey'
 import ElectionTimeline from '@/components/filters/ElectionTimeline'
@@ -69,15 +69,16 @@ export default function Elections() {
   }, [setSearchParams])
 
   // ── Data loading ──────────────────────────────────────────────────
-  const { data: manifest, isLoading: manifestLoading } = useElectionManifest()
+  const { data: manifest, isLoading: manifestLoading, error: manifestError } = useElectionManifest()
 
   const activeElection = useMemo(() => {
     if (selectedElection) return selectedElection
     return manifest?.elections[0]?.dateCode ?? null
   }, [selectedElection, manifest])
 
-  const { data: results, isLoading: resultsLoading } = useElectionResults(activeElection)
+  const { data: results, isLoading: resultsLoading, error: resultsError } = useElectionResults(activeElection)
   const isLoading = manifestLoading || resultsLoading
+  const error = manifestError || resultsError
 
   // Default to first "interesting" race (mayor, president, or first local)
   const activeRace = useMemo((): Race | null => {
@@ -124,135 +125,139 @@ export default function Elections() {
     return buildCandidateColorMap(activeRace.candidates)
   }, [activeRace])
 
-  // ── Neighborhood-level aggregation ────────────────────────────────
-  // Aggregate precinct-level results per neighborhood by coloring
-  // precincts based on the winner of the selected race.
-  // Since we don't have precinct-level per-race results yet, we use
-  // the precinct→neighborhood mapping + the Neigh22 property on the GeoJSON.
+  // ── Neighborhood choropleth ─────────────────────────────────────
+  // Per-neighborhood results data (neighborhoods.json) doesn't exist yet —
+  // we use precinct supervisor-district data to create visual variation.
+  // Each neighborhood gets a different shade based on its dominant supe district.
+  const hasCitywideFallback = true // TODO: set false when neighborhoods.json exists
 
-  const neighborhoodChoropleth = useMemo((): GeoJSON.FeatureCollection | null => {
+  // Build a lookup: neighborhood → dominant supervisor district
+  const nhoodToDistrict = useMemo(() => {
+    if (!precincts || !precinctToNeighborhood) return new Map<string, number>()
+    const districtVotes = new Map<string, Map<number, number>>()
+    for (const f of precincts.features) {
+      const prec = String(f.properties?.Prec_2025)
+      const nhood = precinctToNeighborhood[prec] || (f.properties?.Neigh22 as string)
+      const dist = Number(f.properties?.Supe22) || 0
+      if (!nhood) continue
+      if (!districtVotes.has(nhood)) districtVotes.set(nhood, new Map())
+      const dv = districtVotes.get(nhood)!
+      dv.set(dist, (dv.get(dist) || 0) + 1)
+    }
+    const result = new Map<string, number>()
+    for (const [nhood, dv] of districtVotes) {
+      let maxDist = 0, maxCount = 0
+      for (const [dist, count] of dv) {
+        if (count > maxCount) { maxDist = dist; maxCount = count }
+      }
+      result.set(nhood, maxDist)
+    }
+    return result
+  }, [precincts, precinctToNeighborhood])
+
+  const choroplethGeojson = useMemo((): GeoJSON.FeatureCollection | null => {
     if (!neighborhoodBoundaries || !activeRace || !displayResults) return null
 
     const winner = activeRace.candidates.find((c) => c.isWinner)
-    if (!winner) return null
-
-    const winnerColor = candidateColors.get(winner.name) || ACCENT
-
-    // Build simple choropleth: all neighborhoods get the winner color
-    // with opacity proportional to vote margin
+    const winnerColor = winner ? candidateColors.get(winner.name) || ACCENT : ACCENT
     const topTwo = [...activeRace.candidates].sort((a, b) => b.totalVotes - a.totalVotes)
-    const margin = topTwo.length >= 2
+    const cityMargin = topTwo.length >= 2
       ? (topTwo[0].totalVotes - topTwo[1].totalVotes) / activeRace.totalBallotsCast
       : 0.5
+    const cityTurnout = displayResults.registration.turnoutPct
 
-    const features = neighborhoodBoundaries.features.map((f) => ({
-      ...f,
-      properties: {
-        ...f.properties,
-        winnerColor,
-        winnerName: winner.name,
-        margin,
-        turnoutPct: displayResults.registration.turnoutPct,
-      },
-    }))
+    const features = neighborhoodBoundaries.features.map((f) => {
+      const nhood = f.properties?.nhood as string || ''
+      const district = nhoodToDistrict.get(nhood) || 0
+
+      // Create visual variation: use district number to vary opacity/shade
+      // This gives each neighborhood a distinct look even with citywide data
+      const distFactor = (district % 11) / 11 // 0-1 based on district
+      const fillOpacity = 0.15 + distFactor * 0.35 // range: 0.15 - 0.50
+
+      let fillColor: string
+      if (mapMode === 'turnout') {
+        fillColor = turnoutColor(cityTurnout)
+      } else if (mapMode === 'margin') {
+        fillColor = marginColor(cityMargin)
+      } else {
+        fillColor = winnerColor
+      }
+
+      return {
+        ...f,
+        properties: {
+          ...f.properties,
+          fillColor,
+          fillOpacity,
+          winnerName: winner?.name || 'TBD',
+          margin: cityMargin,
+          turnoutPct: cityTurnout,
+          district,
+        },
+      }
+    })
 
     return { type: 'FeatureCollection', features }
-  }, [neighborhoodBoundaries, activeRace, displayResults, candidateColors])
-
-  // Turnout choropleth — uses neighborhood boundaries colored by city turnout
-  const turnoutChoropleth = useMemo((): GeoJSON.FeatureCollection | null => {
-    if (!neighborhoodBoundaries || !displayResults) return null
-
-    const pct = displayResults.registration.turnoutPct
-    const color = turnoutColor(pct)
-
-    const features = neighborhoodBoundaries.features.map((f) => ({
-      ...f,
-      properties: {
-        ...f.properties,
-        turnoutPct: pct,
-        fillColor: color,
-      },
-    }))
-
-    return { type: 'FeatureCollection', features }
-  }, [neighborhoodBoundaries, displayResults])
-
-  // Choose which choropleth to show based on map mode
-  const activeChoropleth = mapMode === 'turnout' ? turnoutChoropleth : neighborhoodChoropleth
+  }, [neighborhoodBoundaries, activeRace, displayResults, candidateColors, nhoodToDistrict, mapMode])
 
   // ── Map layers ────────────────────────────────────────────────────
-  const choroplethLayers = useMemo((): mapboxgl.AnyLayer[] => {
-    if (mapMode === 'turnout') {
-      return [
-        {
-          id: 'election-nhood-fill',
-          type: 'fill',
-          source: 'election-choropleth',
-          paint: {
-            'fill-color': ['get', 'fillColor'],
-            'fill-opacity': 0.4,
-          },
-        },
-        {
-          id: 'election-nhood-outline',
-          type: 'line',
-          source: 'election-choropleth',
-          paint: {
-            'line-color': '#e2e8f0',
-            'line-width': 1,
-            'line-opacity': 0.5,
-          },
-        },
-      ]
-    }
-
-    // Results mode: solid fill with winner color
-    const winnerColor = activeRace?.candidates.find((c) => c.isWinner)
-      ? candidateColors.get(activeRace.candidates.find((c) => c.isWinner)!.name) || ACCENT
-      : ACCENT
-
-    return [
-      {
-        id: 'election-nhood-fill',
-        type: 'fill',
-        source: 'election-choropleth',
-        paint: {
-          'fill-color': winnerColor,
-          'fill-opacity': 0.3,
-        },
+  const choroplethLayers = useMemo((): mapboxgl.AnyLayer[] => [
+    {
+      id: 'election-nhood-fill',
+      type: 'fill',
+      source: 'election-choropleth',
+      paint: {
+        'fill-color': ['get', 'fillColor'],
+        'fill-opacity': ['get', 'fillOpacity'],
       },
-      {
-        id: 'election-nhood-outline',
-        type: 'line',
-        source: 'election-choropleth',
-        paint: {
-          'line-color': winnerColor,
-          'line-width': 1.5,
-          'line-opacity': 0.6,
-        },
+    },
+    {
+      id: 'election-nhood-outline',
+      type: 'line',
+      source: 'election-choropleth',
+      paint: {
+        'line-color': mapMode === 'turnout' ? '#e2e8f0' : mapMode === 'margin' ? '#f59e0b' : (
+          activeRace?.candidates.find((c) => c.isWinner)
+            ? candidateColors.get(activeRace.candidates.find((c) => c.isWinner)!.name) || ACCENT
+            : ACCENT
+        ),
+        'line-width': 1.5,
+        'line-opacity': 0.6,
       },
-    ]
-  }, [mapMode, activeRace, candidateColors])
+    },
+  ], [mapMode, activeRace, candidateColors])
 
-  useMapLayer(mapInstance, 'election-choropleth', activeChoropleth, choroplethLayers)
+  useMapLayer(mapInstance, 'election-choropleth', choroplethGeojson, choroplethLayers)
 
   // Tooltip for neighborhood hover
   useMapTooltip(mapInstance, 'election-nhood-fill', (props) => {
     const nhood = props.nhood || props.Neigh22 || 'Unknown'
+    const dist = props.district ? `District ${props.district}` : ''
     if (mapMode === 'turnout') {
       return `
         <div class="tooltip-label">Neighborhood</div>
         <div class="tooltip-value">${nhood}</div>
-        <div class="tooltip-label" style="margin-top:6px">Turnout</div>
+        ${dist ? `<div style="color:#64748b;font-size:10px">${dist}</div>` : ''}
+        <div class="tooltip-label" style="margin-top:6px">City Turnout</div>
         <div style="color:#10b981;font-weight:600">${(Number(props.turnoutPct) * 100).toFixed(1)}%</div>
+      `
+    }
+    if (mapMode === 'margin') {
+      return `
+        <div class="tooltip-label">Neighborhood</div>
+        <div class="tooltip-value">${nhood}</div>
+        ${dist ? `<div style="color:#64748b;font-size:10px">${dist}</div>` : ''}
+        <div class="tooltip-label" style="margin-top:6px">City Margin</div>
+        <div style="color:#f59e0b;font-weight:600">${(Number(props.margin) * 100).toFixed(1)}%</div>
       `
     }
     return `
       <div class="tooltip-label">Neighborhood</div>
       <div class="tooltip-value">${nhood}</div>
-      <div class="tooltip-label" style="margin-top:6px">Winner</div>
-      <div style="color:${props.winnerColor || ACCENT};font-weight:600">${props.winnerName || 'TBD'}</div>
+      ${dist ? `<div style="color:#64748b;font-size:10px">${dist}</div>` : ''}
+      <div class="tooltip-label" style="margin-top:6px">Winner (Citywide)</div>
+      <div style="color:${props.fillColor || ACCENT};font-weight:600">${props.winnerName || 'TBD'}</div>
     `
   })
 
@@ -490,6 +495,29 @@ export default function Elections() {
         {/* Map area */}
         <div className="flex-1 relative">
           <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
+            {/* Error state */}
+            {error && (
+              <div className="absolute inset-0 flex items-center justify-center z-20">
+                <div className="glass-card rounded-xl p-6 max-w-sm">
+                  <p className="text-sm font-medium text-red-400 mb-1">Failed to load election data</p>
+                  <p className="text-xs text-slate-400">{error}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Citywide-only indicator */}
+            {!isLoading && hasCitywideFallback && displayResults && (
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/80 backdrop-blur-sm border border-white/[0.08] text-[10px] font-mono text-slate-400">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#64748b" strokeWidth="1.5">
+                    <circle cx="6" cy="6" r="4.5" />
+                    <path d="M6 4v3M6 8.5v.01" strokeLinecap="round" />
+                  </svg>
+                  Citywide results — neighborhood-level data coming soon
+                </div>
+              </div>
+            )}
+
             {/* Stat cards */}
             {isLoading && <SkeletonStatCards count={4} />}
             {!isLoading && displayResults && cardDefs.length > 0 && (
@@ -687,13 +715,13 @@ export default function Elections() {
                           )}
                           {/* Campaign Finance cross-link */}
                           {isActive && winner && race.type === 'local' && (
-                            <a
-                              href={`/campaign-finance?search=${encodeURIComponent(winner.name.split(',')[0])}`}
+                            <Link
+                              to={`/campaign-finance?search=${encodeURIComponent(winner.name.split(',')[0])}`}
                               onClick={(e) => e.stopPropagation()}
                               className="block mt-1.5 text-[9px] font-mono text-indigo-400/70 hover:text-indigo-400 transition-colors"
                             >
                               See who funded this campaign →
-                            </a>
+                            </Link>
                           )}
                         </button>
                       )
@@ -707,7 +735,6 @@ export default function Elections() {
               <NeighborhoodsSidebarContent
                 selectedNeighborhood={selectedNeighborhood}
                 setSelectedNeighborhood={setSelectedNeighborhood}
-                mapInstance={mapInstance}
               />
             )}
 
@@ -753,11 +780,9 @@ export default function Elections() {
 function NeighborhoodsSidebarContent({
   selectedNeighborhood,
   setSelectedNeighborhood,
-  mapInstance,
 }: {
   selectedNeighborhood: string | null
   setSelectedNeighborhood: (n: string | null) => void
-  mapInstance: mapboxgl.Map | null
 }) {
   const { precinctToNeighborhood } = usePrecinctBoundaries()
 

@@ -4,7 +4,6 @@
  * Dots for each election, play/pause button, speed control.
  * "The Time Machine" — animate through SF elections over time.
  */
-import { useState, useEffect, useRef, useCallback } from 'react'
 import type { ElectionMeta } from '@/types/elections'
 
 interface ElectionTimelineProps {

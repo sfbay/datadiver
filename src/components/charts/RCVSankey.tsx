@@ -43,9 +43,9 @@ export default function RCVSankey({
 }: RCVSankeyProps) {
   const [hoveredCandidate, setHoveredCandidate] = useState<string | null>(null)
 
-  const { nodes, links, roundLabels } = useMemo(() => {
+  const { nodes, links, roundLabels, maxLinkValue } = useMemo(() => {
     const rounds = rcvData.rounds
-    if (rounds.length < 2) return { nodes: [], links: [], roundLabels: [] }
+    if (rounds.length < 2) return { nodes: [], links: [], roundLabels: [], maxLinkValue: 1 }
 
     // Only show rounds where something meaningful happens (elimination)
     // Limit to 8 rounds max for readability
@@ -199,8 +199,9 @@ export default function RCVSankey({
     }
 
     const labels = displayRounds.map((ri) => `R${ri + 1}`)
+    const maxLink = Math.max(...allLinks.map((l) => l.value), 1)
 
-    return { nodes: allNodes, links: allLinks, roundLabels: labels }
+    return { nodes: allNodes, links: allLinks, roundLabels: labels, maxLinkValue: maxLink }
   }, [rcvData, candidateColors, width, height])
 
   if (nodes.length === 0) {
@@ -232,7 +233,7 @@ export default function RCVSankey({
               d={linkPath(link)}
               fill="none"
               stroke={link.color}
-              strokeWidth={Math.max(link.value / 5000, 1)}
+              strokeWidth={Math.max((link.value / maxLinkValue) * 20, 1)}
               strokeOpacity={opacity}
               style={{ transition: 'stroke-opacity 0.2s' }}
             />
