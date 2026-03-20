@@ -198,20 +198,26 @@ export default function HorizontalBarChart({
       }
     })
 
-    // Value labels (right of bar)
+    // Value labels (right of bar) — capped bars get label inside the bar end
     g.selectAll('.val-label')
       .data(sliced)
       .join('text')
       .attr('class', 'val-label')
-      .attr('x', (d) => x(d.value) + 4)
+      .attr('x', (d) => {
+        const barW = Math.min(x(d.value), w)
+        // If bar is capped (fills full width), place label inside the bar
+        return d.value > scaleCap ? barW - 4 : barW + 4
+      })
       .attr('y', (d) => (y(d.label) ?? 0) + barHeight / 2)
       .attr('dy', '0.35em')
-      .attr('fill', valueColor)
+      .attr('text-anchor', (d) => d.value > scaleCap ? 'end' : 'start')
+      .attr('fill', (d) => d.value > scaleCap ? '#fff' : valueColor)
       .attr('font-size', '9px')
+      .attr('font-weight', (d) => d.value > scaleCap ? '600' : '400')
       .attr('font-family', '"JetBrains Mono", monospace')
       .text((d) => valueFormatter(d.value))
 
-  }, [data, width, height, maxBars, valueFormatter, isDarkMode])
+  }, [data, width, height, maxBars, valueFormatter, isDarkMode, labelWidth, capPercentile])
 
   return <svg ref={svgRef} className="w-full" />
 }
