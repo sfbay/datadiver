@@ -4,10 +4,11 @@
  *  categories + contract inventory). Fired from the vendor landscape bar click.
  */
 
-import { useRef, useEffect, useMemo } from 'react'
+import { useRef, useEffect, useMemo, useCallback } from 'react'
 import * as d3 from 'd3'
 import { useAppStore } from '@/stores/appStore'
-import { useVendorProfile, type VendorContractRow } from '@/hooks/useVendorProfile'
+import { useVendorProfile, useVendorPayments, useVendorMonthlySpend, type VendorContractRow, type VendorPaymentRow, type MonthlySpendRow } from '@/hooks/useVendorProfile'
+import { exportToCSV } from '@/utils/csvExport'
 import { Skeleton, SkeletonChart } from '@/components/ui/Skeleton'
 import { formatBudgetAmount, formatBudgetFull, formatFiscalYear } from '@/utils/fiscalYear'
 import { computeContractFlags, type VendorFlag } from '@/utils/vendorFlags'
@@ -24,12 +25,29 @@ interface VendorProfileProps {
 export default function VendorProfile({ vendor, fiscalYear, onBack }: VendorProfileProps) {
   const profile = useVendorProfile(vendor, fiscalYear)
   const { metrics } = profile
+  const payments = useVendorPayments(vendor)
+  const monthlySpend = useVendorMonthlySpend(vendor)
 
   // Contract-level anomaly flags
   const contractFlags = useMemo(
     () => computeContractFlags(profile.contractData),
     [profile.contractData],
   )
+
+  // CSV export
+  const handleExportCSV = useCallback(() => {
+    if (payments.payments.length === 0) return
+    const rows = payments.payments.map((p) => ({
+      fiscal_year: p.fiscal_year,
+      department: p.department,
+      category: p.sub_object,
+      amount: p.vouchers_paid,
+      voucher: p.voucher,
+      purchase_order: p.purchase_order,
+    }))
+    const safeName = vendor.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()
+    exportToCSV(rows, `vendor-${safeName}-payments`)
+  }, [payments.payments, vendor])
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -208,6 +226,45 @@ export default function VendorProfile({ vendor, fiscalYear, onBack }: VendorProf
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Payment Pattern Heatgrid */}
+          {monthlySpend.data.length > 0 && (
+            <div className="glass-card rounded-xl p-4 max-w-6xl mt-6">
+              <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500 mb-3">
+                Payment Pattern (monthly)
+              </p>
+              <PaymentHeatgrid data={monthlySpend.data} />
+            </div>
+          )}
+
+          {/* Recent Payments Table */}
+          <div className="glass-card rounded-xl p-4 max-w-6xl mt-6">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500">
+                Recent Payments
+              </p>
+              <button
+                onClick={handleExportCSV}
+                disabled={payments.payments.length === 0}
+                className="flex items-center gap-1.5 text-[10px] font-mono text-slate-400 hover:text-ink dark:hover:text-white bg-slate-100/80 dark:bg-white/[0.04] rounded-md px-2.5 py-1.5 transition-colors disabled:opacity-30"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                  <path d="M6 1v7M3 5l3 3 3-3M2 10h8" />
+                </svg>
+                CSV
+              </button>
+            </div>
+            <PaymentTable payments={payments.payments} isLoading={payments.isLoading} />
+            {payments.hasMore && (
+              <button
+                onClick={payments.loadMore}
+                disabled={payments.isLoading}
+                className="w-full mt-2 py-2 text-[10px] font-mono text-sky-400 hover:text-sky-300 bg-sky-500/5 hover:bg-sky-500/10 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {payments.isLoading ? 'Loading…' : 'Load more payments'}
+              </button>
+            )}
           </div>
 
           {/* Source */}
@@ -593,4 +650,162 @@ function ContractInventory({ contracts }: { contracts: VendorContractRow[] }) {
       })}
     </div>
   )
+}
+
+// ── Payment Table ──────────────────────────────────────────
+
+function PaymentTable({
+  payments,
+  isLoading,
+}: {
+  payments: VendorPaymentRow[]
+  isLoading: boolean
+}) {
+  if (payments.length === 0 && !isLoading) {
+    return <p className="text-xs text-slate-400 font-mono py-4">No payment records</p>
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-[10px] font-mono">
+        <thead>
+          <tr className="text-slate-400 dark:text-slate-500 border-b border-slate-200/50 dark:border-white/[0.04]">
+            <th className="text-left py-1.5 pr-3 font-medium">FY</th>
+            <th className="text-left py-1.5 pr-3 font-medium">Department</th>
+            <th className="text-left py-1.5 pr-3 font-medium">Category</th>
+            <th className="text-right py-1.5 pr-3 font-medium">Amount</th>
+            <th className="text-left py-1.5 pr-3 font-medium">Voucher</th>
+            <th className="text-left py-1.5 font-medium">PO</th>
+          </tr>
+        </thead>
+        <tbody>
+          {payments.map((p, i) => (
+            <tr
+              key={`${p.voucher}-${i}`}
+              className="border-b border-slate-100/50 dark:border-white/[0.02] hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors"
+            >
+              <td className="py-1.5 pr-3 text-slate-500 tabular-nums">FY{p.fiscal_year}</td>
+              <td className="py-1.5 pr-3 text-slate-600 dark:text-slate-300 truncate max-w-[160px]" title={p.department}>
+                {p.department}
+              </td>
+              <td className="py-1.5 pr-3 text-slate-400 truncate max-w-[140px]" title={p.sub_object}>
+                {p.sub_object}
+              </td>
+              <td className="py-1.5 pr-3 text-right text-ink dark:text-white tabular-nums">
+                {formatBudgetAmount(parseFloat(p.vouchers_paid) || 0)}
+              </td>
+              <td className="py-1.5 pr-3 text-sky-400 tabular-nums">{p.voucher}</td>
+              <td className="py-1.5 text-slate-400 tabular-nums">{p.purchase_order}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {isLoading && (
+        <div className="flex items-center justify-center py-4">
+          <span className="w-4 h-4 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Payment Pattern Heatgrid ───────────────────────────────
+
+const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+function PaymentHeatgrid({ data }: { data: MonthlySpendRow[] }) {
+  const svgRef = useRef<SVGSVGElement>(null)
+  const isDarkMode = useAppStore((s) => s.isDarkMode)
+
+  const { matrix, years, maxVal } = useMemo(() => {
+    const yearSet = new Set<string>()
+    const grid = new Map<string, number>() // "FY-month" → total
+
+    for (const r of data) {
+      const fy = r.fiscal_year
+      const month = parseInt(r.month, 10)
+      const total = parseFloat(r.total_paid) || 0
+      if (month < 1 || month > 12) continue
+      yearSet.add(fy)
+      const key = `${fy}-${month}`
+      grid.set(key, (grid.get(key) || 0) + total)
+    }
+
+    const sortedYears = [...yearSet].sort()
+    const maxV = Math.max(...grid.values(), 1)
+    return { matrix: grid, years: sortedYears, maxVal: maxV }
+  }, [data])
+
+  useEffect(() => {
+    if (!svgRef.current || years.length === 0) return
+
+    const svg = d3.select(svgRef.current)
+    svg.selectAll('*').remove()
+
+    const cellSize = 20
+    const gap = 2
+    const marginLeft = 40
+    const marginTop = 20
+    const width = marginLeft + 12 * (cellSize + gap)
+    const height = marginTop + years.length * (cellSize + gap)
+
+    svg.attr('width', width).attr('height', height)
+
+    const g = svg.append('g').attr('transform', `translate(${marginLeft},${marginTop})`)
+
+    // Color scale: transparent → accent
+    const color = d3.scaleSequential()
+      .domain([0, maxVal])
+      .interpolator(d3.interpolateRgb('rgba(14,165,233,0.05)', 'rgba(14,165,233,0.8)'))
+
+    // Month labels (top)
+    const labelColor = isDarkMode ? '#64748b' : '#94a3b8'
+    svg.selectAll('.month-label')
+      .data(MONTH_LABELS)
+      .join('text')
+      .attr('x', (_, i) => marginLeft + i * (cellSize + gap) + cellSize / 2)
+      .attr('y', marginTop - 6)
+      .attr('text-anchor', 'middle')
+      .attr('fill', labelColor)
+      .attr('font-size', '7px')
+      .attr('font-family', '"JetBrains Mono", monospace')
+      .text((d) => d)
+
+    // Year labels (left)
+    svg.selectAll('.year-label')
+      .data(years)
+      .join('text')
+      .attr('x', marginLeft - 6)
+      .attr('y', (_, i) => marginTop + i * (cellSize + gap) + cellSize / 2)
+      .attr('dy', '0.35em')
+      .attr('text-anchor', 'end')
+      .attr('fill', labelColor)
+      .attr('font-size', '7px')
+      .attr('font-family', '"JetBrains Mono", monospace')
+      .text((d) => `'${d.slice(-2)}`)
+
+    // Cells
+    for (const [yi, fy] of years.entries()) {
+      for (let m = 1; m <= 12; m++) {
+        const key = `${fy}-${m}`
+        const val = matrix.get(key) || 0
+        const x = (m - 1) * (cellSize + gap)
+        const y = yi * (cellSize + gap)
+
+        g.append('rect')
+          .attr('x', x)
+          .attr('y', y)
+          .attr('width', cellSize)
+          .attr('height', cellSize)
+          .attr('rx', 2)
+          .attr('fill', val > 0 ? color(val) : (isDarkMode ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'))
+          .append('title')
+          .text(`FY${fy} ${MONTH_LABELS[m - 1]}: ${formatBudgetAmount(val)}`)
+      }
+    }
+  }, [matrix, years, maxVal, isDarkMode])
+
+  if (years.length === 0) return null
+
+  return <svg ref={svgRef} className="w-full" />
 }

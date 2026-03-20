@@ -1,6 +1,6 @@
 /** Vendor profile data — spending timeline, department breakdown, categories, contracts, metrics */
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { fetchDataset } from '@/api/client'
 import type { FiscalYear } from '@/types/budget'
 
@@ -178,4 +178,94 @@ export function useVendorProfile(vendor: string | null, fiscalYear?: FiscalYear)
     isLoading,
     error,
   }
+}
+
+// ── Paginated payments hook ────────────────────────────────
+
+const PAGE_SIZE = 50
+
+export function useVendorPayments(vendor: string | null) {
+  const [payments, setPayments] = useState<VendorPaymentRow[]>([])
+  const [page, setPage] = useState(0)
+  const [hasMore, setHasMore] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
+
+  // Reset on vendor change
+  useEffect(() => {
+    setPayments([])
+    setPage(0)
+    setHasMore(true)
+  }, [vendor])
+
+  // Fetch current page
+  useEffect(() => {
+    if (!vendor) return
+    let cancelled = false
+    setIsLoading(true)
+
+    const escaped = vendor.replace(/'/g, "''")
+
+    fetchDataset<VendorPaymentRow>('vendorPayments', {
+      $select: 'fiscal_year, department, sub_object, vouchers_paid, voucher, purchase_order',
+      $where: `vendor = '${escaped}'`,
+      $order: 'fiscal_year DESC, vouchers_paid DESC',
+      $limit: PAGE_SIZE,
+      $offset: page * PAGE_SIZE,
+    })
+      .then((rows) => {
+        if (cancelled) return
+        setPayments((prev) => page === 0 ? rows : [...prev, ...rows])
+        setHasMore(rows.length === PAGE_SIZE)
+      })
+      .catch(() => {
+        if (!cancelled) setHasMore(false)
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false)
+      })
+
+    return () => { cancelled = true }
+  }, [vendor, page])
+
+  const loadMore = useCallback(() => {
+    if (hasMore && !isLoading) setPage((p) => p + 1)
+  }, [hasMore, isLoading])
+
+  return { payments, isLoading, hasMore, loadMore }
+}
+
+// ── Monthly spending heatgrid data ─────────────────────────
+
+export interface MonthlySpendRow {
+  fiscal_year: string
+  month: string
+  total_paid: string
+}
+
+export function useVendorMonthlySpend(vendor: string | null) {
+  const [data, setData] = useState<MonthlySpendRow[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    if (!vendor) return
+    let cancelled = false
+    setIsLoading(true)
+
+    const escaped = vendor.replace(/'/g, "''")
+
+    fetchDataset<MonthlySpendRow>('vendorPayments', {
+      $select: "fiscal_year, date_extract_m(vouchers_paid_distribution_date) as month, SUM(vouchers_paid) as total_paid",
+      $where: `vendor = '${escaped}' AND vouchers_paid_distribution_date IS NOT NULL`,
+      $group: 'fiscal_year, month',
+      $order: 'fiscal_year ASC, month ASC',
+      $limit: 500,
+    })
+      .then((rows) => { if (!cancelled) setData(rows) })
+      .catch(() => { /* silently fail — heatgrid is supplementary */ })
+      .finally(() => { if (!cancelled) setIsLoading(false) })
+
+    return () => { cancelled = true }
+  }, [vendor])
+
+  return { data, isLoading }
 }
