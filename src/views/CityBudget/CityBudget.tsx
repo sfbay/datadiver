@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import ExportButton from '@/components/export/ExportButton'
+import DataSourceLine from '@/components/ui/DataSourceLine'
 import { Skeleton, SkeletonChart, SkeletonSidebarRows } from '@/components/ui/Skeleton'
 import { type CardDef } from '@/components/ui/CardTray'
 import DepartmentBars from '@/components/charts/DepartmentBars'
@@ -311,11 +312,11 @@ function BudgetOverview({ fiscalYear }: { fiscalYear: FiscalYear }) {
             </div>
 
             {/* Source attribution */}
-            <p className="text-[9px] font-mono text-slate-400/60 dark:text-slate-600">
-              Source: SF Controller — Budget ({' '}
-              <span className="tabular-nums">xdgd-c79v</span>) · Spending & Revenue ({' '}
-              <span className="tabular-nums">bpnb-jwfb</span>) · data.sfgov.org
-            </p>
+            <DataSourceLine
+              dataset="Budget (xdgd-c79v) · Spending & Revenue (bpnb-jwfb)"
+              source="SF Controller"
+              recordCount={bva.data.length > 0 ? bva.data.length : undefined}
+            />
           </div>
         )}
       </div>
@@ -904,11 +905,13 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
             )}
 
             {/* Source attribution */}
-            <p className="text-[9px] font-mono text-slate-400/60 dark:text-slate-600">
-              Source: SF Controller — Vendor Payments ({' '}
-              <span className="tabular-nums">n9pm-xkyq</span>) · Three-layer detection:
-              sub_object tagging + agency registry + P-card flagging · data.sfgov.org
-            </p>
+            <DataSourceLine
+              dataset="Vendor Payments"
+              source="SF Controller"
+              id="n9pm-xkyq"
+              recordCount={ad.vendors.length}
+              caveats={['Three-layer detection: sub_object tagging + agency registry + P-card flagging']}
+            />
           </div>
         )}
       </div>

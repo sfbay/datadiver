@@ -7,6 +7,7 @@
 
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import DataSourceLine from '@/components/ui/DataSourceLine'
 import { useVendorLandscape, type VendorLandscapeItem, type VendorLandscapeFilters } from '@/hooks/useVendorLandscape'
 import VendorProfile from '@/views/CityBudget/VendorProfile'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -424,10 +425,13 @@ export default function VendorExplorer({ fiscalYear }: { fiscalYear: FiscalYear 
             </div>
 
             {/* Source attribution */}
-            <p className="text-[9px] font-mono text-slate-400/60 dark:text-slate-600 pb-4">
-              Source: SF Controller — Vendor Payments ({' '}
-              <span className="tabular-nums">n9pm-xkyq</span>) · data.sfgov.org
-            </p>
+            <DataSourceLine
+              dataset="Vendor Payments"
+              source="SF Controller"
+              id="n9pm-xkyq"
+              recordCount={filtered.length}
+              className="pb-4"
+            />
           </>
         )}
       </div>
