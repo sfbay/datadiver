@@ -1,11 +1,16 @@
+/** Convert ALL CAPS or mixed case to Title Case — capitalize first letter of every word.
+ *  Preserves known abbreviations (SF, CA, LLC, INC, DPH, etc.) */
+const KEEP_UPPER = new Set(['SF', 'CA', 'LLC', 'INC', 'DBA', 'NA', 'LP', 'LLP', 'PC', 'MD', 'JR', 'SR', 'II', 'III', 'IV', 'DPH', 'MTA', 'PUC', 'HRD', 'USA', 'TV'])
+
 export function toSentenceCase(str: string): string {
   if (!str) return ''
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
+  return str.replace(/\b([A-Za-z])([A-Za-z]*)\b/g, (match, first, rest) => {
+    // Preserve known abbreviations
+    if (KEEP_UPPER.has(match.toUpperCase())) return match.toUpperCase()
+    return first.toUpperCase() + rest.toLowerCase()
+  })
 }
 
 export function toTitleCase(str: string): string {
-  if (!str) return ''
-  return str.replace(/\b\w+/g, (w) =>
-    w.length <= 2 ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
-  )
+  return toSentenceCase(str)
 }

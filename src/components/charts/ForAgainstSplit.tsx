@@ -1,13 +1,6 @@
 import type { CampaignIERow, CampaignDonorRow } from '@/types/datasets'
 import { formatCurrency } from './TopRecipientsChart'
-
-/** Convert ALL-CAPS names to Sentence Case (e.g., "GOLDMAN" → "Goldman") */
-function toSentenceCase(name: string): string {
-  if (!name) return name
-  return name.replace(/\b([A-Z])([A-Z]+)\b/g, (_, first, rest) =>
-    first + rest.toLowerCase()
-  )
-}
+import { toSentenceCase } from '@/utils/format'
 
 interface Props {
   supportTotal: number

@@ -8,6 +8,7 @@
  */
 import { useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import type { RCVContest } from '@/types/elections'
+import { toSentenceCase } from '@/utils/format'
 
 interface RCVRoundChartProps {
   rcvData: RCVContest
@@ -16,14 +17,6 @@ interface RCVRoundChartProps {
   /** Optional: externally controlled round (for map sync) */
   currentRound?: number
   onRoundChange?: (round: number) => void
-}
-
-/** Convert ALL CAPS name to Sentence Case */
-function toSentenceCase(name: string): string {
-  if (!name) return name
-  return name.replace(/\b([A-Z])([A-Z]+)\b/g, (_, first, rest) =>
-    first + rest.toLowerCase()
-  )
 }
 
 export default function RCVRoundChart({
