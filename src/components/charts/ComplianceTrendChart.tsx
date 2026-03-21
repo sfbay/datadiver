@@ -125,6 +125,28 @@ export default function ComplianceTrendChart({
       .attr('stroke', isDarkMode ? '#0f172a' : '#fff')
       .attr('stroke-width', 1.5)
 
+    // "Resolution 240210 passed" annotation at FY2025
+    const resolutionFY = 2025
+    const [minFY, maxFY] = d3.extent(active, (d) => d.fiscalYear) as [number, number]
+    if (resolutionFY >= minFY && resolutionFY <= maxFY) {
+      const rx = x(resolutionFY)
+      g.append('line')
+        .attr('x1', rx).attr('x2', rx)
+        .attr('y1', 0).attr('y2', h)
+        .attr('stroke', isDarkMode ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)')
+        .attr('stroke-width', 1)
+        .attr('stroke-dasharray', '3,3')
+
+      g.append('text')
+        .attr('x', rx + 4)
+        .attr('y', 6)
+        .attr('font-size', 7)
+        .attr('font-family', 'JetBrains Mono, monospace')
+        .attr('fill', textColor)
+        .attr('opacity', 0.5)
+        .text('Res. 240210')
+    }
+
     // % labels on dots
     g.selectAll('.pct-label')
       .data(active)

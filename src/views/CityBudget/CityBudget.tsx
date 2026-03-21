@@ -13,7 +13,7 @@ import { useBudgetVsActual, useBudgetTotals, useSpendingTrend, useDepartmentSpen
 import { useAdvertisingData, type AdVendorRow } from '@/hooks/useAdvertisingData'
 import { useComplianceData, type ComplianceStatus, type DepartmentCard } from '@/hooks/useComplianceData'
 import ComplianceTrendChart from '@/components/charts/ComplianceTrendChart'
-import SparkBars from '@/components/charts/SparkBars'
+import MethodologyTip from '@/components/ui/MethodologyTip'
 import { MEDIA_CATEGORIES, type MediaCategory } from '@/utils/mediaClassification'
 import { exportToCSV } from '@/utils/csvExport'
 import { toSentenceCase } from '@/utils/format'
@@ -1152,7 +1152,8 @@ function FilteredVendorList({
 
 const STATUS_CONFIG: Record<ComplianceStatus, { icon: string; color: string; bg: string; label: string }> = {
   compliant: { icon: '✓', color: '#10b981', bg: 'bg-emerald-500/10', label: '≥ 50%' },
-  below: { icon: '⚠', color: '#f59e0b', bg: 'bg-amber-500/10', label: '< 50%' },
+  below: { icon: '⚠', color: '#f59e0b', bg: 'bg-amber-500/10', label: '30–49%' },
+  critical: { icon: '✗', color: '#ef4444', bg: 'bg-red-500/10', label: '< 30%' },
   none: { icon: '—', color: '#64748b', bg: 'bg-slate-500/10', label: 'No ad spend' },
 }
 
@@ -1241,6 +1242,18 @@ function ComplianceDashboard({
             <span style={{ color: barColor }} className="font-semibold text-sm tabular-nums">
               {pct.toFixed(1)}%
             </span>
+            <MethodologyTip
+              formula="ethnic media spend ÷ discretionary ad total × 100"
+              inputs={[
+                { label: 'Ethnic media spend', value: formatBudgetFull(compliance.ethnicMediaSpend) },
+                { label: 'Discretionary ad total', value: formatBudgetFull(compliance.totalDiscretionary) },
+              ]}
+              exclusions={compliance.exclusions.map((e) => ({
+                label: toSentenceCase(e.vendor),
+                reason: e.reason,
+              }))}
+              note="P-card purchases are included in the denominator but outlet is unknown."
+            />
             <span className="text-slate-400 tabular-nums">
               {formatBudgetFull(compliance.ethnicMediaSpend)} of {formatBudgetFull(compliance.totalDiscretionary)} discretionary
             </span>

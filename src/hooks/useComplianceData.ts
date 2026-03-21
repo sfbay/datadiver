@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { fetchDataset } from '@/api/client'
-import { classifyVendor, type MediaCategory, MEDIA_CATEGORIES } from '@/utils/mediaClassification'
+import { classifyVendor, type MediaCategory } from '@/utils/mediaClassification'
 import type { AdVendorRow, AdvertisingData } from '@/hooks/useAdvertisingData'
 import type { FiscalYear } from '@/types/budget'
 import { getCurrentFiscalYear } from '@/utils/fiscalYear'
 
 // ── Types ──────────────────────────────────────────────────
 
-export type ComplianceStatus = 'compliant' | 'below' | 'none'
+export type ComplianceStatus = 'compliant' | 'below' | 'critical' | 'none'
 
 export interface ComplianceExclusion {
   vendor: string
@@ -67,7 +67,9 @@ export interface ComplianceData {
 
 function getComplianceStatus(pct: number, hasSpend: boolean): ComplianceStatus {
   if (!hasSpend) return 'none'
-  return pct >= 50 ? 'compliant' : 'below'
+  if (pct >= 50) return 'compliant'
+  if (pct >= 30) return 'below'
+  return 'critical'
 }
 
 /** Compute compliance metrics from a set of vendor rows */
@@ -258,17 +260,12 @@ export function useComplianceData(adData: AdvertisingData, fiscalYear?: FiscalYe
   // Multi-FY trend
   const { trend, trendLoading } = useTrendData(currentFY)
 
-  // Enrich department cards with trend sparklines once trend data loads
-  const enrichedCards = useMemo((): DepartmentCard[] => {
-    if (trendLoading || trend.length === 0) return departmentCards
-    // For sparklines, use citywide trend (per-dept trend would need per-dept multi-FY queries)
-    const recentTrend = trend.slice(-5).map((t) => t.compliancePct)
-    return departmentCards.map((card) => ({ ...card, trend: recentTrend }))
-  }, [departmentCards, trend, trendLoading])
+  // Note: per-department sparklines would require N × FY Socrata queries.
+  // The citywide trend chart below the report card serves this purpose instead.
 
   return {
     ...singleFY,
-    departmentCards: enrichedCards,
+    departmentCards,
     trend,
     trendLoading,
     isLoading: adData.isLoading,
