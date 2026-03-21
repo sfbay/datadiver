@@ -11,6 +11,7 @@ export type MediaCategory =
   | 'direct-social'
   | 'p-card'
   | 'production'
+  | 'legal-notices'
   | 'unknown'
 
 export interface MediaCategoryInfo {
@@ -70,6 +71,11 @@ export const MEDIA_CATEGORIES: Record<MediaCategory, MediaCategoryInfo> = {
     color: '#a1a1aa',
     description: 'Physical production, not media placement',
   },
+  'legal-notices': {
+    label: 'Legal Notices (Mandatory)',
+    color: '#94a3b8',
+    description: 'Daily Journal Corp, CA Newspaper Service Bureau — mandatory legal publications, excluded from discretionary ad spend',
+  },
   'unknown': {
     label: 'Other / Unclassified',
     color: '#475569',
@@ -79,13 +85,15 @@ export const MEDIA_CATEGORIES: Record<MediaCategory, MediaCategoryInfo> = {
 
 /** Known vendor → category mapping (case-insensitive partial match) */
 const VENDOR_REGISTRY: Array<{ pattern: string; category: MediaCategory }> = [
+  // Legal notices — mandatory publications excluded from discretionary denominator
+  { pattern: 'DAILY JOURNAL', category: 'legal-notices' },
+  { pattern: 'CALIFORNIA NEWSPAPER SERVICE', category: 'legal-notices' },
+
   // Major metro print
-  { pattern: 'DAILY JOURNAL', category: 'major-metro-print' },
   { pattern: 'SF CHRONICLE', category: 'major-metro-print' },
   { pattern: 'SAN FRANCISCO CHRONICLE', category: 'major-metro-print' },
   { pattern: 'SF EXAMINER', category: 'major-metro-print' },
   { pattern: 'SAN FRANCISCO EXAMINER', category: 'major-metro-print' },
-  { pattern: 'CALIFORNIA NEWSPAPER SERVICE', category: 'major-metro-print' },
 
   // Community & ethnic press
   { pattern: 'SING TAO', category: 'community-ethnic-press' },
