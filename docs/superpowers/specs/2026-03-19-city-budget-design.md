@@ -108,7 +108,48 @@ Unlike other DataDiver views that start with a map/chart and drill down, this ta
 
 ### View 3: Advertising & Media Tracker (route: `/city-budget/advertising` or tab)
 
-**This is the watchdog layer.**
+**This is the watchdog layer — and a compliance monitoring tool for Board Resolution 240210.**
+
+#### Resolution 240210 Compliance Dashboard
+
+SF Board of Supervisors File No. 240210 (Dorsey/Preston) resolved that:
+1. City departments should spend **≥50% of discretionary ad budgets** with locally owned ethnic and community journalism outlets
+2. The City should **publicly report** how much is spent on ethnic/community journalism each year
+
+The 2023 BLA report found only **7 of 98** SF media outlets receive city ad dollars, and much spending flows through agencies uncategorized as advertising. DataDiver's Advertising & Media tracker is the monitoring tool this resolution calls for.
+
+**Compliance dashboard (top of Advertising tab):**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ RESOLUTION 240210 COMPLIANCE · FY2025-26                     │
+│                                                               │
+│ Target: 50% of discretionary ad spend → ethnic/community     │
+│ Actual: ████████████████░░░░░░░░░░░░░░  42% ($1.3M / $3.0M) │
+│                                                               │
+│ Outlets receiving city dollars: 12 of ~98                     │
+│ Trend: 38% (FY23) → 40% (FY24) → 42% (FY25)                │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Department report card:**
+- Per-department ethnic/community media share vs 50% target
+- Visual: green checkmark (≥50%), amber warning (30-49%), red flag (<30%)
+- Drill-down: click department → see which ethnic/community outlets they use
+- Trend: is each department's share growing or shrinking year over year?
+
+**Metrics derivation:**
+- "Discretionary advertising" = `sub_object = 'Advertising'` MINUS legal notices (Daily Journal Corp, CA Newspaper Service Bureau — these are mandatory, not discretionary)
+- "Ethnic/community media" = vendors classified as "Community & Ethnic Press" in the media classification taxonomy
+- Legal notice exclusion is important: DJC alone is $7.75M but is not discretionary ad spend — including it would inflate the denominator and make the 50% target appear harder to meet
+
+**What the compliance dashboard enables:**
+- A supervisor can ask "is my department meeting the resolution?" and get an immediate, data-backed answer
+- A journalist can track year-over-year progress (or lack thereof)
+- An advocate can identify which departments under-invest in community media
+- The public can verify the City is following its own stated policy
+
+**Reference:** BOS File No. 240210, source PDF at project reference files
 
 **Data strategy — three-layer detection:**
 
