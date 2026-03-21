@@ -96,28 +96,52 @@ const VENDOR_REGISTRY: Array<{ pattern: string; category: MediaCategory }> = [
   { pattern: 'SAN FRANCISCO EXAMINER', category: 'major-metro-print' },
 
   // Community & ethnic press
+  // — Chinese-language
   { pattern: 'SING TAO', category: 'community-ethnic-press' },
-  { pattern: 'EL MENSAJERO', category: 'community-ethnic-press' },
-  { pattern: 'BAY AREA REPORTER', category: 'community-ethnic-press' },
   { pattern: 'WORLD JOURNAL', category: 'community-ethnic-press' },
-  { pattern: 'EL TECOLOTE', category: 'community-ethnic-press' },
-  { pattern: 'SF NEIGHBORHOOD NEWSPAPER', category: 'community-ethnic-press' },
-  { pattern: 'ASIAN WEEK', category: 'community-ethnic-press' },
   { pattern: 'CHINESE TIMES', category: 'community-ethnic-press' },
-  { pattern: 'KOREA TIMES', category: 'community-ethnic-press' },
+  { pattern: 'WIND NEWSPAPER', category: 'community-ethnic-press' },
+  // — Spanish-language
+  { pattern: 'EL MENSAJERO', category: 'community-ethnic-press' },
+  { pattern: 'EL TECOLOTE', category: 'community-ethnic-press' },
   { pattern: 'EL REPORTERO', category: 'community-ethnic-press' },
-  { pattern: 'INDIA CURRENTS', category: 'community-ethnic-press' },
+  { pattern: 'ACCION LATINA', category: 'community-ethnic-press' },
+  // — Filipino
   { pattern: 'PHILIPPINE NEWS', category: 'community-ethnic-press' },
+  { pattern: 'FIL-AM RADIO', category: 'community-ethnic-press' },
+  // — Korean / South Asian / Other Asian
+  { pattern: 'KOREA TIMES', category: 'community-ethnic-press' },
+  { pattern: 'INDIA CURRENTS', category: 'community-ethnic-press' },
+  { pattern: 'ASIAN WEEK', category: 'community-ethnic-press' },
+  { pattern: 'CENTER FOR ASIAN AMERICAN MEDIA', category: 'community-ethnic-press' },
+  // — LGBTQ+
+  { pattern: 'BAY AREA REPORTER', category: 'community-ethnic-press' },
+  { pattern: 'SAN FRANCISCO BAY TIMES', category: 'community-ethnic-press' },
+  // — African American
+  { pattern: 'SAN FRANCISCO BAY VIEW', category: 'community-ethnic-press' },
+  // — Neighborhood / hyperlocal
+  { pattern: 'SF NEIGHBORHOOD NEWSPAPER', category: 'community-ethnic-press' },
+  { pattern: 'MISSION LOCAL', category: 'community-ethnic-press' },
+  // — Multicultural radio
+  { pattern: 'MULTICULTURAL RADIO', category: 'community-ethnic-press' },
 
   // Radio & TV
   { pattern: 'UNIVISION', category: 'radio-tv' },
+  { pattern: 'TELEMUNDO', category: 'radio-tv' },
   { pattern: 'COMCAST', category: 'radio-tv' },
   { pattern: 'EFFECTV', category: 'radio-tv' },
   { pattern: 'IHEART', category: 'radio-tv' },
   { pattern: 'KTSF', category: 'radio-tv' },
+  { pattern: 'KRON', category: 'radio-tv' },
+  { pattern: 'KGO TV', category: 'radio-tv' },
+  { pattern: 'SKY LINK TV', category: 'radio-tv' },
+  { pattern: 'NBCUNIVERSAL', category: 'radio-tv' },
   { pattern: 'ENTERCOM', category: 'radio-tv' },
   { pattern: 'AUDACY', category: 'radio-tv' },
   { pattern: 'BONNEVILLE', category: 'radio-tv' },
+  { pattern: 'KQED', category: 'radio-tv' },
+  { pattern: 'DISNEY ADVERTISING', category: 'radio-tv' },
+  { pattern: 'LEADER MEDIA GRP', category: 'radio-tv' },
 
   // Out-of-home / transit
   { pattern: 'CBS OUTDOOR', category: 'out-of-home' },
