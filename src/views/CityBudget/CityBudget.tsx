@@ -10,10 +10,13 @@ import VendorExplorer from '@/views/CityBudget/VendorExplorer'
 import VendorProfile from '@/views/CityBudget/VendorProfile'
 import { useBudgetVsActual, useBudgetTotals, useSpendingTrend, useDepartmentSpending } from '@/hooks/useBudgetData'
 import { useAdvertisingData, type AdVendorRow } from '@/hooks/useAdvertisingData'
+import { useComplianceData, type ComplianceStatus, type DepartmentCard } from '@/hooks/useComplianceData'
+import ComplianceTrendChart from '@/components/charts/ComplianceTrendChart'
+import SparkBars from '@/components/charts/SparkBars'
 import { MEDIA_CATEGORIES, type MediaCategory } from '@/utils/mediaClassification'
 import { exportToCSV } from '@/utils/csvExport'
 import { toSentenceCase } from '@/utils/format'
-import { getCurrentFiscalYear, formatFiscalYear, formatBudgetAmount } from '@/utils/fiscalYear'
+import { getCurrentFiscalYear, formatFiscalYear, formatBudgetAmount, formatBudgetFull } from '@/utils/fiscalYear'
 import type { FiscalYear } from '@/types/budget'
 
 type BudgetTab = 'overview' | 'search' | 'advertising'
@@ -381,6 +384,8 @@ interface AdDrilldown {
 function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
   const [searchParams, setSearchParams] = useSearchParams()
   const ad = useAdvertisingData(fiscalYear)
+  const compliance = useComplianceData(ad, fiscalYear)
+  const [methodologyOpen, setMethodologyOpen] = useState(false)
 
   // ── Drill-down state from URL ────────────────────────────
   const drilldown = useMemo((): AdDrilldown => ({
@@ -723,6 +728,17 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                 CSV
               </button>
             </div>
+
+            {/* ── Resolution 240210 Compliance Dashboard ──── */}
+            {!isDrilledDown && (
+              <ComplianceDashboard
+                compliance={compliance}
+                fiscalYear={fiscalYear}
+                methodologyOpen={methodologyOpen}
+                onToggleMethodology={() => setMethodologyOpen((o) => !o)}
+                onDeptClick={navigateToDept}
+              />
+            )}
 
             {/* ── Drilled-down view: filtered vendor list ──── */}
             {isDrilledDown && (
@@ -1124,6 +1140,285 @@ function FilteredVendorList({
 
       {vendors.length === 0 && (
         <p className="text-xs text-slate-400 font-mono py-4 text-center">No vendors found</p>
+      )}
+    </div>
+  )
+}
+
+// ── Compliance Dashboard ──────────────────────────────────
+
+const STATUS_CONFIG: Record<ComplianceStatus, { icon: string; color: string; bg: string; label: string }> = {
+  compliant: { icon: '✓', color: '#10b981', bg: 'bg-emerald-500/10', label: '≥ 50%' },
+  below: { icon: '⚠', color: '#f59e0b', bg: 'bg-amber-500/10', label: '< 50%' },
+  none: { icon: '—', color: '#64748b', bg: 'bg-slate-500/10', label: 'No ad spend' },
+}
+
+function ComplianceDashboard({
+  compliance,
+  fiscalYear,
+  methodologyOpen,
+  onToggleMethodology,
+  onDeptClick,
+}: {
+  compliance: ReturnType<typeof useComplianceData>
+  fiscalYear: FiscalYear
+  methodologyOpen: boolean
+  onToggleMethodology: () => void
+  onDeptClick: (dept: string) => void
+}) {
+  const handleExportDeptCSV = useCallback(() => {
+    const rows = compliance.departmentCards.map((d) => ({
+      department: d.department,
+      ethnic_media_spend: d.ethnicMediaSpend.toFixed(2),
+      discretionary_total: d.discretionaryTotal.toFixed(2),
+      compliance_pct: d.compliancePct.toFixed(1),
+      status: d.status,
+      outlet_count: d.outletCount,
+    }))
+    exportToCSV(rows, `compliance-report-card-fy${fiscalYear}`)
+  }, [compliance.departmentCards, fiscalYear])
+
+  const handleExportExclusions = useCallback(() => {
+    const rows = compliance.exclusions.map((e) => ({
+      vendor: e.vendor,
+      total: e.total.toFixed(2),
+      reason: e.reason,
+    }))
+    exportToCSV(rows, `legal-notice-exclusions-fy${fiscalYear}`)
+  }, [compliance.exclusions, fiscalYear])
+
+  // Progress bar color
+  const pct = compliance.compliancePct
+  const barColor = pct >= 50 ? '#10b981' : pct >= 30 ? '#f59e0b' : '#ef4444'
+
+  return (
+    <div className="space-y-4">
+      {/* ── Compliance Progress Bar ──────────────────── */}
+      <div className="glass-card rounded-xl p-4 border border-slate-200/30 dark:border-white/[0.06]">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60">
+              Resolution 240210 Compliance
+            </span>
+            <span className="text-[9px] font-mono text-slate-400/40">·</span>
+            <span className="text-[9px] font-mono text-slate-400/60">
+              {formatFiscalYear(fiscalYear)}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[8px] font-mono text-slate-400/50">
+              Based on {compliance.recordCount.toLocaleString()} records
+            </span>
+          </div>
+        </div>
+
+        {/* Target description */}
+        <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-3">
+          Target: ≥ 50% of discretionary ad spend → ethnic &amp; community journalism outlets
+        </p>
+
+        {/* Progress bar */}
+        <div className="relative mb-2">
+          <div className="h-5 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-700 ease-out"
+              style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: barColor }}
+            />
+          </div>
+          {/* 50% target marker */}
+          <div
+            className="absolute top-0 h-5 border-l-2 border-dashed border-amber-400/60"
+            style={{ left: '50%' }}
+          />
+        </div>
+
+        {/* Stats row */}
+        <div className="flex items-center justify-between text-[10px] font-mono">
+          <div className="flex items-center gap-4">
+            <span style={{ color: barColor }} className="font-semibold text-sm tabular-nums">
+              {pct.toFixed(1)}%
+            </span>
+            <span className="text-slate-400 tabular-nums">
+              {formatBudgetFull(compliance.ethnicMediaSpend)} of {formatBudgetFull(compliance.totalDiscretionary)} discretionary
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-slate-400">
+              {compliance.outletCount} outlet{compliance.outletCount !== 1 ? 's' : ''}
+            </span>
+            {compliance.legalNoticeTotal > 0 && (
+              <span className="text-slate-400/60">
+                {formatBudgetAmount(compliance.legalNoticeTotal)} legal notices excluded
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Department Report Card ──────────────────── */}
+      <div className="glass-card rounded-xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60">
+            Department Report Card
+          </p>
+          <button
+            onClick={handleExportDeptCSV}
+            className="flex items-center gap-1.5 text-[9px] font-mono text-slate-400 hover:text-ink dark:hover:text-white bg-slate-100/80 dark:bg-white/[0.04] rounded-md px-2 py-1 transition-colors"
+          >
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <path d="M6 1v7M3 5l3 3 3-3M2 10h8" />
+            </svg>
+            CSV
+          </button>
+        </div>
+
+        {/* Column headers */}
+        <div className="grid grid-cols-[1fr_80px_80px_60px_50px] gap-2 px-2 pb-1.5 border-b border-slate-100 dark:border-white/[0.04]">
+          <span className="text-[8px] font-mono uppercase tracking-wider text-slate-400/50">Department</span>
+          <span className="text-[8px] font-mono uppercase tracking-wider text-slate-400/50 text-right">Ethnic Media</span>
+          <span className="text-[8px] font-mono uppercase tracking-wider text-slate-400/50 text-right">Discretionary</span>
+          <span className="text-[8px] font-mono uppercase tracking-wider text-slate-400/50 text-right">Compliance</span>
+          <span className="text-[8px] font-mono uppercase tracking-wider text-slate-400/50 text-center">Status</span>
+        </div>
+
+        <div className="space-y-0.5 mt-1 max-h-[320px] overflow-y-auto">
+          {compliance.departmentCards.map((card) => {
+            const cfg = STATUS_CONFIG[card.status]
+            return (
+              <button
+                key={card.department}
+                onClick={() => onDeptClick(card.department)}
+                className="w-full grid grid-cols-[1fr_80px_80px_60px_50px] gap-2 px-2 py-1.5 rounded-md hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-all group items-center"
+              >
+                <span className="text-[10px] text-slate-600 dark:text-slate-300 group-hover:text-ink dark:group-hover:text-white transition-colors truncate text-left">
+                  {card.department}
+                </span>
+                <span className="text-[10px] font-mono text-slate-500 tabular-nums text-right">
+                  {formatBudgetAmount(card.ethnicMediaSpend)}
+                </span>
+                <span className="text-[10px] font-mono text-slate-500 tabular-nums text-right">
+                  {formatBudgetAmount(card.discretionaryTotal)}
+                </span>
+                <span className="text-[10px] font-mono tabular-nums text-right font-medium" style={{ color: cfg.color }}>
+                  {card.status === 'none' ? '—' : `${card.compliancePct.toFixed(0)}%`}
+                </span>
+                <span className="flex items-center justify-center">
+                  <span
+                    className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] ${cfg.bg}`}
+                    style={{ color: cfg.color }}
+                  >
+                    {cfg.icon}
+                  </span>
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
+        {compliance.departmentCards.length === 0 && (
+          <p className="text-xs text-slate-400 font-mono py-4 text-center">No department data</p>
+        )}
+      </div>
+
+      {/* ── Methodology Disclosure ──────────────────── */}
+      <div className="glass-card rounded-xl overflow-hidden">
+        <button
+          onClick={onToggleMethodology}
+          className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-50/50 dark:hover:bg-white/[0.01] transition-colors"
+        >
+          <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+            How is this calculated?
+          </span>
+          <svg
+            className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${methodologyOpen ? 'rotate-180' : ''}`}
+            fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
+          >
+            <path d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {methodologyOpen && (
+          <div className="px-4 pb-4 space-y-3 border-t border-slate-100 dark:border-white/[0.04] pt-3">
+            <div className="grid grid-cols-2 gap-4 text-[10px]">
+              <div>
+                <p className="font-mono uppercase tracking-wider text-slate-400/60 mb-1 text-[8px]">Numerator</p>
+                <p className="text-slate-600 dark:text-slate-300">
+                  Sum of payments to vendors classified as <strong className="text-emerald-500">Community &amp; Ethnic Press</strong>
+                </p>
+                <p className="font-mono text-emerald-500 mt-0.5 tabular-nums">{formatBudgetFull(compliance.ethnicMediaSpend)}</p>
+                <p className="text-slate-400 mt-0.5">{compliance.outletCount} distinct outlet{compliance.outletCount !== 1 ? 's' : ''}</p>
+              </div>
+              <div>
+                <p className="font-mono uppercase tracking-wider text-slate-400/60 mb-1 text-[8px]">Denominator</p>
+                <p className="text-slate-600 dark:text-slate-300">
+                  All advertising spend (<code className="text-[9px]">sub_object = &apos;Advertising&apos;</code>) minus mandatory legal notices
+                </p>
+                <p className="font-mono text-sky-400 mt-0.5 tabular-nums">{formatBudgetFull(compliance.totalDiscretionary)}</p>
+              </div>
+            </div>
+
+            {/* Exclusions */}
+            {compliance.exclusions.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="font-mono uppercase tracking-wider text-slate-400/60 text-[8px]">
+                    Excluded from Denominator (Legal Notices)
+                  </p>
+                  <button
+                    onClick={handleExportExclusions}
+                    className="text-[8px] font-mono text-slate-400 hover:text-ink dark:hover:text-white transition-colors"
+                  >
+                    Export ↓
+                  </button>
+                </div>
+                <div className="space-y-1">
+                  {compliance.exclusions.map((e) => (
+                    <div key={e.vendor} className="flex items-center justify-between text-[10px] px-2 py-1 rounded bg-slate-50 dark:bg-white/[0.02]">
+                      <span className="text-slate-500">{toSentenceCase(e.vendor)}</span>
+                      <span className="font-mono text-slate-400 tabular-nums">{formatBudgetFull(e.total)}</span>
+                    </div>
+                  ))}
+                  <p className="text-[9px] text-slate-400/60 mt-1">
+                    Total excluded: {formatBudgetFull(compliance.legalNoticeTotal)}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* P-card caveat */}
+            {compliance.pcardTotal > 0 && (
+              <div className="text-[10px] text-slate-500 dark:text-slate-400 bg-red-500/5 rounded-md px-3 py-2">
+                <strong className="text-red-400">P-Card note:</strong> {formatBudgetFull(compliance.pcardTotal)} in procurement card purchases are included in the denominator but the outlet is unknown — these may or may not be ethnic/community media.
+              </div>
+            )}
+
+            {/* Resolution reference */}
+            <p className="text-[9px] text-slate-400/60">
+              Per SF Board of Supervisors File No. 240210 (Dorsey/Preston): city departments should spend ≥ 50% of discretionary ad budgets with locally owned ethnic and community journalism outlets.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* ── Historical Trend Chart ──────────────────── */}
+      {compliance.trend.length > 0 && (
+        <div className="glass-card rounded-xl p-4">
+          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-3">
+            Compliance Trend — Ethnic Media Share of Discretionary Ad Spend
+          </p>
+          <ComplianceTrendChart
+            data={compliance.trend}
+            width={700}
+            height={260}
+            currentFY={fiscalYear}
+          />
+          <p className="text-[8px] font-mono text-slate-400/50 mt-2">
+            Green line = compliance %. Purple bars = outlet count. Dashed line = 50% target.
+          </p>
+        </div>
+      )}
+      {compliance.trendLoading && (
+        <SkeletonChart height={260} />
       )}
     </div>
   )
