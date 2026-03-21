@@ -218,14 +218,22 @@ function useTrendData(currentFY: FiscalYear): { trend: ComplianceTrendPoint[]; t
 export function useComplianceData(adData: AdvertisingData, fiscalYear?: FiscalYear): ComplianceData {
   const currentFY = fiscalYear || getCurrentFiscalYear()
 
-  // Compute single-FY compliance from existing advertising data (no new queries)
-  const singleFY = useMemo(() => computeFromVendors(adData.vendors), [adData.vendors])
+  // Compliance uses ONLY the tagged layer (sub_object = 'Advertising') — not
+  // agency registry or P-card. Agency spend is opaque (may or may not reach
+  // ethnic media), and P-card is untraceable. Only tagged advertising spend
+  // is defensible as the "discretionary advertising" denominator.
+  const taggedVendors = useMemo(
+    () => adData.vendors.filter((v) => v.layer === 'tagged'),
+    [adData.vendors]
+  )
 
-  // Per-department cards
+  const singleFY = useMemo(() => computeFromVendors(taggedVendors), [taggedVendors])
+
+  // Per-department cards (also tagged-only)
   const departmentCards = useMemo((): DepartmentCard[] => {
     const deptMap = new Map<string, { ethnic: number; total: number; legalNotice: number; outlets: Set<string> }>()
 
-    for (const v of adData.vendors) {
+    for (const v of taggedVendors) {
       const amt = parseFloat(v.total_paid) || 0
       const entry = deptMap.get(v.department) || { ethnic: 0, total: 0, legalNotice: 0, outlets: new Set<string>() }
       entry.total += amt
