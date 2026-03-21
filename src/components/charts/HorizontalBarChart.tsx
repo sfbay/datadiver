@@ -18,6 +18,8 @@ interface HorizontalBarChartProps {
   labelWidth?: number
   /** Cap outlier bars at this percentile to prevent scale compression (0 = off) */
   capPercentile?: number
+  /** Click handler for individual bars */
+  onBarClick?: (label: string) => void
 }
 
 export default function HorizontalBarChart({
@@ -28,6 +30,7 @@ export default function HorizontalBarChart({
   valueFormatter = (v) => String(v),
   labelWidth = 150,
   capPercentile = 0,
+  onBarClick,
 }: HorizontalBarChartProps) {
   const svgRef = useRef<SVGSVGElement>(null)
   const isDarkMode = useAppStore((s) => s.isDarkMode)
@@ -68,7 +71,7 @@ export default function HorizontalBarChart({
       .padding(0.1)
 
     // Bars — capped bars get a diagonal break pattern at the end
-    g.selectAll('.bar')
+    const bars = g.selectAll('.bar')
       .data(sliced)
       .join('rect')
       .attr('class', 'bar')
@@ -79,7 +82,13 @@ export default function HorizontalBarChart({
       .attr('rx', 2)
       .attr('fill', (d) => d.color || '#a78bfa')
       .attr('opacity', 0.8)
-      .transition()
+
+    if (onBarClick) {
+      bars.attr('cursor', 'pointer')
+        .on('click', (_, d) => onBarClick(d.label))
+    }
+
+    bars.transition()
       .duration(500)
       .delay((_, i) => i * 30)
       .ease(d3.easeCubicOut)
@@ -217,7 +226,7 @@ export default function HorizontalBarChart({
       .attr('font-family', '"JetBrains Mono", monospace')
       .text((d) => valueFormatter(d.value))
 
-  }, [data, width, height, maxBars, valueFormatter, isDarkMode, labelWidth, capPercentile])
+  }, [data, width, height, maxBars, valueFormatter, isDarkMode, labelWidth, capPercentile, onBarClick])
 
   return <svg ref={svgRef} className="w-full" />
 }

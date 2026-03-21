@@ -392,6 +392,9 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
   const isDrilledDown = drilldown.category !== null || drilldown.dept !== null
 
   // ── Navigation helpers ───────────────────────────────────
+  // adCategory and adDept are mutually exclusive: navigating to a category
+  // clears any department filter and vice versa. Both can coexist with adVendor
+  // (vendor is always the deepest level in either drill-down path).
   const navigateToCategory = useCallback((cat: MediaCategory) => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev)
@@ -843,6 +846,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                     labelWidth={200}
                     capPercentile={85}
                     valueFormatter={(v) => formatBudgetAmount(v)}
+                    onBarClick={navigateToVendor}
                   />
                 </div>
 
@@ -996,7 +1000,7 @@ function AdBreadcrumb({
   return (
     <nav className="flex items-center gap-1 text-[11px] font-mono">
       {segments.map((seg, i) => (
-        <span key={i} className="flex items-center gap-1 animate-[fadeSlideIn_200ms_ease-out_both]" style={{ animationDelay: `${i * 50}ms` }}>
+        <span key={seg.label} className="flex items-center gap-1 animate-[fadeSlideIn_200ms_ease-out_both]" style={{ animationDelay: `${i * 50}ms` }}>
           {i > 0 && <span className="text-slate-300 dark:text-slate-600">›</span>}
           {seg.isCurrent ? (
             <span className="text-ink dark:text-white font-medium">{seg.label}</span>
@@ -1029,9 +1033,9 @@ function FilteredVendorList({
 
   const sorted = useMemo(() => {
     const list = [...vendors]
-    if (sortBy === 'name') list.sort((a, b) => a.vendor.localeCompare(b.vendor))
+    if (sortBy === 'amount') list.sort((a, b) => b.total - a.total)
+    else if (sortBy === 'name') list.sort((a, b) => a.vendor.localeCompare(b.vendor))
     else if (sortBy === 'payments') list.sort((a, b) => b.payments - a.payments)
-    // default: already sorted by amount
     return list
   }, [vendors, sortBy])
 
