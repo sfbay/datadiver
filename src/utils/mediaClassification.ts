@@ -119,9 +119,10 @@ const VENDOR_REGISTRY: Array<{ pattern: string; category: MediaCategory }> = [
   { pattern: 'SAN FRANCISCO BAY TIMES', category: 'community-ethnic-press' },
   // — African American
   { pattern: 'SAN FRANCISCO BAY VIEW', category: 'community-ethnic-press' },
-  // — Neighborhood / hyperlocal
+  // — Neighborhood / hyperlocal / SFIMC
   { pattern: 'SF NEIGHBORHOOD NEWSPAPER', category: 'community-ethnic-press' },
   { pattern: 'MISSION LOCAL', category: 'community-ethnic-press' },
+  { pattern: 'BROKE-ASS STUART', category: 'community-ethnic-press' },
   // — Multicultural radio
   { pattern: 'MULTICULTURAL RADIO', category: 'community-ethnic-press' },
 
