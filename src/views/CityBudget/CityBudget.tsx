@@ -633,11 +633,12 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
         defaultExpanded: true,
       },
       {
-        id: 'vendor-count',
-        label: 'Total Vendors',
-        shortLabel: 'Vendors',
-        value: String(new Set(ad.vendors.map((v) => v.vendor)).size),
-        color: '#f59e0b',
+        id: 'community-vendors',
+        label: 'Community Outlets',
+        shortLabel: 'Outlets',
+        value: String(compliance.outletCount),
+        color: '#10b981',
+        subtitle: `of ${new Set(ad.vendors.map((v) => v.vendor)).size} total vendors`,
         defaultExpanded: true,
       },
     ]
@@ -1204,6 +1205,9 @@ function ComplianceDashboard({
     exportToCSV(rows, `legal-notice-exclusions-fy${fiscalYear}`)
   }, [compliance.exclusions, fiscalYear])
 
+  // Total tagged ad spend = discretionary + legal notices (the full sub_object='Advertising' universe)
+  const totalTaggedAdSpend = compliance.totalDiscretionary + compliance.legalNoticeTotal
+
   // Progress bar color
   const pct = compliance.compliancePct
   const barColor = pct >= 50 ? '#10b981' : pct >= 30 ? '#f59e0b' : '#ef4444'
@@ -1248,6 +1252,71 @@ function ComplianceDashboard({
             style={{ left: '50%' }}
           />
         </div>
+
+        {/* Spend composition bar — shows how total breaks down into layers */}
+        {totalTaggedAdSpend > 0 && (
+          <div className="mt-4 mb-1">
+            <div className="flex items-center gap-1 mb-1.5">
+              <span className="text-[8px] font-mono uppercase tracking-wider text-slate-400/50">
+                Ad spend composition
+              </span>
+              <span className="text-[8px] font-mono text-slate-400/30">
+                {formatBudgetFull(totalTaggedAdSpend)} total
+              </span>
+            </div>
+            {/* Stacked bar */}
+            <div className="relative h-7 rounded bg-slate-100 dark:bg-white/[0.04] overflow-hidden">
+              {/* Legal notices (excluded — grayed out) */}
+              <div
+                className="absolute inset-y-0 left-0 bg-slate-300/40 dark:bg-slate-600/30"
+                style={{ width: `${(compliance.legalNoticeTotal / totalTaggedAdSpend) * 100}%` }}
+                title={`Legal notices: ${formatBudgetFull(compliance.legalNoticeTotal)} (excluded)`}
+              />
+              {/* Discretionary — everything else */}
+              <div
+                className="absolute inset-y-0 bg-slate-200/60 dark:bg-slate-500/15"
+                style={{
+                  left: `${(compliance.legalNoticeTotal / totalTaggedAdSpend) * 100}%`,
+                  width: `${(compliance.totalDiscretionary / totalTaggedAdSpend) * 100}%`,
+                }}
+              >
+                {/* 50% target ghost line within discretionary */}
+                <div
+                  className="absolute inset-y-0 border-r-2 border-dashed border-amber-400/50"
+                  style={{ left: '50%' }}
+                />
+                {/* Community media actual (filled) */}
+                <div
+                  className="absolute inset-y-0 left-0 rounded-r bg-emerald-500/60 transition-all duration-700"
+                  style={{
+                    width: compliance.totalDiscretionary > 0
+                      ? `${Math.min((compliance.ethnicMediaSpend / compliance.totalDiscretionary) * 100, 100)}%`
+                      : '0%',
+                  }}
+                />
+              </div>
+            </div>
+            {/* Legend */}
+            <div className="flex items-center gap-4 mt-1.5 text-[8px] font-mono text-slate-400/60">
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-sm bg-slate-300/40 dark:bg-slate-600/30" />
+                Legal notices (excl.)
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-sm bg-slate-200/60 dark:bg-slate-500/15 border border-slate-300/30 dark:border-white/10" />
+                Discretionary
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500/60" />
+                Community media
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-0 h-2.5 border-r-2 border-dashed border-amber-400/50" />
+                50% target
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Prominent dollar amounts */}
         <div className="grid grid-cols-3 gap-4 mt-3 mb-2">
