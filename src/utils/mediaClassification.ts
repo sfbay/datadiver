@@ -121,6 +121,7 @@ const VENDOR_REGISTRY: Array<{ pattern: string; category: MediaCategory }> = [
   { pattern: 'SAN FRANCISCO BAY VIEW', category: 'community-ethnic-press' },
   // — Neighborhood / hyperlocal / SFIMC
   { pattern: 'SF NEIGHBORHOOD NEWSPAPER', category: 'community-ethnic-press' },
+  { pattern: 'S F NEIGHBORHOOD NEWSPAPER', category: 'community-ethnic-press' },
   { pattern: 'MISSION LOCAL', category: 'community-ethnic-press' },
   { pattern: 'BROKE-ASS STUART', category: 'community-ethnic-press' },
   // — Multicultural radio

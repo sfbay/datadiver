@@ -509,7 +509,8 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
       .sort((a, b) => b.total - a.total)
   }, [ad.vendors, filteredVendors, drilldown.dept])
 
-  const vendorBars = useMemo((): BarDatum[] => {
+  // Build vendor bars + a reverse lookup from title-cased label → raw Socrata vendor name
+  const { vendorBars, vendorLabelToRaw } = useMemo(() => {
     const vendorMap = new Map<string, { total: number; category: MediaCategory }>()
     for (const v of ad.vendors) {
       const amt = parseFloat(v.total_paid) || 0
@@ -517,14 +518,16 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
       entry.total += amt
       vendorMap.set(v.vendor, entry)
     }
-    return [...vendorMap.entries()]
+    const labelToRaw = new Map<string, string>()
+    const bars = [...vendorMap.entries()]
       .sort((a, b) => b[1].total - a[1].total)
       .slice(0, 20)
-      .map(([name, { total, category }]) => ({
-        label: name,
-        value: total,
-        color: MEDIA_CATEGORIES[category].color,
-      }))
+      .map(([name, { total, category }]) => {
+        const label = toSentenceCase(name)
+        labelToRaw.set(label, name)
+        return { label, value: total, color: MEDIA_CATEGORIES[category].color }
+      })
+    return { vendorBars: bars, vendorLabelToRaw: labelToRaw }
   }, [ad.vendors])
 
   // Cards — adapt to drill-down context
@@ -863,7 +866,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                     labelWidth={200}
                     capPercentile={85}
                     valueFormatter={(v) => formatBudgetAmount(v)}
-                    onBarClick={navigateToVendor}
+                    onBarClick={(label) => navigateToVendor(vendorLabelToRaw.get(label) || label)}
                   />
                 </div>
 
