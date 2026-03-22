@@ -1265,19 +1265,24 @@ function ComplianceDashboard({
               </span>
             </div>
             {/* Stacked bar */}
-            <div className="relative h-7 rounded bg-slate-100 dark:bg-white/[0.04] overflow-hidden">
-              {/* Legal notices (excluded — grayed out) */}
+            <div className="relative h-7 rounded overflow-hidden">
+              {/* Legal notices (excluded — diagonal hatching to visually "cross out") */}
               <div
-                className="absolute inset-y-0 left-0 bg-slate-300/40 dark:bg-slate-600/30"
-                style={{ width: `${(compliance.legalNoticeTotal / totalTaggedAdSpend) * 100}%` }}
+                className="absolute inset-y-0 left-0"
+                style={{
+                  width: `${(compliance.legalNoticeTotal / totalTaggedAdSpend) * 100}%`,
+                  background: `repeating-linear-gradient(-45deg, transparent, transparent 3px, rgba(148,163,184,0.25) 3px, rgba(148,163,184,0.25) 5px)`,
+                  backgroundColor: 'rgba(148,163,184,0.1)',
+                }}
                 title={`Legal notices: ${formatBudgetFull(compliance.legalNoticeTotal)} (excluded)`}
               />
-              {/* Discretionary — everything else */}
+              {/* Discretionary — lighter fill, distinct from hatched legal */}
               <div
-                className="absolute inset-y-0 bg-slate-200/60 dark:bg-slate-500/15"
+                className="absolute inset-y-0 border border-sky-400/20"
                 style={{
                   left: `${(compliance.legalNoticeTotal / totalTaggedAdSpend) * 100}%`,
                   width: `${(compliance.totalDiscretionary / totalTaggedAdSpend) * 100}%`,
+                  backgroundColor: 'rgba(14,165,233,0.08)',
                 }}
               >
                 {/* 50% target ghost line within discretionary */}
@@ -1299,11 +1304,11 @@ function ComplianceDashboard({
             {/* Legend */}
             <div className="flex items-center gap-4 mt-1.5 text-[8px] font-mono text-slate-400/60">
               <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-sm bg-slate-300/40 dark:bg-slate-600/30" />
+                <span className="w-2.5 h-2.5 rounded-sm" style={{ background: 'repeating-linear-gradient(-45deg, transparent, transparent 2px, rgba(148,163,184,0.3) 2px, rgba(148,163,184,0.3) 3px)', backgroundColor: 'rgba(148,163,184,0.1)' }} />
                 Legal notices (excl.)
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-sm bg-slate-200/60 dark:bg-slate-500/15 border border-slate-300/30 dark:border-white/10" />
+                <span className="w-2.5 h-2.5 rounded-sm border border-sky-400/30" style={{ backgroundColor: 'rgba(14,165,233,0.12)' }} />
                 Discretionary
               </span>
               <span className="flex items-center gap-1">
