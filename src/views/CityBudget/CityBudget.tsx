@@ -604,11 +604,21 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
         defaultExpanded: true,
       },
       {
-        id: 'top-ad-dept',
-        label: 'Top Ad Department',
-        shortLabel: 'Top Dept',
-        value: ad.topDepartment.length > 18 ? ad.topDepartment.slice(0, 17) + '…' : ad.topDepartment,
-        color: '#a78bfa',
+        id: 'discretionary',
+        label: 'Discretionary',
+        shortLabel: 'Discr.',
+        value: formatBudgetAmount(compliance.totalDiscretionary),
+        color: '#64748b',
+        subtitle: 'excl. legal notices',
+        defaultExpanded: true,
+      },
+      {
+        id: 'community-media',
+        label: 'Community Media',
+        shortLabel: 'Ethnic',
+        value: formatBudgetAmount(compliance.ethnicMediaSpend),
+        color: '#10b981',
+        subtitle: `${compliance.outletCount} outlets`,
         defaultExpanded: true,
       },
       {
@@ -624,14 +634,14 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
       },
       {
         id: 'vendor-count',
-        label: 'Ad Vendors',
+        label: 'Total Vendors',
         shortLabel: 'Vendors',
         value: String(new Set(ad.vendors.map((v) => v.vendor)).size),
         color: '#f59e0b',
         defaultExpanded: true,
       },
     ]
-  }, [ad, drilldown, filteredTotal, aggregatedVendors.length])
+  }, [ad, compliance, drilldown, filteredTotal, aggregatedVendors.length])
 
   const maxPcardTotal = useMemo(
     () => Math.max(...ad.departments.map((d) => d.pcard_total), 1),
@@ -1239,9 +1249,41 @@ function ComplianceDashboard({
           />
         </div>
 
-        {/* Stats row */}
-        <div className="flex items-center justify-between text-[10px] font-mono">
-          <div className="flex items-center gap-4">
+        {/* Prominent dollar amounts */}
+        <div className="grid grid-cols-3 gap-4 mt-3 mb-2">
+          <div>
+            <p className="text-[9px] font-mono uppercase tracking-wider text-slate-400/60 mb-0.5">Community Media Spend</p>
+            <p className="text-lg font-bold font-mono tabular-nums text-emerald-400">{formatBudgetFull(compliance.ethnicMediaSpend)}</p>
+            <p className="text-[9px] font-mono text-slate-400/60">{compliance.outletCount} outlet{compliance.outletCount !== 1 ? 's' : ''}</p>
+          </div>
+          <div>
+            <p className="text-[9px] font-mono uppercase tracking-wider text-slate-400/60 mb-0.5">50% Target</p>
+            <p className="text-lg font-bold font-mono tabular-nums text-amber-400">{formatBudgetFull(compliance.totalDiscretionary * 0.5)}</p>
+            <p className="text-[9px] font-mono text-slate-400/60">of {formatBudgetFull(compliance.totalDiscretionary)} discretionary</p>
+          </div>
+          <div>
+            <p className="text-[9px] font-mono uppercase tracking-wider text-slate-400/60 mb-0.5">Shortfall</p>
+            {compliance.totalDiscretionary * 0.5 > compliance.ethnicMediaSpend ? (
+              <>
+                <p className="text-lg font-bold font-mono tabular-nums text-red-400">
+                  {formatBudgetFull(compliance.totalDiscretionary * 0.5 - compliance.ethnicMediaSpend)}
+                </p>
+                <p className="text-[9px] font-mono text-red-400/60">below 50% target</p>
+              </>
+            ) : (
+              <>
+                <p className="text-lg font-bold font-mono tabular-nums text-emerald-400">
+                  +{formatBudgetFull(compliance.ethnicMediaSpend - compliance.totalDiscretionary * 0.5)}
+                </p>
+                <p className="text-[9px] font-mono text-emerald-400/60">above 50% target</p>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Compliance % + methodology link */}
+        <div className="flex items-center justify-between text-[10px] font-mono border-t border-slate-200/30 dark:border-white/[0.04] pt-2">
+          <div className="flex items-center gap-3">
             <span style={{ color: barColor }} className="font-semibold text-sm tabular-nums">
               {pct.toFixed(1)}%
             </span>
@@ -1257,22 +1299,35 @@ function ComplianceDashboard({
               }))}
               note="P-card purchases are included in the denominator but outlet is unknown."
             />
-            <span className="text-slate-400 tabular-nums">
-              {formatBudgetFull(compliance.ethnicMediaSpend)} of {formatBudgetFull(compliance.totalDiscretionary)} discretionary
-            </span>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-slate-400">
-              {compliance.outletCount} outlet{compliance.outletCount !== 1 ? 's' : ''}
+          {compliance.legalNoticeTotal > 0 && (
+            <span className="text-slate-400/60 text-[9px]">
+              {formatBudgetAmount(compliance.legalNoticeTotal)} legal notices excluded
             </span>
-            {compliance.legalNoticeTotal > 0 && (
-              <span className="text-slate-400/60">
-                {formatBudgetAmount(compliance.legalNoticeTotal)} legal notices excluded
-              </span>
-            )}
-          </div>
+          )}
         </div>
       </div>
+
+      {/* ── Historical Trend Chart (right under thermometer) ── */}
+      {compliance.trend.length > 0 && (
+        <div className="glass-card rounded-xl p-4">
+          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-3">
+            Compliance Trend — Ethnic Media Share of Discretionary Ad Spend
+          </p>
+          <ComplianceTrendChart
+            data={compliance.trend}
+            width={700}
+            height={260}
+            currentFY={fiscalYear}
+          />
+          <p className="text-[8px] font-mono text-slate-400/50 mt-2">
+            Green line = compliance %. Purple bars = outlet count. Dashed line = 50% target.
+          </p>
+        </div>
+      )}
+      {compliance.trendLoading && (
+        <SkeletonChart height={260} />
+      )}
 
       {/* ── Department Report Card ──────────────────── */}
       <div className="glass-card rounded-xl p-4">
@@ -1419,24 +1474,7 @@ function ComplianceDashboard({
         )}
       </div>
 
-      {/* ── Historical Trend Chart ──────────────────── */}
-      {compliance.trend.length > 0 && (
-        <div className="glass-card rounded-xl p-4">
-          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-3">
-            Compliance Trend — Ethnic Media Share of Discretionary Ad Spend
-          </p>
-          <ComplianceTrendChart
-            data={compliance.trend}
-            width={700}
-            height={260}
-            currentFY={fiscalYear}
-          />
-          <p className="text-[8px] font-mono text-slate-400/50 mt-2">
-            Green line = compliance %. Purple bars = outlet count. Dashed line = 50% target.
-          </p>
-        </div>
-      )}
-      {compliance.trendLoading && (
+      {compliance.trendLoading && !compliance.trend.length && (
         <SkeletonChart height={260} />
       )}
     </div>
