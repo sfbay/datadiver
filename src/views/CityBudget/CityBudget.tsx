@@ -1375,18 +1375,23 @@ function ComplianceDashboard({
         <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-2">
           Target: ≥ 50% of discretionary ad spend → ethnic &amp; community journalism outlets
         </p>
-        <div className="relative mb-2">
-          <div className="h-5 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="flex-1 relative">
+            <div className="h-5 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-700 ease-out"
+                style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: barColor }}
+              />
+            </div>
+            {/* 50% target marker */}
             <div
-              className="h-full rounded-full transition-all duration-700 ease-out"
-              style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: barColor }}
+              className="absolute top-0 h-5 border-l-2 border-dashed border-amber-400/60"
+              style={{ left: '50%' }}
             />
           </div>
-          {/* 50% target marker */}
-          <div
-            className="absolute top-0 h-5 border-l-2 border-dashed border-amber-400/60"
-            style={{ left: '50%' }}
-          />
+          <span className="flex-shrink-0 text-sm font-bold font-mono tabular-nums text-sky-400">
+            {formatBudgetFull(compliance.totalDiscretionary)}
+          </span>
         </div>
 
         {/* Prominent dollar amounts */}
