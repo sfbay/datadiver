@@ -9,10 +9,50 @@
  * Scroll: CSS transform + requestAnimationFrame at ~40px/sec.
  * Pauses on hover, edge-fades via CSS mask-image gradients.
  */
-import { useRef, useEffect, useCallback, useState } from 'react'
+import { useRef, useEffect, useCallback, useState, useSyncExternalStore } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { TickerItem, TickerSize } from '@/types/ticker'
 import TickerCard from '@/components/ui/TickerCard'
+
+// ─── Responsive Size Helper ─────────────────────────────
+
+/** Returns the ideal ticker size based on viewport width. */
+export function useResponsiveTickerSize(
+  preferred: TickerSize,
+): TickerSize {
+  const width = useSyncExternalStore(
+    (cb) => {
+      window.addEventListener('resize', cb)
+      return () => window.removeEventListener('resize', cb)
+    },
+    () => window.innerWidth,
+    () => 1200,
+  )
+
+  if (preferred === 'hero') {
+    if (width < 768) return 'compact'
+    if (width < 1024) return 'standard'
+    return 'hero'
+  }
+  if (preferred === 'standard') {
+    if (width < 768) return 'compact'
+    return 'standard'
+  }
+  return 'compact'
+}
+
+/** Detect prefers-reduced-motion */
+function usePrefersReducedMotion(): boolean {
+  return useSyncExternalStore(
+    (cb) => {
+      const mql = window.matchMedia('(prefers-reduced-motion: reduce)')
+      mql.addEventListener('change', cb)
+      return () => mql.removeEventListener('change', cb)
+    },
+    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    () => false,
+  )
+}
 
 // ─── Helpers ────────────────────────────────────────────
 
@@ -46,7 +86,7 @@ const DELTA_COLORS: Record<string, string> = {
 
 // ─── Scroll Hook ────────────────────────────────────────
 
-function useTickerScroll(paused: boolean, speed: number) {
+function useTickerScroll(paused: boolean, speed: number, reducedMotion: boolean) {
   const containerRef = useRef<HTMLDivElement>(null)
   const offsetRef = useRef(0)
   const lastTimeRef = useRef(0)
@@ -77,7 +117,7 @@ function useTickerScroll(paused: boolean, speed: number) {
   }, [speed])
 
   useEffect(() => {
-    if (paused) {
+    if (paused || reducedMotion) {
       cancelAnimationFrame(rafRef.current)
       lastTimeRef.current = 0
       return
@@ -85,7 +125,7 @@ function useTickerScroll(paused: boolean, speed: number) {
     lastTimeRef.current = 0
     rafRef.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(rafRef.current)
-  }, [paused, tick])
+  }, [paused, reducedMotion, tick])
 
   return containerRef
 }
@@ -104,7 +144,8 @@ interface CivicTickerProps {
 
 function HeroTicker({ items, lastUpdated, className = '' }: Omit<CivicTickerProps, 'size'>) {
   const [hovered, setHovered] = useState(false)
-  const trackRef = useTickerScroll(hovered, SCROLL_SPEED)
+  const reducedMotion = usePrefersReducedMotion()
+  const trackRef = useTickerScroll(hovered, SCROLL_SPEED, reducedMotion)
 
   // Duplicate items for seamless loop
   const doubled = [...items, ...items]
@@ -158,7 +199,8 @@ function HeroTicker({ items, lastUpdated, className = '' }: Omit<CivicTickerProp
 function StandardTicker({ items, className = '' }: Omit<CivicTickerProps, 'size'>) {
   const navigate = useNavigate()
   const [hovered, setHovered] = useState(false)
-  const trackRef = useTickerScroll(hovered, SCROLL_SPEED)
+  const reducedMotion = usePrefersReducedMotion()
+  const trackRef = useTickerScroll(hovered, SCROLL_SPEED, reducedMotion)
 
   const doubled = [...items, ...items]
 
@@ -220,7 +262,8 @@ function StandardTicker({ items, className = '' }: Omit<CivicTickerProps, 'size'
 function CompactTicker({ items, className = '' }: Omit<CivicTickerProps, 'size'>) {
   const navigate = useNavigate()
   const [hovered, setHovered] = useState(false)
-  const trackRef = useTickerScroll(hovered, SCROLL_SPEED * 0.8)
+  const reducedMotion = usePrefersReducedMotion()
+  const trackRef = useTickerScroll(hovered, SCROLL_SPEED * 0.8, reducedMotion)
 
   const doubled = [...items, ...items]
 
