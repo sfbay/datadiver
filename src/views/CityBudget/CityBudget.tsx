@@ -752,6 +752,18 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                 methodologyOpen={methodologyOpen}
                 onToggleMethodology={() => setMethodologyOpen((o) => !o)}
                 onDeptClick={navigateToDept}
+                onExportRecords={() => {
+                  const tagged = ad.vendors.filter((v) => v.layer === 'tagged')
+                  const rows = tagged.map((v) => ({
+                    vendor: v.vendor,
+                    department: v.department,
+                    total_paid: v.total_paid,
+                    payments: v.payment_count,
+                    media_category: MEDIA_CATEGORIES[v.category].label,
+                    detection_layer: v.layer,
+                  }))
+                  exportToCSV(rows, `compliance-source-records-fy${fiscalYear}`)
+                }}
               />
             )}
 
@@ -1234,12 +1246,14 @@ function ComplianceDashboard({
   methodologyOpen,
   onToggleMethodology,
   onDeptClick,
+  onExportRecords,
 }: {
   compliance: ReturnType<typeof useComplianceData>
   fiscalYear: FiscalYear
   methodologyOpen: boolean
   onToggleMethodology: () => void
   onDeptClick: (dept: string) => void
+  onExportRecords: () => void
 }) {
   const handleExportDeptCSV = useCallback(() => {
     const rows = compliance.departmentCards.map((d) => ({
@@ -1284,11 +1298,16 @@ function ComplianceDashboard({
               {formatFiscalYear(fiscalYear)}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[8px] font-mono text-slate-400/50">
-              Based on {compliance.recordCount.toLocaleString()} records
-            </span>
-          </div>
+          <button
+            onClick={onExportRecords}
+            className="flex items-center gap-1.5 text-[8px] font-mono text-slate-400/50 hover:text-sky-400 transition-colors"
+            title="Export the tagged advertising records backing this compliance calculation"
+          >
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <path d="M6 1v7M3 5l3 3 3-3M2 10h8" />
+            </svg>
+            Based on {compliance.recordCount.toLocaleString()} records
+          </button>
         </div>
 
         {/* ── 1. Composition bar FIRST — the broadest context ── */}
