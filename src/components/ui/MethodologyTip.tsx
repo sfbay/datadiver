@@ -19,7 +19,7 @@ export default function MethodologyTip({ formula, inputs, exclusions, note, clas
   const [open, setOpen] = useState(false)
 
   return (
-    <span className={`inline-block relative ${className}`}>
+    <span className={`inline-block relative ${className}`} style={{ zIndex: open ? 999 : 'auto' }}>
       <button
         onClick={() => setOpen((o) => !o)}
         className="text-[9px] font-mono text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors underline decoration-dotted underline-offset-2"
