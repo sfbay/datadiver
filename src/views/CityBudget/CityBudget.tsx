@@ -1378,7 +1378,10 @@ function ComplianceDashboard({
         </p>
         <div className="flex items-center gap-3 mb-2">
           <div className="flex-1 relative">
-            <div className="h-5 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
+            <div
+              className="h-5 rounded-full overflow-hidden border border-sky-400/20"
+              style={{ backgroundColor: 'rgba(14,165,233,0.12)' }}
+            >
               <div
                 className="h-full rounded-full transition-all duration-700 ease-out"
                 style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: barColor }}
