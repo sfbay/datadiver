@@ -758,6 +758,63 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
             {/* ── Drilled-down view: filtered vendor list ──── */}
             {isDrilledDown && (
               <>
+                {/* Department compliance indicator */}
+                {drilldown.dept && (() => {
+                  const deptCard = compliance.departmentCards.find((d) => d.department === drilldown.dept)
+                  if (!deptCard || deptCard.status === 'none') return null
+                  const cfg = STATUS_CONFIG[deptCard.status]
+                  const deptDiscretionary = deptCard.discretionaryTotal
+                  const deptEthnic = deptCard.ethnicMediaSpend
+                  const deptTarget = deptDiscretionary * 0.5
+                  return (
+                    <div className="glass-card rounded-xl p-4 border" style={{ borderColor: cfg.color + '30' }}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60">
+                            Compliance — {toSentenceCase(drilldown.dept)}
+                          </span>
+                          <span
+                            className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded"
+                            style={{ color: cfg.color, backgroundColor: cfg.color + '15' }}
+                          >
+                            {cfg.icon} {deptCard.compliancePct.toFixed(0)}%
+                          </span>
+                        </div>
+                        <span className="text-[9px] font-mono text-slate-400/50">
+                          {deptCard.outletCount} outlet{deptCard.outletCount !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      {/* Mini composition bar for this department */}
+                      <div className="relative h-4 rounded overflow-hidden bg-slate-100 dark:bg-white/[0.04]">
+                        {/* Community media fill */}
+                        <div
+                          className="absolute inset-y-0 left-0 rounded-r transition-all duration-500"
+                          style={{
+                            width: deptDiscretionary > 0
+                              ? `${Math.min((deptEthnic / deptDiscretionary) * 100, 100)}%`
+                              : '0%',
+                            backgroundColor: '#10b981',
+                            opacity: 0.6,
+                          }}
+                        />
+                        {/* 50% target line */}
+                        <div
+                          className="absolute inset-y-0 border-r-2 border-dashed border-amber-400/50"
+                          style={{ left: '50%' }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between mt-1.5 text-[9px] font-mono">
+                        <span className="text-emerald-400 tabular-nums">
+                          {formatBudgetAmount(deptEthnic)} community
+                        </span>
+                        <span className="text-slate-400/60 tabular-nums">
+                          {formatBudgetAmount(deptTarget)} target · {formatBudgetAmount(deptDiscretionary)} discretionary
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })()}
+
                 {/* Media mix for department drill-down */}
                 {drilldown.dept && (
                   <div className="glass-card rounded-xl p-4">
