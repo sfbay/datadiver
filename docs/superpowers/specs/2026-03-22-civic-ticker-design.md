@@ -268,6 +268,72 @@ During election nights (detected via CivicAPI polling or a manual toggle):
 - Items: race calls, lead changes, RCV round completions, turnout milestones
 - "Next report expected at 9:45 PM" countdown
 
+## Three-Tier Ticker Architecture
+
+The ticker operates at three levels of focus, each surfacing different insights:
+
+### Tier 1: Cross-View Ticker (compact, in view headers)
+- **Scope:** Signals from OTHER datasets — cross-pollination
+- **Content:** "Business openings +12%" while you're on Crime Incidents
+- **Purpose:** Encourage exploration, surface connections between datasets
+- **Placement:** Compact mode in view headers
+
+### Tier 2: View-Level Ticker (standard, within each visualization)
+- **Scope:** Deep reflections within the CURRENT dataset, responsive to active filters
+- **Content:** "Tenderloin: 3.2σ above baseline" "Peak hour: 2AM (DUI-related)" "Weekends 40% busier than weekdays"
+- **Purpose:** Surface the most interesting patterns in what you're already looking at
+- **Filter-aware:** Changes when you adjust date range, select a neighborhood, toggle a category
+- **Data source:** Mostly derived from existing hooks — `useTrendBaseline` (YoY), hourly pattern (peak/quiet), comparison (period deltas), `useDataFreshness` (staleness), neighborhood anomalies (z-scores). Minimal new queries.
+
+**Per-view indicator examples:**
+
+| View | Possible view-level indicators |
+|------|-------------------------------|
+| Emergency Response | "Avg response {delta}% vs last year" · "Peak hour: {hour}" · "{neighborhood} slowest at {time}" · "Fire calls {pct}% of total" |
+| 311 Cases | "{category} complaints {delta}%" · "{neighborhood} {z}σ anomaly" · "Avg resolution: {days} days" · "Open cases: {count}" |
+| Crime Incidents | "Violent crime {delta}%" · "{category} trending {direction}" · "911-linked: {pct}%" · "Peak: {day} {hour}" |
+| Traffic Safety | "Fatalities: {count} ({delta}%)" · "DUI crashes {delta}%" · "Pedestrian {pct}% of injuries" · "Speed cameras: {citations} citations" |
+| Business Activity | "Net formation: {sign}{net}" · "{sector} most active" · "Closures {delta}% vs last year" · "{neighborhood} highest churn" |
+| Parking Revenue | "Revenue {delta}% vs last year" · "Avg per meter: ${amt}" · "Peak day: {day}" · "Mobile pay: {pct}%" |
+| Parking Citations | "Citations {delta}%" · "Out-of-state: {pct}%" · "Top violation: {type}" · "Revenue: ${amt}" |
+| Campaign Finance | "Cycle total: ${raised}" · "Top recipient: {name}" · "Small donors: {pct}%" · "IE spending: ${amt}" |
+| City Budget | "Top dept: {name} ${amt}" · "Budget utilization: {pct}%" · "YoY spending: {delta}%" |
+| Advertising | "Compliance: {pct}% (target 50%)" · "P-card: ${amt} untraceable" · "Community outlets: {count}" · "Top agency: {name}" |
+| Elections | "Turnout: {pct}% ({delta}% vs prior)" · "RCV rounds: {count}" · "Closest race: {name} ({margin}%)" |
+| Demographics | "Income range: ${low}–${high}" · "Most diverse: {neighborhood}" · "Highest education: {neighborhood}" |
+
+### Tier 3: Detail-Level (inline, contextual)
+- **Scope:** Signals about the currently selected entity (neighborhood, vendor, candidate)
+- **Content:** "This neighborhood: 6.2 min avg vs 4.8 min citywide"
+- **Purpose:** Contextual comparison — "is this entity normal or unusual?"
+- **Placement:** Inside detail panels, neighborhood profiles, vendor profiles
+- **Already partially implemented:** NeighborhoodCensusContext, vendor anomaly flags, election neighborhood profiles
+
+### How They Stack
+
+On a typical view page, the user sees all three tiers:
+
+```
+┌── Header ─────────────────────────────┐
+│ Emergency Response  [controls]         │
+├── TIER 1: Cross-View (compact) ───────┤
+│ ● Biz +47  ● Compliance 10.3%  ●…    │
+├── Content ────────────────────────────┤
+│                                        │
+│ ┌── TIER 2: View-Level (standard) ──┐ │
+│ │ ● Response +23% YoY  ● Peak 2AM  │ │
+│ │   ● Tenderloin 3.2σ anomaly       │ │
+│ └────────────────────────────────────┘ │
+│                                        │
+│ [Map]  [Cards]  [Sidebar]             │
+│                                        │
+│        ┌── TIER 3: Detail ──────────┐ │
+│        │ Tenderloin: 6.2 min avg    │ │
+│        │ vs 4.8 min citywide        │ │
+│        └────────────────────────────┘ │
+└───────────────────────────────────────┘
+```
+
 ## Placement Strategy
 
 ### Home Page
