@@ -145,6 +145,48 @@ const VISUALIZATIONS = [
     ],
     accentColor: '#6366f1',
   },
+  {
+    path: '/campaign-finance',
+    title: 'Campaign Finance',
+    subtitle: 'SF Ethics Commission Filings',
+    badge: 'CF',
+    description:
+      'Follow the money. Track contributions, spending, and independent expenditures across SF election cycles.',
+    stats: [
+      { label: 'Source', value: 'SF Ethics' },
+      { label: 'Filings', value: 'A/E/I/D' },
+      { label: 'Cycles', value: '4+' },
+    ],
+    accentColor: '#14b8a6',
+  },
+  {
+    path: '/city-budget',
+    title: 'City Budget',
+    subtitle: 'SF Controller · Spending & Vendors',
+    badge: 'BU',
+    description:
+      'Where does the money go? Explore $14B+ in city spending, vendor payments, advertising compliance, and anomaly detection.',
+    stats: [
+      { label: 'Payments', value: '7.9M' },
+      { label: 'Vendors', value: '12K+' },
+      { label: 'Since', value: 'FY2007' },
+    ],
+    accentColor: '#0ea5e9',
+  },
+  {
+    path: '/live-feeds',
+    title: 'Live Feeds',
+    subtitle: 'Scanner Radio · SFPD, SFFD, EMS',
+    badge: 'LIVE',
+    description:
+      'Listen in. Scanner radio feeds for police, fire, and EMS — organized by district with contextual neighborhood data.',
+    stats: [
+      { label: 'Services', value: '3' },
+      { label: 'Districts', value: '10+' },
+      { label: 'Status', value: 'Live' },
+    ],
+    accentColor: '#f59e0b',
+  },
 ] as const
 
 export default function Home() {
@@ -239,7 +281,7 @@ export default function Home() {
             <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {VISUALIZATIONS.map((viz, idx) => (
               <button
                 key={viz.path}
