@@ -608,7 +608,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
         label: 'Discretionary',
         shortLabel: 'Discr.',
         value: formatBudgetAmount(compliance.totalDiscretionary),
-        color: '#64748b',
+        color: '#0ea5e9',
         subtitle: 'excl. legal notices',
         defaultExpanded: true,
       },
@@ -1265,9 +1265,10 @@ function ComplianceDashboard({
   // Total tagged ad spend = discretionary + legal notices (the full sub_object='Advertising' universe)
   const totalTaggedAdSpend = compliance.totalDiscretionary + compliance.legalNoticeTotal
 
-  // Progress bar color
+  // Compliance % — bar fill is ALWAYS emerald (it represents community media spend).
+  // The empty space tells the "not enough" story. Only the shortfall number is red.
   const pct = compliance.compliancePct
-  const barColor = pct >= 50 ? '#10b981' : pct >= 30 ? '#f59e0b' : '#ef4444'
+  const barColor = '#10b981' // emerald — community media, consistent with composition bar
 
   return (
     <div className="space-y-4">
