@@ -619,6 +619,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
         value: formatBudgetAmount(compliance.ethnicMediaSpend),
         color: '#10b981',
         subtitle: `${compliance.outletCount} outlets`,
+        subtitleAction: () => navigateToCategory('community-ethnic-press'),
         defaultExpanded: true,
       },
       {
@@ -639,6 +640,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
         value: String(compliance.outletCount),
         color: '#10b981',
         subtitle: `of ${new Set(ad.vendors.map((v) => v.vendor)).size} total vendors`,
+        subtitleAction: () => navigateToCategory('community-ethnic-press'),
         defaultExpanded: true,
       },
     ]
@@ -728,7 +730,16 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                       {card.value}
                     </p>
                     {card.subtitle && (
-                      <p className="text-[10px] font-mono text-slate-400 mt-1">{card.subtitle}</p>
+                      card.subtitleAction ? (
+                        <button
+                          onClick={card.subtitleAction}
+                          className="text-[10px] font-mono text-slate-400 mt-1 hover:text-sky-400 transition-colors underline decoration-dotted underline-offset-2 cursor-pointer"
+                        >
+                          {card.subtitle}
+                        </button>
+                      ) : (
+                        <p className="text-[10px] font-mono text-slate-400 mt-1">{card.subtitle}</p>
+                      )
                     )}
                   </div>
                 ))}

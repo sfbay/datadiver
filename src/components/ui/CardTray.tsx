@@ -29,6 +29,8 @@ export interface CardDef {
   defaultExpanded?: boolean
   /** Optional annual spark data for trend context */
   sparkData?: { values: number[]; labels?: string[] }
+  /** Optional click handler for the subtitle text (makes it a link) */
+  subtitleAction?: () => void
 }
 
 type CardState = 'expanded' | 'minimized' | 'hidden'
