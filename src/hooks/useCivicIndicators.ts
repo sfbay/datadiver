@@ -196,6 +196,28 @@ function priorityFromCategory(cat: TickerCategory): number {
   }
 }
 
+/** Check if a dataset has recent data — returns null if stale (data gap).
+ *  High-latency datasets (traffic crashes, parking citations geo) may have
+ *  weeks of lag, producing misleading -100% deltas from data absence. */
+async function checkFreshness(
+  datasetKey: string,
+  dateField: string,
+  maxAgeDays: number,
+): Promise<boolean> {
+  try {
+    const rows = await fetchDataset<{ max_date: string }>(datasetKey as any, {
+      $select: `MAX(${dateField}) as max_date`,
+      $limit: 1,
+    })
+    if (!rows[0]?.max_date) return false
+    const maxDate = new Date(rows[0].max_date)
+    const ageDays = (Date.now() - maxDate.getTime()) / (1000 * 60 * 60 * 24)
+    return ageDays <= maxAgeDays
+  } catch {
+    return false
+  }
+}
+
 async function fetchSparkline(
   datasetKey: string,
   dateField: string,
@@ -413,6 +435,10 @@ async function fetchCrimeIncidents(ctx: QueryContext): Promise<TickerItem | null
 
 // 4. Traffic Safety — fatalities + crash trend
 async function fetchTrafficSafety(ctx: QueryContext): Promise<TickerItem | null> {
+  // Freshness gate: crash data has high reporting latency (weeks/months)
+  const isFresh = await checkFreshness('trafficCrashes', 'collision_datetime', 60)
+  if (!isFresh) return null  // suppress rather than show misleading -100%
+
   interface CrashRow { crash_count: string; total_killed: string; total_injured: string }
 
   const [curRows, priRows, spark] = await Promise.all([
@@ -549,6 +575,10 @@ async function fetchParkingRevenue(ctx: QueryContext): Promise<TickerItem | null
 
 // 7. Parking Citations — volume + out-of-state share
 async function fetchParkingCitations(ctx: QueryContext): Promise<TickerItem | null> {
+  // Freshness gate: citation geo data has a known gap after Oct 2025
+  const isFresh = await checkFreshness('parkingCitations', 'citation_issued_datetime', 45)
+  if (!isFresh) return null
+
   interface CitRow { cnt: string; oos_cnt: string }
 
   const [curRows, spark] = await Promise.all([
