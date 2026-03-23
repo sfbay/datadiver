@@ -28,7 +28,7 @@ export default function MethodologyTip({ formula, inputs, exclusions, note, clas
       </button>
 
       {open && (
-        <div className="absolute z-30 top-full left-0 mt-1 w-72 glass-card rounded-lg p-3 shadow-lg border border-slate-200/30 dark:border-white/[0.06] text-left">
+        <div className="absolute top-full left-0 mt-1 w-72 glass-card rounded-lg p-3 shadow-lg border border-slate-200/30 dark:border-white/[0.06] text-left" style={{ zIndex: 999 }}>
           <div className="space-y-2">
             <div>
               <p className="text-[8px] font-mono uppercase tracking-wider text-slate-400/60 mb-0.5">Formula</p>
