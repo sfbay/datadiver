@@ -398,14 +398,25 @@ The subpage ticker shows indicators from OTHER datasets — cross-pollinating aw
 - Accessibility: respect prefers-reduced-motion
 - "Updated 2m ago" freshness display
 
-## Data Query Budget
+## Data Query Budget + Caching Strategy
 
-Total queries on home page load: ~10 parallel requests
-Each returns 1-5 rows (aggregations, not raw data)
-Expected total payload: <5KB
-Expected total time: <2 seconds (parallel)
+**Philosophy: earn our keep with depth, not simplicity.** Indicators should reflect genuine analysis — real z-scores, actual response time averages, cross-dataset correlations — not simplified proxies. The cache makes this affordable.
 
-This is lighter than a single existing view (which fires 3-5 queries for just one dataset).
+**Caching:** Module-level cache with 30-minute TTL (not 5 minutes). Indicators change slowly (30-day windows). Max 48 computation cycles per day per user. This budget supports:
+- Complex aggregations (AVG of computed fields, not just COUNT)
+- 12-month baselines for z-score anomaly detection
+- Full 30-day sparkline series (daily granularity)
+- Sparklines on ALL indicators, not just some
+- Cross-dataset correlation queries (future)
+
+**Query complexity budget per cycle:**
+- ~10-15 parallel requests (up from 8, adding sparkline + baseline queries)
+- Each may return 1-30 rows (daily sparkline series)
+- Expected total payload: <15KB
+- Expected total time: <4 seconds (parallel, cached for 30 min)
+- This runs once per 30 minutes, not on every page load
+
+**Future: build-time computation.** A `pnpm build:indicators` script (like `build:elections`) could pre-compute indicators as static JSON, refreshed by a GitHub Action or Vercel cron. This would make page loads instant with zero Socrata queries for the ticker.
 
 ## Open Questions
 
