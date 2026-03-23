@@ -1,4 +1,6 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
+import CivicTicker from '@/components/ui/CivicTicker'
+import { MOCK_TICKER_ITEMS } from '@/components/ui/tickerMockData'
 import type { CensusVariable } from '@/types/census'
 import { useCensusData } from '@/hooks/useCensusData'
 import { useDemographicUnderlay } from '@/components/maps/DemographicUnderlay'
@@ -593,6 +595,14 @@ export default function EmergencyResponse() {
           </div>
         </div>
       </header>
+
+      {/* Cross-view ticker — signals from other datasets */}
+      <div className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-1 bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl z-10">
+        <CivicTicker
+          items={MOCK_TICKER_ITEMS.filter(i => i.source.view !== '/emergency-response')}
+          size="compact"
+        />
+      </div>
 
       {/* Time-of-day filter sub-header */}
       {!hourlyPattern.isLoading && hourlyPattern.hourTotals.some((t) => t > 0) && (
