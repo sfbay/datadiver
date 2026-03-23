@@ -62,7 +62,7 @@ export function useAdvertisingData(fiscalYear?: FiscalYear): AdvertisingData {
       $where: `sub_object = 'Advertising'${fyClause}`,
       $group: 'vendor, department',
       $order: 'total_paid DESC',
-      $limit: 500,
+      $limit: 2000, // vendor × department pairs — 500 was truncating smaller vendors
     })
 
     // Layer 2: Known agency vendors (even if not tagged as Advertising)
