@@ -1290,50 +1290,36 @@ function ComplianceDashboard({
           </div>
         </div>
 
-        {/* Target description */}
-        <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-3">
-          Target: ≥ 50% of discretionary ad spend → ethnic &amp; community journalism outlets
-        </p>
-
-        {/* Progress bar */}
-        <div className="relative mb-2">
-          <div className="h-5 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-700 ease-out"
-              style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: barColor }}
-            />
-          </div>
-          {/* 50% target marker */}
-          <div
-            className="absolute top-0 h-5 border-l-2 border-dashed border-amber-400/60"
-            style={{ left: '50%' }}
-          />
-        </div>
-
-        {/* Spend composition bar — shows how total breaks down into layers */}
+        {/* ── 1. Composition bar FIRST — the broadest context ── */}
         {totalTaggedAdSpend > 0 && (
-          <div className="mt-4 mb-1">
-            <div className="flex items-center gap-1 mb-1.5">
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-1.5">
               <span className="text-[8px] font-mono uppercase tracking-wider text-slate-400/50">
-                Ad spend composition
+                Total Ad Spend Composition
               </span>
-              <span className="text-[8px] font-mono text-slate-400/30">
-                {formatBudgetFull(totalTaggedAdSpend)} total
+              <span className="text-[9px] font-mono font-semibold text-slate-300 tabular-nums">
+                {formatBudgetFull(totalTaggedAdSpend)}
               </span>
             </div>
-            {/* Stacked bar */}
-            <div className="relative h-7 rounded overflow-hidden">
-              {/* Legal notices (excluded — diagonal hatching to visually "cross out") */}
+            {/* Stacked bar with inline labels */}
+            <div className="relative h-8 rounded overflow-hidden">
+              {/* Legal notices (excluded — diagonal hatching) */}
               <div
-                className="absolute inset-y-0 left-0"
+                className="absolute inset-y-0 left-0 flex items-center justify-center"
                 style={{
                   width: `${(compliance.legalNoticeTotal / totalTaggedAdSpend) * 100}%`,
                   background: `repeating-linear-gradient(-45deg, transparent, transparent 3px, rgba(148,163,184,0.25) 3px, rgba(148,163,184,0.25) 5px)`,
                   backgroundColor: 'rgba(148,163,184,0.1)',
                 }}
                 title={`Legal notices: ${formatBudgetFull(compliance.legalNoticeTotal)} (excluded)`}
-              />
-              {/* Discretionary — lighter fill, distinct from hatched legal */}
+              >
+                {compliance.legalNoticeTotal / totalTaggedAdSpend > 0.15 && (
+                  <span className="text-[8px] font-mono text-slate-400/70 tabular-nums">
+                    {formatBudgetAmount(compliance.legalNoticeTotal)} legal
+                  </span>
+                )}
+              </div>
+              {/* Discretionary portion */}
               <div
                 className="absolute inset-y-0 border border-sky-400/20"
                 style={{
@@ -1342,20 +1328,25 @@ function ComplianceDashboard({
                   backgroundColor: 'rgba(14,165,233,0.08)',
                 }}
               >
-                {/* 50% target ghost line within discretionary */}
+                {/* Community media actual (filled green) */}
                 <div
-                  className="absolute inset-y-0 border-r-2 border-dashed border-amber-400/50"
-                  style={{ left: '50%' }}
-                />
-                {/* Community media actual (filled) */}
-                <div
-                  className="absolute inset-y-0 left-0 rounded-r bg-emerald-500/60 transition-all duration-700"
+                  className="absolute inset-y-0 left-0 rounded-r bg-emerald-500/60 transition-all duration-700 flex items-center"
                   style={{
                     width: compliance.totalDiscretionary > 0
                       ? `${Math.min((compliance.ethnicMediaSpend / compliance.totalDiscretionary) * 100, 100)}%`
                       : '0%',
                   }}
-                />
+                >
+                  {compliance.ethnicMediaSpend / compliance.totalDiscretionary > 0.08 && (
+                    <span className="text-[8px] font-mono font-semibold text-white/90 pl-1.5 tabular-nums whitespace-nowrap">
+                      {formatBudgetAmount(compliance.ethnicMediaSpend)}
+                    </span>
+                  )}
+                </div>
+                {/* 50% target line within discretionary */}
+                <div className="absolute inset-y-0 flex flex-col items-center" style={{ left: '50%' }}>
+                  <div className="h-full border-r-2 border-dashed border-amber-400/60" />
+                </div>
               </div>
             </div>
             {/* Legend */}
@@ -1379,6 +1370,24 @@ function ComplianceDashboard({
             </div>
           </div>
         )}
+
+        {/* ── 2. Compliance thermometer — zooms into the discretionary portion ── */}
+        <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-2">
+          Target: ≥ 50% of discretionary ad spend → ethnic &amp; community journalism outlets
+        </p>
+        <div className="relative mb-2">
+          <div className="h-5 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-700 ease-out"
+              style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: barColor }}
+            />
+          </div>
+          {/* 50% target marker */}
+          <div
+            className="absolute top-0 h-5 border-l-2 border-dashed border-amber-400/60"
+            style={{ left: '50%' }}
+          />
+        </div>
 
         {/* Prominent dollar amounts */}
         <div className="grid grid-cols-3 gap-4 mt-3 mb-2">
