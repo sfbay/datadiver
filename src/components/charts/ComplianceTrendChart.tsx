@@ -121,7 +121,7 @@ export default function ComplianceTrendChart({
       .attr('cx', (d) => x(d.fiscalYear))
       .attr('cy', (d) => yPct(d.compliancePct))
       .attr('r', (d) => d.fiscalYear === currentFY ? 5 : 3.5)
-      .attr('fill', (d) => d.compliancePct >= 50 ? '#10b981' : d.compliancePct >= 30 ? '#f59e0b' : '#ef4444')
+      .attr('fill', '#10b981') // always emerald — dots represent community media spend
       .attr('stroke', isDarkMode ? '#0f172a' : '#fff')
       .attr('stroke-width', 1.5)
 
@@ -157,7 +157,7 @@ export default function ComplianceTrendChart({
       .attr('text-anchor', 'middle')
       .attr('font-size', 9)
       .attr('font-family', 'JetBrains Mono, monospace')
-      .attr('fill', (d) => d.compliancePct >= 50 ? '#10b981' : d.compliancePct >= 30 ? '#f59e0b' : '#ef4444')
+      .attr('fill', '#10b981') // always emerald — labels represent community media %
       .text((d) => `${d.compliancePct.toFixed(0)}%`)
 
     // X axis — fiscal years
