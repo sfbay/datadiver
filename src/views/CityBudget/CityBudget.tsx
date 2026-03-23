@@ -1329,7 +1329,7 @@ function ComplianceDashboard({
           <button
             onClick={onExportRecords}
             className="flex items-center gap-1.5 text-[8px] font-mono text-slate-400/50 hover:text-sky-400 transition-colors"
-            title="Export the tagged advertising records backing this compliance calculation"
+            title="Export the advertising records backing this compliance calculation"
           >
             <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
               <path d="M6 1v7M3 5l3 3 3-3M2 10h8" />
@@ -1343,7 +1343,7 @@ function ComplianceDashboard({
           <div className="mb-4">
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[8px] font-mono uppercase tracking-wider text-slate-400/50">
-                Total Advertising Activity (all detection layers)
+                All Advertising Activity
               </span>
               <span className="text-[9px] font-mono font-semibold text-slate-300 tabular-nums">
                 {formatBudgetFull(allLayersTotal)}
@@ -1376,11 +1376,11 @@ function ComplianceDashboard({
                     width: `${(taggedTotal / allLayersTotal) * 100}%`,
                     backgroundColor: 'rgba(14,165,233,0.15)',
                   }}
-                  title={`Tagged advertising: ${formatBudgetFull(taggedTotal)}`}
+                  title={`Classified advertising: ${formatBudgetFull(taggedTotal)}`}
                 >
                   {taggedTotal / allLayersTotal > 0.12 && (
                     <span className="text-[8px] font-mono text-sky-300/80 tabular-nums">
-                      {formatBudgetAmount(taggedTotal)} tagged
+                      {formatBudgetAmount(taggedTotal)} advertising
                     </span>
                   )}
                 </div>
@@ -1404,7 +1404,7 @@ function ComplianceDashboard({
               </span>
               <span className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: 'rgba(14,165,233,0.2)' }} />
-                Tagged advertising ({formatBudgetAmount(taggedTotal)})
+                Classified advertising ({formatBudgetAmount(taggedTotal)})
               </span>
               <span className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-sm bg-red-500/30" />
@@ -1419,7 +1419,7 @@ function ComplianceDashboard({
           <div className="mb-4">
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[8px] font-mono uppercase tracking-wider text-slate-400/50">
-                Tagged Ad Spend — Compliance Universe
+                Classified Advertising — Compliance Basis
               </span>
               <span className="text-[9px] font-mono font-semibold text-slate-300 tabular-nums">
                 {formatBudgetFull(totalTaggedAdSpend)}
