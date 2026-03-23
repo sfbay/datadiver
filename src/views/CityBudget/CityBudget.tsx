@@ -10,7 +10,7 @@ import HorizontalBarChart, { type BarDatum } from '@/components/charts/Horizonta
 import VendorExplorer from '@/views/CityBudget/VendorExplorer'
 import VendorProfile from '@/views/CityBudget/VendorProfile'
 import { useBudgetVsActual, useBudgetTotals, useSpendingTrend, useDepartmentSpending } from '@/hooks/useBudgetData'
-import { useAdvertisingData, type AdVendorRow } from '@/hooks/useAdvertisingData'
+import { useAdvertisingData, type AdVendorRow, type AdvertisingData } from '@/hooks/useAdvertisingData'
 import { useComplianceData, type ComplianceStatus, type DepartmentCard } from '@/hooks/useComplianceData'
 import ComplianceTrendChart from '@/components/charts/ComplianceTrendChart'
 import MethodologyTip from '@/components/ui/MethodologyTip'
@@ -759,6 +759,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
             {!isDrilledDown && (
               <ComplianceDashboard
                 compliance={compliance}
+                adData={ad}
                 fiscalYear={fiscalYear}
                 methodologyOpen={methodologyOpen}
                 onToggleMethodology={() => setMethodologyOpen((o) => !o)}
@@ -1253,6 +1254,7 @@ const STATUS_CONFIG: Record<ComplianceStatus, { icon: string; color: string; bg:
 
 function ComplianceDashboard({
   compliance,
+  adData,
   fiscalYear,
   methodologyOpen,
   onToggleMethodology,
@@ -1260,6 +1262,7 @@ function ComplianceDashboard({
   onExportRecords,
 }: {
   compliance: ReturnType<typeof useComplianceData>
+  adData: AdvertisingData
   fiscalYear: FiscalYear
   methodologyOpen: boolean
   onToggleMethodology: () => void
@@ -1287,13 +1290,27 @@ function ComplianceDashboard({
     exportToCSV(rows, `legal-notice-exclusions-fy${fiscalYear}`)
   }, [compliance.exclusions, fiscalYear])
 
-  // Total tagged ad spend = discretionary + legal notices (the full sub_object='Advertising' universe)
+  // Layer totals for the full advertising picture
+  const taggedTotal = useMemo(
+    () => adData.vendors.filter((v) => v.layer === 'tagged').reduce((s, v) => s + (parseFloat(v.total_paid) || 0), 0),
+    [adData.vendors]
+  )
+  const agencyTotal = useMemo(
+    () => adData.vendors.filter((v) => v.layer === 'agency').reduce((s, v) => s + (parseFloat(v.total_paid) || 0), 0),
+    [adData.vendors]
+  )
+  const pcardTotal = useMemo(
+    () => adData.vendors.filter((v) => v.layer === 'pcard').reduce((s, v) => s + (parseFloat(v.total_paid) || 0), 0),
+    [adData.vendors]
+  )
+  const allLayersTotal = taggedTotal + agencyTotal + pcardTotal
+
+  // Tagged breakdown
   const totalTaggedAdSpend = compliance.totalDiscretionary + compliance.legalNoticeTotal
 
   // Compliance % — bar fill is ALWAYS emerald (it represents community media spend).
-  // The empty space tells the "not enough" story. Only the shortfall number is red.
   const pct = compliance.compliancePct
-  const barColor = '#10b981' // emerald — community media, consistent with composition bar
+  const barColor = '#10b981'
 
   return (
     <div className="space-y-4">
@@ -1321,12 +1338,88 @@ function ComplianceDashboard({
           </button>
         </div>
 
-        {/* ── 1. Composition bar FIRST — the broadest context ── */}
+        {/* ── 1. Full Advertising Activity (all 3 layers) ── */}
+        {allLayersTotal > 0 && (
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[8px] font-mono uppercase tracking-wider text-slate-400/50">
+                Total Advertising Activity (all detection layers)
+              </span>
+              <span className="text-[9px] font-mono font-semibold text-slate-300 tabular-nums">
+                {formatBudgetFull(allLayersTotal)}
+              </span>
+            </div>
+            <div className="relative h-7 rounded overflow-hidden flex">
+              {/* Agency (largest portion — pink/magenta) */}
+              {agencyTotal > 0 && (
+                <div
+                  className="h-full flex items-center justify-center"
+                  style={{
+                    width: `${(agencyTotal / allLayersTotal) * 100}%`,
+                    backgroundColor: 'rgba(236,72,153,0.35)',
+                    borderRight: '1px solid rgba(236,72,153,0.2)',
+                  }}
+                  title={`Agencies: ${formatBudgetFull(agencyTotal)}`}
+                >
+                  {agencyTotal / allLayersTotal > 0.12 && (
+                    <span className="text-[8px] font-mono text-pink-300/80 tabular-nums">
+                      {formatBudgetAmount(agencyTotal)} agencies
+                    </span>
+                  )}
+                </div>
+              )}
+              {/* Tagged (classified advertising) */}
+              {taggedTotal > 0 && (
+                <div
+                  className="h-full flex items-center justify-center border-r border-sky-400/20"
+                  style={{
+                    width: `${(taggedTotal / allLayersTotal) * 100}%`,
+                    backgroundColor: 'rgba(14,165,233,0.15)',
+                  }}
+                  title={`Tagged advertising: ${formatBudgetFull(taggedTotal)}`}
+                >
+                  {taggedTotal / allLayersTotal > 0.12 && (
+                    <span className="text-[8px] font-mono text-sky-300/80 tabular-nums">
+                      {formatBudgetAmount(taggedTotal)} tagged
+                    </span>
+                  )}
+                </div>
+              )}
+              {/* P-card (untraceable) */}
+              {pcardTotal > 0 && (
+                <div
+                  className="h-full flex items-center"
+                  style={{
+                    width: `${Math.max((pcardTotal / allLayersTotal) * 100, 2)}%`,
+                    backgroundColor: 'rgba(239,68,68,0.3)',
+                  }}
+                  title={`P-card: ${formatBudgetFull(pcardTotal)}`}
+                />
+              )}
+            </div>
+            <div className="flex items-center gap-4 mt-1.5 text-[8px] font-mono text-slate-400/60">
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: 'rgba(236,72,153,0.4)' }} />
+                Agencies ({formatBudgetAmount(agencyTotal)})
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: 'rgba(14,165,233,0.2)' }} />
+                Tagged advertising ({formatBudgetAmount(taggedTotal)})
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-sm bg-red-500/30" />
+                P-card ({formatBudgetAmount(pcardTotal)})
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* ── 2. Tagged Ad Spend Breakdown (compliance universe) ── */}
         {totalTaggedAdSpend > 0 && (
           <div className="mb-4">
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[8px] font-mono uppercase tracking-wider text-slate-400/50">
-                Total Ad Spend Composition
+                Tagged Ad Spend — Compliance Universe
               </span>
               <span className="text-[9px] font-mono font-semibold text-slate-300 tabular-nums">
                 {formatBudgetFull(totalTaggedAdSpend)}
