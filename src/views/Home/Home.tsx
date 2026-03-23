@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import CivicTicker, { useResponsiveTickerSize } from '@/components/ui/CivicTicker'
-import { MOCK_TICKER_ITEMS } from '@/components/ui/tickerMockData'
+import { useCivicIndicators } from '@/hooks/useCivicIndicators'
 
 const VISUALIZATIONS = [
   {
@@ -152,6 +152,7 @@ export default function Home() {
   const isDarkMode = useAppStore((s) => s.isDarkMode)
   const [mounted, setMounted] = useState(false)
   const tickerSize = useResponsiveTickerSize('hero')
+  const indicators = useCivicIndicators()
 
   useEffect(() => {
     requestAnimationFrame(() => setMounted(true))
@@ -220,9 +221,10 @@ export default function Home() {
           className={`relative z-10 mb-16 transition-all duration-1000 delay-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
         >
           <CivicTicker
-            items={MOCK_TICKER_ITEMS}
+            items={indicators.items}
             size={tickerSize}
-            lastUpdated={new Date()}
+            isLoading={indicators.isLoading}
+            lastUpdated={indicators.lastUpdated ?? undefined}
           />
         </section>
 

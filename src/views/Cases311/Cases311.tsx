@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useCallback, useEffect, type ReactNode } from 'react'
 import CivicTicker from '@/components/ui/CivicTicker'
-import { MOCK_TICKER_ITEMS } from '@/components/ui/tickerMockData'
+import { useCivicIndicators } from '@/hooks/useCivicIndicators'
 import type { CensusVariable } from '@/types/census'
 import { useCensusData } from '@/hooks/useCensusData'
 import { useDemographicUnderlay } from '@/components/maps/DemographicUnderlay'
@@ -48,6 +48,7 @@ const SELECT_FIELDS = 'service_request_id,requested_datetime,closed_date,status_
 
 export default function Cases311() {
   const { dateRange, timeOfDayFilter, comparisonPeriod, selected311Case, setSelected311Case } = useAppStore()
+  const civicIndicators = useCivicIndicators()
   const [searchParams, setSearchParams] = useSearchParams()
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('categories')
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
@@ -696,7 +697,7 @@ export default function Cases311() {
       {/* Cross-view ticker — signals from other datasets */}
       <div className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-1 bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl z-10">
         <CivicTicker
-          items={MOCK_TICKER_ITEMS.filter(i => i.source.view !== '/311-cases')}
+          items={civicIndicators.items.filter(i => i.source.view !== '/311-cases')}
           size="compact"
         />
       </div>
