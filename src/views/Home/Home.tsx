@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import CivicTicker, { useResponsiveTickerSize } from '@/components/ui/CivicTicker'
 import { useCivicIndicators } from '@/hooks/useCivicIndicators'
+import { usePreloadCache } from '@/hooks/usePreloadCache'
 
 const VISUALIZATIONS = [
   {
@@ -195,6 +196,7 @@ export default function Home() {
   const [mounted, setMounted] = useState(false)
   const tickerSize = useResponsiveTickerSize('hero')
   const indicators = useCivicIndicators()
+  usePreloadCache() // silently warm all view caches in background
 
   useEffect(() => {
     requestAnimationFrame(() => setMounted(true))
