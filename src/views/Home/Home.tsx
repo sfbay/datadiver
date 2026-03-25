@@ -194,6 +194,7 @@ export default function Home() {
   const navigate = useNavigate()
   const isDarkMode = useAppStore((s) => s.isDarkMode)
   const [mounted, setMounted] = useState(false)
+  const [comicOpen, setComicOpen] = useState(false)
   const tickerSize = useResponsiveTickerSize('hero')
   const indicators = useCivicIndicators()
   usePreloadCache() // silently warm all view caches in background
@@ -201,6 +202,14 @@ export default function Home() {
   useEffect(() => {
     requestAnimationFrame(() => setMounted(true))
   }, [])
+
+  // Esc to close comic modal
+  useEffect(() => {
+    if (!comicOpen) return
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setComicOpen(false) }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [comicOpen])
 
   const heroBg = isDarkMode ? '/dana-dark-hero-bg.png' : '/dana-light-hero-bg.png'
 
@@ -265,11 +274,9 @@ export default function Home() {
         <section
           className={`relative z-10 mb-6 transition-all duration-1000 delay-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
         >
-          <a
-            href="/dana-comic-1.jpg"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group flex items-center gap-5 glass-card rounded-2xl px-5 py-3 hover:bg-white/[0.06] transition-all duration-300 overflow-hidden"
+          <button
+            onClick={() => setComicOpen(true)}
+            className="w-full group flex items-center gap-5 glass-card rounded-2xl px-5 py-3 hover:bg-white/[0.06] transition-all duration-300 overflow-hidden text-left"
           >
             {/* Comic thumbnail */}
             <img
@@ -292,8 +299,49 @@ export default function Home() {
                 <path d="M3 8h10M10 4.5L13.5 8 10 11.5" />
               </svg>
             </div>
-          </a>
+          </button>
         </section>
+
+        {/* Dana Comic Modal */}
+        {comicOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-6"
+            onClick={() => setComicOpen(false)}
+          >
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+            {/* Modal */}
+            <div
+              className="relative max-w-3xl w-full animate-in fade-in zoom-in-95 duration-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close button */}
+              <button
+                onClick={() => setComicOpen(false)}
+                className="absolute -top-3 -right-3 z-10 w-8 h-8 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-colors shadow-lg"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M3 3l8 8M11 3l-8 8" />
+                </svg>
+              </button>
+              {/* Comic image */}
+              <img
+                src="/dana-comic-1.jpg"
+                alt="Dana the DataDiver — Comic Strip #1"
+                className="w-full rounded-xl shadow-2xl ring-1 ring-white/10"
+              />
+              {/* Caption */}
+              <div className="mt-3 flex items-center justify-between">
+                <p className="text-[11px] font-mono text-slate-400">
+                  Dana the DataDiver · Comic #1 · datadiver.vercel.app
+                </p>
+                <p className="text-[10px] font-mono text-slate-500">
+                  Press Esc or click outside to close
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Civic Data Ticker — living indicators from across all datasets */}
         <section
