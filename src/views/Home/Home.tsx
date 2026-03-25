@@ -261,21 +261,9 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Civic Data Ticker — living indicators from across all datasets */}
-        <section
-          className={`relative z-10 mb-16 transition-all duration-1000 delay-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
-        >
-          <CivicTicker
-            items={indicators.items}
-            size={tickerSize}
-            isLoading={indicators.isLoading}
-            lastUpdated={indicators.lastUpdated ?? undefined}
-          />
-        </section>
-
         {/* Dana Comic Strip Ribbon */}
         <section
-          className={`relative z-10 mb-10 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+          className={`relative z-10 mb-6 transition-all duration-1000 delay-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
         >
           <a
             href="/dana-comic-1.jpg"
@@ -305,6 +293,18 @@ export default function Home() {
               </svg>
             </div>
           </a>
+        </section>
+
+        {/* Civic Data Ticker — living indicators from across all datasets */}
+        <section
+          className={`relative z-10 mb-16 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+        >
+          <CivicTicker
+            items={indicators.items}
+            size={tickerSize}
+            isLoading={indicators.isLoading}
+            lastUpdated={indicators.lastUpdated ?? undefined}
+          />
         </section>
 
         {/* Visualization Cards */}
