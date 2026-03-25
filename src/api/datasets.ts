@@ -26,6 +26,7 @@ export const DATASETS: Record<string, DatasetConfig> = {
     geoField: 'point',
     defaultSort: 'alarm_dttm DESC',
     dateField: 'alarm_dttm',
+    cacheTTL: 10 * 60_000, // 10 min — updated continuously but queries use date ranges
   },
 
   fireEMSDispatch: {
@@ -38,6 +39,7 @@ export const DATASETS: Record<string, DatasetConfig> = {
     geoField: 'case_location',
     defaultSort: 'received_dttm DESC',
     dateField: 'received_dttm',
+    cacheTTL: 10 * 60_000, // 10 min
   },
 
   policeIncidents: {
@@ -50,6 +52,7 @@ export const DATASETS: Record<string, DatasetConfig> = {
     geoField: 'point',
     defaultSort: 'incident_datetime DESC',
     dateField: 'incident_datetime',
+    cacheTTL: 10 * 60_000, // 10 min
   },
 
   dispatch911Realtime: {
@@ -84,6 +87,7 @@ export const DATASETS: Record<string, DatasetConfig> = {
     hasGeo: false,
     defaultSort: 'session_start_dt DESC',
     dateField: 'session_start_dt',
+    cacheTTL: 15 * 60_000, // 15 min — updated daily
   },
 
   parkingMeters: {
@@ -107,6 +111,7 @@ export const DATASETS: Record<string, DatasetConfig> = {
     geoField: 'point',
     defaultSort: 'requested_datetime DESC',
     dateField: 'requested_datetime',
+    cacheTTL: 10 * 60_000, // 10 min — updated daily
   },
   parkingCitations: {
     id: 'ab4h-6ztd',
@@ -118,6 +123,7 @@ export const DATASETS: Record<string, DatasetConfig> = {
     geoField: 'the_geom',
     defaultSort: 'citation_issued_datetime DESC',
     dateField: 'citation_issued_datetime',
+    cacheTTL: 30 * 60_000, // 30 min — known geo data gap, updates infrequently
   },
 
   trafficCrashes: {
@@ -130,6 +136,7 @@ export const DATASETS: Record<string, DatasetConfig> = {
     geoField: 'point',
     defaultSort: 'collision_datetime DESC',
     dateField: 'collision_datetime',
+    cacheTTL: 30 * 60_000, // 30 min — high reporting latency
   },
 
   speedCameras: {
@@ -141,6 +148,7 @@ export const DATASETS: Record<string, DatasetConfig> = {
     hasGeo: true,
     defaultSort: 'date DESC',
     dateField: 'date',
+    cacheTTL: 30 * 60_000, // 30 min
   },
 
   redLightCameras: {
@@ -151,6 +159,7 @@ export const DATASETS: Record<string, DatasetConfig> = {
     category: 'transportation',
     hasGeo: true,
     geoField: 'point',
+    cacheTTL: 30 * 60_000, // 30 min
   },
 
   pavementCondition: {
@@ -173,6 +182,7 @@ export const DATASETS: Record<string, DatasetConfig> = {
     geoField: 'location',
     defaultSort: 'dba_start_date DESC',
     dateField: 'dba_start_date',
+    cacheTTL: 15 * 60_000, // 15 min — updated daily
   },
 
   campaignFinance: {
@@ -184,6 +194,7 @@ export const DATASETS: Record<string, DatasetConfig> = {
     hasGeo: false,
     defaultSort: 'calculated_date DESC',
     dateField: 'calculated_date',
+    cacheTTL: 30 * 60_000, // 30 min — filings update periodically
   },
 
   // ── City Budget & Spending ────────────────────────────────
@@ -194,6 +205,7 @@ export const DATASETS: Record<string, DatasetConfig> = {
     endpoint: `${BASE_URL}/xdgd-c79v.json`,
     category: 'other',
     hasGeo: false,
+    cacheTTL: 60 * 60_000, // 1 hour — updated weekly at most
   },
 
   spendingRevenue: {
@@ -203,6 +215,7 @@ export const DATASETS: Record<string, DatasetConfig> = {
     endpoint: `${BASE_URL}/bpnb-jwfb.json`,
     category: 'other',
     hasGeo: false,
+    cacheTTL: 60 * 60_000, // 1 hour — updated weekly
   },
 
   vendorPayments: {
@@ -212,6 +225,7 @@ export const DATASETS: Record<string, DatasetConfig> = {
     endpoint: `${BASE_URL}/n9pm-xkyq.json`,
     category: 'other',
     hasGeo: false,
+    cacheTTL: 60 * 60_000, // 1 hour — updated weekly
   },
 
   supplierContracts: {
@@ -221,6 +235,7 @@ export const DATASETS: Record<string, DatasetConfig> = {
     endpoint: `${BASE_URL}/cqi5-hm2d.json`,
     category: 'other',
     hasGeo: false,
+    cacheTTL: 60 * 60_000, // 1 hour — updated weekly
   },
 } as const
 
