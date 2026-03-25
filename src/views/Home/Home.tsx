@@ -280,7 +280,7 @@ export default function Home() {
           >
             {/* Comic thumbnail */}
             <img
-              src="/dana-comic-1.jpg"
+              src="/dana-comic-1-thumb.jpg"
               alt="Dana the DataDiver comic strip"
               className="w-28 h-16 object-cover rounded-lg flex-shrink-0 ring-1 ring-white/10 group-hover:ring-white/20 transition-all"
             />
