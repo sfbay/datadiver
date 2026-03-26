@@ -287,7 +287,7 @@ export default function Home() {
             {/* Text */}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-display italic text-ink dark:text-white leading-tight">
-                Meet Dana the Harbor Seal!
+                Meet Dana, the data-diving Harbor Seal!
               </p>
               <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
                 Follow her adventures diving for data — and fish! New comic strips & data tidbits on Instagram.
