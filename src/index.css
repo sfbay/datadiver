@@ -50,6 +50,7 @@
 /* Base */
 html {
   font-family: var(--font-sans);
+  letter-spacing: -0.02em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "cv11", "ss01";
