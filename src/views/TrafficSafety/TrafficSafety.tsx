@@ -445,26 +445,9 @@ export default function TrafficSafety() {
     `
   })
 
-  useMapTooltip(mapInstance, 'crash-dui-points', (props) => {
-    const crashDate = props.collisionAt
-      ? new Date(String(props.collisionAt)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-      : null
-    const crashTime = props.collisionAt
-      ? new Date(String(props.collisionAt)).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-      : null
-    const sevColor = CRASH_SEVERITY_COLORS[String(props.severity)] || '#64748b'
-    return `
-      <div style="color:#a855f7;font-weight:700;margin-bottom:4px">⚠ DUI-Involved Crash</div>
-      ${crashDate ? `<div style="color:#e2e8f0">${crashDate} · ${crashTime}</div>` : ''}
-      <div class="tooltip-label" style="margin-top:6px">Severity</div>
-      <div style="color:${sevColor};font-weight:600">${props.severity || 'Unknown'}</div>
-      <div class="tooltip-label" style="margin-top:4px">Location</div>
-      <div style="color:#94a3b8">${props.primaryRd || ''}${props.secondaryRd ? ` at ${props.secondaryRd}` : ''}</div>
-      <div style="color:#94a3b8">${props.neighborhood || 'Unknown'}</div>
-      <div class="tooltip-label" style="margin-top:6px">Casualties</div>
-      <div style="color:#94a3b8">Injured: ${props.injured || 0} · Killed: ${props.killed || 0}</div>
-    `
-  })
+  // Note: crash-dui-points tooltip removed — DUI crashes are already handled by
+  // the crash-points tooltip (which shows "⚠ DUI-Involved" when isDui=1).
+  // Having both tooltips caused a doubled-up overlay on DUI crash points.
 
   useMapTooltip(mapInstance, 'neighborhood-fill', (props) => {
     const zScore = Number(props.zScore).toFixed(1)
