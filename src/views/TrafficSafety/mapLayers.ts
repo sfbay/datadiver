@@ -140,3 +140,21 @@ export const PCI_LAYERS: mapboxgl.AnyLayer[] = [
     },
   } as mapboxgl.AnyLayer,
 ]
+
+/** High Injury Network — Vision Zero street corridors (13% of streets, 75% of severe/fatal crashes) */
+export const HIN_LAYERS: mapboxgl.AnyLayer[] = [
+  {
+    id: 'hin-lines',
+    type: 'line',
+    source: 'hin-data',
+    paint: {
+      'line-color': '#a855f7',
+      'line-width': ['interpolate', ['linear'], ['zoom'], 10, 1.5, 14, 4, 17, 8],
+      'line-opacity': 0.7,
+    },
+    layout: {
+      'line-cap': 'round',
+      'line-join': 'round',
+    },
+  } as mapboxgl.AnyLayer,
+]

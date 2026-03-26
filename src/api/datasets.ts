@@ -237,6 +237,15 @@ export const DATASETS: Record<string, DatasetConfig> = {
     hasGeo: false,
     cacheTTL: 60 * 60_000, // 1 hour — updated weekly
   },
+  highInjuryNetwork: {
+    id: 'enwt-3u8m',
+    name: 'High Injury Network (2024)',
+    description: 'Vision Zero street segments where 75% of severe/fatal crashes occur (13% of streets)',
+    endpoint: `${BASE_URL}/enwt-3u8m.geojson`,
+    category: 'public-safety',
+    hasGeo: true,
+    cacheTTL: 24 * 60 * 60_000, // 24 hours — updated annually
+  },
 } as const
 
 export type DatasetKey = keyof typeof DATASETS

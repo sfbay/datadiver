@@ -41,11 +41,11 @@ import { useProgressScope } from '@/hooks/useLoadingProgress'
 import InfoTip from '@/components/ui/InfoTip'
 import ScannerFeedChips from '@/components/ui/ScannerFeedChips'
 import { useTrafficSafetyData } from './useTrafficSafetyData'
-import { CRASH_HEATMAP_LAYERS, ANOMALY_LAYERS, SPEED_CAM_LAYERS, RED_LIGHT_LAYERS, PCI_LAYERS } from './mapLayers'
+import { CRASH_HEATMAP_LAYERS, ANOMALY_LAYERS, SPEED_CAM_LAYERS, RED_LIGHT_LAYERS, PCI_LAYERS, HIN_LAYERS } from './mapLayers'
 
 type MapMode = 'heatmap' | 'anomaly'
 type SidebarTab = 'modes' | 'neighborhoods'
-type Overlay = 'speed' | 'redlight' | 'pci'
+type Overlay = 'speed' | 'redlight' | 'pci' | 'hin'
 
 const SELECT_FIELDS = 'unique_id,collision_datetime,collision_severity,type_of_collision,dph_col_grp_description,vz_pcf_group,number_killed,number_injured,primary_rd,secondary_rd,analysis_neighborhood,supervisor_district,police_district,tb_latitude,tb_longitude,point,ped_action,weather_1,road_surface,road_cond_1,lighting,mviw'
 
@@ -284,6 +284,16 @@ export default function TrafficSafety() {
     [activeOverlays.has('pci')]
   )
 
+  // High Injury Network (GeoJSON line layer — fetched directly, cached 24h)
+  const [hinGeojson, setHinGeojson] = useState<GeoJSON.FeatureCollection | null>(null)
+  useEffect(() => {
+    if (!activeOverlays.has('hin') || hinGeojson) return
+    fetch('https://data.sfgov.org/resource/enwt-3u8m.geojson?$limit=10000')
+      .then((r) => r.json())
+      .then((data) => setHinGeojson(data as GeoJSON.FeatureCollection))
+      .catch(() => {})
+  }, [activeOverlays, hinGeojson])
+
   // Hourly pattern
   const extraWhere = useMemo(() => {
     const parts: string[] = []
@@ -409,6 +419,7 @@ export default function TrafficSafety() {
   useMapLayer(mapInstance, 'speed-cam-data', speedCamGeojson, SPEED_CAM_LAYERS)
   useMapLayer(mapInstance, 'redlight-data', redLightGeojson, RED_LIGHT_LAYERS)
   useMapLayer(mapInstance, 'pci-data', pciGeojson, PCI_LAYERS)
+  useMapLayer(mapInstance, 'hin-data', activeOverlays.has('hin') ? hinGeojson : null, HIN_LAYERS)
 
   // Tooltips
   useMapTooltip(mapInstance, 'crash-points', (props) => {
@@ -485,6 +496,14 @@ export default function TrafficSafety() {
       <div class="tooltip-value">${props.intersection || 'Unknown'}</div>
       <div class="tooltip-label" style="margin-top:6px">Violations</div>
       <div style="color:#dc2626;font-weight:600">${Number(props.count).toLocaleString()}</div>
+    `
+  })
+
+  useMapTooltip(mapInstance, 'hin-lines', (props) => {
+    return `
+      <div class="tooltip-label">High Injury Network</div>
+      <div class="tooltip-value" style="color:#a855f7">${props.street_name || props.full_street_name || 'Street segment'}</div>
+      <div style="color:#94a3b8;font-size:10px;margin-top:4px">Vision Zero priority corridor</div>
     `
   })
 
@@ -617,6 +636,7 @@ export default function TrafficSafety() {
                 { key: 'speed' as Overlay, label: 'SC', title: 'Speed Cameras', color: '#f59e0b' },
                 { key: 'redlight' as Overlay, label: 'RL', title: 'Red Light Cameras', color: '#dc2626' },
                 { key: 'pci' as Overlay, label: 'PCI', title: 'Pavement Condition', color: '#10b981' },
+                { key: 'hin' as Overlay, label: 'HIN', title: 'High Injury Network', color: '#a855f7' },
               ]).map((ov) => (
                 <button
                   key={ov.key}
