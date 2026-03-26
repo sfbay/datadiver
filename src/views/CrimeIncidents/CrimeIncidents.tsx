@@ -931,7 +931,7 @@ export default function CrimeIncidents() {
                             <p className="text-[12px] font-medium text-ink dark:text-slate-200 truncate leading-tight">
                               {ns.neighborhood}
                             </p>
-                            <p className="text-[10px] text-slate-400 dark:text-slate-600 font-mono">
+                            <p className="text-[10px] text-slate-400 dark:text-slate-600 font-mono italic">
                               {(() => {
                                 const nhTrend = trend.neighborhoodMap.get(ns.neighborhood)
                                 if (nhTrend?.priorYearCount) {

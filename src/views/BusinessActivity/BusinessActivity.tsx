@@ -781,7 +781,7 @@ export default function BusinessActivity() {
                             <p className="text-[12px] font-medium text-ink dark:text-slate-200 truncate leading-tight">
                               {ns.neighborhood}
                             </p>
-                            <p className="text-[10px] text-slate-400 dark:text-slate-600 font-mono">
+                            <p className="text-[10px] text-slate-400 dark:text-slate-600 font-mono italic">
                               {ns.total.toLocaleString()} businesses
                               {ns.openings > 0 && <span className="text-emerald-400"> · {ns.openings} opened</span>}
                               {ns.closures > 0 && <span className="text-red-400"> · {ns.closures} closed</span>}
