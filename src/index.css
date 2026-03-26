@@ -42,7 +42,7 @@
   --color-revenue-high: #bfdbfe;
 
   /* Typography */
-  --font-display: "DM Serif Display", Georgia, serif;
+  --font-display: "Roboto Serif", Georgia, serif;
   --font-sans: "DM Sans", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", monospace;
 }
