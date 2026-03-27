@@ -4,6 +4,9 @@ import { useAppStore } from '@/stores/appStore'
 import CivicTicker, { useResponsiveTickerSize } from '@/components/ui/CivicTicker'
 import { useCivicIndicators } from '@/hooks/useCivicIndicators'
 import { usePreloadCache } from '@/hooks/usePreloadCache'
+import { useNeighborhoodProfiles } from '@/views/Neighborhood/useNeighborhoodProfiles'
+import CivicFingerprint from '@/views/Neighborhood/CivicFingerprint'
+import { DOMAINS } from '@/views/Neighborhood/types'
 
 const VISUALIZATIONS = [
   {
@@ -175,20 +178,6 @@ const VISUALIZATIONS = [
     accentColor: '#0ea5e9',
   },
   {
-    path: '/neighborhood',
-    title: 'Neighborhood Profiles',
-    subtitle: 'Cross-Dataset Civic Pulse',
-    badge: 'NH',
-    description:
-      'The ultimate pivot: one neighborhood, all datasets. Civic fingerprints, anomaly detection, YoY trends across 5 datasets for 41 neighborhoods.',
-    stats: [
-      { label: 'Neighborhoods', value: '41' },
-      { label: 'Datasets', value: '5' },
-      { label: 'Metrics', value: 'YoY + Z' },
-    ],
-    accentColor: '#8b5cf6',
-  },
-  {
     path: '/live-feeds',
     title: 'Live Feeds',
     subtitle: 'Scanner Radio · SFPD, SFFD, EMS',
@@ -211,7 +200,15 @@ export default function Home() {
   const [comicOpen, setComicOpen] = useState(false)
   const tickerSize = useResponsiveTickerSize('hero')
   const indicators = useCivicIndicators()
+  const dateRange = useAppStore((s) => s.dateRange)
+  const { profiles, isLoading: profilesLoading } = useNeighborhoodProfiles(dateRange)
   usePreloadCache() // silently warm all view caches in background
+
+  // Top 5 most anomalous neighborhoods for the featured section
+  const featuredNeighborhoods = profiles
+    .filter((p) => p.totalEvents > 0)
+    .sort((a, b) => b.anomalyCount - a.anomalyCount || b.compositeZScore - a.compositeZScore)
+    .slice(0, 5)
 
   useEffect(() => {
     requestAnimationFrame(() => setMounted(true))
@@ -367,6 +364,95 @@ export default function Home() {
             isLoading={indicators.isLoading}
             lastUpdated={indicators.lastUpdated ?? undefined}
           />
+        </section>
+
+        {/* Neighborhood Profiles — featured section */}
+        <section
+          className={`relative z-10 mb-12 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+        >
+          <button
+            onClick={() => navigate('/neighborhood')}
+            className="w-full text-left group"
+          >
+            <div className="glass-card rounded-2xl overflow-hidden hover:bg-white/[0.04] transition-all duration-300">
+              {/* Header */}
+              <div className="px-6 pt-5 pb-3 flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md bg-purple-500/15 text-purple-400 tracking-wider">
+                      NH
+                    </span>
+                    <h2 className="text-[17px] font-display italic text-white leading-none">
+                      Neighborhood Profiles
+                    </h2>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-1.5">
+                    5 datasets, 41 neighborhoods — civic fingerprints reveal each community's unique signature
+                  </p>
+                </div>
+                <div className="flex-shrink-0 text-slate-500 group-hover:text-purple-400 transition-colors">
+                  <svg className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 10h12M12 5.5L16.5 10 12 14.5" />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Fingerprint row */}
+              <div className="px-6 pb-5 pt-1">
+                {profilesLoading ? (
+                  <div className="flex items-center gap-6 py-4">
+                    {[0, 1, 2, 3, 4].map((i) => (
+                      <div key={i} className="flex flex-col items-center gap-2 flex-1">
+                        <div className="w-16 h-16 rounded-full bg-white/[0.03] animate-pulse" />
+                        <div className="w-20 h-2 rounded bg-white/[0.04] animate-pulse" />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-start justify-between gap-2">
+                    {featuredNeighborhoods.map((profile, i) => (
+                      <div
+                        key={profile.name}
+                        className="flex flex-col items-center flex-1 min-w-0 group/fp"
+                        style={{ animationDelay: `${600 + i * 80}ms` }}
+                      >
+                        <div className="relative">
+                          <CivicFingerprint
+                            profile={profile}
+                            size={80}
+                            showLabels={false}
+                            animate={mounted}
+                          />
+                          {/* Anomaly count badge */}
+                          {profile.anomalyCount > 0 && (
+                            <span className="absolute -top-1 -right-1 text-[8px] font-mono font-bold w-4 h-4 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center ring-1 ring-amber-500/20">
+                              {profile.anomalyCount}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-slate-400 text-center leading-tight mt-1.5 truncate w-full">
+                          {profile.name}
+                        </p>
+                        <p className="text-[9px] font-mono text-slate-600 tabular-nums">
+                          {profile.compositeZScore >= 0 ? '+' : ''}{profile.compositeZScore.toFixed(1)}σ
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Domain legend */}
+                <div className="flex items-center justify-center gap-4 mt-4 pt-3 border-t border-white/[0.04]">
+                  {DOMAINS.map((d) => (
+                    <span key={d.key} className="flex items-center gap-1.5">
+                      <span className="w-1 h-1 rounded-full" style={{ backgroundColor: d.color }} />
+                      <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider">{d.short}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </button>
         </section>
 
         {/* Visualization Cards */}
