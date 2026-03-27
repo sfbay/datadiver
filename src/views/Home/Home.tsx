@@ -175,6 +175,20 @@ const VISUALIZATIONS = [
     accentColor: '#0ea5e9',
   },
   {
+    path: '/neighborhood',
+    title: 'Neighborhood Profiles',
+    subtitle: 'Cross-Dataset Civic Pulse',
+    badge: 'NH',
+    description:
+      'The ultimate pivot: one neighborhood, all datasets. Civic fingerprints, anomaly detection, YoY trends across 5 datasets for 41 neighborhoods.',
+    stats: [
+      { label: 'Neighborhoods', value: '41' },
+      { label: 'Datasets', value: '5' },
+      { label: 'Metrics', value: 'YoY + Z' },
+    ],
+    accentColor: '#8b5cf6',
+  },
+  {
     path: '/live-feeds',
     title: 'Live Feeds',
     subtitle: 'Scanner Radio · SFPD, SFFD, EMS',

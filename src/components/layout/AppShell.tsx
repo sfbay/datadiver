@@ -96,6 +96,13 @@ const NAV_ITEMS = [
     description: 'Live results, RCV & historical playback',
     accentColor: '#6366f1',
   },
+  {
+    path: '/neighborhood',
+    label: 'Neighborhoods',
+    shortLabel: 'NH',
+    description: 'Cross-dataset civic profiles',
+    accentColor: '#8b5cf6',
+  },
   { path: '/live-feeds', label: 'Live Feeds', shortLabel: 'LIVE', description: 'Scanner radio feeds — SFPD, SFFD, EMS', accentColor: '#f59e0b' },
 ] as const
 
