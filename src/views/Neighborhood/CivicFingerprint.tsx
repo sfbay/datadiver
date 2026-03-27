@@ -77,7 +77,7 @@ export default function CivicFingerprint({
           cy={cy}
           r={maxR * r}
           fill="none"
-          stroke="rgba(255,255,255,0.06)"
+          stroke="rgba(255,255,255,0.1)"
           strokeWidth={0.5}
         />
       ))}
@@ -98,15 +98,15 @@ export default function CivicFingerprint({
         )
       })}
 
-      {/* Baseline ring (z=0) at 35% */}
+      {/* Baseline ring (z=0) at 35% — the "normal" line */}
       <circle
         cx={cx}
         cy={cy}
         r={maxR * 0.35}
         fill="none"
-        stroke="rgba(255,255,255,0.12)"
-        strokeWidth={0.5}
-        strokeDasharray="2,3"
+        stroke="rgba(255,255,255,0.35)"
+        strokeWidth={0.75}
+        strokeDasharray="3,3"
       />
 
       {/* Filled polygon */}

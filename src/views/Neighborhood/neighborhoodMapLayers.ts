@@ -17,8 +17,8 @@ export const NEIGHBORHOOD_CHOROPLETH_LAYERS: mapboxgl.AnyLayer[] = [
     type: 'line',
     source: 'nh-boundaries',
     paint: {
-      'line-color': 'rgba(255,255,255,0.12)',
-      'line-width': ['interpolate', ['linear'], ['zoom'], 10, 0.5, 14, 1.5],
+      'line-color': 'rgba(255,255,255,0.2)',
+      'line-width': ['interpolate', ['linear'], ['zoom'], 10, 1, 14, 2],
     },
   } as mapboxgl.AnyLayer,
   {
@@ -27,13 +27,13 @@ export const NEIGHBORHOOD_CHOROPLETH_LAYERS: mapboxgl.AnyLayer[] = [
     source: 'nh-boundaries',
     layout: {
       'text-field': ['get', 'nhood'],
-      'text-size': ['interpolate', ['linear'], ['zoom'], 10, 7, 14, 11],
+      'text-size': ['interpolate', ['linear'], ['zoom'], 10, 0, 12, 9, 14, 12],
       'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
       'text-anchor': 'center',
       'text-allow-overlap': false,
     },
     paint: {
-      'text-color': 'rgba(255,255,255,0.6)',
+      'text-color': ['interpolate', ['linear'], ['zoom'], 10, 'rgba(255,255,255,0)', 12, 'rgba(255,255,255,0.5)', 14, 'rgba(255,255,255,0.7)'],
       'text-halo-color': 'rgba(0,0,0,0.7)',
       'text-halo-width': 1.2,
     },
