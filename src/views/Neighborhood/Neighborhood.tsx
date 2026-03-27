@@ -1,10 +1,10 @@
 /** Neighborhood Profiles — cross-dataset civic pulse for 41 SF neighborhoods */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import { useAppStore } from '@/stores/appStore'
-import MapView from '@/components/maps/MapView'
+import MapView, { type MapHandle } from '@/components/maps/MapView'
 import { useMapLayer } from '@/hooks/useMapLayer'
 import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
@@ -20,11 +20,12 @@ import {
 export default function Neighborhood() {
   const dateRange = useAppStore((s) => s.dateRange)
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
+  const mapRef = useRef<MapHandle>(null)
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedNeighborhood = searchParams.get('nh') || null
 
   const { profiles, profileMap, isLoading } = useNeighborhoodProfiles(dateRange)
-  const boundaries = useNeighborhoodBoundaries()
+  const { boundaries } = useNeighborhoodBoundaries()
 
   const setSelectedNeighborhood = useCallback(
     (name: string | null) => {
@@ -90,7 +91,7 @@ export default function Neighborhood() {
   useEffect(() => {
     if (!mapInstance) return
     const handler = (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
-      const name = e.features?.[0]?.properties?.nhood
+      const name = e.features?.[0]?.properties?.nhood as string | undefined
       if (name) setSelectedNeighborhood(selectedNeighborhood === name ? null : name)
     }
     mapInstance.on('click', 'nh-choropleth-fill', handler)
@@ -110,7 +111,7 @@ export default function Neighborhood() {
 
   // Tooltip
   useMapTooltip(mapInstance, 'nh-choropleth-fill', (props) => {
-    const profile = profileMap.get(props.nhood)
+    const profile = profileMap.get(props.nhood as string)
     if (!profile) return `<div class="tooltip-value">${props.nhood}</div>`
     const zColor = profile.compositeZScore > 1 ? '#ef4444' : profile.compositeZScore < -1 ? '#60a5fa' : '#94a3b8'
     return `
@@ -128,10 +129,12 @@ export default function Neighborhood() {
       {/* Map */}
       <div className="flex-1 relative">
         <MapView
-          ref={(ref: mapboxgl.Map | null) => { if (ref && !mapInstance) setMapInstance(ref) }}
-          onMapReady={setMapInstance}
-          initialCenter={[-122.4394, 37.7549]}
-          initialZoom={11.8}
+          ref={mapRef}
+          onMapReady={(map) => {
+            setMapInstance(map)
+            // Zoom out to show all neighborhoods
+            map.flyTo({ center: [-122.4394, 37.7549], zoom: 11.8, duration: 0 })
+          }}
         />
         {isLoading && <MapLoadingIndicator label="Loading 5 datasets..." />}
 

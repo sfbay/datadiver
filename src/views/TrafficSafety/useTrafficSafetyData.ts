@@ -5,7 +5,7 @@ import { coordsFromFields, extractCoordinates } from '@/utils/geo'
 import type { CardDef } from '@/components/ui/CardTray'
 
 type MapMode = 'heatmap' | 'anomaly'
-type Overlay = 'speed' | 'redlight' | 'pci'
+type Overlay = 'speed' | 'redlight' | 'pci' | 'hin'
 
 interface UseTrafficSafetyDataParams {
   rawData: TrafficCrashRecord[]

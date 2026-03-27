@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from 'react'
 import { SkeletonSidebarRows } from '@/components/ui/Skeleton'
-import NeighborhoodCensusContext from '@/components/ui/NeighborhoodCensusContext'
 import CivicFingerprint, { MiniFingerprint } from './CivicFingerprint'
 import type { NeighborhoodProfile, MetricDomain, SortKey, DatasetMetric } from './types'
 import { DOMAINS } from './types'
@@ -134,8 +133,7 @@ function ProfileView({ profile }: { profile: NeighborhoodProfile }) {
         </div>
       </div>
 
-      {/* Census context */}
-      <NeighborhoodCensusContext neighborhood={profile.name} />
+      {/* Census context — future: wire up when Census integration lands */}
     </div>
   )
 }
