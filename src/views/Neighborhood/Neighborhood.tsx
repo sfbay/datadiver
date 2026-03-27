@@ -1,6 +1,6 @@
 /** Neighborhood Profiles — cross-dataset civic pulse for 41 SF neighborhoods */
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import { useAppStore } from '@/stores/appStore'
@@ -15,7 +15,9 @@ import {
   NEIGHBORHOOD_CHOROPLETH_LAYERS,
   NEIGHBORHOOD_SELECTION_LAYERS,
   buildZScoreColorExpression,
+  makeSlotLayers,
 } from './neighborhoodMapLayers'
+import { SLOT_COLORS } from './types'
 
 export default function Neighborhood() {
   const dateRange = useAppStore((s) => s.dateRange)
@@ -23,6 +25,13 @@ export default function Neighborhood() {
   const mapRef = useRef<MapHandle>(null)
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedNeighborhood = searchParams.get('nh') || null
+
+  // Comparison state
+  const [compareMode, setCompareMode] = useState(() => searchParams.has('compare'))
+  const [compareSet, setCompareSet] = useState<string[]>(() => {
+    const param = searchParams.get('compare')
+    return param ? param.split(',').map(decodeURIComponent).filter(Boolean).slice(0, 3) : []
+  })
 
   const { profiles, profileMap, isLoading } = useNeighborhoodProfiles(dateRange)
   const { boundaries } = useNeighborhoodBoundaries()
@@ -37,6 +46,38 @@ export default function Neighborhood() {
     },
     [setSearchParams]
   )
+
+  // URL sync for compareSet
+  useEffect(() => {
+    setSearchParams((prev) => {
+      if (compareMode && compareSet.length > 0) {
+        prev.set('compare', compareSet.map(encodeURIComponent).join(','))
+        prev.delete('nh')
+      } else {
+        prev.delete('compare')
+      }
+      return prev
+    }, { replace: true })
+  }, [compareMode, compareSet, setSearchParams])
+
+  // Comparison callbacks
+  const toggleCompare = useCallback(() => {
+    setCompareMode((prev) => {
+      if (prev) setCompareSet([])
+      return !prev
+    })
+  }, [])
+
+  const addToCompare = useCallback((name: string) => {
+    setCompareSet((prev) => {
+      if (prev.includes(name) || prev.length >= 3) return prev
+      return [...prev, name]
+    })
+  }, [])
+
+  const removeFromCompare = useCallback((name: string) => {
+    setCompareSet((prev) => prev.filter((n) => n !== name))
+  }, [])
 
   // Fly to selected neighborhood
   useEffect(() => {
@@ -71,28 +112,78 @@ export default function Neighborhood() {
     } catch { /* layer not ready */ }
   }, [mapInstance, profileMap])
 
-  // Update selection highlight
+  // Update selection highlight (only when NOT in compare mode)
   useEffect(() => {
     if (!mapInstance) return
-    const filter: any = selectedNeighborhood
+    const filter: any = !compareMode && selectedNeighborhood
       ? ['==', 'nhood', selectedNeighborhood]
       : ['==', 'nhood', '']
     try {
       mapInstance.setFilter('nh-selection-fill', filter)
       mapInstance.setFilter('nh-selection-outline', filter)
     } catch { /* layers not ready */ }
-  }, [mapInstance, selectedNeighborhood])
+  }, [mapInstance, selectedNeighborhood, compareMode])
 
   // Map layers
   useMapLayer(mapInstance, 'nh-boundaries', boundaries, NEIGHBORHOOD_CHOROPLETH_LAYERS)
   useMapLayer(mapInstance, 'nh-boundaries', boundaries, NEIGHBORHOOD_SELECTION_LAYERS)
+
+  // Comparison slot layers
+  const slot0Layers = useMemo(() => makeSlotLayers(0, SLOT_COLORS[0].hex), [])
+  const slot1Layers = useMemo(() => makeSlotLayers(1, SLOT_COLORS[1].hex), [])
+  const slot2Layers = useMemo(() => makeSlotLayers(2, SLOT_COLORS[2].hex), [])
+  useMapLayer(mapInstance, 'nh-boundaries', boundaries, slot0Layers)
+  useMapLayer(mapInstance, 'nh-boundaries', boundaries, slot1Layers)
+  useMapLayer(mapInstance, 'nh-boundaries', boundaries, slot2Layers)
+
+  // Update comparison slot filters
+  useEffect(() => {
+    if (!mapInstance) return
+    for (let i = 0; i < 3; i++) {
+      const name = compareMode ? (compareSet[i] || '') : ''
+      const filter: any = ['==', 'nhood', name]
+      try {
+        mapInstance.setFilter(`nh-compare-fill-${i}`, filter)
+        mapInstance.setFilter(`nh-compare-outline-${i}`, filter)
+      } catch { /* layers not ready */ }
+    }
+  }, [mapInstance, compareMode, compareSet])
+
+  // Fit bounds to compared neighborhoods
+  useEffect(() => {
+    if (!mapInstance || !compareMode || compareSet.length < 2 || !boundaries) return
+    const coords: [number, number][] = []
+    for (const feature of boundaries.features) {
+      const name = feature.properties?.nhood
+      if (!compareSet.includes(name)) continue
+      const geom = feature.geometry as any
+      const extractCoords = (c: any): void => {
+        if (typeof c[0] === 'number') coords.push(c as [number, number])
+        else c.forEach(extractCoords)
+      }
+      extractCoords(geom.coordinates)
+    }
+    if (coords.length === 0) return
+    const lngs = coords.map((c) => c[0])
+    const lats = coords.map((c) => c[1])
+    mapInstance.fitBounds(
+      [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
+      { padding: 60, duration: 800 }
+    )
+  }, [mapInstance, compareMode, compareSet, boundaries])
 
   // Click handler
   useEffect(() => {
     if (!mapInstance) return
     const handler = (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
       const name = e.features?.[0]?.properties?.nhood as string | undefined
-      if (name) setSelectedNeighborhood(selectedNeighborhood === name ? null : name)
+      if (!name) return
+      if (compareMode) {
+        if (compareSet.includes(name)) removeFromCompare(name)
+        else if (compareSet.length < 3) addToCompare(name)
+      } else {
+        setSelectedNeighborhood(selectedNeighborhood === name ? null : name)
+      }
     }
     mapInstance.on('click', 'nh-choropleth-fill', handler)
 
@@ -107,7 +198,7 @@ export default function Neighborhood() {
       mapInstance.off('mouseenter', 'nh-choropleth-fill', enter)
       mapInstance.off('mouseleave', 'nh-choropleth-fill', leave)
     }
-  }, [mapInstance, selectedNeighborhood, setSelectedNeighborhood])
+  }, [mapInstance, selectedNeighborhood, setSelectedNeighborhood, compareMode, compareSet, addToCompare, removeFromCompare])
 
   // Tooltip
   useMapTooltip(mapInstance, 'nh-choropleth-fill', (props) => {
@@ -168,9 +259,15 @@ export default function Neighborhood() {
       {/* Sidebar */}
       <NeighborhoodSidebar
         profiles={profiles}
+        profileMap={profileMap}
         selectedNeighborhood={selectedNeighborhood}
         onSelectNeighborhood={setSelectedNeighborhood}
         isLoading={isLoading}
+        compareMode={compareMode}
+        onToggleCompare={toggleCompare}
+        compareSet={compareSet}
+        onAddToCompare={addToCompare}
+        onRemoveFromCompare={removeFromCompare}
       />
     </div>
   )
