@@ -81,3 +81,33 @@ export function buildZScoreColorExpression(
   }
   return ['match', ['get', 'nhood'], ...stops, '#334155'] as unknown as mapboxgl.Expression
 }
+
+/** Generate fill + outline layers for a comparison slot */
+export function makeSlotLayers(
+  slotIndex: number,
+  color: string,
+): mapboxgl.AnyLayer[] {
+  return [
+    {
+      id: `nh-compare-fill-${slotIndex}`,
+      type: 'fill',
+      source: 'nh-boundaries',
+      paint: {
+        'fill-color': color,
+        'fill-opacity': 0.12,
+      },
+      filter: ['==', 'nhood', ''],
+    } as mapboxgl.AnyLayer,
+    {
+      id: `nh-compare-outline-${slotIndex}`,
+      type: 'line',
+      source: 'nh-boundaries',
+      paint: {
+        'line-color': color,
+        'line-width': 2.5,
+        'line-opacity': 0.8,
+      },
+      filter: ['==', 'nhood', ''],
+    } as mapboxgl.AnyLayer,
+  ]
+}
