@@ -37,3 +37,19 @@ export const DOMAINS: { key: MetricDomain; label: string; short: string; color: 
   { key: 'crashes', label: 'Traffic Crashes', short: 'Crash', color: '#eab308' },
   { key: 'citations', label: 'Parking Citations', short: 'Cite', color: '#06b6d4' },
 ]
+
+/** Fixed color slots for comparison mode */
+export const SLOT_COLORS = [
+  { hex: '#a855f7', name: 'purple', dashArray: '' },       // slot 0: solid
+  { hex: '#22d3ee', name: 'cyan', dashArray: '4,3' },      // slot 1: dashed
+  { hex: '#34d399', name: 'green', dashArray: '2,3' },     // slot 2: dotted
+] as const
+
+/** Cross-link routes: fingerprint axis → dataset view */
+export const DOMAIN_ROUTES: Record<MetricDomain, string> = {
+  emergency: '/emergency-response',
+  crime: '/crime-incidents',
+  cases311: '/311-cases',
+  crashes: '/traffic-safety',
+  citations: '/parking-citations',
+}
