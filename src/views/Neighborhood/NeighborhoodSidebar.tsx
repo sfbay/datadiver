@@ -1,16 +1,24 @@
 /** Neighborhood sidebar — picker list ↔ deep profile with civic fingerprint */
 
 import { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { SkeletonSidebarRows } from '@/components/ui/Skeleton'
 import CivicFingerprint, { MiniFingerprint } from './CivicFingerprint'
+import ComparisonView from './ComparisonView'
 import type { NeighborhoodProfile, MetricDomain, SortKey, DatasetMetric } from './types'
-import { DOMAINS } from './types'
+import { DOMAINS, SLOT_COLORS, DOMAIN_ROUTES } from './types'
 
 interface Props {
   profiles: NeighborhoodProfile[]
+  profileMap: Map<string, NeighborhoodProfile>
   selectedNeighborhood: string | null
   onSelectNeighborhood: (name: string | null) => void
   isLoading: boolean
+  compareMode: boolean
+  onToggleCompare: () => void
+  compareSet: string[]
+  onAddToCompare: (name: string) => void
+  onRemoveFromCompare: (name: string) => void
 }
 
 function fmt(n: number): string {
@@ -42,12 +50,17 @@ function MetricRow({
   metric,
   color,
   maxCount,
+  domainKey,
+  neighborhood,
 }: {
   label: string
   metric: DatasetMetric | null
   color: string
   maxCount: number
+  domainKey?: MetricDomain
+  neighborhood?: string
 }) {
+  const navigate = useNavigate()
   if (!metric) return null
   const barWidth = maxCount > 0 ? (metric.count / maxCount) * 100 : 0
   return (
@@ -66,6 +79,18 @@ function MetricRow({
           <span className="text-[12px] font-mono text-slate-300 tabular-nums">{fmt(metric.count)}</span>
           <YoYBadge pct={metric.yoyPct} />
           <ZDot z={metric.zScore} />
+          {domainKey && neighborhood && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                navigate(`${DOMAIN_ROUTES[domainKey]}?neighborhood=${encodeURIComponent(neighborhood)}`)
+              }}
+              className="opacity-0 group-hover:opacity-100 text-[10px] text-slate-600 hover:text-slate-300 transition-all ml-0.5"
+              title={`Open ${label} view`}
+            >
+              →
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -116,9 +141,9 @@ function ProfileView({ profile }: { profile: NeighborhoodProfile }) {
           Safety
         </p>
         <div className="space-y-0.5">
-          <MetricRow label="Emergency Response" metric={profile.emergency} color="#ef4444" maxCount={maxCount} />
-          <MetricRow label="Crime Incidents" metric={profile.crime} color="#f97316" maxCount={maxCount} />
-          <MetricRow label="Traffic Crashes" metric={profile.crashes} color="#eab308" maxCount={maxCount} />
+          <MetricRow label="Emergency Response" metric={profile.emergency} color="#ef4444" maxCount={maxCount} domainKey="emergency" neighborhood={profile.name} />
+          <MetricRow label="Crime Incidents" metric={profile.crime} color="#f97316" maxCount={maxCount} domainKey="crime" neighborhood={profile.name} />
+          <MetricRow label="Traffic Crashes" metric={profile.crashes} color="#eab308" maxCount={maxCount} domainKey="crashes" neighborhood={profile.name} />
         </div>
       </div>
 
@@ -128,8 +153,8 @@ function ProfileView({ profile }: { profile: NeighborhoodProfile }) {
           Quality of Life
         </p>
         <div className="space-y-0.5">
-          <MetricRow label="311 Cases" metric={profile.cases311} color="#3b82f6" maxCount={maxCount} />
-          <MetricRow label="Parking Citations" metric={profile.citations} color="#06b6d4" maxCount={maxCount} />
+          <MetricRow label="311 Cases" metric={profile.cases311} color="#3b82f6" maxCount={maxCount} domainKey="cases311" neighborhood={profile.name} />
+          <MetricRow label="Parking Citations" metric={profile.citations} color="#06b6d4" maxCount={maxCount} domainKey="citations" neighborhood={profile.name} />
         </div>
       </div>
 
@@ -140,9 +165,15 @@ function ProfileView({ profile }: { profile: NeighborhoodProfile }) {
 
 export default function NeighborhoodSidebar({
   profiles,
+  profileMap,
   selectedNeighborhood,
   onSelectNeighborhood,
   isLoading,
+  compareMode,
+  onToggleCompare,
+  compareSet,
+  onAddToCompare,
+  onRemoveFromCompare,
 }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>('totalEvents')
 
@@ -161,6 +192,11 @@ export default function NeighborhoodSidebar({
     ? profiles.find((p) => p.name === selectedNeighborhood) ?? null
     : null
 
+  const compareProfiles = useMemo(
+    () => compareSet.map((name) => profileMap.get(name)).filter((p): p is NeighborhoodProfile => !!p),
+    [compareSet, profileMap]
+  )
+
   const sortButtons: { key: SortKey; label: string }[] = [
     { key: 'totalEvents', label: 'Events' },
     { key: 'compositeZScore', label: 'Z-Score' },
@@ -174,19 +210,37 @@ export default function NeighborhoodSidebar({
       <div className="px-4 pt-4 pb-3 border-b border-white/[0.04]">
         <div className="flex items-center justify-between mb-1">
           <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500">
-            {selectedNeighborhood ? 'Neighborhood Profile' : '41 Neighborhoods'}
+            {compareMode
+              ? `Comparing ${compareSet.length} of 3`
+              : selectedNeighborhood
+                ? 'Neighborhood Profile'
+                : '41 Neighborhoods'}
           </p>
-          {selectedNeighborhood && (
-            <button
-              onClick={() => onSelectNeighborhood(null)}
-              className="text-[9px] font-mono text-purple-400 hover:text-purple-300 transition-colors"
-            >
-              All neighborhoods
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {compareMode && (
+              <button
+                onClick={onToggleCompare}
+                className="text-[9px] font-mono text-purple-400 hover:text-purple-300 transition-colors"
+              >
+                Exit compare
+              </button>
+            )}
+            {!compareMode && selectedNeighborhood && (
+              <button
+                onClick={() => onSelectNeighborhood(null)}
+                className="text-[9px] font-mono text-purple-400 hover:text-purple-300 transition-colors"
+              >
+                All neighborhoods
+              </button>
+            )}
+          </div>
         </div>
 
-        {selectedNeighborhood ? (
+        {compareMode ? (
+          <p className="text-[12px] text-slate-400 font-mono italic mt-1">
+            Click neighborhoods on the map or list
+          </p>
+        ) : selectedNeighborhood ? (
           <h2 className="text-[18px] font-display italic text-white leading-tight">
             {selectedNeighborhood}
           </h2>
@@ -205,6 +259,18 @@ export default function NeighborhoodSidebar({
                 {label}
               </button>
             ))}
+            {/* Compare toggle */}
+            <button
+              onClick={onToggleCompare}
+              className={`text-[9px] font-mono px-2 py-0.5 rounded-full transition-all duration-200 ml-auto ${
+                compareMode
+                  ? 'bg-purple-500/30 text-purple-300 ring-1 ring-purple-500/30'
+                  : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]'
+              }`}
+              title="Compare up to 3 neighborhoods"
+            >
+              Compare
+            </button>
           </div>
         )}
       </div>
@@ -213,6 +279,63 @@ export default function NeighborhoodSidebar({
       <div className="flex-1 overflow-y-auto scrollbar-thin px-2 py-2">
         {isLoading ? (
           <SkeletonSidebarRows count={14} />
+        ) : compareMode && compareProfiles.length >= 2 ? (
+          <ComparisonView profiles={compareProfiles} onRemove={onRemoveFromCompare} />
+        ) : compareMode ? (
+          /* Compare mode list: show numbered circle indicators */
+          <div className="space-y-0.5">
+            {sorted.map((profile, i) => {
+              const slotIndex = compareSet.indexOf(profile.name)
+              const isSelected = slotIndex !== -1
+              return (
+                <button
+                  key={profile.name}
+                  onClick={() => {
+                    if (isSelected) onRemoveFromCompare(profile.name)
+                    else if (compareSet.length < 3) onAddToCompare(profile.name)
+                  }}
+                  className={`w-full text-left py-2 px-2.5 rounded-lg cursor-pointer transition-all duration-150 group ${
+                    isSelected ? 'bg-white/[0.06]' : 'hover:bg-white/[0.04]'
+                  } ${!isSelected && compareSet.length >= 3 ? 'opacity-40 cursor-not-allowed' : ''}`}
+                  style={{ animationDelay: `${i * 15}ms` }}
+                  disabled={!isSelected && compareSet.length >= 3}
+                >
+                  <div className="flex items-center gap-2.5">
+                    {/* Numbered circle indicator or empty circle */}
+                    <div
+                      className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[9px] font-mono font-bold transition-all ${
+                        isSelected ? 'text-white' : 'border border-white/20 text-slate-600'
+                      }`}
+                      style={isSelected ? { backgroundColor: SLOT_COLORS[slotIndex].hex } : undefined}
+                    >
+                      {isSelected ? slotIndex + 1 : ''}
+                    </div>
+                    {/* Text */}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[12px] font-medium text-slate-200 truncate leading-tight group-hover:text-white transition-colors">
+                        {profile.name}
+                      </p>
+                      <p className="text-[10px] text-slate-500 font-mono italic">
+                        {fmt(profile.totalEvents)} events
+                        {profile.anomalyCount > 0 && (
+                          <span className="text-amber-400/80">
+                            {' '}{profile.anomalyCount} anomal{profile.anomalyCount === 1 ? 'y' : 'ies'}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    {/* Z-score */}
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <ZDot z={profile.compositeZScore} />
+                      <span className="text-[10px] font-mono text-slate-500 tabular-nums">
+                        {profile.compositeZScore >= 0 ? '+' : ''}{profile.compositeZScore.toFixed(1)}σ
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
         ) : selectedProfile ? (
           <ProfileView profile={selectedProfile} />
         ) : (
