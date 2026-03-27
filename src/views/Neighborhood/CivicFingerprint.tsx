@@ -10,6 +10,12 @@ import { useMemo } from 'react'
 import type { NeighborhoodProfile } from './types'
 import { DOMAINS } from './types'
 
+interface GhostOverlay {
+  profile: NeighborhoodProfile
+  color: string
+  dashArray: string
+}
+
 interface CivicFingerprintProps {
   profile: NeighborhoodProfile
   size?: number
@@ -17,6 +23,8 @@ interface CivicFingerprintProps {
   /** Animate on mount */
   animate?: boolean
   className?: string
+  /** Comparison overlays rendered behind the primary polygon */
+  ghostProfiles?: GhostOverlay[]
 }
 
 const TAU = 2 * Math.PI
@@ -27,6 +35,7 @@ export default function CivicFingerprint({
   showLabels = true,
   animate = true,
   className = '',
+  ghostProfiles,
 }: CivicFingerprintProps) {
   const cx = size / 2
   const cy = size / 2
@@ -58,6 +67,17 @@ export default function CivicFingerprint({
   }, [normalizedValues, cx, cy, maxR])
 
   const polygonPath = points.map((p) => `${p.x},${p.y}`).join(' ')
+
+  function computePolygon(p: NeighborhoodProfile): string {
+    return DOMAINS.map(({ key }, i) => {
+      const metric = p[key]
+      const z = metric ? Math.max(-3, Math.min(3, metric.zScore)) : -3
+      const v = 0.35 + (z / 3) * 0.55
+      const r = Math.max(v, 0.15) * maxR
+      const angle = (i / DOMAINS.length) * TAU - Math.PI / 2
+      return `${cx + Math.cos(angle) * r},${cy + Math.sin(angle) * r}`
+    }).join(' ')
+  }
 
   // Grid rings at 33%, 66%, 100%
   const rings = [0.33, 0.66, 1.0]
@@ -108,6 +128,20 @@ export default function CivicFingerprint({
         strokeWidth={0.75}
         strokeDasharray="3,3"
       />
+
+      {/* Ghost overlay polygons (comparison mode) */}
+      {ghostProfiles?.map((ghost, gi) => (
+        <polygon
+          key={gi}
+          points={computePolygon(ghost.profile)}
+          fill={`${ghost.color}${gi === 0 ? '0f' : '0c'}`}
+          stroke={ghost.color}
+          strokeOpacity={gi === 0 ? 0.4 : 0.35}
+          strokeWidth={1}
+          strokeDasharray={ghost.dashArray}
+          strokeLinejoin="round"
+        />
+      ))}
 
       {/* Filled polygon */}
       <polygon
