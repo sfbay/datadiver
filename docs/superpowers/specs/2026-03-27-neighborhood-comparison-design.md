@@ -90,6 +90,26 @@ State management:
 - `src/views/Neighborhood/neighborhoodMapLayers.ts` — Add `COMPARISON_SLOT_LAYERS` factory function that generates fill + outline layers for a given slot color and source filter.
 - `src/views/Neighborhood/types.ts` — Add `SLOT_COLORS` constant array and `ComparisonSlot` type.
 
+## Domain Drill-Down (Cross-Linking)
+
+Each domain metric row in the sidebar (both single profile and comparison mode) includes a small arrow icon that navigates to the dataset's dedicated view, pre-filtered to that neighborhood:
+
+| Domain | Link |
+|--------|------|
+| Emergency Response | `/emergency-response?neighborhood={name}` |
+| Crime Incidents | `/crime-incidents?neighborhood={name}` |
+| 311 Cases | `/311-cases?neighborhood={name}` |
+| Traffic Crashes | `/traffic-safety?neighborhood={name}` |
+| Parking Citations | `/parking-citations?neighborhood={name}` |
+
+The target views already support `?neighborhood=` via `useUrlSync` and `appStore.selectedNeighborhood`. The link opens in the same tab (standard navigation, not new tab).
+
+In comparison mode, clicking the arrow on a domain row drills into the primary (slot 1) neighborhood by default. Each neighborhood name in the header is also clickable to drill into that specific one.
+
+### File Changes for Cross-Linking
+- **Modify**: `src/views/Neighborhood/NeighborhoodSidebar.tsx` — Add `useNavigate` + arrow icons on MetricRow and ComparisonView domain rows
+- **Modify**: `src/views/Neighborhood/types.ts` — Add `DOMAIN_ROUTES` mapping from MetricDomain to route path
+
 ## Edge Cases
 
 - **1 neighborhood selected in compare mode**: Show its profile normally (like single-select mode) with a prompt to "Select another neighborhood to compare"
