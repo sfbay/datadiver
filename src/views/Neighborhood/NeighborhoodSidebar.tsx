@@ -310,7 +310,25 @@ export default function NeighborhoodSidebar({
         {isLoading ? (
           <SkeletonSidebarRows count={14} />
         ) : compareMode && compareProfiles.length >= 2 ? (
-          <ComparisonView profiles={compareProfiles} onRemove={onRemoveFromCompare} />
+          <>
+            <ComparisonView profiles={compareProfiles} onRemove={onRemoveFromCompare} />
+            {compareSet.length < 3 && (
+              <div className="mt-4 pt-3 border-t border-white/[0.04]">
+                <p className="text-[9px] font-mono text-slate-500 uppercase tracking-wider mb-2 px-1">Add neighborhood</p>
+                <div className="space-y-0.5 max-h-40 overflow-y-auto">
+                  {sorted.filter((p) => !compareSet.includes(p.name)).slice(0, 15).map((profile) => (
+                    <button
+                      key={profile.name}
+                      onClick={() => onAddToCompare(profile.name)}
+                      className="w-full text-left py-1.5 px-2 rounded-md text-[11px] text-slate-400 hover:text-white hover:bg-white/[0.04] transition-colors truncate"
+                    >
+                      + {profile.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         ) : compareMode ? (
           /* Compare mode list: show numbered circle indicators */
           <div className="space-y-0.5">
