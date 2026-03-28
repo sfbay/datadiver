@@ -23,6 +23,8 @@ interface Props {
   isDiveInActive?: boolean
   isDiveInLoading?: boolean
   onFocusNeighborhood?: (name: string) => void
+  visibleDomains?: Set<import('./types').MetricDomain>
+  onToggleDomain?: (domain: import('./types').MetricDomain) => void
 }
 
 function fmt(n: number): string {
@@ -56,6 +58,8 @@ function MetricRow({
   maxCount,
   domainKey,
   neighborhood,
+  isVisible,
+  onToggle,
 }: {
   label: string
   metric: DatasetMetric | null
@@ -63,22 +67,32 @@ function MetricRow({
   maxCount: number
   domainKey?: MetricDomain
   neighborhood?: string
+  isVisible?: boolean
+  onToggle?: () => void
 }) {
   const navigate = useNavigate()
   if (!metric) return null
   const barWidth = maxCount > 0 ? (metric.count / maxCount) * 100 : 0
+  const dimmed = isVisible === false
   return (
-    <div className="relative py-2 px-2.5 rounded-lg group">
+    <div className={`relative py-2 px-2.5 rounded-lg group transition-opacity duration-200 ${dimmed ? 'opacity-35' : ''}`}>
       {/* Background bar */}
       <div
         className="absolute inset-y-0 left-0 rounded-lg transition-all duration-500"
         style={{ width: `${barWidth}%`, backgroundColor: color, opacity: 0.08 }}
       />
       <div className="relative flex items-center justify-between">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+        <button
+          onClick={onToggle}
+          className="flex items-center gap-2 min-w-0 cursor-pointer hover:brightness-125 transition-all"
+          title={dimmed ? `Show ${label} on map` : `Hide ${label} on map`}
+        >
+          <div
+            className={`w-1.5 h-1.5 rounded-full flex-shrink-0 transition-all ${dimmed ? 'ring-1 ring-current' : ''}`}
+            style={{ backgroundColor: dimmed ? 'transparent' : color, color }}
+          />
           <span className="text-[11px] text-slate-300 truncate">{label}</span>
-        </div>
+        </button>
         <div className="flex items-center gap-2.5 flex-shrink-0">
           <span className="text-[12px] font-mono text-slate-300 tabular-nums">{fmt(metric.count)}</span>
           <YoYBadge pct={metric.yoyPct} />
@@ -102,11 +116,13 @@ function MetricRow({
 }
 
 /** Deep profile view for a selected neighborhood */
-function ProfileView({ profile, onDiveIn, isDiveInActive, isDiveInLoading }: {
+function ProfileView({ profile, onDiveIn, isDiveInActive, isDiveInLoading, visibleDomains, onToggleDomain }: {
   profile: NeighborhoodProfile
   onDiveIn?: () => void
   isDiveInActive?: boolean
   isDiveInLoading?: boolean
+  visibleDomains?: Set<MetricDomain>
+  onToggleDomain?: (domain: MetricDomain) => void
 }) {
   // Find max count for bar scaling
   const maxCount = Math.max(
@@ -169,9 +185,9 @@ function ProfileView({ profile, onDiveIn, isDiveInActive, isDiveInLoading }: {
           Safety
         </p>
         <div className="space-y-0.5">
-          <MetricRow label="Emergency Response" metric={profile.emergency} color="#ef4444" maxCount={maxCount} domainKey="emergency" neighborhood={profile.name} />
-          <MetricRow label="Crime Incidents" metric={profile.crime} color="#f97316" maxCount={maxCount} domainKey="crime" neighborhood={profile.name} />
-          <MetricRow label="Traffic Crashes" metric={profile.crashes} color="#eab308" maxCount={maxCount} domainKey="crashes" neighborhood={profile.name} />
+          <MetricRow label="Emergency Response" metric={profile.emergency} color="#ef4444" maxCount={maxCount} domainKey="emergency" neighborhood={profile.name} isVisible={visibleDomains?.has('emergency')} onToggle={() => onToggleDomain?.('emergency')} />
+          <MetricRow label="Crime Incidents" metric={profile.crime} color="#f97316" maxCount={maxCount} domainKey="crime" neighborhood={profile.name} isVisible={visibleDomains?.has('crime')} onToggle={() => onToggleDomain?.('crime')} />
+          <MetricRow label="Traffic Crashes" metric={profile.crashes} color="#eab308" maxCount={maxCount} domainKey="crashes" neighborhood={profile.name} isVisible={visibleDomains?.has('crashes')} onToggle={() => onToggleDomain?.('crashes')} />
         </div>
       </div>
 
@@ -181,8 +197,8 @@ function ProfileView({ profile, onDiveIn, isDiveInActive, isDiveInLoading }: {
           Quality of Life
         </p>
         <div className="space-y-0.5">
-          <MetricRow label="311 Cases" metric={profile.cases311} color="#3b82f6" maxCount={maxCount} domainKey="cases311" neighborhood={profile.name} />
-          <MetricRow label="Parking Citations" metric={profile.citations} color="#06b6d4" maxCount={maxCount} domainKey="citations" neighborhood={profile.name} />
+          <MetricRow label="311 Cases" metric={profile.cases311} color="#3b82f6" maxCount={maxCount} domainKey="cases311" neighborhood={profile.name} isVisible={visibleDomains?.has('cases311')} onToggle={() => onToggleDomain?.('cases311')} />
+          <MetricRow label="Parking Citations" metric={profile.citations} color="#06b6d4" maxCount={maxCount} domainKey="citations" neighborhood={profile.name} isVisible={visibleDomains?.has('citations')} onToggle={() => onToggleDomain?.('citations')} />
         </div>
       </div>
 
@@ -206,6 +222,8 @@ export default function NeighborhoodSidebar({
   isDiveInActive,
   isDiveInLoading,
   onFocusNeighborhood,
+  visibleDomains,
+  onToggleDomain,
 }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>('totalEvents')
 
@@ -392,6 +410,8 @@ export default function NeighborhoodSidebar({
             onDiveIn={onDiveIn}
             isDiveInActive={isDiveInActive}
             isDiveInLoading={isDiveInLoading}
+            visibleDomains={visibleDomains}
+            onToggleDomain={onToggleDomain}
           />
         ) : (
           <div className="space-y-0.5">

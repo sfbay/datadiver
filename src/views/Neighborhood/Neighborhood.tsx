@@ -40,6 +40,17 @@ export default function Neighborhood() {
   const { boundaries } = useNeighborhoodBoundaries()
   const portrait = useNeighborhoodPortrait(selectedNeighborhood, dateRange)
 
+  // Domain visibility toggle (controls which portrait layers show on map)
+  const [visibleDomains, setVisibleDomains] = useState<Set<MetricDomain>>(() => new Set(DOMAINS.map((d) => d.key)))
+  const toggleDomain = useCallback((domain: MetricDomain) => {
+    setVisibleDomains((prev) => {
+      const next = new Set(prev)
+      if (next.has(domain)) next.delete(domain)
+      else next.add(domain)
+      return next
+    })
+  }, [])
+
   // Portrait points → GeoJSON per domain for map layers
   const portraitGeojsonByDomain = useMemo(() => {
     const map = new Map<string, GeoJSON.FeatureCollection>()
@@ -169,11 +180,11 @@ export default function Neighborhood() {
   useMapLayer(mapInstance, 'nh-boundaries', boundaries, slot2Layers)
 
   // Portrait circle layers — one per domain with domain color
-  const erGeojson = portrait.isActive ? portraitGeojsonByDomain.get('emergency') ?? null : null
-  const crimeGeojson = portrait.isActive ? portraitGeojsonByDomain.get('crime') ?? null : null
-  const cases311Geojson = portrait.isActive ? portraitGeojsonByDomain.get('cases311') ?? null : null
-  const crashesGeojson = portrait.isActive ? portraitGeojsonByDomain.get('crashes') ?? null : null
-  const citationsGeojson = portrait.isActive ? portraitGeojsonByDomain.get('citations') ?? null : null
+  const erGeojson = portrait.isActive && visibleDomains.has('emergency') ? portraitGeojsonByDomain.get('emergency') ?? null : null
+  const crimeGeojson = portrait.isActive && visibleDomains.has('crime') ? portraitGeojsonByDomain.get('crime') ?? null : null
+  const cases311Geojson = portrait.isActive && visibleDomains.has('cases311') ? portraitGeojsonByDomain.get('cases311') ?? null : null
+  const crashesGeojson = portrait.isActive && visibleDomains.has('crashes') ? portraitGeojsonByDomain.get('crashes') ?? null : null
+  const citationsGeojson = portrait.isActive && visibleDomains.has('citations') ? portraitGeojsonByDomain.get('citations') ?? null : null
 
   const erLayers = useMemo((): mapboxgl.AnyLayer[] => [{ id: 'portrait-emergency', type: 'circle', source: 'portrait-emergency', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 4, 16, 8], 'circle-color': '#ef4444', 'circle-opacity': 0.75, 'circle-stroke-color': 'rgba(0,0,0,0.5)', 'circle-stroke-width': 1 } } as mapboxgl.AnyLayer], [])
   const crimeLayers = useMemo((): mapboxgl.AnyLayer[] => [{ id: 'portrait-crime', type: 'circle', source: 'portrait-crime', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 4, 16, 8], 'circle-color': '#f97316', 'circle-opacity': 0.75, 'circle-stroke-color': 'rgba(0,0,0,0.5)', 'circle-stroke-width': 1 } } as mapboxgl.AnyLayer], [])
@@ -343,6 +354,8 @@ export default function Neighborhood() {
         isDiveInActive={portrait.isActive}
         isDiveInLoading={portrait.loading}
         onFocusNeighborhood={focusNeighborhood}
+        visibleDomains={visibleDomains}
+        onToggleDomain={toggleDomain}
       />
     </div>
   )
