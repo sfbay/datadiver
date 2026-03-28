@@ -19,6 +19,9 @@ interface Props {
   compareSet: string[]
   onAddToCompare: (name: string) => void
   onRemoveFromCompare: (name: string) => void
+  onDiveIn?: () => void
+  isDiveInActive?: boolean
+  isDiveInLoading?: boolean
 }
 
 function fmt(n: number): string {
@@ -98,7 +101,12 @@ function MetricRow({
 }
 
 /** Deep profile view for a selected neighborhood */
-function ProfileView({ profile }: { profile: NeighborhoodProfile }) {
+function ProfileView({ profile, onDiveIn, isDiveInActive, isDiveInLoading }: {
+  profile: NeighborhoodProfile
+  onDiveIn?: () => void
+  isDiveInActive?: boolean
+  isDiveInLoading?: boolean
+}) {
   // Find max count for bar scaling
   const maxCount = Math.max(
     ...DOMAINS.map(({ key }) => profile[key]?.count ?? 0),
@@ -107,6 +115,25 @@ function ProfileView({ profile }: { profile: NeighborhoodProfile }) {
 
   return (
     <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      {/* Dive In button */}
+      {onDiveIn && !isDiveInActive && (
+        <button
+          onClick={onDiveIn}
+          disabled={isDiveInLoading}
+          className="w-full py-2.5 rounded-xl glass-card text-[11px] font-mono uppercase tracking-wider text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 transition-all duration-200 flex items-center justify-center gap-2"
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <path d="M6 2v8M3 7l3 3 3-3" />
+          </svg>
+          {isDiveInLoading ? 'Loading portrait...' : 'Dive In \u2014 explore on map'}
+        </button>
+      )}
+      {isDiveInActive && (
+        <div className="text-center py-1">
+          <span className="text-[9px] font-mono text-purple-400/60 uppercase tracking-wider">Data portrait active on map</span>
+        </div>
+      )}
+
       {/* Civic Fingerprint — the hero */}
       <div className="flex flex-col items-center py-3">
         <CivicFingerprint profile={profile} size={140} showLabels />
@@ -174,6 +201,9 @@ export default function NeighborhoodSidebar({
   compareSet,
   onAddToCompare,
   onRemoveFromCompare,
+  onDiveIn,
+  isDiveInActive,
+  isDiveInLoading,
 }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>('totalEvents')
 
@@ -337,7 +367,12 @@ export default function NeighborhoodSidebar({
             })}
           </div>
         ) : selectedProfile ? (
-          <ProfileView profile={selectedProfile} />
+          <ProfileView
+            profile={selectedProfile}
+            onDiveIn={onDiveIn}
+            isDiveInActive={isDiveInActive}
+            isDiveInLoading={isDiveInLoading}
+          />
         ) : (
           <div className="space-y-0.5">
             {sorted.map((profile, i) => (
