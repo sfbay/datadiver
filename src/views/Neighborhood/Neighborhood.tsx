@@ -1,7 +1,7 @@
 /** Neighborhood Profiles — cross-dataset civic pulse for 41 SF neighborhoods */
 
 import { useState, useEffect, useCallback, useRef, useMemo, type SetStateAction } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import { useAppStore } from '@/stores/appStore'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
@@ -19,10 +19,12 @@ import {
   buildZScoreColorExpression,
   makeSlotLayers,
 } from './neighborhoodMapLayers'
-import { DOMAINS, SLOT_COLORS } from './types'
+import { DOMAINS, SLOT_COLORS, DOMAIN_ROUTES } from './types'
 import type { MetricDomain } from './types'
+import type { PortraitPoint } from './useNeighborhoodPortrait'
 
 export default function Neighborhood() {
+  const navigate = useNavigate()
   const dateRange = useAppStore((s) => s.dateRange)
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
   const mapRef = useRef<MapHandle>(null)
@@ -39,6 +41,9 @@ export default function Neighborhood() {
   const { profiles, profileMap, isLoading } = useNeighborhoodProfiles(dateRange)
   const { boundaries } = useNeighborhoodBoundaries()
   const portrait = useNeighborhoodPortrait(selectedNeighborhood, dateRange)
+
+  // Selected portrait point (click-to-inspect)
+  const [selectedPoint, setSelectedPoint] = useState<PortraitPoint | null>(null)
 
   // Domain visibility toggle (controls which portrait layers show on map)
   const [visibleDomains, setVisibleDomains] = useState<Set<MetricDomain>>(() => new Set(DOMAINS.map((d) => d.key)))
@@ -294,6 +299,38 @@ export default function Neighborhood() {
   useMapTooltip(mapInstance, 'portrait-crashes', portraitTooltipFn)
   useMapTooltip(mapInstance, 'portrait-citations', portraitTooltipFn)
 
+  // Portrait point click → select for detail card
+  useEffect(() => {
+    if (!mapInstance) return
+    const layerIds = ['portrait-emergency', 'portrait-crime', 'portrait-cases311', 'portrait-crashes', 'portrait-citations']
+    const handler = (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
+      const props = e.features?.[0]?.properties
+      if (!props) return
+      const point: PortraitPoint = {
+        lat: e.lngLat.lat,
+        lng: e.lngLat.lng,
+        domain: props.domain as MetricDomain,
+        label: props.label as string,
+        detail: props.detail as string,
+        value: (props.value as string) || undefined,
+      }
+      setSelectedPoint((prev) => prev?.lat === point.lat && prev?.lng === point.lng ? null : point)
+    }
+    for (const id of layerIds) {
+      try { mapInstance.on('click', id, handler) } catch { /* layer not ready */ }
+    }
+    return () => {
+      for (const id of layerIds) {
+        try { mapInstance.off('click', id, handler) } catch { /* ok */ }
+      }
+    }
+  }, [mapInstance])
+
+  // Clear selected point when portrait deactivates
+  useEffect(() => {
+    if (!portrait.isActive) setSelectedPoint(null)
+  }, [portrait.isActive])
+
   return (
     <div className="flex h-full">
       {/* Map */}
@@ -310,6 +347,50 @@ export default function Neighborhood() {
         {portrait.loading && (
           <DiveInOverlay loadedDomains={portrait.loadedDomains} loading={portrait.loading} />
         )}
+
+        {/* Portrait point detail card */}
+        {selectedPoint && (() => {
+          const domainConfig = DOMAINS.find((d) => d.key === selectedPoint.domain)
+          const color = domainConfig?.color || '#94a3b8'
+          return (
+            <div className="absolute bottom-20 left-4 z-20 glass-card rounded-xl px-4 py-3 max-w-[280px] animate-in fade-in slide-in-from-bottom-2 duration-200">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                    <span className="text-[9px] font-mono uppercase tracking-wider" style={{ color }}>
+                      {domainConfig?.label}
+                    </span>
+                  </div>
+                  <p className="text-[13px] font-medium text-white leading-tight">{selectedPoint.label}</p>
+                  {selectedPoint.detail && (
+                    <p className="text-[10px] text-slate-400 font-mono italic mt-1">{selectedPoint.detail}</p>
+                  )}
+                  {selectedPoint.value && (
+                    <p className="text-[12px] font-mono font-semibold mt-1" style={{ color }}>
+                      {selectedPoint.value}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => setSelectedPoint(null)}
+                  className="text-slate-600 hover:text-slate-400 transition-colors flex-shrink-0 mt-0.5"
+                >
+                  ✕
+                </button>
+              </div>
+              {domainConfig && selectedNeighborhood && (
+                <button
+                  onClick={() => navigate(`${DOMAIN_ROUTES[selectedPoint.domain]}?neighborhood=${encodeURIComponent(selectedNeighborhood)}`)}
+                  className="mt-2 text-[9px] font-mono hover:brightness-125 transition-all"
+                  style={{ color }}
+                >
+                  Open in {domainConfig.label} →
+                </button>
+              )}
+            </div>
+          )
+        })()}
 
         {/* Title overlay */}
         <div className="absolute top-4 left-4 z-10 pointer-events-none">
