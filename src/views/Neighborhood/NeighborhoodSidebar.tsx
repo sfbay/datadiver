@@ -22,6 +22,7 @@ interface Props {
   onDiveIn?: () => void
   isDiveInActive?: boolean
   isDiveInLoading?: boolean
+  onFocusNeighborhood?: (name: string) => void
 }
 
 function fmt(n: number): string {
@@ -204,6 +205,7 @@ export default function NeighborhoodSidebar({
   onDiveIn,
   isDiveInActive,
   isDiveInLoading,
+  onFocusNeighborhood,
 }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>('totalEvents')
 
@@ -311,7 +313,7 @@ export default function NeighborhoodSidebar({
           <SkeletonSidebarRows count={14} />
         ) : compareMode && compareProfiles.length >= 2 ? (
           <>
-            <ComparisonView profiles={compareProfiles} onRemove={onRemoveFromCompare} />
+            <ComparisonView profiles={compareProfiles} onRemove={onRemoveFromCompare} onFocus={onFocusNeighborhood} />
             {compareSet.length < 3 && (
               <div className="mt-4 pt-3 border-t border-white/[0.04]">
                 <p className="text-[9px] font-mono text-slate-500 uppercase tracking-wider mb-2 px-1">Add neighborhood</p>

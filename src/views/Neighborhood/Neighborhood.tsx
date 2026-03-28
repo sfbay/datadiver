@@ -1,6 +1,6 @@
 /** Neighborhood Profiles — cross-dataset civic pulse for 41 SF neighborhoods */
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo, type SetStateAction } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import { useAppStore } from '@/stores/appStore'
@@ -20,6 +20,7 @@ import {
   makeSlotLayers,
 } from './neighborhoodMapLayers'
 import { DOMAINS, SLOT_COLORS } from './types'
+import type { MetricDomain } from './types'
 
 export default function Neighborhood() {
   const dateRange = useAppStore((s) => s.dateRange)
@@ -97,6 +98,18 @@ export default function Neighborhood() {
   const removeFromCompare = useCallback((name: string) => {
     setCompareSet((prev) => prev.filter((n) => n !== name))
   }, [])
+
+  const focusNeighborhood = useCallback((name: string) => {
+    const profile = profileMap.get(name)
+    if (profile && mapInstance) {
+      mapInstance.flyTo({ center: [profile.centerLng, profile.centerLat], zoom: 14, duration: 1200 })
+    }
+    // Set as selected so portrait can load for it
+    setSearchParams((prev) => {
+      prev.set('nh', name)
+      return prev
+    }, { replace: true })
+  }, [profileMap, mapInstance, setSearchParams])
 
   // Fly to selected neighborhood
   useEffect(() => {
@@ -329,6 +342,7 @@ export default function Neighborhood() {
         onDiveIn={portrait.diveIn}
         isDiveInActive={portrait.isActive}
         isDiveInLoading={portrait.loading}
+        onFocusNeighborhood={focusNeighborhood}
       />
     </div>
   )

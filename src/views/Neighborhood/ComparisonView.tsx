@@ -12,6 +12,8 @@ interface ComparisonViewProps {
   /** Profiles in slot order (index 0 = primary/purple, 1 = cyan, 2 = green) */
   profiles: NeighborhoodProfile[]
   onRemove: (name: string) => void
+  /** Click a neighborhood name → zoom map + load portrait */
+  onFocus?: (name: string) => void
 }
 
 function fmt(n: number): string {
@@ -71,7 +73,7 @@ function DomainBars({
   )
 }
 
-export default function ComparisonView({ profiles, onRemove }: ComparisonViewProps) {
+export default function ComparisonView({ profiles, onRemove, onFocus }: ComparisonViewProps) {
   const primary = profiles[0]
   const ghosts = useMemo(
     () =>
@@ -94,7 +96,13 @@ export default function ComparisonView({ profiles, onRemove }: ComparisonViewPro
                 className="w-2 h-2 rounded-full flex-shrink-0"
                 style={{ backgroundColor: SLOT_COLORS[i].hex }}
               />
-              <span className="text-[11px] text-slate-300 truncate">{p.name}</span>
+              <button
+                onClick={() => onFocus?.(p.name)}
+                className="text-[11px] text-slate-300 truncate hover:text-white transition-colors text-left"
+                title={`Zoom to ${p.name}`}
+              >
+                {p.name}
+              </button>
             </div>
             <button
               onClick={() => onRemove(p.name)}
