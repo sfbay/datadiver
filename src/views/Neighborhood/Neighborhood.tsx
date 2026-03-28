@@ -10,6 +10,8 @@ import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { MapLoadingIndicator } from '@/components/ui/Skeleton'
 import { useNeighborhoodProfiles } from './useNeighborhoodProfiles'
+import { useNeighborhoodPortrait } from './useNeighborhoodPortrait'
+import DiveInOverlay from './DiveInOverlay'
 import NeighborhoodSidebar from './NeighborhoodSidebar'
 import {
   NEIGHBORHOOD_CHOROPLETH_LAYERS,
@@ -17,7 +19,7 @@ import {
   buildZScoreColorExpression,
   makeSlotLayers,
 } from './neighborhoodMapLayers'
-import { SLOT_COLORS } from './types'
+import { DOMAINS, SLOT_COLORS } from './types'
 
 export default function Neighborhood() {
   const dateRange = useAppStore((s) => s.dateRange)
@@ -35,6 +37,23 @@ export default function Neighborhood() {
 
   const { profiles, profileMap, isLoading } = useNeighborhoodProfiles(dateRange)
   const { boundaries } = useNeighborhoodBoundaries()
+  const portrait = useNeighborhoodPortrait(selectedNeighborhood, dateRange)
+
+  // Portrait points → GeoJSON per domain for map layers
+  const portraitGeojsonByDomain = useMemo(() => {
+    const map = new Map<string, GeoJSON.FeatureCollection>()
+    for (const domain of DOMAINS) {
+      const features = portrait.points
+        .filter((p) => p.domain === domain.key)
+        .map((p) => ({
+          type: 'Feature' as const,
+          geometry: { type: 'Point' as const, coordinates: [p.lng, p.lat] },
+          properties: { label: p.label, detail: p.detail, value: p.value || '', domain: p.domain },
+        }))
+      map.set(domain.key, { type: 'FeatureCollection' as const, features })
+    }
+    return map
+  }, [portrait.points])
 
   const setSelectedNeighborhood = useCallback(
     (name: string | null) => {
@@ -136,6 +155,25 @@ export default function Neighborhood() {
   useMapLayer(mapInstance, 'nh-boundaries', boundaries, slot1Layers)
   useMapLayer(mapInstance, 'nh-boundaries', boundaries, slot2Layers)
 
+  // Portrait circle layers — one per domain with domain color
+  const erGeojson = portrait.isActive ? portraitGeojsonByDomain.get('emergency') ?? null : null
+  const crimeGeojson = portrait.isActive ? portraitGeojsonByDomain.get('crime') ?? null : null
+  const cases311Geojson = portrait.isActive ? portraitGeojsonByDomain.get('cases311') ?? null : null
+  const crashesGeojson = portrait.isActive ? portraitGeojsonByDomain.get('crashes') ?? null : null
+  const citationsGeojson = portrait.isActive ? portraitGeojsonByDomain.get('citations') ?? null : null
+
+  const erLayers = useMemo((): mapboxgl.AnyLayer[] => [{ id: 'portrait-emergency', type: 'circle', source: 'portrait-emergency', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 4, 16, 8], 'circle-color': '#ef4444', 'circle-opacity': 0.75, 'circle-stroke-color': 'rgba(0,0,0,0.5)', 'circle-stroke-width': 1 } } as mapboxgl.AnyLayer], [])
+  const crimeLayers = useMemo((): mapboxgl.AnyLayer[] => [{ id: 'portrait-crime', type: 'circle', source: 'portrait-crime', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 4, 16, 8], 'circle-color': '#f97316', 'circle-opacity': 0.75, 'circle-stroke-color': 'rgba(0,0,0,0.5)', 'circle-stroke-width': 1 } } as mapboxgl.AnyLayer], [])
+  const cases311MapLayers = useMemo((): mapboxgl.AnyLayer[] => [{ id: 'portrait-cases311', type: 'circle', source: 'portrait-cases311', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 4, 16, 8], 'circle-color': '#3b82f6', 'circle-opacity': 0.75, 'circle-stroke-color': 'rgba(0,0,0,0.5)', 'circle-stroke-width': 1 } } as mapboxgl.AnyLayer], [])
+  const crashesMapLayers = useMemo((): mapboxgl.AnyLayer[] => [{ id: 'portrait-crashes', type: 'circle', source: 'portrait-crashes', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 5, 16, 10], 'circle-color': '#eab308', 'circle-opacity': 0.8, 'circle-stroke-color': 'rgba(0,0,0,0.5)', 'circle-stroke-width': 1 } } as mapboxgl.AnyLayer], [])
+  const citationsMapLayers = useMemo((): mapboxgl.AnyLayer[] => [{ id: 'portrait-citations', type: 'circle', source: 'portrait-citations', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 3, 16, 6], 'circle-color': '#06b6d4', 'circle-opacity': 0.65, 'circle-stroke-color': 'rgba(0,0,0,0.5)', 'circle-stroke-width': 1 } } as mapboxgl.AnyLayer], [])
+
+  useMapLayer(mapInstance, 'portrait-emergency', erGeojson, erLayers)
+  useMapLayer(mapInstance, 'portrait-crime', crimeGeojson, crimeLayers)
+  useMapLayer(mapInstance, 'portrait-cases311', cases311Geojson, cases311MapLayers)
+  useMapLayer(mapInstance, 'portrait-crashes', crashesGeojson, crashesMapLayers)
+  useMapLayer(mapInstance, 'portrait-citations', citationsGeojson, citationsMapLayers)
+
   // Update comparison slot filters
   useEffect(() => {
     if (!mapInstance) return
@@ -215,6 +253,23 @@ export default function Neighborhood() {
     `
   })
 
+  // Portrait point tooltips
+  const portraitTooltipFn = useCallback((props: Record<string, unknown>) => {
+    const domainConfig = DOMAINS.find((d) => d.key === props.domain)
+    const color = domainConfig?.color || '#94a3b8'
+    return `
+      <div class="tooltip-value" style="color:${color}">${props.label}</div>
+      ${props.detail ? `<div style="color:#94a3b8;font-size:10px;margin-top:2px">${props.detail}</div>` : ''}
+      ${props.value ? `<div style="color:${color};font-size:11px;font-weight:600;margin-top:2px">${props.value}</div>` : ''}
+    `
+  }, [])
+
+  useMapTooltip(mapInstance, 'portrait-emergency', portraitTooltipFn)
+  useMapTooltip(mapInstance, 'portrait-crime', portraitTooltipFn)
+  useMapTooltip(mapInstance, 'portrait-cases311', portraitTooltipFn)
+  useMapTooltip(mapInstance, 'portrait-crashes', portraitTooltipFn)
+  useMapTooltip(mapInstance, 'portrait-citations', portraitTooltipFn)
+
   return (
     <div className="flex h-full">
       {/* Map */}
@@ -228,6 +283,9 @@ export default function Neighborhood() {
           }}
         />
         {isLoading && <MapLoadingIndicator label="Loading 5 datasets..." />}
+        {portrait.loading && (
+          <DiveInOverlay loadedDomains={portrait.loadedDomains} loading={portrait.loading} />
+        )}
 
         {/* Title overlay */}
         <div className="absolute top-4 left-4 z-10 pointer-events-none">
@@ -268,6 +326,9 @@ export default function Neighborhood() {
         compareSet={compareSet}
         onAddToCompare={addToCompare}
         onRemoveFromCompare={removeFromCompare}
+        onDiveIn={portrait.diveIn}
+        isDiveInActive={portrait.isActive}
+        isDiveInLoading={portrait.loading}
       />
     </div>
   )
