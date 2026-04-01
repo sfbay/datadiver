@@ -4,13 +4,14 @@
  *  categories + contract inventory). Fired from the vendor landscape bar click.
  */
 
-import { useRef, useEffect, useMemo, useCallback } from 'react'
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import * as d3 from 'd3'
 import { useAppStore } from '@/stores/appStore'
 import { useVendorProfile, useVendorPayments, useVendorMonthlySpend, type VendorContractRow, type VendorPaymentRow, type MonthlySpendRow } from '@/hooks/useVendorProfile'
 import { exportToCSV } from '@/utils/csvExport'
 import { Skeleton, SkeletonChart } from '@/components/ui/Skeleton'
 import { formatBudgetAmount, formatBudgetFull, formatFiscalYear } from '@/utils/fiscalYear'
+import { toSentenceCase } from '@/utils/format'
 import { computeContractFlags, computePaymentPatternFlags, type VendorFlag } from '@/utils/vendorFlags'
 import type { FiscalYear } from '@/types/budget'
 
@@ -27,6 +28,29 @@ export default function VendorProfile({ vendor, fiscalYear, onBack }: VendorProf
   const { metrics } = profile
   const payments = useVendorPayments(vendor)
   const monthlySpend = useVendorMonthlySpend(vendor)
+
+  // Filter state — clicking departments/contracts filters the payment table
+  const [deptFilter, setDeptFilter] = useState<string | null>(null)
+  const [activeContractNo, setActiveContractNo] = useState<string | null>(null) // for visual highlight
+  const activeFilterLabel = activeContractNo ? `${activeContractNo} (${deptFilter})` : deptFilter
+  const paymentsRef = useRef<HTMLDivElement>(null)
+
+  const filteredPayments = useMemo(() => {
+    if (!deptFilter) return payments.payments
+    return payments.payments.filter((p) => p.department === deptFilter)
+  }, [payments.payments, deptFilter])
+
+  const clearFilter = useCallback(() => {
+    setDeptFilter(null)
+    setActiveContractNo(null)
+  }, [])
+
+  // Scroll to payments table when filter is set
+  useEffect(() => {
+    if (deptFilter && paymentsRef.current) {
+      paymentsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [deptFilter])
 
   // Contract-level anomaly flags
   const contractFlags = useMemo(
@@ -87,7 +111,7 @@ export default function VendorProfile({ vendor, fiscalYear, onBack }: VendorProf
         <div className="mt-2">
           <div className="flex items-center gap-2">
             <h2 className="font-display text-xl italic text-ink dark:text-white leading-tight tracking-tight">
-              {vendor}
+              {toSentenceCase(vendor)}
             </h2>
             {metrics?.isNonprofit && (
               <span className="text-[9px] font-mono font-semibold bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded-full">
@@ -100,6 +124,53 @@ export default function VendorProfile({ vendor, fiscalYear, onBack }: VendorProf
               {formatBudgetFull(metrics.lifetimeTotal)} lifetime · {metrics.fiscalYears} fiscal years · {metrics.contractCount} contract{metrics.contractCount !== 1 ? 's' : ''}
             </p>
           )}
+
+          {/* Baseball card — quick-scan vendor vitals */}
+          {metrics && profile.yearData.length > 0 && (() => {
+            const firstFY = profile.yearData[0].fiscal_year
+            const deptCount = profile.deptData.length
+            const totalPayments = profile.yearData.reduce((s, r) => s + (parseInt(r.payment_count, 10) || 0), 0)
+            const avgPayment = totalPayments > 0 ? metrics.lifetimeTotal / totalPayments : 0
+            const activeContracts = profile.contractData.filter((c) => !c.term_end_date || new Date(c.term_end_date) >= new Date()).length
+            const soleSourceCount = profile.contractData.filter((c) => c.sole_source_flg === 'Y').length
+
+            return (
+              <div className="flex items-center gap-3 mt-2 flex-wrap">
+                <span className="text-[9px] font-mono text-slate-500" title="First fiscal year with payments">
+                  Since <span className="text-slate-300">FY{firstFY}</span>
+                </span>
+                <span className="text-[9px] font-mono text-slate-600">·</span>
+                <span className="text-[9px] font-mono text-slate-500" title="Distinct departments paying this vendor">
+                  <span className="text-slate-300">{deptCount}</span> dept{deptCount !== 1 ? 's' : ''}
+                </span>
+                <span className="text-[9px] font-mono text-slate-600">·</span>
+                <span className="text-[9px] font-mono text-slate-500" title="Total individual voucher payments">
+                  <span className="text-slate-300">{totalPayments.toLocaleString()}</span> payments
+                </span>
+                <span className="text-[9px] font-mono text-slate-600">·</span>
+                <span className="text-[9px] font-mono text-slate-500" title="Average payment amount">
+                  avg <span className="text-slate-300">{formatBudgetAmount(avgPayment)}</span>
+                </span>
+                {activeContracts > 0 && (
+                  <>
+                    <span className="text-[9px] font-mono text-slate-600">·</span>
+                    <span className="text-[9px] font-mono text-slate-500" title="Contracts not yet expired">
+                      <span className="text-slate-300">{activeContracts}</span> active contract{activeContracts !== 1 ? 's' : ''}
+                    </span>
+                  </>
+                )}
+                {soleSourceCount > 0 && (
+                  <>
+                    <span className="text-[9px] font-mono text-slate-600">·</span>
+                    <span className="text-[9px] font-mono text-amber-500/80" title="Contracts awarded without competitive bidding">
+                      {soleSourceCount} sole source
+                    </span>
+                  </>
+                )}
+              </div>
+            )
+          })()}
+
           {/* Anomaly flags */}
           {allProfileFlags.length > 0 && (
             <div className="flex items-center gap-1.5 mt-2 flex-wrap">
@@ -213,7 +284,14 @@ export default function VendorProfile({ vendor, fiscalYear, onBack }: VendorProf
                   <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500 mb-3">
                     Department Breakdown
                   </p>
-                  <DepartmentBreakdown data={profile.deptData} />
+                  <DepartmentBreakdown
+                    data={profile.deptData}
+                    activeDept={!activeContractNo ? deptFilter : null}
+                    onClickDept={(dept) => {
+                      setActiveContractNo(null)
+                      setDeptFilter((prev) => prev === dept ? null : dept)
+                    }}
+                  />
                 </div>
               )}
 
@@ -223,7 +301,18 @@ export default function VendorProfile({ vendor, fiscalYear, onBack }: VendorProf
                   <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500 mb-3">
                     Contract Inventory
                   </p>
-                  <ContractInventory contracts={profile.contractData} />
+                  <ContractInventory
+                    contracts={profile.contractData}
+                    activeContract={activeContractNo}
+                    onClickContract={(contractNo, dept) => {
+                      if (activeContractNo === contractNo) {
+                        clearFilter()
+                      } else {
+                        setActiveContractNo(contractNo)
+                        setDeptFilter(dept)
+                      }
+                    }}
+                  />
                 </div>
               )}
 
@@ -252,11 +341,21 @@ export default function VendorProfile({ vendor, fiscalYear, onBack }: VendorProf
           )}
 
           {/* Recent Payments Table */}
-          <div className="glass-card rounded-xl p-4 max-w-6xl mt-6">
+          <div ref={paymentsRef} className="glass-card rounded-xl p-4 max-w-6xl mt-6">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500">
-                Recent Payments
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500">
+                  {deptFilter ? 'Filtered Payments' : 'Recent Payments'}
+                </p>
+                {deptFilter && (
+                  <button
+                    onClick={clearFilter}
+                    className="text-[9px] font-mono text-sky-400 hover:text-sky-300 transition-colors flex items-center gap-1"
+                  >
+                    {activeFilterLabel} ✕
+                  </button>
+                )}
+              </div>
               <button
                 onClick={handleExportCSV}
                 disabled={payments.payments.length === 0}
@@ -268,7 +367,7 @@ export default function VendorProfile({ vendor, fiscalYear, onBack }: VendorProf
                 CSV
               </button>
             </div>
-            <PaymentTable payments={payments.payments} isLoading={payments.isLoading} />
+            <PaymentTable payments={filteredPayments} isLoading={payments.isLoading} />
             {payments.hasMore && (
               <button
                 onClick={payments.loadMore}
@@ -467,8 +566,12 @@ function MetricCard({
 
 function DepartmentBreakdown({
   data,
+  activeDept,
+  onClickDept,
 }: {
   data: { department: string; total_paid: string; payment_count: string }[]
+  activeDept?: string | null
+  onClickDept?: (dept: string) => void
 }) {
   const maxTotal = useMemo(
     () => Math.max(...data.map((r) => parseFloat(r.total_paid) || 0), 1),
@@ -484,10 +587,17 @@ function DepartmentBreakdown({
       {data.map((r) => {
         const amount = parseFloat(r.total_paid) || 0
         const pct = totalAll > 0 ? (amount / totalAll) * 100 : 0
+        const isActive = activeDept === r.department
         return (
-          <div key={r.department}>
+          <div
+            key={r.department}
+            className={`rounded-md transition-all duration-150 ${onClickDept ? 'cursor-pointer hover:bg-white/[0.03]' : ''} ${isActive ? 'bg-sky-500/[0.06] ring-1 ring-sky-500/20' : ''}`}
+            onClick={() => onClickDept?.(r.department)}
+            role={onClickDept ? 'button' : undefined}
+            title={onClickDept ? `Filter payments to ${r.department}` : r.department}
+          >
             <div className="flex items-center justify-between mb-0.5">
-              <span className="text-[10px] text-slate-600 dark:text-slate-300 truncate max-w-[200px]" title={r.department}>
+              <span className={`text-[10px] truncate max-w-[200px] ${isActive ? 'text-sky-300' : 'text-slate-600 dark:text-slate-300'}`}>
                 {r.department}
               </span>
               <div className="flex items-center gap-2 flex-shrink-0 ml-2">
@@ -587,7 +697,11 @@ function CategoryBreakdown({
 
 // ── Contract Inventory with utilization bars ────────────────
 
-function ContractInventory({ contracts }: { contracts: VendorContractRow[] }) {
+function ContractInventory({ contracts, activeContract, onClickContract }: {
+  contracts: VendorContractRow[]
+  activeContract?: string | null
+  onClickContract?: (contractNo: string, dept: string) => void
+}) {
   return (
     <div className="space-y-2">
       {contracts.map((c) => {
@@ -599,10 +713,17 @@ function ContractInventory({ contracts }: { contracts: VendorContractRow[] }) {
         const isSoleSource = c.sole_source_flg === 'Y'
         const isExpired = c.term_end_date ? new Date(c.term_end_date) < new Date() : false
 
+        const isActiveContract = activeContract === c.contract_no
         return (
-          <div key={c.contract_no} className="glass-card rounded-lg p-2.5">
+          <div
+            key={c.contract_no}
+            className={`glass-card rounded-lg p-2.5 transition-all duration-150 ${onClickContract ? 'cursor-pointer hover:bg-white/[0.03]' : ''} ${isActiveContract ? 'ring-1 ring-sky-500/20 bg-sky-500/[0.06]' : ''}`}
+            onClick={() => onClickContract?.(c.contract_no, c.department)}
+            role={onClickContract ? 'button' : undefined}
+            title={onClickContract ? `Filter payments to ${c.department} (${c.contract_no})` : undefined}
+          >
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-mono text-sky-400">{c.contract_no}</span>
+              <span className={`text-[10px] font-mono ${isActiveContract ? 'text-sky-300' : 'text-sky-400'}`}>{c.contract_no}</span>
               <div className="flex items-center gap-1">
                 {isSoleSource && (
                   <span className="text-[7px] font-mono font-bold bg-amber-500/10 text-amber-500 px-1 py-0.5 rounded">
