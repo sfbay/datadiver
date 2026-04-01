@@ -10,7 +10,8 @@ import { useAppStore } from '@/stores/appStore'
 import { useVendorProfile, useVendorPayments, useVendorMonthlySpend, type VendorContractRow, type VendorPaymentRow, type MonthlySpendRow } from '@/hooks/useVendorProfile'
 import { exportToCSV } from '@/utils/csvExport'
 import { Skeleton, SkeletonChart } from '@/components/ui/Skeleton'
-import { formatBudgetAmount, formatBudgetFull, formatFiscalYear } from '@/utils/fiscalYear'
+import ShareLinkButton from '@/components/ui/ShareLinkButton'
+import { formatBudgetAmount, formatBudgetFull, formatFiscalYear, getCurrentFiscalYear } from '@/utils/fiscalYear'
 import { toSentenceCase } from '@/utils/format'
 import { computeContractFlags, computePaymentPatternFlags, type VendorFlag } from '@/utils/vendorFlags'
 import type { FiscalYear } from '@/types/budget'
@@ -70,6 +71,15 @@ export default function VendorProfile({ vendor, fiscalYear, onBack }: VendorProf
     [contractFlags, patternFlags],
   )
 
+  // Clean share URL — only view-relevant params
+  const buildShareUrl = useCallback(() => {
+    const params = new URLSearchParams()
+    params.set('tab', 'search')
+    params.set('vendor', vendor)
+    if (fiscalYear !== getCurrentFiscalYear()) params.set('fy', String(fiscalYear))
+    return `${window.location.origin}${window.location.pathname}?${params.toString()}`
+  }, [vendor, fiscalYear])
+
   // CSV export
   const handleExportCSV = useCallback(() => {
     if (payments.payments.length === 0) return
@@ -97,16 +107,7 @@ export default function VendorProfile({ vendor, fiscalYear, onBack }: VendorProf
           >
             ← Back to vendor list
           </button>
-          <button
-            onClick={() => navigator.clipboard.writeText(window.location.href)}
-            className="text-[10px] font-mono text-slate-400 hover:text-ink dark:hover:text-white transition-colors flex items-center gap-1"
-          >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-              <path d="M8 1H4a1 1 0 00-1 1v8a1 1 0 001 1h5a1 1 0 001-1V3L8 1z" />
-              <path d="M8 1v2h2" />
-            </svg>
-            Share URL
-          </button>
+          <ShareLinkButton buildUrl={buildShareUrl} />
         </div>
         <div className="mt-2">
           <div className="flex items-center gap-2">
