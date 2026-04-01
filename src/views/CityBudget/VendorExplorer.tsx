@@ -12,6 +12,7 @@ import { useVendorLandscape, type VendorLandscapeItem, type VendorLandscapeFilte
 import VendorProfile from '@/views/CityBudget/VendorProfile'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { formatBudgetAmount, formatBudgetFull, formatFiscalYear, getCurrentFiscalYear } from '@/utils/fiscalYear'
+import { toSentenceCase } from '@/utils/format'
 import { computeLandscapeFlags, computeCohortStats, filterBySensitivity, type VendorFlag } from '@/utils/vendorFlags'
 import type { FiscalYear } from '@/types/budget'
 
@@ -496,9 +497,9 @@ function VendorBarRow({
             ? 'text-slate-400 dark:text-slate-600 line-through'
             : 'text-slate-600 dark:text-slate-300 group-hover:text-ink dark:group-hover:text-white'
           }`}
-        title={item.vendor}
+        title={toSentenceCase(item.vendor)}
       >
-        {item.vendor}
+        {toSentenceCase(item.vendor)}
       </div>
 
       {/* Bar area */}

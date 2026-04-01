@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import DetailPanelShell from '@/components/ui/DetailPanelShell'
 import { fetchDataset } from '@/api/client'
 import { formatBudgetAmount, formatBudgetFull } from '@/utils/fiscalYear'
+import { toSentenceCase } from '@/utils/format'
 import type { VendorDepartmentRow } from '@/types/budget'
 
 interface VendorDetailPanelProps {
@@ -107,7 +108,7 @@ export default function VendorDetailPanel({ vendor, onClose, inline }: VendorDet
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-semibold text-ink dark:text-white pr-8 leading-tight">
-                {vendor}
+                {toSentenceCase(vendor ?? '')}
               </h3>
               {nonProfit && (
                 <span className="inline-flex items-center text-[9px] font-mono bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded-full">
