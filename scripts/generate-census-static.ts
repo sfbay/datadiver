@@ -488,6 +488,182 @@ async function fetchCensusLive(apiKey: string): Promise<{ tracts: CensusData[]; 
 }
 
 // ---------------------------------------------------------------------------
+// Block group → neighborhood crosswalk via point-in-polygon
+// ---------------------------------------------------------------------------
+
+const TIGERWEB_URL = 'https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_ACS2023/MapServer/10/query'
+const NEIGHBORHOOD_GEOJSON_URL = 'https://raw.githubusercontent.com/sfbrigade/data-science-wg/master/projects-in-this-repo/SF_311_Data-Analysis/data/GeoJSON/city_analysis_neighbor.geojson'
+
+/** Ray-casting point-in-polygon (works for simple and multi-polygons) */
+function pointInPolygon(lat: number, lng: number, coordinates: number[][][]): boolean {
+  for (const ring of coordinates) {
+    let inside = false
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const xi = ring[i][0], yi = ring[i][1]
+      const xj = ring[j][0], yj = ring[j][1]
+      if (((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi)) {
+        inside = !inside
+      }
+    }
+    if (inside) return true
+  }
+  return false
+}
+
+function pointInFeature(lat: number, lng: number, feature: any): boolean {
+  const geom = feature.geometry
+  if (geom.type === 'Polygon') {
+    return pointInPolygon(lat, lng, geom.coordinates)
+  }
+  if (geom.type === 'MultiPolygon') {
+    return geom.coordinates.some((poly: number[][][]) => pointInPolygon(lat, lng, poly))
+  }
+  return false
+}
+
+/** Fetch BG centroids from Census TIGERweb, returns Map<geoId, {lat, lng}> */
+async function fetchBlockGroupCentroids(): Promise<Map<string, { lat: number; lng: number }>> {
+  console.log('Fetching block group centroids from TIGERweb...')
+  const centroids = new Map<string, { lat: number; lng: number }>()
+
+  // TIGERweb paginates — fetch in batches
+  let offset = 0
+  const batchSize = 500
+  while (true) {
+    const params = new URLSearchParams({
+      where: `STATE='${SF_STATE}' AND COUNTY='${SF_COUNTY}'`,
+      outFields: 'GEOID,INTPTLAT,INTPTLON',
+      f: 'json',
+      resultOffset: String(offset),
+      resultRecordCount: String(batchSize),
+    })
+    const url = `${TIGERWEB_URL}?${params.toString()}`
+    const response = await fetch(url)
+    if (!response.ok) throw new Error(`TIGERweb ${response.status}`)
+    const data = await response.json()
+    const features = data.features || []
+    for (const f of features) {
+      const { GEOID, INTPTLAT, INTPTLON } = f.attributes
+      centroids.set(GEOID, { lat: parseFloat(INTPTLAT), lng: parseFloat(INTPTLON) })
+    }
+    if (features.length < batchSize) break
+    offset += batchSize
+  }
+
+  console.log(`  Got ${centroids.size} block group centroids`)
+  return centroids
+}
+
+/** Fetch neighborhood boundary GeoJSON and build lookup */
+async function fetchNeighborhoodBoundaries(): Promise<any[]> {
+  console.log('Fetching neighborhood boundary GeoJSON...')
+  const response = await fetch(NEIGHBORHOOD_GEOJSON_URL)
+  if (!response.ok) throw new Error(`Neighborhood GeoJSON ${response.status}`)
+  const geojson = await response.json()
+  // Deduplicate features by nhood name (multiple polygon features per neighborhood)
+  // Group all features by nhood for MultiPolygon matching
+  const byName = new Map<string, any[]>()
+  for (const feature of geojson.features) {
+    const name = feature.properties?.nhood
+    if (!name) continue
+    if (!byName.has(name)) byName.set(name, [])
+    byName.get(name)!.push(feature)
+  }
+  console.log(`  Got ${byName.size} neighborhoods`)
+  return Array.from(byName.entries()).map(([name, features]) => ({ name, features }))
+}
+
+/** Build BG → neighborhood mapping using point-in-polygon */
+function buildBlockGroupMapping(
+  centroids: Map<string, { lat: number; lng: number }>,
+  neighborhoods: { name: string; features: any[] }[],
+): Map<string, string> {
+  const mapping = new Map<string, string>()
+  let matched = 0
+  let unmatched = 0
+
+  for (const [geoId, { lat, lng }] of centroids) {
+    let found = false
+    for (const nh of neighborhoods) {
+      for (const feature of nh.features) {
+        if (pointInFeature(lat, lng, feature)) {
+          mapping.set(geoId, nh.name)
+          matched++
+          found = true
+          break
+        }
+      }
+      if (found) break
+    }
+    if (!found) unmatched++
+  }
+
+  console.log(`  Mapped ${matched} block groups to neighborhoods, ${unmatched} unmatched`)
+  return mapping
+}
+
+/** Aggregate block groups to neighborhoods using the crosswalk */
+function aggregateBlockGroupsToNeighborhoods(
+  blockGroups: import('../src/types/census').CensusData[],
+  bgToNeighborhood: Map<string, string>,
+): import('../src/types/census').NeighborhoodCensusData[] {
+  // Group BGs by neighborhood
+  const grouped = new Map<string, import('../src/types/census').CensusData[]>()
+  for (const bg of blockGroups) {
+    const nhName = bgToNeighborhood.get(bg.geoId)
+    if (!nhName) continue
+    if (!grouped.has(nhName)) grouped.set(nhName, [])
+    grouped.get(nhName)!.push(bg)
+  }
+
+  const allVariableKeys = CENSUS_VARIABLES.map(v => v.key)
+  const COUNT_VARS = new Set(['totalPopulation'])
+
+  const results: import('../src/types/census').NeighborhoodCensusData[] = []
+
+  for (const [nhName, bgs] of grouped) {
+    const aggregated: Record<string, number> = {}
+
+    for (const varKey of allVariableKeys) {
+      const isCount = COUNT_VARS.has(varKey)
+      const valid = bgs.filter(bg => (bg as any)[varKey] !== undefined && (bg as any)[varKey] !== null)
+
+      if (valid.length === 0) continue
+
+      if (isCount) {
+        // Sum
+        aggregated[varKey] = Math.round(valid.reduce((s, bg) => s + ((bg as any)[varKey] as number), 0))
+      } else {
+        // Population-weighted average
+        const withPop = valid.filter(bg => bg.population > 0)
+        if (withPop.length === 0) continue
+        let weightedSum = 0
+        let totalPop = 0
+        for (const bg of withPop) {
+          weightedSum += ((bg as any)[varKey] as number) * bg.population
+          totalPop += bg.population
+        }
+        aggregated[varKey] = totalPop > 0 ? Math.round((weightedSum / totalPop) * 100) / 100 : 0
+      }
+    }
+
+    const totalPop = aggregated.totalPopulation ?? bgs.reduce((s, bg) => s + bg.population, 0)
+
+    results.push({
+      geoId: `neighborhood_${nhName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
+      geoType: 'neighborhood',
+      name: nhName,
+      population: totalPop,
+      blockGroupCount: bgs.length,
+      tracts: [...new Set(bgs.map(bg => bg.geoId.slice(5, 11)))], // unique tract IDs
+      ...aggregated,
+    } as any)
+  }
+
+  return results.sort((a, b) => a.name.localeCompare(b.name))
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -522,10 +698,26 @@ async function main() {
     const apiKey = process.env.VITE_CENSUS_API_KEY!
     const { tracts, blockGroups } = await fetchCensusLive(apiKey)
 
-    // Aggregate tracts to neighborhoods
-    const neighborhoods = tracts.length > 0
-      ? aggregateToNeighborhoods(tracts)
-      : convertResonateSample()
+    // Build block-group → neighborhood crosswalk via point-in-polygon
+    let neighborhoods
+    if (blockGroups.length > 0) {
+      const centroids = await fetchBlockGroupCentroids()
+      const nhBoundaries = await fetchNeighborhoodBoundaries()
+      const bgMapping = buildBlockGroupMapping(centroids, nhBoundaries)
+
+      // Write crosswalk for debugging/auditing
+      const crosswalkPath = resolve(DATA_DIR, 'census-bg-crosswalk.json')
+      const crosswalkObj = Object.fromEntries(bgMapping)
+      writeFileSync(crosswalkPath, JSON.stringify(crosswalkObj, null, 2) + '\n')
+      console.log(`  Wrote ${crosswalkPath} (${bgMapping.size} mappings)`)
+
+      neighborhoods = aggregateBlockGroupsToNeighborhoods(blockGroups, bgMapping)
+      console.log(`Aggregated ${blockGroups.length} block groups → ${neighborhoods.length} neighborhoods`)
+    } else if (tracts.length > 0) {
+      neighborhoods = aggregateToNeighborhoods(tracts)
+    } else {
+      neighborhoods = convertResonateSample()
+    }
 
     const nhPath = resolve(DATA_DIR, 'census-neighborhoods.json')
     writeFileSync(nhPath, JSON.stringify(neighborhoods, null, 2) + '\n')

@@ -52,7 +52,8 @@ export type CensusData = {
 /** Neighborhood-level Census data with aggregation metadata */
 export interface NeighborhoodCensusData extends CensusData {
   geoType: 'neighborhood'
-  tractCount: number
+  tractCount?: number
+  blockGroupCount?: number
   tracts: string[]
 }
 
