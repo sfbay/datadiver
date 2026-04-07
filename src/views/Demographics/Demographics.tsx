@@ -57,8 +57,8 @@ function formatValue(value: number | null | undefined, format: 'currency' | 'per
   switch (format) {
     case 'currency':
       if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`
-      if (value >= 1_000) return `$${Math.round(value / 1_000)}K`
-      return `$${value.toFixed(0)}`
+      if (value >= 100_000) return `$${Math.round(value / 1_000)}K`
+      return `$${Math.round(value).toLocaleString()}`
     case 'percent':
       return `${Math.round(value)}%`
     case 'density':
@@ -550,7 +550,7 @@ export default function Demographics() {
                     <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
                   </div>
                   <div className="space-y-0.5">
-                    {rankedNeighborhoods.slice(0, 15).map((n, idx) => {
+                    {rankedNeighborhoods.map((n, idx) => {
                       const value = n[activeVariable] as number
                       const maxVal = rankedNeighborhoods[0]?.[activeVariable] as number ?? 1
                       const barWidth = maxVal > 0 ? (value / maxVal) * 100 : 0
