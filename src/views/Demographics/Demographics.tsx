@@ -35,8 +35,8 @@ const DEFAULT_SCATTER_Y = 'crimeCount'
 const DEFAULT_EXPANDED: CensusVariable[] = [
   'totalPopulation',
   'medianIncome',
-  'pctAsian',
-  'lepRate',
+  'povertyRate',
+  'rentBurden',
 ]
 
 /** All Census variables usable as scatter Y-axis options */
@@ -251,15 +251,16 @@ export default function Demographics() {
 
   // --- Determine which cards are expanded vs collapsed ---
   const allCardVariables: CensusVariable[] = useMemo(() => {
-    // Only variables with verified source data (ACS via resonate seed)
-    // Variables without data: povertyRate, rentBurden, pctBachelorsPlus,
-    // medianAge, unemploymentRate, medianRent, medianHomeValue, populationDensity
-    // These require live Census API fetch (VITE_CENSUS_API_KEY)
+    // All variables with verified ACS 5-Year source data (Census API)
     return [
       'totalPopulation',
       'medianIncome',
-      'renterPct',
-      'lepRate',
+      'povertyRate',
+      'rentBurden',
+      'medianRent',
+      'pctBachelorsPlus',
+      'medianAge',
+      'unemploymentRate',
       'pctAsian',
       'pctHispanic',
       'pctWhite',

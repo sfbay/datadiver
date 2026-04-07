@@ -458,14 +458,14 @@ export const CENSUS_VARIABLES: CensusVariableConfig[] = [
     availableAt: ['neighborhood', 'tract'],
   },
 
-  // ── Commute (C08301) — NOT available at block group ─────────────────────
+  // ── Commute (B08301) — NOT available at block group ─────────────────────
   {
     key: 'pctWFH',
     label: 'Worked From Home',
     shortLabel: '% WFH',
     category: 'employment',
-    acsTable: 'C08301',
-    acsVariables: ['C08301_001E', 'C08301_021E'],
+    acsTable: 'B08301',
+    acsVariables: ['B08301_001E', 'B08301_021E'],
     format: 'percent',
     colorScale: 'sequential',
     colorRamp: INCOME_RAMP,
@@ -476,8 +476,8 @@ export const CENSUS_VARIABLES: CensusVariableConfig[] = [
     label: 'Drove Alone to Work',
     shortLabel: '% Drive Alone',
     category: 'employment',
-    acsTable: 'C08301',
-    acsVariables: ['C08301_001E', 'C08301_003E'],
+    acsTable: 'B08301',
+    acsVariables: ['B08301_001E', 'B08301_003E'],
     format: 'percent',
     colorScale: 'sequential',
     colorRamp: STRESS_RAMP,
@@ -488,8 +488,8 @@ export const CENSUS_VARIABLES: CensusVariableConfig[] = [
     label: 'Public Transit Commuters',
     shortLabel: '% Transit',
     category: 'employment',
-    acsTable: 'C08301',
-    acsVariables: ['C08301_001E', 'C08301_010E'],
+    acsTable: 'B08301',
+    acsVariables: ['B08301_001E', 'B08301_010E'],
     format: 'percent',
     colorScale: 'sequential',
     colorRamp: INCOME_RAMP,
@@ -500,10 +500,10 @@ export const CENSUS_VARIABLES: CensusVariableConfig[] = [
     label: 'Biked or Walked to Work',
     shortLabel: '% Bike/Walk',
     category: 'employment',
-    acsTable: 'C08301',
-    // C08301_018E = bicycle, C08301_019E = walked (use _019E as the combined walk estimate;
+    acsTable: 'B08301',
+    // B08301_018E = bicycle, B08301_019E = walked (use _019E as the combined walk estimate;
     // for bike we use _018E; together these approximate the bike+walk share)
-    acsVariables: ['C08301_001E', 'C08301_018E', 'C08301_019E'],
+    acsVariables: ['B08301_001E', 'B08301_018E', 'B08301_019E'],
     format: 'percent',
     colorScale: 'sequential',
     colorRamp: INCOME_RAMP,

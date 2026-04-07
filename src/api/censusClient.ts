@@ -253,15 +253,15 @@ function computeVariables(
     result.unemploymentRate = pctSafe(val('B23025_005E'), val('B23025_003E'))
   }
 
-  // ── Commute (C08301) — tract only ────────────────────────────────────
+  // ── Commute (B08301) — tract only ────────────────────────────────────
   if (available('pctDriveAlone')) {
-    const commuteDenom = val('C08301_001E')
-    result.pctDriveAlone = pctSafe(val('C08301_003E'), commuteDenom)
-    result.pctTransit = pctSafe(val('C08301_010E'), commuteDenom)
-    result.pctWFH = pctSafe(val('C08301_021E'), commuteDenom)
+    const commuteDenom = val('B08301_001E')
+    result.pctDriveAlone = pctSafe(val('B08301_003E'), commuteDenom)
+    result.pctTransit = pctSafe(val('B08301_010E'), commuteDenom)
+    result.pctWFH = pctSafe(val('B08301_021E'), commuteDenom)
 
-    // Bike (C08301_018E) + Walk (C08301_019E)
-    const bikeWalk = sumRaw(row, ['C08301_018E', 'C08301_019E'])
+    // Bike (B08301_018E) + Walk (B08301_019E)
+    const bikeWalk = sumRaw(row, ['B08301_018E', 'B08301_019E'])
     result.pctBikeWalk = pctSafe(bikeWalk, commuteDenom)
   }
 

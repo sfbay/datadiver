@@ -306,10 +306,14 @@ async function fetchCensusLive(apiKey: string): Promise<{ tracts: CensusData[]; 
         key: apiKey,
       })
 
-      const url = `${API_BASE}/2023/acs5?${params.toString()}`
+      const url = `${API_BASE}/2023/acs/acs5?${params.toString()}`
       const response = await fetch(url)
       if (!response.ok) {
-        throw new Error(`Census API ${response.status}: ${response.statusText}`)
+        const body = await response.text().catch(() => '')
+        console.error(`Census API ${response.status} for batch with vars: ${batch.slice(0, 5).join(', ')}...`)
+        console.error(`  URL: ${url.slice(0, 200)}...`)
+        console.error(`  Response: ${body.slice(0, 300)}`)
+        throw new Error(`Census API ${response.status}: ${body.slice(0, 200)}`)
       }
 
       const data: (string | null)[][] = await response.json()
@@ -340,19 +344,130 @@ async function fetchCensusLive(apiKey: string): Promise<{ tracts: CensusData[]; 
     return merged
   }
 
-  // This is a simplified version — for full computation, use the censusClient.ts logic
-  // (which we can't import here due to import.meta.env dependency).
-  // For now, just return empty arrays — the full computeVariables logic would be
-  // duplicated here if needed.
-  console.log('Live API fetch not yet fully implemented in standalone script.')
-  console.log('Use --sample-only for now, or enhance this script with full compute logic.')
+  // Fetch raw data from Census API
+  const tractRows = await fetchGeoLevel('tract')
+  console.log(`Fetched ${tractRows.size} tracts from Census API`)
 
-  // Placeholder: fetch raw data but return empty (compute logic TBD)
-  const _tractRows = await fetchGeoLevel('tract')
-  const _blockGroupRows = await fetchGeoLevel('blockgroup')
-  console.log(`Fetched ${_tractRows.size} tracts, ${_blockGroupRows.size} block groups from Census API`)
+  // Parse helpers (mirrored from censusClient.ts)
+  function parseRawValue(raw: string | null | undefined): number | undefined {
+    if (raw == null || raw === '-' || raw === '' || raw === '(X)' || raw === 'null') return undefined
+    const n = Number(raw)
+    return isNaN(n) || n < 0 ? undefined : n
+  }
 
-  return { tracts: [], blockGroups: [] }
+  function sumRawVals(row: Record<string, string | null>, codes: string[]): number | undefined {
+    let total = 0; let anyValid = false
+    for (const code of codes) {
+      const v = parseRawValue(row[code])
+      if (v !== undefined) { total += v; anyValid = true }
+    }
+    return anyValid ? total : undefined
+  }
+
+  function pctSafe(num: number | undefined, den: number | undefined): number | undefined {
+    if (num === undefined || den === undefined || den === 0) return undefined
+    return (num / den) * 100
+  }
+
+  // Compute all variables from a single row of raw ACS data (from censusClient.ts)
+  function computeVars(row: Record<string, string | null>): Partial<Record<string, number>> {
+    const result: Partial<Record<string, number>> = {}
+    const val = (code: string) => parseRawValue(row[code])
+
+    // Direct values
+    const totalPop = val('B01003_001E')
+    if (totalPop !== undefined) result.totalPopulation = totalPop
+    const medIncome = val('B19013_001E')
+    if (medIncome !== undefined) result.medianIncome = medIncome
+    const medAge = val('B01002_001E')
+    if (medAge !== undefined) result.medianAge = medAge
+    const medRent = val('B25064_001E')
+    if (medRent !== undefined) result.medianRent = medRent
+    const medHome = val('B25077_001E')
+    if (medHome !== undefined) result.medianHomeValue = medHome
+
+    // Poverty rate (B17001)
+    result.povertyRate = pctSafe(val('B17001_002E'), val('B17001_001E'))
+
+    // Race/Ethnicity (B03002)
+    const raceDenom = val('B03002_001E')
+    result.pctWhite = pctSafe(val('B03002_003E'), raceDenom)
+    result.pctBlack = pctSafe(val('B03002_004E'), raceDenom)
+    result.pctAsian = pctSafe(val('B03002_006E'), raceDenom)
+    result.pctHispanic = pctSafe(val('B03002_012E'), raceDenom)
+    result.pctPacificIslander = pctSafe(val('B03002_007E'), raceDenom)
+    result.pctMultiracial = pctSafe(val('B03002_009E'), raceDenom)
+    result.pctOther = pctSafe(val('B03002_008E'), raceDenom)
+
+    // Housing
+    result.renterPct = pctSafe(val('B25003_003E'), val('B25003_001E'))
+    const rentBurdenNum = sumRawVals(row, ['B25070_007E', 'B25070_008E', 'B25070_009E', 'B25070_010E'])
+    result.rentBurden = pctSafe(rentBurdenNum, val('B25070_001E'))
+
+    // Age (B01001)
+    const ageDenom = val('B01001_001E')
+    const under18Codes = ['B01001_003E','B01001_004E','B01001_005E','B01001_006E','B01001_027E','B01001_028E','B01001_029E','B01001_030E']
+    const under18 = sumRawVals(row, under18Codes)
+    result.pctUnder18 = pctSafe(under18, ageDenom)
+    const over65Codes = ['B01001_020E','B01001_021E','B01001_022E','B01001_023E','B01001_024E','B01001_025E','B01001_044E','B01001_045E','B01001_046E','B01001_047E','B01001_048E','B01001_049E']
+    const over65 = sumRawVals(row, over65Codes)
+    result.pctOver65 = pctSafe(over65, ageDenom)
+    if (result.pctUnder18 !== undefined && result.pctOver65 !== undefined) {
+      result.pctWorkingAge = 100 - result.pctUnder18 - result.pctOver65
+    }
+
+    // Education (B15003)
+    const eduDenom = val('B15003_001E')
+    const noHsCodes = ['B15003_002E','B15003_003E','B15003_004E','B15003_005E','B15003_006E','B15003_007E','B15003_008E','B15003_009E','B15003_010E','B15003_011E','B15003_012E','B15003_013E','B15003_014E','B15003_015E','B15003_016E']
+    result.pctNoHighSchool = pctSafe(sumRawVals(row, noHsCodes), eduDenom)
+    const bachPlusCodes = ['B15003_022E','B15003_023E','B15003_024E','B15003_025E']
+    result.pctBachelorsPlus = pctSafe(sumRawVals(row, bachPlusCodes), eduDenom)
+
+    // Employment (B23025)
+    result.unemploymentRate = pctSafe(val('B23025_005E'), val('B23025_003E'))
+
+    // Commute (B08301)
+    const commuteDenom = val('B08301_001E')
+    result.pctDriveAlone = pctSafe(val('B08301_003E'), commuteDenom)
+    result.pctTransit = pctSafe(val('B08301_010E'), commuteDenom)
+    result.pctWFH = pctSafe(val('B08301_021E'), commuteDenom)
+    result.pctBikeWalk = pctSafe(sumRawVals(row, ['B08301_018E','B08301_019E']), commuteDenom)
+
+    // Language (B16001)
+    const langDenom = val('B16001_001E')
+    const lepCodes = ['B16001_005E','B16001_008E','B16001_011E','B16001_014E','B16001_017E','B16001_020E']
+    result.lepRate = pctSafe(sumRawVals(row, lepCodes), langDenom)
+    result.pctSpanish = pctSafe(val('B16001_003E'), langDenom)
+    result.pctChinese = pctSafe(val('B16001_006E'), langDenom)
+    result.pctVietnamese = pctSafe(val('B16001_009E'), langDenom)
+    result.pctTagalog = pctSafe(val('B16001_012E'), langDenom)
+    result.pctKorean = pctSafe(val('B16001_015E'), langDenom)
+    result.pctRussian = pctSafe(val('B16001_018E'), langDenom)
+
+    // Strip undefined
+    for (const key of Object.keys(result)) {
+      if ((result as any)[key] === undefined) delete (result as any)[key]
+    }
+    return result
+  }
+
+  // Convert raw rows to CensusData records
+  const tracts: CensusData[] = []
+  for (const [geoId, row] of tractRows) {
+    const tractId = geoId.slice(-6) // last 6 chars = tract ID
+    const computed = computeVars(row)
+    tracts.push({
+      geoId,
+      geoType: 'tract',
+      name: row['NAME'] || tractId,
+      population: computed.totalPopulation ?? 0,
+      ...computed,
+    } as CensusData)
+  }
+  console.log(`Computed variables for ${tracts.length} tracts`)
+
+  // Block groups — skip for now (heavy API load, tracts sufficient for neighborhood aggregation)
+  return { tracts, blockGroups: [] }
 }
 
 // ---------------------------------------------------------------------------
