@@ -67,12 +67,12 @@ export function useMapLayer(
         const spec = layer as any
         if (spec.paint) {
           for (const [prop, value] of Object.entries(spec.paint)) {
-            map.setPaintProperty(layer.id, prop, value)
+            map.setPaintProperty(layer.id, prop as any, value)
           }
         }
         if (spec.layout) {
           for (const [prop, value] of Object.entries(spec.layout)) {
-            map.setLayoutProperty(layer.id, prop, value)
+            map.setLayoutProperty(layer.id, prop as any, value)
           }
         }
       } catch { /* layer not ready yet */ }
