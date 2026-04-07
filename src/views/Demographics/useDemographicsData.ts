@@ -5,6 +5,7 @@
 import { useMemo } from 'react'
 import type { CensusVariable, NeighborhoodCensusData } from '../../types/census'
 import { getVariableConfig, CENSUS_VARIABLES } from '../../utils/censusVariables'
+import { NON_RESIDENTIAL_NEIGHBORHOODS } from '../../utils/geo'
 
 // ---------------------------------------------------------------------------
 // Approximate neighborhood centroids (lat, lng) for cartogram positioning
@@ -212,8 +213,11 @@ export function useDemographicsData(
       lookup.set(n.name, n)
     }
 
-    // Enrich each boundary feature with Census variable values
-    const features = boundaries.features.map(f => {
+    // Enrich each boundary feature with Census variable values (skip parks)
+    const features = boundaries.features.filter(f => {
+      const nhood = f.properties?.nhood as string | undefined
+      return !nhood || !NON_RESIDENTIAL_NEIGHBORHOODS.has(nhood)
+    }).map(f => {
       const nhood = f.properties?.nhood as string | undefined
       const censusData = nhood ? lookup.get(nhood) : undefined
 
