@@ -435,7 +435,7 @@ export default function Demographics() {
                         onClick={() => setSelectedNeighborhood(null)}
                         className="text-slate-500 hover:text-slate-300 text-xs"
                       >
-                        \u2715
+                        {'\u2715'}
                       </button>
                     </div>
                   </div>

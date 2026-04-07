@@ -36,6 +36,7 @@ export interface CensusVariableConfig {
   colorScale: 'sequential' | 'diverging'
   colorRamp: string[]
   availableAt: ('neighborhood' | 'tract' | 'blockgroup')[]
+  description?: string
   isSubPicker?: boolean
   parentGroup?: string
 }

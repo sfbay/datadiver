@@ -15,6 +15,7 @@ import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { use311HourlyPattern } from '@/hooks/useHourlyPatternFactory'
 import { use311ComparisonData } from '@/hooks/useComparisonDataFactory'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
+import { useFlyToNeighborhood } from '@/hooks/useFlyToNeighborhood'
 import { useAppStore } from '@/stores/appStore'
 import type { Cases311Record, ServiceCategoryAggRow, NeighborhoodAggRow311 } from '@/types/datasets'
 import { diffHours, formatResolution, formatDelta, formatNumber, formatHour } from '@/utils/time'
@@ -219,6 +220,7 @@ export default function Cases311() {
 
   // Neighborhood boundaries for anomaly mode
   const { boundaries: neighborhoodBoundaries } = useNeighborhoodBoundaries()
+  useFlyToNeighborhood(mapInstance, selectedNeighborhood, neighborhoodBoundaries)
 
   // Census demographic underlay
   const [underlayVariable, setUnderlayVariable] = useState<CensusVariable | null>(null)

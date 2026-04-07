@@ -15,6 +15,7 @@ import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { useCrashHourlyPattern } from '@/hooks/useHourlyPatternFactory'
 import { useCrashComparisonData } from '@/hooks/useComparisonDataFactory'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
+import { useFlyToNeighborhood } from '@/hooks/useFlyToNeighborhood'
 import { useAppStore } from '@/stores/appStore'
 import type { TrafficCrashRecord, CrashModeAggRow, NeighborhoodAggRowCrashes, SpeedCameraRecord, RedLightCameraRecord, PavementConditionRecord } from '@/types/datasets'
 import { formatDelta, formatNumber, formatHour } from '@/utils/time'
@@ -306,6 +307,7 @@ export default function TrafficSafety() {
   const comparison = useCrashComparisonData(dateRange, whereClause, comparisonPeriod, rawData)
   const compLabel = comparisonPeriod ? `vs ${comparisonPeriod >= 360 ? '1yr' : `${comparisonPeriod}d`} ago` : ''
   const { boundaries: neighborhoodBoundaries } = useNeighborhoodBoundaries()
+  useFlyToNeighborhood(mapInstance, selectedNeighborhood, neighborhoodBoundaries)
 
   // Census demographic underlay
   const [underlayVariable, setUnderlayVariable] = useState<CensusVariable | null>(null)

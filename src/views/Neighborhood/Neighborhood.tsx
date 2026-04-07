@@ -44,6 +44,7 @@ export default function Neighborhood() {
 
   // Selected portrait point (click-to-inspect)
   const [selectedPoint, setSelectedPoint] = useState<PortraitPoint | null>(null)
+  const portraitClickConsumed = useRef(false)  // prevents choropleth handler from firing on portrait dot clicks
 
   // Domain visibility toggle (controls which portrait layers show on map)
   const [visibleDomains, setVisibleDomains] = useState<Set<MetricDomain>>(() => new Set(DOMAINS.map((d) => d.key)))
@@ -160,15 +161,23 @@ export default function Neighborhood() {
     } catch { /* layer not ready */ }
   }, [mapInstance, profileMap])
 
-  // Update selection highlight (only when NOT in compare mode)
+  // Update selection highlight + dim layer (only when NOT in compare mode)
   useEffect(() => {
     if (!mapInstance) return
-    const filter: any = !compareMode && selectedNeighborhood
+    const hasSelection = !compareMode && !!selectedNeighborhood
+    const selFilter: any = hasSelection
       ? ['==', 'nhood', selectedNeighborhood]
       : ['==', 'nhood', '']
+    // Dim filter: darken everything EXCEPT selected (or nothing when no selection)
+    const dimFilter: any = hasSelection
+      ? ['!=', 'nhood', selectedNeighborhood]
+      : ['==', 'nhood', '__none__']  // match nothing
     try {
-      mapInstance.setFilter('nh-selection-fill', filter)
-      mapInstance.setFilter('nh-selection-outline', filter)
+      mapInstance.setFilter('nh-selection-fill', selFilter)
+      mapInstance.setFilter('nh-selection-glow', selFilter)
+      mapInstance.setFilter('nh-selection-outline', selFilter)
+      mapInstance.setFilter('nh-dim-fill', dimFilter)
+      mapInstance.setPaintProperty('nh-dim-fill', 'fill-opacity', hasSelection ? 0.45 : 0)
     } catch { /* layers not ready */ }
   }, [mapInstance, selectedNeighborhood, compareMode])
 
@@ -203,17 +212,27 @@ export default function Neighborhood() {
   useMapLayer(mapInstance, 'portrait-crashes', crashesGeojson, crashesMapLayers)
   useMapLayer(mapInstance, 'portrait-citations', citationsGeojson, citationsMapLayers)
 
-  // Update comparison slot filters
+  // Update comparison slot filters + dim layer
   useEffect(() => {
     if (!mapInstance) return
+    const hasCompare = compareMode && compareSet.length > 0
     for (let i = 0; i < 3; i++) {
       const name = compareMode ? (compareSet[i] || '') : ''
       const filter: any = ['==', 'nhood', name]
       try {
         mapInstance.setFilter(`nh-compare-fill-${i}`, filter)
+        mapInstance.setFilter(`nh-compare-glow-${i}`, filter)
         mapInstance.setFilter(`nh-compare-outline-${i}`, filter)
       } catch { /* layers not ready */ }
     }
+    // Dim non-compared neighborhoods
+    try {
+      const dimFilter: any = hasCompare
+        ? ['!', ['in', ['get', 'nhood'], ['literal', compareSet]]]
+        : ['==', 'nhood', '__none__']
+      mapInstance.setFilter('nh-dim-fill', dimFilter)
+      mapInstance.setPaintProperty('nh-dim-fill', 'fill-opacity', hasCompare ? 0.45 : 0)
+    } catch { /* layers not ready */ }
   }, [mapInstance, compareMode, compareSet])
 
   // Fit bounds to compared neighborhoods
@@ -239,10 +258,12 @@ export default function Neighborhood() {
     )
   }, [mapInstance, compareMode, compareSet, boundaries])
 
-  // Click handler
+  // Click handler (choropleth)
   useEffect(() => {
     if (!mapInstance) return
     const handler = (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
+      // Skip if a portrait dot click already consumed this event
+      if (portraitClickConsumed.current) return
       const name = e.features?.[0]?.properties?.nhood as string | undefined
       if (!name) return
       if (compareMode) {
@@ -306,6 +327,9 @@ export default function Neighborhood() {
     const handler = (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
       const props = e.features?.[0]?.properties
       if (!props) return
+      // Mark click as consumed so choropleth handler doesn't deselect the neighborhood
+      portraitClickConsumed.current = true
+      setTimeout(() => { portraitClickConsumed.current = false }, 50)
       const point: PortraitPoint = {
         lat: e.lngLat.lat,
         lng: e.lngLat.lng,

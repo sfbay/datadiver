@@ -13,6 +13,7 @@ import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { useCitationHourlyPattern } from '@/hooks/useHourlyPatternFactory'
 import { useCitationComparisonData } from '@/hooks/useComparisonDataFactory'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
+import { useFlyToNeighborhood } from '@/hooks/useFlyToNeighborhood'
 import { useAppStore } from '@/stores/appStore'
 import type { ParkingCitationRecord, ViolationTypeAggRow, NeighborhoodAggRowCitations } from '@/types/datasets'
 import { formatCurrency, formatDelta, formatNumber, formatHour } from '@/utils/time'
@@ -228,6 +229,7 @@ export default function ParkingCitations() {
 
   // Neighborhood boundaries for anomaly mode
   const { boundaries: neighborhoodBoundaries } = useNeighborhoodBoundaries()
+  useFlyToNeighborhood(mapInstance, selectedNeighborhood, neighborhoodBoundaries)
 
   // Census demographic underlay
   const [underlayVariable, setUnderlayVariable] = useState<CensusVariable | null>(null)

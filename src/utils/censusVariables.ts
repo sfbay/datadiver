@@ -243,7 +243,8 @@ export const CENSUS_VARIABLES: CensusVariableConfig[] = [
   {
     key: 'lepRate',
     label: 'Limited English Proficiency Rate',
-    shortLabel: 'LEP Rate',
+    shortLabel: 'Limited English',
+    description: 'Share of residents who speak English less than "very well" (Census self-reported)',
     category: 'language',
     acsTable: 'B16001',
     acsVariables: [

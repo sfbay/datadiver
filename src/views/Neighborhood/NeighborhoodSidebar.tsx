@@ -60,6 +60,7 @@ function MetricRow({
   neighborhood,
   isVisible,
   onToggle,
+  isPortraitActive,
 }: {
   label: string
   metric: DatasetMetric | null
@@ -69,11 +70,15 @@ function MetricRow({
   neighborhood?: string
   isVisible?: boolean
   onToggle?: () => void
+  isPortraitActive?: boolean
 }) {
   const navigate = useNavigate()
   if (!metric) return null
   const barWidth = maxCount > 0 ? (metric.count / maxCount) * 100 : 0
-  const dimmed = isVisible === false
+  const dimmed = isPortraitActive && isVisible === false
+  const toggleTitle = !isPortraitActive
+    ? `Show ${label} on map`
+    : dimmed ? `Show ${label} on map` : `Hide ${label} on map`
   return (
     <div className={`relative py-2 px-2.5 rounded-lg group transition-opacity duration-200 ${dimmed ? 'opacity-35' : ''}`}>
       {/* Background bar */}
@@ -85,7 +90,7 @@ function MetricRow({
         <button
           onClick={onToggle}
           className="flex items-center gap-2 min-w-0 cursor-pointer hover:brightness-125 transition-all"
-          title={dimmed ? `Show ${label} on map` : `Hide ${label} on map`}
+          title={toggleTitle}
         >
           <div
             className={`w-1.5 h-1.5 rounded-full flex-shrink-0 transition-all ${dimmed ? 'ring-1 ring-current' : ''}`}
@@ -185,9 +190,9 @@ function ProfileView({ profile, onDiveIn, isDiveInActive, isDiveInLoading, visib
           Safety
         </p>
         <div className="space-y-0.5">
-          <MetricRow label="Emergency Response" metric={profile.emergency} color="#ef4444" maxCount={maxCount} domainKey="emergency" neighborhood={profile.name} isVisible={visibleDomains?.has('emergency')} onToggle={() => onToggleDomain?.('emergency')} />
-          <MetricRow label="Crime Incidents" metric={profile.crime} color="#f97316" maxCount={maxCount} domainKey="crime" neighborhood={profile.name} isVisible={visibleDomains?.has('crime')} onToggle={() => onToggleDomain?.('crime')} />
-          <MetricRow label="Traffic Crashes" metric={profile.crashes} color="#eab308" maxCount={maxCount} domainKey="crashes" neighborhood={profile.name} isVisible={visibleDomains?.has('crashes')} onToggle={() => onToggleDomain?.('crashes')} />
+          <MetricRow label="Emergency Response" metric={profile.emergency} color="#ef4444" maxCount={maxCount} domainKey="emergency" neighborhood={profile.name} isVisible={visibleDomains?.has('emergency')} onToggle={() => isDiveInActive ? onToggleDomain?.('emergency') : onDiveIn?.()} isPortraitActive={isDiveInActive} />
+          <MetricRow label="Crime Incidents" metric={profile.crime} color="#f97316" maxCount={maxCount} domainKey="crime" neighborhood={profile.name} isVisible={visibleDomains?.has('crime')} onToggle={() => isDiveInActive ? onToggleDomain?.('crime') : onDiveIn?.()} isPortraitActive={isDiveInActive} />
+          <MetricRow label="Traffic Crashes" metric={profile.crashes} color="#eab308" maxCount={maxCount} domainKey="crashes" neighborhood={profile.name} isVisible={visibleDomains?.has('crashes')} onToggle={() => isDiveInActive ? onToggleDomain?.('crashes') : onDiveIn?.()} isPortraitActive={isDiveInActive} />
         </div>
       </div>
 
@@ -197,8 +202,8 @@ function ProfileView({ profile, onDiveIn, isDiveInActive, isDiveInLoading, visib
           Quality of Life
         </p>
         <div className="space-y-0.5">
-          <MetricRow label="311 Cases" metric={profile.cases311} color="#3b82f6" maxCount={maxCount} domainKey="cases311" neighborhood={profile.name} isVisible={visibleDomains?.has('cases311')} onToggle={() => onToggleDomain?.('cases311')} />
-          <MetricRow label="Parking Citations" metric={profile.citations} color="#06b6d4" maxCount={maxCount} domainKey="citations" neighborhood={profile.name} isVisible={visibleDomains?.has('citations')} onToggle={() => onToggleDomain?.('citations')} />
+          <MetricRow label="311 Cases" metric={profile.cases311} color="#3b82f6" maxCount={maxCount} domainKey="cases311" neighborhood={profile.name} isVisible={visibleDomains?.has('cases311')} onToggle={() => isDiveInActive ? onToggleDomain?.('cases311') : onDiveIn?.()} isPortraitActive={isDiveInActive} />
+          <MetricRow label="Parking Citations" metric={profile.citations} color="#06b6d4" maxCount={maxCount} domainKey="citations" neighborhood={profile.name} isVisible={visibleDomains?.has('citations')} onToggle={() => isDiveInActive ? onToggleDomain?.('citations') : onDiveIn?.()} isPortraitActive={isDiveInActive} />
         </div>
       </div>
 
@@ -331,12 +336,12 @@ export default function NeighborhoodSidebar({
           <SkeletonSidebarRows count={14} />
         ) : compareMode && compareProfiles.length >= 2 ? (
           <>
-            <ComparisonView profiles={compareProfiles} onRemove={onRemoveFromCompare} onFocus={onFocusNeighborhood} />
+            {/* 3rd neighborhood picker — above comparison so it's always visible */}
             {compareSet.length < 3 && (
-              <div className="mt-4 pt-3 border-t border-white/[0.04]">
-                <p className="text-[9px] font-mono text-slate-500 uppercase tracking-wider mb-2 px-1">Add neighborhood</p>
-                <div className="space-y-0.5 max-h-40 overflow-y-auto">
-                  {sorted.filter((p) => !compareSet.includes(p.name)).slice(0, 15).map((profile) => (
+              <div className="mb-3 pb-3 border-b border-white/[0.04]">
+                <p className="text-[9px] font-mono text-slate-500 uppercase tracking-wider mb-2 px-1">Add 3rd neighborhood</p>
+                <div className="space-y-0.5 max-h-32 overflow-y-auto">
+                  {sorted.filter((p) => !compareSet.includes(p.name)).slice(0, 12).map((profile) => (
                     <button
                       key={profile.name}
                       onClick={() => onAddToCompare(profile.name)}
@@ -348,6 +353,7 @@ export default function NeighborhoodSidebar({
                 </div>
               </div>
             )}
+            <ComparisonView profiles={compareProfiles} onRemove={onRemoveFromCompare} onFocus={onFocusNeighborhood} />
           </>
         ) : compareMode ? (
           /* Compare mode list: show numbered circle indicators */

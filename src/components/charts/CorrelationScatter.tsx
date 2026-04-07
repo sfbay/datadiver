@@ -59,7 +59,8 @@ function formatTooltipValue(value: number, label: string): string {
     return `${value.toFixed(1)}%`
   }
   if (Math.abs(value) >= 1_000) return `${(value / 1_000).toFixed(1)}K`
-  return `${value.toFixed(1)}`
+  // Whole numbers (counts like crime incidents) should not show decimals
+  return Number.isInteger(value) ? `${value}` : `${value.toFixed(1)}`
 }
 
 function computeOLS(data: { x: number; y: number }[]): { slope: number; intercept: number; r: number } {

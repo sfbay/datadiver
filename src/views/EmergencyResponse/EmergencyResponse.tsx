@@ -8,6 +8,7 @@ import UnderlayPicker from '@/components/maps/UnderlayPicker'
 import NeighborhoodCensusContext from '@/components/ui/NeighborhoodCensusContext'
 import { UNDERLAY_PRESETS } from '@/utils/censusVariables'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
+import { useFlyToNeighborhood } from '@/hooks/useFlyToNeighborhood'
 import { useSearchParams } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import { useDataset } from '@/hooks/useDataset'
@@ -66,10 +67,12 @@ export default function EmergencyResponse() {
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
   const mapHandleRef = useRef<MapHandle>(null)
 
-  // Deep-link: rehydrate detail panel from URL on mount
+  // Deep-link: rehydrate detail panel + neighborhood from URL on mount
   useEffect(() => {
     const detailParam = searchParams.get('detail')
     if (detailParam) setSelectedIncident(detailParam)
+    const neighborhoodParam = searchParams.get('neighborhood')
+    if (neighborhoodParam) setSelectedNeighborhood(neighborhoodParam)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -134,6 +137,7 @@ export default function EmergencyResponse() {
 
   // Neighborhood boundaries + Census demographic underlay
   const { boundaries: neighborhoodBoundaries } = useNeighborhoodBoundaries()
+  useFlyToNeighborhood(mapInstance, selectedNeighborhood, neighborhoodBoundaries)
   const [underlayVariable, setUnderlayVariable] = useState<CensusVariable | null>(null)
   const { neighborhoods: censusNeighborhoods } = useCensusData()
 

@@ -41,23 +41,50 @@ export const NEIGHBORHOOD_CHOROPLETH_LAYERS: mapboxgl.AnyLayer[] = [
 ]
 
 export const NEIGHBORHOOD_SELECTION_LAYERS: mapboxgl.AnyLayer[] = [
+  // Dim layer — darkens everything NOT selected
+  {
+    id: 'nh-dim-fill',
+    type: 'fill',
+    source: 'nh-boundaries',
+    paint: {
+      'fill-color': '#000000',
+      'fill-opacity': 0,  // controlled dynamically: 0 when nothing selected, 0.45 otherwise
+    },
+    filter: ['!=', 'nhood', ''],  // dynamically set to exclude selected neighborhoods
+  } as mapboxgl.AnyLayer,
+  // Selection fill — subtle brightening on selected
   {
     id: 'nh-selection-fill',
     type: 'fill',
     source: 'nh-boundaries',
     paint: {
       'fill-color': '#a855f7',
-      'fill-opacity': 0.12,
+      'fill-opacity': 0.08,
     },
     filter: ['==', 'nhood', ''],
   } as mapboxgl.AnyLayer,
+  // Outer glow — wide soft line behind the crisp border
+  {
+    id: 'nh-selection-glow',
+    type: 'line',
+    source: 'nh-boundaries',
+    paint: {
+      'line-color': '#a855f7',
+      'line-width': 8,
+      'line-opacity': 0.2,
+      'line-blur': 6,
+    },
+    filter: ['==', 'nhood', ''],
+  } as mapboxgl.AnyLayer,
+  // Crisp selection outline
   {
     id: 'nh-selection-outline',
     type: 'line',
     source: 'nh-boundaries',
     paint: {
       'line-color': '#a855f7',
-      'line-width': 2.5,
+      'line-width': 2,
+      'line-opacity': 0.85,
     },
     filter: ['==', 'nhood', ''],
   } as mapboxgl.AnyLayer,
@@ -94,18 +121,32 @@ export function makeSlotLayers(
       source: 'nh-boundaries',
       paint: {
         'fill-color': color,
-        'fill-opacity': 0.12,
+        'fill-opacity': 0.1,
       },
       filter: ['==', 'nhood', ''],
     } as mapboxgl.AnyLayer,
+    // Soft outer glow
+    {
+      id: `nh-compare-glow-${slotIndex}`,
+      type: 'line',
+      source: 'nh-boundaries',
+      paint: {
+        'line-color': color,
+        'line-width': 8,
+        'line-opacity': 0.2,
+        'line-blur': 6,
+      },
+      filter: ['==', 'nhood', ''],
+    } as mapboxgl.AnyLayer,
+    // Crisp border
     {
       id: `nh-compare-outline-${slotIndex}`,
       type: 'line',
       source: 'nh-boundaries',
       paint: {
         'line-color': color,
-        'line-width': 2.5,
-        'line-opacity': 0.8,
+        'line-width': 2,
+        'line-opacity': 0.85,
       },
       filter: ['==', 'nhood', ''],
     } as mapboxgl.AnyLayer,

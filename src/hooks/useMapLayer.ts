@@ -11,6 +11,7 @@ export function useMapLayer(
   const layersRef = useRef(layers)
   layersRef.current = layers
 
+  // Core effect: add source + layers, update data
   useEffect(() => {
     if (!map || !geojson || geojson.features.length === 0) return
 
@@ -56,4 +57,25 @@ export function useMapLayer(
       map.off('style.load', handleStyleData)
     }
   }, [map, geojson, sourceId])
+
+  // Secondary effect: update paint/layout properties when layers config changes
+  useEffect(() => {
+    if (!map) return
+    for (const layer of layers) {
+      try {
+        if (!map.getLayer(layer.id)) continue
+        const spec = layer as any
+        if (spec.paint) {
+          for (const [prop, value] of Object.entries(spec.paint)) {
+            map.setPaintProperty(layer.id, prop, value)
+          }
+        }
+        if (spec.layout) {
+          for (const [prop, value] of Object.entries(spec.layout)) {
+            map.setLayoutProperty(layer.id, prop, value)
+          }
+        }
+      } catch { /* layer not ready yet */ }
+    }
+  }, [map, layers])
 }
