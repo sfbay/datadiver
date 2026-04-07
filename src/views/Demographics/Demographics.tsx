@@ -4,6 +4,7 @@
 import { useState, useMemo, useCallback, useRef } from 'react'
 import mapboxgl from 'mapbox-gl'
 import { useCensusData } from '@/hooks/useCensusData'
+import { NON_RESIDENTIAL_NEIGHBORHOODS } from '@/utils/geo'
 import { useCivicMetric } from '@/hooks/useCivicMetrics'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useMapLayer } from '@/hooks/useMapLayer'
@@ -83,8 +84,12 @@ export default function Demographics() {
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
   const mapHandleRef = useRef(null)
 
-  // --- Data ---
-  const { neighborhoods } = useCensusData()
+  // --- Data (filter out non-residential areas like parks) ---
+  const { neighborhoods: allNeighborhoods } = useCensusData()
+  const neighborhoods = useMemo(
+    () => allNeighborhoods.filter(n => !NON_RESIDENTIAL_NEIGHBORHOODS.has(n.name as any)),
+    [allNeighborhoods],
+  )
   const { boundaries } = useNeighborhoodBoundaries()
 
   // Determine if scatter Y is a Census variable or civic metric

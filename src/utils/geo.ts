@@ -47,3 +47,11 @@ export const SF_NEIGHBORHOODS = [
 ] as const
 
 export type SFNeighborhood = (typeof SF_NEIGHBORHOODS)[number]
+
+/** Non-residential areas (parks, military) — exclude from demographic rankings and profiles */
+export const NON_RESIDENTIAL_NEIGHBORHOODS = new Set([
+  'Golden Gate Park',
+  'McLaren Park',
+  'Lincoln Park',
+  'Presidio',
+])
