@@ -466,8 +466,25 @@ async function fetchCensusLive(apiKey: string): Promise<{ tracts: CensusData[]; 
   }
   console.log(`Computed variables for ${tracts.length} tracts`)
 
-  // Block groups — skip for now (heavy API load, tracts sufficient for neighborhood aggregation)
-  return { tracts, blockGroups: [] }
+  // Block groups — finer resolution for more accurate neighborhood aggregation
+  console.log('Fetching block groups...')
+  const bgRows = await fetchGeoLevel('blockgroup')
+  console.log(`Fetched ${bgRows.size} block groups from Census API`)
+
+  const blockGroups: CensusData[] = []
+  for (const [geoId, row] of bgRows) {
+    const computed = computeVars(row)
+    blockGroups.push({
+      geoId,
+      geoType: 'blockgroup',
+      name: row['NAME'] || geoId,
+      population: computed.totalPopulation ?? 0,
+      ...computed,
+    } as CensusData)
+  }
+  console.log(`Computed variables for ${blockGroups.length} block groups`)
+
+  return { tracts, blockGroups }
 }
 
 // ---------------------------------------------------------------------------
