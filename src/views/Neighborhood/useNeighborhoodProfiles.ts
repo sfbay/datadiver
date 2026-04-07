@@ -5,6 +5,14 @@ import { useTrendBaseline } from '@/hooks/useTrendBaseline'
 import { SF_NEIGHBORHOODS } from '@/utils/geo'
 import type { NeighborhoodProfile, DatasetMetric } from './types'
 
+/** Non-residential areas — parks, military, etc. Excluded from rankings and profiles. */
+const NON_RESIDENTIAL = new Set([
+  'Golden Gate Park',
+  'McLaren Park',
+  'Lincoln Park',
+  'Presidio',
+])
+
 /** Approximate neighborhood centers for map flyTo */
 const CENTERS: Record<string, [number, number]> = {
   'Bayview Hunters Point': [37.7346, -122.3907],
@@ -103,6 +111,7 @@ export function useNeighborhoodProfiles(
     const map = new Map<string, NeighborhoodProfile>()
 
     for (const name of SF_NEIGHBORHOODS) {
+      if (NON_RESIDENTIAL.has(name)) continue
       const emergency = extract(trendER.neighborhoodMap, name)
       const crime = extract(trendCrime.neighborhoodMap, name)
       const cases311 = extract(trend311.neighborhoodMap, name)

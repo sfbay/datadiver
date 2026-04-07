@@ -422,7 +422,7 @@ export default function Neighborhood() {
             Neighborhoods
           </h1>
           <p className="text-[11px] font-mono text-slate-400/80 mt-1">
-            Cross-dataset civic pulse across 41 neighborhoods
+            Cross-dataset civic pulse across {profiles.length} neighborhoods
           </p>
         </div>
 

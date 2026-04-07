@@ -269,7 +269,7 @@ export default function NeighborhoodSidebar({
               ? `Comparing ${compareSet.length} of 3`
               : selectedNeighborhood
                 ? 'Neighborhood Profile'
-                : '41 Neighborhoods'}
+                : `${profiles.length} Neighborhoods`}
           </p>
           <div className="flex items-center gap-2">
             {compareMode && (
