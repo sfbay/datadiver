@@ -220,17 +220,17 @@ function convertResonateSample(): NeighborhoodCensusData[] {
       population: g.totalPop,
       tractCount: tracts.length,
       tracts,
-      // Income & Housing
+      // Income & Housing — from resonate/ACS seed data
       medianIncome: Math.round(wavg(d => d.economic.medianHouseholdIncome)),
       renterPct: wavg(d => d.housing.renterOccupied),
-      // Race/Ethnicity
+      // Race/Ethnicity — from resonate/ACS seed data
       pctWhite: wavg(d => d.ethnicity.distribution.white),
       pctBlack: wavg(d => d.ethnicity.distribution.black),
       pctAsian: wavg(d => d.ethnicity.distribution.asian),
       pctHispanic: wavg(d => d.ethnicity.distribution.hispanic),
       pctPacificIslander: wavg(d => d.ethnicity.distribution.pacific),
       pctMultiracial: wavg(d => d.ethnicity.distribution.multiracial),
-      // Language
+      // Language — from resonate/ACS seed data
       lepRate: wavg(d => d.language.limitedEnglishProficiency),
       pctChinese: wavg(d => d.language.languagesSpoken.chinese),
       pctSpanish: wavg(d => d.language.languagesSpoken.spanish),
@@ -238,12 +238,16 @@ function convertResonateSample(): NeighborhoodCensusData[] {
       pctVietnamese: wavg(d => d.language.languagesSpoken.vietnamese),
       pctKorean: wavg(d => d.language.languagesSpoken.korean),
       pctRussian: wavg(d => d.language.languagesSpoken.russian),
-      // Age
+      // Age — from resonate/ACS seed data
       pctUnder18: wavg(d => d.age.under18),
       pctOver65: wavg(d => d.age.seniors),
       pctWorkingAge: Math.round((100 - wavg(d => d.age.under18) - wavg(d => d.age.seniors)) * 100) / 100,
       // Population
       totalPopulation: g.totalPop,
+      // NOTE: povertyRate, rentBurden, pctBachelorsPlus, medianAge, unemploymentRate,
+      // medianRent, medianHomeValue, populationDensity, pctNoHighSchool, pctWFH,
+      // pctDriveAlone, pctTransit, pctBikeWalk are NOT in resonate seed data.
+      // These require live Census API fetch (VITE_CENSUS_API_KEY).
     }
 
     results.push(entry)

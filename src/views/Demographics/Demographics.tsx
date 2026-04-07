@@ -35,20 +35,8 @@ const DEFAULT_SCATTER_Y = 'crimeCount'
 const DEFAULT_EXPANDED: CensusVariable[] = [
   'totalPopulation',
   'medianIncome',
-  'rentBurden',
-  'lepRate',
-]
-
-/** Quick-switch variable pills shown in the toolbar */
-const VARIABLE_PILLS: CensusVariable[] = [
-  'medianIncome',
-  'rentBurden',
-  'totalPopulation',
   'pctAsian',
-  'pctHispanic',
   'lepRate',
-  'pctBachelorsPlus',
-  'povertyRate',
 ]
 
 /** All Census variables usable as scatter Y-axis options */
@@ -263,20 +251,22 @@ export default function Demographics() {
 
   // --- Determine which cards are expanded vs collapsed ---
   const allCardVariables: CensusVariable[] = useMemo(() => {
-    // Show a curated set of key variables
+    // Only variables with verified source data (ACS via resonate seed)
+    // Variables without data: povertyRate, rentBurden, pctBachelorsPlus,
+    // medianAge, unemploymentRate, medianRent, medianHomeValue, populationDensity
+    // These require live Census API fetch (VITE_CENSUS_API_KEY)
     return [
       'totalPopulation',
       'medianIncome',
-      'rentBurden',
+      'renterPct',
       'lepRate',
-      'povertyRate',
-      'pctBachelorsPlus',
-      'medianAge',
       'pctAsian',
       'pctHispanic',
       'pctWhite',
       'pctBlack',
-      'unemploymentRate',
+      'pctMultiracial',
+      'pctUnder18',
+      'pctOver65',
     ]
   }, [])
 
@@ -331,35 +321,13 @@ export default function Demographics() {
           </div>
         </div>
 
-        {/* Variable pills */}
-        <div className="flex items-center gap-2 mt-2 overflow-x-auto pb-1">
-          <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 whitespace-nowrap shrink-0">
-            Variable
-          </span>
-          {VARIABLE_PILLS.map(v => {
-            const cfg = getVariableConfig(v)
-            if (!cfg) return null
-            return (
-              <button
-                key={v}
-                onClick={() => handleActivateVariable(v)}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-medium whitespace-nowrap transition-all duration-200 ${
-                  activeVariable === v
-                    ? 'bg-purple-600/20 text-purple-300 ring-1 ring-purple-500/30'
-                    : 'text-slate-400 dark:text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]'
-                }`}
-              >
-                {cfg.shortLabel}
-              </button>
-            )
-          })}
-          <div className="ml-auto shrink-0">
-            <DataSourceLine
-              dataset="American Community Survey 5-Year Estimates"
-              source="U.S. Census Bureau"
-              vintage="2020-2024"
-            />
-          </div>
+        {/* Source attribution */}
+        <div className="mt-1">
+          <DataSourceLine
+            dataset="American Community Survey 5-Year Estimates"
+            source="U.S. Census Bureau"
+            vintage="2020-2024"
+          />
         </div>
       </header>
 
@@ -495,6 +463,9 @@ export default function Demographics() {
                         {formatValue(legendStops[legendStops.length - 1].value, activeConfig.format)}
                       </span>
                     </div>
+                    <p className="text-[8px] font-mono text-slate-500/60 mt-1.5">
+                      Source: U.S. Census Bureau via DataDiver
+                    </p>
                   </div>
                 )}
               </div>
@@ -512,7 +483,8 @@ export default function Demographics() {
                 <select
                   value={scatterYMetric ?? ''}
                   onChange={e => setScatterYMetric(e.target.value || null)}
-                  className="flex-1 text-[11px] bg-transparent border border-white/[0.06] rounded-md px-2 py-1 text-slate-200 focus:outline-none focus:ring-1 focus:ring-purple-500/40"
+                  className="flex-1 text-[11px] bg-slate-900 border border-white/[0.06] rounded-md px-2 py-1 text-slate-200 focus:outline-none focus:ring-1 focus:ring-purple-500/40"
+                  style={{ colorScheme: 'dark' }}
                 >
                   <optgroup label="Civic Metrics">
                     {SCATTER_CIVIC_OPTIONS.map(m => (

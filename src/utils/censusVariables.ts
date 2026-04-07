@@ -10,14 +10,8 @@ const INCOME_RAMP    = ['#92400e', '#f59e0b', '#14b8a6', '#7c3aed'] // amber →
 const STRESS_RAMP    = ['#14b8a6', '#f59e0b', '#ef4444', '#7f1d1d'] // teal → amber → red (high=bad)
 const POPULATION_RAMP = ['#1e293b', '#475569', '#7c3aed', '#a78bfa'] // slate → purple
 
-// Race/ethnicity — single-hue ramps per group
-const RACE_WHITE_RAMP   = ['#f8fafc', '#cbd5e1', '#64748b', '#1e293b']
-const RACE_BLACK_RAMP   = ['#fffbeb', '#fde68a', '#d97706', '#78350f']
-const RACE_ASIAN_RAMP   = ['#ecfdf5', '#6ee7b7', '#059669', '#064e3b']
-const RACE_HISPANIC_RAMP = ['#fff7ed', '#fed7aa', '#ea580c', '#7c2d12']
-const RACE_PI_RAMP      = ['#f0fdf4', '#86efac', '#16a34a', '#14532d']
-const RACE_MULTI_RAMP   = ['#fdf4ff', '#e9d5ff', '#9333ea', '#4a044e']
-const RACE_OTHER_RAMP   = ['#f8fafc', '#e2e8f0', '#94a3b8', '#334155']
+// Race/ethnicity — unified purple sequential ramp (neutral, no chromatic bias per group)
+const RACE_RAMP = ['#1e1b2e', '#4c1d95', '#7c3aed', '#c4b5fd']
 
 // Language — cyan-based ramps
 const LANG_RAMP = ['#ecfeff', '#67e8f9', '#0891b2', '#164e63']
@@ -156,7 +150,7 @@ export const CENSUS_VARIABLES: CensusVariableConfig[] = [
     acsVariables: ['B03002_001E', 'B03002_003E'],
     format: 'percent',
     colorScale: 'sequential',
-    colorRamp: RACE_WHITE_RAMP,
+    colorRamp: RACE_RAMP,
     availableAt: ['neighborhood', 'tract', 'blockgroup'],
     parentGroup: 'raceEthnicity',
   },
@@ -169,7 +163,7 @@ export const CENSUS_VARIABLES: CensusVariableConfig[] = [
     acsVariables: ['B03002_001E', 'B03002_004E'],
     format: 'percent',
     colorScale: 'sequential',
-    colorRamp: RACE_BLACK_RAMP,
+    colorRamp: RACE_RAMP,
     availableAt: ['neighborhood', 'tract', 'blockgroup'],
     parentGroup: 'raceEthnicity',
   },
@@ -182,7 +176,7 @@ export const CENSUS_VARIABLES: CensusVariableConfig[] = [
     acsVariables: ['B03002_001E', 'B03002_006E'],
     format: 'percent',
     colorScale: 'sequential',
-    colorRamp: RACE_ASIAN_RAMP,
+    colorRamp: RACE_RAMP,
     availableAt: ['neighborhood', 'tract', 'blockgroup'],
     parentGroup: 'raceEthnicity',
   },
@@ -195,7 +189,7 @@ export const CENSUS_VARIABLES: CensusVariableConfig[] = [
     acsVariables: ['B03002_001E', 'B03002_012E'],
     format: 'percent',
     colorScale: 'sequential',
-    colorRamp: RACE_HISPANIC_RAMP,
+    colorRamp: RACE_RAMP,
     availableAt: ['neighborhood', 'tract', 'blockgroup'],
     parentGroup: 'raceEthnicity',
   },
@@ -208,7 +202,7 @@ export const CENSUS_VARIABLES: CensusVariableConfig[] = [
     acsVariables: ['B03002_001E', 'B03002_007E'],
     format: 'percent',
     colorScale: 'sequential',
-    colorRamp: RACE_PI_RAMP,
+    colorRamp: RACE_RAMP,
     availableAt: ['neighborhood', 'tract', 'blockgroup'],
     parentGroup: 'raceEthnicity',
   },
@@ -221,7 +215,7 @@ export const CENSUS_VARIABLES: CensusVariableConfig[] = [
     acsVariables: ['B03002_001E', 'B03002_009E'],
     format: 'percent',
     colorScale: 'sequential',
-    colorRamp: RACE_MULTI_RAMP,
+    colorRamp: RACE_RAMP,
     availableAt: ['neighborhood', 'tract', 'blockgroup'],
     parentGroup: 'raceEthnicity',
   },
@@ -234,7 +228,7 @@ export const CENSUS_VARIABLES: CensusVariableConfig[] = [
     acsVariables: ['B03002_001E', 'B03002_008E'],
     format: 'percent',
     colorScale: 'sequential',
-    colorRamp: RACE_OTHER_RAMP,
+    colorRamp: RACE_RAMP,
     availableAt: ['neighborhood', 'tract', 'blockgroup'],
     parentGroup: 'raceEthnicity',
   },
