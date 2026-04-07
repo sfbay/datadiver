@@ -327,7 +327,8 @@ export default function Demographics() {
           <DataSourceLine
             dataset="American Community Survey 5-Year Estimates"
             source="U.S. Census Bureau"
-            vintage="2020-2024"
+            vintage="2019-2023"
+            caveats={['Neighborhood values aggregated from census tracts — tract boundaries do not align precisely with neighborhood borders']}
           />
         </div>
       </header>

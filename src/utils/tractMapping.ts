@@ -166,7 +166,8 @@ export const TRACT_MAPPINGS: TractMapping[] = [
   { tractId: '048000', neighborhoods: [{ name: 'Outer Richmond', weight: 1 }] },
 
   // === SEACLIFF ===
-  { tractId: '042700', neighborhoods: [{ name: 'Seacliff', weight: 1 }] },
+  // 042700 covers Lincoln Park + most of Seacliff area but extends into Outer Richmond
+  { tractId: '042700', neighborhoods: [{ name: 'Outer Richmond', weight: 0.75 }, { name: 'Seacliff', weight: 0.25 }] },
 
   // === HAIGHT ASHBURY ===
   { tractId: '016600', neighborhoods: [{ name: 'Haight Ashbury', weight: 1 }] },
