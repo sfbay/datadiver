@@ -668,6 +668,17 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
     [ad.departments]
   )
 
+  // Per-department community media spend lookup (for the rail bar green fill).
+  // Uses compliance.departmentCards which already has ethnicMediaSpend per dept
+  // computed from the tagged layer — no new queries needed.
+  const communityByDept = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const d of compliance.departmentCards) {
+      map.set(d.department, d.ethnicMediaSpend)
+    }
+    return map
+  }, [compliance.departmentCards])
+
   const handleExportCSV = useCallback(() => {
     const rows = (isDrilledDown ? filteredVendors : ad.vendors).map((v) => ({
       vendor: v.vendor,
@@ -1039,47 +1050,82 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
             <SkeletonSidebarRows count={10} />
           ) : (
             <div className="space-y-0.5">
-              {ad.departments.map((dept) => (
-                <button
-                  key={dept.department}
-                  onClick={() => navigateToDept(dept.department)}
-                  className={`w-full text-left px-2 py-1.5 rounded-md transition-all duration-150 group
-                    ${drilldown.dept === dept.department
-                      ? 'bg-sky-500/10 dark:bg-sky-400/10'
-                      : 'hover:bg-slate-50 dark:hover:bg-white/[0.02]'
-                    }`}
-                >
-                  <div className="flex items-center justify-between mb-0.5">
-                    <span className={`text-[10px] truncate max-w-[140px] ${
-                      drilldown.dept === dept.department
-                        ? 'text-sky-600 dark:text-sky-400 font-medium'
-                        : 'text-slate-600 dark:text-slate-400'
-                    }`}>
-                      {dept.department}
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-500 tabular-nums ml-2">
-                      {formatBudgetAmount(dept.total)}
-                    </span>
-                  </div>
-                  <div className="h-1 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden flex">
-                    <div
-                      className="h-full bg-sky-500/50"
-                      style={{ width: `${dept.transparency_pct * (ad.departments[0]?.total ? dept.total / ad.departments[0].total : 0)}%` }}
-                    />
-                    {dept.pcard_total > 0 && (
-                      <div
-                        className="h-full bg-red-500/50"
-                        style={{ width: `${(100 - dept.transparency_pct) * (ad.departments[0]?.total ? dept.total / ad.departments[0].total : 0)}%` }}
-                      />
+              {ad.departments.map((dept) => {
+                const topTotal = ad.departments[0]?.total || 1
+                const communitySpend = communityByDept.get(dept.department) ?? 0
+                const transparentSpend = dept.total - dept.pcard_total
+                // Widths as % of the container (absolute scale relative to top dept).
+                // Sum of all three = dept.total / topTotal * 100.
+                const communityW = (communitySpend / topTotal) * 100
+                const skyW = (Math.max(transparentSpend - communitySpend, 0) / topTotal) * 100
+                const pcardW = (dept.pcard_total / topTotal) * 100
+                // Percentage of THIS dept that went to community (for readable label)
+                const communityOfDeptPct = dept.total > 0
+                  ? (communitySpend / dept.total) * 100
+                  : 0
+                return (
+                  <button
+                    key={dept.department}
+                    onClick={() => navigateToDept(dept.department)}
+                    className={`w-full text-left px-2 py-1.5 rounded-md transition-all duration-150 group
+                      ${drilldown.dept === dept.department
+                        ? 'bg-sky-500/10 dark:bg-sky-400/10'
+                        : 'hover:bg-slate-50 dark:hover:bg-white/[0.02]'
+                      }`}
+                  >
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className={`text-[10px] truncate max-w-[140px] ${
+                        drilldown.dept === dept.department
+                          ? 'text-sky-600 dark:text-sky-400 font-medium'
+                          : 'text-slate-600 dark:text-slate-400'
+                      }`}>
+                        {dept.department}
+                      </span>
+                      <span className="text-[10px] font-mono text-slate-500 tabular-nums ml-2">
+                        {formatBudgetAmount(dept.total)}
+                      </span>
+                    </div>
+                    <div className="h-1 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden flex">
+                      {/* Community media — leftmost green segment, only visible
+                          for departments with measurable community spend. */}
+                      {communityW > 0 && (
+                        <div
+                          className="h-full bg-emerald-500/75"
+                          style={{ width: `${communityW}%` }}
+                        />
+                      )}
+                      {/* Transparent (non-community, non-p-card) — sky */}
+                      {skyW > 0 && (
+                        <div
+                          className="h-full bg-sky-500/50"
+                          style={{ width: `${skyW}%` }}
+                        />
+                      )}
+                      {/* P-card — red tail */}
+                      {pcardW > 0 && (
+                        <div
+                          className="h-full bg-red-500/50"
+                          style={{ width: `${pcardW}%` }}
+                        />
+                      )}
+                    </div>
+                    {(dept.pcard_total > 0 || communityOfDeptPct > 0) && (
+                      <p className="text-[8px] font-mono mt-0.5 flex gap-2">
+                        {communityOfDeptPct > 0 && (
+                          <span className="text-emerald-400/80">
+                            {communityOfDeptPct.toFixed(communityOfDeptPct < 1 ? 1 : 0)}% community
+                          </span>
+                        )}
+                        {dept.pcard_total > 0 && (
+                          <span className="text-red-400/60">
+                            {(100 - dept.transparency_pct).toFixed(0)}% P-card
+                          </span>
+                        )}
+                      </p>
                     )}
-                  </div>
-                  {dept.pcard_total > 0 && (
-                    <p className="text-[8px] font-mono text-red-400/60 mt-0.5">
-                      {(100 - dept.transparency_pct).toFixed(0)}% P-card
-                    </p>
-                  )}
-                </button>
-              ))}
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>
