@@ -679,6 +679,49 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
     return map
   }, [compliance.departmentCards])
 
+  // ── Department rail tab state ────────────────────────────
+  // Three lenses on the same 23 departments, each with a different scale:
+  //   spend            — total ad spend (composition bar, scaled to top dept)
+  //   communityDollars — absolute community $ (green bar, scaled to top community dept)
+  //   communityPct     — community share of this dept's total (0-100% scale)
+  type RailTab = 'spend' | 'communityDollars' | 'communityPct'
+  const [railTab, setRailTab] = useState<RailTab>('spend')
+
+  // Enrich departments with community spend and community %
+  const railDepts = useMemo(() => {
+    return ad.departments.map((dept) => {
+      const communitySpend = communityByDept.get(dept.department) ?? 0
+      const communityPct = dept.total > 0 ? (communitySpend / dept.total) * 100 : 0
+      return { ...dept, communitySpend, communityPct }
+    })
+  }, [ad.departments, communityByDept])
+
+  // Sort by the active tab's metric
+  const sortedRailDepts = useMemo(() => {
+    const sorted = [...railDepts]
+    switch (railTab) {
+      case 'spend':
+        return sorted.sort((a, b) => b.total - a.total)
+      case 'communityDollars':
+        return sorted.sort((a, b) => b.communitySpend - a.communitySpend)
+      case 'communityPct':
+        return sorted.sort((a, b) => b.communityPct - a.communityPct)
+    }
+  }, [railDepts, railTab])
+
+  // Top value for this tab's scale (used to compute bar widths)
+  const railTopValue = useMemo(() => {
+    if (sortedRailDepts.length === 0) return 1
+    switch (railTab) {
+      case 'spend':
+        return sortedRailDepts[0].total || 1
+      case 'communityDollars':
+        return sortedRailDepts[0].communitySpend || 1
+      case 'communityPct':
+        return 100 // percentage scale is always 0-100
+    }
+  }, [sortedRailDepts, railTab])
+
   const handleExportCSV = useCallback(() => {
     const rows = (isDrilledDown ? filteredVendors : ad.vendors).map((v) => ({
       vendor: v.vendor,
@@ -1039,81 +1082,136 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
         )}
       </div>
 
-      {/* Right sidebar — departments by ad spend */}
+      {/* Right sidebar — departments with three tab lenses */}
       <aside className="w-72 flex-shrink-0 border-l border-slate-200/50 dark:border-white/[0.04] bg-white/30 dark:bg-slate-900/30 overflow-y-auto">
         <div className="p-4">
-          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500 mb-3">
-            Departments by Ad Spend
+          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500 mb-2">
+            Departments
           </p>
+
+          {/* Tab selector — three lenses on the same 23 departments */}
+          <div className="flex gap-0.5 mb-3 rounded-md overflow-hidden bg-slate-100/50 dark:bg-white/[0.03] p-0.5">
+            {([
+              { key: 'spend', label: 'Ad Spend', activeClass: 'bg-sky-500/20 text-sky-300' },
+              { key: 'communityDollars', label: 'Community $', activeClass: 'bg-emerald-500/20 text-emerald-300' },
+              { key: 'communityPct', label: 'Community %', activeClass: 'bg-emerald-500/20 text-emerald-300' },
+            ] as const).map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setRailTab(tab.key)}
+                className={`flex-1 py-1 text-[9px] font-mono tracking-wide rounded transition-colors ${
+                  railTab === tab.key
+                    ? tab.activeClass
+                    : 'text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
           {ad.isLoading ? (
             <SkeletonSidebarRows count={10} />
           ) : (
             <div className="space-y-0.5">
-              {ad.departments.map((dept) => {
-                const topTotal = ad.departments[0]?.total || 1
-                const communitySpend = communityByDept.get(dept.department) ?? 0
-                const transparentSpend = dept.total - dept.pcard_total
-                // Widths as % of the container (absolute scale relative to top dept).
-                // Sum of all three = dept.total / topTotal * 100.
-                const communityW = (communitySpend / topTotal) * 100
-                const skyW = (Math.max(transparentSpend - communitySpend, 0) / topTotal) * 100
-                const pcardW = (dept.pcard_total / topTotal) * 100
-                // Percentage of THIS dept that went to community (for readable label)
-                const communityOfDeptPct = dept.total > 0
-                  ? (communitySpend / dept.total) * 100
-                  : 0
+              {sortedRailDepts.map((dept) => {
+                const isActive = drilldown.dept === dept.department
+                const hoverClass = isActive
+                  ? 'bg-sky-500/10 dark:bg-sky-400/10'
+                  : 'hover:bg-slate-50 dark:hover:bg-white/[0.02]'
+
+                // Primary number on the right of the name — changes per tab
+                let primaryValue: string
+                let primaryColor: string
+                switch (railTab) {
+                  case 'spend':
+                    primaryValue = formatBudgetAmount(dept.total)
+                    primaryColor = 'text-slate-500'
+                    break
+                  case 'communityDollars':
+                    primaryValue = formatBudgetAmount(dept.communitySpend)
+                    primaryColor = dept.communitySpend > 0 ? 'text-emerald-400' : 'text-slate-600'
+                    break
+                  case 'communityPct':
+                    primaryValue = `${dept.communityPct.toFixed(dept.communityPct < 1 && dept.communityPct > 0 ? 1 : 0)}%`
+                    primaryColor = dept.communityPct >= 50
+                      ? 'text-emerald-400'
+                      : dept.communityPct > 0 ? 'text-emerald-400/70' : 'text-slate-600'
+                    break
+                }
+
                 return (
                   <button
                     key={dept.department}
                     onClick={() => navigateToDept(dept.department)}
-                    className={`w-full text-left px-2 py-1.5 rounded-md transition-all duration-150 group
-                      ${drilldown.dept === dept.department
-                        ? 'bg-sky-500/10 dark:bg-sky-400/10'
-                        : 'hover:bg-slate-50 dark:hover:bg-white/[0.02]'
-                      }`}
+                    className={`w-full text-left px-2 py-1.5 rounded-md transition-all duration-150 group ${hoverClass}`}
                   >
                     <div className="flex items-center justify-between mb-0.5">
                       <span className={`text-[10px] truncate max-w-[140px] ${
-                        drilldown.dept === dept.department
+                        isActive
                           ? 'text-sky-600 dark:text-sky-400 font-medium'
                           : 'text-slate-600 dark:text-slate-400'
                       }`}>
                         {dept.department}
                       </span>
-                      <span className="text-[10px] font-mono text-slate-500 tabular-nums ml-2">
-                        {formatBudgetAmount(dept.total)}
+                      <span className={`text-[10px] font-mono tabular-nums ml-2 ${primaryColor}`}>
+                        {primaryValue}
                       </span>
                     </div>
-                    <div className="h-1 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden flex">
-                      {/* Community media — leftmost green segment, only visible
-                          for departments with measurable community spend. */}
-                      {communityW > 0 && (
-                        <div
-                          className="h-full bg-emerald-500/75"
-                          style={{ width: `${communityW}%` }}
-                        />
-                      )}
-                      {/* Transparent (non-community, non-p-card) — sky */}
-                      {skyW > 0 && (
-                        <div
-                          className="h-full bg-sky-500/50"
-                          style={{ width: `${skyW}%` }}
-                        />
-                      )}
-                      {/* P-card — red tail */}
-                      {pcardW > 0 && (
-                        <div
-                          className="h-full bg-red-500/50"
-                          style={{ width: `${pcardW}%` }}
-                        />
-                      )}
-                    </div>
-                    {(dept.pcard_total > 0 || communityOfDeptPct > 0) && (
+
+                    {/* Bar — structure varies per tab */}
+                    {railTab === 'spend' && (() => {
+                      const transparentSpend = dept.total - dept.pcard_total
+                      const communityW = (dept.communitySpend / railTopValue) * 100
+                      const skyW = (Math.max(transparentSpend - dept.communitySpend, 0) / railTopValue) * 100
+                      const pcardW = (dept.pcard_total / railTopValue) * 100
+                      return (
+                        <div className="h-1 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden flex">
+                          {communityW > 0 && <div className="h-full bg-emerald-500/75" style={{ width: `${communityW}%` }} />}
+                          {skyW > 0 && <div className="h-full bg-sky-500/50" style={{ width: `${skyW}%` }} />}
+                          {pcardW > 0 && <div className="h-full bg-red-500/50" style={{ width: `${pcardW}%` }} />}
+                        </div>
+                      )
+                    })()}
+
+                    {railTab === 'communityDollars' && (() => {
+                      // Absolute scale: bar width = dept.communitySpend / topCommunitySpender * 100
+                      const communityW = (dept.communitySpend / railTopValue) * 100
+                      return (
+                        <div className="h-1 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
+                          {dept.communitySpend > 0 && (
+                            <div className="h-full bg-emerald-500/75" style={{ width: `${communityW}%` }} />
+                          )}
+                        </div>
+                      )
+                    })()}
+
+                    {railTab === 'communityPct' && (() => {
+                      // 0-100 scale. Green fill to the pct, 50% target marker.
+                      const pctW = Math.min(dept.communityPct, 100)
+                      return (
+                        <div className="relative h-1 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
+                          {dept.communityPct > 0 && (
+                            <div
+                              className={`h-full ${dept.communityPct >= 50 ? 'bg-emerald-500/90' : 'bg-emerald-500/60'}`}
+                              style={{ width: `${pctW}%` }}
+                            />
+                          )}
+                          {/* 50% target marker */}
+                          <div
+                            className="absolute inset-y-0 border-l border-dashed border-emerald-300/40"
+                            style={{ left: '50%' }}
+                          />
+                        </div>
+                      )
+                    })()}
+
+                    {/* Secondary label — varies per tab, shows complementary info */}
+                    {railTab === 'spend' && (dept.communityPct > 0 || dept.pcard_total > 0) && (
                       <p className="text-[8px] font-mono mt-0.5 flex gap-2">
-                        {communityOfDeptPct > 0 && (
+                        {dept.communityPct > 0 && (
                           <span className="text-emerald-400/80">
-                            {communityOfDeptPct.toFixed(communityOfDeptPct < 1 ? 1 : 0)}% community
+                            {dept.communityPct.toFixed(dept.communityPct < 1 ? 1 : 0)}% community
                           </span>
                         )}
                         {dept.pcard_total > 0 && (
@@ -1121,6 +1219,22 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                             {(100 - dept.transparency_pct).toFixed(0)}% P-card
                           </span>
                         )}
+                      </p>
+                    )}
+
+                    {railTab === 'communityDollars' && dept.communitySpend > 0 && (
+                      <p className="text-[8px] font-mono text-slate-500 mt-0.5">
+                        of {formatBudgetAmount(dept.total)} total ·{' '}
+                        <span className="text-emerald-400/80">
+                          {dept.communityPct.toFixed(dept.communityPct < 1 ? 1 : 0)}%
+                        </span>
+                      </p>
+                    )}
+
+                    {railTab === 'communityPct' && dept.communityPct > 0 && (
+                      <p className="text-[8px] font-mono text-slate-500 mt-0.5">
+                        <span className="text-emerald-400/80">{formatBudgetAmount(dept.communitySpend)}</span>
+                        {' '}of {formatBudgetAmount(dept.total)}
                       </p>
                     )}
                   </button>
