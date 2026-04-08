@@ -337,7 +337,7 @@ export default function Home() {
               </button>
               {/* Comic image */}
               <img
-                src="/dana-comic-1.jpg"
+                src="/dana-comic-1r.jpg"
                 alt="Dana the DataDiver — Comic Strip #1"
                 className="w-full rounded-xl shadow-2xl ring-1 ring-white/10"
               />
