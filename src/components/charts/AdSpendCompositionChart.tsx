@@ -74,10 +74,9 @@ export default function AdSpendCompositionChart({
     )
     if (active.length === 0) return
 
-    // Compute total per year for scaling (agency + tagged + pcard)
+    // Compute total per year for scaling — sum of all four stack layers.
     const totalsByFY = active.map((d) => ({
       ...d,
-      taggedTotal: d.discretionaryTotal + d.legalNoticeTotal,
       grandTotal: d.discretionaryTotal + d.legalNoticeTotal + d.agencyTotal + d.pcardTotal,
     }))
 
@@ -106,13 +105,39 @@ export default function AdSpendCompositionChart({
       .attr('stroke-width', 1)
 
     // ── Stacked bars ──
-    // Stack order from BOTTOM to TOP: agency (largest, foundation) → direct → p-card
+    // Stack order from BOTTOM to TOP:
+    //   1. Legal (slate)        — excluded foundation, set below the active stack
+    //   2. Agencies (purple)    — the opaque majority of active ad spend
+    //   3. Discretionary (teal) — the compliance basis, with community green inset
+    //   4. P-card (red sliver)  — untraceable residual at the top
+    // Placing legal at the bottom keeps the compliance-relevant layers (agencies
+    // + discretionary + community) visually continuous, so the eye doesn't have
+    // to skip over a "dismissed" band mid-stack to reconnect the active story.
     totalsByFY.forEach((d) => {
       const cx = x(d.fiscalYear) ?? 0
       const bw = x.bandwidth()
       let yCursor = h // start at bottom in screen coords, work upward
 
-      // 1. Agency segment (bottom)
+      // 1. Legal notices (BOTTOM — excluded foundation, slate hatched-look)
+      if (d.legalNoticeTotal > 0) {
+        const segH = h - y(d.legalNoticeTotal)
+        const segY = yCursor - segH
+        g.append('rect')
+          .attr('x', cx)
+          .attr('y', segY)
+          .attr('width', bw)
+          .attr('height', segH)
+          .attr('fill', COLOR_LEGAL)
+          .attr('fill-opacity', 0.28)
+          .attr('stroke', COLOR_LEGAL)
+          .attr('stroke-opacity', 0.4)
+          .attr('stroke-width', 0.5)
+          .append('title')
+          .text(`Legal notices (excluded): ${formatBudgetAmount(d.legalNoticeTotal)}`)
+        yCursor = segY
+      }
+
+      // 2. Agencies (above legal)
       if (d.agencyTotal > 0) {
         const segH = h - y(d.agencyTotal)
         const segY = yCursor - segH
@@ -131,83 +156,58 @@ export default function AdSpendCompositionChart({
         yCursor = segY
       }
 
-      // 2. Direct ad placements segment — sub-divided into legal (slate) + discretionary (sky)
-      if (d.taggedTotal > 0) {
-        const segH = h - y(d.taggedTotal)
+      // 3. Discretionary (above agencies) — the compliance basis, with community
+      //    media emerald inset and 50%-of-discretionary target tick.
+      if (d.discretionaryTotal > 0) {
+        const segH = h - y(d.discretionaryTotal)
         const segY = yCursor - segH
+        g.append('rect')
+          .attr('x', cx)
+          .attr('y', segY)
+          .attr('width', bw)
+          .attr('height', segH)
+          .attr('fill', COLOR_DISCRETIONARY)
+          .attr('fill-opacity', 0.35)
+          .attr('stroke', COLOR_DISCRETIONARY)
+          .attr('stroke-opacity', 0.55)
+          .attr('stroke-width', 0.5)
+          .append('title')
+          .text(`Discretionary: ${formatBudgetAmount(d.discretionaryTotal)}`)
 
-        // Legal sub-portion (drawn at the bottom of the direct segment, slate hatched-look via opacity)
-        if (d.legalNoticeTotal > 0) {
-          const legalH = (d.legalNoticeTotal / d.taggedTotal) * segH
+        // Community-media inset — fills from the BOTTOM of the discretionary
+        // slice upward, proportional to the community/ethnic share.
+        if (d.ethnicMediaSpend > 0) {
+          const commH = Math.min(d.ethnicMediaSpend / d.discretionaryTotal, 1) * segH
           g.append('rect')
             .attr('x', cx)
-            .attr('y', segY + (segH - legalH))
+            .attr('y', segY + segH - commH)
             .attr('width', bw)
-            .attr('height', legalH)
-            .attr('fill', COLOR_LEGAL)
-            .attr('fill-opacity', 0.28)
-            .attr('stroke', COLOR_LEGAL)
-            .attr('stroke-opacity', 0.4)
-            .attr('stroke-width', 0.5)
+            .attr('height', commH)
+            .attr('fill', COLOR_COMMUNITY)
+            .attr('fill-opacity', 0.78)
             .append('title')
-            .text(`Legal notices (excluded): ${formatBudgetAmount(d.legalNoticeTotal)}`)
+            .text(`Community media: ${formatBudgetAmount(d.ethnicMediaSpend)} (${d.compliancePct.toFixed(1)}% of discretionary)`)
         }
 
-        // Discretionary sub-portion (teal — matches the compliance card bar 3
-        // and trapezoid 2 in the card above. Distinct from direct/sky because
-        // discretionary is a narrower subset than direct.)
-        if (d.discretionaryTotal > 0) {
-          const discH = (d.discretionaryTotal / d.taggedTotal) * segH
-          g.append('rect')
-            .attr('x', cx)
-            .attr('y', segY)
-            .attr('width', bw)
-            .attr('height', discH)
-            .attr('fill', COLOR_DISCRETIONARY)
-            .attr('fill-opacity', 0.35)
-            .attr('stroke', COLOR_DISCRETIONARY)
-            .attr('stroke-opacity', 0.55)
-            .attr('stroke-width', 0.5)
-            .append('title')
-            .text(`Discretionary: ${formatBudgetAmount(d.discretionaryTotal)}`)
-
-          // Community-media inset — fills from the BOTTOM of the discretionary slice upward,
-          // proportional to the share of discretionary that went to community/ethnic outlets.
-          if (d.ethnicMediaSpend > 0) {
-            const commH = Math.min(d.ethnicMediaSpend / d.discretionaryTotal, 1) * discH
-            g.append('rect')
-              .attr('x', cx)
-              .attr('y', segY + discH - commH)
-              .attr('width', bw)
-              .attr('height', commH)
-              .attr('fill', COLOR_COMMUNITY)
-              .attr('fill-opacity', 0.78)
-              .append('title')
-              .text(`Community media: ${formatBudgetAmount(d.ethnicMediaSpend)} (${d.compliancePct.toFixed(1)}% of discretionary)`)
-          }
-
-          // 50%-of-discretionary marker — green dashed tick, positioned at half
-          // the discretionary height. The green hue semantically connects this
-          // line to the community-media fill: it's the level community should reach.
-          // Pre-resolution years (< FY2024-25) show the tick very faintly as an
-          // advisory reference, since the resolution didn't exist then.
-          const halfMarkY = segY + discH / 2
-          const isPostResolution = d.fiscalYear >= RESOLUTION_EFFECTIVE_FY
-          g.append('line')
-            .attr('x1', cx - 1)
-            .attr('x2', cx + bw + 1)
-            .attr('y1', halfMarkY)
-            .attr('y2', halfMarkY)
-            .attr('stroke', COLOR_TARGET)
-            .attr('stroke-width', isPostResolution ? 1.5 : 1)
-            .attr('stroke-dasharray', '3,2')
-            .attr('opacity', isPostResolution ? 0.85 : 0.2)
-        }
+        // 50%-of-discretionary marker — green dashed tick at half the
+        // discretionary height. Prominent post-resolution, faint advisory
+        // pre-resolution.
+        const halfMarkY = segY + segH / 2
+        const isPostResolution = d.fiscalYear >= RESOLUTION_EFFECTIVE_FY
+        g.append('line')
+          .attr('x1', cx - 1)
+          .attr('x2', cx + bw + 1)
+          .attr('y1', halfMarkY)
+          .attr('y2', halfMarkY)
+          .attr('stroke', COLOR_TARGET)
+          .attr('stroke-width', isPostResolution ? 1.5 : 1)
+          .attr('stroke-dasharray', '3,2')
+          .attr('opacity', isPostResolution ? 0.85 : 0.2)
 
         yCursor = segY
       }
 
-      // 3. P-card segment (top sliver, often invisible-small)
+      // 4. P-card (TOP — untraceable residual, often an invisible sliver)
       if (d.pcardTotal > 0) {
         const segH = Math.max(h - y(d.pcardTotal), 1.5) // floor 1.5px so it never disappears
         const segY = yCursor - segH
@@ -325,13 +325,16 @@ export default function AdSpendCompositionChart({
       .attr('opacity', 0.6)
       .text('Annual ad-related spending')
 
-    // Right-side legend (small, vertical)
+    // Right-side legend — ordered TOP-to-BOTTOM to match the visual stack
+    // order in each bar: p-card (top) → discretionary (with community inset) →
+    // agencies → legal (bottom, excluded). Reading the legend top-down
+    // mirrors reading a bar top-down.
     const legendItems: { label: string; color: string; opacity: number }[] = [
-      { label: 'Agencies', color: COLOR_AGENCY, opacity: 0.4 },
-      { label: 'Discretionary', color: COLOR_DISCRETIONARY, opacity: 0.35 },
-      { label: 'Legal (excl.)', color: COLOR_LEGAL, opacity: 0.28 },
       { label: 'P-card', color: COLOR_PCARD, opacity: 0.55 },
+      { label: 'Discretionary', color: COLOR_DISCRETIONARY, opacity: 0.35 },
       { label: 'Community $', color: COLOR_COMMUNITY, opacity: 0.78 },
+      { label: 'Agencies', color: COLOR_AGENCY, opacity: 0.4 },
+      { label: 'Legal (excl.)', color: COLOR_LEGAL, opacity: 0.28 },
     ]
     const legend = g.append('g').attr('transform', `translate(${w + 10},0)`)
     legendItems.forEach((item, i) => {
