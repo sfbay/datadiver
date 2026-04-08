@@ -594,39 +594,42 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
       ]
     }
 
+    // Compute layer totals from ad.vendors to match the compliance card bars above.
+    const agencyTotalTop = ad.vendors
+      .filter((v) => v.layer === 'agency')
+      .reduce((s, v) => s + (parseFloat(v.total_paid) || 0), 0)
+    // Distinct departments that have any ad-related spending (tagged, agency, or p-card).
+    const departmentsWithSpend = new Set(ad.vendors.map((v) => v.department)).size
+
+    // Order MATCHES bar 1 of the compliance dashboard: agencies → p-card → direct.
+    // Discretionary takes the "direct" slot because it's the compliance basis
+    // (direct minus legal notices), which is what the drill-down actually targets.
     return [
       {
         id: 'total-ad-spend',
         label: 'Total Ad Spend',
         shortLabel: 'Ad Total',
-        value: formatBudgetAmount(ad.totalAdSpend),
+        value: formatBudgetFull(ad.totalAdSpend),
         color: ACCENT,
+        subtitle: `${departmentsWithSpend} departments paid in`,
         defaultExpanded: true,
       },
       {
-        id: 'discretionary',
-        label: 'Discretionary',
-        shortLabel: 'Discr.',
-        value: formatBudgetAmount(compliance.totalDiscretionary),
-        color: '#0ea5e9',
-        subtitle: 'excl. legal notices',
-        defaultExpanded: true,
-      },
-      {
-        id: 'community-media',
-        label: 'Community Media',
-        shortLabel: 'Ethnic',
-        value: formatBudgetAmount(compliance.ethnicMediaSpend),
-        color: '#10b981',
-        subtitle: `${compliance.outletCount} outlets`,
-        subtitleAction: () => navigateToCategory('community-ethnic-press'),
+        id: 'agency-spend',
+        label: 'Agencies',
+        shortLabel: 'Agency',
+        value: formatBudgetFull(agencyTotalTop),
+        color: '#a855f7',
+        subtitle: ad.totalAdSpend > 0
+          ? `${((agencyTotalTop / ad.totalAdSpend) * 100).toFixed(0)}% of ad spend`
+          : undefined,
         defaultExpanded: true,
       },
       {
         id: 'pcard-spend',
         label: 'P-Card Ad Spend',
         shortLabel: 'P-Card',
-        value: formatBudgetAmount(ad.totalPcardSpend),
+        value: formatBudgetFull(ad.totalPcardSpend),
         color: '#ef4444',
         subtitle: ad.totalAdSpend > 0
           ? `${((ad.totalPcardSpend / ad.totalAdSpend) * 100).toFixed(1)}% of ad spend`
@@ -634,17 +637,26 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
         defaultExpanded: true,
       },
       {
-        id: 'community-vendors',
-        label: 'Community Outlets',
-        shortLabel: 'Outlets',
-        value: String(compliance.outletCount),
+        id: 'discretionary',
+        label: 'Discretionary',
+        shortLabel: 'Discr.',
+        value: formatBudgetFull(compliance.totalDiscretionary),
+        color: '#2dd4bf',
+        subtitle: 'direct minus legal notices',
+        defaultExpanded: true,
+      },
+      {
+        id: 'community-media',
+        label: 'Community Media',
+        shortLabel: 'Ethnic',
+        value: formatBudgetFull(compliance.ethnicMediaSpend),
         color: '#10b981',
-        subtitle: `of ${new Set(ad.vendors.map((v) => v.vendor)).size} total vendors`,
+        subtitle: `${compliance.outletCount} outlet${compliance.outletCount !== 1 ? 's' : ''}`,
         subtitleAction: () => navigateToCategory('community-ethnic-press'),
         defaultExpanded: true,
       },
     ]
-  }, [ad, compliance, drilldown, filteredTotal, aggregatedVendors.length])
+  }, [ad, compliance, drilldown, filteredTotal, aggregatedVendors.length, navigateToCategory])
 
   const maxPcardTotal = useMemo(
     () => Math.max(...ad.departments.map((d) => d.pcard_total), 1),
@@ -1355,10 +1367,12 @@ function ComplianceDashboard({
             ? Math.min((compliance.ethnicMediaSpend / compliance.totalDiscretionary) * 100, 100)
             : 0
 
-          // Trapezoid connector edges (in the FULL-width coordinate system of the parent bar)
-          // Connector 1: parent = "tagged" segment of top bar (from agencyPct to agencyPct+taggedPct)
-          const conn1Left = agencyPct
-          const conn1Right = agencyPct + taggedPct
+          // Trapezoid connector edges (in the FULL-width coordinate system of the parent bar).
+          // In bar 1 we render segments in order: Agencies, P-card (tiny bumper), Direct.
+          // This puts "direct" at the rightmost position of bar 1 so its right edge aligns
+          // with the bar's right edge, and trapezoid 1 cleanly fills the right portion.
+          const conn1Left = agencyPct + pcardPct
+          const conn1Right = 100
           // Connector 2: parent = "discretionary" segment of middle bar (legalWithinTagged to 100)
           const conn2Left = legalWithinTagged
           const conn2Right = 100
@@ -1398,7 +1412,7 @@ function ComplianceDashboard({
                     {agencyPct > 8 && (
                       <>
                         <span className="text-[11px] font-mono font-semibold text-purple-200 tabular-nums leading-tight">
-                          {formatBudgetAmount(agencyTotal)}
+                          {formatBudgetFull(agencyTotal)}
                         </span>
                         <span className="text-[9px] font-mono text-purple-300/70 leading-tight mt-0.5">
                           agencies · {Math.round(agencyPct)}%
@@ -1407,9 +1421,19 @@ function ComplianceDashboard({
                     )}
                   </div>
                 )}
+                {pcardTotal > 0 && (
+                  <div
+                    className="h-full flex items-center justify-center border-l border-white/[0.05]"
+                    style={{
+                      width: `${Math.max(pcardPct, 1.5)}%`,
+                      backgroundColor: 'rgba(239,68,68,0.3)',
+                    }}
+                    title={`P-card purchases (untraceable to outlet): ${formatBudgetFull(pcardTotal)}`}
+                  />
+                )}
                 {taggedTotal > 0 && (
                   <div
-                    className="h-full flex flex-col items-center justify-center px-2 border-l border-r border-white/[0.05]"
+                    className="h-full flex flex-col items-center justify-center px-2 border-l border-white/[0.05]"
                     style={{
                       width: `${taggedPct}%`,
                       backgroundColor: 'rgba(14,165,233,0.22)',
@@ -1419,7 +1443,7 @@ function ComplianceDashboard({
                     {taggedPct > 6 && (
                       <>
                         <span className="text-[11px] font-mono font-semibold text-sky-200 tabular-nums leading-tight">
-                          {formatBudgetAmount(taggedTotal)}
+                          {formatBudgetFull(taggedTotal)}
                         </span>
                         <span className="text-[9px] font-mono text-sky-300/70 leading-tight mt-0.5">
                           direct · {Math.round(taggedPct)}%
@@ -1428,44 +1452,43 @@ function ComplianceDashboard({
                     )}
                   </div>
                 )}
-                {pcardTotal > 0 && (
-                  <div
-                    className="h-full flex items-center justify-center relative group"
-                    style={{
-                      width: `${Math.max(pcardPct, 1.5)}%`,
-                      backgroundColor: 'rgba(239,68,68,0.3)',
-                    }}
-                    title={`P-card purchases (untraceable to outlet): ${formatBudgetFull(pcardTotal)}`}
-                  />
-                )}
               </div>
 
               {/* ───── Row 2: empty label cell + trapezoid connector 1 ───── */}
-              {/* Trapezoid: fill only, no border. Color (sky) matches the
-                  "direct" segment in bar 1 above and the sky-bordered bar 2
-                  below — visual continuity through shared hue. */}
+              {/* Trapezoid: sky fill with a fast vertical gradient that
+                  dissolves into near-black at the bottom. Top edge matches
+                  the "direct" segment of bar 1 above; the bottom edge fades
+                  into darkness so bar 2 below emerges cleanly without a
+                  hard seam between the trapezoid fill and the card ground. */}
               <div />
-              <div className="relative h-7 -my-px">
+              <div className="relative h-11 -my-px">
                 <svg
                   width="100%"
-                  height="28"
-                  viewBox="0 0 100 28"
+                  height="44"
+                  viewBox="0 0 100 44"
                   preserveAspectRatio="none"
                   className="absolute inset-0 block"
                 >
+                  <defs>
+                    <linearGradient id="trap1-grad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="rgba(14,165,233,0.32)" />
+                      <stop offset="55%" stopColor="rgba(14,165,233,0.22)" />
+                      <stop offset="100%" stopColor="rgba(2,6,23,0)" />
+                    </linearGradient>
+                  </defs>
                   <path
-                    d={`M ${conn1Left},0 L ${conn1Right},0 L 100,28 L 0,28 Z`}
-                    fill="rgba(14,165,233,0.22)"
+                    d={`M ${conn1Left},0 L ${conn1Right},0 L 100,44 L 0,44 Z`}
+                    fill="url(#trap1-grad)"
                   />
                 </svg>
                 <span
-                  className="absolute text-sky-200/80 pointer-events-none leading-none"
+                  className="absolute text-sky-200/85 pointer-events-none leading-none"
                   style={{
                     left: `${(conn1Left + conn1Right) / 2}%`,
-                    top: '50%',
+                    top: '42%',
                     transform: 'translate(-50%, -50%)',
-                    fontSize: '10px',
-                    letterSpacing: '0.25em',
+                    fontSize: '12px',
+                    letterSpacing: '0.3em',
                   }}
                 >
                   ↓ ↓ ↓
@@ -1499,7 +1522,7 @@ function ComplianceDashboard({
                       {legalWithinTagged > 12 && (
                         <>
                           <span className="text-[11px] font-mono text-slate-300 tabular-nums leading-tight">
-                            {formatBudgetAmount(compliance.legalNoticeTotal)}
+                            {formatBudgetFull(compliance.legalNoticeTotal)}
                           </span>
                           <span className="text-[9px] font-mono text-slate-400/80 leading-tight mt-0.5">
                             legal · excl.
@@ -1520,7 +1543,7 @@ function ComplianceDashboard({
                       title={`Discretionary advertising (subject to Resolution 240210): ${formatBudgetFull(compliance.totalDiscretionary)}`}
                     >
                       <span className="text-[11px] font-mono font-semibold text-teal-100 tabular-nums leading-tight">
-                        {formatBudgetAmount(compliance.totalDiscretionary)}
+                        {formatBudgetFull(compliance.totalDiscretionary)}
                       </span>
                       <span className="text-[9px] font-mono text-teal-200/80 leading-tight mt-0.5">
                         discretionary · {Math.round(discretionaryWithinTagged)}%
@@ -1533,30 +1556,37 @@ function ComplianceDashboard({
               )}
 
               {/* ───── Row 4: empty label cell + trapezoid connector 2 ───── */}
-              {/* Trapezoid: fill only, teal to match the discretionary segment
-                  in bar 2 above and the teal-bordered bar 3 below. */}
+              {/* Trapezoid 2: teal gradient dissolving into darkness.
+                  Matches the discretionary segment in bar 2 above. */}
               <div />
-              <div className="relative h-7 -my-px">
+              <div className="relative h-11 -my-px">
                 <svg
                   width="100%"
-                  height="28"
-                  viewBox="0 0 100 28"
+                  height="44"
+                  viewBox="0 0 100 44"
                   preserveAspectRatio="none"
                   className="absolute inset-0 block"
                 >
+                  <defs>
+                    <linearGradient id="trap2-grad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="rgba(45,212,191,0.32)" />
+                      <stop offset="55%" stopColor="rgba(45,212,191,0.22)" />
+                      <stop offset="100%" stopColor="rgba(2,6,23,0)" />
+                    </linearGradient>
+                  </defs>
                   <path
-                    d={`M ${conn2Left},0 L ${conn2Right},0 L 100,28 L 0,28 Z`}
-                    fill="rgba(45,212,191,0.22)"
+                    d={`M ${conn2Left},0 L ${conn2Right},0 L 100,44 L 0,44 Z`}
+                    fill="url(#trap2-grad)"
                   />
                 </svg>
                 <span
-                  className="absolute text-teal-200/80 pointer-events-none leading-none"
+                  className="absolute text-teal-200/85 pointer-events-none leading-none"
                   style={{
                     left: `${(conn2Left + conn2Right) / 2}%`,
-                    top: '50%',
+                    top: '42%',
                     transform: 'translate(-50%, -50%)',
-                    fontSize: '10px',
-                    letterSpacing: '0.25em',
+                    fontSize: '12px',
+                    letterSpacing: '0.3em',
                   }}
                 >
                   ↓ ↓ ↓
@@ -1591,20 +1621,21 @@ function ComplianceDashboard({
                       style={{ width: `${communityWithinDiscretionary}%` }}
                       title={`Community/ethnic media spend: ${formatBudgetFull(compliance.ethnicMediaSpend)}`}
                     />
-                    {/* Community $ label — floats to the right of a thin fill so it never clips */}
+                    {/* Community $ label — full dollar amount to preserve precision
+                        (journalism tool: the exact number is sometimes the story) */}
                     {communityWithinDiscretionary < 85 ? (
                       <div
                         className="absolute inset-y-0 flex items-center pl-2 pointer-events-none"
                         style={{ left: `${communityWithinDiscretionary}%` }}
                       >
-                        <span className="text-[11px] font-mono font-semibold text-emerald-300 tabular-nums leading-tight">
-                          {formatBudgetAmount(compliance.ethnicMediaSpend)} community
+                        <span className="text-[11px] font-mono font-semibold text-emerald-300 tabular-nums leading-tight whitespace-nowrap">
+                          {formatBudgetFull(compliance.ethnicMediaSpend)} community media spend
                         </span>
                       </div>
                     ) : (
                       <div className="absolute inset-y-0 left-0 flex items-center justify-center pointer-events-none" style={{ width: `${communityWithinDiscretionary}%` }}>
                         <span className="text-[11px] font-mono font-semibold text-white tabular-nums leading-tight">
-                          {formatBudgetAmount(compliance.ethnicMediaSpend)} community
+                          {formatBudgetFull(compliance.ethnicMediaSpend)} community media spend
                         </span>
                       </div>
                     )}
@@ -1630,7 +1661,9 @@ function ComplianceDashboard({
           <div>
             <p className="text-[9px] font-mono uppercase tracking-wider text-slate-400/60 mb-0.5">Community Media Spend</p>
             <p className="text-lg font-bold font-mono tabular-nums text-emerald-400">{formatBudgetFull(compliance.ethnicMediaSpend)}</p>
-            <p className="text-[9px] font-mono text-slate-400/60">{compliance.outletCount} outlet{compliance.outletCount !== 1 ? 's' : ''}</p>
+            <p className="text-[10px] font-mono text-emerald-300/90">
+              across <span className="font-semibold">{compliance.outletCount}</span> {compliance.outletCount === 1 ? 'outlet' : 'outlets'}
+            </p>
           </div>
           <div>
             <p className="text-[9px] font-mono uppercase tracking-wider text-slate-400/60 mb-0.5">50% Target</p>
