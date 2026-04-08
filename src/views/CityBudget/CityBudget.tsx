@@ -1441,6 +1441,9 @@ function ComplianceDashboard({
               </div>
 
               {/* ───── Row 2: empty label cell + trapezoid connector 1 ───── */}
+              {/* Trapezoid: fill only, no border. Color (sky) matches the
+                  "direct" segment in bar 1 above and the sky-bordered bar 2
+                  below — visual continuity through shared hue. */}
               <div />
               <div className="relative h-7 -my-px">
                 <svg
@@ -1452,21 +1455,20 @@ function ComplianceDashboard({
                 >
                   <path
                     d={`M ${conn1Left},0 L ${conn1Right},0 L 100,28 L 0,28 Z`}
-                    fill="rgba(14,165,233,0.18)"
-                    stroke="rgba(14,165,233,0.42)"
-                    strokeWidth="1"
-                    vectorEffect="non-scaling-stroke"
+                    fill="rgba(14,165,233,0.22)"
                   />
                 </svg>
                 <span
-                  className="absolute text-[8px] font-mono text-sky-300/80 tracking-wider uppercase pointer-events-none"
+                  className="absolute text-sky-200/80 pointer-events-none leading-none"
                   style={{
                     left: `${(conn1Left + conn1Right) / 2}%`,
                     top: '50%',
                     transform: 'translate(-50%, -50%)',
+                    fontSize: '10px',
+                    letterSpacing: '0.25em',
                   }}
                 >
-                  zoom in ↓
+                  ↓ ↓ ↓
                 </span>
               </div>
 
@@ -1505,20 +1507,22 @@ function ComplianceDashboard({
                         </>
                       )}
                     </div>
-                    {/* Discretionary — inside the tagged total, zoomed into next bar */}
+                    {/* Discretionary — inside the tagged total, zoomed into next bar.
+                        Color: TEAL (not sky) to distinguish it from the parent "direct"
+                        concept and to visually match trapezoid 2 + bar 3 below. */}
                     <div
                       className="absolute inset-y-0 flex flex-col items-center justify-center"
                       style={{
                         left: `${legalWithinTagged}%`,
                         width: `${discretionaryWithinTagged}%`,
-                        backgroundColor: 'rgba(14,165,233,0.2)',
+                        backgroundColor: 'rgba(45,212,191,0.22)',
                       }}
                       title={`Discretionary advertising (subject to Resolution 240210): ${formatBudgetFull(compliance.totalDiscretionary)}`}
                     >
-                      <span className="text-[11px] font-mono font-semibold text-sky-100 tabular-nums leading-tight">
+                      <span className="text-[11px] font-mono font-semibold text-teal-100 tabular-nums leading-tight">
                         {formatBudgetAmount(compliance.totalDiscretionary)}
                       </span>
-                      <span className="text-[9px] font-mono text-sky-200/80 leading-tight mt-0.5">
+                      <span className="text-[9px] font-mono text-teal-200/80 leading-tight mt-0.5">
                         discretionary · {Math.round(discretionaryWithinTagged)}%
                       </span>
                     </div>
@@ -1529,6 +1533,8 @@ function ComplianceDashboard({
               )}
 
               {/* ───── Row 4: empty label cell + trapezoid connector 2 ───── */}
+              {/* Trapezoid: fill only, teal to match the discretionary segment
+                  in bar 2 above and the teal-bordered bar 3 below. */}
               <div />
               <div className="relative h-7 -my-px">
                 <svg
@@ -1540,64 +1546,69 @@ function ComplianceDashboard({
                 >
                   <path
                     d={`M ${conn2Left},0 L ${conn2Right},0 L 100,28 L 0,28 Z`}
-                    fill="rgba(16,185,129,0.16)"
-                    stroke="rgba(16,185,129,0.42)"
-                    strokeWidth="1"
-                    vectorEffect="non-scaling-stroke"
+                    fill="rgba(45,212,191,0.22)"
                   />
                 </svg>
                 <span
-                  className="absolute text-[8px] font-mono text-emerald-300/80 tracking-wider uppercase pointer-events-none"
+                  className="absolute text-teal-200/80 pointer-events-none leading-none"
                   style={{
                     left: `${(conn2Left + conn2Right) / 2}%`,
                     top: '50%',
                     transform: 'translate(-50%, -50%)',
+                    fontSize: '10px',
+                    letterSpacing: '0.25em',
                   }}
                 >
-                  zoom in ↓
+                  ↓ ↓ ↓
                 </span>
               </div>
 
-              {/* ───── Row 5 (bar 3): meta + bar body ───── */}
+              {/* ───── Row 5 (bar 3): meta + bar body ─────
+                  Bar 3 represents DISCRETIONARY (the teal zoomed-in view).
+                  Community media (emerald fill) is shown as a subset within it.
+                  The 50% target dashed line stays green because it's the goal
+                  FOR community media, not the bar's identity. */}
               {compliance.totalDiscretionary > 0 && (
                 <>
                   <div className="self-center">
-                    <p className="text-[9px] font-mono uppercase tracking-[0.15em] leading-snug">
-                      <span className="text-emerald-300">Community media</span>
-                      <span className="text-slate-500"> share</span>
+                    <p className="text-[9px] font-mono uppercase tracking-[0.15em] text-teal-300 leading-snug">
+                      Discretionary
                     </p>
                     <p className="text-[8px] font-mono text-slate-500 leading-snug mt-0.5">
-                      target ≥ 50% of discretionary · {fyLabel}
+                      target ≥ 50% to community media · {fyLabel}
                     </p>
-                    <p className="text-[11px] font-mono font-semibold text-emerald-200 tabular-nums mt-1">
-                      {formatBudgetFull(compliance.ethnicMediaSpend)}
+                    <p className="text-[11px] font-mono font-semibold text-teal-200 tabular-nums mt-1">
+                      {formatBudgetFull(compliance.totalDiscretionary)}
                     </p>
                   </div>
-                  <div className="relative h-14 rounded-md overflow-hidden border border-emerald-400/20" style={{ backgroundColor: 'rgba(14,165,233,0.1)' }}>
-                    {/* Community media actual */}
+                  <div
+                    className="relative h-14 rounded-md overflow-hidden border border-teal-400/25"
+                    style={{ backgroundColor: 'rgba(45,212,191,0.1)' }}
+                  >
+                    {/* Community media actual — emerald fill inside the teal container */}
                     <div
-                      className="absolute inset-y-0 left-0 bg-emerald-500/60 transition-all duration-700"
+                      className="absolute inset-y-0 left-0 bg-emerald-500/65 transition-all duration-700"
                       style={{ width: `${communityWithinDiscretionary}%` }}
                       title={`Community/ethnic media spend: ${formatBudgetFull(compliance.ethnicMediaSpend)}`}
                     />
-                    {/* Community $ label — placed to the RIGHT of the fill so it never gets clipped */}
+                    {/* Community $ label — floats to the right of a thin fill so it never clips */}
                     {communityWithinDiscretionary < 85 ? (
                       <div
                         className="absolute inset-y-0 flex items-center pl-2 pointer-events-none"
                         style={{ left: `${communityWithinDiscretionary}%` }}
                       >
                         <span className="text-[11px] font-mono font-semibold text-emerald-300 tabular-nums leading-tight">
-                          {formatBudgetAmount(compliance.ethnicMediaSpend)}
+                          {formatBudgetAmount(compliance.ethnicMediaSpend)} community
                         </span>
                       </div>
                     ) : (
                       <div className="absolute inset-y-0 left-0 flex items-center justify-center pointer-events-none" style={{ width: `${communityWithinDiscretionary}%` }}>
                         <span className="text-[11px] font-mono font-semibold text-white tabular-nums leading-tight">
-                          {formatBudgetAmount(compliance.ethnicMediaSpend)}
+                          {formatBudgetAmount(compliance.ethnicMediaSpend)} community
                         </span>
                       </div>
                     )}
-                    {/* 50% target marker — green dashed line labeled at the top */}
+                    {/* 50% target marker — emerald dashed line (community-media goal) */}
                     <div
                       className="absolute inset-y-0 pointer-events-none"
                       style={{ left: '50%' }}

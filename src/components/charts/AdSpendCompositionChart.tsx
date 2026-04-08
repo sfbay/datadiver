@@ -22,12 +22,15 @@ interface AdSpendCompositionChartProps {
   currentFY?: number
 }
 
-// Layer colors — intentionally aligned with the compliance card bars above
+// Layer colors — intentionally aligned with the compliance card bars above.
+// Visual progression narrows scope: purple (all agencies) → slate-hatched
+// (legal, excluded) → teal (discretionary, the compliance basis) → emerald
+// (community media, the goal).
 const COLOR_AGENCY = '#a855f7'        // purple — agency-managed
-const COLOR_DIRECT = '#0ea5e9'        // sky — direct ad placements (legal+discretionary container)
-const COLOR_DIRECT_LEGAL = '#64748b'  // slate — legal notices (within direct)
+const COLOR_LEGAL = '#64748b'         // slate — legal notices (within direct, excluded)
+const COLOR_DISCRETIONARY = '#2dd4bf' // teal — discretionary (within direct, the compliance basis)
 const COLOR_PCARD = '#ef4444'         // red — p-card untraceable
-const COLOR_COMMUNITY = '#10b981'     // emerald — community media share inside direct
+const COLOR_COMMUNITY = '#10b981'     // emerald — community media share inside discretionary
 // Target line uses the SAME hue as community media on purpose: the 50% line
 // is "where community media should reach." Green dashed line = community's goal.
 const COLOR_TARGET = '#10b981'
@@ -141,16 +144,18 @@ export default function AdSpendCompositionChart({
             .attr('y', segY + (segH - legalH))
             .attr('width', bw)
             .attr('height', legalH)
-            .attr('fill', COLOR_DIRECT_LEGAL)
+            .attr('fill', COLOR_LEGAL)
             .attr('fill-opacity', 0.28)
-            .attr('stroke', COLOR_DIRECT_LEGAL)
+            .attr('stroke', COLOR_LEGAL)
             .attr('stroke-opacity', 0.4)
             .attr('stroke-width', 0.5)
             .append('title')
             .text(`Legal notices (excluded): ${formatBudgetAmount(d.legalNoticeTotal)}`)
         }
 
-        // Discretionary sub-portion (sky)
+        // Discretionary sub-portion (teal — matches the compliance card bar 3
+        // and trapezoid 2 in the card above. Distinct from direct/sky because
+        // discretionary is a narrower subset than direct.)
         if (d.discretionaryTotal > 0) {
           const discH = (d.discretionaryTotal / d.taggedTotal) * segH
           g.append('rect')
@@ -158,10 +163,10 @@ export default function AdSpendCompositionChart({
             .attr('y', segY)
             .attr('width', bw)
             .attr('height', discH)
-            .attr('fill', COLOR_DIRECT)
-            .attr('fill-opacity', 0.32)
-            .attr('stroke', COLOR_DIRECT)
-            .attr('stroke-opacity', 0.5)
+            .attr('fill', COLOR_DISCRETIONARY)
+            .attr('fill-opacity', 0.35)
+            .attr('stroke', COLOR_DISCRETIONARY)
+            .attr('stroke-opacity', 0.55)
             .attr('stroke-width', 0.5)
             .append('title')
             .text(`Discretionary: ${formatBudgetAmount(d.discretionaryTotal)}`)
@@ -323,8 +328,8 @@ export default function AdSpendCompositionChart({
     // Right-side legend (small, vertical)
     const legendItems: { label: string; color: string; opacity: number }[] = [
       { label: 'Agencies', color: COLOR_AGENCY, opacity: 0.4 },
-      { label: 'Direct (discr.)', color: COLOR_DIRECT, opacity: 0.32 },
-      { label: 'Legal (excl.)', color: COLOR_DIRECT_LEGAL, opacity: 0.28 },
+      { label: 'Discretionary', color: COLOR_DISCRETIONARY, opacity: 0.35 },
+      { label: 'Legal (excl.)', color: COLOR_LEGAL, opacity: 0.28 },
       { label: 'P-card', color: COLOR_PCARD, opacity: 0.55 },
       { label: 'Community $', color: COLOR_COMMUNITY, opacity: 0.78 },
     ]
