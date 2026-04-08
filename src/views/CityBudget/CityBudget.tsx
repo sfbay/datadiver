@@ -600,6 +600,9 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
       .reduce((s, v) => s + (parseFloat(v.total_paid) || 0), 0)
     // Distinct departments that have any ad-related spending (tagged, agency, or p-card).
     const departmentsWithSpend = new Set(ad.vendors.map((v) => v.department)).size
+    // FY label inlined into the anchor tile so the time period is visible
+    // on the first thing the reader sees in the upper left.
+    const fyAnchor = `FY${fiscalYear - 1}-${String(fiscalYear).slice(2)}`
 
     // Order MATCHES bar 1 of the compliance dashboard: agencies → p-card → direct.
     // Discretionary takes the "direct" slot because it's the compliance basis
@@ -607,11 +610,11 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
     return [
       {
         id: 'total-ad-spend',
-        label: 'Total Ad Spend',
+        label: `Total Ad Spend · ${fyAnchor}`,
         shortLabel: 'Ad Total',
         value: formatBudgetFull(ad.totalAdSpend),
         color: ACCENT,
-        subtitle: `${departmentsWithSpend} departments paid in`,
+        subtitle: `${departmentsWithSpend} departments`,
         defaultExpanded: true,
       },
       {
@@ -642,7 +645,9 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
         shortLabel: 'Discr.',
         value: formatBudgetFull(compliance.totalDiscretionary),
         color: '#2dd4bf',
-        subtitle: 'direct minus legal notices',
+        subtitle: ad.totalAdSpend > 0
+          ? `${((compliance.totalDiscretionary / ad.totalAdSpend) * 100).toFixed(0)}% of ad spend`
+          : undefined,
         defaultExpanded: true,
       },
       {
@@ -656,7 +661,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
         defaultExpanded: true,
       },
     ]
-  }, [ad, compliance, drilldown, filteredTotal, aggregatedVendors.length, navigateToCategory])
+  }, [ad, compliance, drilldown, filteredTotal, aggregatedVendors.length, navigateToCategory, fiscalYear])
 
   const maxPcardTotal = useMemo(
     () => Math.max(...ad.departments.map((d) => d.pcard_total), 1),
