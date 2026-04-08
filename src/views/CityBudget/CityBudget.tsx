@@ -1404,9 +1404,11 @@ function ComplianceDashboard({
                   {formatBudgetFull(allLayersTotal)}
                 </p>
               </div>
-              {/* Bar 1: flat bottom so trapezoid 1 meets it cleanly. Border
-                  on top + sides only so the bottom edge doesn't show a line. */}
-              <div className="relative h-14 rounded-t-md overflow-hidden flex border-t border-x border-white/[0.04]">
+              {/* Bar 1: flat bottom so trapezoid 1 meets it cleanly. No
+                  borders — fills alone define the shape. Borders created a
+                  vertical "ghost line" down the right side of the whole stack
+                  because of the gaps at the trapezoid regions. */}
+              <div className="relative h-14 rounded-t-md overflow-hidden flex">
                 {agencyTotal > 0 && (
                   <div
                     className="h-full flex flex-col items-center justify-center px-2"
@@ -1477,11 +1479,12 @@ function ComplianceDashboard({
                   className="absolute inset-0 block"
                 >
                   <defs>
-                    {/* Gradient fades ALPHA only (not hue) so it works in both
-                        light and dark modes without introducing color smudge. */}
+                    {/* Gradient fades ALPHA only (not hue). Starts at 0.22
+                        to EXACTLY match bar 1's direct segment fill, so the
+                        interface at the top of the trapezoid has no alpha
+                        jump — no visible seam line. */}
                     <linearGradient id="trap1-grad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="rgba(14,165,233,0.32)" />
-                      <stop offset="55%" stopColor="rgba(14,165,233,0.22)" />
+                      <stop offset="0%" stopColor="rgba(14,165,233,0.22)" />
                       <stop offset="100%" stopColor="rgba(14,165,233,0)" />
                     </linearGradient>
                   </defs>
@@ -1518,9 +1521,10 @@ function ComplianceDashboard({
                       {formatBudgetFull(totalTaggedAdSpend)}
                     </p>
                   </div>
-                  {/* Bar 2: no rounding, only left/right borders — trapezoid 1
-                      meets the top and trapezoid 2 meets the bottom. */}
-                  <div className="relative h-14 overflow-hidden border-x border-sky-400/20">
+                  {/* Bar 2: no rounding, no borders. Trapezoid 1 meets the
+                      top and trapezoid 2 meets the bottom — both need
+                      zero-line interfaces. */}
+                  <div className="relative h-14 overflow-hidden">
                     {/* Legal notices — hatched, excluded */}
                     <div
                       className="absolute inset-y-0 left-0 flex flex-col items-center justify-center"
@@ -1579,10 +1583,10 @@ function ComplianceDashboard({
                   className="absolute inset-0 block"
                 >
                   <defs>
-                    {/* Alpha-only fade (see trap1-grad for rationale). */}
+                    {/* Starts at 0.22 to match bar 2's discretionary fill
+                        exactly — no alpha jump at the seam, no line. */}
                     <linearGradient id="trap2-grad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="rgba(45,212,191,0.32)" />
-                      <stop offset="55%" stopColor="rgba(45,212,191,0.22)" />
+                      <stop offset="0%" stopColor="rgba(45,212,191,0.22)" />
                       <stop offset="100%" stopColor="rgba(45,212,191,0)" />
                     </linearGradient>
                   </defs>
@@ -1623,10 +1627,10 @@ function ComplianceDashboard({
                       {formatBudgetFull(compliance.totalDiscretionary)}
                     </p>
                   </div>
-                  {/* Bar 3: flat top so trapezoid 2 meets it cleanly. Border
-                      on bottom + sides only so the top edge doesn't show a line. */}
+                  {/* Bar 3: flat top so trapezoid 2 meets it cleanly. No
+                      borders — fills alone define the shape. */}
                   <div
-                    className="relative h-14 rounded-b-md overflow-hidden border-b border-x border-teal-400/25"
+                    className="relative h-14 rounded-b-md overflow-hidden"
                     style={{ backgroundColor: 'rgba(45,212,191,0.1)' }}
                   >
                     {/* Community media actual — emerald fill inside the teal container */}
