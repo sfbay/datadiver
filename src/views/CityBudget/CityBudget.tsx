@@ -1161,15 +1161,35 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
 
                     {/* Bar — structure varies per tab */}
                     {railTab === 'spend' && (() => {
-                      const transparentSpend = dept.total - dept.pcard_total
+                      // Four layers, same palette as the compliance card above:
+                      //   green = community media (subset of tagged/direct)
+                      //   sky   = direct ad placements minus community
+                      //   purple= agency-managed media buying
+                      //   red   = p-card untraceable
+                      // Segment widths are % of container = absolute scale
+                      // relative to the top department. Gate at 0.5% of
+                      // container (~1.2px at ~240px bar width) so sub-pixel
+                      // slivers don't create visual noise.
+                      const MIN_SEGMENT_PCT = 0.5
+                      const directResidual = Math.max(dept.tagged_total - dept.communitySpend, 0)
                       const communityW = (dept.communitySpend / railTopValue) * 100
-                      const skyW = (Math.max(transparentSpend - dept.communitySpend, 0) / railTopValue) * 100
+                      const skyW = (directResidual / railTopValue) * 100
+                      const purpleW = (dept.agency_total / railTopValue) * 100
                       const pcardW = (dept.pcard_total / railTopValue) * 100
                       return (
                         <div className="h-1 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden flex">
-                          {communityW > 0 && <div className="h-full bg-emerald-500/75" style={{ width: `${communityW}%` }} />}
-                          {skyW > 0 && <div className="h-full bg-sky-500/50" style={{ width: `${skyW}%` }} />}
-                          {pcardW > 0 && <div className="h-full bg-red-500/50" style={{ width: `${pcardW}%` }} />}
+                          {communityW >= MIN_SEGMENT_PCT && (
+                            <div className="h-full bg-emerald-500/80" style={{ width: `${communityW}%` }} />
+                          )}
+                          {skyW >= MIN_SEGMENT_PCT && (
+                            <div className="h-full bg-sky-500/50" style={{ width: `${skyW}%` }} />
+                          )}
+                          {purpleW >= MIN_SEGMENT_PCT && (
+                            <div className="h-full bg-purple-500/55" style={{ width: `${purpleW}%` }} />
+                          )}
+                          {pcardW >= MIN_SEGMENT_PCT && (
+                            <div className="h-full bg-red-500/50" style={{ width: `${pcardW}%` }} />
+                          )}
                         </div>
                       )
                     })()}
@@ -1207,20 +1227,30 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                     })()}
 
                     {/* Secondary label — varies per tab, shows complementary info */}
-                    {railTab === 'spend' && (dept.communityPct > 0 || dept.pcard_total > 0) && (
-                      <p className="text-[8px] font-mono mt-0.5 flex gap-2">
-                        {dept.communityPct > 0 && (
-                          <span className="text-emerald-400/80">
-                            {dept.communityPct.toFixed(dept.communityPct < 1 ? 1 : 0)}% community
-                          </span>
-                        )}
-                        {dept.pcard_total > 0 && (
-                          <span className="text-red-400/60">
-                            {(100 - dept.transparency_pct).toFixed(0)}% P-card
-                          </span>
-                        )}
-                      </p>
-                    )}
+                    {railTab === 'spend' && (() => {
+                      const agencyPct = dept.total > 0 ? (dept.agency_total / dept.total) * 100 : 0
+                      const hasAny = dept.communityPct > 0 || agencyPct > 0 || dept.pcard_total > 0
+                      if (!hasAny) return null
+                      return (
+                        <p className="text-[8px] font-mono mt-0.5 flex gap-2 flex-wrap">
+                          {dept.communityPct > 0 && (
+                            <span className="text-emerald-400/80">
+                              {dept.communityPct.toFixed(dept.communityPct < 1 ? 1 : 0)}% community
+                            </span>
+                          )}
+                          {agencyPct >= 1 && (
+                            <span className="text-purple-400/80">
+                              {agencyPct.toFixed(0)}% agency
+                            </span>
+                          )}
+                          {dept.pcard_total > 0 && (
+                            <span className="text-red-400/60">
+                              {(100 - dept.transparency_pct).toFixed(0)}% P-card
+                            </span>
+                          )}
+                        </p>
+                      )
+                    })()}
 
                     {railTab === 'communityDollars' && dept.communitySpend > 0 && (
                       <p className="text-[8px] font-mono text-slate-500 mt-0.5">

@@ -18,6 +18,10 @@ export interface AdDepartmentRow {
   department: string
   total: number
   pcard_total: number
+  /** Layer 2 — agency-managed media buying for this department */
+  agency_total: number
+  /** Layer 1 — direct department ad placements (tagged sub_object='Advertising') */
+  tagged_total: number
   transparency_pct: number
 }
 
@@ -131,21 +135,26 @@ export function useAdvertisingData(fiscalYear?: FiscalYear): AdvertisingData {
     return () => { cancelled = true }
   }, [fiscalYear])
 
-  // Compute department summaries
+  // Compute department summaries — tracks all three layers separately so
+  // the department rail can render per-layer segments (agency/direct/p-card).
   const departments = useMemo((): AdDepartmentRow[] => {
-    const deptMap = new Map<string, { total: number; pcard: number }>()
+    const deptMap = new Map<string, { total: number; pcard: number; agency: number; tagged: number }>()
     for (const v of vendors) {
       const amt = parseFloat(v.total_paid) || 0
-      const entry = deptMap.get(v.department) || { total: 0, pcard: 0 }
+      const entry = deptMap.get(v.department) || { total: 0, pcard: 0, agency: 0, tagged: 0 }
       entry.total += amt
       if (v.layer === 'pcard') entry.pcard += amt
+      else if (v.layer === 'agency') entry.agency += amt
+      else if (v.layer === 'tagged') entry.tagged += amt
       deptMap.set(v.department, entry)
     }
     return [...deptMap.entries()]
-      .map(([dept, { total, pcard }]) => ({
+      .map(([dept, { total, pcard, agency, tagged }]) => ({
         department: dept,
         total,
         pcard_total: pcard,
+        agency_total: agency,
+        tagged_total: tagged,
         transparency_pct: total > 0 ? ((total - pcard) / total) * 100 : 100,
       }))
       .sort((a, b) => b.total - a.total)
