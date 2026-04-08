@@ -37,13 +37,21 @@ export const MEDIA_CATEGORIES: Record<MediaCategory, MediaCategoryInfo> = {
     description: 'Univision, Comcast/Effectv, iHeart, KTSF, Entercom, Audacy',
   },
   'out-of-home': {
+    // Swapped with full-service-agency: the previous violet collided with
+    // the Compliance Card's Agencies purple. Inherits the old agency pink,
+    // which is fine because out-of-home transit + billboards have no
+    // strong color association and pink reads well for physical/transit.
     label: 'Out-of-Home / Transit',
-    color: '#8b5cf6',
+    color: '#ec4899',
     description: 'CBS Outdoor, Clear Channel, Titan Outdoor, Intersection Media',
   },
   'full-service-agency': {
+    // Matches the Compliance Card's Agencies layer color. This is the SAME
+    // concept (payments to full-service media-buying agencies like Zeba,
+    // Most Likely To, O'Rorke) and should render in the same purple
+    // anywhere it appears on the page.
     label: 'Full-Service Agency',
-    color: '#ec4899',
+    color: '#a855f7',
     description: 'Zeba Consulting, Most Likely To, O\'Rorke — may include digital/social',
   },
   'digital-agency': {
@@ -57,8 +65,12 @@ export const MEDIA_CATEGORIES: Record<MediaCategory, MediaCategoryInfo> = {
     description: 'Advance Recruitment Solutions, LinkedIn Corp — job listings',
   },
   'direct-social': {
+    // Shifted from sky (#0ea5e9) to indigo. The old sky collided with the
+    // Compliance Card's Direct Ad Placements color. Indigo stays in the
+    // blue family (appropriate for a digital/tech platform category) while
+    // being unmistakably distinct from sky.
     label: 'Direct Social Platform',
-    color: '#0ea5e9',
+    color: '#6366f1',
     description: 'LinkedIn Corporation — only confirmed direct platform vendor',
   },
   'p-card': {
