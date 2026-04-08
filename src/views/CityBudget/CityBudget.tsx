@@ -566,21 +566,50 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
 
     if (drilldown.dept) {
       const deptInfo = ad.departments.find((d) => d.department === drilldown.dept)
+      const deptCard = compliance.departmentCards.find((d) => d.department === drilldown.dept)
+      const agencyTotal = deptInfo?.agency_total ?? 0
+      const discretionaryTotal = deptCard?.discretionaryTotal ?? 0
+      const ethnicMediaSpend = deptCard?.ethnicMediaSpend ?? 0
       return [
         {
           id: 'dept-total',
-          label: 'Dept Ad Spend',
+          label: 'Total Ad Spend',
           shortLabel: 'Total',
-          value: formatBudgetAmount(filteredTotal),
+          value: formatBudgetFull(filteredTotal),
           color: ACCENT,
           defaultExpanded: true,
         },
         {
-          id: 'dept-vendors',
-          label: 'Ad Vendors',
-          shortLabel: 'Vendors',
-          value: String(aggregatedVendors.length),
-          color: '#f59e0b',
+          id: 'dept-agency',
+          label: 'Agencies',
+          shortLabel: 'Agency',
+          value: formatBudgetFull(agencyTotal),
+          color: '#a855f7',
+          subtitle: filteredTotal > 0 && agencyTotal > 0
+            ? `${((agencyTotal / filteredTotal) * 100).toFixed(0)}% of ad spend`
+            : undefined,
+          defaultExpanded: true,
+        },
+        {
+          id: 'dept-discretionary',
+          label: 'Discretionary',
+          shortLabel: 'Discr.',
+          value: formatBudgetFull(discretionaryTotal),
+          color: '#2dd4bf',
+          subtitle: discretionaryTotal > 0
+            ? 'compliance basis'
+            : 'no discretionary spend',
+          defaultExpanded: true,
+        },
+        {
+          id: 'dept-community',
+          label: 'Community Media',
+          shortLabel: 'Community',
+          value: formatBudgetFull(ethnicMediaSpend),
+          color: '#10b981',
+          subtitle: discretionaryTotal > 0
+            ? `${((ethnicMediaSpend / discretionaryTotal) * 100).toFixed(1)}% of discretionary`
+            : undefined,
           defaultExpanded: true,
         },
         {
@@ -696,7 +725,9 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
     })
   }, [ad.departments, communityByDept])
 
-  // Sort by the active tab's metric
+  // Sort by the active tab's metric. For the % Community tab, use a
+  // secondary sort by absolute community $ so that 100%-compliant-on-pennies
+  // doesn't dominate the top over meaningful community spenders.
   const sortedRailDepts = useMemo(() => {
     const sorted = [...railDepts]
     switch (railTab) {
@@ -705,9 +736,17 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
       case 'communityDollars':
         return sorted.sort((a, b) => b.communitySpend - a.communitySpend)
       case 'communityPct':
-        return sorted.sort((a, b) => b.communityPct - a.communityPct)
+        return sorted.sort((a, b) => {
+          if (b.communityPct !== a.communityPct) return b.communityPct - a.communityPct
+          // Tie-break: higher absolute community $ wins
+          return b.communitySpend - a.communitySpend
+        })
     }
   }, [railDepts, railTab])
+
+  // Small-denominator threshold for the % Community tab — depts with total
+  // ad spend below this amount get dimmed to signal "small sample size."
+  const SMALL_DEPT_THRESHOLD = 5000
 
   // Top value for this tab's scale (used to compute bar widths)
   const railTopValue = useMemo(() => {
@@ -853,10 +892,49 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
             {/* ── Drilled-down view: filtered vendor list ──── */}
             {isDrilledDown && (
               <>
-                {/* Department compliance indicator */}
+                {/* Department compliance indicator — either the compliance
+                    card (if this dept has discretionary spending) OR an
+                    informational placeholder (if it doesn't). Absence of
+                    discretionary spending is itself information worth
+                    surfacing — usually it means the dept routes all ad
+                    money through agencies or has only legal notices. */}
                 {drilldown.dept && (() => {
                   const deptCard = compliance.departmentCards.find((d) => d.department === drilldown.dept)
-                  if (!deptCard || deptCard.status === 'none') return null
+                  const deptInfo = ad.departments.find((d) => d.department === drilldown.dept)
+
+                  // No discretionary case — show an explanatory placeholder
+                  if (!deptCard || deptCard.status === 'none') {
+                    const agencyTotal = deptInfo?.agency_total ?? 0
+                    const pcardTotal = deptInfo?.pcard_total ?? 0
+                    const deptTotal = deptInfo?.total ?? 0
+                    const agencyPct = deptTotal > 0 ? (agencyTotal / deptTotal) * 100 : 0
+                    const pcardPct = deptTotal > 0 ? (pcardTotal / deptTotal) * 100 : 0
+
+                    let reason = 'This department has no discretionary ad spending to measure under Resolution 240210.'
+                    if (agencyPct >= 50) {
+                      reason = `This department routes ${agencyPct.toFixed(0)}% of its ad spending through agencies. Agency-managed media buying is opaque to direct measurement — the compliance basis (discretionary ad spend minus legal notices) is zero.`
+                    } else if (pcardPct >= 50) {
+                      reason = `This department charges ${pcardPct.toFixed(0)}% of its ad spending to a P-card. P-card purchases are untraceable to a specific outlet, so there is no discretionary spend to measure under Resolution 240210.`
+                    }
+
+                    return (
+                      <div className="glass-card rounded-xl p-4 border border-slate-200/30 dark:border-white/[0.06]">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60">
+                            Resolution 240210 Compliance
+                          </span>
+                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-500/10 text-slate-400">
+                            N/A
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                          {reason}
+                        </p>
+                      </div>
+                    )
+                  }
+
+                  // Has discretionary case — show the compliance card
                   const cfg = STATUS_CONFIG[deptCard.status]
                   const deptDiscretionary = deptCard.discretionaryTotal
                   const deptEthnic = deptCard.ethnicMediaSpend
@@ -879,31 +957,32 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                           {deptCard.outletCount} outlet{deptCard.outletCount !== 1 ? 's' : ''}
                         </span>
                       </div>
-                      {/* Mini composition bar for this department */}
-                      <div className="relative h-4 rounded overflow-hidden bg-slate-100 dark:bg-white/[0.04]">
-                        {/* Community media fill */}
+                      {/* Mini composition bar scoped to this department.
+                          Teal container matching the main compliance card
+                          bar 3, emerald community fill, green dashed target. */}
+                      <div
+                        className="relative h-4 rounded overflow-hidden"
+                        style={{ backgroundColor: 'rgba(45,212,191,0.1)' }}
+                      >
                         <div
-                          className="absolute inset-y-0 left-0 rounded-r transition-all duration-500"
+                          className="absolute inset-y-0 left-0 bg-emerald-500/65 transition-all duration-500"
                           style={{
                             width: deptDiscretionary > 0
                               ? `${Math.min((deptEthnic / deptDiscretionary) * 100, 100)}%`
                               : '0%',
-                            backgroundColor: '#10b981',
-                            opacity: 0.6,
                           }}
                         />
-                        {/* 50% target line */}
                         <div
-                          className="absolute inset-y-0 border-r-2 border-dashed border-amber-400/50"
+                          className="absolute inset-y-0 border-l border-dashed border-emerald-400/70"
                           style={{ left: '50%' }}
                         />
                       </div>
                       <div className="flex items-center justify-between mt-1.5 text-[9px] font-mono">
                         <span className="text-emerald-400 tabular-nums">
-                          {formatBudgetAmount(deptEthnic)} community
+                          {formatBudgetFull(deptEthnic)} community
                         </span>
                         <span className="text-slate-400/60 tabular-nums">
-                          {formatBudgetAmount(deptTarget)} target · {formatBudgetAmount(deptDiscretionary)} discretionary
+                          {formatBudgetFull(deptTarget)} target · {formatBudgetFull(deptDiscretionary)} discretionary
                         </span>
                       </div>
                     </div>
@@ -1090,15 +1169,16 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
           </p>
 
           {/* Tab selector — three lenses on the same 23 departments */}
-          <div className="flex gap-0.5 mb-3 rounded-md overflow-hidden bg-slate-100/50 dark:bg-white/[0.03] p-0.5">
+          <div className="flex gap-0.5 mb-1 rounded-md overflow-hidden bg-slate-100/50 dark:bg-white/[0.03] p-0.5">
             {([
-              { key: 'spend', label: '$ Ad Spend', activeClass: 'bg-sky-500/20 text-sky-300' },
-              { key: 'communityDollars', label: '$ Community', activeClass: 'bg-emerald-500/20 text-emerald-300' },
-              { key: 'communityPct', label: '% Community', activeClass: 'bg-emerald-500/20 text-emerald-300' },
+              { key: 'spend', label: '$ Ad Spend', activeClass: 'bg-sky-500/20 text-sky-300', title: 'Sort by total ad spend (largest departments first)' },
+              { key: 'communityDollars', label: '$ Community', activeClass: 'bg-emerald-500/20 text-emerald-300', title: 'Sort by absolute community-media dollars' },
+              { key: 'communityPct', label: '% Community', activeClass: 'bg-emerald-500/20 text-emerald-300', title: 'Sort by community share of total ad spend. Not compliance % — which uses discretionary as denominator' },
             ] as const).map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setRailTab(tab.key)}
+                title={tab.title}
                 className={`flex-1 py-1 text-[9px] font-mono tracking-wide rounded transition-colors ${
                   railTab === tab.key
                     ? tab.activeClass
@@ -1109,6 +1189,15 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
               </button>
             ))}
           </div>
+          {/* Explanatory caption for the current tab — makes the denominator
+              of each tab unambiguous, so a reader who clicks from this rail
+              into the detail page doesn't see the same dept's percentage
+              change without understanding why. */}
+          <p className="text-[8px] font-mono text-slate-500 mb-3 leading-snug">
+            {railTab === 'spend' && 'Total spending across all layers. Drill to see the full breakdown.'}
+            {railTab === 'communityDollars' && 'Absolute dollars to community/ethnic outlets, scaled to top spender.'}
+            {railTab === 'communityPct' && 'Community $ ÷ total ad spend. Detail pages show compliance % (÷ discretionary).'}
+          </p>
 
           {ad.isLoading ? (
             <SkeletonSidebarRows count={10} />
@@ -1119,6 +1208,10 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                 const hoverClass = isActive
                   ? 'bg-sky-500/10 dark:bg-sky-400/10'
                   : 'hover:bg-slate-50 dark:hover:bg-white/[0.02]'
+                // In % Community tab, dim small-total depts to flag them
+                // as "small denominator — percentage may mislead"
+                const isSmallDenomDept = railTab === 'communityPct' && dept.total < SMALL_DEPT_THRESHOLD
+                const dimClass = isSmallDenomDept ? 'opacity-45' : ''
 
                 // Primary number on the right of the name — changes per tab
                 let primaryValue: string
@@ -1144,7 +1237,8 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                   <button
                     key={dept.department}
                     onClick={() => navigateToDept(dept.department)}
-                    className={`w-full text-left px-2 py-1.5 rounded-md transition-all duration-150 group ${hoverClass}`}
+                    title={isSmallDenomDept ? `Small denominator — ${dept.department} has ${formatBudgetFull(dept.total)} total ad spend. Percentages based on small totals can mislead.` : undefined}
+                    className={`w-full text-left px-2 py-1.5 rounded-md transition-all duration-150 group ${hoverClass} ${dimClass}`}
                   >
                     <div className="flex items-center justify-between mb-0.5">
                       <span className={`text-[10px] truncate max-w-[140px] ${
