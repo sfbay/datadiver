@@ -53,6 +53,8 @@ export default function ParkingRevenue() {
     }, { replace: true })
   }, [selectedMeter, setSearchParams])
 
+  const deepLinkHandledRef = useRef(false)
+
   const freshness = useDataFreshness('parkingRevenue', 'session_start_dt', dateRange)
 
   const trendConfig = useMemo((): TrendConfig => ({
@@ -78,6 +80,23 @@ export default function ParkingRevenue() {
     }
     return map
   }, [meters])
+
+  // Fly to the deep-linked meter on initial load. The click handler path
+  // already zooms on user-driven selections — this effect fills the gap for
+  // URL-driven selections, where setSelectedMeter fires from the rehydrate
+  // effect above but no mapbox click event is emitted. Gated to fire once
+  // per session via ref so it doesn't double-fly with subsequent clicks.
+  useEffect(() => {
+    if (deepLinkHandledRef.current) return
+    if (!mapInstance || !selectedMeter || meterMap.size === 0) return
+    deepLinkHandledRef.current = true
+    const meter = meterMap.get(selectedMeter)
+    if (!meter) return // invalid post_id in the URL — detail panel handles the UX
+    const lat = parseFloat(meter.latitude) || 0
+    const lng = parseFloat(meter.longitude) || 0
+    if (lat === 0 || lng === 0) return
+    mapInstance.flyTo({ center: [lng, lat], zoom: 16, duration: 1500 })
+  }, [mapInstance, selectedMeter, meterMap])
 
   const revenueWhere = useMemo(() => {
     return `session_start_dt >= '${dateRange.start}T00:00:00' AND session_start_dt <= '${dateRange.end}T23:59:59'`
