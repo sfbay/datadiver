@@ -1315,7 +1315,10 @@ function ComplianceDashboard({
   return (
     <div className="space-y-4">
       {/* ── Compliance Progress Bar ──────────────────── */}
-      <div className="glass-card rounded-xl p-4 border border-slate-200/30 dark:border-white/[0.06]">
+      {/* relative z-20: lifts this card above the composition chart below so
+          the MethodologyTip tooltip can overflow downward without being
+          clipped by the next glass-card's backdrop-blur stacking context. */}
+      <div className="glass-card rounded-xl p-4 border border-slate-200/30 dark:border-white/[0.06] relative z-20">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60">
@@ -1360,108 +1363,103 @@ function ComplianceDashboard({
           const conn2Left = legalWithinTagged
           const conn2Right = 100
 
+          const fyLabel = `FY${fiscalYear - 1}-${String(fiscalYear).slice(2)}`
+
           return (
-            <div className="space-y-0">
-              {/* ─── BAR 1: All city ad-related spending ─── */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-[9px] font-mono uppercase tracking-[0.15em] text-slate-300">
-                      All city ad-related spending
-                    </span>
-                    <span className="text-[8px] font-mono text-slate-500 normal-case tracking-normal">
-                      all vendor payments tied to advertising · FY{fiscalYear - 1}-{String(fiscalYear).slice(2)}
-                    </span>
+            // Grid: fixed-width label column on the left, bars + trapezoids on the right.
+            // The right column runs contiguously — no header rows interrupt the flow
+            // between bar bodies and their trapezoid connectors.
+            <div
+              className="grid gap-x-4"
+              style={{ gridTemplateColumns: '200px 1fr' }}
+            >
+              {/* ───── Row 1 (bar 1): meta + bar body ───── */}
+              <div className="self-center">
+                <p className="text-[9px] font-mono uppercase tracking-[0.15em] text-slate-300 leading-snug">
+                  All city ad-related spending
+                </p>
+                <p className="text-[8px] font-mono text-slate-500 leading-snug mt-0.5">
+                  all vendor payments tied to advertising · {fyLabel}
+                </p>
+                <p className="text-[11px] font-mono font-semibold text-slate-200 tabular-nums mt-1">
+                  {formatBudgetFull(allLayersTotal)}
+                </p>
+              </div>
+              <div className="relative h-14 rounded-md overflow-hidden flex border border-white/[0.04]">
+                {agencyTotal > 0 && (
+                  <div
+                    className="h-full flex flex-col items-center justify-center px-2"
+                    style={{
+                      width: `${agencyPct}%`,
+                      backgroundColor: 'rgba(168,85,247,0.22)',
+                    }}
+                    title={`Agency-managed media buying: ${formatBudgetFull(agencyTotal)}`}
+                  >
+                    {agencyPct > 8 && (
+                      <>
+                        <span className="text-[11px] font-mono font-semibold text-purple-200 tabular-nums leading-tight">
+                          {formatBudgetAmount(agencyTotal)}
+                        </span>
+                        <span className="text-[9px] font-mono text-purple-300/70 leading-tight mt-0.5">
+                          agencies · {Math.round(agencyPct)}%
+                        </span>
+                      </>
+                    )}
                   </div>
-                  <span className="text-[10px] font-mono font-semibold text-slate-200 tabular-nums">
-                    {formatBudgetFull(allLayersTotal)}
-                  </span>
-                </div>
-                <div className="relative h-12 rounded-md overflow-hidden flex border border-white/[0.04]">
-                  {agencyTotal > 0 && (
-                    <div
-                      className="h-full flex flex-col items-center justify-center px-2"
-                      style={{
-                        width: `${agencyPct}%`,
-                        backgroundColor: 'rgba(168,85,247,0.22)',
-                      }}
-                      title={`Agency-managed media buying: ${formatBudgetFull(agencyTotal)}`}
-                    >
-                      {agencyPct > 8 && (
-                        <>
-                          <span className="text-[10px] font-mono font-semibold text-purple-200 tabular-nums leading-tight">
-                            {formatBudgetAmount(agencyTotal)}
-                          </span>
-                          <span className="text-[8px] font-mono text-purple-300/70 leading-tight mt-0.5">
-                            agencies ({Math.round(agencyPct)}%)
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  )}
-                  {taggedTotal > 0 && (
-                    <div
-                      className="h-full flex flex-col items-center justify-center px-2 border-l border-r border-white/[0.05]"
-                      style={{
-                        width: `${taggedPct}%`,
-                        backgroundColor: 'rgba(14,165,233,0.22)',
-                      }}
-                      title={`Direct department ad placements: ${formatBudgetFull(taggedTotal)}`}
-                    >
-                      {taggedPct > 6 && (
-                        <>
-                          <span className="text-[10px] font-mono font-semibold text-sky-200 tabular-nums leading-tight">
-                            {formatBudgetAmount(taggedTotal)}
-                          </span>
-                          <span className="text-[8px] font-mono text-sky-300/70 leading-tight mt-0.5">
-                            direct ({Math.round(taggedPct)}%)
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  )}
-                  {pcardTotal > 0 && (
-                    <div
-                      className="h-full flex items-center justify-center"
-                      style={{
-                        width: `${Math.max(pcardPct, 1.5)}%`,
-                        backgroundColor: 'rgba(239,68,68,0.3)',
-                      }}
-                      title={`P-card purchases (untraceable to outlet): ${formatBudgetFull(pcardTotal)}`}
-                    />
-                  )}
-                </div>
-                {/* Top bar legend (only for the segments without inline labels) */}
-                <div className="flex items-center justify-end gap-3 mt-1 text-[8px] font-mono text-slate-500">
-                  {pcardTotal > 0 && (
-                    <span className="flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-sm bg-red-500/40" />
-                      P-card {formatBudgetAmount(pcardTotal)}
-                    </span>
-                  )}
-                </div>
+                )}
+                {taggedTotal > 0 && (
+                  <div
+                    className="h-full flex flex-col items-center justify-center px-2 border-l border-r border-white/[0.05]"
+                    style={{
+                      width: `${taggedPct}%`,
+                      backgroundColor: 'rgba(14,165,233,0.22)',
+                    }}
+                    title={`Direct department ad placements: ${formatBudgetFull(taggedTotal)}`}
+                  >
+                    {taggedPct > 6 && (
+                      <>
+                        <span className="text-[11px] font-mono font-semibold text-sky-200 tabular-nums leading-tight">
+                          {formatBudgetAmount(taggedTotal)}
+                        </span>
+                        <span className="text-[9px] font-mono text-sky-300/70 leading-tight mt-0.5">
+                          direct · {Math.round(taggedPct)}%
+                        </span>
+                      </>
+                    )}
+                  </div>
+                )}
+                {pcardTotal > 0 && (
+                  <div
+                    className="h-full flex items-center justify-center relative group"
+                    style={{
+                      width: `${Math.max(pcardPct, 1.5)}%`,
+                      backgroundColor: 'rgba(239,68,68,0.3)',
+                    }}
+                    title={`P-card purchases (untraceable to outlet): ${formatBudgetFull(pcardTotal)}`}
+                  />
+                )}
               </div>
 
-              {/* Connector 1: top bar "direct" segment → middle bar full width */}
+              {/* ───── Row 2: empty label cell + trapezoid connector 1 ───── */}
+              <div />
               <div className="relative h-7 -my-px">
                 <svg
                   width="100%"
                   height="28"
                   viewBox="0 0 100 28"
                   preserveAspectRatio="none"
-                  className="absolute inset-0"
+                  className="absolute inset-0 block"
                 >
                   <path
                     d={`M ${conn1Left},0 L ${conn1Right},0 L 100,28 L 0,28 Z`}
-                    fill="rgba(14,165,233,0.14)"
-                    stroke="rgba(14,165,233,0.38)"
+                    fill="rgba(14,165,233,0.18)"
+                    stroke="rgba(14,165,233,0.42)"
                     strokeWidth="1"
                     vectorEffect="non-scaling-stroke"
                   />
                 </svg>
-                {/* "zoom in" annotation riding the centerline of the trapezoid */}
                 <span
-                  className="absolute text-[8px] font-mono text-sky-300/70 tracking-wider uppercase"
+                  className="absolute text-[8px] font-mono text-sky-300/80 tracking-wider uppercase pointer-events-none"
                   style={{
                     left: `${(conn1Left + conn1Right) / 2}%`,
                     top: '50%',
@@ -1472,23 +1470,21 @@ function ComplianceDashboard({
                 </span>
               </div>
 
-              {/* ─── BAR 2: Direct ad placements (drill-down) ─── */}
-              {totalTaggedAdSpend > 0 && (
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-[9px] font-mono uppercase tracking-[0.15em] text-sky-300">
-                        Direct ad placements
-                      </span>
-                      <span className="text-[8px] font-mono text-slate-500 normal-case tracking-normal">
-                        what {compliance.departmentCards.length} departments paid directly to publishers · FY{fiscalYear - 1}-{String(fiscalYear).slice(2)}
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-mono font-semibold text-sky-200 tabular-nums">
+              {/* ───── Row 3 (bar 2): meta + bar body ───── */}
+              {totalTaggedAdSpend > 0 ? (
+                <>
+                  <div className="self-center">
+                    <p className="text-[9px] font-mono uppercase tracking-[0.15em] text-sky-300 leading-snug">
+                      Direct ad placements
+                    </p>
+                    <p className="text-[8px] font-mono text-slate-500 leading-snug mt-0.5">
+                      {compliance.departmentCards.length} departments paid directly · {fyLabel}
+                    </p>
+                    <p className="text-[11px] font-mono font-semibold text-sky-200 tabular-nums mt-1">
                       {formatBudgetFull(totalTaggedAdSpend)}
-                    </span>
+                    </p>
                   </div>
-                  <div className="relative h-12 rounded-md overflow-hidden border border-sky-400/15">
+                  <div className="relative h-14 rounded-md overflow-hidden border border-sky-400/20">
                     {/* Legal notices — hatched, excluded */}
                     <div
                       className="absolute inset-y-0 left-0 flex flex-col items-center justify-center"
@@ -1500,55 +1496,58 @@ function ComplianceDashboard({
                     >
                       {legalWithinTagged > 12 && (
                         <>
-                          <span className="text-[10px] font-mono text-slate-300 tabular-nums leading-tight">
+                          <span className="text-[11px] font-mono text-slate-300 tabular-nums leading-tight">
                             {formatBudgetAmount(compliance.legalNoticeTotal)}
                           </span>
-                          <span className="text-[8px] font-mono text-slate-400/80 leading-tight mt-0.5">
-                            legal (excl.)
+                          <span className="text-[9px] font-mono text-slate-400/80 leading-tight mt-0.5">
+                            legal · excl.
                           </span>
                         </>
                       )}
                     </div>
-                    {/* Discretionary — empty container, the inner community fill is in the next bar */}
+                    {/* Discretionary — inside the tagged total, zoomed into next bar */}
                     <div
                       className="absolute inset-y-0 flex flex-col items-center justify-center"
                       style={{
                         left: `${legalWithinTagged}%`,
                         width: `${discretionaryWithinTagged}%`,
-                        backgroundColor: 'rgba(14,165,233,0.12)',
+                        backgroundColor: 'rgba(14,165,233,0.2)',
                       }}
                       title={`Discretionary advertising (subject to Resolution 240210): ${formatBudgetFull(compliance.totalDiscretionary)}`}
                     >
-                      <span className="text-[10px] font-mono font-semibold text-sky-100 tabular-nums leading-tight">
+                      <span className="text-[11px] font-mono font-semibold text-sky-100 tabular-nums leading-tight">
                         {formatBudgetAmount(compliance.totalDiscretionary)}
                       </span>
-                      <span className="text-[8px] font-mono text-sky-200/70 leading-tight mt-0.5">
-                        discretionary
+                      <span className="text-[9px] font-mono text-sky-200/80 leading-tight mt-0.5">
+                        discretionary · {Math.round(discretionaryWithinTagged)}%
                       </span>
                     </div>
                   </div>
-                </div>
+                </>
+              ) : (
+                <><div /><div /></>
               )}
 
-              {/* Connector 2: middle bar "discretionary" segment → bottom bar full width */}
+              {/* ───── Row 4: empty label cell + trapezoid connector 2 ───── */}
+              <div />
               <div className="relative h-7 -my-px">
                 <svg
                   width="100%"
                   height="28"
                   viewBox="0 0 100 28"
                   preserveAspectRatio="none"
-                  className="absolute inset-0"
+                  className="absolute inset-0 block"
                 >
                   <path
                     d={`M ${conn2Left},0 L ${conn2Right},0 L 100,28 L 0,28 Z`}
-                    fill="rgba(16,185,129,0.12)"
-                    stroke="rgba(16,185,129,0.38)"
+                    fill="rgba(16,185,129,0.16)"
+                    stroke="rgba(16,185,129,0.42)"
                     strokeWidth="1"
                     vectorEffect="non-scaling-stroke"
                   />
                 </svg>
                 <span
-                  className="absolute text-[8px] font-mono text-emerald-300/70 tracking-wider uppercase"
+                  className="absolute text-[8px] font-mono text-emerald-300/80 tracking-wider uppercase pointer-events-none"
                   style={{
                     left: `${(conn2Left + conn2Right) / 2}%`,
                     top: '50%',
@@ -1559,54 +1558,57 @@ function ComplianceDashboard({
                 </span>
               </div>
 
-              {/* ─── BAR 3: Discretionary → community media (compliance basis) ─── */}
+              {/* ───── Row 5 (bar 3): meta + bar body ───── */}
               {compliance.totalDiscretionary > 0 && (
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-[9px] font-mono uppercase tracking-[0.15em]">
-                        <span className="text-sky-300">Discretionary</span>
-                        <span className="text-slate-500"> → </span>
-                        <span className="text-emerald-300">community media</span>
-                      </span>
-                      <span className="text-[8px] font-mono text-slate-500 normal-case tracking-normal">
-                        Resolution 240210 target: ≥ 50% to ethnic &amp; community outlets · FY{fiscalYear - 1}-{String(fiscalYear).slice(2)}
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-mono font-semibold text-sky-200 tabular-nums">
-                      {formatBudgetFull(compliance.totalDiscretionary)}
-                    </span>
+                <>
+                  <div className="self-center">
+                    <p className="text-[9px] font-mono uppercase tracking-[0.15em] leading-snug">
+                      <span className="text-emerald-300">Community media</span>
+                      <span className="text-slate-500"> share</span>
+                    </p>
+                    <p className="text-[8px] font-mono text-slate-500 leading-snug mt-0.5">
+                      target ≥ 50% of discretionary · {fyLabel}
+                    </p>
+                    <p className="text-[11px] font-mono font-semibold text-emerald-200 tabular-nums mt-1">
+                      {formatBudgetFull(compliance.ethnicMediaSpend)}
+                    </p>
                   </div>
-                  <div className="relative h-12 rounded-md overflow-hidden border border-sky-400/15" style={{ backgroundColor: 'rgba(14,165,233,0.1)' }}>
+                  <div className="relative h-14 rounded-md overflow-hidden border border-emerald-400/20" style={{ backgroundColor: 'rgba(14,165,233,0.1)' }}>
                     {/* Community media actual */}
                     <div
-                      className="absolute inset-y-0 left-0 flex flex-col items-center justify-center bg-emerald-500/55 transition-all duration-700"
+                      className="absolute inset-y-0 left-0 bg-emerald-500/60 transition-all duration-700"
                       style={{ width: `${communityWithinDiscretionary}%` }}
                       title={`Community/ethnic media spend: ${formatBudgetFull(compliance.ethnicMediaSpend)}`}
-                    >
-                      {communityWithinDiscretionary > 6 && (
-                        <>
-                          <span className="text-[10px] font-mono font-semibold text-white tabular-nums leading-tight">
-                            {formatBudgetAmount(compliance.ethnicMediaSpend)}
-                          </span>
-                          <span className="text-[8px] font-mono text-emerald-50/80 leading-tight mt-0.5">
-                            community
-                          </span>
-                        </>
-                      )}
-                    </div>
-                    {/* 50% target marker — green to semantically anchor the "goal for community media" */}
+                    />
+                    {/* Community $ label — placed to the RIGHT of the fill so it never gets clipped */}
+                    {communityWithinDiscretionary < 85 ? (
+                      <div
+                        className="absolute inset-y-0 flex items-center pl-2 pointer-events-none"
+                        style={{ left: `${communityWithinDiscretionary}%` }}
+                      >
+                        <span className="text-[11px] font-mono font-semibold text-emerald-300 tabular-nums leading-tight">
+                          {formatBudgetAmount(compliance.ethnicMediaSpend)}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="absolute inset-y-0 left-0 flex items-center justify-center pointer-events-none" style={{ width: `${communityWithinDiscretionary}%` }}>
+                        <span className="text-[11px] font-mono font-semibold text-white tabular-nums leading-tight">
+                          {formatBudgetAmount(compliance.ethnicMediaSpend)}
+                        </span>
+                      </div>
+                    )}
+                    {/* 50% target marker — green dashed line labeled at the top */}
                     <div
                       className="absolute inset-y-0 pointer-events-none"
                       style={{ left: '50%' }}
                     >
-                      <div className="h-full border-l-2 border-dashed border-emerald-400/70" />
-                      <span className="absolute top-0 left-1 text-[8px] font-mono text-emerald-300/90 leading-tight whitespace-nowrap">
+                      <div className="h-full border-l-2 border-dashed border-emerald-400/80" />
+                      <span className="absolute top-0.5 left-1 text-[8px] font-mono text-emerald-300/90 leading-tight whitespace-nowrap">
                         50% target
                       </span>
                     </div>
                   </div>
-                </div>
+                </>
               )}
             </div>
           )
@@ -1680,18 +1682,11 @@ function ComplianceDashboard({
           : ''
         return (
           <div className="glass-card rounded-xl p-4">
-            <div className="flex items-baseline justify-between mb-3">
-              <div className="flex items-baseline gap-2">
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60">
-                  Annual ad-spending composition
-                </p>
-                <p className="text-[9px] font-mono text-slate-400">
-                  · {fyRangeLabel}
-                </p>
-              </div>
-              <p className="text-[8px] font-mono text-slate-500 normal-case">
-                same three layers as the bars above, year by year
+            <div className="flex items-baseline gap-2 mb-3">
+              <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60">
+                Annual ad-spending composition
               </p>
+              <p className="text-[9px] font-mono text-slate-400">· {fyRangeLabel}</p>
             </div>
             <AdSpendCompositionChart
               data={compliance.trend}
@@ -1700,7 +1695,7 @@ function ComplianceDashboard({
               currentFY={fiscalYear}
             />
             <p className="text-[8px] font-mono text-slate-400/50 mt-2">
-              Stack: agencies + direct ad placements (legal + discretionary) + p-card. Green fill inside discretionary = community media spend. Dashed green tick = 50% of discretionary (community-media target). % label: green ≥ 50%, amber &lt; 50%, slate pre-FY2024-25 (advisory only — resolution not yet in force).
+              Green fill = community media. Dashed green tick = 50% target (faint for pre-FY24-25 reference only).
             </p>
           </div>
         )
