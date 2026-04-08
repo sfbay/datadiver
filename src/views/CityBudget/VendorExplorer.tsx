@@ -221,13 +221,35 @@ export default function VendorExplorer({ fiscalYear }: { fiscalYear: FiscalYear 
   }, [filtered])
 
   // ── Level 2: Vendor Profile ──────────────────────────────────
+  // VendorProfile's internal H2 header was stripped when it started being
+  // wrapped in AdBreadcrumb on the Advertising & Media tab. Here on Vendor
+  // Explorer we're not using AdBreadcrumb, so we render an equivalent
+  // eyebrow + italic H2 wrapper ourselves to give the destination page its
+  // vendor title. Matches the drill-down header convention documented in
+  // .claude/skills/datadiver-compliance.md.
   if (selectedVendor) {
     return (
-      <VendorProfile
-        vendor={selectedVendor}
-        fiscalYear={fiscalYear}
-        onBack={() => selectVendor(null)}
-      />
+      <div className="h-full flex flex-col overflow-hidden">
+        <div className="flex-shrink-0 px-6 pt-5 pb-2 animate-[fadeSlideIn_200ms_ease-out_both]">
+          <button
+            onClick={() => selectVendor(null)}
+            className="group flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500 hover:text-sky-500 dark:hover:text-sky-400 transition-colors mb-1.5"
+          >
+            <span className="transition-transform group-hover:-translate-x-0.5">←</span>
+            <span>Back to Vendor Explorer</span>
+          </button>
+          <h2 className="font-display text-3xl italic text-ink dark:text-white leading-none tracking-tight">
+            {toSentenceCase(selectedVendor)}
+          </h2>
+        </div>
+        <div className="flex-1 min-h-0">
+          <VendorProfile
+            vendor={selectedVendor}
+            fiscalYear={fiscalYear}
+            onBack={() => selectVendor(null)}
+          />
+        </div>
+      </div>
     )
   }
 

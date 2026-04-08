@@ -130,7 +130,14 @@ export default function SpendingTrend({
       .call((g) => g.selectAll('.tick line').remove())
 
     // Lines
+    // .defined() guards against negative or zero amounts in the source data
+    // (e.g. PUC bond refunds / expenditure recoveries). Without this guard,
+    // curveMonotoneX faithfully draws through negative values and produces
+    // a line that appears to rise from below the x-axis. Breaking the line
+    // at non-positive values is more honest than filtering them out, which
+    // would imply continuity across the gap.
     const line = d3.line<{ fy: number; amount: number }>()
+      .defined((d) => d.amount > 0)
       .x((d) => x(d.fy))
       .y((d) => y(d.amount))
       .curve(d3.curveMonotoneX)
