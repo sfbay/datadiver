@@ -1525,15 +1525,16 @@ function ComplianceDashboard({
                   className="absolute inset-0 block"
                 >
                   <defs>
-                    {/* Gradient starts and ends at 0 alpha, peaks in the middle.
-                        This makes the trapezoid invisible at both interface
-                        edges — so any 1-pixel overlap (from -my-px) can't
-                        create compound-alpha seam lines, and any 1-pixel gap
-                        has nothing to show anyway. Visually: a soft glowing
-                        tunnel that dissolves at both ends. */}
+                    {/* Plateau gradient: 0 alpha ONLY at the top and bottom
+                        overlap pixels, rising to full 0.22 alpha over ~2 pixels
+                        and sustaining through the middle. This gives a razor-
+                        sharp visible edge at the top (the intended look) while
+                        preventing compound alpha at the 1-pixel overlap from
+                        -my-px. Think "slab with hairline fade zones." */}
                     <linearGradient id="trap1-grad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="rgba(14,165,233,0)" />
-                      <stop offset="40%" stopColor="rgba(14,165,233,0.22)" />
+                      <stop offset="5%" stopColor="rgba(14,165,233,0.22)" />
+                      <stop offset="95%" stopColor="rgba(14,165,233,0.22)" />
                       <stop offset="100%" stopColor="rgba(14,165,233,0)" />
                     </linearGradient>
                   </defs>
@@ -1632,12 +1633,13 @@ function ComplianceDashboard({
                   className="absolute inset-0 block"
                 >
                   <defs>
-                    {/* Same shape-shaped fade as trap1: invisible at both
-                        interface edges, peak in the middle. No compound
-                        alpha at the bar 2 or bar 3 seam. */}
+                    {/* Plateau gradient — see trap1-grad for rationale.
+                        Sharp-top slab with hairline fades to 0 at each
+                        interface pixel so compound alpha is avoided. */}
                     <linearGradient id="trap2-grad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="rgba(45,212,191,0)" />
-                      <stop offset="40%" stopColor="rgba(45,212,191,0.22)" />
+                      <stop offset="5%" stopColor="rgba(45,212,191,0.22)" />
+                      <stop offset="95%" stopColor="rgba(45,212,191,0.22)" />
                       <stop offset="100%" stopColor="rgba(45,212,191,0)" />
                     </linearGradient>
                   </defs>
