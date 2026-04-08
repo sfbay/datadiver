@@ -1470,7 +1470,7 @@ function ComplianceDashboard({
                   into darkness so bar 2 below emerges cleanly without a
                   hard seam between the trapezoid fill and the card ground. */}
               <div />
-              <div className="relative h-11 -my-px">
+              <div className="relative h-11">
                 <svg
                   width="100%"
                   height="44"
@@ -1574,7 +1574,7 @@ function ComplianceDashboard({
               {/* Trapezoid 2: teal gradient dissolving into darkness.
                   Matches the discretionary segment in bar 2 above. */}
               <div />
-              <div className="relative h-11 -my-px">
+              <div className="relative h-11">
                 <svg
                   width="100%"
                   height="44"
