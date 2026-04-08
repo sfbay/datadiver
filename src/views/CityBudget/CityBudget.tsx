@@ -12,7 +12,7 @@ import VendorProfile from '@/views/CityBudget/VendorProfile'
 import { useBudgetVsActual, useBudgetTotals, useSpendingTrend, useDepartmentSpending } from '@/hooks/useBudgetData'
 import { useAdvertisingData, type AdVendorRow, type AdvertisingData } from '@/hooks/useAdvertisingData'
 import { useComplianceData, type ComplianceStatus, type DepartmentCard } from '@/hooks/useComplianceData'
-import ComplianceTrendChart from '@/components/charts/ComplianceTrendChart'
+import AdSpendCompositionChart from '@/components/charts/AdSpendCompositionChart'
 import MethodologyTip from '@/components/ui/MethodologyTip'
 import { MEDIA_CATEGORIES, type MediaCategory } from '@/utils/mediaClassification'
 import { exportToCSV } from '@/utils/csvExport'
@@ -1338,188 +1338,251 @@ function ComplianceDashboard({
           </button>
         </div>
 
-        {/* ── 1. Full Advertising Activity (all 3 layers) ── */}
-        {allLayersTotal > 0 && (
-          <div className="mb-4">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[8px] font-mono uppercase tracking-wider text-slate-400/50">
-                All Advertising Activity
-              </span>
-              <span className="text-[9px] font-mono font-semibold text-slate-300 tabular-nums">
-                {formatBudgetFull(allLayersTotal)}
-              </span>
-            </div>
-            <div className="relative h-7 rounded overflow-hidden flex">
-              {/* Agency (largest portion — pink/magenta) */}
-              {agencyTotal > 0 && (
-                <div
-                  className="h-full flex items-center justify-center"
-                  style={{
-                    width: `${(agencyTotal / allLayersTotal) * 100}%`,
-                    backgroundColor: 'rgba(236,72,153,0.35)',
-                    borderRight: '1px solid rgba(236,72,153,0.2)',
-                  }}
-                  title={`Agencies: ${formatBudgetFull(agencyTotal)}`}
-                >
-                  {agencyTotal / allLayersTotal > 0.12 && (
-                    <span className="text-[8px] font-mono text-pink-300/80 tabular-nums">
-                      {formatBudgetAmount(agencyTotal)} agencies
-                    </span>
-                  )}
-                </div>
-              )}
-              {/* Tagged (classified advertising) */}
-              {taggedTotal > 0 && (
-                <div
-                  className="h-full flex items-center justify-center border-r border-sky-400/20"
-                  style={{
-                    width: `${(taggedTotal / allLayersTotal) * 100}%`,
-                    backgroundColor: 'rgba(14,165,233,0.15)',
-                  }}
-                  title={`Classified advertising: ${formatBudgetFull(taggedTotal)}`}
-                >
-                  {taggedTotal / allLayersTotal > 0.12 && (
-                    <span className="text-[8px] font-mono text-sky-300/80 tabular-nums">
-                      {formatBudgetAmount(taggedTotal)} advertising
-                    </span>
-                  )}
-                </div>
-              )}
-              {/* P-card (untraceable) */}
-              {pcardTotal > 0 && (
-                <div
-                  className="h-full flex items-center"
-                  style={{
-                    width: `${Math.max((pcardTotal / allLayersTotal) * 100, 2)}%`,
-                    backgroundColor: 'rgba(239,68,68,0.3)',
-                  }}
-                  title={`P-card: ${formatBudgetFull(pcardTotal)}`}
-                />
-              )}
-            </div>
-            <div className="flex items-center gap-4 mt-1.5 text-[8px] font-mono text-slate-400/60">
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: 'rgba(236,72,153,0.4)' }} />
-                Agencies ({formatBudgetAmount(agencyTotal)})
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: 'rgba(14,165,233,0.2)' }} />
-                Classified advertising ({formatBudgetAmount(taggedTotal)})
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-sm bg-red-500/30" />
-                P-card ({formatBudgetAmount(pcardTotal)})
-              </span>
-            </div>
-          </div>
-        )}
+        {/* ── Aligned Stepped Bars (top → middle → bottom drill-down) ── */}
+        {allLayersTotal > 0 && (() => {
+          // Compute all percentages once for alignment math
+          const agencyPct = (agencyTotal / allLayersTotal) * 100
+          const taggedPct = (taggedTotal / allLayersTotal) * 100
+          const pcardPct = (pcardTotal / allLayersTotal) * 100
+          // Within tagged: legal vs discretionary
+          const legalWithinTagged = totalTaggedAdSpend > 0 ? (compliance.legalNoticeTotal / totalTaggedAdSpend) * 100 : 0
+          const discretionaryWithinTagged = 100 - legalWithinTagged
+          // Within discretionary: community vs shortfall
+          const communityWithinDiscretionary = compliance.totalDiscretionary > 0
+            ? Math.min((compliance.ethnicMediaSpend / compliance.totalDiscretionary) * 100, 100)
+            : 0
 
-        {/* ── 2. Tagged Ad Spend Breakdown (compliance universe) ── */}
-        {totalTaggedAdSpend > 0 && (
-          <div className="mb-4">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[8px] font-mono uppercase tracking-wider text-slate-400/50">
-                Classified Advertising — Compliance Basis
-              </span>
-              <span className="text-[9px] font-mono font-semibold text-slate-300 tabular-nums">
-                {formatBudgetFull(totalTaggedAdSpend)}
-              </span>
-            </div>
-            {/* Stacked bar with inline labels */}
-            <div className="relative h-8 rounded overflow-hidden">
-              {/* Legal notices (excluded — diagonal hatching) */}
-              <div
-                className="absolute inset-y-0 left-0 flex items-center justify-center"
-                style={{
-                  width: `${(compliance.legalNoticeTotal / totalTaggedAdSpend) * 100}%`,
-                  background: `repeating-linear-gradient(-45deg, transparent, transparent 3px, rgba(148,163,184,0.25) 3px, rgba(148,163,184,0.25) 5px)`,
-                  backgroundColor: 'rgba(148,163,184,0.1)',
-                }}
-                title={`Legal notices: ${formatBudgetFull(compliance.legalNoticeTotal)} (excluded)`}
-              >
-                {compliance.legalNoticeTotal / totalTaggedAdSpend > 0.15 && (
-                  <span className="text-[8px] font-mono text-slate-400/70 tabular-nums">
-                    {formatBudgetAmount(compliance.legalNoticeTotal)} legal
+          // Trapezoid connector edges (in the FULL-width coordinate system of the parent bar)
+          // Connector 1: parent = "tagged" segment of top bar (from agencyPct to agencyPct+taggedPct)
+          const conn1Left = agencyPct
+          const conn1Right = agencyPct + taggedPct
+          // Connector 2: parent = "discretionary" segment of middle bar (legalWithinTagged to 100)
+          const conn2Left = legalWithinTagged
+          const conn2Right = 100
+
+          return (
+            <div className="space-y-0">
+              {/* ─── BAR 1: All city ad-related spending ─── */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[9px] font-mono uppercase tracking-[0.15em] text-slate-300">
+                    All city ad-related spending
                   </span>
-                )}
-              </div>
-              {/* Discretionary portion */}
-              <div
-                className="absolute inset-y-0 border border-sky-400/20"
-                style={{
-                  left: `${(compliance.legalNoticeTotal / totalTaggedAdSpend) * 100}%`,
-                  width: `${(compliance.totalDiscretionary / totalTaggedAdSpend) * 100}%`,
-                  backgroundColor: 'rgba(14,165,233,0.08)',
-                }}
-              >
-                {/* Community media actual (filled green) */}
-                <div
-                  className="absolute inset-y-0 left-0 rounded-r bg-emerald-500/60 transition-all duration-700 flex items-center"
-                  style={{
-                    width: compliance.totalDiscretionary > 0
-                      ? `${Math.min((compliance.ethnicMediaSpend / compliance.totalDiscretionary) * 100, 100)}%`
-                      : '0%',
-                  }}
-                >
-                  {compliance.ethnicMediaSpend / compliance.totalDiscretionary > 0.08 && (
-                    <span className="text-[8px] font-mono font-semibold text-white/90 pl-1.5 tabular-nums whitespace-nowrap">
-                      {formatBudgetAmount(compliance.ethnicMediaSpend)}
+                  <span className="text-[10px] font-mono font-semibold text-slate-200 tabular-nums">
+                    {formatBudgetFull(allLayersTotal)}
+                  </span>
+                </div>
+                <div className="relative h-12 rounded-md overflow-hidden flex border border-white/[0.04]">
+                  {agencyTotal > 0 && (
+                    <div
+                      className="h-full flex flex-col items-center justify-center px-2"
+                      style={{
+                        width: `${agencyPct}%`,
+                        backgroundColor: 'rgba(168,85,247,0.22)',
+                      }}
+                      title={`Agency-managed media buying: ${formatBudgetFull(agencyTotal)}`}
+                    >
+                      {agencyPct > 8 && (
+                        <>
+                          <span className="text-[10px] font-mono font-semibold text-purple-200 tabular-nums leading-tight">
+                            {formatBudgetAmount(agencyTotal)}
+                          </span>
+                          <span className="text-[8px] font-mono text-purple-300/70 leading-tight mt-0.5">
+                            agencies ({Math.round(agencyPct)}%)
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {taggedTotal > 0 && (
+                    <div
+                      className="h-full flex flex-col items-center justify-center px-2 border-l border-r border-white/[0.05]"
+                      style={{
+                        width: `${taggedPct}%`,
+                        backgroundColor: 'rgba(14,165,233,0.22)',
+                      }}
+                      title={`Direct department ad placements: ${formatBudgetFull(taggedTotal)}`}
+                    >
+                      {taggedPct > 6 && (
+                        <>
+                          <span className="text-[10px] font-mono font-semibold text-sky-200 tabular-nums leading-tight">
+                            {formatBudgetAmount(taggedTotal)}
+                          </span>
+                          <span className="text-[8px] font-mono text-sky-300/70 leading-tight mt-0.5">
+                            direct ({Math.round(taggedPct)}%)
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {pcardTotal > 0 && (
+                    <div
+                      className="h-full flex items-center justify-center"
+                      style={{
+                        width: `${Math.max(pcardPct, 1.5)}%`,
+                        backgroundColor: 'rgba(239,68,68,0.3)',
+                      }}
+                      title={`P-card purchases (untraceable to outlet): ${formatBudgetFull(pcardTotal)}`}
+                    />
+                  )}
+                </div>
+                {/* Top bar legend (only for the segments without inline labels) */}
+                <div className="flex items-center justify-end gap-3 mt-1 text-[8px] font-mono text-slate-500">
+                  {pcardTotal > 0 && (
+                    <span className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-sm bg-red-500/40" />
+                      P-card {formatBudgetAmount(pcardTotal)}
                     </span>
                   )}
                 </div>
-                {/* 50% target line within discretionary */}
-                <div className="absolute inset-y-0 flex flex-col items-center" style={{ left: '50%' }}>
-                  <div className="h-full border-r-2 border-dashed border-amber-400/60" />
-                </div>
               </div>
-            </div>
-            {/* Legend */}
-            <div className="flex items-center gap-4 mt-1.5 text-[8px] font-mono text-slate-400/60">
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-sm" style={{ background: 'repeating-linear-gradient(-45deg, transparent, transparent 2px, rgba(148,163,184,0.3) 2px, rgba(148,163,184,0.3) 3px)', backgroundColor: 'rgba(148,163,184,0.1)' }} />
-                Legal notices (excl.)
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-sm border border-sky-400/30" style={{ backgroundColor: 'rgba(14,165,233,0.12)' }} />
-                Discretionary
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500/60" />
-                Community media
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-0 h-2.5 border-r-2 border-dashed border-amber-400/50" />
-                50% target
-              </span>
-            </div>
-          </div>
-        )}
 
-        {/* ── 2. Compliance thermometer — zooms into the discretionary portion ── */}
-        <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-2">
-          Target: ≥ 50% of discretionary ad spend → ethnic &amp; community journalism outlets
-        </p>
-        <div className="flex items-center gap-3 mb-2">
-          <div className="flex-1 relative">
-            <div
-              className="h-5 rounded-full overflow-hidden border border-sky-400/20"
-              style={{ backgroundColor: 'rgba(14,165,233,0.12)' }}
-            >
-              <div
-                className="h-full rounded-full transition-all duration-700 ease-out"
-                style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: barColor }}
-              />
+              {/* Connector 1: top bar "direct" segment → middle bar full width */}
+              <div className="relative h-3.5 -my-px">
+                <svg
+                  width="100%"
+                  height="14"
+                  viewBox="0 0 100 14"
+                  preserveAspectRatio="none"
+                  className="absolute inset-0"
+                >
+                  <path
+                    d={`M ${conn1Left},0 L ${conn1Right},0 L 100,14 L 0,14 Z`}
+                    fill="rgba(14,165,233,0.06)"
+                    stroke="rgba(14,165,233,0.18)"
+                    strokeWidth="0.3"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                </svg>
+              </div>
+
+              {/* ─── BAR 2: Direct ad placements (drill-down) ─── */}
+              {totalTaggedAdSpend > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-[9px] font-mono uppercase tracking-[0.15em] text-sky-300">
+                        Direct ad placements
+                      </span>
+                      <span className="text-[8px] font-mono text-slate-500 normal-case tracking-normal">
+                        what 43 departments paid directly to publishers
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono font-semibold text-sky-200 tabular-nums">
+                      {formatBudgetFull(totalTaggedAdSpend)}
+                    </span>
+                  </div>
+                  <div className="relative h-12 rounded-md overflow-hidden border border-sky-400/15">
+                    {/* Legal notices — hatched, excluded */}
+                    <div
+                      className="absolute inset-y-0 left-0 flex flex-col items-center justify-center"
+                      style={{
+                        width: `${legalWithinTagged}%`,
+                        background: `repeating-linear-gradient(-45deg, rgba(148,163,184,0.05), rgba(148,163,184,0.05) 4px, rgba(148,163,184,0.22) 4px, rgba(148,163,184,0.22) 6px)`,
+                      }}
+                      title={`Legal notices (mandatory, excluded from compliance): ${formatBudgetFull(compliance.legalNoticeTotal)}`}
+                    >
+                      {legalWithinTagged > 12 && (
+                        <>
+                          <span className="text-[10px] font-mono text-slate-300 tabular-nums leading-tight">
+                            {formatBudgetAmount(compliance.legalNoticeTotal)}
+                          </span>
+                          <span className="text-[8px] font-mono text-slate-400/80 leading-tight mt-0.5">
+                            legal (excl.)
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    {/* Discretionary — empty container, the inner community fill is in the next bar */}
+                    <div
+                      className="absolute inset-y-0 flex flex-col items-center justify-center"
+                      style={{
+                        left: `${legalWithinTagged}%`,
+                        width: `${discretionaryWithinTagged}%`,
+                        backgroundColor: 'rgba(14,165,233,0.12)',
+                      }}
+                      title={`Discretionary advertising (subject to Resolution 240210): ${formatBudgetFull(compliance.totalDiscretionary)}`}
+                    >
+                      <span className="text-[10px] font-mono font-semibold text-sky-100 tabular-nums leading-tight">
+                        {formatBudgetAmount(compliance.totalDiscretionary)}
+                      </span>
+                      <span className="text-[8px] font-mono text-sky-200/70 leading-tight mt-0.5">
+                        discretionary
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Connector 2: middle bar "discretionary" segment → bottom bar full width */}
+              <div className="relative h-3.5 -my-px">
+                <svg
+                  width="100%"
+                  height="14"
+                  viewBox="0 0 100 14"
+                  preserveAspectRatio="none"
+                  className="absolute inset-0"
+                >
+                  <path
+                    d={`M ${conn2Left},0 L ${conn2Right},0 L 100,14 L 0,14 Z`}
+                    fill="rgba(16,185,129,0.05)"
+                    stroke="rgba(16,185,129,0.2)"
+                    strokeWidth="0.3"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                </svg>
+              </div>
+
+              {/* ─── BAR 3: Discretionary → community media (compliance basis) ─── */}
+              {compliance.totalDiscretionary > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-[9px] font-mono uppercase tracking-[0.15em] text-emerald-300">
+                        Discretionary → community media
+                      </span>
+                      <span className="text-[8px] font-mono text-slate-500 normal-case tracking-normal">
+                        Resolution 240210 target: ≥ 50% to ethnic &amp; community outlets
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono font-semibold text-emerald-200 tabular-nums">
+                      {formatBudgetFull(compliance.totalDiscretionary)}
+                    </span>
+                  </div>
+                  <div className="relative h-12 rounded-md overflow-hidden border border-emerald-400/15" style={{ backgroundColor: 'rgba(14,165,233,0.06)' }}>
+                    {/* Community media actual */}
+                    <div
+                      className="absolute inset-y-0 left-0 flex flex-col items-center justify-center bg-emerald-500/55 transition-all duration-700"
+                      style={{ width: `${communityWithinDiscretionary}%` }}
+                      title={`Community/ethnic media spend: ${formatBudgetFull(compliance.ethnicMediaSpend)}`}
+                    >
+                      {communityWithinDiscretionary > 6 && (
+                        <>
+                          <span className="text-[10px] font-mono font-semibold text-white tabular-nums leading-tight">
+                            {formatBudgetAmount(compliance.ethnicMediaSpend)}
+                          </span>
+                          <span className="text-[8px] font-mono text-emerald-50/80 leading-tight mt-0.5">
+                            community
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    {/* 50% target marker */}
+                    <div
+                      className="absolute inset-y-0 pointer-events-none"
+                      style={{ left: '50%' }}
+                    >
+                      <div className="h-full border-l-2 border-dashed border-amber-400/70" />
+                      <span className="absolute top-0 left-1 text-[8px] font-mono text-amber-400/90 leading-tight whitespace-nowrap">
+                        50% target
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-            {/* 50% target marker */}
-            <div
-              className="absolute top-0 h-5 border-l-2 border-dashed border-amber-400/60"
-              style={{ left: '50%' }}
-            />
-          </div>
-          <span className="flex-shrink-0 text-sm font-bold font-mono tabular-nums text-sky-400">
-            {formatBudgetFull(compliance.totalDiscretionary)}
-          </span>
-        </div>
+          )
+        })()}
 
         {/* Prominent dollar amounts */}
         <div className="grid grid-cols-3 gap-4 mt-3 mb-2">
@@ -1580,25 +1643,30 @@ function ComplianceDashboard({
         </div>
       </div>
 
-      {/* ── Historical Trend Chart (right under thermometer) ── */}
+      {/* ── Historical Composition Chart ── */}
       {compliance.trend.length > 0 && (
         <div className="glass-card rounded-xl p-4">
-          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-3">
-            Compliance Trend — Ethnic Media Share of Discretionary Ad Spend
-          </p>
-          <ComplianceTrendChart
+          <div className="flex items-baseline justify-between mb-3">
+            <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60">
+              Annual ad-spending composition
+            </p>
+            <p className="text-[8px] font-mono text-slate-500 normal-case">
+              same three layers as the bars above, year by year
+            </p>
+          </div>
+          <AdSpendCompositionChart
             data={compliance.trend}
             width={700}
-            height={260}
+            height={320}
             currentFY={fiscalYear}
           />
           <p className="text-[8px] font-mono text-slate-400/50 mt-2">
-            Green line = compliance %. Purple bars = outlet count. Dashed line = 50% target.
+            Stack: agencies + direct ad placements (legal + discretionary) + p-card. Green fill inside discretionary = community media spend. Dashed amber tick = 50% target of discretionary. % above each bar = compliance.
           </p>
         </div>
       )}
       {compliance.trendLoading && (
-        <SkeletonChart height={260} />
+        <SkeletonChart height={320} />
       )}
 
       {/* ── Department Report Card ──────────────────── */}

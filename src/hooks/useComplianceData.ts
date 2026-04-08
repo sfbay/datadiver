@@ -34,6 +34,12 @@ export interface ComplianceTrendPoint {
   ethnicMediaSpend: number
   discretionaryTotal: number
   outletCount: number
+  /** Agency-managed media buying for this fiscal year (Layer 2) */
+  agencyTotal: number
+  /** P-card advertising purchases for this fiscal year (Layer 3) */
+  pcardTotal: number
+  /** Legal notices for this fiscal year (excluded from compliance basis) */
+  legalNoticeTotal: number
 }
 
 export interface ComplianceData {
@@ -135,7 +141,12 @@ interface RawTrendVendorAgg {
   total_paid: string
 }
 
-/** Fetch vendor-level ad data for multiple fiscal years for trend computation */
+/** Same agency vendor LIKE clause used by useAdvertisingData. Update both if you change one. */
+const AGENCY_VENDOR_LIKE = "(UPPER(vendor) LIKE '%ZEBA CONSULTING%' OR UPPER(vendor) LIKE '%MOST LIKELY TO%' OR UPPER(vendor) LIKE '%CKR INTERACTIVE%' OR UPPER(vendor) LIKE '%O''RORKE%' OR UPPER(vendor) LIKE '%GREAT KOLOR%' OR UPPER(vendor) LIKE '%CIVIC EDGE%' OR UPPER(vendor) LIKE '%BETTER WORLD ADVERTISING%' OR UPPER(vendor) LIKE '%PROMOTION MARKETING%')"
+
+/** Fetch vendor-level ad data for multiple fiscal years for trend computation.
+ *  Pulls all three layers (tagged direct, agency-managed, P-card) so the
+ *  composition trend chart can show year-over-year breakdown. */
 function useTrendData(currentFY: FiscalYear): { trend: ComplianceTrendPoint[]; trendLoading: boolean } {
   const [trend, setTrend] = useState<ComplianceTrendPoint[]>([])
   const [trendLoading, setTrendLoading] = useState(true)
@@ -149,36 +160,93 @@ function useTrendData(currentFY: FiscalYear): { trend: ComplianceTrendPoint[]; t
     const fyList = Array.from({ length: currentFY - startFY + 1 }, (_, i) => startFY + i)
     const fyInClause = fyList.map((fy) => `'${fy}'`).join(',')
 
-    fetchDataset<RawTrendVendorAgg>('vendorPayments', {
+    // Layer 1: Tagged direct ad placements (sub_object = 'Advertising')
+    const taggedPromise = fetchDataset<RawTrendVendorAgg>('vendorPayments', {
       $select: 'vendor, fiscal_year, SUM(vouchers_paid) as total_paid',
       $where: `sub_object = 'Advertising' AND fiscal_year IN (${fyInClause})`,
       $group: 'vendor, fiscal_year',
       $order: 'fiscal_year, total_paid DESC',
       $limit: 10000,
     })
-      .then((rows) => {
+
+    // Layer 2: Agency-managed media buying (vendor matches agency registry, NOT tagged Advertising)
+    const agencyPromise = fetchDataset<RawTrendVendorAgg>('vendorPayments', {
+      $select: 'vendor, fiscal_year, SUM(vouchers_paid) as total_paid',
+      $where: `${AGENCY_VENDOR_LIKE} AND sub_object != 'Advertising' AND fiscal_year IN (${fyInClause})`,
+      $group: 'vendor, fiscal_year',
+      $order: 'fiscal_year, total_paid DESC',
+      $limit: 5000,
+    })
+
+    // Layer 3: P-card advertising
+    const pcardPromise = fetchDataset<RawTrendVendorAgg>('vendorPayments', {
+      $select: 'vendor, fiscal_year, SUM(vouchers_paid) as total_paid',
+      $where: `UPPER(vendor) LIKE '%P-CARD%' AND sub_object = 'Advertising' AND fiscal_year IN (${fyInClause})`,
+      $group: 'vendor, fiscal_year',
+      $order: 'fiscal_year, total_paid DESC',
+      $limit: 5000,
+    })
+
+    Promise.all([taggedPromise, agencyPromise, pcardPromise])
+      .then(([taggedRows, agencyRows, pcardRows]) => {
         if (cancelled) return
 
-        // Group by fiscal year, compute compliance for each
-        const byFY = new Map<number, { vendor: string; total_paid: string; category: MediaCategory }[]>()
-        for (const r of rows) {
+        // Index P-card rows so we can deduplicate them out of the tagged set (matches useAdvertisingData logic)
+        const pcardKeys = new Set<string>()
+        for (const r of pcardRows) {
+          pcardKeys.add(`${r.vendor}|${r.fiscal_year}`)
+        }
+
+        // Per-FY accumulators
+        const byFY = new Map<number, {
+          taggedVendors: { vendor: string; total_paid: string; category: MediaCategory }[]
+          agencyTotal: number
+          pcardTotal: number
+        }>()
+        for (const fy of fyList) {
+          byFY.set(fy, { taggedVendors: [], agencyTotal: 0, pcardTotal: 0 })
+        }
+
+        // Tagged → tagged vendors list, but skip rows that are also P-card (they belong to pcard layer)
+        for (const r of taggedRows) {
           const fy = parseInt(r.fiscal_year, 10)
-          if (!byFY.has(fy)) byFY.set(fy, [])
-          const category = classifyVendor(r.vendor)
-          byFY.get(fy)!.push({ vendor: r.vendor, total_paid: r.total_paid, category })
+          const entry = byFY.get(fy)
+          if (!entry) continue
+          if (pcardKeys.has(`${r.vendor}|${r.fiscal_year}`)) continue
+          entry.taggedVendors.push({
+            vendor: r.vendor,
+            total_paid: r.total_paid,
+            category: classifyVendor(r.vendor),
+          })
+        }
+
+        // Agency totals per FY
+        for (const r of agencyRows) {
+          const fy = parseInt(r.fiscal_year, 10)
+          const entry = byFY.get(fy)
+          if (!entry) continue
+          entry.agencyTotal += parseFloat(r.total_paid) || 0
+        }
+
+        // P-card totals per FY
+        for (const r of pcardRows) {
+          const fy = parseInt(r.fiscal_year, 10)
+          const entry = byFY.get(fy)
+          if (!entry) continue
+          entry.pcardTotal += parseFloat(r.total_paid) || 0
         }
 
         const points: ComplianceTrendPoint[] = []
         for (const fy of fyList) {
-          const fyVendors = byFY.get(fy) || []
-          let totalAdSpend = 0
+          const entry = byFY.get(fy)!
+          let taggedSpend = 0
           let legalNoticeTotal = 0
           let ethnicMediaSpend = 0
           const ethnicVendorSet = new Set<string>()
 
-          for (const v of fyVendors) {
+          for (const v of entry.taggedVendors) {
             const amt = parseFloat(v.total_paid) || 0
-            totalAdSpend += amt
+            taggedSpend += amt
             if (v.category === 'legal-notices') {
               legalNoticeTotal += amt
             } else if (v.category === 'community-ethnic-press') {
@@ -187,13 +255,16 @@ function useTrendData(currentFY: FiscalYear): { trend: ComplianceTrendPoint[]; t
             }
           }
 
-          const discretionary = totalAdSpend - legalNoticeTotal
+          const discretionary = taggedSpend - legalNoticeTotal
           points.push({
             fiscalYear: fy,
             compliancePct: discretionary > 0 ? (ethnicMediaSpend / discretionary) * 100 : 0,
             ethnicMediaSpend,
             discretionaryTotal: discretionary,
             outletCount: ethnicVendorSet.size,
+            agencyTotal: entry.agencyTotal,
+            pcardTotal: entry.pcardTotal,
+            legalNoticeTotal,
           })
         }
 
