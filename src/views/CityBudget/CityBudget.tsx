@@ -1289,54 +1289,50 @@ function AdBreadcrumb({
   onNavigateRoot: () => void
   onNavigateUp: () => void
 }) {
-  // Build parent segments (the "path to get here") and the current title
-  // (the deepest drill-down level, which becomes the big display header).
-  const parents: { label: string; onClick: () => void }[] = [
-    { label: 'Advertising & Media', onClick: onNavigateRoot },
-  ]
+  // Figure out the current title (deepest drill-down level) and the
+  // immediate parent we'd navigate back to. The eyebrow is a single
+  // "← Back to X" affordance where X is the immediate parent — clearer
+  // than a breadcrumb trail for a single-click-back interaction.
   let currentTitle: string | null = null
+  let backLabel: string | null = null
+  let backHandler: () => void = onNavigateRoot
 
-  if (drilldown.category) {
-    const catLabel = MEDIA_CATEGORIES[drilldown.category]?.label || drilldown.category
-    if (drilldown.vendor) {
-      parents.push({ label: catLabel, onClick: onNavigateUp })
-    } else {
-      currentTitle = catLabel
-    }
-  }
-
-  if (drilldown.dept) {
-    if (drilldown.vendor) {
-      parents.push({ label: drilldown.dept, onClick: onNavigateUp })
-    } else {
-      currentTitle = drilldown.dept
-    }
-  }
-
-  if (drilldown.vendor) {
+  if (drilldown.category && !drilldown.vendor) {
+    currentTitle = MEDIA_CATEGORIES[drilldown.category]?.label || drilldown.category
+    backLabel = 'Advertising & Media'
+    backHandler = onNavigateRoot
+  } else if (drilldown.dept && !drilldown.vendor) {
+    currentTitle = drilldown.dept
+    backLabel = 'Advertising & Media'
+    backHandler = onNavigateRoot
+  } else if (drilldown.vendor) {
     currentTitle = toSentenceCase(drilldown.vendor)
+    // Immediate parent is either a dept, a category, or the root
+    if (drilldown.dept) {
+      backLabel = drilldown.dept
+      backHandler = onNavigateUp
+    } else if (drilldown.category) {
+      backLabel = MEDIA_CATEGORIES[drilldown.category]?.label || drilldown.category
+      backHandler = onNavigateUp
+    } else {
+      backLabel = 'Advertising & Media'
+      backHandler = onNavigateRoot
+    }
   }
 
-  // Root view (no drill-down) — render nothing; the main tab header already
-  // shows "Advertising & Media" in the top nav bar.
+  // Root view (no drill-down) — render nothing.
   if (!currentTitle) return null
 
   return (
     <div className="animate-[fadeSlideIn_200ms_ease-out_both]">
-      {/* Eyebrow / overline — clickable trail back to parent context */}
-      <nav className="flex items-center gap-1 text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-500 mb-1">
-        {parents.map((seg, i) => (
-          <span key={seg.label} className="flex items-center gap-1">
-            {i > 0 && <span className="text-slate-300 dark:text-slate-700">›</span>}
-            <button
-              onClick={seg.onClick}
-              className="hover:text-sky-500 dark:hover:text-sky-400 transition-colors"
-            >
-              {seg.label}
-            </button>
-          </span>
-        ))}
-      </nav>
+      {/* Back-link eyebrow — explicit "← Back to X" affordance */}
+      <button
+        onClick={backHandler}
+        className="group flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500 hover:text-sky-500 dark:hover:text-sky-400 transition-colors mb-1.5"
+      >
+        <span className="transition-transform group-hover:-translate-x-0.5">←</span>
+        <span>Back to {backLabel}</span>
+      </button>
       {/* Prominent H2 title — the subject of this view */}
       <h2 className="font-display text-3xl italic text-ink dark:text-white leading-none tracking-tight">
         {currentTitle}
