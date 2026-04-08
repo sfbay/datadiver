@@ -1404,7 +1404,9 @@ function ComplianceDashboard({
                   {formatBudgetFull(allLayersTotal)}
                 </p>
               </div>
-              <div className="relative h-14 rounded-md overflow-hidden flex border border-white/[0.04]">
+              {/* Bar 1: flat bottom so trapezoid 1 meets it cleanly. Border
+                  on top + sides only so the bottom edge doesn't show a line. */}
+              <div className="relative h-14 rounded-t-md overflow-hidden flex border-t border-x border-white/[0.04]">
                 {agencyTotal > 0 && (
                   <div
                     className="h-full flex flex-col items-center justify-center px-2"
@@ -1475,10 +1477,12 @@ function ComplianceDashboard({
                   className="absolute inset-0 block"
                 >
                   <defs>
+                    {/* Gradient fades ALPHA only (not hue) so it works in both
+                        light and dark modes without introducing color smudge. */}
                     <linearGradient id="trap1-grad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="rgba(14,165,233,0.32)" />
                       <stop offset="55%" stopColor="rgba(14,165,233,0.22)" />
-                      <stop offset="100%" stopColor="rgba(2,6,23,0)" />
+                      <stop offset="100%" stopColor="rgba(14,165,233,0)" />
                     </linearGradient>
                   </defs>
                   <path
@@ -1514,7 +1518,9 @@ function ComplianceDashboard({
                       {formatBudgetFull(totalTaggedAdSpend)}
                     </p>
                   </div>
-                  <div className="relative h-14 rounded-md overflow-hidden border border-sky-400/20">
+                  {/* Bar 2: no rounding, only left/right borders — trapezoid 1
+                      meets the top and trapezoid 2 meets the bottom. */}
+                  <div className="relative h-14 overflow-hidden border-x border-sky-400/20">
                     {/* Legal notices — hatched, excluded */}
                     <div
                       className="absolute inset-y-0 left-0 flex flex-col items-center justify-center"
@@ -1573,10 +1579,11 @@ function ComplianceDashboard({
                   className="absolute inset-0 block"
                 >
                   <defs>
+                    {/* Alpha-only fade (see trap1-grad for rationale). */}
                     <linearGradient id="trap2-grad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="rgba(45,212,191,0.32)" />
                       <stop offset="55%" stopColor="rgba(45,212,191,0.22)" />
-                      <stop offset="100%" stopColor="rgba(2,6,23,0)" />
+                      <stop offset="100%" stopColor="rgba(45,212,191,0)" />
                     </linearGradient>
                   </defs>
                   <path
@@ -1616,8 +1623,10 @@ function ComplianceDashboard({
                       {formatBudgetFull(compliance.totalDiscretionary)}
                     </p>
                   </div>
+                  {/* Bar 3: flat top so trapezoid 2 meets it cleanly. Border
+                      on bottom + sides only so the top edge doesn't show a line. */}
                   <div
-                    className="relative h-14 rounded-md overflow-hidden border border-teal-400/25"
+                    className="relative h-14 rounded-b-md overflow-hidden border-b border-x border-teal-400/25"
                     style={{ backgroundColor: 'rgba(45,212,191,0.1)' }}
                   >
                     {/* Community media actual — emerald fill inside the teal container */}
