@@ -24,7 +24,7 @@ interface VendorProfileProps {
   onBack: () => void
 }
 
-export default function VendorProfile({ vendor, fiscalYear, onBack }: VendorProfileProps) {
+export default function VendorProfile({ vendor, fiscalYear, onBack: _onBack }: VendorProfileProps) {
   const profile = useVendorProfile(vendor, fiscalYear)
   const { metrics } = profile
   const payments = useVendorPayments(vendor)
@@ -98,30 +98,26 @@ export default function VendorProfile({ vendor, fiscalYear, onBack }: VendorProf
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="flex-shrink-0 px-6 py-4 border-b border-slate-200/50 dark:border-white/[0.04]">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={onBack}
-            className="text-xs font-mono text-slate-400 hover:text-ink dark:hover:text-white transition-colors"
-          >
-            ← Back to vendor list
-          </button>
-          <ShareLinkButton buildUrl={buildShareUrl} />
-        </div>
-        <div className="mt-2">
-          <div className="flex items-center gap-2">
-            <h2 className="font-display text-xl italic text-ink dark:text-white leading-tight tracking-tight">
-              {toSentenceCase(vendor)}
-            </h2>
-            {metrics?.isNonprofit && (
-              <span className="text-[9px] font-mono font-semibold bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded-full">
-                Nonprofit
-              </span>
-            )}
+      {/* Header — the big H2 title + back button are handled by the parent
+          (AdBreadcrumb in CityBudget.tsx). This inner header now only
+          carries the vendor-specific metadata: Nonprofit badge, lifetime
+          stats, baseball-card vitals, and anomaly flags. */}
+      <div className="flex-shrink-0 px-6 py-3 border-b border-slate-200/50 dark:border-white/[0.04]">
+        <div>
+          {/* Top row: Nonprofit badge (if applicable) + ShareLinkButton */}
+          <div className="flex items-center justify-between mb-1">
+            <div>
+              {metrics?.isNonprofit && (
+                <span className="text-[9px] font-mono font-semibold bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded-full">
+                  Nonprofit
+                </span>
+              )}
+            </div>
+            <ShareLinkButton buildUrl={buildShareUrl} />
           </div>
+
           {metrics && (
-            <p className="text-[10px] font-mono text-slate-400 dark:text-slate-500 mt-0.5">
+            <p className="text-[10px] font-mono text-slate-400 dark:text-slate-500">
               {formatBudgetFull(metrics.lifetimeTotal)} lifetime · {metrics.fiscalYears} fiscal years · {metrics.contractCount} contract{metrics.contractCount !== 1 ? 's' : ''}
             </p>
           )}

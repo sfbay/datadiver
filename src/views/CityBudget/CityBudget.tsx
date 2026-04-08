@@ -892,12 +892,56 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
             {/* ── Drilled-down view: filtered vendor list ──── */}
             {isDrilledDown && (
               <>
-                {/* Department compliance indicator — either the compliance
-                    card (if this dept has discretionary spending) OR an
-                    informational placeholder (if it doesn't). Absence of
-                    discretionary spending is itself information worth
-                    surfacing — usually it means the dept routes all ad
-                    money through agencies or has only legal notices. */}
+                {/* Media mix for department drill-down */}
+                {drilldown.dept && (
+                  <div className="glass-card rounded-xl p-4">
+                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-3">
+                      Media Mix — {drilldown.dept}
+                    </p>
+                    <div className="space-y-2">
+                      {mediaMix.map((m) => (
+                        <button
+                          key={m.category}
+                          onClick={() => navigateToCategory(m.category)}
+                          className="w-full text-left group"
+                        >
+                          <div className="flex items-center justify-between mb-0.5">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: m.color }} />
+                              <span className="text-[10px] text-slate-600 dark:text-slate-300 group-hover:text-ink dark:group-hover:text-white transition-colors">
+                                {m.label}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-mono text-slate-500 tabular-nums">
+                                {formatBudgetAmount(m.total)}
+                              </span>
+                              <svg className="w-3 h-3 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path d="M9 5l7 7-7 7" />
+                              </svg>
+                            </div>
+                          </div>
+                          <div className="h-1.5 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{
+                                width: `${filteredTotal > 0 ? (m.total / filteredTotal) * 100 : 0}%`,
+                                backgroundColor: m.color,
+                                opacity: 0.7,
+                              }}
+                            />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Department compliance indicator — rendered AFTER the media
+                    mix because the editorial order is "show what they spent
+                    on before evaluating how well they complied." Either the
+                    compliance card (if this dept has discretionary spending)
+                    or an informational placeholder (if it doesn't). */}
                 {drilldown.dept && (() => {
                   const deptCard = compliance.departmentCards.find((d) => d.department === drilldown.dept)
                   const deptInfo = ad.departments.find((d) => d.department === drilldown.dept)
@@ -957,9 +1001,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                           {deptCard.outletCount} outlet{deptCard.outletCount !== 1 ? 's' : ''}
                         </span>
                       </div>
-                      {/* Mini composition bar scoped to this department.
-                          Teal container matching the main compliance card
-                          bar 3, emerald community fill, green dashed target. */}
+                      {/* Mini composition bar scoped to this department. */}
                       <div
                         className="relative h-4 rounded overflow-hidden"
                         style={{ backgroundColor: 'rgba(45,212,191,0.1)' }}
@@ -988,51 +1030,6 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                     </div>
                   )
                 })()}
-
-                {/* Media mix for department drill-down */}
-                {drilldown.dept && (
-                  <div className="glass-card rounded-xl p-4">
-                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-3">
-                      Media Mix — {drilldown.dept}
-                    </p>
-                    <div className="space-y-2">
-                      {mediaMix.map((m) => (
-                        <button
-                          key={m.category}
-                          onClick={() => navigateToCategory(m.category)}
-                          className="w-full text-left group"
-                        >
-                          <div className="flex items-center justify-between mb-0.5">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: m.color }} />
-                              <span className="text-[10px] text-slate-600 dark:text-slate-300 group-hover:text-ink dark:group-hover:text-white transition-colors">
-                                {m.label}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-mono text-slate-500 tabular-nums">
-                                {formatBudgetAmount(m.total)}
-                              </span>
-                              <svg className="w-3 h-3 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                <path d="M9 5l7 7-7 7" />
-                              </svg>
-                            </div>
-                          </div>
-                          <div className="h-1.5 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
-                            <div
-                              className="h-full rounded-full transition-all duration-500"
-                              style={{
-                                width: `${filteredTotal > 0 ? (m.total / filteredTotal) * 100 : 0}%`,
-                                backgroundColor: m.color,
-                                opacity: 0.7,
-                              }}
-                            />
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 {/* Filtered vendor list */}
                 <FilteredVendorList
