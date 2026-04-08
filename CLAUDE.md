@@ -85,12 +85,49 @@ Each view follows the same structure:
 5. Map-centric (MapView + sidebar) or chart-centric (Dispatch911)
 6. Skeleton loading per component zone
 
+### Compliance data model (Resolution 240210)
+The Advertising & Media tab has a dense architectural story worth preserving. **Three-layer ad detection** is the foundational pattern:
+- **Tagged** (`sub_object = 'Advertising'`) — direct department ad placements
+- **Agency** (vendor matches registry AND `sub_object != 'Advertising'`) — agency-managed media buying, opaque
+- **P-card** (`vendor LIKE '%P-CARD%' AND sub_object = 'Advertising'`) — untraceable purchases
+
+**P-card rows appear in BOTH tagged and p-card queries** — always deduplicate via `vendor + fiscal_year` keys or exclude `%P-CARD%` from the tagged query. Any department-level or category-level time series MUST query all three layers and sum; tagged-only queries produce wildly misleading totals for agency-heavy departments like AIR Airport Commission (99% agency-routed).
+
+**Compliance basis** = discretionary = tagged minus legal notices. Target: ≥50% of discretionary → community/ethnic media outlets. The agency registry is currently duplicated across `useAdvertisingData.ts`, `useComplianceData.ts`, and `useEntityTimeline.ts` — should be lifted to `mediaClassification.ts` as an exported `AGENCY_VENDOR_LIKE` constant.
+
+**See `.claude/skills/datadiver-compliance.md`** for the full compliance dashboard knowledge base — color palette reservations, trapezoid gradient technique, stakeholder context (Maya, Resolution 240210 effective FY2024-25), department rail tab semantics, and the tile-and-chart consistency self-check.
+
+### Color palette commitment (drill-down hierarchy)
+The compliance dashboard and related views enforce **reserved color semantics**. Same concept = same color everywhere:
+
+| Concept | Color | Hex |
+|---|---|---|
+| Agencies (full-service agency) | Purple | `#a855f7` |
+| Direct ad placements | Sky | `#0ea5e9` |
+| Discretionary (compliance basis) | Teal | `#2dd4bf` |
+| Community media (goal + actual + target line) | Emerald | `#10b981` |
+| Legal notices (excluded) | Slate | `#64748b` / `#94a3b8` |
+| P-card (untraceable) | Red | `#ef4444` |
+| Warning / below-target | Amber | `#f59e0b` |
+
+The visual progression **purple → sky → teal → emerald** is the narrative of narrowing scope. Don't introduce collisions — `full-service-agency` in `MEDIA_CATEGORIES` is purple (not pink), and `out-of-home` is pink (not violet) to avoid competing with the agency purple.
+
+### SVG gradient pattern for adjacent semi-transparent shapes
+When two semi-transparent shapes meet at a 1-pixel boundary (e.g., compliance card bar meeting trapezoid connector), alpha compositing produces a brighter line at the overlap. **Fix**: fade to zero alpha at the exact overlap edge. Safe gradient shape:
+```
+0%   → rgba(color, 0)     // overlap pixel transparent, no compound
+5%   → rgba(color, 0.22)  // sharp rise in ~2 pixels
+100% → rgba(color, 0)     // linear fade to zero over remaining height
+```
+**Alpha-only fades** (constant hue, varying alpha) work in both light and dark modes. Fading to a specific dark color introduces a visible smudge in light mode. Used in `CityBudget.tsx` trapezoid connectors — see also `.claude/skills/datadiver-compliance.md`.
+
 ## Deployment
 - **Vercel** auto-deploys from `main` branch
 - Env vars: `VITE_MAPBOX_TOKEN`, `VITE_SOCRATA_APP_TOKEN` (set via Vercel dashboard or `vercel env add --value`)
 - SPA routing: `vercel.json` has `rewrites` for `/(.*) → /index.html`
 - Build: `pnpm build` → `tsc -b && vite build`
 - Dev: `pnpm dev` (port 5174)
+- **`tsc -b` is stricter than `tsc --noEmit`** — Vercel's build runs `tsc -b` which catches issues the local `--noEmit` pass doesn't (unused parameters, some Mapbox type assertions). Always run `npx tsc -b` before pushing to avoid failed deploys. Underscore-prefix unused parameters (`_onBack`) to silence strict mode without losing the signature.
 
 ## Fonts
 - Playfair Display (headlines, `.font-display`)
