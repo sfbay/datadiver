@@ -1643,13 +1643,13 @@ function ComplianceDashboard({
                         style={{ left: `${communityWithinDiscretionary}%` }}
                       >
                         <span className="text-[11px] font-mono font-semibold text-emerald-300 tabular-nums leading-tight whitespace-nowrap">
-                          {formatBudgetFull(compliance.ethnicMediaSpend)} community media spend
+                          {formatBudgetFull(compliance.ethnicMediaSpend)} community
                         </span>
                       </div>
                     ) : (
                       <div className="absolute inset-y-0 left-0 flex items-center justify-center pointer-events-none" style={{ width: `${communityWithinDiscretionary}%` }}>
                         <span className="text-[11px] font-mono font-semibold text-white tabular-nums leading-tight">
-                          {formatBudgetFull(compliance.ethnicMediaSpend)} community media spend
+                          {formatBudgetFull(compliance.ethnicMediaSpend)} community
                         </span>
                       </div>
                     )}
