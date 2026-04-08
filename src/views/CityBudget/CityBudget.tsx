@@ -754,9 +754,9 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
     <div className="h-full flex overflow-hidden">
       {/* Main content */}
       <div className="flex-1 overflow-y-auto p-6">
-        {/* Breadcrumb */}
+        {/* Drill-down page header (eyebrow + H2 title) */}
         {isDrilledDown && (
-          <div className="mb-4">
+          <div className="mb-5">
             <AdBreadcrumb drilldown={drilldown} onNavigateRoot={navigateToRoot} onNavigateUp={navigateUp} />
           </div>
         )}
@@ -1289,53 +1289,59 @@ function AdBreadcrumb({
   onNavigateRoot: () => void
   onNavigateUp: () => void
 }) {
-  const segments: { label: string; onClick: () => void; isCurrent: boolean }[] = [
-    { label: 'Advertising & Media', onClick: onNavigateRoot, isCurrent: !drilldown.category && !drilldown.dept && !drilldown.vendor },
+  // Build parent segments (the "path to get here") and the current title
+  // (the deepest drill-down level, which becomes the big display header).
+  const parents: { label: string; onClick: () => void }[] = [
+    { label: 'Advertising & Media', onClick: onNavigateRoot },
   ]
+  let currentTitle: string | null = null
 
   if (drilldown.category) {
     const catLabel = MEDIA_CATEGORIES[drilldown.category]?.label || drilldown.category
-    segments.push({
-      label: catLabel,
-      onClick: onNavigateUp,
-      isCurrent: !drilldown.vendor,
-    })
+    if (drilldown.vendor) {
+      parents.push({ label: catLabel, onClick: onNavigateUp })
+    } else {
+      currentTitle = catLabel
+    }
   }
 
   if (drilldown.dept) {
-    segments.push({
-      label: drilldown.dept,
-      onClick: onNavigateUp,
-      isCurrent: !drilldown.vendor,
-    })
+    if (drilldown.vendor) {
+      parents.push({ label: drilldown.dept, onClick: onNavigateUp })
+    } else {
+      currentTitle = drilldown.dept
+    }
   }
 
   if (drilldown.vendor) {
-    segments.push({
-      label: toSentenceCase(drilldown.vendor),
-      onClick: () => {},
-      isCurrent: true,
-    })
+    currentTitle = toSentenceCase(drilldown.vendor)
   }
 
+  // Root view (no drill-down) — render nothing; the main tab header already
+  // shows "Advertising & Media" in the top nav bar.
+  if (!currentTitle) return null
+
   return (
-    <nav className="flex items-center gap-1 text-[11px] font-mono">
-      {segments.map((seg, i) => (
-        <span key={seg.label} className="flex items-center gap-1 animate-[fadeSlideIn_200ms_ease-out_both]" style={{ animationDelay: `${i * 50}ms` }}>
-          {i > 0 && <span className="text-slate-300 dark:text-slate-600">›</span>}
-          {seg.isCurrent ? (
-            <span className="text-ink dark:text-white font-medium">{seg.label}</span>
-          ) : (
+    <div className="animate-[fadeSlideIn_200ms_ease-out_both]">
+      {/* Eyebrow / overline — clickable trail back to parent context */}
+      <nav className="flex items-center gap-1 text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-500 mb-1">
+        {parents.map((seg, i) => (
+          <span key={seg.label} className="flex items-center gap-1">
+            {i > 0 && <span className="text-slate-300 dark:text-slate-700">›</span>}
             <button
               onClick={seg.onClick}
-              className="text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors"
+              className="hover:text-sky-500 dark:hover:text-sky-400 transition-colors"
             >
               {seg.label}
             </button>
-          )}
-        </span>
-      ))}
-    </nav>
+          </span>
+        ))}
+      </nav>
+      {/* Prominent H2 title — the subject of this view */}
+      <h2 className="font-display text-3xl italic text-ink dark:text-white leading-none tracking-tight">
+        {currentTitle}
+      </h2>
+    </div>
   )
 }
 
