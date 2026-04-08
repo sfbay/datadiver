@@ -28,7 +28,12 @@ const COLOR_DIRECT = '#0ea5e9'        // sky — direct ad placements (legal+dis
 const COLOR_DIRECT_LEGAL = '#64748b'  // slate — legal notices (within direct)
 const COLOR_PCARD = '#ef4444'         // red — p-card untraceable
 const COLOR_COMMUNITY = '#10b981'     // emerald — community media share inside direct
-const COLOR_TARGET = '#f59e0b'        // amber — 50% target reference
+// Target line uses the SAME hue as community media on purpose: the 50% line
+// is "where community media should reach." Green dashed line = community's goal.
+const COLOR_TARGET = '#10b981'
+// Resolution 240210 took effect in FY2024-25 (our internal fiscalYear = 2025).
+// Any year strictly before that is shown with a faint "advisory" target line.
+const RESOLUTION_EFFECTIVE_FY = 2025
 
 // Hoisted module-level margins (re-rendering optimization: stable reference)
 const MARGIN = { top: 24, right: 56, bottom: 38, left: 56 }
@@ -36,7 +41,7 @@ const MARGIN = { top: 24, right: 56, bottom: 38, left: 56 }
 export default function AdSpendCompositionChart({
   data,
   width = 700,
-  height = 320,
+  height = 400,
   currentFY,
 }: AdSpendCompositionChartProps) {
   const svgRef = useRef<SVGSVGElement>(null)
@@ -176,18 +181,22 @@ export default function AdSpendCompositionChart({
               .text(`Community media: ${formatBudgetAmount(d.ethnicMediaSpend)} (${d.compliancePct.toFixed(1)}% of discretionary)`)
           }
 
-          // 50%-of-discretionary marker — a thin amber tick across this bar's width,
-          // positioned at half the discretionary height.
+          // 50%-of-discretionary marker — green dashed tick, positioned at half
+          // the discretionary height. The green hue semantically connects this
+          // line to the community-media fill: it's the level community should reach.
+          // Pre-resolution years (< FY2024-25) show the tick very faintly as an
+          // advisory reference, since the resolution didn't exist then.
           const halfMarkY = segY + discH / 2
+          const isPostResolution = d.fiscalYear >= RESOLUTION_EFFECTIVE_FY
           g.append('line')
             .attr('x1', cx - 1)
             .attr('x2', cx + bw + 1)
             .attr('y1', halfMarkY)
             .attr('y2', halfMarkY)
             .attr('stroke', COLOR_TARGET)
-            .attr('stroke-width', 1.25)
+            .attr('stroke-width', isPostResolution ? 1.5 : 1)
             .attr('stroke-dasharray', '3,2')
-            .attr('opacity', 0.7)
+            .attr('opacity', isPostResolution ? 0.85 : 0.2)
         }
 
         yCursor = segY
@@ -209,16 +218,23 @@ export default function AdSpendCompositionChart({
         yCursor = segY
       }
 
-      // Compliance % label above the bar
+      // Compliance % label above the bar — green when hitting target, warning
+      // amber when below. For pre-resolution years we render it neutral slate
+      // since the compliance target wasn't in force.
       const labelY = y(d.grandTotal) - 6
+      const isPostRes = d.fiscalYear >= RESOLUTION_EFFECTIVE_FY
+      const labelColor = !isPostRes
+        ? '#64748b'                                // neutral slate pre-resolution
+        : d.compliancePct >= 50 ? COLOR_COMMUNITY  // green when hitting 50%+
+        : '#f59e0b'                                // amber warning below target
       g.append('text')
         .attr('x', cx + bw / 2)
         .attr('y', labelY)
         .attr('text-anchor', 'middle')
         .attr('font-size', 9)
         .attr('font-family', 'JetBrains Mono, monospace')
-        .attr('fill', d.compliancePct >= 50 ? COLOR_COMMUNITY : COLOR_TARGET)
-        .attr('opacity', 0.85)
+        .attr('fill', labelColor)
+        .attr('opacity', isPostRes ? 0.95 : 0.55)
         .text(`${d.compliancePct.toFixed(0)}%`)
 
       // Highlight ring around the current FY
@@ -235,30 +251,35 @@ export default function AdSpendCompositionChart({
       }
     })
 
-    // ── Resolution 240210 marker line at FY2025 ──
-    const resolutionFY = 2025
-    if (resolutionFY >= totalsByFY[0].fiscalYear && resolutionFY <= totalsByFY[totalsByFY.length - 1].fiscalYear) {
-      // Draw between bars: midway between FY2024 and FY2025 bandwidth midpoints
-      const fy24 = totalsByFY.find((d) => d.fiscalYear === 2024)
-      const fy25 = totalsByFY.find((d) => d.fiscalYear === 2025)
-      if (fy24 && fy25) {
-        const x24 = (x(2024) ?? 0) + x.bandwidth()
-        const x25 = x(2025) ?? 0
-        const rx = (x24 + x25) / 2
+    // ── Resolution 240210 marker line — drawn between FY2024 and FY2025 bars.
+    // This visually separates "pre-resolution" years (faded target ticks) from
+    // "in force" years (prominent target ticks).
+    {
+      const preFY = RESOLUTION_EFFECTIVE_FY - 1
+      const postFY = RESOLUTION_EFFECTIVE_FY
+      const pre = totalsByFY.find((d) => d.fiscalYear === preFY)
+      const post = totalsByFY.find((d) => d.fiscalYear === postFY)
+      if (pre || post) {
+        const preRight = pre ? (x(preFY) ?? 0) + x.bandwidth() : null
+        const postLeft = post ? (x(postFY) ?? 0) : null
+        const rx = preRight !== null && postLeft !== null
+          ? (preRight + postLeft) / 2
+          : (preRight ?? postLeft ?? 0)
         g.append('line')
           .attr('x1', rx).attr('x2', rx)
-          .attr('y1', -8).attr('y2', h)
-          .attr('stroke', isDarkMode ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)')
+          .attr('y1', -10).attr('y2', h)
+          .attr('stroke', COLOR_TARGET)
           .attr('stroke-width', 1)
-          .attr('stroke-dasharray', '3,3')
+          .attr('stroke-dasharray', '2,3')
+          .attr('opacity', 0.35)
         g.append('text')
           .attr('x', rx + 4)
-          .attr('y', -10)
+          .attr('y', -12)
           .attr('font-size', 8)
           .attr('font-family', 'JetBrains Mono, monospace')
-          .attr('fill', textColor)
-          .attr('opacity', 0.6)
-          .text('Res. 240210 →')
+          .attr('fill', COLOR_TARGET)
+          .attr('opacity', 0.7)
+          .text('Res. 240210 in force →')
       }
     }
 

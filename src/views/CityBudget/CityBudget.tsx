@@ -1365,9 +1365,14 @@ function ComplianceDashboard({
               {/* ─── BAR 1: All city ad-related spending ─── */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[9px] font-mono uppercase tracking-[0.15em] text-slate-300">
-                    All city ad-related spending
-                  </span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-[9px] font-mono uppercase tracking-[0.15em] text-slate-300">
+                      All city ad-related spending
+                    </span>
+                    <span className="text-[8px] font-mono text-slate-500 normal-case tracking-normal">
+                      all vendor payments tied to advertising · FY{fiscalYear - 1}-{String(fiscalYear).slice(2)}
+                    </span>
+                  </div>
                   <span className="text-[10px] font-mono font-semibold text-slate-200 tabular-nums">
                     {formatBudgetFull(allLayersTotal)}
                   </span>
@@ -1438,22 +1443,33 @@ function ComplianceDashboard({
               </div>
 
               {/* Connector 1: top bar "direct" segment → middle bar full width */}
-              <div className="relative h-3.5 -my-px">
+              <div className="relative h-7 -my-px">
                 <svg
                   width="100%"
-                  height="14"
-                  viewBox="0 0 100 14"
+                  height="28"
+                  viewBox="0 0 100 28"
                   preserveAspectRatio="none"
                   className="absolute inset-0"
                 >
                   <path
-                    d={`M ${conn1Left},0 L ${conn1Right},0 L 100,14 L 0,14 Z`}
-                    fill="rgba(14,165,233,0.06)"
-                    stroke="rgba(14,165,233,0.18)"
-                    strokeWidth="0.3"
+                    d={`M ${conn1Left},0 L ${conn1Right},0 L 100,28 L 0,28 Z`}
+                    fill="rgba(14,165,233,0.14)"
+                    stroke="rgba(14,165,233,0.38)"
+                    strokeWidth="1"
                     vectorEffect="non-scaling-stroke"
                   />
                 </svg>
+                {/* "zoom in" annotation riding the centerline of the trapezoid */}
+                <span
+                  className="absolute text-[8px] font-mono text-sky-300/70 tracking-wider uppercase"
+                  style={{
+                    left: `${(conn1Left + conn1Right) / 2}%`,
+                    top: '50%',
+                    transform: 'translate(-50%, -50%)',
+                  }}
+                >
+                  zoom in ↓
+                </span>
               </div>
 
               {/* ─── BAR 2: Direct ad placements (drill-down) ─── */}
@@ -1465,7 +1481,7 @@ function ComplianceDashboard({
                         Direct ad placements
                       </span>
                       <span className="text-[8px] font-mono text-slate-500 normal-case tracking-normal">
-                        what 43 departments paid directly to publishers
+                        what {compliance.departmentCards.length} departments paid directly to publishers · FY{fiscalYear - 1}-{String(fiscalYear).slice(2)}
                       </span>
                     </div>
                     <span className="text-[10px] font-mono font-semibold text-sky-200 tabular-nums">
@@ -1515,22 +1531,32 @@ function ComplianceDashboard({
               )}
 
               {/* Connector 2: middle bar "discretionary" segment → bottom bar full width */}
-              <div className="relative h-3.5 -my-px">
+              <div className="relative h-7 -my-px">
                 <svg
                   width="100%"
-                  height="14"
-                  viewBox="0 0 100 14"
+                  height="28"
+                  viewBox="0 0 100 28"
                   preserveAspectRatio="none"
                   className="absolute inset-0"
                 >
                   <path
-                    d={`M ${conn2Left},0 L ${conn2Right},0 L 100,14 L 0,14 Z`}
-                    fill="rgba(16,185,129,0.05)"
-                    stroke="rgba(16,185,129,0.2)"
-                    strokeWidth="0.3"
+                    d={`M ${conn2Left},0 L ${conn2Right},0 L 100,28 L 0,28 Z`}
+                    fill="rgba(16,185,129,0.12)"
+                    stroke="rgba(16,185,129,0.38)"
+                    strokeWidth="1"
                     vectorEffect="non-scaling-stroke"
                   />
                 </svg>
+                <span
+                  className="absolute text-[8px] font-mono text-emerald-300/70 tracking-wider uppercase"
+                  style={{
+                    left: `${(conn2Left + conn2Right) / 2}%`,
+                    top: '50%',
+                    transform: 'translate(-50%, -50%)',
+                  }}
+                >
+                  zoom in ↓
+                </span>
               </div>
 
               {/* ─── BAR 3: Discretionary → community media (compliance basis) ─── */}
@@ -1538,18 +1564,20 @@ function ComplianceDashboard({
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-[9px] font-mono uppercase tracking-[0.15em] text-emerald-300">
-                        Discretionary → community media
+                      <span className="text-[9px] font-mono uppercase tracking-[0.15em]">
+                        <span className="text-sky-300">Discretionary</span>
+                        <span className="text-slate-500"> → </span>
+                        <span className="text-emerald-300">community media</span>
                       </span>
                       <span className="text-[8px] font-mono text-slate-500 normal-case tracking-normal">
-                        Resolution 240210 target: ≥ 50% to ethnic &amp; community outlets
+                        Resolution 240210 target: ≥ 50% to ethnic &amp; community outlets · FY{fiscalYear - 1}-{String(fiscalYear).slice(2)}
                       </span>
                     </div>
-                    <span className="text-[10px] font-mono font-semibold text-emerald-200 tabular-nums">
+                    <span className="text-[10px] font-mono font-semibold text-sky-200 tabular-nums">
                       {formatBudgetFull(compliance.totalDiscretionary)}
                     </span>
                   </div>
-                  <div className="relative h-12 rounded-md overflow-hidden border border-emerald-400/15" style={{ backgroundColor: 'rgba(14,165,233,0.06)' }}>
+                  <div className="relative h-12 rounded-md overflow-hidden border border-sky-400/15" style={{ backgroundColor: 'rgba(14,165,233,0.1)' }}>
                     {/* Community media actual */}
                     <div
                       className="absolute inset-y-0 left-0 flex flex-col items-center justify-center bg-emerald-500/55 transition-all duration-700"
@@ -1567,13 +1595,13 @@ function ComplianceDashboard({
                         </>
                       )}
                     </div>
-                    {/* 50% target marker */}
+                    {/* 50% target marker — green to semantically anchor the "goal for community media" */}
                     <div
                       className="absolute inset-y-0 pointer-events-none"
                       style={{ left: '50%' }}
                     >
-                      <div className="h-full border-l-2 border-dashed border-amber-400/70" />
-                      <span className="absolute top-0 left-1 text-[8px] font-mono text-amber-400/90 leading-tight whitespace-nowrap">
+                      <div className="h-full border-l-2 border-dashed border-emerald-400/70" />
+                      <span className="absolute top-0 left-1 text-[8px] font-mono text-emerald-300/90 leading-tight whitespace-nowrap">
                         50% target
                       </span>
                     </div>
@@ -1644,29 +1672,41 @@ function ComplianceDashboard({
       </div>
 
       {/* ── Historical Composition Chart ── */}
-      {compliance.trend.length > 0 && (
-        <div className="glass-card rounded-xl p-4">
-          <div className="flex items-baseline justify-between mb-3">
-            <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60">
-              Annual ad-spending composition
-            </p>
-            <p className="text-[8px] font-mono text-slate-500 normal-case">
-              same three layers as the bars above, year by year
+      {compliance.trend.length > 0 && (() => {
+        const minFY = compliance.trend[0]?.fiscalYear
+        const maxFY = compliance.trend[compliance.trend.length - 1]?.fiscalYear
+        const fyRangeLabel = minFY && maxFY
+          ? `FY${String(minFY - 1).slice(2)}-${String(minFY).slice(2)} → FY${String(maxFY - 1).slice(2)}-${String(maxFY).slice(2)}`
+          : ''
+        return (
+          <div className="glass-card rounded-xl p-4">
+            <div className="flex items-baseline justify-between mb-3">
+              <div className="flex items-baseline gap-2">
+                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60">
+                  Annual ad-spending composition
+                </p>
+                <p className="text-[9px] font-mono text-slate-400">
+                  · {fyRangeLabel}
+                </p>
+              </div>
+              <p className="text-[8px] font-mono text-slate-500 normal-case">
+                same three layers as the bars above, year by year
+              </p>
+            </div>
+            <AdSpendCompositionChart
+              data={compliance.trend}
+              width={700}
+              height={400}
+              currentFY={fiscalYear}
+            />
+            <p className="text-[8px] font-mono text-slate-400/50 mt-2">
+              Stack: agencies + direct ad placements (legal + discretionary) + p-card. Green fill inside discretionary = community media spend. Dashed green tick = 50% of discretionary (community-media target). % label: green ≥ 50%, amber &lt; 50%, slate pre-FY2024-25 (advisory only — resolution not yet in force).
             </p>
           </div>
-          <AdSpendCompositionChart
-            data={compliance.trend}
-            width={700}
-            height={320}
-            currentFY={fiscalYear}
-          />
-          <p className="text-[8px] font-mono text-slate-400/50 mt-2">
-            Stack: agencies + direct ad placements (legal + discretionary) + p-card. Green fill inside discretionary = community media spend. Dashed amber tick = 50% target of discretionary. % above each bar = compliance.
-          </p>
-        </div>
-      )}
+        )
+      })()}
       {compliance.trendLoading && (
-        <SkeletonChart height={320} />
+        <SkeletonChart height={400} />
       )}
 
       {/* ── Department Report Card ──────────────────── */}
