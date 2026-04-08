@@ -1525,16 +1525,16 @@ function ComplianceDashboard({
                   className="absolute inset-0 block"
                 >
                   <defs>
-                    {/* Plateau gradient: 0 alpha ONLY at the top and bottom
-                        overlap pixels, rising to full 0.22 alpha over ~2 pixels
-                        and sustaining through the middle. This gives a razor-
-                        sharp visible edge at the top (the intended look) while
-                        preventing compound alpha at the 1-pixel overlap from
-                        -my-px. Think "slab with hairline fade zones." */}
+                    {/* Sharp top, long fade bottom: 0 alpha at y=0 (overlap
+                        safety), rise to peak 0.22 over ~2 pixels (5%), then
+                        a SINGLE long linear fade from peak all the way to 0
+                        at y=100% (~42 pixels of gradual dissolve). The
+                        bottom overlap pixel contributes 0 alpha via the
+                        linear interpolation math — no explicit plateau
+                        needed. Shape: solid cap dissolving into nothingness. */}
                     <linearGradient id="trap1-grad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="rgba(14,165,233,0)" />
                       <stop offset="5%" stopColor="rgba(14,165,233,0.22)" />
-                      <stop offset="95%" stopColor="rgba(14,165,233,0.22)" />
                       <stop offset="100%" stopColor="rgba(14,165,233,0)" />
                     </linearGradient>
                   </defs>
@@ -1633,13 +1633,11 @@ function ComplianceDashboard({
                   className="absolute inset-0 block"
                 >
                   <defs>
-                    {/* Plateau gradient — see trap1-grad for rationale.
-                        Sharp-top slab with hairline fades to 0 at each
-                        interface pixel so compound alpha is avoided. */}
+                    {/* Sharp top, long gradual fade — see trap1-grad for
+                        rationale. */}
                     <linearGradient id="trap2-grad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="rgba(45,212,191,0)" />
                       <stop offset="5%" stopColor="rgba(45,212,191,0.22)" />
-                      <stop offset="95%" stopColor="rgba(45,212,191,0.22)" />
                       <stop offset="100%" stopColor="rgba(45,212,191,0)" />
                     </linearGradient>
                   </defs>
