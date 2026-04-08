@@ -13,6 +13,8 @@ import { useBudgetVsActual, useBudgetTotals, useSpendingTrend, useDepartmentSpen
 import { useAdvertisingData, type AdVendorRow, type AdvertisingData } from '@/hooks/useAdvertisingData'
 import { useComplianceData, type ComplianceStatus, type DepartmentCard } from '@/hooks/useComplianceData'
 import AdSpendCompositionChart from '@/components/charts/AdSpendCompositionChart'
+import SpendingTimeline from '@/components/charts/SpendingTimeline'
+import { useDepartmentTimeline, useCategoryTimeline } from '@/hooks/useEntityTimeline'
 import MethodologyTip from '@/components/ui/MethodologyTip'
 import { MEDIA_CATEGORIES, type MediaCategory } from '@/utils/mediaClassification'
 import { exportToCSV } from '@/utils/csvExport'
@@ -708,6 +710,12 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
     return map
   }, [compliance.departmentCards])
 
+  // Year-by-year spending timelines — only activate when the user is on
+  // a dept or category drill-down. The hook is called unconditionally
+  // (Rules of Hooks) but fetches nothing when its target is null.
+  const deptTimeline = useDepartmentTimeline(drilldown.dept, fiscalYear)
+  const categoryTimeline = useCategoryTimeline(drilldown.category, fiscalYear)
+
   // ── Department rail tab state ────────────────────────────
   // Three lenses on the same 23 departments, each with a different scale:
   //   spend            — total ad spend (composition bar, scaled to top dept)
@@ -892,6 +900,39 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
             {/* ── Drilled-down view: filtered vendor list ──── */}
             {isDrilledDown && (
               <>
+                {/* Year-by-year spending timeline — shown for both dept and
+                    category drill-downs. Pure read-only visualization: the
+                    current FY is highlighted and peak year gets an amber dot.
+                    Year selection is done via the top-right FY selector; the
+                    timeline is a "where are you in the trend" indicator only. */}
+                {drilldown.dept && deptTimeline.data.length >= 2 && (
+                  <div className="glass-card rounded-xl p-4">
+                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                      Spending Timeline — {drilldown.dept}
+                    </p>
+                    <SpendingTimeline data={deptTimeline.data} currentFY={fiscalYear} />
+                  </div>
+                )}
+                {drilldown.dept && deptTimeline.isLoading && (
+                  <SkeletonChart height={180} />
+                )}
+
+                {drilldown.category && !drilldown.dept && !drilldown.vendor && categoryTimeline.data.length >= 2 && (
+                  <div className="glass-card rounded-xl p-4">
+                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                      Spending Timeline — {MEDIA_CATEGORIES[drilldown.category]?.label}
+                    </p>
+                    <SpendingTimeline
+                      data={categoryTimeline.data}
+                      currentFY={fiscalYear}
+                      color={MEDIA_CATEGORIES[drilldown.category]?.color}
+                    />
+                  </div>
+                )}
+                {drilldown.category && !drilldown.dept && !drilldown.vendor && categoryTimeline.isLoading && (
+                  <SkeletonChart height={180} />
+                )}
+
                 {/* Media mix for department drill-down */}
                 {drilldown.dept && (
                   <div className="glass-card rounded-xl p-4">

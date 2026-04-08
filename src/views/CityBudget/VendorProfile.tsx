@@ -11,6 +11,7 @@ import { useVendorProfile, useVendorPayments, useVendorMonthlySpend, type Vendor
 import { exportToCSV } from '@/utils/csvExport'
 import { Skeleton, SkeletonChart } from '@/components/ui/Skeleton'
 import ShareLinkButton from '@/components/ui/ShareLinkButton'
+import SpendingTimeline from '@/components/charts/SpendingTimeline'
 import { formatBudgetAmount, formatBudgetFull, formatFiscalYear, getCurrentFiscalYear } from '@/utils/fiscalYear'
 import { toSentenceCase } from '@/utils/format'
 import { computeContractFlags, computePaymentPatternFlags, type VendorFlag } from '@/utils/vendorFlags'
@@ -390,143 +391,8 @@ export default function VendorProfile({ vendor, fiscalYear, onBack: _onBack }: V
   )
 }
 
-// ── Spending Timeline (D3 area chart) ──────────────────────
-
-function SpendingTimeline({
-  data,
-  currentFY,
-}: {
-  data: { fiscal_year: string; total_paid: string; payment_count: string }[]
-  currentFY: FiscalYear
-}) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const svgRef = useRef<SVGSVGElement>(null)
-  const isDarkMode = useAppStore((s) => s.isDarkMode)
-
-  const points = useMemo(
-    () => data
-      .map((r) => ({ fy: parseInt(r.fiscal_year, 10), amount: parseFloat(r.total_paid) || 0 }))
-      .sort((a, b) => a.fy - b.fy),
-    [data],
-  )
-
-  useEffect(() => {
-    if (!svgRef.current || !containerRef.current || points.length < 2) return
-
-    const svg = d3.select(svgRef.current)
-    svg.selectAll('*').remove()
-
-    const width = containerRef.current.clientWidth || 460
-    const height = 180
-    const margin = { top: 12, right: 16, bottom: 28, left: 52 }
-    const w = width - margin.left - margin.right
-    const h = height - margin.top - margin.bottom
-
-    svg.attr('width', width).attr('height', height)
-    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`)
-
-    const x = d3.scaleLinear()
-      .domain(d3.extent(points, (d) => d.fy) as [number, number])
-      .range([0, w])
-    const y = d3.scaleLinear()
-      .domain([0, (d3.max(points, (d) => d.amount) || 1) * 1.1])
-      .range([h, 0])
-      .nice()
-
-    // Grid lines
-    const gridColor = isDarkMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'
-    g.selectAll('.grid')
-      .data(y.ticks(4))
-      .join('line')
-      .attr('x1', 0).attr('x2', w)
-      .attr('y1', (d) => y(d)).attr('y2', (d) => y(d))
-      .attr('stroke', gridColor)
-
-    // Area fill
-    const area = d3.area<{ fy: number; amount: number }>()
-      .x((d) => x(d.fy))
-      .y0(h)
-      .y1((d) => y(d.amount))
-      .curve(d3.curveMonotoneX)
-
-    g.append('path')
-      .datum(points)
-      .attr('fill', `${ACCENT}18`)
-      .attr('d', area)
-
-    // Line
-    const line = d3.line<{ fy: number; amount: number }>()
-      .x((d) => x(d.fy))
-      .y((d) => y(d.amount))
-      .curve(d3.curveMonotoneX)
-
-    const path = g.append('path')
-      .datum(points)
-      .attr('fill', 'none')
-      .attr('stroke', ACCENT)
-      .attr('stroke-width', 2)
-      .attr('d', line)
-
-    // Animate line draw
-    const totalLength = path.node()?.getTotalLength() || 0
-    path
-      .attr('stroke-dasharray', `${totalLength} ${totalLength}`)
-      .attr('stroke-dashoffset', totalLength)
-      .transition()
-      .duration(800)
-      .ease(d3.easeCubicOut)
-      .attr('stroke-dashoffset', 0)
-
-    // Highlight current FY dot
-    const currentPoint = points.find((p) => p.fy === currentFY)
-    if (currentPoint) {
-      g.append('circle')
-        .attr('cx', x(currentPoint.fy))
-        .attr('cy', y(currentPoint.amount))
-        .attr('r', 4)
-        .attr('fill', ACCENT)
-        .attr('stroke', isDarkMode ? '#0f172a' : '#fff')
-        .attr('stroke-width', 2)
-    }
-
-    // Highlight peak year
-    const peak = points.reduce((best, p) => p.amount > best.amount ? p : best, points[0])
-    if (peak && peak.fy !== currentFY) {
-      g.append('circle')
-        .attr('cx', x(peak.fy))
-        .attr('cy', y(peak.amount))
-        .attr('r', 3)
-        .attr('fill', '#f59e0b')
-        .attr('opacity', 0.7)
-    }
-
-    // Axes
-    const axisColor = isDarkMode ? '#64748b' : '#94a3b8'
-    g.append('g')
-      .attr('transform', `translate(0,${h})`)
-      .call(d3.axisBottom(x).ticks(6).tickFormat((d) => `'${String(d).slice(-2)}`))
-      .call((g) => g.select('.domain').attr('stroke', axisColor))
-      .call((g) => g.selectAll('.tick text').attr('fill', axisColor).attr('font-size', '8px').attr('font-family', '"JetBrains Mono", monospace'))
-      .call((g) => g.selectAll('.tick line').attr('stroke', axisColor))
-
-    g.append('g')
-      .call(d3.axisLeft(y).ticks(4).tickFormat((d) => formatBudgetAmount(d as number)))
-      .call((g) => g.select('.domain').remove())
-      .call((g) => g.selectAll('.tick text').attr('fill', axisColor).attr('font-size', '8px').attr('font-family', '"JetBrains Mono", monospace'))
-      .call((g) => g.selectAll('.tick line').remove())
-
-  }, [points, currentFY, isDarkMode])
-
-  if (points.length < 2) {
-    return <p className="text-xs text-slate-400 font-mono py-4">Insufficient data for timeline</p>
-  }
-
-  return (
-    <div ref={containerRef} className="w-full">
-      <svg ref={svgRef} className="w-full" />
-    </div>
-  )
-}
+// SpendingTimeline extracted to src/components/charts/SpendingTimeline.tsx
+// so department and category detail pages can share the same visualization.
 
 // ── Metric Card ────────────────────────────────────────────
 
