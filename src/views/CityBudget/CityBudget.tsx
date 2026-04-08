@@ -1470,7 +1470,7 @@ function ComplianceDashboard({
                   into darkness so bar 2 below emerges cleanly without a
                   hard seam between the trapezoid fill and the card ground. */}
               <div />
-              <div className="relative h-11">
+              <div className="relative h-11 -my-px">
                 <svg
                   width="100%"
                   height="44"
@@ -1479,12 +1479,15 @@ function ComplianceDashboard({
                   className="absolute inset-0 block"
                 >
                   <defs>
-                    {/* Gradient fades ALPHA only (not hue). Starts at 0.22
-                        to EXACTLY match bar 1's direct segment fill, so the
-                        interface at the top of the trapezoid has no alpha
-                        jump — no visible seam line. */}
+                    {/* Gradient starts and ends at 0 alpha, peaks in the middle.
+                        This makes the trapezoid invisible at both interface
+                        edges — so any 1-pixel overlap (from -my-px) can't
+                        create compound-alpha seam lines, and any 1-pixel gap
+                        has nothing to show anyway. Visually: a soft glowing
+                        tunnel that dissolves at both ends. */}
                     <linearGradient id="trap1-grad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="rgba(14,165,233,0.22)" />
+                      <stop offset="0%" stopColor="rgba(14,165,233,0)" />
+                      <stop offset="40%" stopColor="rgba(14,165,233,0.22)" />
                       <stop offset="100%" stopColor="rgba(14,165,233,0)" />
                     </linearGradient>
                   </defs>
@@ -1574,7 +1577,7 @@ function ComplianceDashboard({
               {/* Trapezoid 2: teal gradient dissolving into darkness.
                   Matches the discretionary segment in bar 2 above. */}
               <div />
-              <div className="relative h-11">
+              <div className="relative h-11 -my-px">
                 <svg
                   width="100%"
                   height="44"
@@ -1583,10 +1586,12 @@ function ComplianceDashboard({
                   className="absolute inset-0 block"
                 >
                   <defs>
-                    {/* Starts at 0.22 to match bar 2's discretionary fill
-                        exactly — no alpha jump at the seam, no line. */}
+                    {/* Same shape-shaped fade as trap1: invisible at both
+                        interface edges, peak in the middle. No compound
+                        alpha at the bar 2 or bar 3 seam. */}
                     <linearGradient id="trap2-grad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="rgba(45,212,191,0.22)" />
+                      <stop offset="0%" stopColor="rgba(45,212,191,0)" />
+                      <stop offset="40%" stopColor="rgba(45,212,191,0.22)" />
                       <stop offset="100%" stopColor="rgba(45,212,191,0)" />
                     </linearGradient>
                   </defs>
