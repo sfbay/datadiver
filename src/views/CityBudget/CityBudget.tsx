@@ -1092,9 +1092,9 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
           {/* Tab selector — three lenses on the same 23 departments */}
           <div className="flex gap-0.5 mb-3 rounded-md overflow-hidden bg-slate-100/50 dark:bg-white/[0.03] p-0.5">
             {([
-              { key: 'spend', label: 'Ad Spend', activeClass: 'bg-sky-500/20 text-sky-300' },
-              { key: 'communityDollars', label: 'Community $', activeClass: 'bg-emerald-500/20 text-emerald-300' },
-              { key: 'communityPct', label: 'Community %', activeClass: 'bg-emerald-500/20 text-emerald-300' },
+              { key: 'spend', label: '$ Ad Spend', activeClass: 'bg-sky-500/20 text-sky-300' },
+              { key: 'communityDollars', label: '$ Community', activeClass: 'bg-emerald-500/20 text-emerald-300' },
+              { key: 'communityPct', label: '% Community', activeClass: 'bg-emerald-500/20 text-emerald-300' },
             ] as const).map((tab) => (
               <button
                 key={tab.key}
