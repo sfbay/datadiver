@@ -104,8 +104,10 @@ const VENDOR_REGISTRY: Array<{ pattern: string; category: MediaCategory }> = [
   // Major metro print
   { pattern: 'SF CHRONICLE', category: 'major-metro-print' },
   { pattern: 'SAN FRANCISCO CHRONICLE', category: 'major-metro-print' },
+  { pattern: 'S F CHRONICLE', category: 'major-metro-print' },        // spaced variant — matches 'S F CHRONICLE- DIV OF HEARST'
   { pattern: 'SF EXAMINER', category: 'major-metro-print' },
   { pattern: 'SAN FRANCISCO EXAMINER', category: 'major-metro-print' },
+  { pattern: 'SAN FRANCISCO MEDIA CO', category: 'major-metro-print' }, // historical SF Examiner publisher (pre-2020)
 
   // Community & ethnic press
   // — Chinese-language
@@ -136,6 +138,9 @@ const VENDOR_REGISTRY: Array<{ pattern: string; category: MediaCategory }> = [
   { pattern: 'S F NEIGHBORHOOD NEWSPAPER', category: 'community-ethnic-press' },
   { pattern: 'MISSION LOCAL', category: 'community-ethnic-press' },
   { pattern: 'BROKE-ASS STUART', category: 'community-ethnic-press' },
+  { pattern: 'POTRERO VIEW', category: 'community-ethnic-press' },        // OEWD-validated C&E vendor (8.30.22 OEWD file)
+  { pattern: 'PIXEL LABS', category: 'community-ethnic-press' },          // Hoodline.com — OEWD-validated C&E vendor (8.30.22 OEWD file)
+  { pattern: 'HOODLINE', category: 'community-ethnic-press' },            // secondary pattern for Hoodline — direct-name variant
   // — Multicultural radio
   { pattern: 'MULTICULTURAL RADIO', category: 'community-ethnic-press' },
 
