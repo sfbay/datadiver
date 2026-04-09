@@ -98,6 +98,39 @@ export default function ParkingRevenue() {
     mapInstance.flyTo({ center: [lng, lat], zoom: 16, duration: 1500 })
   }, [mapInstance, selectedMeter, meterMap])
 
+  // Visual callout marker on the map for the selected meter. Shows a cyan
+  // dot with a pulsing ring. Works for both URL deep-links and click-driven
+  // selections. The marker is a DOM element managed by mapboxgl.Marker, so
+  // Mapbox handles repositioning during pan/zoom automatically.
+  const selectedMarkerRef = useRef<mapboxgl.Marker | null>(null)
+  useEffect(() => {
+    // Clean up previous marker
+    if (selectedMarkerRef.current) {
+      selectedMarkerRef.current.remove()
+      selectedMarkerRef.current = null
+    }
+
+    if (!mapInstance || !selectedMeter || meterMap.size === 0) return
+
+    const meter = meterMap.get(selectedMeter)
+    if (!meter) return
+    const lat = parseFloat(meter.latitude) || 0
+    const lng = parseFloat(meter.longitude) || 0
+    if (lat === 0 || lng === 0) return
+
+    const el = document.createElement('div')
+    el.className = 'selected-meter-marker'
+    el.innerHTML = '<div class="meter-pulse"></div><div class="meter-dot"></div>'
+
+    const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
+      .setLngLat([lng, lat])
+      .addTo(mapInstance)
+
+    selectedMarkerRef.current = marker
+
+    return () => { marker.remove() }
+  }, [mapInstance, selectedMeter, meterMap])
+
   const revenueWhere = useMemo(() => {
     return `session_start_dt >= '${dateRange.start}T00:00:00' AND session_start_dt <= '${dateRange.end}T23:59:59'`
   }, [dateRange])
