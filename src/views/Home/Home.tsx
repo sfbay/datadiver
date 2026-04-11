@@ -7,6 +7,11 @@ import { usePreloadCache } from '@/hooks/usePreloadCache'
 import { useNeighborhoodProfiles } from '@/views/Neighborhood/useNeighborhoodProfiles'
 import CivicFingerprint from '@/views/Neighborhood/CivicFingerprint'
 import { DOMAINS } from '@/views/Neighborhood/types'
+import DeficitCounter from '@/components/investigations/DeficitCounter'
+import ResponseEquity from '@/components/investigations/ResponseEquity'
+import DispatchUnanswered from '@/components/investigations/DispatchUnanswered'
+import ComplianceTracker from '@/components/investigations/ComplianceTracker'
+import OmniSearch from '@/components/search/OmniSearch'
 
 const VISUALIZATIONS = [
   {
@@ -354,6 +359,31 @@ export default function Home() {
           </div>
         )}
 
+        {/* Investigations — hero visualizations */}
+        <section
+          className={`relative z-10 mb-8 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+        >
+          <div className="flex items-center gap-2.5 mb-4">
+            <p className="text-[9px] font-mono uppercase tracking-[0.25em] text-slate-400/60 dark:text-slate-600">
+              Investigations
+            </p>
+            <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <DeficitCounter />
+            <ResponseEquity />
+            <DispatchUnanswered />
+            <ComplianceTracker />
+          </div>
+        </section>
+
+        {/* OmniSearch */}
+        <section
+          className={`relative z-10 mb-8 transition-all duration-1000 delay-600 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+        >
+          <OmniSearch mode="inline" />
+        </section>
+
         {/* Civic Data Ticker — living indicators from across all datasets */}
         <section
           className={`relative z-10 mb-16 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
@@ -466,113 +496,36 @@ export default function Home() {
             <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
           </div>
 
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-2.5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {VISUALIZATIONS.map((viz, idx) => (
               <button
                 key={viz.path}
                 onClick={() => navigate(viz.path)}
                 className={`
                   group text-left overflow-hidden relative
-                  rounded-[2rem] rounded-bl-none
-                  transition-all duration-500
-                  ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
+                  rounded-xl border border-white/[0.04]
+                  bg-slate-950/30 hover:bg-slate-950/50 hover:border-white/[0.1]
+                  transition-all duration-300
+                  px-3.5 py-3
+                  ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
                 `}
-                style={{ transitionDelay: `${600 + idx * 100}ms` }}
+                style={{ transitionDelay: `${600 + idx * 60}ms` }}
               >
-                {/* Frosted glass backdrop — colored radial glow + noise */}
                 <div
-                  className="absolute inset-0 transition-all duration-500 group-hover:opacity-100 opacity-70"
-                  style={{
-                    background: `
-                      radial-gradient(ellipse at 70% 30%, ${viz.accentColor}1a 0%, transparent 70%),
-                      radial-gradient(ellipse at 20% 80%, ${viz.accentColor}10 0%, transparent 60%),
-                      linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.65) 100%)
-                    `,
-                  }}
-                />
-                <div
-                  className="absolute inset-0 opacity-25 group-hover:opacity-70 transition-all duration-500"
-                  style={{
-                    background: `
-                      radial-gradient(ellipse at 70% 30%, ${viz.accentColor}30 0%, transparent 60%),
-                      radial-gradient(ellipse at 20% 80%, ${viz.accentColor}20 0%, transparent 50%)
-                    `,
-                  }}
-                />
-                {/* Dark mode base */}
-                <div className="absolute inset-0 hidden dark:block transition-all duration-500 group-hover:opacity-100 opacity-80" style={{
-                  background: `
-                    radial-gradient(ellipse at 70% 30%, ${viz.accentColor}18 0%, transparent 60%),
-                    radial-gradient(ellipse at 20% 80%, ${viz.accentColor}10 0%, transparent 50%),
-                    linear-gradient(135deg, rgba(15,23,42,0.92) 0%, rgba(15,23,42,0.85) 100%)
-                  `,
-                }} />
-                <div className="absolute inset-0 hidden dark:block opacity-0 group-hover:opacity-60 transition-all duration-500" style={{
-                  background: `
-                    radial-gradient(ellipse at 60% 40%, ${viz.accentColor}30 0%, transparent 50%)
-                  `,
-                }} />
-                {/* Noise texture overlay */}
-                <div className="absolute inset-0 noise-bg opacity-60 dark:opacity-40" />
-
-                {/* Notched top-right corner — arrow lives here */}
-                <div
-                  className="absolute top-0 right-0 w-12 h-12 flex items-center justify-center z-20
-                    rounded-bl-[1.5rem]
-                    transition-all duration-300
-                    group-hover:w-14 group-hover:h-14 group-hover:shadow-lg"
-                  style={{
-                    backgroundColor: viz.accentColor,
-                    boxShadow: `0 2px 8px ${viz.accentColor}40`,
-                  }}
+                  className="text-[9px] font-mono font-bold tracking-wider mb-1.5"
+                  style={{ color: viz.accentColor, opacity: 0.7 }}
                 >
-                  <svg
-                    className="w-5 h-5 text-white transition-transform duration-300 group-hover:translate-x-0.5"
-                    viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                  >
-                    <path d="M3 8h10M10 4.5L13.5 8 10 11.5" />
-                  </svg>
+                  {viz.badge}
                 </div>
-
-                {/* Content */}
-                <div className="relative p-6 pr-16">
-                  {/* Badge + Title */}
-                  <div className="flex items-start gap-3 mb-4">
-                    <div
-                      className="flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center
-                        text-[10px] font-mono font-bold tracking-wider text-white/90"
-                      style={{ backgroundColor: viz.accentColor + '30' }}
-                    >
-                      {viz.badge}
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="font-display text-xl italic text-ink dark:text-white leading-tight">
-                        {viz.title}
-                      </h3>
-                      <p className="text-[11px] font-mono uppercase tracking-wider text-slate-400 dark:text-slate-500 mt-1">
-                        {viz.subtitle}
-                      </p>
-                    </div>
-                  </div>
-
-                  <p className="text-[13px] text-slate-500 dark:text-slate-400 leading-relaxed mb-5">
-                    {viz.description}
-                  </p>
-
-                  {/* Data stats */}
-                  <div className="grid grid-cols-3 gap-3 pt-4 border-t border-slate-300/20 dark:border-white/[0.06]">
-                    {viz.stats.map((stat) => (
-                      <div key={stat.label}>
-                        <p className="text-[9px] font-mono uppercase tracking-wider text-slate-400/60 dark:text-slate-500">
-                          {stat.label}
-                        </p>
-                        <p className="text-sm font-mono font-semibold text-ink dark:text-white mt-0.5">
-                          {stat.value}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <h3
+                  className="text-[14px] text-ink dark:text-slate-200 leading-tight mb-0.5"
+                  style={{ fontFamily: '"Instrument Serif", Georgia, serif', fontStyle: 'italic' }}
+                >
+                  {viz.title}
+                </h3>
+                <p className="text-[8px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-600">
+                  {viz.subtitle}
+                </p>
               </button>
             ))}
           </div>
