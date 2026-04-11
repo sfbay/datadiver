@@ -203,6 +203,8 @@ export default function Home() {
   const isDarkMode = useAppStore((s) => s.isDarkMode)
   const [mounted, setMounted] = useState(false)
   const [comicOpen, setComicOpen] = useState(false)
+  const [showTicker, setShowTicker] = useState(false)
+  const [showProfiles, setShowProfiles] = useState(false)
   const tickerSize = useResponsiveTickerSize('hero')
   const indicators = useCivicIndicators()
   const dateRange = useAppStore((s) => s.dateRange)
@@ -217,6 +219,10 @@ export default function Home() {
 
   useEffect(() => {
     requestAnimationFrame(() => setMounted(true))
+    // Stagger lower-priority sections so hero vizzes get query priority
+    const t1 = setTimeout(() => setShowTicker(true), 500)
+    const t2 = setTimeout(() => setShowProfiles(true), 1000)
+    return () => { clearTimeout(t1); clearTimeout(t2) }
   }, [])
 
   // Esc to close comic modal
@@ -384,21 +390,24 @@ export default function Home() {
           <OmniSearch mode="inline" />
         </section>
 
-        {/* Civic Data Ticker — living indicators from across all datasets */}
-        <section
-          className={`relative z-10 mb-16 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
-        >
-          <CivicTicker
-            items={indicators.items}
-            size={tickerSize}
-            isLoading={indicators.isLoading}
-            lastUpdated={indicators.lastUpdated ?? undefined}
-          />
-        </section>
+        {/* Civic Data Ticker — delayed 500ms to let hero vizzes load first */}
+        {showTicker && (
+          <section
+            className={`relative z-10 mb-16 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+          >
+            <CivicTicker
+              items={indicators.items}
+              size={tickerSize}
+              isLoading={indicators.isLoading}
+              lastUpdated={indicators.lastUpdated ?? undefined}
+            />
+          </section>
+        )}
 
-        {/* Neighborhood Profiles — featured section */}
+        {/* Neighborhood Profiles — delayed 1000ms to let hero vizzes + ticker load first */}
+        {showProfiles && (
         <section
-          className={`relative z-10 mb-12 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+          className={`relative z-10 mb-12 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
         >
           <button
             onClick={() => navigate('/neighborhood')}
@@ -484,6 +493,7 @@ export default function Home() {
             </div>
           </button>
         </section>
+        )}
 
         {/* Visualization Cards */}
         <section className="relative z-10">
