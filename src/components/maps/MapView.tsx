@@ -143,7 +143,9 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
           <div className="mt-2 pt-2 border-t border-emerald-500/15 text-[9px] text-emerald-200/70">
             paste-ready:<br />
             <span className="text-amber-300">SF_DEFAULT_PITCH = {Math.round(debugCam.pitch * 10) / 10}</span><br />
-            <span className="text-amber-300">SF_DEFAULT_BEARING = {Math.round(debugCam.bearing * 10) / 10}</span>
+            <span className="text-amber-300">SF_DEFAULT_BEARING = {Math.round(debugCam.bearing * 10) / 10}</span><br />
+            <span className="text-amber-300">SF_DEFAULT_ZOOM = {Math.round(debugCam.zoom * 100) / 100}</span><br />
+            <span className="text-amber-300">{`SF_CENTER = { lat: ${debugCam.center[1].toFixed(4)}, lng: ${debugCam.center[0].toFixed(4)} }`}</span>
           </div>
         </div>
       )}
