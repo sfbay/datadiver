@@ -37,7 +37,7 @@ import { BUSINESS_HEATMAP_LAYERS, ANOMALY_LAYERS } from './mapLayers'
 type MapMode = 'heatmap' | 'anomaly'
 type SidebarTab = 'sectors' | 'neighborhoods'
 
-const SELECT_FIELDS = 'uniqueid,dba_name,ownership_name,full_business_address,city,dba_start_date,dba_end_date,naic_code,naic_code_description,parking_tax,transient_occupancy_tax,location'
+const SELECT_FIELDS = 'uniqueid,certificate_number,ttxid,dba_name,ownership_name,full_business_address,city,dba_start_date,dba_end_date,location_start_date,location_end_date,administratively_closed,naic_code,naic_code_description,naics_code_descriptions_list,lic,lic_code_description,parking_tax,transient_occupancy_tax,business_corridor,community_benefit_district,supervisor_district,mailing_address_1,mail_city,mail_state,mail_zipcode,location'
 
 const SF_CITY_FILTER = "city = 'San Francisco'"
 

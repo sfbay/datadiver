@@ -486,10 +486,21 @@ export interface BusinessLocationRecord {
   dba_end_date: string | null
   location_start_date: string
   location_end_date: string | null
+  administratively_closed?: string
   naic_code: string
   naic_code_description: string
+  naics_code_descriptions_list?: string
+  lic?: string
+  lic_code_description?: string
   parking_tax: boolean
   transient_occupancy_tax: boolean
+  business_corridor?: string
+  community_benefit_district?: string
+  supervisor_district?: string
+  mailing_address_1?: string
+  mail_city?: string
+  mail_state?: string
+  mail_zipcode?: string
   location: { type: string; coordinates: [number, number] } | null
 }
 
