@@ -10,6 +10,14 @@ export const SF_BOUNDS = {
 }
 export const SF_DEFAULT_ZOOM = 12
 
+/** Default 3D camera orientation for all maps. The slight pitch + counter-
+ *  clockwise bearing fits more of the SF peninsula on screen with less empty
+ *  ocean and aligns the city's diagonal street grid more naturally. Users
+ *  can still rotate/tilt freely after the initial render. Tune from one
+ *  place if these need adjustment. */
+export const SF_DEFAULT_PITCH = 35
+export const SF_DEFAULT_BEARING = -17.5
+
 /** Extract lat/lng from a Socrata point field */
 export function extractCoordinates(
   point: { type: string; coordinates: [number, number] } | null | undefined

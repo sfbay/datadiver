@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { SF_CENTER, SF_DEFAULT_ZOOM } from '@/utils/geo'
+import { SF_CENTER, SF_DEFAULT_ZOOM, SF_DEFAULT_PITCH, SF_DEFAULT_BEARING } from '@/utils/geo'
 import { useAppStore } from '@/stores/appStore'
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN || ''
@@ -45,8 +45,8 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
         : 'mapbox://styles/mapbox/light-v11',
       center: [SF_CENTER.lng, SF_CENTER.lat],
       zoom: SF_DEFAULT_ZOOM,
-      pitch: 0,
-      bearing: 0,
+      pitch: SF_DEFAULT_PITCH,
+      bearing: SF_DEFAULT_BEARING,
       antialias: true,
       preserveDrawingBuffer: true,
       attributionControl: false,
