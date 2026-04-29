@@ -107,7 +107,7 @@ async function fetchEquityData(
     fetchDataset<NeighborhoodRow>('fireEMSDispatch', {
       $select: [
         'neighborhoods_analysis_boundaries as neighborhood',
-        'AVG(date_diff_d(on_scene_dttm, received_dttm, \'SS\')) as avg_response',
+        'AVG(date_diff_ss(on_scene_dttm, received_dttm)) as avg_response',
         'COUNT(*) as call_count',
       ].join(', '),
       $where: baseWhere,
@@ -119,7 +119,7 @@ async function fetchEquityData(
     // Query 2: City-wide AVG response time
     fetchDataset<CityRow>('fireEMSDispatch', {
       $select: [
-        'AVG(date_diff_d(on_scene_dttm, received_dttm, \'SS\')) as avg_response',
+        'AVG(date_diff_ss(on_scene_dttm, received_dttm)) as avg_response',
         'COUNT(*) as call_count',
       ].join(', '),
       $where: baseWhere,
@@ -131,7 +131,7 @@ async function fetchEquityData(
       $select: [
         'neighborhoods_analysis_boundaries as neighborhood',
         'call_type_group as call_type',
-        'AVG(date_diff_d(on_scene_dttm, received_dttm, \'SS\')) as avg_response',
+        'AVG(date_diff_ss(on_scene_dttm, received_dttm)) as avg_response',
         'COUNT(*) as call_count',
       ].join(', '),
       $where: baseWhere,

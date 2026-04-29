@@ -1,4 +1,4 @@
-import { InvestigationCard } from './InvestigationCard'
+import { InvestigationCard, ErrorState } from './InvestigationCard'
 import { useDispatchUnanswered } from '@/hooks/useDispatchUnanswered'
 
 /** Color for an outcome label */
@@ -26,7 +26,7 @@ export default function DispatchUnanswered() {
       isLoading={isLoading || (!data && !error)}
     >
       {error ? (
-        <p className="text-[9px] font-mono text-red-400 py-2">{error}</p>
+        <ErrorState error={error} />
       ) : data ? (
         <div className="flex flex-col gap-3">
           {/* ── Big number ─────────────────────────────────────── */}

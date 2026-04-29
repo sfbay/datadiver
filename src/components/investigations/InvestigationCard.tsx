@@ -87,10 +87,7 @@ export function InvestigationCard({
         </div>
 
         {/* Headline */}
-        <h3
-          className="text-[15px] leading-snug text-white mb-1.5"
-          style={{ fontFamily: '"Instrument Serif", Georgia, serif', fontStyle: 'italic' }}
-        >
+        <h3 className="font-display italic text-[15px] leading-snug text-white mb-1.5">
           {headline}
         </h3>
 
@@ -115,5 +112,38 @@ export function InvestigationCard({
         </span>
       </div>
     </button>
+  )
+}
+
+/** Graceful error state for an investigation card body. Shows a small,
+ *  fixed-height placeholder rather than dumping the raw error text into
+ *  the layout (which can leak server-side SOQL strings, JSON, etc. into
+ *  the public UI). The full error is logged to the console and shown in
+ *  the title attribute for debugging. */
+export function ErrorState({ error }: { error: string }) {
+  if (typeof console !== 'undefined' && console.warn) {
+    // eslint-disable-next-line no-console
+    console.warn('[Investigation card] Failed to load:', error)
+  }
+  return (
+    <div
+      className="flex flex-col items-center justify-center text-center py-6 px-2 gap-1"
+      title={error}
+    >
+      <svg
+        width="18" height="18" viewBox="0 0 18 18" fill="none"
+        stroke="#94a3b8" strokeWidth="1.5"
+        className="opacity-50"
+      >
+        <circle cx="9" cy="9" r="7" />
+        <path d="M9 5v4M9 12v.01" strokeLinecap="round" />
+      </svg>
+      <p className="text-[10px] font-mono text-slate-500">
+        This view didn’t load
+      </p>
+      <p className="text-[9px] text-slate-600 max-w-[14rem]">
+        Hover for details, or click Explore for the full dataset.
+      </p>
+    </div>
   )
 }

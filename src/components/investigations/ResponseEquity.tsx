@@ -1,4 +1,4 @@
-import { InvestigationCard } from './InvestigationCard'
+import { InvestigationCard, ErrorState } from './InvestigationCard'
 import { useResponseEquity } from '@/hooks/useResponseEquity'
 
 /** Truncate a neighborhood name to maxLen chars with ellipsis */
@@ -24,7 +24,7 @@ export default function ResponseEquity() {
       isLoading={isLoading || (!data && !error)}
     >
       {error ? (
-        <p className="text-[9px] font-mono text-red-400 py-2">{error}</p>
+        <ErrorState error={error} />
       ) : data ? (
         <div className="flex flex-col gap-3">
           {/* ── Three equity bars ─────────────────────────────── */}

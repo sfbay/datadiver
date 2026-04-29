@@ -72,8 +72,12 @@ async function loadUnansweredData(dateRange: {
   const priStart = `${yearAgo(dateRange.start)}T00:00:00`
   const priEnd = `${yearAgo(dateRange.end)}T23:59:59`
 
-  // "Slow" call predicate: no on_scene OR response time > 10 minutes
-  const slowPredicate = `(on_scene_dttm IS NULL OR date_diff_d(on_scene_dttm, received_dttm, 'MI') > 10)`
+  // "Slow" call predicate: no on_scene OR response time > 10 minutes.
+  // Socrata SoQL exposes date diffs through unit-specific arity-2 functions
+  // (date_diff_ss, date_diff_mm, date_diff_h, date_diff_d, date_diff_y …)
+  // — not the 3-arg `date_diff_d(a, b, 'unit')` form (which doesn't exist
+  // and rejects with `query.soql.no-such-function`).
+  const slowPredicate = `(on_scene_dttm IS NULL OR date_diff_mm(on_scene_dttm, received_dttm) > 10)`
 
   const curWhere = `received_dttm >= '${curStart}' AND received_dttm <= '${curEnd}' AND ${slowPredicate}`
   const priWhere = `received_dttm >= '${priStart}' AND received_dttm <= '${priEnd}' AND ${slowPredicate}`
