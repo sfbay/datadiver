@@ -196,6 +196,19 @@ export default function BusinessActivity() {
   )
   const closuresCount = closuresCountRows[0] ? parseInt(closuresCountRows[0].count, 10) : null
 
+  // Admin-closure count: subset of closures where administratively_closed = "Yes"
+  // (forced closures from tax/license/regulatory issues, vs. voluntary closure)
+  const adminClosuresClause = useMemo(
+    () => `(${closuresClause}) AND UPPER(administratively_closed) = 'YES'`,
+    [closuresClause],
+  )
+  const { data: adminClosuresCountRows } = useDataset<{ count: string }>(
+    'businessLocations',
+    { $select: 'count(*) as count', $where: adminClosuresClause },
+    [adminClosuresClause]
+  )
+  const adminClosuresCount = adminClosuresCountRows[0] ? parseInt(adminClosuresCountRows[0].count, 10) : null
+
   const { data: activeCountRows } = useDataset<{ count: string }>(
     'businessLocations',
     { $select: 'count(*) as count', $where: `${SF_CITY_FILTER} AND dba_end_date IS NULL` },
@@ -308,6 +321,17 @@ export default function BusinessActivity() {
   )
   const priorClosuresCount = priorClosuresCountRows[0] ? parseInt(priorClosuresCountRows[0].count, 10) : null
 
+  const priorAdminClosuresClause = useMemo(
+    () => `(${priorClosuresClause}) AND UPPER(administratively_closed) = 'YES'`,
+    [priorClosuresClause],
+  )
+  const { data: priorAdminClosuresCountRows } = useDataset<{ count: string }>(
+    'businessLocations',
+    { $select: 'count(*) as count', $where: priorAdminClosuresClause },
+    [priorAdminClosuresClause]
+  )
+  const priorAdminClosuresCount = priorAdminClosuresCountRows[0] ? parseInt(priorAdminClosuresCountRows[0].count, 10) : null
+
   const { boundaries: neighborhoodBoundaries } = useNeighborhoodBoundaries()
 
   // Census demographic underlay
@@ -364,9 +388,11 @@ export default function BusinessActivity() {
     priorClosureRows,
     openingsCount,
     closuresCount,
+    adminClosuresCount,
     activeCount,
     priorOpeningsCount,
     priorClosuresCount,
+    priorAdminClosuresCount,
   })
 
   // Chart tiles
