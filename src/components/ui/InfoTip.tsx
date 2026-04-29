@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { getGlossaryEntry } from '@/utils/glossary'
 
 interface InfoTipProps {
@@ -15,16 +16,24 @@ export default function InfoTip({ term, text, size = 12 }: InfoTipProps) {
   if (!explanation) return null
 
   const [open, setOpen] = useState(false)
-  const [position, setPosition] = useState<'below' | 'above'>('below')
+  // Tooltip is portaled to document.body so it can't be clipped by ancestor
+  // stacking contexts (StatCard's transition / opacity etc). Coords are
+  // computed from the trigger's bounding rect each time it opens.
+  const [coords, setCoords] = useState<{ top: number; left: number; placeAbove: boolean } | null>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const tipRef = useRef<HTMLDivElement>(null)
 
-  // Determine if tooltip should render above or below
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open || !triggerRef.current) return
     const rect = triggerRef.current.getBoundingClientRect()
     const spaceBelow = window.innerHeight - rect.bottom
-    setPosition(spaceBelow < 160 ? 'above' : 'below')
+    const placeAbove = spaceBelow < 160
+    // Center horizontally on the trigger; CSS transform handles the centering.
+    setCoords({
+      top: placeAbove ? rect.top - 6 : rect.bottom + 6,
+      left: rect.left + rect.width / 2,
+      placeAbove,
+    })
   }, [open])
 
   // Close on outside click
@@ -43,7 +52,7 @@ export default function InfoTip({ term, text, size = 12 }: InfoTipProps) {
   }, [open])
 
   return (
-    <span className="relative inline-flex items-center" style={{ zIndex: open ? 999 : 'auto' }}>
+    <>
       <button
         ref={triggerRef}
         onClick={() => setOpen(!open)}
@@ -71,26 +80,31 @@ export default function InfoTip({ term, text, size = 12 }: InfoTipProps) {
         </svg>
       </button>
 
-      {open && (
+      {open && coords && createPortal(
         <div
           ref={tipRef}
-          className={`
-            absolute w-56 px-3 py-2.5 rounded-lg
+          onMouseEnter={() => setOpen(true)}
+          onMouseLeave={() => setOpen(false)}
+          className="fixed w-56 px-3 py-2.5 rounded-lg
             bg-white dark:bg-slate-800
             border border-slate-200 dark:border-white/[0.08]
             shadow-xl shadow-black/10 dark:shadow-black/40
             text-[11px] leading-relaxed text-slate-600 dark:text-slate-300
             normal-case tracking-normal whitespace-normal font-normal font-sans
-            animate-in fade-in duration-150
-            ${position === 'below'
-              ? 'top-full mt-1.5 left-1/2 -translate-x-1/2'
-              : 'bottom-full mb-1.5 left-1/2 -translate-x-1/2'
-            }
-          `}
+            animate-in fade-in duration-150 pointer-events-auto"
+          style={{
+            zIndex: 9999,
+            top: coords.top,
+            left: coords.left,
+            transform: coords.placeAbove
+              ? 'translate(-50%, -100%)'
+              : 'translate(-50%, 0)',
+          }}
         >
           {explanation}
-        </div>
+        </div>,
+        document.body,
       )}
-    </span>
+    </>
   )
 }

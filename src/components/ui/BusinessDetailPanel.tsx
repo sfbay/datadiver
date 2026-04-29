@@ -19,7 +19,18 @@ interface BusinessDetail {
   licenseCode: string | null
   corridor: string | null
   cbd: string | null
+  supervisorDistrict: string | null
   mailingAddress: string | null
+  isFoodBusiness: boolean
+}
+
+/** Detect food/restaurant businesses by NAICS code prefix or text match.
+ *  NAICS 722 = Food Services and Drinking Places. Used to surface a
+ *  placeholder for inspection data that PR 5 will resolve to a real link. */
+function isLikelyFoodBusiness(record: BusinessLocationRecord): boolean {
+  if (record.naic_code?.startsWith('722')) return true
+  const sectors = (record.naics_code_descriptions_list || record.naic_code_description || '').toLowerCase()
+  return /(restaurant|food service|drinking place|caterer|bar |tavern|coffee|bakery)/i.test(sectors)
 }
 
 function formatDate(iso: string | null): string {
@@ -78,7 +89,9 @@ function buildDetail(record: BusinessLocationRecord): BusinessDetail {
     licenseCode,
     corridor: record.business_corridor?.trim() || null,
     cbd: record.community_benefit_district?.trim() || null,
+    supervisorDistrict: record.supervisor_district?.trim() || null,
     mailingAddress: buildMailingAddress(record),
+    isFoodBusiness: isLikelyFoodBusiness(record),
   }
 }
 
@@ -120,14 +133,15 @@ export default function BusinessDetailPanel() {
           <div>
             <p className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">{detail.name}</p>
             <p className="text-[10px] text-slate-500 dark:text-slate-400">{detail.owner}</p>
-            {detail.ban && (
-              <p className="text-[9px] font-mono text-slate-400 dark:text-slate-600 mt-0.5">
-                BAN <span className="text-slate-500 dark:text-slate-500">{detail.ban}</span>
-              </p>
-            )}
           </div>
 
           <div className="space-y-2 mt-3">
+            {detail.ban && (
+              <div>
+                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500">Business Account #</p>
+                <p className="text-[11px] font-mono text-slate-700 dark:text-slate-300 tabular-nums">{detail.ban}</p>
+              </div>
+            )}
             <div>
               <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500">Sector</p>
               <p className="text-[11px] text-slate-700 dark:text-slate-300">{detail.sector}</p>
@@ -141,14 +155,14 @@ export default function BusinessDetailPanel() {
             <div>
               <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500">Address</p>
               <p className="text-[11px] text-slate-700 dark:text-slate-300">{detail.address}</p>
-              {detail.corridor && (
+              {(detail.corridor || detail.cbd || detail.supervisorDistrict) && (
                 <p className="text-[10px] text-slate-500 dark:text-slate-500 mt-0.5">
-                  {detail.corridor} corridor
-                  {detail.cbd && ` · ${detail.cbd}`}
+                  {[
+                    detail.corridor && `${detail.corridor} corridor`,
+                    detail.cbd,
+                    detail.supervisorDistrict && `District ${detail.supervisorDistrict}`,
+                  ].filter(Boolean).join(' · ')}
                 </p>
-              )}
-              {!detail.corridor && detail.cbd && (
-                <p className="text-[10px] text-slate-500 dark:text-slate-500 mt-0.5">{detail.cbd}</p>
               )}
             </div>
             {detail.mailingAddress && (
@@ -202,6 +216,17 @@ export default function BusinessDetailPanel() {
                     Hotel Tax
                   </span>
                 )}
+              </div>
+            )}
+
+            {/* Food businesses get a placeholder pointing to inspection data —
+                resolves to a real link when the Restaurants view (PR 5) ships. */}
+            {detail.isFoodBusiness && (
+              <div className="mt-1 pt-2 border-t border-slate-200/40 dark:border-white/[0.04]">
+                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500">Health inspections</p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 italic mt-0.5">
+                  Restaurant inspection data coming with the Restaurants view
+                </p>
               </div>
             )}
           </div>
