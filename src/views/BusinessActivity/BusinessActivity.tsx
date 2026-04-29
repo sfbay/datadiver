@@ -84,6 +84,7 @@ export default function BusinessActivity() {
     return new Set(param.split(',').map(decodeURIComponent))
   }, [searchParams])
   const selectedNeighborhood = searchParams.get('neighborhood') || null
+  const selectedCorridor = searchParams.get('corridor') || null
 
   const setMapMode = useCallback((mode: MapMode) => {
     setSearchParams((prev) => {
@@ -108,6 +109,15 @@ export default function BusinessActivity() {
       const next = new URLSearchParams(prev)
       if (!n) next.delete('neighborhood')
       else next.set('neighborhood', n)
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
+
+  const setSelectedCorridor = useCallback((c: string | null) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (!c) next.delete('corridor')
+      else next.set('corridor', c)
       return next
     }, { replace: true })
   }, [setSearchParams])
@@ -234,6 +244,28 @@ export default function BusinessActivity() {
       $limit: 30,
     },
     [openingsDateOnlyClause]
+  )
+
+  // Corridor list — server-side aggregate of all distinct corridor values
+  // (sorted by population). Static-ish list since SF defines a fixed set;
+  // we keep it date-independent so the dropdown remains stable across
+  // date-range changes.
+  const { data: corridorRows } = useDataset<{ business_corridor: string; cnt: string }>(
+    'businessLocations',
+    {
+      $select: 'business_corridor, count(*) as cnt',
+      $group: 'business_corridor',
+      $where: `${SF_CITY_FILTER} AND business_corridor IS NOT NULL AND trim(business_corridor) != ''`,
+      $order: 'cnt DESC',
+      $limit: 100,
+    },
+    [],
+  )
+  const corridors = useMemo(
+    () => corridorRows
+      .map((r) => ({ name: r.business_corridor, count: parseInt(r.cnt, 10) || 0 }))
+      .filter((c) => c.name && c.name.trim().length > 0),
+    [corridorRows],
   )
 
   // Monthly openings
@@ -380,6 +412,7 @@ export default function BusinessActivity() {
     dateRange,
     mapMode,
     selectedNeighborhood,
+    selectedCorridor,
     neighborhoodBoundaries,
     sectorRows,
     monthlyOpeningRows,
@@ -734,6 +767,40 @@ export default function BusinessActivity() {
 
             {sidebarTab === 'neighborhoods' && (
               <>
+                {/* Corridor filter \u2014 SF-defined commercial corridors (Mission, Castro,
+                    Hayes Valley, etc.). Single-select. Combines additively with the
+                    neighborhood filter so a journalist can ask "Mission Street within
+                    the Mission" or "Castro within Castro/Upper Market" cleanly. */}
+                {corridors.length > 0 && (
+                  <div className="mb-4">
+                    <label className="block text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 mb-1.5">
+                      Commercial Corridor
+                    </label>
+                    <select
+                      value={selectedCorridor || ''}
+                      onChange={(e) => setSelectedCorridor(e.target.value || null)}
+                      className="w-full text-[11px] bg-white/80 dark:bg-white/[0.04] border border-slate-200/50 dark:border-white/[0.06]
+                        rounded-md px-2 py-1.5 text-slate-700 dark:text-slate-300
+                        focus:outline-none focus:border-emerald-500/40 transition-colors"
+                    >
+                      <option value="">All corridors</option>
+                      {corridors.map((c) => (
+                        <option key={c.name} value={c.name}>
+                          {c.name} ({c.count.toLocaleString()})
+                        </option>
+                      ))}
+                    </select>
+                    {selectedCorridor && (
+                      <button
+                        onClick={() => setSelectedCorridor(null)}
+                        className="mt-1.5 text-[10px] font-mono text-emerald-500 hover:text-emerald-400 transition-colors"
+                      >
+                        {'\u2190'} Clear corridor filter
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex items-center gap-2 mb-4">
                   <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
                     By Neighborhood

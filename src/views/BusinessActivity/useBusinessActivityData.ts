@@ -13,6 +13,7 @@ interface UseBusinessActivityDataParams {
   dateRange: { start: string; end: string }
   mapMode: MapMode
   selectedNeighborhood: string | null
+  selectedCorridor: string | null
   neighborhoodBoundaries: GeoJSON.FeatureCollection | null
   sectorRows: SectorAggRow[]
   monthlyOpeningRows: BusinessMonthlyRow[]
@@ -34,6 +35,7 @@ export function useBusinessActivityData(params: UseBusinessActivityDataParams) {
     dateRange,
     mapMode,
     selectedNeighborhood,
+    selectedCorridor,
     neighborhoodBoundaries,
     sectorRows,
     monthlyOpeningRows,
@@ -65,12 +67,32 @@ export function useBusinessActivityData(params: UseBusinessActivityDataParams) {
           : 'active'
         const isAdminClosed = status === 'closed'
           && record.administratively_closed?.trim().toLowerCase() === 'yes'
+
+        // Multi-NAICS: parse `naics_code_descriptions_list` (typically comma- or
+        // semicolon-separated) and dedup. Falls back to single primary if the
+        // list is missing. A coffee+retail shop will appear in `sectors` as
+        // both "Food Services" and "Retail Trade", which lets sector counting
+        // reflect multi-sector reality (with the trade-off that per-sector
+        // openings sum to more than total openings — documented in the
+        // SectorFilter "About this data" explainer).
+        const primary = record.naic_code_description?.trim() || ''
+        const list = record.naics_code_descriptions_list?.trim() || ''
+        const sectors: string[] = list
+          ? Array.from(new Set(
+              list.split(/[,;|]/)
+                .map((s) => s.trim())
+                .filter((s) => s.length > 0)
+            ))
+          : (primary ? [primary] : ['Uncategorized'])
+
         return {
           uniqueId: record.uniqueid,
           dbaName: record.dba_name || 'Unknown',
           ownerName: record.ownership_name || '',
           address: record.full_business_address || '',
-          sector: record.naic_code_description || 'Uncategorized',
+          sector: primary || 'Uncategorized',
+          sectors,
+          corridor: record.business_corridor?.trim() || null,
           status,
           isAdminClosed,
           startDate: record.dba_start_date,
@@ -88,11 +110,19 @@ export function useBusinessActivityData(params: UseBusinessActivityDataParams) {
     return assignNeighborhoods(parsedData, neighborhoodBoundaries)
   }, [parsedData, neighborhoodBoundaries])
 
-  // Apply client-side neighborhood filter
+  // Apply client-side neighborhood + corridor filters. Corridor matching is
+  // case-insensitive (Socrata's free-text values are inconsistently cased).
   const filteredData = useMemo(() => {
-    if (!selectedNeighborhood) return dataWithNeighborhoods
-    return dataWithNeighborhoods.filter((d) => d.neighborhood === selectedNeighborhood)
-  }, [dataWithNeighborhoods, selectedNeighborhood])
+    let result = dataWithNeighborhoods
+    if (selectedNeighborhood) {
+      result = result.filter((d) => d.neighborhood === selectedNeighborhood)
+    }
+    if (selectedCorridor) {
+      const target = selectedCorridor.toLowerCase()
+      result = result.filter((d) => d.corridor?.toLowerCase() === target)
+    }
+    return result
+  }, [dataWithNeighborhoods, selectedNeighborhood, selectedCorridor])
 
   // Neighborhood aggregation (client-side)
   const neighborhoodEntries = useMemo(() => {
@@ -179,16 +209,23 @@ export function useBusinessActivityData(params: UseBusinessActivityDataParams) {
     return top ? top.naic_code_description : null
   }, [sectorRows])
 
-  // Sector entries for sidebar (enrich server-side counts with client-side openings/closures/net)
+  // Sector entries for sidebar (enrich server-side counts with client-side
+  // openings/closures/net). Multi-NAICS aware: a business with `sectors`
+  // = ["Food Services", "Retail Trade"] contributes +1 to each sector's
+  // opening/closure tally. This matches the journalistic intent (a coffee
+  // shop that is also a retailer should appear in both sector views) at the
+  // cost of the per-sector openings sum exceeding the total openings count.
+  // The SectorFilter "About this data" explainer documents this trade-off.
   const sectorEntries = useMemo(() => {
-    // Build per-sector openings/closures from client-side data
     const sectorStats = new Map<string, { openings: number; closures: number }>()
     for (const d of dataWithNeighborhoods) {
-      if (!d.sector || d.sector === 'Uncategorized') continue
-      const entry = sectorStats.get(d.sector) || { openings: 0, closures: 0 }
-      if (d.status === 'opened') entry.openings++
-      if (d.status === 'closed') entry.closures++
-      sectorStats.set(d.sector, entry)
+      for (const s of d.sectors) {
+        if (!s || s === 'Uncategorized') continue
+        const entry = sectorStats.get(s) || { openings: 0, closures: 0 }
+        if (d.status === 'opened') entry.openings++
+        if (d.status === 'closed') entry.closures++
+        sectorStats.set(s, entry)
+      }
     }
 
     return sectorRows
