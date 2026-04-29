@@ -136,9 +136,12 @@ export default function CardTray({ viewId, cards, className = '' }: CardTrayProp
 
   return (
     <div ref={trayRef} className={`absolute top-0 left-0 right-0 z-10 flex flex-col pointer-events-none ${className}`}>
-      {/* Minimized pills — flush top bar */}
+      {/* Minimized pills — flush top bar.
+          Wrapper is `pointer-events-none` so empty space inside the bar does
+          not capture clicks meant for map markers below; children buttons
+          have the default `pointer-events: auto` and remain interactive. */}
       {(minimizedCards.length > 0 || hiddenCards.length > 0 || hasExpanded) && (
-        <div className="flex flex-wrap items-center gap-1.5 px-4 py-2 pointer-events-auto">
+        <div className="flex flex-wrap items-center gap-1.5 px-4 py-2 pointer-events-none">
           {minimizedCards.map((card) => {
             const trendArrow = card.yoyDelta != null
               ? card.yoyDelta > 0 ? '↑' : card.yoyDelta < 0 ? '↓' : '→'
@@ -246,11 +249,14 @@ export default function CardTray({ viewId, cards, className = '' }: CardTrayProp
         </div>
       )}
 
-      {/* Expanded stat cards — below the pill bar */}
+      {/* Expanded stat cards — below the pill bar.
+          Same fix as ChartTray: the wrapping flex spans the full map width and
+          would otherwise eat clicks on map markers visible to the right of the
+          cards. Pointer events stay active only on the individual card boxes. */}
       {hasExpanded && (
-        <div className="flex gap-2.5 flex-wrap px-5 pb-2 pointer-events-auto">
+        <div className="flex gap-2.5 flex-wrap px-5 pb-2 pointer-events-none">
           {expandedCards.map((card) => (
-            <div key={card.id} className="group/card relative">
+            <div key={card.id} className="group/card relative pointer-events-auto">
               <StatCard
                 label={card.label}
                 value={card.value}

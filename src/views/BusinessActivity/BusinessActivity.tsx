@@ -37,7 +37,7 @@ import { BUSINESS_HEATMAP_LAYERS, ANOMALY_LAYERS } from './mapLayers'
 type MapMode = 'heatmap' | 'anomaly'
 type SidebarTab = 'sectors' | 'neighborhoods'
 
-const SELECT_FIELDS = 'uniqueid,dba_name,ownership_name,full_business_address,city,dba_start_date,dba_end_date,naic_code,naic_code_description,parking_tax,transient_occupancy_tax,location'
+const SELECT_FIELDS = 'uniqueid,certificate_number,ttxid,dba_name,ownership_name,full_business_address,city,dba_start_date,dba_end_date,location_start_date,location_end_date,administratively_closed,naic_code,naic_code_description,naics_code_descriptions_list,lic,lic_code_description,parking_tax,transient_occupancy_tax,business_corridor,community_benefit_district,supervisor_district,mailing_address_1,mail_city,mail_state,mail_zipcode,location'
 
 const SF_CITY_FILTER = "city = 'San Francisco'"
 
@@ -196,6 +196,19 @@ export default function BusinessActivity() {
   )
   const closuresCount = closuresCountRows[0] ? parseInt(closuresCountRows[0].count, 10) : null
 
+  // Admin-closure count: subset of closures where administratively_closed = "Yes"
+  // (forced closures from tax/license/regulatory issues, vs. voluntary closure)
+  const adminClosuresClause = useMemo(
+    () => `(${closuresClause}) AND UPPER(administratively_closed) = 'YES'`,
+    [closuresClause],
+  )
+  const { data: adminClosuresCountRows } = useDataset<{ count: string }>(
+    'businessLocations',
+    { $select: 'count(*) as count', $where: adminClosuresClause },
+    [adminClosuresClause]
+  )
+  const adminClosuresCount = adminClosuresCountRows[0] ? parseInt(adminClosuresCountRows[0].count, 10) : null
+
   const { data: activeCountRows } = useDataset<{ count: string }>(
     'businessLocations',
     { $select: 'count(*) as count', $where: `${SF_CITY_FILTER} AND dba_end_date IS NULL` },
@@ -308,6 +321,17 @@ export default function BusinessActivity() {
   )
   const priorClosuresCount = priorClosuresCountRows[0] ? parseInt(priorClosuresCountRows[0].count, 10) : null
 
+  const priorAdminClosuresClause = useMemo(
+    () => `(${priorClosuresClause}) AND UPPER(administratively_closed) = 'YES'`,
+    [priorClosuresClause],
+  )
+  const { data: priorAdminClosuresCountRows } = useDataset<{ count: string }>(
+    'businessLocations',
+    { $select: 'count(*) as count', $where: priorAdminClosuresClause },
+    [priorAdminClosuresClause]
+  )
+  const priorAdminClosuresCount = priorAdminClosuresCountRows[0] ? parseInt(priorAdminClosuresCountRows[0].count, 10) : null
+
   const { boundaries: neighborhoodBoundaries } = useNeighborhoodBoundaries()
 
   // Census demographic underlay
@@ -364,9 +388,11 @@ export default function BusinessActivity() {
     priorClosureRows,
     openingsCount,
     closuresCount,
+    adminClosuresCount,
     activeCount,
     priorOpeningsCount,
     priorClosuresCount,
+    priorAdminClosuresCount,
   })
 
   // Chart tiles
@@ -446,23 +472,19 @@ export default function BusinessActivity() {
   useMapLayer(mapInstance, 'neighborhood-anomaly', anomalyGeojson, ANOMALY_LAYERS)
 
   // Tooltips
+  // Hover answers "is this worth clicking?" — name, status, sector only.
+  // Click opens the full detail panel with BAN, license, corridor, mailing,
+  // dates, etc. Don't duplicate the panel here.
   useMapTooltip(mapInstance, 'business-points', (props) => {
-    const startFormatted = props.startDate
-      ? new Date(String(props.startDate)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-      : null
     const statusColor = props.status === 'opened' ? '#10b981' : props.status === 'closed' ? '#ef4444' : '#64748b'
-    const statusLabel = String(props.status).charAt(0).toUpperCase() + String(props.status).slice(1)
+    const statusLabel = props.status === 'opened' ? 'Opened in range'
+      : props.status === 'closed' ? 'Closed in range'
+      : 'Active'
     return `
       <div class="tooltip-value">${props.dbaName || 'Unknown'}</div>
-      <div class="tooltip-label" style="margin-top:6px">Status</div>
-      <div style="color:${statusColor};font-weight:600">${statusLabel}</div>
-      <div class="tooltip-label" style="margin-top:6px">Sector</div>
-      <div style="color:#e2e8f0">${props.sector || 'Uncategorized'}</div>
-      <div class="tooltip-label" style="margin-top:4px">Address</div>
-      <div style="color:#94a3b8">${props.address || 'Unknown'}</div>
-      <div style="color:#94a3b8">${props.neighborhood || 'Unknown'}</div>
-      ${startFormatted ? `<div class="tooltip-label" style="margin-top:6px">Opened</div><div style="color:#94a3b8">${startFormatted}</div>` : ''}
-      ${props.endDate ? `<div class="tooltip-label" style="margin-top:4px">Closed</div><div style="color:#ef4444">${new Date(String(props.endDate)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>` : ''}
+      <div style="color:${statusColor};font-weight:600;font-size:10px;margin-top:4px">${statusLabel}</div>
+      <div style="color:#94a3b8;font-size:10px;margin-top:2px">${props.sector || 'Uncategorized'}</div>
+      <div style="color:#64748b;font-size:9px;margin-top:6px;font-style:italic">Click for details</div>
     `
   })
 

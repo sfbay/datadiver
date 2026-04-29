@@ -21,9 +21,11 @@ interface UseBusinessActivityDataParams {
   priorClosureRows: BusinessMonthlyRow[]
   openingsCount: number | null
   closuresCount: number | null
+  adminClosuresCount: number | null
   activeCount: number | null
   priorOpeningsCount: number | null
   priorClosuresCount: number | null
+  priorAdminClosuresCount: number | null
 }
 
 export function useBusinessActivityData(params: UseBusinessActivityDataParams) {
@@ -40,9 +42,11 @@ export function useBusinessActivityData(params: UseBusinessActivityDataParams) {
     priorClosureRows,
     openingsCount,
     closuresCount,
+    adminClosuresCount,
     activeCount,
     priorOpeningsCount,
     priorClosuresCount,
+    priorAdminClosuresCount,
   } = params
 
   // --- Computed data ---
@@ -59,6 +63,8 @@ export function useBusinessActivityData(params: UseBusinessActivityDataParams) {
           startDate >= rangeStart && startDate <= rangeEnd ? 'opened'
           : endDate && endDate >= rangeStart && endDate <= rangeEnd ? 'closed'
           : 'active'
+        const isAdminClosed = status === 'closed'
+          && record.administratively_closed?.trim().toLowerCase() === 'yes'
         return {
           uniqueId: record.uniqueid,
           dbaName: record.dba_name || 'Unknown',
@@ -66,6 +72,7 @@ export function useBusinessActivityData(params: UseBusinessActivityDataParams) {
           address: record.full_business_address || '',
           sector: record.naic_code_description || 'Uncategorized',
           status,
+          isAdminClosed,
           startDate: record.dba_start_date,
           endDate: record.dba_end_date,
           lat: coords.lat,
@@ -89,12 +96,15 @@ export function useBusinessActivityData(params: UseBusinessActivityDataParams) {
 
   // Neighborhood aggregation (client-side)
   const neighborhoodEntries = useMemo(() => {
-    const map = new Map<string, { openings: number; closures: number; total: number }>()
+    const map = new Map<string, { openings: number; closures: number; adminClosures: number; total: number }>()
     for (const d of dataWithNeighborhoods) {
-      const entry = map.get(d.neighborhood) || { openings: 0, closures: 0, total: 0 }
+      const entry = map.get(d.neighborhood) || { openings: 0, closures: 0, adminClosures: 0, total: 0 }
       entry.total++
       if (d.status === 'opened') entry.openings++
-      if (d.status === 'closed') entry.closures++
+      if (d.status === 'closed') {
+        entry.closures++
+        if (d.isAdminClosed) entry.adminClosures++
+      }
       map.set(d.neighborhood, entry)
     }
     return Array.from(map.entries())
@@ -102,6 +112,7 @@ export function useBusinessActivityData(params: UseBusinessActivityDataParams) {
         neighborhood,
         openings: stats.openings,
         closures: stats.closures,
+        adminClosures: stats.adminClosures,
         total: stats.total,
         netChange: stats.openings - stats.closures,
       }))
@@ -147,6 +158,20 @@ export function useBusinessActivityData(params: UseBusinessActivityDataParams) {
     if (closuresCount === null || priorClosuresCount === null || priorClosuresCount === 0) return null
     return ((closuresCount - priorClosuresCount) / priorClosuresCount) * 100
   }, [closuresCount, priorClosuresCount])
+
+  // Admin-closure derived stats — voluntary count and "vs last year" delta for the
+  // forced-closure subset specifically. Useful for journalists asking "is the
+  // city forcing more businesses out than usual?"
+  const voluntaryClosuresCount = useMemo(() => {
+    if (closuresCount === null) return null
+    const admin = adminClosuresCount ?? 0
+    return Math.max(closuresCount - admin, 0)
+  }, [closuresCount, adminClosuresCount])
+
+  const adminClosuresYoY = useMemo(() => {
+    if (adminClosuresCount === null || priorAdminClosuresCount === null || priorAdminClosuresCount === 0) return null
+    return ((adminClosuresCount - priorAdminClosuresCount) / priorAdminClosuresCount) * 100
+  }, [adminClosuresCount, priorAdminClosuresCount])
 
   const topSector = useMemo(() => {
     if (sectorRows.length === 0) return null
@@ -262,6 +287,15 @@ export function useBusinessActivityData(params: UseBusinessActivityDataParams) {
       info: 'closures',
       defaultExpanded: true,
       yoyDelta: closuresYoY,
+      // When admin closures > 0, surface the voluntary/forced split in the subtitle.
+      // (StatCard renders subtitle in lieu of yoyText, so we fold both signals into
+      // one line.) Pill view still shows the YoY arrow via yoyDelta.
+      subtitle: adminClosuresCount && adminClosuresCount > 0 && voluntaryClosuresCount !== null
+        ? `${formatNumber(voluntaryClosuresCount)} voluntary · ${formatNumber(adminClosuresCount)} forced`
+          + (adminClosuresYoY !== null
+            ? ` (${adminClosuresYoY > 0 ? '+' : ''}${adminClosuresYoY.toFixed(0)}% vs last yr)`
+            : '')
+        : undefined,
     },
     {
       id: 'active',
@@ -283,7 +317,11 @@ export function useBusinessActivityData(params: UseBusinessActivityDataParams) {
       info: 'top-sector',
       defaultExpanded: false,
     },
-  ], [netChange, netYoY, openingsCount, openingsYoY, closuresCount, closuresYoY, activeCount, topSector])
+  ], [
+    netChange, netYoY, openingsCount, openingsYoY,
+    closuresCount, closuresYoY, adminClosuresCount, voluntaryClosuresCount, adminClosuresYoY,
+    activeCount, topSector,
+  ])
 
   // --- Map GeoJSON ---
   const heatmapGeojson = useMemo((): GeoJSON.FeatureCollection | null => {
