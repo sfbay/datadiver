@@ -1,14 +1,18 @@
 /** Geographic utility functions */
 
-/** San Francisco map center and bounds */
-export const SF_CENTER = { lat: 37.7749, lng: -122.4194 }
+/** SF_CENTER is the camera target / look-at point — the lat/lng that sits
+ *  at the visual center of the map viewport on first render. Not the literal
+ *  geographic centroid of San Francisco; chosen visually so the city frames
+ *  nicely under the default pitch + bearing. SF_BOUNDS is the city's actual
+ *  geographic extent (used for fit-to-city operations). */
+export const SF_CENTER = { lat: 37.7377, lng: -122.4472 }
 export const SF_BOUNDS = {
   north: 37.8324,
   south: 37.7065,
   east: -122.3279,
   west: -122.5168,
 }
-export const SF_DEFAULT_ZOOM = 12
+export const SF_DEFAULT_ZOOM = 12.11
 
 /** Default 3D camera orientation for all maps. Pitch puts the camera at a
  *  moderate aerial angle so dot density reads well; the positive (clockwise)
