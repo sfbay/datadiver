@@ -118,9 +118,12 @@ export default function ChartTray({ viewId, tiles, className = '' }: ChartTrayPr
 
   return (
     <div ref={trayRef} className={`absolute bottom-0 left-0 right-0 top-0 z-10 flex flex-col-reverse overflow-hidden pointer-events-none ${className}`}>
-      {/* Minimized pills — flush bottom bar */}
+      {/* Minimized pills — flush bottom bar.
+          Wrapper is `pointer-events-none` so empty space inside the bar does
+          not capture clicks meant for map markers; children buttons retain
+          the default `pointer-events: auto` and remain interactive. */}
       {(minimizedTiles.length > 0 || hiddenTiles.length > 0 || hasExpanded) && (
-        <div className="flex flex-wrap items-center gap-1.5 px-4 py-2 pointer-events-auto">
+        <div className="flex flex-wrap items-center gap-1.5 px-4 py-2 pointer-events-none">
           {minimizedTiles.map((tile) => (
             <button
               key={tile.id}
@@ -206,11 +209,16 @@ export default function ChartTray({ viewId, tiles, className = '' }: ChartTrayPr
         </div>
       )}
 
-      {/* Expanded chart tiles — above the pill bar */}
+      {/* Expanded chart tiles — above the pill bar.
+          The flex wrapper itself is `pointer-events-none` because its box
+          spans the full map width even when only a tile or two is rendered,
+          which would otherwise eat clicks on map markers visible to the right
+          of the tiles. We re-enable pointer events on each individual tile so
+          they remain interactive. */}
       {hasExpanded && (
-        <div className="flex gap-2.5 flex-wrap px-5 pb-1 pointer-events-auto">
+        <div className="flex gap-2.5 flex-wrap px-5 pb-1 pointer-events-none">
           {expandedTiles.map((tile) => (
-            <div key={tile.id} className="group/tile relative">
+            <div key={tile.id} className="group/tile relative pointer-events-auto">
               <div className="glass-card rounded-xl p-3">
                 <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                   {tile.label}
