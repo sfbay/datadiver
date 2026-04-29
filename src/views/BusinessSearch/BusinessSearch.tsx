@@ -10,9 +10,10 @@
  *  prompt to start typing.
  */
 
-import { useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useMemo } from 'react'
+import { useSearchParams, Link } from 'react-router-dom'
 import { useBusinessSearch, type BusinessSearchFilters, type BusinessSortKey } from '@/hooks/useBusinessSearch'
+import { useBusinessFeatured, type FeaturedBusiness, type FeaturedChain } from '@/hooks/useBusinessFeatured'
 import BusinessRow from './components/BusinessRow'
 import { Skeleton } from '@/components/ui/Skeleton'
 
@@ -150,9 +151,9 @@ export default function BusinessSearch() {
             </div>
           )}
 
-          {/* Empty / prompt state */}
+          {/* Empty / featured-collections state */}
           {!query && results.length === 0 && !isLoading && (
-            <EmptyPrompt />
+            <FeaturedLanding />
           )}
 
           {/* Loading skeletons */}
@@ -232,27 +233,153 @@ function FilterPill({ label, value, options, onChange }: FilterPillProps) {
   )
 }
 
-// ── Empty prompt ────────────────────────────────────────────
+// ── Featured landing (empty-state collections) ─────────────────
 
-function EmptyPrompt() {
+function FeaturedLanding() {
+  const { oldestActive, recentClosures, biggestChains, isLoading, error } = useBusinessFeatured()
+
   return (
-    <div className="text-center py-16 max-w-md mx-auto">
-      <p
-        className="text-[20px] text-slate-400 dark:text-slate-500 italic mb-3"
-        style={{ fontFamily: '"Instrument Serif", Georgia, serif' }}
-      >
-        Start typing to search 136,000+ SF businesses.
-      </p>
-      <p className="text-[11px] text-slate-500 leading-relaxed">
-        Search by <span className="text-slate-300">business name</span>{', '}
-        <span className="text-slate-300">owner</span>{', '}
-        <span className="text-slate-300">address</span>, or{' '}
-        <span className="text-slate-300">Business Account Number (BAN)</span>.
-      </p>
-      <p className="text-[10px] text-slate-600 mt-4">
-        Each result links to a full business profile with chain locations,
-        mailing address, license details, and source-of-truth registry deep links.
-      </p>
+    <div className="space-y-6 py-2">
+      <div>
+        <p
+          className="text-[18px] text-slate-400 dark:text-slate-400 italic mb-1"
+          style={{ fontFamily: '"Instrument Serif", Georgia, serif' }}
+        >
+          Search 136,000+ SF businesses by name, owner, address, or BAN.
+        </p>
+        <p className="text-[11px] text-slate-500 leading-relaxed">
+          Or start with one of these — curated views into the registry.
+        </p>
+      </div>
+
+      {error && (
+        <p className="text-[11px] text-red-400">Featured collections failed to load: {error}</p>
+      )}
+
+      {isLoading && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {Array.from({ length: 3 }, (_, i) => (
+            <div key={i} className="glass-card rounded-xl p-4 space-y-2">
+              <Skeleton className="h-3 w-1/2" />
+              {Array.from({ length: 5 }, (_, j) => <Skeleton key={j} className="h-2 w-full" />)}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!isLoading && !error && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <FeaturedCard
+            title="SF's old guard"
+            subtitle="Oldest active businesses"
+            accent="#10b981"
+          >
+            {oldestActive.map((b) => (
+              <FeaturedBusinessRow key={b.uniqueid} business={b} showStartYear />
+            ))}
+          </FeaturedCard>
+
+          <FeaturedCard
+            title="Notable closures"
+            subtitle="Long-tenured businesses lost in the last year"
+            accent="#ef4444"
+          >
+            {recentClosures.length === 0 && (
+              <p className="text-[10px] text-slate-500 italic px-2 py-1">
+                No notable long-tenure closures in the last 365 days.
+              </p>
+            )}
+            {recentClosures.map((b) => (
+              <FeaturedBusinessRow key={b.uniqueid} business={b} showAge />
+            ))}
+          </FeaturedCard>
+
+          <FeaturedCard
+            title="Biggest chains"
+            subtitle="By location count under one BAN"
+            accent="#06b6d4"
+          >
+            {biggestChains.map((c) => (
+              <FeaturedChainRow key={c.ban} chain={c} />
+            ))}
+          </FeaturedCard>
+        </div>
+      )}
     </div>
+  )
+}
+
+function FeaturedCard({
+  title, subtitle, accent, children,
+}: {
+  title: string; subtitle: string; accent: string; children: React.ReactNode
+}) {
+  return (
+    <div className="glass-card rounded-xl p-4">
+      <div className="flex items-baseline gap-2 mb-1">
+        <span
+          className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+          style={{ backgroundColor: accent }}
+        />
+        <p
+          className="text-[15px] text-ink dark:text-slate-100 italic leading-none"
+          style={{ fontFamily: '"Instrument Serif", Georgia, serif' }}
+        >
+          {title}
+        </p>
+      </div>
+      <p className="text-[9px] font-mono uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500 mb-3">
+        {subtitle}
+      </p>
+      <ul className="space-y-1">{children}</ul>
+    </div>
+  )
+}
+
+function FeaturedBusinessRow({
+  business, showStartYear, showAge,
+}: { business: FeaturedBusiness; showStartYear?: boolean; showAge?: boolean }) {
+  const startYear = business.startDate?.split('T')[0]?.slice(0, 4)
+  const endYear = business.endDate?.split('T')[0]?.slice(0, 4)
+  return (
+    <li>
+      <Link
+        to={`/business/${encodeURIComponent(business.uniqueid)}`}
+        className="block px-2 py-1.5 -mx-2 rounded-md hover:bg-white/[0.04] transition-colors group"
+      >
+        <p className="text-[11px] text-slate-700 dark:text-slate-200 truncate">
+          {business.dbaName}
+        </p>
+        <p className="text-[9px] text-slate-500 font-mono mt-0.5">
+          {showStartYear && <>since {startYear} · </>}
+          {showAge && <>{business.ageYears}y · </>}
+          {business.sector}
+          {endYear && <span className="text-red-400"> · closed {endYear}</span>}
+        </p>
+      </Link>
+    </li>
+  )
+}
+
+function FeaturedChainRow({ chain }: { chain: FeaturedChain }) {
+  return (
+    <li>
+      <Link
+        to={`/business/chain/${encodeURIComponent(chain.ban)}`}
+        className="block px-2 py-1.5 -mx-2 rounded-md hover:bg-white/[0.04] transition-colors"
+      >
+        <div className="flex items-baseline justify-between gap-2">
+          <p className="text-[11px] text-slate-700 dark:text-slate-200 truncate min-w-0">
+            {chain.primaryDba}
+          </p>
+          <p className="text-[10px] font-mono text-cyan-400 flex-shrink-0">
+            {chain.locationCount} locations
+          </p>
+        </div>
+        <p className="text-[9px] text-slate-500 font-mono mt-0.5">
+          BAN {chain.ban}
+        </p>
+      </Link>
+    </li>
   )
 }
