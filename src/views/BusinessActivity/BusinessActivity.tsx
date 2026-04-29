@@ -84,6 +84,7 @@ export default function BusinessActivity() {
     return new Set(param.split(',').map(decodeURIComponent))
   }, [searchParams])
   const selectedNeighborhood = searchParams.get('neighborhood') || null
+  const selectedCorridor = searchParams.get('corridor') || null
 
   const setMapMode = useCallback((mode: MapMode) => {
     setSearchParams((prev) => {
@@ -112,6 +113,15 @@ export default function BusinessActivity() {
     }, { replace: true })
   }, [setSearchParams])
 
+  const setSelectedCorridor = useCallback((c: string | null) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (!c) next.delete('corridor')
+      else next.set('corridor', c)
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
+
   // --- WHERE clause construction ---
   const sectorClause = useMemo(() => {
     if (selectedSectors.size === 0) return ''
@@ -119,28 +129,47 @@ export default function BusinessActivity() {
     return `naic_code_description IN (${escaped.join(',')})`
   }, [selectedSectors])
 
+  // Corridor predicate is folded into every WHERE site so server-side counts
+  // (openings, closures, active, sector aggregation, prior-year YoY) all reflect
+  // the corridor scope. Client-side `filteredData` in the data hook handles
+  // marker/list filtering — but stat cards and trend charts come from these
+  // server queries, which is why corridor needs to be here too.
+  const corridorClause = useMemo(() => {
+    if (!selectedCorridor) return ''
+    const escaped = selectedCorridor.replace(/'/g, "''")
+    return `business_corridor = '${escaped}'`
+  }, [selectedCorridor])
+
   const whereClause = useMemo(() => {
     const conditions: string[] = [SF_CITY_FILTER]
     conditions.push(`(dba_start_date >= '${dateRange.start}T00:00:00' AND dba_start_date <= '${dateRange.end}T23:59:59') OR (dba_end_date >= '${dateRange.start}T00:00:00' AND dba_end_date <= '${dateRange.end}T23:59:59')`)
     if (sectorClause) conditions.push(sectorClause)
+    if (corridorClause) conditions.push(corridorClause)
     return conditions.map((c, i) => i === 0 ? c : `(${c})`).join(' AND ')
-  }, [dateRange, sectorClause])
+  }, [dateRange, sectorClause, corridorClause])
 
-  // Openings clause: businesses that opened in the date range (with optional sector filter)
+  // Openings clause: businesses that opened in the date range (with optional filters)
   const openingsClause = useMemo(() => {
-    const base = `${SF_CITY_FILTER} AND dba_start_date >= '${dateRange.start}T00:00:00' AND dba_start_date <= '${dateRange.end}T23:59:59'`
-    return sectorClause ? `${base} AND ${sectorClause}` : base
-  }, [dateRange, sectorClause])
+    const parts = [`${SF_CITY_FILTER} AND dba_start_date >= '${dateRange.start}T00:00:00' AND dba_start_date <= '${dateRange.end}T23:59:59'`]
+    if (sectorClause) parts.push(sectorClause)
+    if (corridorClause) parts.push(corridorClause)
+    return parts.join(' AND ')
+  }, [dateRange, sectorClause, corridorClause])
 
   const closuresClause = useMemo(() => {
-    const base = `${SF_CITY_FILTER} AND dba_end_date >= '${dateRange.start}T00:00:00' AND dba_end_date <= '${dateRange.end}T23:59:59'`
-    return sectorClause ? `${base} AND ${sectorClause}` : base
-  }, [dateRange, sectorClause])
+    const parts = [`${SF_CITY_FILTER} AND dba_end_date >= '${dateRange.start}T00:00:00' AND dba_end_date <= '${dateRange.end}T23:59:59'`]
+    if (sectorClause) parts.push(sectorClause)
+    if (corridorClause) parts.push(corridorClause)
+    return parts.join(' AND ')
+  }, [dateRange, sectorClause, corridorClause])
 
-  // Date-only openings clause for sector aggregation (no sector filter, so all sectors visible)
+  // Date-only openings clause for sector aggregation (no sector filter so all
+  // sectors are visible; corridor IS applied so the sector list reflects what's
+  // in the selected corridor).
   const openingsDateOnlyClause = useMemo(() => {
-    return `${SF_CITY_FILTER} AND dba_start_date >= '${dateRange.start}T00:00:00' AND dba_start_date <= '${dateRange.end}T23:59:59'`
-  }, [dateRange])
+    const base = `${SF_CITY_FILTER} AND dba_start_date >= '${dateRange.start}T00:00:00' AND dba_start_date <= '${dateRange.end}T23:59:59'`
+    return corridorClause ? `${base} AND ${corridorClause}` : base
+  }, [dateRange, corridorClause])
 
   // Data freshness detection
   const freshness = useDataFreshness('businessLocations', 'dba_start_date', dateRange)
@@ -209,10 +238,17 @@ export default function BusinessActivity() {
   )
   const adminClosuresCount = adminClosuresCountRows[0] ? parseInt(adminClosuresCountRows[0].count, 10) : null
 
+  // Active count narrows by corridor when one is selected, so the "Active"
+  // pill matches the user's narrowed scope rather than always showing the
+  // citywide total.
+  const activeCountWhere = useMemo(() => {
+    const base = `${SF_CITY_FILTER} AND dba_end_date IS NULL`
+    return corridorClause ? `${base} AND ${corridorClause}` : base
+  }, [corridorClause])
   const { data: activeCountRows } = useDataset<{ count: string }>(
     'businessLocations',
-    { $select: 'count(*) as count', $where: `${SF_CITY_FILTER} AND dba_end_date IS NULL` },
-    [SF_CITY_FILTER]
+    { $select: 'count(*) as count', $where: activeCountWhere },
+    [activeCountWhere]
   )
   const activeCount = activeCountRows[0] ? parseInt(activeCountRows[0].count, 10) : null
 
@@ -234,6 +270,28 @@ export default function BusinessActivity() {
       $limit: 30,
     },
     [openingsDateOnlyClause]
+  )
+
+  // Corridor list — server-side aggregate of all distinct corridor values
+  // (sorted by population). Static-ish list since SF defines a fixed set;
+  // we keep it date-independent so the dropdown remains stable across
+  // date-range changes.
+  const { data: corridorRows } = useDataset<{ business_corridor: string; cnt: string }>(
+    'businessLocations',
+    {
+      $select: 'business_corridor, count(*) as cnt',
+      $group: 'business_corridor',
+      $where: `${SF_CITY_FILTER} AND business_corridor IS NOT NULL AND trim(business_corridor) != ''`,
+      $order: 'cnt DESC',
+      $limit: 100,
+    },
+    [],
+  )
+  const corridors = useMemo(
+    () => corridorRows
+      .map((r) => ({ name: r.business_corridor, count: parseInt(r.cnt, 10) || 0 }))
+      .filter((c) => c.name && c.name.trim().length > 0),
+    [corridorRows],
   )
 
   // Monthly openings
@@ -262,15 +320,17 @@ export default function BusinessActivity() {
     [closuresClause]
   )
 
-  // Prior-year openings for ghost bars
+  // Prior-year openings for ghost bars (corridor-aware so YoY comparisons stay
+  // within the same corridor scope when one is selected)
   const priorOpeningsClause = useMemo(() => {
     const start = new Date(dateRange.start)
     const end = new Date(dateRange.end)
     start.setFullYear(start.getFullYear() - 1)
     end.setFullYear(end.getFullYear() - 1)
     const fmt = (d: Date) => d.toISOString().split('T')[0]
-    return `${SF_CITY_FILTER} AND dba_start_date >= '${fmt(start)}T00:00:00' AND dba_start_date <= '${fmt(end)}T23:59:59'`
-  }, [dateRange])
+    const base = `${SF_CITY_FILTER} AND dba_start_date >= '${fmt(start)}T00:00:00' AND dba_start_date <= '${fmt(end)}T23:59:59'`
+    return corridorClause ? `${base} AND ${corridorClause}` : base
+  }, [dateRange, corridorClause])
 
   const { data: priorOpeningRows } = useDataset<BusinessMonthlyRow>(
     'businessLocations',
@@ -284,15 +344,16 @@ export default function BusinessActivity() {
     [priorOpeningsClause]
   )
 
-  // Prior-year closures for ghost bars
+  // Prior-year closures for ghost bars (corridor-aware)
   const priorClosuresClause = useMemo(() => {
     const start = new Date(dateRange.start)
     const end = new Date(dateRange.end)
     start.setFullYear(start.getFullYear() - 1)
     end.setFullYear(end.getFullYear() - 1)
     const fmt = (d: Date) => d.toISOString().split('T')[0]
-    return `${SF_CITY_FILTER} AND dba_end_date >= '${fmt(start)}T00:00:00' AND dba_end_date <= '${fmt(end)}T23:59:59'`
-  }, [dateRange])
+    const base = `${SF_CITY_FILTER} AND dba_end_date >= '${fmt(start)}T00:00:00' AND dba_end_date <= '${fmt(end)}T23:59:59'`
+    return corridorClause ? `${base} AND ${corridorClause}` : base
+  }, [dateRange, corridorClause])
 
   const { data: priorClosureRows } = useDataset<BusinessMonthlyRow>(
     'businessLocations',
@@ -380,6 +441,7 @@ export default function BusinessActivity() {
     dateRange,
     mapMode,
     selectedNeighborhood,
+    selectedCorridor,
     neighborhoodBoundaries,
     sectorRows,
     monthlyOpeningRows,
@@ -577,6 +639,34 @@ export default function BusinessActivity() {
     }
   }, [dataWithNeighborhoods, mapInstance, selectedNeighborhood, setSelectedNeighborhood])
 
+  // Fit map to corridor's bounding box when one is selected. Corridors are
+  // typically elongated street segments — `fitBounds` handles that geometry
+  // better than a center+zoom flyTo. Fires whenever the corridor selection
+  // changes and the matching points are available.
+  useEffect(() => {
+    if (!mapInstance || !selectedCorridor) return
+    const target = selectedCorridor.toLowerCase()
+    const items = dataWithNeighborhoods.filter((d) => d.corridor?.toLowerCase() === target)
+    if (items.length === 0) return
+
+    let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity
+    for (const d of items) {
+      if (d.lat < minLat) minLat = d.lat
+      if (d.lat > maxLat) maxLat = d.lat
+      if (d.lng < minLng) minLng = d.lng
+      if (d.lng > maxLng) maxLng = d.lng
+    }
+    // Single-point edge case: fall back to flyTo at city-level zoom
+    if (minLat === maxLat && minLng === maxLng) {
+      mapInstance.flyTo({ center: [minLng, minLat], zoom: 16, duration: 1000 })
+      return
+    }
+    mapInstance.fitBounds(
+      [[minLng, minLat], [maxLng, maxLat]],
+      { padding: 80, maxZoom: 16, duration: 1000 },
+    )
+  }, [mapInstance, selectedCorridor, dataWithNeighborhoods])
+
   useProgressScope()
 
   return (
@@ -734,6 +824,40 @@ export default function BusinessActivity() {
 
             {sidebarTab === 'neighborhoods' && (
               <>
+                {/* Corridor filter \u2014 SF-defined commercial corridors (Mission, Castro,
+                    Hayes Valley, etc.). Single-select. Combines additively with the
+                    neighborhood filter so a journalist can ask "Mission Street within
+                    the Mission" or "Castro within Castro/Upper Market" cleanly. */}
+                {corridors.length > 0 && (
+                  <div className="mb-4">
+                    <label className="block text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 mb-1.5">
+                      Commercial Corridor
+                    </label>
+                    <select
+                      value={selectedCorridor || ''}
+                      onChange={(e) => setSelectedCorridor(e.target.value || null)}
+                      className="w-full text-[11px] bg-white/80 dark:bg-white/[0.04] border border-slate-200/50 dark:border-white/[0.06]
+                        rounded-md px-2 py-1.5 text-slate-700 dark:text-slate-300
+                        focus:outline-none focus:border-emerald-500/40 transition-colors"
+                    >
+                      <option value="">All corridors</option>
+                      {corridors.map((c) => (
+                        <option key={c.name} value={c.name}>
+                          {c.name} ({c.count.toLocaleString()})
+                        </option>
+                      ))}
+                    </select>
+                    {selectedCorridor && (
+                      <button
+                        onClick={() => setSelectedCorridor(null)}
+                        className="mt-1.5 text-[10px] font-mono text-emerald-500 hover:text-emerald-400 transition-colors"
+                      >
+                        {'\u2190'} Clear corridor filter
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex items-center gap-2 mb-4">
                   <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
                     By Neighborhood

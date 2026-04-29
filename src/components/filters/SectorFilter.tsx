@@ -172,6 +172,12 @@ export default function SectorFilter({ categories, selected, onChange, zScores }
                 Individual sectors may appear to be declining when the overall trend is growth.
               </p>
               <p className="text-[9px] text-amber-200/60 leading-relaxed mt-1.5">
+                Some businesses report multiple NAICS sectors (e.g. a coffee shop that's also a retailer).
+                Per-sector openings and closures count those businesses in <span className="italic">each</span> listed sector,
+                so the per-sector totals can sum to more than the overall count — this is intentional, so multi-sector
+                businesses appear in every sector lens.
+              </p>
+              <p className="text-[9px] text-amber-200/60 leading-relaxed mt-1.5">
                 The health bars below compare each sector's closure rate against its own 5-year historical baseline (2019–2023).
                 Green = fewer closures than typical. Red = more closures than typical. This normalizes for the data bias.
               </p>
