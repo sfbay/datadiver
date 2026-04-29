@@ -241,10 +241,7 @@ function FeaturedLanding() {
   return (
     <div className="space-y-6 py-2">
       <div>
-        <p
-          className="text-[18px] text-slate-400 dark:text-slate-400 italic mb-1"
-          style={{ fontFamily: '"Instrument Serif", Georgia, serif' }}
-        >
+        <p className="font-display italic text-[18px] text-slate-400 dark:text-slate-400 mb-1">
           Search 136,000+ SF businesses by name, owner, address, or BAN.
         </p>
         <p className="text-[11px] text-slate-500 leading-relaxed">
@@ -321,10 +318,7 @@ function FeaturedCard({
           className="w-1.5 h-1.5 rounded-full flex-shrink-0"
           style={{ backgroundColor: accent }}
         />
-        <p
-          className="text-[15px] text-ink dark:text-slate-100 italic leading-none"
-          style={{ fontFamily: '"Instrument Serif", Georgia, serif' }}
-        >
+        <p className="font-display italic text-[15px] text-ink dark:text-slate-100 leading-none">
           {title}
         </p>
       </div>

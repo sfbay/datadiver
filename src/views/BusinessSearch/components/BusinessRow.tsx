@@ -43,10 +43,7 @@ export default function BusinessRow({ result }: BusinessRowProps) {
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2 flex-wrap">
-            <h3
-              className="text-[15px] text-ink dark:text-slate-100 truncate group-hover:text-slate-50"
-              style={{ fontFamily: '"Instrument Serif", Georgia, serif', fontStyle: 'italic' }}
-            >
+            <h3 className="font-display italic text-[15px] text-ink dark:text-slate-100 truncate group-hover:text-slate-50">
               {result.dbaName}
             </h3>
             <span

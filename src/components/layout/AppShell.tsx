@@ -152,14 +152,36 @@ export default function AppShell({ children }: { children: ReactNode }) {
             />
           </button>
           {isSidebarOpen && (
-            <div className="flex flex-col min-w-0">
-              <span className="font-display text-xl italic text-ink dark:text-white leading-none tracking-tight">
-                DataDiver
-              </span>
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono uppercase tracking-widest mt-0.5">
-                SF Open Data
-              </span>
-            </div>
+            <>
+              <div className="flex flex-col min-w-0 flex-1">
+                <span className="font-display text-xl italic text-ink dark:text-white leading-none tracking-tight">
+                  DataDiver
+                </span>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono uppercase tracking-widest mt-0.5">
+                  SF Open Data
+                </span>
+              </div>
+              {/* Top-of-window collapse affordance — paired with the bottom
+                  collapse so users have a control wherever their eye lands. */}
+              <button
+                onClick={toggleSidebar}
+                className="flex-shrink-0 w-7 h-7 rounded-md flex items-center justify-center
+                  text-slate-400 dark:text-slate-600
+                  hover:text-slate-600 dark:hover:text-slate-300
+                  hover:bg-slate-100 dark:hover:bg-white/[0.04]
+                  transition-all duration-150"
+                aria-label="Collapse sidebar"
+                title="Collapse sidebar"
+              >
+                <svg
+                  width="14" height="14" viewBox="0 0 16 16"
+                  fill="none" stroke="currentColor"
+                  strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+                >
+                  <path d="M10 3L5 8l5 5" />
+                </svg>
+              </button>
+            </>
           )}
         </div>
 
