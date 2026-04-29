@@ -11,6 +11,10 @@ import CrimeIncidents from '@/views/CrimeIncidents/CrimeIncidents'
 import ParkingCitations from '@/views/ParkingCitations/ParkingCitations'
 import TrafficSafety from '@/views/TrafficSafety/TrafficSafety'
 import BusinessActivity from '@/views/BusinessActivity/BusinessActivity'
+import BusinessSearch from '@/views/BusinessSearch/BusinessSearch'
+import BusinessProfile from '@/views/BusinessSearch/BusinessProfile'
+import ChainProfile from '@/views/BusinessSearch/ChainProfile'
+import OwnerProfile from '@/views/BusinessSearch/OwnerProfile'
 import CampaignFinance from '@/views/CampaignFinance/CampaignFinance'
 import Demographics from '@/views/Demographics/Demographics'
 import CityBudget from '@/views/CityBudget/CityBudget'
@@ -38,6 +42,10 @@ export default function App() {
           <Route path="/parking-citations" element={<ParkingCitations />} />
           <Route path="/traffic-safety" element={<TrafficSafety />} />
           <Route path="/business-activity" element={<BusinessActivity />} />
+          <Route path="/business" element={<BusinessSearch />} />
+          <Route path="/business/chain/:ban" element={<ChainProfile />} />
+          <Route path="/business/owner/:name" element={<OwnerProfile />} />
+          <Route path="/business/:uniqueid" element={<BusinessProfile />} />
           <Route path="/campaign-finance" element={<CampaignFinance />} />
           <Route path="/demographics" element={<Demographics />} />
           <Route path="/city-budget" element={<CityBudget />} />

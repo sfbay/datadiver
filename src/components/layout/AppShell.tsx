@@ -69,6 +69,13 @@ const NAV_ITEMS = [
     accentColor: '#10b981',
   },
   {
+    path: '/business',
+    label: 'Business Search',
+    shortLabel: 'BS',
+    description: 'Search businesses, chains, and owners',
+    accentColor: '#06b6d4',
+  },
+  {
     path: '/campaign-finance',
     label: 'Campaign Finance',
     shortLabel: 'CF',
