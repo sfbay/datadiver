@@ -274,8 +274,8 @@ export default function Home() {
                 <span className="w-1.5 h-1.5 rounded-full bg-signal-emerald pulse-live" />
                 Live data from datasf.sfgov.org
               </span>
-              <span className="text-[10px] font-mono text-slate-400/60 dark:text-slate-500/60">
-                Created by Jesse Garnier with Claude<br />SF State Journalism
+              <span className="text-[11px] font-mono text-slate-400/80 dark:text-slate-400/60 whitespace-nowrap">
+                Jesse Garnier with Claude · SF State Journalism
               </span>
             </div>
           </div>

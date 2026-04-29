@@ -1,9 +1,13 @@
 import { useState, useEffect, useRef, type RefObject } from 'react'
 
 /**
- * Observes a container's dimensions and returns whether the viewport
- * is too small for expanded overlays. Uses the tray element's
- * offsetParent (the nearest positioned ancestor, i.e. the map container).
+ * Observes the dimensions of the tray's positioned ancestor (the map container)
+ * and returns whether that container is too small for expanded overlays.
+ *
+ * The tray itself is `position: absolute` and shrinks to fit its rendered pills,
+ * so observing it directly produces a tiny height that always reads as compact.
+ * We always climb to `offsetParent` — the nearest positioned ancestor — so the
+ * measurement reflects the real available canvas (the map area).
  *
  * Thresholds:
  *  - compact: height < 500px OR width < 600px → force-minimize expanded items
@@ -20,9 +24,7 @@ export function useCompactViewport(
     const el = elRef.current
     if (!el) return
 
-    // Observe the element itself (spans full map container via inset-0)
-    // Falls back to offsetParent if the element doesn't have explicit dimensions
-    const container = (el.offsetHeight > 0 ? el : el.offsetParent as HTMLElement | null)
+    const container = (el.offsetParent as HTMLElement | null) ?? document.documentElement
     if (!container) return
 
     const check = () => {
