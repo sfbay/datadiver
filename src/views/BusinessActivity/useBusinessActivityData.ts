@@ -346,8 +346,13 @@ export function useBusinessActivityData(params: UseBusinessActivityDataParams) {
     },
     {
       id: 'top-sector',
+      // Pill rendering shows `${shortLabel} ${value}`, so the previous
+      // shortLabel "Sector" produced a chip reading "Sector Professional,
+      // Scientific…" — visually identical to a filter selection. "Top"
+      // disambiguates: this is the most-active sector in the current
+      // window, not a filter that's been applied.
       label: 'Top Sector',
-      shortLabel: 'Sector',
+      shortLabel: 'Top',
       value: topSector || '...',
       color: '#64748b',
       delay: 320,
