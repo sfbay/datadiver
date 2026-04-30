@@ -41,13 +41,25 @@ export const SF_DEFAULT_VIEW: CameraView = {
  *  field's free-text values from Socrata (case sensitive). Tune via the
  *  `?debug=map` overlay and add entries here as they're dialed in. */
 export const CORRIDOR_VIEWS: Record<string, CameraView> = {
-  // Example shape — kept commented for reference; remove once a real entry lands.
-  // 'Mission Street': {
-  //   pitch: 50,
-  //   bearing: 25,
-  //   zoom: 14.5,
-  //   center: { lat: 37.7596, lng: -122.4194 },
-  // },
+  // Tuned 2026-04-29 via the ?debug=map overlay.
+  'Central Market': {
+    pitch: 59,
+    bearing: 16.8,
+    zoom: 15.72,
+    center: { lat: 37.7773, lng: -122.4132 },
+  },
+  'Chinatown': {
+    pitch: 63,
+    bearing: -35.2,
+    zoom: 16.55,
+    center: { lat: 37.7932, lng: -122.4053 },
+  },
+  'Castro': {
+    pitch: 64.5,
+    bearing: 25.6,
+    zoom: 15.76,
+    center: { lat: 37.7629, lng: -122.4312 },
+  },
 }
 
 /** Per-neighborhood presets. Keys must match
