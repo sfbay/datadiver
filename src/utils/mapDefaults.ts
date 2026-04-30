@@ -197,9 +197,130 @@ export const CORRIDOR_VIEWS: Record<string, CameraView> = {
 }
 
 /** Per-neighborhood presets. Keys must match
- *  `neighborhoods_analysis_boundaries` text values. */
+ *  `neighborhoods_analysis_boundaries` text values exactly (case sensitive).
+ *  Tuned 2026-04-29 via the ?debug=map overlay. Covers 30 of SF's 41 official
+ *  neighborhoods — long-tail districts fall back to centroid-flyTo. */
 export const NEIGHBORHOOD_VIEWS: Record<string, CameraView> = {
-  // Same iterative-population pattern as CORRIDOR_VIEWS.
+  'Financial District/South Beach': {
+    pitch: 47.5, bearing: 31, zoom: 14.42,
+    center: { lat: 37.7845, lng: -122.3968 },
+  },
+  'Mission': {
+    pitch: 57.5, bearing: 40.6, zoom: 14.59,
+    center: { lat: 37.7540, lng: -122.4178 },
+  },
+  'Sunset/Parkside': {
+    pitch: 57.5, bearing: 40.6, zoom: 14.1,
+    center: { lat: 37.7420, lng: -122.4964 },
+  },
+  'South of Market': {
+    pitch: 62.5, bearing: 14.8, zoom: 15.05,
+    center: { lat: 37.7740, lng: -122.4073 },
+  },
+  'Castro/Upper Market': {
+    pitch: 62.5, bearing: 27.9, zoom: 15.45,
+    center: { lat: 37.7577, lng: -122.4381 },
+  },
+  'Outer Richmond': {
+    pitch: 54, bearing: 53.5, zoom: 14.77,
+    center: { lat: 37.7717, lng: -122.4993 },
+  },
+  'Tenderloin': {
+    pitch: 44.5, bearing: 10.5, zoom: 15.41,
+    center: { lat: 37.7787, lng: -122.4153 },
+  },
+  'Bayview Hunters Point': {
+    pitch: 44.5, bearing: 10.5, zoom: 13.62,
+    center: { lat: 37.7216, lng: -122.3850 },
+  },
+  'Marina': {
+    pitch: 46.5, bearing: 36.3, zoom: 14.96,
+    center: { lat: 37.7971, lng: -122.4377 },
+  },
+  'Nob Hill': {
+    pitch: 49, bearing: 0, zoom: 15.76,
+    center: { lat: 37.7894, lng: -122.4144 },
+  },
+  'West of Twin Peaks': {
+    pitch: 49, bearing: 20.8, zoom: 14.16,
+    center: { lat: 37.7266, lng: -122.4579 },
+  },
+  'Pacific Heights': {
+    pitch: 52.5, bearing: 36.8, zoom: 15.18,
+    center: { lat: 37.7881, lng: -122.4382 },
+  },
+  'Mission Bay': {
+    pitch: 52.5, bearing: 36.8, zoom: 14.83,
+    center: { lat: 37.7670, lng: -122.3956 },
+  },
+  'Inner Sunset': {
+    pitch: 52, bearing: 11.2, zoom: 14.86,
+    center: { lat: 37.7531, lng: -122.4646 },
+  },
+  'Chinatown': {
+    pitch: 57, bearing: -88, zoom: 16.56,
+    center: { lat: 37.7963, lng: -122.4031 },
+  },
+  'Noe Valley': {
+    pitch: 60.8, bearing: 49.8, zoom: 15.25,
+    center: { lat: 37.7457, lng: -122.4363 },
+  },
+  'Western Addition': {
+    pitch: 54.9, bearing: 44, zoom: 15.36,
+    center: { lat: 37.7775, lng: -122.4346 },
+  },
+  'Hayes Valley': {
+    pitch: 41.8, bearing: 40, zoom: 15.46,
+    center: { lat: 37.7723, lng: -122.4334 },
+  },
+  'Inner Richmond': {
+    pitch: 41.8, bearing: 7.2, zoom: 15.1,
+    center: { lat: 37.7771, lng: -122.4646 },
+  },
+  'Potrero Hill': {
+    pitch: 42.3, bearing: 12, zoom: 14.96,
+    center: { lat: 37.7549, lng: -122.3947 },
+  },
+  'Excelsior': {
+    pitch: 42.3, bearing: 12, zoom: 14.36,
+    center: { lat: 37.7126, lng: -122.4324 },
+  },
+  'Bernal Heights': {
+    pitch: 42.3, bearing: 12, zoom: 14.77,
+    center: { lat: 37.7356, lng: -122.4145 },
+  },
+  'North Beach': {
+    pitch: 42.3, bearing: 12, zoom: 15.39,
+    center: { lat: 37.8023, lng: -122.4091 },
+  },
+  'Russian Hill': {
+    pitch: 56.3, bearing: -34.4, zoom: 15.61,
+    center: { lat: 37.7967, lng: -122.4173 },
+  },
+  'Haight Ashbury': {
+    pitch: 49.3, bearing: 35.4, zoom: 15.44,
+    center: { lat: 37.7651, lng: -122.4465 },
+  },
+  'Outer Mission': {
+    pitch: 48.8, bearing: 17.6, zoom: 14.5,
+    center: { lat: 37.7116, lng: -122.4505 },
+  },
+  'Lone Mountain/USF': {
+    pitch: 48.8, bearing: 17.6, zoom: 15.46,
+    center: { lat: 37.7739, lng: -122.4504 },
+  },
+  'Oceanview/Merced/Ingleside': {
+    pitch: 48.8, bearing: 17.6, zoom: 15.36,
+    center: { lat: 37.7119, lng: -122.4636 },
+  },
+  'Presidio Heights': {
+    pitch: 48.8, bearing: 17.6, zoom: 15.64,
+    center: { lat: 37.7831, lng: -122.4507 },
+  },
+  'Portola': {
+    pitch: 49.3, bearing: -54.7, zoom: 15.35,
+    center: { lat: 37.7240, lng: -122.4059 },
+  },
 }
 
 /** Look up a corridor's camera preset. Returns null if no preset exists —
