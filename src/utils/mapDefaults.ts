@@ -128,6 +128,72 @@ export const CORRIDOR_VIEWS: Record<string, CameraView> = {
     zoom: 15.63,
     center: { lat: 37.7978, lng: -122.4402 },
   },
+  'Ocean Ave': {
+    pitch: 50,
+    bearing: 83.2,
+    zoom: 15.98,
+    center: { lat: 37.7240, lng: -122.4624 },
+  },
+  'Third Street': {
+    pitch: 57.5,
+    bearing: 0,
+    zoom: 15.72,
+    center: { lat: 37.7273, lng: -122.3912 },
+  },
+  'Lower Polk': {
+    pitch: 44.6,
+    bearing: -36.7,
+    zoom: 16.15,
+    center: { lat: 37.7844, lng: -122.4183 },
+  },
+  'Lower 24th': {
+    pitch: 58,
+    bearing: 68.6,
+    zoom: 16.65,
+    center: { lat: 37.7513, lng: -122.4152 },
+  },
+  'Outer Irving': {
+    pitch: 56.5,
+    bearing: 65.1,
+    zoom: 17.11,
+    center: { lat: 37.7624, lng: -122.4832 },
+  },
+  'San Bruno Ave': {
+    pitch: 63.5,
+    bearing: -38.3,
+    zoom: 16.57,
+    center: { lat: 37.7246, lng: -122.4012 },
+  },
+  'Middle Polk': {
+    pitch: 50,
+    bearing: -32,
+    zoom: 17.01,
+    center: { lat: 37.7923, lng: -122.4202 },
+  },
+  'Japantown': {
+    pitch: 35.2,
+    bearing: 49.9,
+    zoom: 17.74,
+    center: { lat: 37.7851, lng: -122.4302 },
+  },
+  'Larkin Street': {
+    pitch: 46,
+    bearing: -33.6,
+    zoom: 17.03,
+    center: { lat: 37.7824, lng: -122.4164 },
+  },
+  'Leland Ave': {
+    pitch: 60.5,
+    bearing: 99.7,
+    zoom: 17.61,
+    center: { lat: 37.7123, lng: -122.4075 },
+  },
+  'Brotherhood Way': {
+    pitch: 45.7,
+    bearing: 56.7,
+    zoom: 16.2,
+    center: { lat: 37.7126, lng: -122.4625 },
+  },
 }
 
 /** Per-neighborhood presets. Keys must match
