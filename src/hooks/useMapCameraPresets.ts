@@ -35,17 +35,22 @@ export interface CameraPresetPoint {
 export interface UseMapCameraPresetsOptions {
   selectedCorridor?: string | null
   selectedNeighborhood?: string | null
-  /** Points to compute fallback framing from — typically the view's
-   *  current data filtered to the active selection. Used for fit-bounds
-   *  (corridor) and centroid-flyTo (neighborhood) when no preset exists. */
+  /** For corridor fallback when no preset exists: points filtered to the
+   *  active corridor selection. The hook fit-bounds over them. */
   fallbackPoints?: CameraPresetPoint[]
+  /** For neighborhood fallback when no preset exists: the SF neighborhood
+   *  polygon GeoJSON. The hook locates the matching feature by `nhood`
+   *  property and fit-bounds the polygon — gives a much tighter, more
+   *  accurate frame than centroid-flyTo. Preferred over `fallbackPoints`
+   *  for neighborhood selections when both are provided. */
+  neighborhoodBoundaries?: GeoJSON.FeatureCollection | null
 }
 
 export function useMapCameraPresets(
   map: mapboxgl.Map | null,
   options: UseMapCameraPresetsOptions,
 ) {
-  const { selectedCorridor, selectedNeighborhood, fallbackPoints } = options
+  const { selectedCorridor, selectedNeighborhood, fallbackPoints, neighborhoodBoundaries } = options
 
   // Corridor preset — applies on selection or falls back to fit-bounds.
   // Note: the deps include fallbackPoints; if the upstream view passes a
@@ -79,7 +84,10 @@ export function useMapCameraPresets(
     }
   }, [map, selectedCorridor, fallbackPoints])
 
-  // Neighborhood preset — applies on selection or centroid-flies as fallback.
+  // Neighborhood preset — applies on selection. Falls back (in priority order)
+  // to: 1) polygon-based fitBounds over the matching feature in
+  // `neighborhoodBoundaries`, 2) centroid-flyTo over `fallbackPoints`,
+  // 3) nothing if neither is available.
   useEffect(() => {
     if (!map || !selectedNeighborhood) return
 
@@ -89,12 +97,44 @@ export function useMapCameraPresets(
       return
     }
 
+    // Fallback A: polygon fitBounds (more accurate frame than centroid-fly).
+    if (neighborhoodBoundaries) {
+      const feature = neighborhoodBoundaries.features.find(
+        (f) => f.properties?.nhood === selectedNeighborhood,
+      )
+      if (feature) {
+        const coords: [number, number][] = []
+        const collect = (c: unknown): void => {
+          if (Array.isArray(c) && typeof c[0] === 'number') {
+            coords.push(c as [number, number])
+          } else if (Array.isArray(c)) {
+            c.forEach(collect)
+          }
+        }
+        // GeoJSON geometry coordinates structure varies by type; recurse safely
+        collect((feature.geometry as { coordinates: unknown }).coordinates)
+        if (coords.length > 0) {
+          const lngs = coords.map((c) => c[0])
+          const lats = coords.map((c) => c[1])
+          map.fitBounds(
+            [
+              [Math.min(...lngs), Math.min(...lats)],
+              [Math.max(...lngs), Math.max(...lats)],
+            ],
+            { padding: 80, duration: 1200 },
+          )
+          return
+        }
+      }
+    }
+
+    // Fallback B: centroid-flyTo over filtered points.
     if (fallbackPoints && fallbackPoints.length > 0) {
       const avgLat = fallbackPoints.reduce((s, d) => s + d.lat, 0) / fallbackPoints.length
       const avgLng = fallbackPoints.reduce((s, d) => s + d.lng, 0) / fallbackPoints.length
       map.flyTo({ center: [avgLng, avgLat], zoom: 14, duration: 1200 })
     }
-  }, [map, selectedNeighborhood, fallbackPoints])
+  }, [map, selectedNeighborhood, fallbackPoints, neighborhoodBoundaries])
 
   // Reset to global default on falling-edge clear (set → null transition for
   // both selections). Tracked via ref so we don't fire on every mount where

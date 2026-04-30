@@ -8,7 +8,7 @@ import UnderlayPicker from '@/components/maps/UnderlayPicker'
 import NeighborhoodCensusContext from '@/components/ui/NeighborhoodCensusContext'
 import { UNDERLAY_PRESETS } from '@/utils/censusVariables'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
-import { useFlyToNeighborhood } from '@/hooks/useFlyToNeighborhood'
+import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useSearchParams } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import { useDataset } from '@/hooks/useDataset'
@@ -137,7 +137,7 @@ export default function EmergencyResponse() {
 
   // Neighborhood boundaries + Census demographic underlay
   const { boundaries: neighborhoodBoundaries } = useNeighborhoodBoundaries()
-  useFlyToNeighborhood(mapInstance, selectedNeighborhood, neighborhoodBoundaries)
+  useMapCameraPresets(mapInstance, { selectedNeighborhood, neighborhoodBoundaries })
   const [underlayVariable, setUnderlayVariable] = useState<CensusVariable | null>(null)
   const { neighborhoods: censusNeighborhoods } = useCensusData()
 

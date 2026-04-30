@@ -7,6 +7,7 @@ import { useCensusData } from '@/hooks/useCensusData'
 import { NON_RESIDENTIAL_NEIGHBORHOODS } from '@/utils/geo'
 import { useCivicMetric } from '@/hooks/useCivicMetrics'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
+import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useMapLayer } from '@/hooks/useMapLayer'
 import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { useDemographicsData } from './useDemographicsData'
@@ -188,6 +189,10 @@ export default function Demographics() {
   // Bind choropleth layer only when in choropleth mode
   const choroplethGeo = mapMode === 'choropleth' ? choroplethGeoJSON : null
   useMapLayer(mapInstance, 'demographics-choropleth', choroplethGeo, choroplethLayers)
+
+  // Camera presets — reactively glides to the matching neighborhood preset
+  // (or fits the polygon when no preset). Cross-view consistent.
+  useMapCameraPresets(mapInstance, { selectedNeighborhood, neighborhoodBoundaries: boundaries })
 
   // Choropleth tooltip
   useMapTooltip(mapInstance, 'demographics-choropleth-fill', (props) => {
