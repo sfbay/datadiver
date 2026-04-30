@@ -39,7 +39,9 @@ export const SF_DEFAULT_VIEW: CameraView = {
 
 /** Per-corridor presets. Keys must exactly match the `business_corridor`
  *  field's free-text values from Socrata (case sensitive). Tune via the
- *  `?debug=map` overlay and add entries here as they're dialed in. */
+ *  `?debug=map` overlay and add entries here as they're dialed in.
+ *  Bearings vary widely because SF's commercial corridors run in many
+ *  different directions — each preset honors the corridor's natural axis. */
 export const CORRIDOR_VIEWS: Record<string, CameraView> = {
   // Tuned 2026-04-29 via the ?debug=map overlay.
   'Central Market': {
@@ -59,6 +61,72 @@ export const CORRIDOR_VIEWS: Record<string, CameraView> = {
     bearing: 25.6,
     zoom: 15.76,
     center: { lat: 37.7629, lng: -122.4312 },
+  },
+  'Market/Castro': {
+    pitch: 51,
+    bearing: 12.9,
+    zoom: 15.51,
+    center: { lat: 37.7620, lng: -122.4302 },
+  },
+  'Union Street': {
+    pitch: 53.1,
+    bearing: 49.7,
+    zoom: 16.38,
+    center: { lat: 37.7962, lng: -122.4334 },
+  },
+  'Mission Street': {
+    pitch: 65,
+    bearing: 12,
+    zoom: 15.56,
+    center: { lat: 37.7200, lng: -122.4348 },
+  },
+  'North Beach': {
+    pitch: 56,
+    bearing: 0,
+    zoom: 16.62,
+    center: { lat: 37.7990, lng: -122.4080 },
+  },
+  'Parkside Taraval': {
+    pitch: 55,
+    bearing: 57.8,
+    zoom: 15.22,
+    center: { lat: 37.7393, lng: -122.4976 },
+  },
+  '24th Street': {
+    pitch: 54.5,
+    bearing: 63.3,
+    zoom: 16.09,
+    center: { lat: 37.7494, lng: -122.4344 },
+  },
+  'West Portal': {
+    pitch: 50,
+    bearing: 8,
+    zoom: 16.38,
+    center: { lat: 37.7378, lng: -122.4673 },
+  },
+  'Geary Boulevard': {
+    pitch: 58.5,
+    bearing: 56,
+    zoom: 15.72,
+    center: { lat: 37.7787, lng: -122.4832 },
+  },
+  'Noriega': {
+    pitch: 57.5,
+    bearing: 70.4,
+    zoom: 15.2,
+    center: { lat: 37.7512, lng: -122.5002 },
+  },
+  'Fillmore Street (Lower)': {
+    pitch: 59,
+    bearing: -31.2,
+    zoom: 16.58,
+    center: { lat: 37.7809, lng: -122.4314 },
+  },
+  'Lombard Street': {
+    pitch: 54.6,
+    bearing: 53.8,
+    zoom: 15.63,
+    center: { lat: 37.7978, lng: -122.4402 },
   },
 }
 
