@@ -497,6 +497,10 @@ export interface BusinessLocationRecord {
   business_corridor?: string
   community_benefit_district?: string
   supervisor_district?: string
+  /** SF analysis-neighborhood text value — same string used across the
+   *  city's other datasets (Crime, 311, etc.) so neighborhood filters and
+   *  presets can match by exact equality. */
+  neighborhoods_analysis_boundaries?: string
   mailing_address_1?: string
   mail_city?: string
   mail_state?: string
