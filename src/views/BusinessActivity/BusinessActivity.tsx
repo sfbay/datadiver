@@ -33,6 +33,12 @@ import { useProgressScope } from '@/hooks/useLoadingProgress'
 import InfoTip from '@/components/ui/InfoTip'
 import { useBusinessActivityData } from './useBusinessActivityData'
 import { BUSINESS_HEATMAP_LAYERS, ANOMALY_LAYERS } from './mapLayers'
+import {
+  getCorridorView,
+  getNeighborhoodView,
+  applyCameraView,
+  SF_DEFAULT_VIEW,
+} from '@/utils/mapDefaults'
 
 type MapMode = 'heatmap' | 'anomaly'
 type SidebarTab = 'sectors' | 'neighborhoods'
@@ -630,21 +636,40 @@ export default function BusinessActivity() {
   const handleMapReady = useCallback((map: mapboxgl.Map) => { setMapInstance(map) }, [])
 
   const handleNeighborhoodClick = useCallback((neighborhood: string) => {
-    setSelectedNeighborhood(selectedNeighborhood === neighborhood ? null : neighborhood)
+    const isClearing = selectedNeighborhood === neighborhood
+    setSelectedNeighborhood(isClearing ? null : neighborhood)
+    if (isClearing || !mapInstance) return
+
+    // Preset wins over the auto-fit camera. If there's no entry in the
+    // NEIGHBORHOOD_VIEWS lookup, fall back to centroid-flyTo at zoom 14.
+    const preset = getNeighborhoodView(neighborhood)
+    if (preset) {
+      applyCameraView(mapInstance, preset, { duration: 1000 })
+      return
+    }
     const nhoodItems = dataWithNeighborhoods.filter((d) => d.neighborhood === neighborhood)
-    if (nhoodItems.length > 0 && mapInstance) {
+    if (nhoodItems.length > 0) {
       const avgLat = nhoodItems.reduce((s, d) => s + d.lat, 0) / nhoodItems.length
       const avgLng = nhoodItems.reduce((s, d) => s + d.lng, 0) / nhoodItems.length
       mapInstance.flyTo({ center: [avgLng, avgLat], zoom: 14, duration: 1200 })
     }
   }, [dataWithNeighborhoods, mapInstance, selectedNeighborhood, setSelectedNeighborhood])
 
-  // Fit map to corridor's bounding box when one is selected. Corridors are
-  // typically elongated street segments — `fitBounds` handles that geometry
-  // better than a center+zoom flyTo. Fires whenever the corridor selection
-  // changes and the matching points are available.
+  // Fit map to corridor's bounding box when one is selected, OR apply a
+  // hand-tuned preset from CORRIDOR_VIEWS if one exists for this corridor.
+  // Corridors are typically elongated street segments — `fitBounds` handles
+  // that geometry better than a center+zoom flyTo, but a per-corridor preset
+  // beats the generic fit when we want a specific bearing rotation that
+  // aligns the corridor's axis with the screen.
   useEffect(() => {
     if (!mapInstance || !selectedCorridor) return
+
+    const preset = getCorridorView(selectedCorridor)
+    if (preset) {
+      applyCameraView(mapInstance, preset, { duration: 1000 })
+      return
+    }
+
     const target = selectedCorridor.toLowerCase()
     const items = dataWithNeighborhoods.filter((d) => d.corridor?.toLowerCase() === target)
     if (items.length === 0) return
@@ -656,7 +681,7 @@ export default function BusinessActivity() {
       if (d.lng < minLng) minLng = d.lng
       if (d.lng > maxLng) maxLng = d.lng
     }
-    // Single-point edge case: fall back to flyTo at city-level zoom
+    // Single-point edge case: fall back to flyTo at street-level zoom
     if (minLat === maxLat && minLng === maxLng) {
       mapInstance.flyTo({ center: [minLng, minLat], zoom: 16, duration: 1000 })
       return
@@ -666,6 +691,24 @@ export default function BusinessActivity() {
       { padding: 80, maxZoom: 16, duration: 1000 },
     )
   }, [mapInstance, selectedCorridor, dataWithNeighborhoods])
+
+  // Reset to the global default view when both filters clear. Without this,
+  // the map stays zoomed into wherever the last filter framed it, which
+  // feels stale after the user clears their selection. Tracks previous
+  // values so the reset only fires on the falling edge (true → false), not
+  // on every render where both happen to be null.
+  const prevFilters = useRef<{ corridor: string | null; neighborhood: string | null }>({
+    corridor: null, neighborhood: null,
+  })
+  useEffect(() => {
+    if (!mapInstance) return
+    const hadCorridor = prevFilters.current.corridor !== null
+    const hadNeighborhood = prevFilters.current.neighborhood !== null
+    const justCleared = (hadCorridor || hadNeighborhood)
+      && !selectedCorridor && !selectedNeighborhood
+    prevFilters.current = { corridor: selectedCorridor, neighborhood: selectedNeighborhood }
+    if (justCleared) applyCameraView(mapInstance, SF_DEFAULT_VIEW, { duration: 1200 })
+  }, [mapInstance, selectedCorridor, selectedNeighborhood])
 
   useProgressScope()
 
