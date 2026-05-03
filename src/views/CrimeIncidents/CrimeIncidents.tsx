@@ -15,7 +15,7 @@ import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { usePoliceHourlyPattern } from '@/hooks/useHourlyPatternFactory'
 import { usePoliceComparisonData } from '@/hooks/useComparisonDataFactory'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
-import { useFlyToNeighborhood } from '@/hooks/useFlyToNeighborhood'
+import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useAppStore } from '@/stores/appStore'
 import type { PoliceIncident, IncidentCategoryAggRow, NeighborhoodAggRowPolice, ResolutionAggRow } from '@/types/datasets'
 import { formatDelta, formatNumber, formatHour } from '@/utils/time'
@@ -232,7 +232,7 @@ export default function CrimeIncidents() {
 
   // Neighborhood boundaries for anomaly mode
   const { boundaries: neighborhoodBoundaries } = useNeighborhoodBoundaries()
-  useFlyToNeighborhood(mapInstance, selectedNeighborhood, neighborhoodBoundaries)
+  useMapCameraPresets(mapInstance, { selectedNeighborhood, neighborhoodBoundaries })
 
   // Census demographic underlay
   const [underlayVariable, setUnderlayVariable] = useState<CensusVariable | null>(null)

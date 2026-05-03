@@ -6,6 +6,7 @@ import UnderlayPicker from '@/components/maps/UnderlayPicker'
 import NeighborhoodCensusContext from '@/components/ui/NeighborhoodCensusContext'
 import { UNDERLAY_PRESETS } from '@/utils/censusVariables'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
+import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useSearchParams } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import { useDataset } from '@/hooks/useDataset'
@@ -254,6 +255,11 @@ export default function ParkingRevenue() {
 
   // Neighborhood boundaries + Census demographic underlay
   const { boundaries: neighborhoodBoundaries } = useNeighborhoodBoundaries()
+
+  // Camera presets — applies pitched preset on neighborhood selection,
+  // glides to default on clear. Cross-view consistent via the global
+  // NEIGHBORHOOD_VIEWS lookup.
+  useMapCameraPresets(mapInstance, { selectedNeighborhood, neighborhoodBoundaries })
   const [underlayVariable, setUnderlayVariable] = useState<CensusVariable | null>(null)
   const { neighborhoods: censusNeighborhoods } = useCensusData()
 
