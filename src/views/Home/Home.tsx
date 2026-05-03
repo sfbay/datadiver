@@ -265,10 +265,17 @@ export default function Home() {
             </div>
 
             <h1
-              className={`text-5xl md:text-7xl lg:text-[5.5rem] text-ink dark:text-white leading-[0.95] mb-6 transition-all duration-1000 delay-150 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
-              style={{ fontFamily: '"Instrument Serif", Georgia, serif' }}
+              className={`font-display text-5xl md:text-7xl lg:text-[5.5rem] text-ink dark:text-white leading-[0.95] mb-6 transition-all duration-1000 delay-150 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
             >
-              <em className="not-italic">Dive beneath</em>
+              <em
+                style={{
+                  textShadow:
+                    '0 0 18px rgba(34, 211, 238, 0.55), 0 0 42px rgba(34, 211, 238, 0.30), 0 0 96px rgba(34, 211, 238, 0.14)',
+                }}
+              >
+                Dive
+              </em>{' '}
+              beneath
               <br />
               <span className="text-slate-300 dark:text-slate-400">the surface.</span>
             </h1>
@@ -528,8 +535,7 @@ export default function Home() {
                   {viz.badge}
                 </div>
                 <h3
-                  className="text-[14px] text-ink dark:text-slate-200 leading-tight mb-0.5"
-                  style={{ fontFamily: '"Instrument Serif", Georgia, serif', fontStyle: 'italic' }}
+                  className="font-display italic text-[14px] text-ink dark:text-slate-200 leading-tight mb-0.5"
                 >
                   {viz.title}
                 </h3>
