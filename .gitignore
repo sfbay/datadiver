@@ -35,3 +35,10 @@ progress.md
 .vercel
 .worktrees
 .superpowers
+
+# Word working files
+# Lock files (Word writes these next to open .docx files)
+~$*
+# Dated working copies of the compliance report. The canonical
+# resolution-240210-compliance-report.docx (no date suffix) is tracked.
+reports/resolution-240210-compliance-report-*.docx
