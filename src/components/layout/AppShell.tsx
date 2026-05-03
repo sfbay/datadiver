@@ -1,4 +1,5 @@
-import { type ReactNode } from 'react'
+import { type ReactNode, useState, useEffect } from 'react'
+import OmniSearch from '@/components/search/OmniSearch'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAppStore } from '@/stores/appStore'
 import { useUrlSync } from '@/hooks/useUrlSync'
@@ -118,6 +119,19 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation()
   const { isDarkMode, toggleDarkMode, isSidebarOpen, toggleSidebar, dateRange } = useAppStore()
   useUrlSync()
+
+  const [omniOpen, setOmniOpen] = useState(false)
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setOmniOpen((v) => !v)
+      }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [])
 
   return (
     <div className="flex h-screen overflow-hidden bg-paper dark:bg-slate-950 noise-bg">
@@ -339,6 +353,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
       <main className="flex-1 overflow-hidden relative">
         {children}
       </main>
+
+      <OmniSearch mode="modal" isOpen={omniOpen} onClose={() => setOmniOpen(false)} />
     </div>
   )
 }

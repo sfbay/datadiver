@@ -7,6 +7,15 @@ import type { NeighborhoodProfile, DatasetMetric } from './types'
 
 // Uses shared NON_RESIDENTIAL_NEIGHBORHOODS from geo.ts
 
+interface ProfileCacheEntry {
+  profiles: NeighborhoodProfile[]
+  profileMap: Map<string, NeighborhoodProfile>
+  timestamp: number
+  dateKey: string
+}
+const PROFILE_CACHE_TTL = 30 * 60 * 1000 // 30 minutes
+let profileCache: ProfileCacheEntry | null = null
+
 /** Approximate neighborhood centers for map flyTo */
 const CENTERS: Record<string, [number, number]> = {
   'Bayview Hunters Point': [37.7346, -122.3907],
@@ -101,7 +110,17 @@ export function useNeighborhoodProfiles(
     trendER.isLoading || trendCrime.isLoading || trend311.isLoading ||
     trendCrashes.isLoading || trendCitations.isLoading
 
+  const dateKey = `${dateRange.start}|${dateRange.end}`
+
   const { profiles, profileMap } = useMemo(() => {
+    if (
+      profileCache &&
+      profileCache.dateKey === dateKey &&
+      Date.now() - profileCache.timestamp < PROFILE_CACHE_TTL
+    ) {
+      return { profiles: profileCache.profiles, profileMap: profileCache.profileMap }
+    }
+
     const map = new Map<string, NeighborhoodProfile>()
 
     for (const name of SF_NEIGHBORHOODS) {
@@ -138,8 +157,10 @@ export function useNeighborhoodProfiles(
     }
 
     const sorted = Array.from(map.values()).sort((a, b) => b.totalEvents - a.totalEvents)
+    profileCache = { profiles: sorted, profileMap: map, timestamp: Date.now(), dateKey }
     return { profiles: sorted, profileMap: map }
   }, [
+    dateKey,
     trendER.neighborhoodMap, trendCrime.neighborhoodMap,
     trend311.neighborhoodMap, trendCrashes.neighborhoodMap,
     trendCitations.neighborhoodMap,
