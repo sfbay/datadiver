@@ -131,6 +131,18 @@ export default function ParkingRevenue() {
     return () => { marker.remove() }
   }, [mapInstance, selectedMeter, meterMap])
 
+  // NOTE on neighborhood scoping: unlike BusinessActivity / Cases311 / etc., the
+  // `parkingRevenue` dataset has no native neighborhood field — only `post_id`
+  // (the meter ID). Neighborhood lives on the `parkingMeters` inventory
+  // dataset. Server-side neighborhood filtering would require resolving the
+  // selected neighborhood to a list of post_ids (potentially hundreds–
+  // thousands per neighborhood) and then injecting `post_id IN (...)` into
+  // every revenue WHERE clause. That generates very long URLs that flirt with
+  // Socrata's request-length limit, and the per-meter aggregation is already
+  // small enough (one row per meter) that client-side filtering on the joined
+  // `meterRevenue` array is fast and correct. Decision: keep neighborhood
+  // narrowing client-side here. Reconsider if/when SF adds a neighborhood
+  // column to parkingRevenue, or if we hit row-cap problems on dense corridors.
   const revenueWhere = useMemo(() => {
     return `session_start_dt >= '${dateRange.start}T00:00:00' AND session_start_dt <= '${dateRange.end}T23:59:59'`
   }, [dateRange])

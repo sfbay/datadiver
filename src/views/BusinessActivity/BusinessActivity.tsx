@@ -37,7 +37,7 @@ import { BUSINESS_HEATMAP_LAYERS, ANOMALY_LAYERS } from './mapLayers'
 type MapMode = 'heatmap' | 'anomaly'
 type SidebarTab = 'sectors' | 'neighborhoods'
 
-const SELECT_FIELDS = 'uniqueid,certificate_number,ttxid,dba_name,ownership_name,full_business_address,city,dba_start_date,dba_end_date,location_start_date,location_end_date,administratively_closed,naic_code,naic_code_description,naics_code_descriptions_list,lic,lic_code_description,parking_tax,transient_occupancy_tax,business_corridor,community_benefit_district,supervisor_district,mailing_address_1,mail_city,mail_state,mail_zipcode,location'
+const SELECT_FIELDS = 'uniqueid,certificate_number,ttxid,dba_name,ownership_name,full_business_address,city,dba_start_date,dba_end_date,location_start_date,location_end_date,administratively_closed,naic_code,naic_code_description,naics_code_descriptions_list,lic,lic_code_description,parking_tax,transient_occupancy_tax,business_corridor,neighborhoods_analysis_boundaries,community_benefit_district,supervisor_district,mailing_address_1,mail_city,mail_state,mail_zipcode,location'
 
 const SF_CITY_FILTER = "city = 'San Francisco'"
 
@@ -140,36 +140,55 @@ export default function BusinessActivity() {
     return `business_corridor = '${escaped}'`
   }, [selectedCorridor])
 
+  // Neighborhood predicate is folded into every WHERE site for the same reason
+  // as corridor: server-side counts and aggregates need to reflect the narrowed
+  // scope, not just the map markers. This also unlocks completeness for small
+  // neighborhoods whose data was previously diluted by the citywide row cap.
+  // SF datasets are inconsistent: businessLocations uses the plural
+  // `neighborhoods_analysis_boundaries`, while Crime/311/etc. use
+  // `analysis_neighborhood` (singular). Both are SF analysis-neighborhood
+  // strings, so the camera presets and dropdown values match by exact equality.
+  const neighborhoodClause = useMemo(() => {
+    if (!selectedNeighborhood) return ''
+    const escaped = selectedNeighborhood.replace(/'/g, "''")
+    return `neighborhoods_analysis_boundaries = '${escaped}'`
+  }, [selectedNeighborhood])
+
   const whereClause = useMemo(() => {
     const conditions: string[] = [SF_CITY_FILTER]
     conditions.push(`(dba_start_date >= '${dateRange.start}T00:00:00' AND dba_start_date <= '${dateRange.end}T23:59:59') OR (dba_end_date >= '${dateRange.start}T00:00:00' AND dba_end_date <= '${dateRange.end}T23:59:59')`)
     if (sectorClause) conditions.push(sectorClause)
     if (corridorClause) conditions.push(corridorClause)
+    if (neighborhoodClause) conditions.push(neighborhoodClause)
     return conditions.map((c, i) => i === 0 ? c : `(${c})`).join(' AND ')
-  }, [dateRange, sectorClause, corridorClause])
+  }, [dateRange, sectorClause, corridorClause, neighborhoodClause])
 
   // Openings clause: businesses that opened in the date range (with optional filters)
   const openingsClause = useMemo(() => {
     const parts = [`${SF_CITY_FILTER} AND dba_start_date >= '${dateRange.start}T00:00:00' AND dba_start_date <= '${dateRange.end}T23:59:59'`]
     if (sectorClause) parts.push(sectorClause)
     if (corridorClause) parts.push(corridorClause)
+    if (neighborhoodClause) parts.push(neighborhoodClause)
     return parts.join(' AND ')
-  }, [dateRange, sectorClause, corridorClause])
+  }, [dateRange, sectorClause, corridorClause, neighborhoodClause])
 
   const closuresClause = useMemo(() => {
     const parts = [`${SF_CITY_FILTER} AND dba_end_date >= '${dateRange.start}T00:00:00' AND dba_end_date <= '${dateRange.end}T23:59:59'`]
     if (sectorClause) parts.push(sectorClause)
     if (corridorClause) parts.push(corridorClause)
+    if (neighborhoodClause) parts.push(neighborhoodClause)
     return parts.join(' AND ')
-  }, [dateRange, sectorClause, corridorClause])
+  }, [dateRange, sectorClause, corridorClause, neighborhoodClause])
 
   // Date-only openings clause for sector aggregation (no sector filter so all
-  // sectors are visible; corridor IS applied so the sector list reflects what's
-  // in the selected corridor).
+  // sectors are visible; corridor + neighborhood ARE applied so the sector
+  // list reflects what's in the selected scope).
   const openingsDateOnlyClause = useMemo(() => {
-    const base = `${SF_CITY_FILTER} AND dba_start_date >= '${dateRange.start}T00:00:00' AND dba_start_date <= '${dateRange.end}T23:59:59'`
-    return corridorClause ? `${base} AND ${corridorClause}` : base
-  }, [dateRange, corridorClause])
+    const parts = [`${SF_CITY_FILTER} AND dba_start_date >= '${dateRange.start}T00:00:00' AND dba_start_date <= '${dateRange.end}T23:59:59'`]
+    if (corridorClause) parts.push(corridorClause)
+    if (neighborhoodClause) parts.push(neighborhoodClause)
+    return parts.join(' AND ')
+  }, [dateRange, corridorClause, neighborhoodClause])
 
   // Data freshness detection
   const freshness = useDataFreshness('businessLocations', 'dba_start_date', dateRange)
@@ -238,13 +257,15 @@ export default function BusinessActivity() {
   )
   const adminClosuresCount = adminClosuresCountRows[0] ? parseInt(adminClosuresCountRows[0].count, 10) : null
 
-  // Active count narrows by corridor when one is selected, so the "Active"
-  // pill matches the user's narrowed scope rather than always showing the
-  // citywide total.
+  // Active count narrows by corridor + neighborhood when one is selected, so
+  // the "Active" pill matches the user's narrowed scope rather than always
+  // showing the citywide total.
   const activeCountWhere = useMemo(() => {
-    const base = `${SF_CITY_FILTER} AND dba_end_date IS NULL`
-    return corridorClause ? `${base} AND ${corridorClause}` : base
-  }, [corridorClause])
+    const parts = [`${SF_CITY_FILTER} AND dba_end_date IS NULL`]
+    if (corridorClause) parts.push(corridorClause)
+    if (neighborhoodClause) parts.push(neighborhoodClause)
+    return parts.join(' AND ')
+  }, [corridorClause, neighborhoodClause])
   const { data: activeCountRows } = useDataset<{ count: string }>(
     'businessLocations',
     { $select: 'count(*) as count', $where: activeCountWhere },
@@ -320,17 +341,19 @@ export default function BusinessActivity() {
     [closuresClause]
   )
 
-  // Prior-year openings for ghost bars (corridor-aware so YoY comparisons stay
-  // within the same corridor scope when one is selected)
+  // Prior-year openings for ghost bars (corridor + neighborhood-aware so YoY
+  // comparisons stay within the same scope when one is selected)
   const priorOpeningsClause = useMemo(() => {
     const start = new Date(dateRange.start)
     const end = new Date(dateRange.end)
     start.setFullYear(start.getFullYear() - 1)
     end.setFullYear(end.getFullYear() - 1)
     const fmt = (d: Date) => d.toISOString().split('T')[0]
-    const base = `${SF_CITY_FILTER} AND dba_start_date >= '${fmt(start)}T00:00:00' AND dba_start_date <= '${fmt(end)}T23:59:59'`
-    return corridorClause ? `${base} AND ${corridorClause}` : base
-  }, [dateRange, corridorClause])
+    const parts = [`${SF_CITY_FILTER} AND dba_start_date >= '${fmt(start)}T00:00:00' AND dba_start_date <= '${fmt(end)}T23:59:59'`]
+    if (corridorClause) parts.push(corridorClause)
+    if (neighborhoodClause) parts.push(neighborhoodClause)
+    return parts.join(' AND ')
+  }, [dateRange, corridorClause, neighborhoodClause])
 
   const { data: priorOpeningRows } = useDataset<BusinessMonthlyRow>(
     'businessLocations',
@@ -344,16 +367,18 @@ export default function BusinessActivity() {
     [priorOpeningsClause]
   )
 
-  // Prior-year closures for ghost bars (corridor-aware)
+  // Prior-year closures for ghost bars (corridor + neighborhood-aware)
   const priorClosuresClause = useMemo(() => {
     const start = new Date(dateRange.start)
     const end = new Date(dateRange.end)
     start.setFullYear(start.getFullYear() - 1)
     end.setFullYear(end.getFullYear() - 1)
     const fmt = (d: Date) => d.toISOString().split('T')[0]
-    const base = `${SF_CITY_FILTER} AND dba_end_date >= '${fmt(start)}T00:00:00' AND dba_end_date <= '${fmt(end)}T23:59:59'`
-    return corridorClause ? `${base} AND ${corridorClause}` : base
-  }, [dateRange, corridorClause])
+    const parts = [`${SF_CITY_FILTER} AND dba_end_date >= '${fmt(start)}T00:00:00' AND dba_end_date <= '${fmt(end)}T23:59:59'`]
+    if (corridorClause) parts.push(corridorClause)
+    if (neighborhoodClause) parts.push(neighborhoodClause)
+    return parts.join(' AND ')
+  }, [dateRange, corridorClause, neighborhoodClause])
 
   const { data: priorClosureRows } = useDataset<BusinessMonthlyRow>(
     'businessLocations',
