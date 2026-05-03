@@ -265,7 +265,7 @@ export default function Home() {
             </div>
 
             <h1
-              className={`font-display text-5xl md:text-7xl lg:text-[5.5rem] text-ink dark:text-white leading-[0.95] mb-6 transition-all duration-1000 delay-150 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
+              className={`font-display text-5xl md:text-7xl lg:text-[5.5rem] text-ink dark:text-white leading-[0.9] mb-6 transition-all duration-1000 delay-150 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
             >
               <em
                 style={{
