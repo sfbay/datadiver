@@ -328,3 +328,78 @@ body {
 .animate-pulse-subtle {
   animation: pulse-subtle 2s ease-in-out infinite;
 }
+
+/* ================================================================
+   CORNER GLOW — the unifying treatment
+   ----------------------------------------------------------------
+   A big, diffuse, top-left-anchored blur sitting half-outside its
+   container, CLIPPED to the container bounds. Reads like warm
+   morning light leaking through a corner window — not an LED, not
+   a gradient overlay. The system's strongest non-typographic
+   signature; replaces the bottom-accent-bar / colored-left-border
+   tropes of typical dashboards.
+
+   Usage: mark a parent as .glow-host, place a child .glow-corner
+   element inside it. Drive pigment via the --glow custom property
+   set inline (style={{ "--glow": dataset.color }} as React.CSSProperties).
+
+   Source: docs/design-handoff/colors_and_type.css
+   ================================================================ */
+
+.glow-host {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.glow-corner {
+  position: absolute;
+  top: -40px;
+  left: -40px;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: var(--glow, var(--accent));
+  filter: blur(28px);
+  opacity: var(--glow-opacity, 0.65);
+  z-index: 0;
+  pointer-events: none;
+  transition:
+    opacity 400ms var(--ease-settle, ease),
+    transform 400ms var(--ease-settle, ease),
+    filter 400ms var(--ease-settle, ease);
+}
+
+/* Softer on cream — light surface needs less juice */
+:root:not([data-theme="dark"]) .glow-corner,
+html:not(.dark) .glow-corner {
+  opacity: var(--glow-opacity, 0.4);
+}
+
+/* Hover lift: source brightens + drifts toward content */
+.glow-host:hover > .glow-corner,
+.glow-host:hover .glow-corner:first-child {
+  opacity: calc(var(--glow-opacity, 0.65) + 0.2);
+  transform: scale(1.15) translate(6px, 6px);
+  filter: blur(32px);
+}
+
+/* Sizing variants */
+.glow-corner.is-sm {
+  top: -28px;
+  left: -28px;
+  width: 80px;
+  height: 80px;
+  filter: blur(20px);
+}
+.glow-corner.is-lg {
+  top: -60px;
+  left: -60px;
+  width: 180px;
+  height: 180px;
+  filter: blur(40px);
+}
+
+/* Anchor variants — top-left is the default; use these sparingly */
+.glow-corner.is-tr { left: auto; right: -40px; }
+.glow-corner.is-bl { top: auto; bottom: -40px; }
