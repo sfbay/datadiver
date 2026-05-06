@@ -387,11 +387,15 @@ export default function Home() {
         <section
           className={`relative z-10 mb-8 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
         >
-          <div className="flex items-center gap-2.5 mb-4">
-            <p className="text-[9px] font-mono uppercase tracking-[0.25em] text-slate-400/60 dark:text-slate-600">
+          <div
+            className="glow-host flex items-center gap-2.5 mb-4 py-1"
+            style={{ '--glow': '#b85a33' } as CSSProperties}
+          >
+            <div className="glow-corner is-sm" />
+            <p className="relative text-[9px] font-mono uppercase tracking-[0.25em] text-slate-400/60 dark:text-slate-600">
               Investigations
             </p>
-            <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
+            <div className="relative flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <DeficitCounter />
@@ -516,12 +520,14 @@ export default function Home() {
         {/* Visualization Cards */}
         <section className="relative z-10">
           <div
-            className={`flex items-center gap-2.5 mb-6 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100' : 'opacity-0'}`}
+            className={`glow-host flex items-center gap-2.5 mb-6 py-1 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100' : 'opacity-0'}`}
+            style={{ '--glow': '#5c9693' } as CSSProperties}
           >
-            <p className="text-[9px] font-mono uppercase tracking-[0.25em] text-slate-400/60 dark:text-slate-600">
+            <div className="glow-corner is-sm" />
+            <p className="relative text-[9px] font-mono uppercase tracking-[0.25em] text-slate-400/60 dark:text-slate-600">
               Explorations
             </p>
-            <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
+            <div className="relative flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
           </div>
 
           <div className="grid gap-2.5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
