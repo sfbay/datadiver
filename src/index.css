@@ -201,10 +201,16 @@ body {
 }
 
 .dark .glass-card {
-  background: rgba(15, 23, 42, 0.65);
-  border-color: rgba(255, 255, 255, 0.06);
+  /* Espresso-800 (#2a1d13) at 0.65 alpha — was slate-900 #0f172a, which
+     bypassed the earth-tone @theme remap and read as cool blue-grey on
+     top of espresso ground. RGB literal here because rgba() needs raw
+     channel values, not the cream/espresso CSS vars. */
+  background: rgba(42, 29, 19, 0.65);
+  /* Warm cream-tinted border + highlight (was pure white) so the glass
+     edge stays in tone with the warm palette. */
+  border-color: rgba(255, 235, 200, 0.06);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
-              inset 0 1px 0 rgba(255, 255, 255, 0.05);
+              inset 0 1px 0 rgba(255, 235, 200, 0.05);
 }
 
 /* Noise texture overlay */
