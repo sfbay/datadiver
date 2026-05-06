@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import CivicTicker, { useResponsiveTickerSize } from '@/components/ui/CivicTicker'
 import { useCivicIndicators } from '@/hooks/useCivicIndicators'
@@ -240,7 +240,17 @@ export default function Home() {
     <div className="h-full overflow-y-auto">
       <div className="max-w-5xl mx-auto px-8 py-16 relative">
         {/* Hero — full-width background with Dana on right, text on left */}
-        <header className="mb-20 relative z-10 overflow-hidden rounded-3xl">
+        <header
+          className="glow-host mb-20 relative z-10 overflow-hidden rounded-3xl"
+          style={{ '--glow': '#b85a33' } as CSSProperties}
+        >
+          {/* Large terracotta corner glow behind Dana — anchored top-right
+              with a generous offset so the disc bleeds in from off-canvas
+              and reads as warm light catching her from above. */}
+          <div
+            className="glow-corner is-lg"
+            style={{ top: -80, left: 'auto', right: -60, opacity: 0.55 }}
+          />
           {/* Background image — pushed hard right so Dana clears the text */}
           <img
             src={heroBg}
@@ -271,7 +281,7 @@ export default function Home() {
               <em
                 style={{
                   textShadow:
-                    '0 0 18px rgba(34, 211, 238, 0.55), 0 0 42px rgba(34, 211, 238, 0.30), 0 0 96px rgba(34, 211, 238, 0.14)',
+                    '0 0 18px rgba(92, 150, 147, 0.55), 0 0 42px rgba(92, 150, 147, 0.30), 0 0 96px rgba(92, 150, 147, 0.14)',
                 }}
               >
                 Dive
