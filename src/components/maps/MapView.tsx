@@ -7,11 +7,10 @@ import { useAppStore } from '@/stores/appStore'
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN || ''
 
 /** SF terrain — vertical exaggeration applied to Mapbox DEM tiles.
- *  1.0 is realistic (subtle at city zoom); 1.5 is the chosen sweet spot
- *  where the SF hills (Twin Peaks, Telegraph, Russian, Bernal, etc.)
- *  read as topography without distorting the data layered on them.
- *  Adjust here for the whole site. */
-const TERRAIN_EXAGGERATION = 1.5
+ *  1.0 is realistic (subtle at city zoom); 2.0 makes the SF hills
+ *  (Twin Peaks, Sutro, Russian, Bernal, etc.) unambiguously visible
+ *  without making the data look fake. Adjust here for the whole site. */
+const TERRAIN_EXAGGERATION = 2.0
 
 /** Apply the terrain DEM source + setTerrain + warm fog on a map.
  *  Called both on initial style load and after each setStyle (theme
@@ -26,6 +25,15 @@ function applyTerrainAndFog(map: mapboxgl.Map, dark: boolean) {
     })
   }
   map.setTerrain({ source: 'mapbox-dem', exaggeration: TERRAIN_EXAGGERATION })
+  // Diagnostic — confirms terrain actually applied at runtime. Remove
+  // once we've verified end-to-end on a real preview.
+  // eslint-disable-next-line no-console
+  console.log('[MapView] terrain applied', {
+    exaggeration: TERRAIN_EXAGGERATION,
+    hasTerrain: !!map.getTerrain(),
+    hasDemSource: !!map.getSource('mapbox-dem'),
+    pitch: map.getPitch(),
+  })
 
   // Atmospheric fog tuned to the earth-tone palette — fades distant
   // terrain into espresso (dark) or cream (light), giving the foreground
