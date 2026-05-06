@@ -403,3 +403,34 @@ html:not(.dark) .glow-corner {
 /* Anchor variants — top-left is the default; use these sparingly */
 .glow-corner.is-tr { left: auto; right: -40px; }
 .glow-corner.is-bl { top: auto; bottom: -40px; }
+
+/* ================================================================
+   PRIMARY BUTTON HOVER SHEEN
+   ----------------------------------------------------------------
+   Not yet adopted by any caller — DataDiver is a data-viewing tool
+   with very few primary CTAs. Added as a ready utility for future
+   buttons. Pattern from docs/design-handoff/ui_kits/datadiver/kit.css.
+   To opt in: add class="btn-primary" to a button. Optionally drive
+   the halo color via --accent override on the parent or button.
+   ================================================================ */
+.btn-primary {
+  position: relative;
+  isolation: isolate;
+  transition:
+    transform var(--dur-fast, 150ms) var(--ease-snap, ease),
+    box-shadow var(--dur-fast, 150ms) var(--ease-snap, ease);
+}
+.btn-primary::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: inherit;
+  background: radial-gradient(circle at 30% 30%, var(--accent), transparent 70%);
+  filter: blur(14px);
+  opacity: 0;
+  z-index: -1;
+  pointer-events: none;
+  transition: opacity var(--dur-slow, 480ms) var(--ease-settle, ease);
+}
+.btn-primary:hover::after { opacity: 0.6; }
+.btn-primary:hover { transform: translateY(-1px); }
