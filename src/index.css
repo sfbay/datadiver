@@ -434,3 +434,29 @@ html:not(.dark) .glow-corner {
 }
 .btn-primary:hover::after { opacity: 0.6; }
 .btn-primary:hover { transform: translateY(-1px); }
+
+/* ================================================================
+   DANA RIBBON HOVER GLOW
+   ----------------------------------------------------------------
+   On-hover only — the comic-strip ribbon is a quiet editorial
+   surface at rest, blooming with a soft top-left teal glow when
+   the reader hovers. Pattern from kit.css `.dd-ribbon::before`.
+   The ::before pseudo here lets us keep the ribbon's existing
+   layout untouched (no glow-host structural change required).
+   ================================================================ */
+.dd-ribbon-hover::before {
+  content: "";
+  position: absolute;
+  top: -32px;
+  left: -32px;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: var(--glow, var(--info));
+  filter: blur(28px);
+  opacity: 0;
+  z-index: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-slow, 480ms) var(--ease-settle, ease);
+}
+.dd-ribbon-hover:hover::before { opacity: 0.55; }

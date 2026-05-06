@@ -316,16 +316,17 @@ export default function Home() {
         >
           <button
             onClick={() => setComicOpen(true)}
-            className="w-full group flex items-center gap-5 glass-card rounded-2xl px-5 py-3 hover:bg-white/[0.06] transition-all duration-300 overflow-hidden text-left"
+            className="dd-ribbon-hover w-full group flex items-center gap-5 glass-card rounded-2xl px-5 py-3 hover:bg-white/[0.06] transition-all duration-300 overflow-hidden text-left relative isolate"
+            style={{ '--glow': '#5c9693' } as CSSProperties}
           >
             {/* Comic thumbnail */}
             <img
               src="/dana-comic-1-thumb.jpg"
               alt="Dana the DataDiver comic strip"
-              className="w-28 h-16 object-cover rounded-lg flex-shrink-0 ring-1 ring-white/10 group-hover:ring-white/20 transition-all"
+              className="w-28 h-16 object-cover rounded-lg flex-shrink-0 ring-1 ring-white/10 group-hover:ring-white/20 transition-all relative z-10"
             />
             {/* Text */}
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 relative z-10">
               <p className="text-sm font-display italic text-ink dark:text-white leading-tight">
                 Meet Dana, the data-diving Harbor Seal!
               </p>
@@ -334,7 +335,7 @@ export default function Home() {
               </p>
             </div>
             {/* Arrow */}
-            <div className="flex-shrink-0 text-slate-400 dark:text-slate-600 group-hover:text-ink dark:group-hover:text-white transition-colors">
+            <div className="flex-shrink-0 text-slate-400 dark:text-slate-600 group-hover:text-ink dark:group-hover:text-white transition-colors relative z-10">
               <svg className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 8h10M10 4.5L13.5 8 10 11.5" />
               </svg>
