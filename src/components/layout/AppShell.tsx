@@ -1,4 +1,4 @@
-import { type ReactNode, useState, useEffect } from 'react'
+import { type ReactNode, type CSSProperties, useState, useEffect } from 'react'
 import OmniSearch from '@/components/search/OmniSearch'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAppStore } from '@/stores/appStore'
@@ -244,11 +244,15 @@ export default function AppShell({ children }: { children: ReactNode }) {
                   transition-all duration-200
                   ${isSidebarOpen ? 'gap-3 px-3 py-2.5' : 'justify-center p-2.5'}
                   ${isActive
-                    ? 'bg-slate-100 dark:bg-white/[0.06]'
+                    ? 'glow-host bg-slate-100 dark:bg-white/[0.06]'
                     : 'hover:bg-slate-50 dark:hover:bg-white/[0.03]'
                   }
                 `}
+                style={isActive ? ({ '--glow': item.accentColor } as CSSProperties) : undefined}
               >
+                {/* Active-state corner glow — anchored top-left of the nav row,
+                    pigment from the dataset's accentColor. */}
+                {isActive && <div className="glow-corner is-sm" />}
                 {/* Accent indicator */}
                 <div className={`
                   relative flex-shrink-0 flex items-center justify-center
@@ -271,7 +275,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
                   )}
                 </div>
                 {isSidebarOpen && (
-                  <div className="flex flex-col min-w-0">
+                  <div className="relative flex flex-col min-w-0">
                     <span className={`text-[13px] font-semibold truncate transition-colors
                       ${isActive ? 'text-ink dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}>
                       {item.label}
