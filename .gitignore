@@ -48,3 +48,4 @@ reports/resolution-240210-compliance-report-*.docx
 # project + the zip drop in public/ are local working files only.
 docs/design-handoff/
 public/DataDiver Design System.zip
+.env*.local

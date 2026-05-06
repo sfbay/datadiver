@@ -51,9 +51,9 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
         style={{ '--glow': color } as CSSProperties}
       >
         <div className="glow-corner" />
-        <p className="relative text-[10px] font-medium uppercase tracking-wider text-slate-400 mb-1.5 whitespace-nowrap flex items-center">
+        <p className="relative text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 whitespace-nowrap flex items-center">
           {label}
-          {info && <InfoTip term={info} size={10} />}
+          {info && <InfoTip term={info} size={11} />}
         </p>
         <p
           className="relative text-2xl font-bold font-mono tracking-tight leading-none"
@@ -62,7 +62,7 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
           {value}
         </p>
         {subtitle && (
-          <p className="relative text-[10px] mt-1 font-mono flex items-center gap-1">
+          <p className="relative text-[11px] mt-1.5 font-mono flex items-center gap-1">
             {trend === 'up' && (
               <svg width="10" height="10" viewBox="0 0 10 10" className="flex-shrink-0">
                 <path d="M5 2 L8 6 L2 6 Z" fill="#963e30" />
@@ -73,14 +73,14 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
                 <path d="M5 8 L8 4 L2 4 Z" fill="#5c7a3d" />
               </svg>
             )}
-            <span className={trend === 'up' ? 'text-[#963e30]' : trend === 'down' ? 'text-[#5c7a3d]' : 'text-slate-500'}>
+            <span className={trend === 'up' ? 'text-[#963e30]' : trend === 'down' ? 'text-[#5c7a3d]' : 'text-slate-500 dark:text-slate-400'}>
               {subtitle}
             </span>
           </p>
         )}
         {yoyText && !subtitle && (
-          <p className="relative text-[10px] mt-1 font-mono flex items-center gap-1">
-            <span className={yoyDelta! > 0 ? 'text-[#963e30]' : yoyDelta! < 0 ? 'text-[#5c7a3d]' : 'text-slate-500'}>
+          <p className="relative text-[11px] mt-1.5 font-mono flex items-center gap-1">
+            <span className={yoyDelta! > 0 ? 'text-[#963e30]' : yoyDelta! < 0 ? 'text-[#5c7a3d]' : 'text-slate-500 dark:text-slate-400'}>
               {yoyText}
             </span>
           </p>

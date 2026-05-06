@@ -276,11 +276,11 @@ export default function AppShell({ children }: { children: ReactNode }) {
                 </div>
                 {isSidebarOpen && (
                   <div className="relative flex flex-col min-w-0">
-                    <span className={`text-[13px] font-semibold truncate transition-colors
-                      ${isActive ? 'text-ink dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}>
+                    <span className={`text-[14px] font-semibold truncate transition-colors
+                      ${isActive ? 'text-ink dark:text-white' : 'text-slate-700 dark:text-slate-300'}`}>
                       {item.label}
                     </span>
-                    <span className="text-[10px] text-slate-400 dark:text-slate-600 truncate">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
                       {item.description}
                     </span>
                   </div>

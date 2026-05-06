@@ -127,7 +127,7 @@ export default function TickerCard({ item }: TickerCardProps) {
         )}
 
         {/* Source label */}
-        <p className="text-[9px] font-mono text-slate-400 dark:text-slate-500 tracking-wide truncate text-left mt-auto">
+        <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400 tracking-wide truncate text-left mt-auto">
           {item.source.label}
         </p>
       </div>

@@ -41,10 +41,11 @@ export default function VizCard({
       className={`
         group glow-host text-left
         rounded-[28px] rounded-bl-none
-        bg-white/40 dark:bg-slate-950/30
-        hover:bg-white/60 dark:hover:bg-slate-950/50
-        border border-slate-200/50 dark:border-white/[0.04]
-        hover:border-slate-300/60 dark:hover:border-white/[0.08]
+        bg-white/70 dark:bg-slate-950/30
+        hover:bg-white/95 dark:hover:bg-slate-950/50
+        border border-slate-300/60 dark:border-white/[0.04]
+        hover:border-slate-400/70 dark:hover:border-white/[0.08]
+        hover:shadow-md dark:hover:shadow-none
         transition-all duration-300
         pl-4 pr-[52px] py-3.5
         ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
@@ -53,15 +54,15 @@ export default function VizCard({
     >
       <div className="glow-corner is-lg" />
       <div
-        className="relative text-[9px] font-mono font-bold tracking-wider mb-1.5"
-        style={{ color: accentColor, opacity: 0.85 }}
+        className="relative text-[10px] font-mono font-bold tracking-wider mb-1.5"
+        style={{ color: accentColor, opacity: 0.95 }}
       >
         {badge}
       </div>
-      <h3 className="relative font-display italic text-[14px] text-ink dark:text-slate-200 leading-tight mb-0.5">
+      <h3 className="relative font-display italic font-medium text-[15px] text-ink dark:text-slate-200 leading-tight mb-1">
         {title}
       </h3>
-      <p className="relative text-[8px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-600">
+      <p className="relative text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
         {subtitle}
       </p>
 

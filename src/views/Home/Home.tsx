@@ -393,7 +393,7 @@ export default function Home() {
             style={{ '--glow': '#b85a33' } as CSSProperties}
           >
             <div className="glow-corner is-sm" />
-            <p className="relative text-[9px] font-mono uppercase tracking-[0.25em] text-slate-400/60 dark:text-slate-600">
+            <p className="relative text-[10px] font-mono uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400">
               Investigations
             </p>
             <div className="relative flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
@@ -525,7 +525,7 @@ export default function Home() {
             style={{ '--glow': '#5c9693' } as CSSProperties}
           >
             <div className="glow-corner is-sm" />
-            <p className="relative text-[9px] font-mono uppercase tracking-[0.25em] text-slate-400/60 dark:text-slate-600">
+            <p className="relative text-[10px] font-mono uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400">
               Explorations
             </p>
             <div className="relative flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />

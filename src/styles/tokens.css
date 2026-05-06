@@ -238,4 +238,19 @@
   --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.3);
   --shadow-xl: 0 24px 60px rgba(0, 0, 0, 0.7);
   --shadow-press-in: inset 0 1px 2px rgba(0, 0, 0, 0.4), inset 0 -1px 0 rgba(255, 235, 200, 0.04);
+
+  /* ============================================================
+     SLATE-MID DARK-MODE OVERRIDES
+     ----------------------------------------------------------------
+     The --color-slate-* scale in @theme maps cream → espresso so it
+     can serve both modes, but the mid values (-500, -600, -700) end
+     up too close to the espresso background when used as muted text
+     in dark mode. Override here so `dark:text-slate-500` etc. resolve
+     to readable warm-grey paper tints instead of near-bg espresso.
+     Only the dark-mode resolution shifts; light-mode keeps the cream
+     values defined in @theme.
+     ============================================================ */
+  --color-slate-500: #a8926a;  /* paper-500 — was espresso-500 (#5e4831), too dim */
+  --color-slate-600: #c7b288;  /* cream-400 — was espresso-700 (#3a2a1e), invisible */
+  --color-slate-700: #ddcba8;  /* cream-300 — keep readable for descriptions */
 }
