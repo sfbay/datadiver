@@ -6,6 +6,39 @@ import { useAppStore } from '@/stores/appStore'
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN || ''
 
+/** SF terrain — vertical exaggeration applied to Mapbox DEM tiles.
+ *  1.0 is realistic (subtle at city zoom); 1.5 is the chosen sweet spot
+ *  where the SF hills (Twin Peaks, Telegraph, Russian, Bernal, etc.)
+ *  read as topography without distorting the data layered on them.
+ *  Adjust here for the whole site. */
+const TERRAIN_EXAGGERATION = 1.5
+
+/** Apply the terrain DEM source + setTerrain + warm fog on a map.
+ *  Called both on initial style load and after each setStyle (theme
+ *  switch), since setStyle wipes terrain state. */
+function applyTerrainAndFog(map: mapboxgl.Map, dark: boolean) {
+  if (!map.getSource('mapbox-dem')) {
+    map.addSource('mapbox-dem', {
+      type: 'raster-dem',
+      url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+      tileSize: 512,
+      maxzoom: 14,
+    })
+  }
+  map.setTerrain({ source: 'mapbox-dem', exaggeration: TERRAIN_EXAGGERATION })
+
+  // Atmospheric fog tuned to the earth-tone palette — fades distant
+  // terrain into espresso (dark) or cream (light), giving the foreground
+  // data more visual punch via depth contrast.
+  map.setFog({
+    'horizon-blend': 0.05,
+    'color': dark ? '#1e140d' : '#f5ecd9',         // bg ground tone
+    'high-color': dark ? '#2a1d13' : '#ecdfc5',    // mid sky
+    'space-color': dark ? '#140c08' : '#fbf6ea',   // outer
+    'star-intensity': 0,                            // no nighttime stars
+  })
+}
+
 export interface MapHandle {
   getMap: () => mapboxgl.Map | null
 }
@@ -54,6 +87,17 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
 
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'bottom-right')
     map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-left')
+
+    // Apply terrain + fog every time the style loads. style.load fires once
+    // on initial style load AND each time setStyle() is called (theme
+    // switch), so a single binding covers both. We read the live dark-mode
+    // state from the store at fire time so the fog tint matches the
+    // current theme even mid-session.
+    const handleStyleLoad = () => {
+      applyTerrainAndFog(map, useAppStore.getState().isDarkMode)
+    }
+    map.on('style.load', handleStyleLoad)
+    if (map.isStyleLoaded()) handleStyleLoad()
 
     mapRef.current = map
 
