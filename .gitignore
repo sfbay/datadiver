@@ -42,3 +42,9 @@ progress.md
 # Dated working copies of the compliance report. The canonical
 # resolution-240210-compliance-report.docx (no date suffix) is tracked.
 reports/resolution-240210-compliance-report-*.docx
+
+# Design handoff working artifacts — the brief's content distills into the
+# code itself (tokens.css, components, CLAUDE.md). The unzipped reference
+# project + the zip drop in public/ are local working files only.
+docs/design-handoff/
+public/DataDiver Design System.zip
