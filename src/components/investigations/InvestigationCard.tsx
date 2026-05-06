@@ -87,12 +87,12 @@ export function InvestigationCard({
         </div>
 
         {/* Headline */}
-        <h3 className="font-display italic text-[15px] leading-snug text-white mb-1.5">
+        <h3 className="font-display italic text-[15px] leading-snug text-ink dark:text-white mb-1.5">
           {headline}
         </h3>
 
         {/* Subtitle */}
-        <p className="text-[9px] font-mono text-slate-500">
+        <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
           {subtitle}
         </p>
       </div>
@@ -103,11 +103,11 @@ export function InvestigationCard({
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-2.5 border-t border-white/[0.03] flex items-center justify-between">
-        <span className="text-[7px] font-mono uppercase tracking-wider text-slate-700">
+      <div className="px-4 py-2.5 border-t border-slate-200/50 dark:border-white/[0.04] flex items-center justify-between">
+        <span className="text-[8px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-500">
           {sourceName}
         </span>
-        <span className="text-[9px] font-mono text-slate-500 group-hover:text-slate-300 transition-colors">
+        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors">
           Explore →
         </span>
       </div>
@@ -132,7 +132,7 @@ export function ErrorState({ error }: { error: string }) {
     >
       <svg
         width="18" height="18" viewBox="0 0 18 18" fill="none"
-        stroke="#94a3b8" strokeWidth="1.5"
+        stroke="#a8926a" strokeWidth="1.5"
         className="opacity-50"
       >
         <circle cx="9" cy="9" r="7" />

@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { InvestigationCard } from './InvestigationCard'
 import { useDeficitData } from '@/hooks/useDeficitData'
 
-// Colors for top 3 dept bars + "other"
-const DEPT_COLORS = ['#ef4444', '#f97316', '#f59e0b', '#334155']
+// Earth-tone palette for top 3 dept bars + "other": brick → terracotta →
+// ochre → espresso. Same warm-to-deep gradient as the previous red→amber
+// → slate; just substituted into the project's pigment scale.
+const DEPT_COLORS = ['#963e30', '#d47149', '#d4a435', '#3a2a1e']
 
 export default function DeficitCounter() {
   const { data, isLoading } = useDeficitData()
@@ -110,7 +112,7 @@ export default function DeficitCounter() {
   return (
     <InvestigationCard
       eyebrow="Budget Gap · This Fiscal Year"
-      accentColor="#ef4444"
+      accentColor="#963e30"
       headline="The deficit is growing faster than revenue"
       subtitle="SF Controller · Spending & Revenue"
       explorePath="/city-budget"
@@ -122,20 +124,20 @@ export default function DeficitCounter() {
           {/* Big ticking counter */}
           <div>
             <div
-              className="font-mono font-bold text-red-300 leading-none tabular-nums"
-              style={{ fontSize: 28 }}
+              className="font-mono font-bold leading-none tabular-nums"
+              style={{ fontSize: 28, color: '#d17566' }}
             >
               {fmtDollars(displayAmount)}
             </div>
 
             {/* Rate line */}
-            <div className="font-mono mt-1" style={{ fontSize: 10, color: '#64748b' }}>
+            <div className="font-mono mt-1" style={{ fontSize: 10, color: '#a8926a' }}>
               {'▲ '}
-              <span style={{ color: '#f87171' }}>
+              <span style={{ color: '#d17566' }}>
                 ${data.perSecond.toFixed(2)}/sec
               </span>
               {' · ▲ '}
-              <span style={{ color: '#f87171' }}>
+              <span style={{ color: '#d17566' }}>
                 {fmtMillions(data.perDay)}/day
               </span>
             </div>
@@ -153,14 +155,14 @@ export default function DeficitCounter() {
                 {/* Area fill */}
                 <path
                   d={sparkline.areaPath}
-                  fill="#ef4444"
-                  fillOpacity={0.12}
+                  fill="#963e30"
+                  fillOpacity={0.14}
                 />
                 {/* Line */}
                 <path
                   d={sparkline.linePath}
                   fill="none"
-                  stroke="#ef4444"
+                  stroke="#963e30"
                   strokeWidth={1.5}
                   strokeLinejoin="round"
                 />
@@ -168,7 +170,7 @@ export default function DeficitCounter() {
               {/* FY labels */}
               <div
                 className="flex justify-between font-mono mt-0.5"
-                style={{ fontSize: 8, color: '#475569' }}
+                style={{ fontSize: 8, color: '#7a5f42' }}
               >
                 <span>FY{sparkline.firstFY}</span>
                 <span>FY{sparkline.lastFY}</span>
@@ -202,7 +204,7 @@ export default function DeficitCounter() {
                   <div
                     key={i}
                     className="flex items-center gap-1 font-mono"
-                    style={{ fontSize: 7, color: '#64748b' }}
+                    style={{ fontSize: 7, color: '#a8926a' }}
                   >
                     <span
                       className="inline-block rounded-full flex-shrink-0"
@@ -220,9 +222,9 @@ export default function DeficitCounter() {
           )}
 
           {/* Since you opened */}
-          <div className="font-mono" style={{ fontSize: 9, color: '#475569' }}>
+          <div className="font-mono" style={{ fontSize: 9, color: '#7a5f42' }}>
             Since you opened:{' '}
-            <span style={{ color: '#f87171' }}>
+            <span style={{ color: '#d17566' }}>
               +{fmtDollars(sinceOpened)}
             </span>
           </div>
