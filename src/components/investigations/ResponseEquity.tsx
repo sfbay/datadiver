@@ -16,7 +16,7 @@ export default function ResponseEquity() {
   return (
     <InvestigationCard
       eyebrow="911 Response · The Equity Gap"
-      accentColor="#f59e0b"
+      accentColor="#d4a435"
       headline={headline}
       subtitle="Fire/EMS Dispatch · Average response time by neighborhood"
       explorePath="/emergency-response"
@@ -27,29 +27,32 @@ export default function ResponseEquity() {
         <ErrorState error={error} />
       ) : data ? (
         <div className="flex flex-col gap-3">
-          {/* ── Three equity bars ─────────────────────────────── */}
+          {/* ── Three equity bars (best / avg / worst) ──────────
+              Earth-tone tier palette: moss for best, paper-grey neutral
+              for cityAvg, brick for worst. Matches the heatmap scale
+              tokens (--scale-fast / --scale-slow / --scale-critical). */}
           <div className="flex flex-col gap-2">
             {[
               {
                 entry: data.best,
-                labelColor: '#86efac',
-                valueColor: '#34d399',
-                barFrom: '#166534',
-                barTo: '#34d399',
+                labelColor: '#9db87a',  // moss-400
+                valueColor: '#7a9954',  // moss-500
+                barFrom: '#445c2b',     // moss-700
+                barTo: '#9db87a',       // moss-400
               },
               {
                 entry: data.cityAvg,
-                labelColor: '#94a3b8',
-                valueColor: '#94a3b8',
-                barFrom: '#334155',
-                barTo: '#94a3b8',
+                labelColor: '#a8926a',  // paper-500
+                valueColor: '#a8926a',  // paper-500
+                barFrom: '#3a2a1e',     // espresso-700
+                barTo: '#a8926a',       // paper-500
               },
               {
                 entry: data.worst,
-                labelColor: '#fca5a5',
-                valueColor: '#f87171',
-                barFrom: '#7f1d1d',
-                barTo: '#f87171',
+                labelColor: '#d17566',  // brick-400
+                valueColor: '#b85545',  // brick-500
+                barFrom: '#6f2b20',     // brick-700
+                barTo: '#d17566',       // brick-400
               },
             ].map(({ entry, labelColor, valueColor, barFrom, barTo }) => {
               const maxSeconds = data.worst.medianSeconds
@@ -95,12 +98,12 @@ export default function ResponseEquity() {
           {/* ── Gap callout ───────────────────────────────────── */}
           <div
             className="rounded-md px-3 py-2"
-            style={{ backgroundColor: 'rgba(239,68,68,0.08)' }}
+            style={{ backgroundColor: 'rgba(150, 62, 48, 0.10)' }}
           >
-            <span className="text-[12px] font-mono font-bold text-red-400">
+            <span className="text-[12px] font-mono font-bold" style={{ color: '#d17566' }}>
               {data.gapMultiplier.toFixed(1)}×
             </span>{' '}
-            <span className="text-[9px] font-mono text-slate-400">
+            <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
               slower — the gap between fastest and slowest neighborhoods
             </span>
           </div>
@@ -159,11 +162,14 @@ export default function ResponseEquity() {
                       let bg = 'rgba(255,255,255,0.03)'
                       if (intensity !== null) {
                         if (intensity < 0.35) {
-                          bg = `rgba(16,185,129,${0.15 + intensity * 0.5})`   // green
+                          // moss-500 (#7a9954) — fast tier
+                          bg = `rgba(122, 153, 84, ${0.15 + intensity * 0.5})`
                         } else if (intensity < 0.6) {
-                          bg = `rgba(245,158,11,${0.2 + (intensity - 0.35) * 0.6})` // amber
+                          // ochre-500 (#d4a435) — ok tier
+                          bg = `rgba(212, 164, 53, ${0.2 + (intensity - 0.35) * 0.6})`
                         } else {
-                          bg = `rgba(239,68,68,${0.25 + (intensity - 0.6) * 0.7})`  // red
+                          // brick-600 (#963e30) — slow / critical tier
+                          bg = `rgba(150, 62, 48, ${0.25 + (intensity - 0.6) * 0.7})`
                         }
                       }
 
