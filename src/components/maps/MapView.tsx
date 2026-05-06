@@ -138,9 +138,23 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Update style on theme change
+  // Update style on theme change. CRITICAL: skip the no-op first run
+  // when isReady transitions false → true with the same isDarkMode that
+  // the constructor already used. setStyle is destructive — calling it
+  // with the same URL still wipes terrain / fog / hillshade and triggers
+  // a re-application race that briefly clears the elevation render.
+  const lastStyleRef = useRef<'dark' | 'light' | null>(null)
   useEffect(() => {
     if (!mapRef.current || !isReady) return
+    const target: 'dark' | 'light' = isDarkMode ? 'dark' : 'light'
+    if (lastStyleRef.current === null) {
+      // First time we see the map ready — record the style that was
+      // baked into the constructor and skip the redundant setStyle.
+      lastStyleRef.current = target
+      return
+    }
+    if (lastStyleRef.current === target) return
+    lastStyleRef.current = target
     const style = isDarkMode
       ? 'mapbox://styles/mapbox/dark-v11'
       : 'mapbox://styles/mapbox/light-v11'
