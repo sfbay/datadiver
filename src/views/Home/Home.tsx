@@ -12,6 +12,7 @@ import ResponseEquity from '@/components/investigations/ResponseEquity'
 import DispatchUnanswered from '@/components/investigations/DispatchUnanswered'
 import ComplianceTracker from '@/components/investigations/ComplianceTracker'
 import OmniSearch from '@/components/search/OmniSearch'
+import VizCard from '@/components/ui/VizCard'
 
 const VISUALIZATIONS = [
   {
@@ -26,7 +27,7 @@ const VISUALIZATIONS = [
       { label: 'Records/yr', value: '~600K' },
       { label: 'Neighborhoods', value: '41' },
     ],
-    accentColor: '#ff4d4d',
+    accentColor: '#b85a33', // terracotta-600
   },
   {
     path: '/parking-revenue',
@@ -40,7 +41,7 @@ const VISUALIZATIONS = [
       { label: 'Detail level', value: 'Every session' },
       { label: 'Meter types', value: '6' },
     ],
-    accentColor: '#60a5fa',
+    accentColor: '#3f7573', // teal-600
   },
   {
     path: '/dispatch-911',
@@ -54,7 +55,7 @@ const VISUALIZATIONS = [
       { label: 'Sensitive calls', value: '~181K' },
       { label: 'Timestamps', value: '6 per call' },
     ],
-    accentColor: '#a78bfa',
+    accentColor: '#474e74', // indigo-600
   },
   {
     path: '/311-cases',
@@ -68,7 +69,7 @@ const VISUALIZATIONS = [
       { label: 'Categories', value: '25' },
       { label: 'Years of data', value: '18' },
     ],
-    accentColor: '#10b981',
+    accentColor: '#5c7a3d', // moss-600
   },
   {
     path: '/crime-incidents',
@@ -82,7 +83,7 @@ const VISUALIZATIONS = [
       { label: '911 linked', value: '~60%' },
       { label: 'Neighborhoods', value: '41' },
     ],
-    accentColor: '#ef4444',
+    accentColor: '#963e30', // brick-600
   },
   {
     path: '/parking-citations',
@@ -96,7 +97,7 @@ const VISUALIZATIONS = [
       { label: 'Violation types', value: '~40' },
       { label: 'Revenue tracking', value: 'Yes' },
     ],
-    accentColor: '#f97316',
+    accentColor: '#d47149', // terracotta-500
   },
   {
     path: '/traffic-safety',
@@ -110,7 +111,7 @@ const VISUALIZATIONS = [
       { label: 'Camera sites', value: '~100+' },
       { label: 'Severity levels', value: '4' },
     ],
-    accentColor: '#dc2626',
+    accentColor: '#963e30', // brick-600
   },
   {
     path: '/business-activity',
@@ -124,7 +125,7 @@ const VISUALIZATIONS = [
       { label: 'Active', value: '~164K' },
       { label: 'Sectors', value: '15+' },
     ],
-    accentColor: '#10b981',
+    accentColor: '#5c7a3d', // moss-600
   },
   {
     path: '/demographics',
@@ -138,7 +139,7 @@ const VISUALIZATIONS = [
       { label: 'Variables', value: '35' },
       { label: 'Source', value: 'ACS 5-yr' },
     ],
-    accentColor: '#7c3aed',
+    accentColor: '#8b6282', // plum-500
   },
   {
     path: '/elections',
@@ -152,7 +153,7 @@ const VISUALIZATIONS = [
       { label: 'RCV rounds', value: 'All' },
       { label: 'Measures', value: '1961–now' },
     ],
-    accentColor: '#6366f1',
+    accentColor: '#616a96', // indigo-500
   },
   {
     path: '/campaign-finance',
@@ -166,7 +167,7 @@ const VISUALIZATIONS = [
       { label: 'Filings', value: 'A/E/I/D' },
       { label: 'Cycles', value: '4+' },
     ],
-    accentColor: '#14b8a6',
+    accentColor: '#8b6282', // plum-500
   },
   {
     path: '/city-budget',
@@ -180,7 +181,7 @@ const VISUALIZATIONS = [
       { label: 'Vendors', value: '12K+' },
       { label: 'Since', value: 'FY2007' },
     ],
-    accentColor: '#0ea5e9',
+    accentColor: '#b58620', // ochre-600
   },
   {
     path: '/live-feeds',
@@ -194,7 +195,7 @@ const VISUALIZATIONS = [
       { label: 'Districts', value: '10+' },
       { label: 'Status', value: 'Live' },
     ],
-    accentColor: '#f59e0b',
+    accentColor: '#d4a435', // ochre-500
   },
 ] as const
 
@@ -515,34 +516,16 @@ export default function Home() {
 
           <div className="grid gap-2.5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {VISUALIZATIONS.map((viz, idx) => (
-              <button
+              <VizCard
                 key={viz.path}
+                title={viz.title}
+                subtitle={viz.subtitle}
+                badge={viz.badge}
+                accentColor={viz.accentColor}
                 onClick={() => navigate(viz.path)}
-                className={`
-                  group text-left overflow-hidden relative
-                  rounded-xl border border-white/[0.04]
-                  bg-slate-950/30 hover:bg-slate-950/50 hover:border-white/[0.1]
-                  transition-all duration-300
-                  px-3.5 py-3
-                  ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
-                `}
-                style={{ transitionDelay: `${600 + idx * 60}ms` }}
-              >
-                <div
-                  className="text-[9px] font-mono font-bold tracking-wider mb-1.5"
-                  style={{ color: viz.accentColor, opacity: 0.7 }}
-                >
-                  {viz.badge}
-                </div>
-                <h3
-                  className="font-display italic text-[14px] text-ink dark:text-slate-200 leading-tight mb-0.5"
-                >
-                  {viz.title}
-                </h3>
-                <p className="text-[8px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-600">
-                  {viz.subtitle}
-                </p>
-              </button>
+                delay={600 + idx * 60}
+                mounted={mounted}
+              />
             ))}
           </div>
         </section>
