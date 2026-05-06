@@ -4,25 +4,26 @@
  * Displays: category badge (colored dot + label), headline, delta badge,
  * sparkline via SparkBars, source label. Clicks navigate to source view.
  */
+import type { CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import SparkBars from '@/components/charts/SparkBars'
 import type { TickerItem } from '@/types/ticker'
 
-/** Maps category → accent color for badges and sparklines. */
+/** Maps category → accent color for badges and sparklines (earth-tone). */
 const CATEGORY_COLORS: Record<string, string> = {
-  anomaly: '#ef4444',
-  compliance: '#f59e0b',
-  trend: '#60a5fa',
-  milestone: '#6366f1',
-  live: '#ef4444',
+  anomaly: '#963e30',     // brick-600 — danger
+  compliance: '#d4a435',  // ochre-500 — money / ledger
+  trend: '#5c9693',       // teal-500 — info
+  milestone: '#616a96',   // indigo-500 — civic ceremony
+  live: '#b85a33',        // terracotta-600 — primary brand
 }
 
-/** Maps severity → delta badge color. */
+/** Maps severity → delta badge color (earth-tone). */
 const SEVERITY_COLORS: Record<string, string> = {
-  positive: '#10b981',
-  negative: '#ef4444',
-  neutral: '#94a3b8',
-  alert: '#f59e0b',
+  positive: '#5c7a3d',  // moss-600 — success / formation
+  negative: '#963e30',  // brick-600 — danger
+  neutral: '#7a5f42',   // ink-500 — muted
+  alert: '#d4a435',     // ochre-500 — warning
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -57,15 +58,17 @@ export default function TickerCard({ item }: TickerCardProps) {
     <button
       onClick={handleClick}
       className="
-        group flex-shrink-0 w-[220px]
-        glass-card rounded-xl overflow-hidden
+        group glow-host flex-shrink-0 w-[220px]
+        glass-card rounded-xl
         cursor-pointer select-none
         transition-all duration-300 ease-out
         hover:scale-[1.03] hover:shadow-lg
         active:scale-[0.98]
       "
+      style={{ '--glow': accent } as CSSProperties}
     >
-      <div className="p-4 flex flex-col h-full">
+      <div className="glow-corner is-sm" />
+      <div className="relative p-4 flex flex-col h-full">
         {/* Category badge */}
         <div className="flex items-center gap-1.5 mb-2.5">
           <span
@@ -128,12 +131,6 @@ export default function TickerCard({ item }: TickerCardProps) {
           {item.source.label}
         </p>
       </div>
-
-      {/* Bottom accent line */}
-      <div
-        className="h-[2px] w-full opacity-50 group-hover:opacity-80 transition-opacity"
-        style={{ backgroundColor: accent }}
-      />
     </button>
   )
 }
