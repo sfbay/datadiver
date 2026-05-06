@@ -25,15 +25,33 @@ function applyTerrainAndFog(map: mapboxgl.Map, dark: boolean) {
     })
   }
   map.setTerrain({ source: 'mapbox-dem', exaggeration: TERRAIN_EXAGGERATION })
-  // Diagnostic — confirms terrain actually applied at runtime. Remove
-  // once we've verified end-to-end on a real preview.
-  // eslint-disable-next-line no-console
-  console.log('[MapView] terrain applied', {
-    exaggeration: TERRAIN_EXAGGERATION,
-    hasTerrain: !!map.getTerrain(),
-    hasDemSource: !!map.getSource('mapbox-dem'),
-    pitch: map.getPitch(),
-  })
+
+  // Hillshade layer — draws light/shadow on terrain slopes so the SF
+  // hills read as topography rather than soft gradient. Mapbox's
+  // dark-v11 / light-v11 styles don't ship with hillshade enabled, so
+  // we add it explicitly. Inserted beneath the first symbol layer so
+  // street + neighborhood labels render on top.
+  if (!map.getLayer('dd-hillshade')) {
+    const layers = map.getStyle().layers || []
+    const firstSymbol = layers.find((l) => l.type === 'symbol')
+    map.addLayer(
+      {
+        id: 'dd-hillshade',
+        type: 'hillshade',
+        source: 'mapbox-dem',
+        paint: {
+          // Palette-matched: espresso shadows + paper highlights for
+          // dark mode; ink shadows + cream highlights for light.
+          'hillshade-shadow-color': dark ? '#140c08' : '#7a5f42',
+          'hillshade-highlight-color': dark ? '#5e4831' : '#fbf6ea',
+          'hillshade-accent-color': dark ? '#3a2a1e' : '#ddcba8',
+          'hillshade-illumination-direction': 335,
+          'hillshade-exaggeration': 0.6,
+        },
+      },
+      firstSymbol?.id,
+    )
+  }
 
   // Atmospheric fog tuned to the earth-tone palette — fades distant
   // terrain into espresso (dark) or cream (light), giving the foreground
