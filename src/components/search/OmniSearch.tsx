@@ -1,11 +1,48 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useOmniSearch, type SearchResult } from './useOmniSearch'
+import { useTypingPlaceholder } from '@/hooks/useTypingPlaceholder'
 
 export interface OmniSearchProps {
-  mode: 'inline' | 'modal'
+  /** Surface mode. `ribbon` is the slim top-of-page form; `modal` is the
+   *  ⌘K-triggered overlay. (`inline` is kept as an alias for backward
+   *  compatibility but renders as `ribbon`.) */
+  mode: 'ribbon' | 'inline' | 'modal'
   isOpen?: boolean
   onClose?: () => void
+}
+
+/** Sample queries cycled through the ribbon placeholder. Stable reference
+ *  (module-scoped) so the typing-placeholder effect doesn't restart every
+ *  render. Each one demonstrates a different dimension of search:
+ *  neighborhood, vendor, dataset, sub-category, entity. */
+const RIBBON_SAMPLES = [
+  'Crime in the Tenderloin',
+  'Parking revenue · Mission',
+  '311 graffiti reports',
+  'Vendor: Salesforce',
+  'Uber campaign contributions',
+  'Response times · Sunset',
+]
+
+function SearchIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      className="shrink-0"
+    >
+      <circle cx="7" cy="7" r="5" />
+      <path d="M11 11l4 4" />
+    </svg>
+  )
 }
 
 function ResultRow({
@@ -19,43 +56,65 @@ function ResultRow({
     <button
       type="button"
       onClick={() => onSelect(result)}
-      className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-white/[0.04] transition-colors"
+      className="w-full flex items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-slate-100/70 dark:hover:bg-white/[0.04]"
     >
       <span className="text-base leading-none shrink-0">{result.icon}</span>
       <span className="flex-1 min-w-0">
-        <span className="block text-[12px] text-slate-200 truncate">{result.label}</span>
-        <span className="block text-[9px] font-mono text-slate-500 truncate mt-0.5">
+        <span className="block text-[13px] text-ink dark:text-slate-200 truncate">
+          {result.label}
+        </span>
+        <span className="block text-[10px] font-mono text-slate-500 dark:text-slate-400 truncate mt-0.5">
           {result.sublabel}
         </span>
       </span>
-      <span className="text-[8px] font-mono text-slate-600 uppercase shrink-0 tracking-wider">
+      <span className="text-[9px] font-mono text-slate-500 dark:text-slate-400 uppercase shrink-0 tracking-wider">
         {result.category}
       </span>
     </button>
   )
 }
 
-function SearchBar({
-  query,
-  setQuery,
-  inputRef,
-}: {
+interface SearchBarProps {
   query: string
   setQuery: (v: string) => void
   inputRef: React.RefObject<HTMLInputElement | null>
-}) {
+  /** When true, the placeholder cycles through sample queries. Disabled
+   *  for the modal mode (which auto-focuses immediately). */
+  cyclePlaceholder?: boolean
+  /** Visual height variant. `slim` is for the ribbon at the top of the
+   *  page; `tall` is for the modal. */
+  size?: 'slim' | 'tall'
+}
+
+function SearchBar({ query, setQuery, inputRef, cyclePlaceholder = false, size = 'tall' }: SearchBarProps) {
+  const [focused, setFocused] = useState(false)
+  // Suppress the type-out animation while user is interacting or typing.
+  const animatedPlaceholder = useTypingPlaceholder({
+    samples: RIBBON_SAMPLES,
+    paused: !cyclePlaceholder || focused || query.length > 0,
+  })
+  const placeholder = cyclePlaceholder
+    ? animatedPlaceholder || 'Search across time, place, vendor, dataset…'
+    : 'Search across time, place, vendor, dataset…'
+
+  const padY = size === 'slim' ? 'py-2.5' : 'py-2'
+
   return (
-    <div className="flex items-center gap-2 px-3 py-2">
-      <span className="text-base leading-none shrink-0 opacity-60">🔍</span>
+    <div className={`flex items-center gap-2.5 px-3.5 ${padY}`}>
+      <span className="text-slate-500 dark:text-slate-400">
+        <SearchIcon size={size === 'slim' ? 15 : 14} />
+      </span>
       <input
         ref={inputRef}
         type="text"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search across time, place, vendor, dataset..."
-        className="flex-1 bg-transparent text-[13px] font-mono text-slate-200 placeholder:text-slate-600 outline-none min-w-0"
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        placeholder={placeholder}
+        className="flex-1 bg-transparent text-[13px] font-mono text-ink dark:text-slate-200 placeholder:text-slate-500 dark:placeholder:text-slate-500 outline-none min-w-0"
       />
-      <span className="shrink-0 text-[10px] font-mono text-slate-600 bg-white/[0.06] px-1.5 py-0.5 rounded">
+      <span className="shrink-0 text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-200/70 dark:bg-white/[0.06] px-1.5 py-0.5 rounded">
         ⌘K
       </span>
     </div>
@@ -67,14 +126,12 @@ export default function OmniSearch({ mode, isOpen, onClose }: OmniSearchProps) {
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement | null>(null)
 
-  // Auto-focus when opened
+  // Modal: focus the input when opened. Ribbon: do NOT auto-focus —
+  // browsers scroll a freshly-focused input into view, and the ribbon
+  // sits below the page's first paint. Power users still have ⌘K to
+  // open the modal.
   useEffect(() => {
     if (mode === 'modal' && isOpen) {
-      const timer = setTimeout(() => inputRef.current?.focus(), 50)
-      return () => clearTimeout(timer)
-    }
-    if (mode === 'inline') {
-      // Focus on mount for inline
       const timer = setTimeout(() => inputRef.current?.focus(), 50)
       return () => clearTimeout(timer)
     }
@@ -119,10 +176,10 @@ export default function OmniSearch({ mode, isOpen, onClose }: OmniSearchProps) {
         }}
       >
         <div className="w-full max-w-lg mx-4 h-fit">
-          <div className="rounded-2xl border border-white/10 bg-slate-950/90 overflow-hidden shadow-2xl">
-            <SearchBar query={query} setQuery={setQuery} inputRef={inputRef} />
+          <div className="rounded-2xl border border-slate-300/60 dark:border-white/10 bg-white dark:bg-slate-950/95 overflow-hidden shadow-2xl">
+            <SearchBar query={query} setQuery={setQuery} inputRef={inputRef} size="tall" />
             {showDropdown && (
-              <div className="border-t border-white/[0.06]">
+              <div className="border-t border-slate-200/60 dark:border-white/[0.06]">
                 {results.map((r) => (
                   <ResultRow key={r.id} result={r} onSelect={handleSelect} />
                 ))}
@@ -134,12 +191,26 @@ export default function OmniSearch({ mode, isOpen, onClose }: OmniSearchProps) {
     )
   }
 
-  // Inline mode
+  // Ribbon mode (also covers legacy `inline` callers).
+  // Container click anywhere → focus the input. Without this, the
+  // hit area is just the <input> element itself, and clicks on the
+  // icon / placeholder whitespace / ⌘K hint do nothing — confusing.
+  const focusInput = () => inputRef.current?.focus()
   return (
-    <div className="rounded-2xl border border-white/10 bg-slate-950/60 overflow-hidden">
-      <SearchBar query={query} setQuery={setQuery} inputRef={inputRef} />
+    <div
+      onClick={focusInput}
+      className="cursor-text rounded-xl border border-slate-300/60 dark:border-white/[0.08] bg-white/80 dark:bg-slate-900/60 backdrop-blur-sm overflow-hidden shadow-sm transition-colors hover:border-slate-400/70 dark:hover:border-white/[0.14] focus-within:border-slate-500 dark:focus-within:border-white/30"
+      style={{ '--accent': '#b85a33' } as CSSProperties}
+    >
+      <SearchBar
+        query={query}
+        setQuery={setQuery}
+        inputRef={inputRef}
+        cyclePlaceholder
+        size="slim"
+      />
       {showDropdown && (
-        <div className="border-t border-white/[0.06]">
+        <div className="border-t border-slate-200/60 dark:border-white/[0.06]" onClick={(e) => e.stopPropagation()}>
           {results.map((r) => (
             <ResultRow key={r.id} result={r} onSelect={handleSelect} />
           ))}

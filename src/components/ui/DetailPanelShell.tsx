@@ -1,4 +1,4 @@
-import { useRef, useEffect, type ReactNode } from 'react'
+import { useRef, useEffect, type ReactNode, type CSSProperties } from 'react'
 import ShareLinkButton from '@/components/ui/ShareLinkButton'
 
 interface DetailPanelShellProps {
@@ -16,6 +16,9 @@ interface DetailPanelShellProps {
   buildShareUrl?: () => string
   /** Accent class passed to ShareLinkButton */
   shareAccentClass?: string
+  /** Hex color driving the panel's top-left corner glow. Defaults to the
+   *  brand terracotta. Pass the dataset's pigment for per-view consistency. */
+  glowColor?: string
   /** Panel content — only rendered when not loading */
   children: ReactNode
 }
@@ -39,6 +42,7 @@ export default function DetailPanelShell({
   widthClass = 'w-72',
   buildShareUrl,
   shareAccentClass,
+  glowColor = '#b85a33', // terracotta-600 — brand fallback
   children,
 }: DetailPanelShellProps) {
   const panelRef = useRef<HTMLDivElement>(null)
@@ -64,10 +68,12 @@ export default function DetailPanelShell({
   return (
     <div
       ref={panelRef}
-      className={`absolute top-5 right-5 z-30 rounded-xl p-4 ${widthClass} max-h-[80vh] overflow-y-auto animate-in fade-in slide-in-from-right-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/[0.08] shadow-xl shadow-black/20`}
+      className={`glow-host absolute top-5 right-5 z-30 rounded-xl p-4 ${widthClass} max-h-[80vh] overflow-y-auto animate-in fade-in slide-in-from-right-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/[0.08] shadow-xl shadow-black/20`}
+      style={{ '--glow': glowColor } as CSSProperties}
     >
+      <div className="glow-corner" />
       {/* Top-right actions */}
-      <div className="absolute top-2 right-2 flex items-center gap-0.5">
+      <div className="absolute top-2 right-2 flex items-center gap-0.5 z-10">
         {buildShareUrl && (
           <ShareLinkButton buildUrl={buildShareUrl} accentClass={shareAccentClass} />
         )}
@@ -82,12 +88,12 @@ export default function DetailPanelShell({
       </div>
 
       {isLoading && (
-        <div className="flex items-center justify-center py-8">
+        <div className="relative flex items-center justify-center py-8">
           <div className={`w-5 h-5 border-2 ${spinnerClass} border-t-transparent rounded-full animate-spin`} />
         </div>
       )}
 
-      {!isLoading && children}
+      {!isLoading && <div className="relative">{children}</div>}
     </div>
   )
 }

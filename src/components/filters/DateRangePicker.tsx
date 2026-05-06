@@ -197,22 +197,26 @@ export default function DateRangePicker() {
 
       {/* Preset pills — always visible */}
       <div className="flex gap-0.5 mb-1">
-        {PRESETS.map((preset) => (
-          <button
-            key={preset.label}
-            onClick={() => applyPreset(preset)}
-            className={`
-              flex-1 py-1 rounded-md text-[9px] font-mono font-medium
-              transition-all duration-150
-              ${activePreset?.label === preset.label
-                ? 'bg-signal-blue text-white shadow-sm shadow-signal-blue/30'
-                : 'bg-slate-100/80 dark:bg-white/[0.04] text-slate-500 dark:text-slate-500 hover:bg-slate-200/80 dark:hover:bg-white/[0.08]'
-              }
-            `}
-          >
-            {preset.label}
-          </button>
-        ))}
+        {PRESETS.map((preset) => {
+          const isActive = activePreset?.label === preset.label
+          return (
+            <button
+              key={preset.label}
+              onClick={() => applyPreset(preset)}
+              className={`
+                flex-1 py-1 rounded-md text-[9px] font-mono font-medium
+                transition-all duration-150
+                ${isActive
+                  ? 'glow-host border border-[#b85a33]/40 bg-[#b85a33]/[0.18] text-[#b85a33] dark:text-[#d47149]'
+                  : 'bg-slate-100/80 dark:bg-white/[0.04] text-slate-500 dark:text-slate-500 hover:bg-slate-200/80 dark:hover:bg-white/[0.08]'
+                }
+              `}
+            >
+              {isActive && <div className="glow-corner is-sm" style={{ top: -14, left: -14, width: 38, height: 38, opacity: 0.6, filter: 'blur(12px)' }} />}
+              <span className="relative">{preset.label}</span>
+            </button>
+          )
+        })}
       </div>
 
       {/* Custom range toggle */}

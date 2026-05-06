@@ -4,45 +4,56 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-ink: #08080a;
-  --color-paper: #f5f3ef;
-  --color-parchment: #ece8e1;
-  --color-slate-50: #f8fafc;
-  --color-slate-100: #f1f5f9;
-  --color-slate-200: #e2e8f0;
-  --color-slate-300: #cbd5e1;
-  --color-slate-400: #94a3b8;
-  --color-slate-500: #64748b;
-  --color-slate-600: #475569;
-  --color-slate-700: #334155;
-  --color-slate-800: #1e293b;
-  --color-slate-850: #162032;
-  --color-slate-900: #0f172a;
-  --color-slate-950: #060a14;
+  /* Earth-tone refactor — names preserved so existing Tailwind classes
+     (text-signal-red, bg-paper, bg-slate-950, etc.) continue to compile;
+     only the rendered color shifts. Pigment mapping rationale lives in
+     src/styles/tokens.css and docs/design-handoff/colors_and_type.css. */
 
-  /* Signal palette — high-saturation for dark backgrounds */
-  --color-signal-red: #ff4d4d;
-  --color-signal-orange: #ff8c42;
-  --color-signal-amber: #ffbe0b;
-  --color-signal-emerald: #2dd4a8;
-  --color-signal-cyan: #22d3ee;
-  --color-signal-blue: #60a5fa;
-  --color-signal-violet: #a78bfa;
-  --color-signal-rose: #fb7185;
+  --color-ink: #1e140d;        /* espresso-900 */
+  --color-paper: #f5ecd9;      /* cream-100 */
+  --color-parchment: #ecdfc5;  /* cream-200 */
 
-  /* Response time scale */
-  --color-response-fast: #2dd4a8;
-  --color-response-ok: #ffbe0b;
-  --color-response-slow: #ff4d4d;
-  --color-response-critical: #dc2626;
+  /* "slate" scale — repurposed for warm grayscale across modes:
+     light end → cream tones, dark end → espresso tones. */
+  --color-slate-50: #fbf6ea;   /* cream-50 */
+  --color-slate-100: #f5ecd9;  /* cream-100 */
+  --color-slate-200: #ecdfc5;  /* cream-200 */
+  --color-slate-300: #ddcba8;  /* cream-300 */
+  --color-slate-400: #a8926a;  /* paper-500 / ink-300 — neutral mid */
+  --color-slate-500: #7a5f42;  /* ink-500 / paper-700 */
+  --color-slate-600: #5e4831;  /* espresso-500 */
+  --color-slate-700: #3a2a1e;  /* espresso-700 */
+  --color-slate-800: #2a1d13;  /* espresso-800 */
+  --color-slate-850: #241710;  /* between espresso-800 and -900 */
+  --color-slate-900: #1e140d;  /* espresso-900 */
+  --color-slate-950: #140c08;  /* espresso-1000 */
 
-  /* Revenue scale */
-  --color-revenue-low: #1e3a5f;
-  --color-revenue-mid: #60a5fa;
-  --color-revenue-high: #bfdbfe;
+  /* "signal" palette — repigmented to earth-tone equivalents. Each name
+     keeps its semantic role (red = danger, amber = warning, emerald =
+     success, etc.) but with warmer values. */
+  --color-signal-red: #b85545;     /* brick-500 */
+  --color-signal-orange: #d47149;  /* terracotta-500 */
+  --color-signal-amber: #d4a435;   /* ochre-500 */
+  --color-signal-emerald: #7a9954; /* moss-500 */
+  --color-signal-cyan: #5c9693;    /* teal-500 */
+  --color-signal-blue: #616a96;    /* indigo-500 (rare cool, warm-ish) */
+  --color-signal-violet: #8b6282;  /* plum-500 */
+  --color-signal-rose: #d17566;    /* brick-400 */
 
-  /* Typography */
-  --font-display: "Roboto Serif", Georgia, serif;
+  /* Response time scale — warm replacement for cyan/amber/red gradient */
+  --color-response-fast: #7a9954;     /* moss-500 */
+  --color-response-ok: #d4a435;       /* ochre-500 */
+  --color-response-slow: #d47149;     /* terracotta-500 */
+  --color-response-critical: #963e30; /* brick-600 */
+
+  /* Revenue scale — sequential teal/moss replacing sequential blues */
+  --color-revenue-low: #3a2a1e;   /* espresso-700 deep neutral */
+  --color-revenue-mid: #5c9693;   /* teal-500 */
+  --color-revenue-high: #9db87a;  /* moss-400 */
+
+  /* Typography — Fraunces display, Roboto Serif body, Space Mono labels.
+     Font CDN links updated in next commit. */
+  --font-display: "Fraunces", "Roboto Serif", Georgia, serif;
   --font-sans: "Roboto Serif", Georgia, serif;
   --font-mono: "Space Mono", "Fira Code", monospace;
 }
@@ -317,3 +328,135 @@ body {
 .animate-pulse-subtle {
   animation: pulse-subtle 2s ease-in-out infinite;
 }
+
+/* ================================================================
+   CORNER GLOW — the unifying treatment
+   ----------------------------------------------------------------
+   A big, diffuse, top-left-anchored blur sitting half-outside its
+   container, CLIPPED to the container bounds. Reads like warm
+   morning light leaking through a corner window — not an LED, not
+   a gradient overlay. The system's strongest non-typographic
+   signature; replaces the bottom-accent-bar / colored-left-border
+   tropes of typical dashboards.
+
+   Usage: mark a parent as .glow-host, place a child .glow-corner
+   element inside it. Drive pigment via the --glow custom property
+   set inline (style={{ "--glow": dataset.color }} as React.CSSProperties).
+
+   Source: docs/design-handoff/colors_and_type.css
+   ================================================================ */
+
+.glow-host {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.glow-corner {
+  position: absolute;
+  top: -40px;
+  left: -40px;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: var(--glow, var(--accent));
+  filter: blur(28px);
+  opacity: var(--glow-opacity, 0.65);
+  z-index: 0;
+  pointer-events: none;
+  transition:
+    opacity 400ms var(--ease-settle, ease),
+    transform 400ms var(--ease-settle, ease),
+    filter 400ms var(--ease-settle, ease);
+}
+
+/* Softer on cream — light surface needs less juice */
+:root:not([data-theme="dark"]) .glow-corner,
+html:not(.dark) .glow-corner {
+  opacity: var(--glow-opacity, 0.4);
+}
+
+/* Hover lift: source brightens + drifts toward content */
+.glow-host:hover > .glow-corner,
+.glow-host:hover .glow-corner:first-child {
+  opacity: calc(var(--glow-opacity, 0.65) + 0.2);
+  transform: scale(1.15) translate(6px, 6px);
+  filter: blur(32px);
+}
+
+/* Sizing variants */
+.glow-corner.is-sm {
+  top: -28px;
+  left: -28px;
+  width: 80px;
+  height: 80px;
+  filter: blur(20px);
+}
+.glow-corner.is-lg {
+  top: -60px;
+  left: -60px;
+  width: 180px;
+  height: 180px;
+  filter: blur(40px);
+}
+
+/* Anchor variants — top-left is the default; use these sparingly */
+.glow-corner.is-tr { left: auto; right: -40px; }
+.glow-corner.is-bl { top: auto; bottom: -40px; }
+
+/* ================================================================
+   PRIMARY BUTTON HOVER SHEEN
+   ----------------------------------------------------------------
+   Not yet adopted by any caller — DataDiver is a data-viewing tool
+   with very few primary CTAs. Added as a ready utility for future
+   buttons. Pattern from docs/design-handoff/ui_kits/datadiver/kit.css.
+   To opt in: add class="btn-primary" to a button. Optionally drive
+   the halo color via --accent override on the parent or button.
+   ================================================================ */
+.btn-primary {
+  position: relative;
+  isolation: isolate;
+  transition:
+    transform var(--dur-fast, 150ms) var(--ease-snap, ease),
+    box-shadow var(--dur-fast, 150ms) var(--ease-snap, ease);
+}
+.btn-primary::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: inherit;
+  background: radial-gradient(circle at 30% 30%, var(--accent), transparent 70%);
+  filter: blur(14px);
+  opacity: 0;
+  z-index: -1;
+  pointer-events: none;
+  transition: opacity var(--dur-slow, 480ms) var(--ease-settle, ease);
+}
+.btn-primary:hover::after { opacity: 0.6; }
+.btn-primary:hover { transform: translateY(-1px); }
+
+/* ================================================================
+   DANA RIBBON HOVER GLOW
+   ----------------------------------------------------------------
+   On-hover only — the comic-strip ribbon is a quiet editorial
+   surface at rest, blooming with a soft top-left teal glow when
+   the reader hovers. Pattern from kit.css `.dd-ribbon::before`.
+   The ::before pseudo here lets us keep the ribbon's existing
+   layout untouched (no glow-host structural change required).
+   ================================================================ */
+.dd-ribbon-hover::before {
+  content: "";
+  position: absolute;
+  top: -32px;
+  left: -32px;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: var(--glow, var(--info));
+  filter: blur(28px);
+  opacity: 0;
+  z-index: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-slow, 480ms) var(--ease-settle, ease);
+}
+.dd-ribbon-hover:hover::before { opacity: 0.55; }

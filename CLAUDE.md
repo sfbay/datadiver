@@ -21,6 +21,61 @@ The project's core belief is that **public data should feel alive, not archival*
 
 Journalists, civic researchers, neighborhood advocates, and curious residents. People who want to understand their city through its data but don't want to write SQL or download CSVs. The tool should be shareable (URL-encoded state) and exportable (PNG screenshots).
 
+## Aesthetic
+
+DataDiver runs an **earth-tone visual system** — espresso (`#1e140d`) for dark mode, cream (`#f5ecd9`) for light mode, with pigment-named accents (terracotta, ochre, moss, dusty teal, brick, plum, indigo). The dark mode reads like a leather-bound field journal under a reading lamp; the light mode reads like newsprint or a vintage census report. **Source of truth: `src/styles/tokens.css` and the `@theme` block in `src/index.css`.**
+
+The previous "Bloomberg Terminal" cool slate-950 + signal-red/cyan/violet aesthetic was deliberately replaced. The new direction keeps the information density, the glass cards, the Mapbox dark basemap, and the editorial serif display face — but pulls DataDiver out of the "generic Claude analytics dashboard" visual cluster.
+
+### Pigment vocabulary
+
+Each accent has a 400/500/600/700 ramp. Same dataset = same pigment across sidebar nav, viz card, on-map detail, and stat cards. The pigment palette + their semantic meanings:
+
+| Pigment | Role |
+|---|---|
+| Terracotta `#b85a33` | Primary brand, emergency, alert |
+| Ochre `#d4a435` | Warnings, money, ledger feel |
+| Moss `#7a9954` | Success, business formation, civic upkeep |
+| Dusty teal `#5c9693` | Info, Dana's color, civic-place |
+| Brick `#963e30` | Critical, errors, crash severity |
+| Indigo `#616a96` | Rare cool, civic ceremony, sensitive calls |
+| Plum `#8b6282` | Campaign finance, agency routing |
+
+The "signal" Tailwind tokens (`text-signal-red`, `bg-signal-cyan`, etc.) still exist as class names but resolve to earth-tone equivalents under the hood — no caller-side migration is required.
+
+### Corner-glow signature
+
+The unifying visual signature of the system is a **single diffuse, top-left-anchored blur** clipped to the element's bounds, driven by an inline `--glow` custom property. Reads like warm morning light leaking through a corner window — not an LED, not a gradient overlay.
+
+Utility lives at the bottom of `src/index.css`:
+
+```html
+<div class="my-card glow-host" style="--glow: #b85a33">
+  <div class="glow-corner"></div>
+  ...
+</div>
+```
+
+Sizes: `.is-sm` (80px, ticker cells), default (110px, stat cards), `.is-lg` (180px, viz cards). On cream surfaces opacity drops to ~0.4; on espresso ~0.55.
+
+**Glow tiers — where to use it, where NOT** (overusing dilutes the signature):
+
+- **Tier 1, always glows:** `<VizCard>`, `<StatCard>`, `<TickerCard>`, sidebar active nav item, hero, section heads, detail-view overlay panels.
+- **Tier 2, subtle on interaction only:** `.btn-primary` hover, active date-preset chip, Dana ribbon hover.
+- **Tier 3, HOLD THE LINE (no glow):** body copy / prose blocks, secondary/tertiary/icon buttons, inputs, dropdowns, modals, tooltips, popovers, tables, list rows, comic-panel thumbnails (image IS the color), every neutral `bg-raised` card with no dataset pigment. If a reviewer adds a glow to one of these, push back.
+
+### Differentiators layered on top
+
+To avoid looking like another generic dashboard, the system also enforces:
+
+1. **Rule-leading micro labels** — `── EYEBROW` instead of floating caps
+2. **Kraft-paper card edges** — warm umber shadow rather than cool glass
+3. **Pull-quote margin notes** — italic editorial sidebars inside data views
+4. **Oldstyle figures in body text**, lining tabular figures in data values
+5. **Pigment naming** — `terracotta`, `ochre`, `moss` in code, not `red-500`
+6. **Double-rule dividers** — newspaper-style section breaks
+7. **Notched corners with accent tab** — see `<VizCard>`, the Home / Overview tile
+
 ## Stack
 - **Vite + React 18 + TypeScript + Tailwind v4**
 - **Mapbox GL JS v3** for maps (dark-v11 basemap, `preserveDrawingBuffer: true`)
@@ -98,6 +153,9 @@ The Advertising & Media tab has a dense architectural story worth preserving. **
 **See `.claude/skills/datadiver-compliance.md`** for the full compliance dashboard knowledge base — color palette reservations, trapezoid gradient technique, stakeholder context (Maya, Resolution 240210 effective FY2024-25), department rail tab semantics, and the tile-and-chart consistency self-check.
 
 ### Color palette commitment (drill-down hierarchy)
+
+**Note: this is a scoped exception to the project-wide earth-tone aesthetic.** The compliance dashboard's drill-down hierarchy depends on saturated, well-spaced hues to keep the narrowing-scope narrative readable across dense stacked bars and trapezoid connectors. Earth-tone substitutes lose that contrast and confuse the visual story. These specific colors stay; everything else on the site uses the earth-tone palette.
+
 The compliance dashboard and related views enforce **reserved color semantics**. Same concept = same color everywhere:
 
 | Concept | Color | Hex |
@@ -130,6 +188,11 @@ When two semi-transparent shapes meet at a 1-pixel boundary (e.g., compliance ca
 - **`tsc -b` is stricter than `tsc --noEmit`** — Vercel's build runs `tsc -b` which catches issues the local `--noEmit` pass doesn't (unused parameters, some Mapbox type assertions). Always run `npx tsc -b` before pushing to avoid failed deploys. Underscore-prefix unused parameters (`_onBack`) to silence strict mode without losing the signature.
 
 ## Fonts
-- Playfair Display (headlines, `.font-display`)
-- Inter (body)
-- JetBrains Mono (data values, `.font-mono`)
+
+All three loaded from Google Fonts CDN via `<link>` in `index.html`. Type-stack tokens live in `src/styles/tokens.css` as `--font-display` / `--font-body` / `--font-mono`.
+
+- **Fraunces** — display face, headlines, hero. Variable axis `opsz 9..144`, `SOFT 0..100`. Italic at hero scale; upright at card titles. Replaces the older Instrument Serif / Roboto Serif display role with a higher-stylistic-contrast italic. Class: `.font-display`.
+- **Roboto Serif** — body. Variable axis `opsz 8..144`, weights 300–700. Oldstyle figures (`font-feature-settings: "onum"`) in prose; lining tabular figures (`"tnum","lnum"`) in data values.
+- **Space Mono** — mono labels, data values, eyebrows, timestamps, coordinates. Has real italics. Class: `.font-mono`.
+
+Tracking is tight (`-0.02em` to `-0.04em`) on display, heavy (`+0.25em` uppercase) on micro labels.

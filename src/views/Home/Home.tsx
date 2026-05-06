@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import CivicTicker, { useResponsiveTickerSize } from '@/components/ui/CivicTicker'
 import { useCivicIndicators } from '@/hooks/useCivicIndicators'
@@ -11,7 +11,7 @@ import DeficitCounter from '@/components/investigations/DeficitCounter'
 import ResponseEquity from '@/components/investigations/ResponseEquity'
 import DispatchUnanswered from '@/components/investigations/DispatchUnanswered'
 import ComplianceTracker from '@/components/investigations/ComplianceTracker'
-import OmniSearch from '@/components/search/OmniSearch'
+import VizCard from '@/components/ui/VizCard'
 
 const VISUALIZATIONS = [
   {
@@ -26,7 +26,7 @@ const VISUALIZATIONS = [
       { label: 'Records/yr', value: '~600K' },
       { label: 'Neighborhoods', value: '41' },
     ],
-    accentColor: '#ff4d4d',
+    accentColor: '#b85a33', // terracotta-600
   },
   {
     path: '/parking-revenue',
@@ -40,7 +40,7 @@ const VISUALIZATIONS = [
       { label: 'Detail level', value: 'Every session' },
       { label: 'Meter types', value: '6' },
     ],
-    accentColor: '#60a5fa',
+    accentColor: '#3f7573', // teal-600
   },
   {
     path: '/dispatch-911',
@@ -54,7 +54,7 @@ const VISUALIZATIONS = [
       { label: 'Sensitive calls', value: '~181K' },
       { label: 'Timestamps', value: '6 per call' },
     ],
-    accentColor: '#a78bfa',
+    accentColor: '#474e74', // indigo-600
   },
   {
     path: '/311-cases',
@@ -68,7 +68,7 @@ const VISUALIZATIONS = [
       { label: 'Categories', value: '25' },
       { label: 'Years of data', value: '18' },
     ],
-    accentColor: '#10b981',
+    accentColor: '#5c7a3d', // moss-600
   },
   {
     path: '/crime-incidents',
@@ -82,7 +82,7 @@ const VISUALIZATIONS = [
       { label: '911 linked', value: '~60%' },
       { label: 'Neighborhoods', value: '41' },
     ],
-    accentColor: '#ef4444',
+    accentColor: '#963e30', // brick-600
   },
   {
     path: '/parking-citations',
@@ -96,7 +96,7 @@ const VISUALIZATIONS = [
       { label: 'Violation types', value: '~40' },
       { label: 'Revenue tracking', value: 'Yes' },
     ],
-    accentColor: '#f97316',
+    accentColor: '#d47149', // terracotta-500
   },
   {
     path: '/traffic-safety',
@@ -110,7 +110,7 @@ const VISUALIZATIONS = [
       { label: 'Camera sites', value: '~100+' },
       { label: 'Severity levels', value: '4' },
     ],
-    accentColor: '#dc2626',
+    accentColor: '#963e30', // brick-600
   },
   {
     path: '/business-activity',
@@ -124,7 +124,7 @@ const VISUALIZATIONS = [
       { label: 'Active', value: '~164K' },
       { label: 'Sectors', value: '15+' },
     ],
-    accentColor: '#10b981',
+    accentColor: '#5c7a3d', // moss-600
   },
   {
     path: '/demographics',
@@ -138,7 +138,7 @@ const VISUALIZATIONS = [
       { label: 'Variables', value: '35' },
       { label: 'Source', value: 'ACS 5-yr' },
     ],
-    accentColor: '#7c3aed',
+    accentColor: '#8b6282', // plum-500
   },
   {
     path: '/elections',
@@ -152,7 +152,7 @@ const VISUALIZATIONS = [
       { label: 'RCV rounds', value: 'All' },
       { label: 'Measures', value: '1961–now' },
     ],
-    accentColor: '#6366f1',
+    accentColor: '#616a96', // indigo-500
   },
   {
     path: '/campaign-finance',
@@ -166,7 +166,7 @@ const VISUALIZATIONS = [
       { label: 'Filings', value: 'A/E/I/D' },
       { label: 'Cycles', value: '4+' },
     ],
-    accentColor: '#14b8a6',
+    accentColor: '#8b6282', // plum-500
   },
   {
     path: '/city-budget',
@@ -180,7 +180,7 @@ const VISUALIZATIONS = [
       { label: 'Vendors', value: '12K+' },
       { label: 'Since', value: 'FY2007' },
     ],
-    accentColor: '#0ea5e9',
+    accentColor: '#b58620', // ochre-600
   },
   {
     path: '/live-feeds',
@@ -194,7 +194,7 @@ const VISUALIZATIONS = [
       { label: 'Districts', value: '10+' },
       { label: 'Status', value: 'Live' },
     ],
-    accentColor: '#f59e0b',
+    accentColor: '#d4a435', // ochre-500
   },
 ] as const
 
@@ -237,9 +237,26 @@ export default function Home() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="max-w-5xl mx-auto px-8 py-16 relative">
+      <div className="max-w-5xl mx-auto px-8 pt-8 pb-16 relative">
+        {/* OmniSearch ribbon hidden pending entity-search infrastructure —
+            the static index only matches neighborhoods + dataset names, so
+            queries like "salesforce" or "uber" silently produced no results.
+            Ribbon will debut alongside vendor / business / committee
+            indexing in a follow-up PR. ⌘K modal kept active as a
+            power-user surface (limited but discoverable only by intent). */}
+
         {/* Hero — full-width background with Dana on right, text on left */}
-        <header className="mb-20 relative z-10 overflow-hidden rounded-3xl">
+        <header
+          className="glow-host mb-20 relative z-10 overflow-hidden rounded-3xl"
+          style={{ '--glow': '#b85a33' } as CSSProperties}
+        >
+          {/* Large terracotta corner glow behind Dana — anchored top-right
+              with a generous offset so the disc bleeds in from off-canvas
+              and reads as warm light catching her from above. */}
+          <div
+            className="glow-corner is-lg"
+            style={{ top: -80, left: 'auto', right: -60, opacity: 0.55 }}
+          />
           {/* Background image — pushed hard right so Dana clears the text */}
           <img
             src={heroBg}
@@ -270,7 +287,7 @@ export default function Home() {
               <em
                 style={{
                   textShadow:
-                    '0 0 18px rgba(34, 211, 238, 0.55), 0 0 42px rgba(34, 211, 238, 0.30), 0 0 96px rgba(34, 211, 238, 0.14)',
+                    '0 0 18px rgba(92, 150, 147, 0.55), 0 0 42px rgba(92, 150, 147, 0.30), 0 0 96px rgba(92, 150, 147, 0.14)',
                 }}
               >
                 Dive
@@ -305,16 +322,17 @@ export default function Home() {
         >
           <button
             onClick={() => setComicOpen(true)}
-            className="w-full group flex items-center gap-5 glass-card rounded-2xl px-5 py-3 hover:bg-white/[0.06] transition-all duration-300 overflow-hidden text-left"
+            className="dd-ribbon-hover w-full group flex items-center gap-5 glass-card rounded-2xl px-5 py-3 hover:bg-white/[0.06] transition-all duration-300 overflow-hidden text-left relative isolate"
+            style={{ '--glow': '#5c9693' } as CSSProperties}
           >
             {/* Comic thumbnail */}
             <img
               src="/dana-comic-1-thumb.jpg"
               alt="Dana the DataDiver comic strip"
-              className="w-28 h-16 object-cover rounded-lg flex-shrink-0 ring-1 ring-white/10 group-hover:ring-white/20 transition-all"
+              className="w-28 h-16 object-cover rounded-lg flex-shrink-0 ring-1 ring-white/10 group-hover:ring-white/20 transition-all relative z-10"
             />
             {/* Text */}
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 relative z-10">
               <p className="text-sm font-display italic text-ink dark:text-white leading-tight">
                 Meet Dana, the data-diving Harbor Seal!
               </p>
@@ -323,7 +341,7 @@ export default function Home() {
               </p>
             </div>
             {/* Arrow */}
-            <div className="flex-shrink-0 text-slate-400 dark:text-slate-600 group-hover:text-ink dark:group-hover:text-white transition-colors">
+            <div className="flex-shrink-0 text-slate-400 dark:text-slate-600 group-hover:text-ink dark:group-hover:text-white transition-colors relative z-10">
               <svg className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 8h10M10 4.5L13.5 8 10 11.5" />
               </svg>
@@ -376,11 +394,15 @@ export default function Home() {
         <section
           className={`relative z-10 mb-8 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
         >
-          <div className="flex items-center gap-2.5 mb-4">
-            <p className="text-[9px] font-mono uppercase tracking-[0.25em] text-slate-400/60 dark:text-slate-600">
+          <div
+            className="glow-host flex items-center gap-2.5 mb-4 py-1"
+            style={{ '--glow': '#b85a33' } as CSSProperties}
+          >
+            <div className="glow-corner is-sm" />
+            <p className="relative text-[10px] font-mono uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400">
               Investigations
             </p>
-            <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
+            <div className="relative flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <DeficitCounter />
@@ -388,13 +410,6 @@ export default function Home() {
             <DispatchUnanswered />
             <ComplianceTracker />
           </div>
-        </section>
-
-        {/* OmniSearch */}
-        <section
-          className={`relative z-10 mb-8 transition-all duration-1000 delay-600 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
-        >
-          <OmniSearch mode="inline" />
         </section>
 
         {/* Civic Data Ticker — delayed 500ms to let hero vizzes load first */}
@@ -505,44 +520,28 @@ export default function Home() {
         {/* Visualization Cards */}
         <section className="relative z-10">
           <div
-            className={`flex items-center gap-2.5 mb-6 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100' : 'opacity-0'}`}
+            className={`glow-host flex items-center gap-2.5 mb-6 py-1 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100' : 'opacity-0'}`}
+            style={{ '--glow': '#5c9693' } as CSSProperties}
           >
-            <p className="text-[9px] font-mono uppercase tracking-[0.25em] text-slate-400/60 dark:text-slate-600">
+            <div className="glow-corner is-sm" />
+            <p className="relative text-[10px] font-mono uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400">
               Explorations
             </p>
-            <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
+            <div className="relative flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
           </div>
 
           <div className="grid gap-2.5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {VISUALIZATIONS.map((viz, idx) => (
-              <button
+              <VizCard
                 key={viz.path}
+                title={viz.title}
+                subtitle={viz.subtitle}
+                badge={viz.badge}
+                accentColor={viz.accentColor}
                 onClick={() => navigate(viz.path)}
-                className={`
-                  group text-left overflow-hidden relative
-                  rounded-xl border border-white/[0.04]
-                  bg-slate-950/30 hover:bg-slate-950/50 hover:border-white/[0.1]
-                  transition-all duration-300
-                  px-3.5 py-3
-                  ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
-                `}
-                style={{ transitionDelay: `${600 + idx * 60}ms` }}
-              >
-                <div
-                  className="text-[9px] font-mono font-bold tracking-wider mb-1.5"
-                  style={{ color: viz.accentColor, opacity: 0.7 }}
-                >
-                  {viz.badge}
-                </div>
-                <h3
-                  className="font-display italic text-[14px] text-ink dark:text-slate-200 leading-tight mb-0.5"
-                >
-                  {viz.title}
-                </h3>
-                <p className="text-[8px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-600">
-                  {viz.subtitle}
-                </p>
-              </button>
+                delay={600 + idx * 60}
+                mounted={mounted}
+              />
             ))}
           </div>
         </section>

@@ -1,117 +1,122 @@
-import { type ReactNode, useState, useEffect } from 'react'
+import { type ReactNode, type CSSProperties, useState, useEffect } from 'react'
 import OmniSearch from '@/components/search/OmniSearch'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAppStore } from '@/stores/appStore'
 import { useUrlSync } from '@/hooks/useUrlSync'
 import DateRangePicker from '@/components/filters/DateRangePicker'
 
+// Earth-tone refactor — each nav item carries a pigment from the design
+// system palette (terracotta / ochre / moss / teal / brick / indigo / plum).
+// Pigment drives: nav-tag fill, sidebar active-state corner glow, viz card
+// glow on the Overview grid, on-map detail glows. Same color = same dataset
+// across every surface; deliberately not interchangeable.
 const NAV_ITEMS = [
   {
     path: '/',
     label: 'Overview',
     shortLabel: 'OV',
     description: 'Data stories & viz picker',
-    accentColor: '#a78bfa',
+    accentColor: '#b85a33', // terracotta-600 — primary brand
   },
   {
     path: '/emergency-response',
     label: 'Emergency Response',
     shortLabel: 'ER',
     description: 'Fire, Police, EMS response times',
-    accentColor: '#ff4d4d',
+    accentColor: '#b85a33', // terracotta-600 — emergency / alert
   },
   {
     path: '/parking-revenue',
     label: 'Parking Revenue',
     shortLabel: 'PR',
     description: 'Meter revenue & patterns',
-    accentColor: '#60a5fa',
+    accentColor: '#3f7573', // teal-600 — info / Dana's color
   },
   {
     path: '/dispatch-911',
     label: '911 Dispatch',
     shortLabel: '911',
     description: 'Sensitive call temporal patterns',
-    accentColor: '#a78bfa',
+    accentColor: '#474e74', // indigo-600 — rare cool, sensitivity
   },
   {
     path: '/311-cases',
     label: '311 Cases',
     shortLabel: '311',
     description: '311 service request patterns',
-    accentColor: '#10b981',
+    accentColor: '#5c7a3d', // moss-600 — civic upkeep / growth
   },
   {
     path: '/crime-incidents',
     label: 'Crime Incidents',
     shortLabel: 'CI',
     description: 'SFPD incidents & 911 cross-ref',
-    accentColor: '#ef4444',
+    accentColor: '#963e30', // brick-600 — danger / critical
   },
   {
     path: '/parking-citations',
     label: 'Parking Citations',
     shortLabel: 'PC',
     description: 'SFMTA citation patterns & fines',
-    accentColor: '#f97316',
+    accentColor: '#d47149', // terracotta-500 — kin to PR teal but warmer
   },
   {
     path: '/traffic-safety',
     label: 'Traffic Safety',
     shortLabel: 'TS',
     description: 'Vision Zero crash & speed analysis',
-    accentColor: '#dc2626',
+    accentColor: '#963e30', // brick-600 — danger semantic, twin to Crime
   },
   {
     path: '/business-activity',
     label: 'Business Activity',
     shortLabel: 'BA',
     description: 'Business opening & closing trends',
-    accentColor: '#10b981',
+    accentColor: '#5c7a3d', // moss-600 — formation / success
   },
   {
     path: '/business',
     label: 'Business Search',
     shortLabel: 'BS',
     description: 'Search businesses, chains, and owners',
-    accentColor: '#06b6d4',
+    accentColor: '#3f7573', // teal-600 — info, twin to BA but cooler
   },
   {
     path: '/campaign-finance',
     label: 'Campaign Finance',
     shortLabel: 'CF',
     description: 'Campaign contributions & spending',
-    accentColor: '#14b8a6',
+    accentColor: '#8b6282', // plum-500 — campaign finance / agency routing
   },
   {
     path: '/demographics',
     label: 'Demographics',
     shortLabel: 'DM',
     description: 'Census demographics & civic correlations',
-    accentColor: '#7c3aed',
+    accentColor: '#8b6282', // plum-500 — editorial cool, civic profiling
   },
   {
     path: '/city-budget',
     label: 'City Budget',
     shortLabel: 'BU',
     description: 'Budget, spending, vendor & ad tracking',
-    accentColor: '#0ea5e9',
+    accentColor: '#b58620', // ochre-600 — money / traditional ledger
   },
   {
     path: '/elections',
     label: 'Elections',
     shortLabel: 'EL',
     description: 'Live results, RCV & historical playback',
-    accentColor: '#6366f1',
+    accentColor: '#616a96', // indigo-500 — civic ceremony
   },
   {
     path: '/neighborhood',
     label: 'Neighborhoods',
     shortLabel: 'NH',
     description: 'Cross-dataset civic profiles',
-    accentColor: '#8b5cf6',
+    accentColor: '#5c9693', // teal-500 — Dana's color, civic-place
   },
-  { path: '/live-feeds', label: 'Live Feeds', shortLabel: 'LIVE', description: 'Scanner radio feeds — SFPD, SFFD, EMS', accentColor: '#f59e0b' },
+  { path: '/live-feeds', label: 'Live Feeds', shortLabel: 'LIVE', description: 'Scanner radio feeds — SFPD, SFFD, EMS', accentColor: '#d4a435' /* ochre-500 — live / warm yellow */ },
 ] as const
 
 export default function AppShell({ children }: { children: ReactNode }) {
@@ -239,11 +244,15 @@ export default function AppShell({ children }: { children: ReactNode }) {
                   transition-all duration-200
                   ${isSidebarOpen ? 'gap-3 px-3 py-2.5' : 'justify-center p-2.5'}
                   ${isActive
-                    ? 'bg-slate-100 dark:bg-white/[0.06]'
+                    ? 'glow-host bg-slate-100 dark:bg-white/[0.06]'
                     : 'hover:bg-slate-50 dark:hover:bg-white/[0.03]'
                   }
                 `}
+                style={isActive ? ({ '--glow': item.accentColor } as CSSProperties) : undefined}
               >
+                {/* Active-state corner glow — anchored top-left of the nav row,
+                    pigment from the dataset's accentColor. */}
+                {isActive && <div className="glow-corner is-sm" />}
                 {/* Accent indicator */}
                 <div className={`
                   relative flex-shrink-0 flex items-center justify-center
@@ -266,12 +275,12 @@ export default function AppShell({ children }: { children: ReactNode }) {
                   )}
                 </div>
                 {isSidebarOpen && (
-                  <div className="flex flex-col min-w-0">
-                    <span className={`text-[13px] font-semibold truncate transition-colors
-                      ${isActive ? 'text-ink dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}>
+                  <div className="relative flex flex-col min-w-0">
+                    <span className={`text-[14px] font-semibold truncate transition-colors
+                      ${isActive ? 'text-ink dark:text-white' : 'text-slate-700 dark:text-slate-300'}`}>
                       {item.label}
                     </span>
-                    <span className="text-[10px] text-slate-400 dark:text-slate-600 truncate">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
                       {item.description}
                     </span>
                   </div>
