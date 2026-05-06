@@ -91,21 +91,35 @@ body {
 .mapboxgl-ctrl-attrib a {
   color: inherit !important;
 }
+/* Light mode (default) — cream paper feel with subtle warm border */
 .mapboxgl-ctrl-group {
-  background: rgba(15, 23, 42, 0.85) !important;
+  background: rgba(251, 246, 234, 0.85) !important;  /* cream-50 */
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(255,255,255,0.08) !important;
+  border: 1px solid rgba(58, 42, 30, 0.10) !important; /* warm umber */
   border-radius: 8px !important;
   overflow: hidden;
 }
 .mapboxgl-ctrl-group button {
-  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+  border-bottom: 1px solid rgba(58, 42, 30, 0.08) !important;
 }
 .mapboxgl-ctrl-group button + button {
   border-top: none !important;
 }
+/* Light-mode icons keep their default near-black SVG (no filter) */
 .mapboxgl-ctrl-group button span {
-  filter: invert(1) brightness(0.8);
+  filter: none;
+}
+
+/* Dark mode — espresso surface, paper-toned border + inverted icons */
+.dark .mapboxgl-ctrl-group {
+  background: rgba(30, 20, 13, 0.85) !important;  /* espresso-900 */
+  border: 1px solid rgba(255, 235, 200, 0.08) !important;
+}
+.dark .mapboxgl-ctrl-group button {
+  border-bottom: 1px solid rgba(255, 235, 200, 0.06) !important;
+}
+.dark .mapboxgl-ctrl-group button span {
+  filter: invert(1) brightness(0.85);
 }
 
 /* Scrollbar */
@@ -283,33 +297,51 @@ body {
   100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
 }
 
-/* Mapbox tooltip overrides */
+/* Mapbox tooltip overrides — paired light/dark variants. Light mode is
+   the default; .dark variants match espresso ground tone. */
 .datadiver-tooltip .mapboxgl-popup-content {
-  background: rgba(15, 23, 42, 0.92);
+  background: rgba(251, 246, 234, 0.94);  /* cream-50 */
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(58, 42, 30, 0.12);
   border-radius: 10px;
   padding: 10px 12px;
-  color: #e2e8f0;
-  font-family: 'JetBrains Mono', monospace;
+  color: #1e140d;  /* ink-900 */
+  font-family: var(--font-mono);
   font-size: 11px;
   line-height: 1.5;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 32px rgba(58, 42, 30, 0.18);
 }
 .datadiver-tooltip .mapboxgl-popup-tip {
-  border-top-color: rgba(15, 23, 42, 0.92);
+  border-top-color: rgba(251, 246, 234, 0.94);
 }
 .datadiver-tooltip .tooltip-label {
   font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.15em;
-  color: #64748b;
+  color: #7a5f42;  /* ink-500 */
   margin-bottom: 2px;
 }
 .datadiver-tooltip .tooltip-value {
   font-size: 13px;
   font-weight: 600;
-  color: #f1f5f9;
+  color: #1e140d;  /* ink-900 */
+}
+
+/* Dark mode — espresso surface, paper text */
+.dark .datadiver-tooltip .mapboxgl-popup-content {
+  background: rgba(30, 20, 13, 0.92);  /* espresso-900 */
+  border: 1px solid rgba(255, 235, 200, 0.08);
+  color: #f5ecd9;  /* paper-100 */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+.dark .datadiver-tooltip .mapboxgl-popup-tip {
+  border-top-color: rgba(30, 20, 13, 0.92);
+}
+.dark .datadiver-tooltip .tooltip-label {
+  color: #a8926a;  /* paper-500 */
+}
+.dark .datadiver-tooltip .tooltip-value {
+  color: #f5ecd9;  /* paper-100 */
 }
 
 /* Civic Fingerprint animations */
