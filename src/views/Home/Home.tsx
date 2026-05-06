@@ -238,7 +238,17 @@ export default function Home() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="max-w-5xl mx-auto px-8 py-16 relative">
+      <div className="max-w-5xl mx-auto px-8 pt-8 pb-16 relative">
+        {/* OmniSearch ribbon — slim search ribbon at the very top, above
+            the hero. Captures intent before the reader has to scroll;
+            placeholder cycles through sample queries to demo what's
+            possible. ⌘K still opens the modal version anywhere. */}
+        <section
+          className={`relative z-20 mb-10 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
+        >
+          <OmniSearch mode="ribbon" />
+        </section>
+
         {/* Hero — full-width background with Dana on right, text on left */}
         <header
           className="glow-host mb-20 relative z-10 overflow-hidden rounded-3xl"
@@ -404,13 +414,6 @@ export default function Home() {
             <DispatchUnanswered />
             <ComplianceTracker />
           </div>
-        </section>
-
-        {/* OmniSearch */}
-        <section
-          className={`relative z-10 mb-8 transition-all duration-1000 delay-600 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
-        >
-          <OmniSearch mode="inline" />
         </section>
 
         {/* Civic Data Ticker — delayed 500ms to let hero vizzes load first */}
