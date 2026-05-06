@@ -1,36 +1,241 @@
-/* DataDiver Design Tokens — "Breaking Story" editorial data aesthetic */
+/* ================================================================
+   DataDiver Design Tokens — Earth-tone Refactor
+   ----------------------------------------------------------------
+   Dark mode: Espresso (warm, low-lumen, field-journal feel)
+   Light mode: Cream (newsprint / vintage census report)
+   Accents: Terracotta, ochre, moss, dusty teal, brick, plum
+
+   Source of truth: docs/design-handoff/colors_and_type.css
+   ================================================================ */
 
 :root {
-  /* Timing */
-  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* ============================================================
+     RAW PALETTE — pigments, not "signals"
+     ============================================================ */
+
+  /* Espresso family — dark mode surfaces */
+  --espresso-1000: #140c08;
+  --espresso-900:  #1e140d;
+  --espresso-800:  #2a1d13;
+  --espresso-700:  #3a2a1e;
+  --espresso-600:  #4b3827;
+  --espresso-500:  #5e4831;
+
+  /* Cream / parchment family — light mode surfaces */
+  --cream-50:   #fbf6ea;
+  --cream-100:  #f5ecd9;
+  --cream-200:  #ecdfc5;
+  --cream-300:  #ddcba8;
+  --cream-400:  #c7b288;
+  --cream-500:  #a8926a;
+
+  /* Ink family — text on light */
+  --ink-1000:   #140c08;
+  --ink-900:    #1e140d;
+  --ink-700:    #3a2a1e;
+  --ink-500:    #7a5f42;
+  --ink-300:    #a8926a;
+
+  /* Paper-tint family — text on espresso */
+  --paper-100:  #f5ecd9;
+  --paper-300:  #d9c9a7;
+  --paper-500:  #a8926a;
+  --paper-700:  #7a5f42;
+
+  /* ============================================================
+     ACCENT PIGMENTS (each has 400 / 500 / 600 / 700)
+     ============================================================ */
+
+  /* Terracotta — primary brand accent (replaces signal-red/orange) */
+  --terracotta-400: #e8896b;
+  --terracotta-500: #d47149;
+  --terracotta-600: #b85a33;
+  --terracotta-700: #8f4426;
+
+  /* Ochre — warnings / amber (replaces signal-amber) */
+  --ochre-400:      #e8c06b;
+  --ochre-500:      #d4a435;
+  --ochre-600:      #b58620;
+  --ochre-700:      #8f6817;
+
+  /* Moss — success / business formation (replaces signal-emerald) */
+  --moss-400:       #9db87a;
+  --moss-500:       #7a9954;
+  --moss-600:       #5c7a3d;
+  --moss-700:       #445c2b;
+
+  /* Dusty teal — Dana's color, info / parking revenue */
+  --teal-400:       #8bb5b2;
+  --teal-500:       #5c9693;
+  --teal-600:       #3f7573;
+  --teal-700:       #2e5856;
+
+  /* Brick — critical / errors / crash severity */
+  --brick-400:      #d17566;
+  --brick-500:      #b85545;
+  --brick-600:      #963e30;
+  --brick-700:      #6f2b20;
+
+  /* Indigo-slate — rare cool accent (Elections, 911) */
+  --indigo-400:     #8a92b5;
+  --indigo-500:     #616a96;
+  --indigo-600:     #474e74;
+
+  /* Plum — campaign finance / agency routing */
+  --plum-400:       #b08aa8;
+  --plum-500:       #8b6282;
+  --plum-600:       #6b4563;
+
+  /* ============================================================
+     SEMANTIC TOKENS — light mode (default)
+     ============================================================ */
+  --bg:              var(--cream-100);
+  --bg-raised:       var(--cream-50);
+  --surface:         var(--cream-200);
+  --surface-hover:   var(--cream-300);
+  --border:          var(--cream-300);
+  --border-strong:   var(--cream-400);
+  --rule:            var(--ink-300);
+
+  --fg:              var(--ink-900);
+  --fg-secondary:    var(--ink-700);
+  --fg-muted:        var(--ink-500);
+  --fg-faint:        var(--ink-300);
+
+  --accent:          var(--terracotta-600);
+  --accent-hover:    var(--terracotta-700);
+  --accent-soft:     var(--terracotta-400);
+
+  --success:         var(--moss-600);
+  --warning:         var(--ochre-600);
+  --danger:          var(--brick-600);
+  --info:            var(--teal-600);
+
+  /* Heatmap / sequential scales (used by Mapbox layers + D3 charts).
+     Migration of choropleth layers to these tokens is deferred to a
+     follow-up PR — needs a real-map legibility check on dark basemap. */
+  --scale-fast:      var(--moss-500);
+  --scale-ok:        var(--ochre-500);
+  --scale-slow:      var(--terracotta-500);
+  --scale-critical:  var(--brick-600);
+
+  /* ============================================================
+     TYPOGRAPHY — Fraunces / Roboto Serif / Space Mono
+     Loaded via index.html Google Fonts <link>
+     ============================================================ */
+  --font-display: "Fraunces", "Roboto Serif", Georgia, Cambria, serif;
+  --font-body:    "Roboto Serif", Georgia, Cambria, serif;
+  --font-mono:    "Space Mono", "IBM Plex Mono", "Courier New", monospace;
+
+  /* Scale */
+  --text-mega:    clamp(3.5rem, 8vw, 5.75rem);
+  --text-hero:    clamp(2.5rem, 5vw, 3.5rem);
+  --text-h1:      2.25rem;
+  --text-h2:      1.75rem;
+  --text-h3:      1.375rem;
+  --text-h4:      1.125rem;
+  --text-body:    1rem;
+  --text-small:   0.875rem;
+  --text-caption: 0.75rem;
+  --text-label:   0.6875rem;
+  --text-micro:   0.625rem;
+
+  --leading-tight:   1.05;
+  --leading-snug:    1.2;
+  --leading-normal:  1.5;
+  --leading-relaxed: 1.65;
+
+  --tracking-tight:  -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide:   0.1em;
+  --tracking-mega:   0.25em;
+
+  /* ============================================================
+     SPACING & RADII
+     ============================================================ */
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-5:  1.5rem;
+  --space-6:  2rem;
+  --space-7:  3rem;
+  --space-8:  4rem;
+
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg:  14px;
+  --radius-xl:  20px;
+  --radius-2xl: 28px;
+
+  /* ============================================================
+     SHADOWS — warm umber, letterpress-inspired
+     ============================================================ */
+  --shadow-sm: 0 1px 2px rgba(58, 42, 30, 0.08);
+  --shadow-md: 0 4px 12px rgba(58, 42, 30, 0.10), 0 1px 2px rgba(58, 42, 30, 0.06);
+  --shadow-lg: 0 12px 32px rgba(58, 42, 30, 0.12), 0 2px 6px rgba(58, 42, 30, 0.06);
+  --shadow-xl: 0 24px 60px rgba(58, 42, 30, 0.16);
+  --shadow-press-in: inset 0 1px 2px rgba(58, 42, 30, 0.08), inset 0 -1px 0 rgba(255, 255, 255, 0.3);
+
+  /* ============================================================
+     MOTION
+     ============================================================ */
+  --ease-snap:     cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-settle:   cubic-bezier(0.22, 0.8, 0.3, 1);
+  --ease-soft:     cubic-bezier(0.4, 0, 0.2, 1);
+
+  --dur-fast:      150ms;
+  --dur-normal:    280ms;
+  --dur-slow:      480ms;
+  --dur-lingering: 800ms;
+
+  /* ============================================================
+     LEGACY ALIASES — older token names kept alive for components
+     that still reference them.
+     ============================================================ */
+  --ease-out-expo:    var(--ease-snap);
+  --ease-out-back:    cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-in-out-sine: cubic-bezier(0.37, 0, 0.63, 1);
-  --duration-fast: 150ms;
-  --duration-normal: 300ms;
-  --duration-slow: 500ms;
-  --duration-dramatic: 800ms;
-
-  /* Elevation — cinematic depth */
-  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.06);
-  --shadow-md: 0 4px 12px rgb(0 0 0 / 0.08);
-  --shadow-lg: 0 12px 40px rgb(0 0 0 / 0.12);
-  --shadow-xl: 0 24px 60px rgb(0 0 0 / 0.16);
-  --shadow-glow-blue: 0 0 30px rgb(96 165 250 / 0.2);
-  --shadow-glow-amber: 0 0 30px rgb(255 190 11 / 0.15);
-  --shadow-glow-red: 0 0 30px rgb(255 77 77 / 0.15);
-  --shadow-inner-glow: inset 0 1px 0 rgb(255 255 255 / 0.05);
-
-  /* Radius */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-2xl: 20px;
+  --duration-fast:      var(--dur-fast);
+  --duration-normal:    var(--dur-normal);
+  --duration-slow:      var(--dur-slow);
+  --duration-dramatic:  var(--dur-lingering);
 }
 
-.dark {
-  --shadow-sm: 0 1px 3px rgb(0 0 0 / 0.4);
-  --shadow-md: 0 4px 16px rgb(0 0 0 / 0.5);
-  --shadow-lg: 0 12px 40px rgb(0 0 0 / 0.6);
-  --shadow-xl: 0 24px 60px rgb(0 0 0 / 0.7);
+/* ================================================================
+   DARK MODE — Espresso
+   ================================================================ */
+.dark, [data-theme="dark"] {
+  --bg:              var(--espresso-900);
+  --bg-raised:       var(--espresso-800);
+  --surface:         var(--espresso-800);
+  --surface-hover:   var(--espresso-700);
+  --border:          var(--espresso-700);
+  --border-strong:   var(--espresso-600);
+  --rule:            var(--paper-700);
+
+  --fg:              var(--paper-100);
+  --fg-secondary:    var(--paper-300);
+  --fg-muted:        var(--paper-500);
+  --fg-faint:        var(--paper-700);
+
+  --accent:          var(--terracotta-500);
+  --accent-hover:    var(--terracotta-400);
+  --accent-soft:     var(--terracotta-600);
+
+  --success:         var(--moss-500);
+  --warning:         var(--ochre-500);
+  --danger:          var(--brick-500);
+  --info:            var(--teal-500);
+
+  --scale-fast:      var(--moss-400);
+  --scale-ok:        var(--ochre-400);
+  --scale-slow:      var(--terracotta-400);
+  --scale-critical:  var(--brick-400);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 24px 60px rgba(0, 0, 0, 0.7);
+  --shadow-press-in: inset 0 1px 2px rgba(0, 0, 0, 0.4), inset 0 -1px 0 rgba(255, 235, 200, 0.04);
 }

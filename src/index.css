@@ -4,45 +4,56 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-ink: #08080a;
-  --color-paper: #f5f3ef;
-  --color-parchment: #ece8e1;
-  --color-slate-50: #f8fafc;
-  --color-slate-100: #f1f5f9;
-  --color-slate-200: #e2e8f0;
-  --color-slate-300: #cbd5e1;
-  --color-slate-400: #94a3b8;
-  --color-slate-500: #64748b;
-  --color-slate-600: #475569;
-  --color-slate-700: #334155;
-  --color-slate-800: #1e293b;
-  --color-slate-850: #162032;
-  --color-slate-900: #0f172a;
-  --color-slate-950: #060a14;
+  /* Earth-tone refactor — names preserved so existing Tailwind classes
+     (text-signal-red, bg-paper, bg-slate-950, etc.) continue to compile;
+     only the rendered color shifts. Pigment mapping rationale lives in
+     src/styles/tokens.css and docs/design-handoff/colors_and_type.css. */
 
-  /* Signal palette — high-saturation for dark backgrounds */
-  --color-signal-red: #ff4d4d;
-  --color-signal-orange: #ff8c42;
-  --color-signal-amber: #ffbe0b;
-  --color-signal-emerald: #2dd4a8;
-  --color-signal-cyan: #22d3ee;
-  --color-signal-blue: #60a5fa;
-  --color-signal-violet: #a78bfa;
-  --color-signal-rose: #fb7185;
+  --color-ink: #1e140d;        /* espresso-900 */
+  --color-paper: #f5ecd9;      /* cream-100 */
+  --color-parchment: #ecdfc5;  /* cream-200 */
 
-  /* Response time scale */
-  --color-response-fast: #2dd4a8;
-  --color-response-ok: #ffbe0b;
-  --color-response-slow: #ff4d4d;
-  --color-response-critical: #dc2626;
+  /* "slate" scale — repurposed for warm grayscale across modes:
+     light end → cream tones, dark end → espresso tones. */
+  --color-slate-50: #fbf6ea;   /* cream-50 */
+  --color-slate-100: #f5ecd9;  /* cream-100 */
+  --color-slate-200: #ecdfc5;  /* cream-200 */
+  --color-slate-300: #ddcba8;  /* cream-300 */
+  --color-slate-400: #a8926a;  /* paper-500 / ink-300 — neutral mid */
+  --color-slate-500: #7a5f42;  /* ink-500 / paper-700 */
+  --color-slate-600: #5e4831;  /* espresso-500 */
+  --color-slate-700: #3a2a1e;  /* espresso-700 */
+  --color-slate-800: #2a1d13;  /* espresso-800 */
+  --color-slate-850: #241710;  /* between espresso-800 and -900 */
+  --color-slate-900: #1e140d;  /* espresso-900 */
+  --color-slate-950: #140c08;  /* espresso-1000 */
 
-  /* Revenue scale */
-  --color-revenue-low: #1e3a5f;
-  --color-revenue-mid: #60a5fa;
-  --color-revenue-high: #bfdbfe;
+  /* "signal" palette — repigmented to earth-tone equivalents. Each name
+     keeps its semantic role (red = danger, amber = warning, emerald =
+     success, etc.) but with warmer values. */
+  --color-signal-red: #b85545;     /* brick-500 */
+  --color-signal-orange: #d47149;  /* terracotta-500 */
+  --color-signal-amber: #d4a435;   /* ochre-500 */
+  --color-signal-emerald: #7a9954; /* moss-500 */
+  --color-signal-cyan: #5c9693;    /* teal-500 */
+  --color-signal-blue: #616a96;    /* indigo-500 (rare cool, warm-ish) */
+  --color-signal-violet: #8b6282;  /* plum-500 */
+  --color-signal-rose: #d17566;    /* brick-400 */
 
-  /* Typography */
-  --font-display: "Roboto Serif", Georgia, serif;
+  /* Response time scale — warm replacement for cyan/amber/red gradient */
+  --color-response-fast: #7a9954;     /* moss-500 */
+  --color-response-ok: #d4a435;       /* ochre-500 */
+  --color-response-slow: #d47149;     /* terracotta-500 */
+  --color-response-critical: #963e30; /* brick-600 */
+
+  /* Revenue scale — sequential teal/moss replacing sequential blues */
+  --color-revenue-low: #3a2a1e;   /* espresso-700 deep neutral */
+  --color-revenue-mid: #5c9693;   /* teal-500 */
+  --color-revenue-high: #9db87a;  /* moss-400 */
+
+  /* Typography — Fraunces display, Roboto Serif body, Space Mono labels.
+     Font CDN links updated in next commit. */
+  --font-display: "Fraunces", "Roboto Serif", Georgia, serif;
   --font-sans: "Roboto Serif", Georgia, serif;
   --font-mono: "Space Mono", "Fira Code", monospace;
 }
