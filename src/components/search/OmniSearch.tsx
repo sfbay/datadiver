@@ -192,9 +192,14 @@ export default function OmniSearch({ mode, isOpen, onClose }: OmniSearchProps) {
   }
 
   // Ribbon mode (also covers legacy `inline` callers).
+  // Container click anywhere → focus the input. Without this, the
+  // hit area is just the <input> element itself, and clicks on the
+  // icon / placeholder whitespace / ⌘K hint do nothing — confusing.
+  const focusInput = () => inputRef.current?.focus()
   return (
     <div
-      className="rounded-xl border border-slate-300/60 dark:border-white/[0.08] bg-white/80 dark:bg-slate-900/60 backdrop-blur-sm overflow-hidden shadow-sm"
+      onClick={focusInput}
+      className="cursor-text rounded-xl border border-slate-300/60 dark:border-white/[0.08] bg-white/80 dark:bg-slate-900/60 backdrop-blur-sm overflow-hidden shadow-sm transition-colors hover:border-slate-400/70 dark:hover:border-white/[0.14] focus-within:border-slate-500 dark:focus-within:border-white/30"
       style={{ '--accent': '#b85a33' } as CSSProperties}
     >
       <SearchBar
@@ -205,7 +210,7 @@ export default function OmniSearch({ mode, isOpen, onClose }: OmniSearchProps) {
         size="slim"
       />
       {showDropdown && (
-        <div className="border-t border-slate-200/60 dark:border-white/[0.06]">
+        <div className="border-t border-slate-200/60 dark:border-white/[0.06]" onClick={(e) => e.stopPropagation()}>
           {results.map((r) => (
             <ResultRow key={r.id} result={r} onSelect={handleSelect} />
           ))}
