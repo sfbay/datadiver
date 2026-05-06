@@ -6,6 +6,65 @@ import { useAppStore } from '@/stores/appStore'
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN || ''
 
+/** SF terrain — vertical exaggeration applied to Mapbox DEM tiles.
+ *  1.0 is realistic (subtle at city zoom); 2.0 makes the SF hills
+ *  (Twin Peaks, Sutro, Russian, Bernal, etc.) unambiguously visible
+ *  without making the data look fake. Adjust here for the whole site. */
+const TERRAIN_EXAGGERATION = 2.0
+
+/** Apply the terrain DEM source + setTerrain + warm fog on a map.
+ *  Called both on initial style load and after each setStyle (theme
+ *  switch), since setStyle wipes terrain state. */
+function applyTerrainAndFog(map: mapboxgl.Map, dark: boolean) {
+  if (!map.getSource('mapbox-dem')) {
+    map.addSource('mapbox-dem', {
+      type: 'raster-dem',
+      url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+      tileSize: 512,
+      maxzoom: 14,
+    })
+  }
+  map.setTerrain({ source: 'mapbox-dem', exaggeration: TERRAIN_EXAGGERATION })
+
+  // Hillshade layer — draws light/shadow on terrain slopes so the SF
+  // hills read as topography rather than soft gradient. Mapbox's
+  // dark-v11 / light-v11 styles don't ship with hillshade enabled, so
+  // we add it explicitly. Inserted beneath the first symbol layer so
+  // street + neighborhood labels render on top.
+  if (!map.getLayer('dd-hillshade')) {
+    const layers = map.getStyle().layers || []
+    const firstSymbol = layers.find((l) => l.type === 'symbol')
+    map.addLayer(
+      {
+        id: 'dd-hillshade',
+        type: 'hillshade',
+        source: 'mapbox-dem',
+        paint: {
+          // Palette-matched: espresso shadows + paper highlights for
+          // dark mode; ink shadows + cream highlights for light.
+          'hillshade-shadow-color': dark ? '#140c08' : '#7a5f42',
+          'hillshade-highlight-color': dark ? '#5e4831' : '#fbf6ea',
+          'hillshade-accent-color': dark ? '#3a2a1e' : '#ddcba8',
+          'hillshade-illumination-direction': 335,
+          'hillshade-exaggeration': 0.6,
+        },
+      },
+      firstSymbol?.id,
+    )
+  }
+
+  // Atmospheric fog tuned to the earth-tone palette — fades distant
+  // terrain into espresso (dark) or cream (light), giving the foreground
+  // data more visual punch via depth contrast.
+  map.setFog({
+    'horizon-blend': 0.05,
+    'color': dark ? '#1e140d' : '#f5ecd9',         // bg ground tone
+    'high-color': dark ? '#2a1d13' : '#ecdfc5',    // mid sky
+    'space-color': dark ? '#140c08' : '#fbf6ea',   // outer
+    'star-intensity': 0,                            // no nighttime stars
+  })
+}
+
 export interface MapHandle {
   getMap: () => mapboxgl.Map | null
 }
@@ -55,6 +114,17 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'bottom-right')
     map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-left')
 
+    // Apply terrain + fog every time the style loads. style.load fires once
+    // on initial style load AND each time setStyle() is called (theme
+    // switch), so a single binding covers both. We read the live dark-mode
+    // state from the store at fire time so the fog tint matches the
+    // current theme even mid-session.
+    const handleStyleLoad = () => {
+      applyTerrainAndFog(map, useAppStore.getState().isDarkMode)
+    }
+    map.on('style.load', handleStyleLoad)
+    if (map.isStyleLoaded()) handleStyleLoad()
+
     mapRef.current = map
 
     // Notify parent immediately — useMapLayer handles retry if style isn't ready
@@ -68,9 +138,23 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Update style on theme change
+  // Update style on theme change. CRITICAL: skip the no-op first run
+  // when isReady transitions false → true with the same isDarkMode that
+  // the constructor already used. setStyle is destructive — calling it
+  // with the same URL still wipes terrain / fog / hillshade and triggers
+  // a re-application race that briefly clears the elevation render.
+  const lastStyleRef = useRef<'dark' | 'light' | null>(null)
   useEffect(() => {
     if (!mapRef.current || !isReady) return
+    const target: 'dark' | 'light' = isDarkMode ? 'dark' : 'light'
+    if (lastStyleRef.current === null) {
+      // First time we see the map ready — record the style that was
+      // baked into the constructor and skip the redundant setStyle.
+      lastStyleRef.current = target
+      return
+    }
+    if (lastStyleRef.current === target) return
+    lastStyleRef.current = target
     const style = isDarkMode
       ? 'mapbox://styles/mapbox/dark-v11'
       : 'mapbox://styles/mapbox/light-v11'
