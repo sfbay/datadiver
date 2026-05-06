@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import InfoTip from '@/components/ui/InfoTip'
 import SparkBars from '@/components/charts/SparkBars'
 
@@ -31,23 +31,78 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
     : null
 
   const zScoreDot = zScore != null && Math.abs(zScore) > 1
-    ? zScore > 1 ? '#ef4444' : '#3b82f6'
+    ? zScore > 1 ? '#963e30' : '#474e74'  // brick-600 for high, indigo-600 for low
     : null
 
   return (
     <div
       ref={ref}
       className={`
-        glass-card rounded-xl px-4 py-3 min-w-[120px]
+        relative min-w-[120px]
         transition-all duration-700
         ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}
       `}
       style={{ transitionDelay: `${delay}ms` }}
     >
-      {zScoreDot && (
-        <div
-          className="absolute top-2 right-2 group cursor-help"
+      {/* Card visual — glow-host clips the corner blur to its rounded bounds.
+          Sibling-positioned tooltip below escapes this clip. */}
+      <div
+        className="glass-card glow-host rounded-xl px-4 py-3"
+        style={{ '--glow': color } as CSSProperties}
+      >
+        <div className="glow-corner" />
+        <p className="relative text-[10px] font-medium uppercase tracking-wider text-slate-400 mb-1.5 whitespace-nowrap flex items-center">
+          {label}
+          {info && <InfoTip term={info} size={10} />}
+        </p>
+        <p
+          className="relative text-2xl font-bold font-mono tracking-tight leading-none"
+          style={{ color }}
         >
+          {value}
+        </p>
+        {subtitle && (
+          <p className="relative text-[10px] mt-1 font-mono flex items-center gap-1">
+            {trend === 'up' && (
+              <svg width="10" height="10" viewBox="0 0 10 10" className="flex-shrink-0">
+                <path d="M5 2 L8 6 L2 6 Z" fill="#963e30" />
+              </svg>
+            )}
+            {trend === 'down' && (
+              <svg width="10" height="10" viewBox="0 0 10 10" className="flex-shrink-0">
+                <path d="M5 8 L8 4 L2 4 Z" fill="#5c7a3d" />
+              </svg>
+            )}
+            <span className={trend === 'up' ? 'text-[#963e30]' : trend === 'down' ? 'text-[#5c7a3d]' : 'text-slate-500'}>
+              {subtitle}
+            </span>
+          </p>
+        )}
+        {yoyText && !subtitle && (
+          <p className="relative text-[10px] mt-1 font-mono flex items-center gap-1">
+            <span className={yoyDelta! > 0 ? 'text-[#963e30]' : yoyDelta! < 0 ? 'text-[#5c7a3d]' : 'text-slate-500'}>
+              {yoyText}
+            </span>
+          </p>
+        )}
+        {sparkData && sparkData.values.length > 0 && (
+          <div className="relative mt-2">
+            <SparkBars
+              values={sparkData.values}
+              labels={sparkData.labels}
+              height={14}
+              accentColor={color}
+              className="w-full"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Z-score anomaly dot + tooltip — rendered outside the glow-host so the
+          hover tooltip (which extends past the card's bottom edge) doesn't get
+          clipped. Anchored to the outer wrapper at top-2 right-2. */}
+      {zScoreDot && (
+        <div className="absolute top-2 right-2 group cursor-help z-10">
           <div
             className="w-2 h-2 rounded-full"
             style={{ backgroundColor: zScoreDot }}
@@ -58,56 +113,6 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
           </div>
         </div>
       )}
-      <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 mb-1.5 whitespace-nowrap flex items-center">
-        {label}
-        {info && <InfoTip term={info} size={10} />}
-      </p>
-      <p
-        className="text-2xl font-bold font-mono tracking-tight leading-none"
-        style={{ color }}
-      >
-        {value}
-      </p>
-      {subtitle && (
-        <p className="text-[10px] mt-1 font-mono flex items-center gap-1">
-          {trend === 'up' && (
-            <svg width="10" height="10" viewBox="0 0 10 10" className="flex-shrink-0">
-              <path d="M5 2 L8 6 L2 6 Z" fill="#ef4444" />
-            </svg>
-          )}
-          {trend === 'down' && (
-            <svg width="10" height="10" viewBox="0 0 10 10" className="flex-shrink-0">
-              <path d="M5 8 L8 4 L2 4 Z" fill="#10b981" />
-            </svg>
-          )}
-          <span className={trend === 'up' ? 'text-red-400' : trend === 'down' ? 'text-emerald-400' : 'text-slate-500'}>
-            {subtitle}
-          </span>
-        </p>
-      )}
-      {yoyText && !subtitle && (
-        <p className="text-[10px] mt-1 font-mono flex items-center gap-1">
-          <span className={yoyDelta! > 0 ? 'text-red-400' : yoyDelta! < 0 ? 'text-emerald-400' : 'text-slate-500'}>
-            {yoyText}
-          </span>
-        </p>
-      )}
-      {sparkData && sparkData.values.length > 0 && (
-        <div className="mt-2">
-          <SparkBars
-            values={sparkData.values}
-            labels={sparkData.labels}
-            height={14}
-            accentColor={color}
-            className="w-full"
-          />
-        </div>
-      )}
-      {/* Accent line */}
-      <div
-        className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full opacity-40"
-        style={{ backgroundColor: color }}
-      />
     </div>
   )
 }
