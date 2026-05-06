@@ -11,7 +11,6 @@ import DeficitCounter from '@/components/investigations/DeficitCounter'
 import ResponseEquity from '@/components/investigations/ResponseEquity'
 import DispatchUnanswered from '@/components/investigations/DispatchUnanswered'
 import ComplianceTracker from '@/components/investigations/ComplianceTracker'
-import OmniSearch from '@/components/search/OmniSearch'
 import VizCard from '@/components/ui/VizCard'
 
 const VISUALIZATIONS = [
@@ -239,15 +238,12 @@ export default function Home() {
   return (
     <div className="h-full overflow-y-auto">
       <div className="max-w-5xl mx-auto px-8 pt-8 pb-16 relative">
-        {/* OmniSearch ribbon — slim search ribbon at the very top, above
-            the hero. Captures intent before the reader has to scroll;
-            placeholder cycles through sample queries to demo what's
-            possible. ⌘K still opens the modal version anywhere. */}
-        <section
-          className={`relative z-20 mb-10 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
-        >
-          <OmniSearch mode="ribbon" />
-        </section>
+        {/* OmniSearch ribbon hidden pending entity-search infrastructure —
+            the static index only matches neighborhoods + dataset names, so
+            queries like "salesforce" or "uber" silently produced no results.
+            Ribbon will debut alongside vendor / business / committee
+            indexing in a follow-up PR. ⌘K modal kept active as a
+            power-user surface (limited but discoverable only by intent). */}
 
         {/* Hero — full-width background with Dana on right, text on left */}
         <header
