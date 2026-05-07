@@ -19,14 +19,14 @@ interface SectorFilterProps {
 
 // Accent colors for common NAICS sectors
 const SECTOR_COLORS: Record<string, string> = {
-  'Food Services': '#f59e0b',
-  'Retail Trade': '#3b82f6',
-  'Construction': '#f97316',
-  'Professional, Scientific, and Technical Services': '#8b5cf6',
-  'Real Estate and Rental and Leasing Services': '#10b981',
-  'Arts, Entertainment, and Recreation': '#ec4899',
-  'Accommodations': '#06b6d4',
-  'Information': '#6366f1',
+  'Food Services': '#d4a435',
+  'Retail Trade': '#3f7573',
+  'Construction': '#d47149',
+  'Professional, Scientific, and Technical Services': '#8b6282',
+  'Real Estate and Rental and Leasing Services': '#7a9954',
+  'Arts, Entertainment, and Recreation': '#d17566',
+  'Accommodations': '#5c9693',
+  'Information': '#616a96',
   'Private Education and Health Services': '#14b8a6',
   'Financial Services': '#84cc16',
   'Uncategorized': '#94a3b8',
@@ -38,12 +38,12 @@ function getSectorColor(sector: string): string {
 
 /** Translate a z-score into a human-readable closure health label */
 function closureLabel(z: number): { text: string; className: string } {
-  if (z >= 2.5) return { text: 'historically high closures', className: 'text-red-400' }
-  if (z >= 1.5) return { text: 'elevated closures', className: 'text-red-400/70' }
-  if (z >= 0.5) return { text: 'slightly elevated', className: 'text-amber-400/60' }
+  if (z >= 2.5) return { text: 'historically high closures', className: 'text-brick-400' }
+  if (z >= 1.5) return { text: 'elevated closures', className: 'text-brick-400/70' }
+  if (z >= 0.5) return { text: 'slightly elevated', className: 'text-ochre-500/60' }
   if (z > -0.5) return { text: 'typical', className: 'text-slate-500' }
-  if (z > -1.5) return { text: 'below average closures', className: 'text-emerald-400/70' }
-  return { text: 'historically low closures', className: 'text-emerald-400' }
+  if (z > -1.5) return { text: 'below average closures', className: 'text-moss-400/70' }
+  return { text: 'historically low closures', className: 'text-moss-400' }
 }
 
 export default function SectorFilter({ categories, selected, onChange, zScores }: SectorFilterProps) {
@@ -89,7 +89,7 @@ export default function SectorFilter({ categories, selected, onChange, zScores }
       <button
         onClick={selectAll}
         className={`w-full text-left px-2 py-1 rounded text-[10px] font-mono transition-colors
-          ${allSelected ? 'text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}
+          ${allSelected ? 'text-moss-400' : 'text-slate-500 hover:text-slate-300'}`}
       >
         {allSelected ? '✓ All sectors' : 'Show all sectors'}
       </button>
@@ -142,13 +142,13 @@ export default function SectorFilter({ categories, selected, onChange, zScores }
             {/* Proportion bar: openings (green) vs closures (red) */}
             <ProportionBar openings={uncategorized.openings} closures={uncategorized.closures} />
             <div className="flex justify-between mt-0.5">
-              <span className="text-[8px] font-mono text-emerald-500/70">
+              <span className="text-[8px] font-mono text-moss-500/70">
                 {uncategorized.openings.toLocaleString()} opened
               </span>
-              <span className={`text-[8px] font-mono ${uncategorized.net >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              <span className={`text-[8px] font-mono ${uncategorized.net >= 0 ? 'text-moss-400' : 'text-brick-400'}`}>
                 net {uncategorized.net >= 0 ? '+' : ''}{uncategorized.net.toLocaleString()}
               </span>
-              <span className="text-[8px] font-mono text-red-500/70">
+              <span className="text-[8px] font-mono text-brick-500/70">
                 {uncategorized.closures.toLocaleString()} closed
               </span>
             </div>
@@ -157,7 +157,7 @@ export default function SectorFilter({ categories, selected, onChange, zScores }
           {/* Data quality note */}
           <button
             onClick={() => setShowExplainer(!showExplainer)}
-            className="flex items-center gap-1 px-2 mt-1 text-[8px] font-mono text-amber-500/60 hover:text-amber-400/80 transition-colors"
+            className="flex items-center gap-1 px-2 mt-1 text-[8px] font-mono text-ochre-500/60 hover:text-ochre-500/80 transition-colors"
           >
             <svg className="w-2.5 h-2.5 flex-shrink-0" viewBox="0 0 12 12" fill="currentColor">
               <path d="M6 1a5 5 0 100 10A5 5 0 006 1zm.5 7.5h-1v-1h1v1zm0-2h-1v-3h1v3z" />
@@ -165,19 +165,19 @@ export default function SectorFilter({ categories, selected, onChange, zScores }
             About this data
           </button>
           {showExplainer && (
-            <div className="mx-2 mt-1 p-2 rounded-md bg-amber-500/5 border border-amber-500/10">
-              <p className="text-[9px] text-amber-200/60 leading-relaxed">
+            <div className="mx-2 mt-1 p-2 rounded-md bg-ochre-500/5 border border-ochre-500/10">
+              <p className="text-[9px] text-ochre-400/60 leading-relaxed">
                 New business registrations often lack industry (NAICS) codes — codes are assigned later or not at all.
                 This means most recent openings appear as "Uncategorized" while closures (older, established businesses) almost always have codes.
                 Individual sectors may appear to be declining when the overall trend is growth.
               </p>
-              <p className="text-[9px] text-amber-200/60 leading-relaxed mt-1.5">
+              <p className="text-[9px] text-ochre-400/60 leading-relaxed mt-1.5">
                 Some businesses report multiple NAICS sectors (e.g. a coffee shop that's also a retailer).
                 Per-sector openings and closures count those businesses in <span className="italic">each</span> listed sector,
                 so the per-sector totals can sum to more than the overall count — this is intentional, so multi-sector
                 businesses appear in every sector lens.
               </p>
-              <p className="text-[9px] text-amber-200/60 leading-relaxed mt-1.5">
+              <p className="text-[9px] text-ochre-400/60 leading-relaxed mt-1.5">
                 The health bars below compare each sector's closure rate against its own 5-year historical baseline (2019–2023).
                 Green = fewer closures than typical. Red = more closures than typical. This normalizes for the data bias.
               </p>
@@ -193,13 +193,13 @@ export default function SectorFilter({ categories, selected, onChange, zScores }
         <div className="px-2 pb-2">
           <div className="flex items-center justify-between text-[7px] font-mono text-slate-600 mb-0.5">
             <span className="flex items-center gap-0.5">
-              <span className="text-red-500/40">◂</span>
+              <span className="text-brick-500/40">◂</span>
               more closures
             </span>
             <span>typical</span>
             <span className="flex items-center gap-0.5">
               fewer closures
-              <span className="text-emerald-500/40">▸</span>
+              <span className="text-moss-500/40">▸</span>
             </span>
           </div>
           <ZScoreBar zScore={0} height={2} showCenter={false} />
@@ -289,14 +289,14 @@ function ProportionBar({ openings, closures }: { openings: number; closures: num
         className="h-full transition-all duration-500 rounded-l-full"
         style={{
           width: `${openPct}%`,
-          background: 'linear-gradient(90deg, #10b981, #34d399)',
+          background: 'linear-gradient(90deg, #7a9954, #9db87a)',
         }}
       />
       <div
         className="h-full transition-all duration-500 rounded-r-full"
         style={{
           width: `${100 - openPct}%`,
-          background: 'linear-gradient(90deg, #f87171, #ef4444)',
+          background: 'linear-gradient(90deg, #d17566, #b85545)',
         }}
       />
     </div>

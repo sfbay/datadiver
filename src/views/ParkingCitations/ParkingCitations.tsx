@@ -313,7 +313,7 @@ export default function ParkingCitations() {
     return sliced.map((v) => ({
       label: v.violationDesc,
       value: sortByRevenue ? v.totalFines : v.count,
-      color: '#f97316',
+      color: '#d47149',
     }))
   }, [violationEntries, sortByRevenue])
 
@@ -325,7 +325,7 @@ export default function ParkingCitations() {
         id: 'fine-distribution',
         label: 'Fine Amount Distribution',
         shortLabel: 'Fines',
-        color: '#f97316',
+        color: '#d47149',
         defaultExpanded: true,
         render: () => (
           <FineHistogram data={histogramData} width={320} height={100} />
@@ -338,14 +338,14 @@ export default function ParkingCitations() {
         id: 'top-violations',
         label: 'Top Violations',
         shortLabel: 'Violations',
-        color: '#fb923c',
+        color: '#e8896b',
         defaultExpanded: true,
         render: () => (
           <>
             <div className="flex items-center justify-end -mt-1 mb-1">
               <button
                 onClick={() => setSortByRevenue(!sortByRevenue)}
-                className="text-[9px] font-mono text-orange-500/70 hover:text-orange-400 transition-colors"
+                className="text-[9px] font-mono text-terracotta-500/70 hover:text-terracotta-500 transition-colors"
               >
                 {sortByRevenue ? '$ Revenue' : '# Count'}
               </button>
@@ -367,7 +367,7 @@ export default function ParkingCitations() {
         id: 'daily-trend',
         label: `Daily Trend${comparison.isLoading ? ' (loading…)' : ''}`,
         shortLabel: 'Trend',
-        color: '#f59e0b',
+        color: '#d4a435',
         defaultExpanded: true,
         render: () => (
           <TrendChart
@@ -458,7 +458,7 @@ export default function ParkingCitations() {
       minzoom: 13,
       paint: {
         'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 4, 16, 14],
-        'circle-color': '#f97316',
+        'circle-color': '#d47149',
         'circle-opacity': 0.7,
         'circle-stroke-width': 1,
         'circle-stroke-color': 'rgba(255,255,255,0.15)',
@@ -489,12 +489,12 @@ export default function ParkingCitations() {
       paint: {
         'fill-color': [
           'interpolate', ['linear'], ['get', 'zScore'],
-          -2, '#3b82f6',
-          -1, '#93c5fd',
+          -2, '#3f7573',
+          -1, '#8bb5b2',
           0, '#e2e8f0',
-          1, '#fbbf24',
-          2, '#ef4444',
-          3, '#7f1d1d',
+          1, '#e8c06b',
+          2, '#b85545',
+          3, '#6f2b20',
         ],
         'fill-opacity': 0.55,
       },
@@ -527,7 +527,7 @@ export default function ParkingCitations() {
       ${issuedDate ? `<div style="color:#e2e8f0">${issuedDate} · ${issuedTime}</div>` : ''}
       <div class="tooltip-label" style="margin-top:6px">Violation</div>
       <div style="color:#e2e8f0">${props.violationDesc || 'Unknown'}</div>
-      ${fine ? `<div class="tooltip-label" style="margin-top:6px">Fine</div><div style="color:#f97316;font-weight:600">${fine}</div>` : ''}
+      ${fine ? `<div class="tooltip-label" style="margin-top:6px">Fine</div><div style="color:#d47149;font-weight:600">${fine}</div>` : ''}
       <div class="tooltip-label" style="margin-top:6px">Location</div>
       <div style="color:#94a3b8">${props.location || 'Unknown'}</div>
       <div class="tooltip-label" style="margin-top:4px">Neighborhood</div>
@@ -646,7 +646,7 @@ export default function ParkingCitations() {
       label: 'Fine Revenue',
       shortLabel: 'Revenue',
       value: formatCurrency(totalRevenue),
-      color: '#f97316',
+      color: '#d47149',
       delay: 0,
       info: 'fine-revenue',
       defaultExpanded: true,
@@ -658,7 +658,7 @@ export default function ParkingCitations() {
       label: 'Total Citations',
       shortLabel: 'Total',
       value: formatNumber(totalCount ?? stats.totalCitations),
-      color: '#fb923c',
+      color: '#e8896b',
       delay: 80,
       info: 'total-citations',
       defaultExpanded: true,
@@ -669,7 +669,7 @@ export default function ParkingCitations() {
       label: 'Avg Fine',
       shortLabel: 'Avg',
       value: formatCurrency(stats.avgFine),
-      color: '#f59e0b',
+      color: '#d4a435',
       delay: 160,
       info: 'avg-fine',
       defaultExpanded: true,
@@ -681,7 +681,7 @@ export default function ParkingCitations() {
       label: 'Out-of-State',
       shortLabel: 'OOS',
       value: `${stats.outOfStatePct.toFixed(1)}%`,
-      color: '#60a5fa',
+      color: '#5c9693',
       delay: 240,
       info: 'out-of-state',
       defaultExpanded: false,
@@ -691,7 +691,7 @@ export default function ParkingCitations() {
       label: 'Peak Hour',
       shortLabel: 'Peak',
       value: formatHour(stats.peakHour),
-      color: '#a78bfa',
+      color: '#8b6282',
       delay: 320,
       info: 'peak-hour',
       defaultExpanded: false,
@@ -716,12 +716,12 @@ export default function ParkingCitations() {
             </div>
             {!isLoading && citationData.length > 0 && (
               <div className="flex items-center gap-1.5">
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-orange-500/80 bg-orange-500/10 px-2 py-1 rounded-full">
-                  <span className="w-1 h-1 rounded-full bg-orange-500 pulse-live" />
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-terracotta-500/80 bg-terracotta-500/10 px-2 py-1 rounded-full">
+                  <span className="w-1 h-1 rounded-full bg-terracotta-500 pulse-live" />
                   {formatNumber(citationData.length)} records
                 </span>
                 {hitLimit && totalCount !== null && (
-                  <span className="text-[10px] font-mono text-amber-500/80 bg-amber-500/10 px-2 py-1 rounded-full">
+                  <span className="text-[10px] font-mono text-ochre-500/80 bg-ochre-500/10 px-2 py-1 rounded-full">
                     of {formatNumber(totalCount)} total
                   </span>
                 )}
@@ -775,8 +775,8 @@ export default function ParkingCitations() {
         {/* Map hero */}
         <div className="flex-1 relative">
           <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
-            {isLoading && <MapScanOverlay label="Scanning citations" color="#fb923c" />}
-            <MapProgressBar color="#fb923c" />
+            {isLoading && <MapScanOverlay label="Scanning citations" color="#e8896b" />}
+            <MapProgressBar color="#e8896b" />
 
             {error && (
               <div className="absolute inset-0 flex items-center justify-center z-20">
@@ -792,7 +792,7 @@ export default function ParkingCitations() {
                 latestDate={freshness.latestDate}
                 latestGeoDate={freshness.latestGeoDate}
                 suggestedRange={freshness.suggestedRange}
-                accentColor="#f97316"
+                accentColor="#d47149"
               />
             )}
 
@@ -813,13 +813,13 @@ export default function ParkingCitations() {
                   Citation Anomaly<InfoTip term="anomaly-map" size={10} />
                 </p>
                 <div className="flex items-center gap-1">
-                  <span className="text-[9px] font-mono text-blue-400">−2σ</span>
+                  <span className="text-[9px] font-mono text-teal-500">−2σ</span>
                   <div className="flex h-2.5 rounded-full overflow-hidden" style={{ width: 100 }}>
-                    {['#3b82f6', '#93c5fd', '#e2e8f0', '#fbbf24', '#ef4444', '#7f1d1d'].map((c, i) => (
+                    {['#3f7573', '#8bb5b2', '#e2e8f0', '#e8c06b', '#b85545', '#6f2b20'].map((c, i) => (
                       <div key={i} className="flex-1" style={{ backgroundColor: c }} />
                     ))}
                   </div>
-                  <span className="text-[9px] font-mono text-red-400">+3σ</span>
+                  <span className="text-[9px] font-mono text-brick-400">+3σ</span>
                 </div>
                 <p className="text-[9px] text-slate-500 mt-1">below avg → above avg</p>
               </div>
@@ -839,7 +839,7 @@ export default function ParkingCitations() {
                 onClick={() => setSidebarTab(key)}
                 className={`flex-1 py-2.5 text-[10px] font-mono uppercase tracking-[0.15em] transition-all duration-200 ${
                   sidebarTab === key
-                    ? 'text-ink dark:text-white border-b-2 border-orange-500'
+                    ? 'text-ink dark:text-white border-b-2 border-terracotta-500'
                     : 'text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400'
                 }`}
               >
@@ -858,7 +858,7 @@ export default function ParkingCitations() {
                   <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
                   <button
                     onClick={() => setSortByRevenue(!sortByRevenue)}
-                    className="text-[9px] font-mono text-orange-500/70 hover:text-orange-400 transition-colors"
+                    className="text-[9px] font-mono text-terracotta-500/70 hover:text-terracotta-500 transition-colors"
                   >
                     {sortByRevenue ? 'By Revenue' : 'By Count'}
                   </button>
@@ -884,7 +884,7 @@ export default function ParkingCitations() {
                 {selectedNeighborhood && (
                   <button
                     onClick={() => setSelectedNeighborhood(null)}
-                    className="mb-3 text-[10px] font-mono text-orange-500 hover:text-orange-400 transition-colors"
+                    className="mb-3 text-[10px] font-mono text-terracotta-500 hover:text-terracotta-500 transition-colors"
                   >
                     ← Clear filter: {selectedNeighborhood}
                   </button>
@@ -907,7 +907,7 @@ export default function ParkingCitations() {
                   <div className="mb-4">
                     <HourlyHeatgrid grid={hourlyPattern.grid} width={264} height={160} />
                     <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-mono">
-                      Peak: <span className="text-orange-500">{formatHour(hourlyPattern.peakHour)}</span>
+                      Peak: <span className="text-terracotta-500">{formatHour(hourlyPattern.peakHour)}</span>
                       {' · '}Quiet: <span className="text-slate-500">{formatHour(hourlyPattern.quietestHour)}</span>
                     </p>
                   </div>
@@ -922,7 +922,7 @@ export default function ParkingCitations() {
                       current={trend.currentPeriods}
                       priorYear={trend.priorYearPeriods}
                       granularity={trend.granularity}
-                      accentColor="#f97316"
+                      accentColor="#d47149"
                       width={264}
                       height={130}
                     />
@@ -943,13 +943,13 @@ export default function ParkingCitations() {
                         onClick={() => handleNeighborhoodClick(ns.neighborhood)}
                         className={`relative py-2 px-3 rounded-lg cursor-pointer transition-all duration-200 ${
                           isActive
-                            ? 'bg-orange-500/10 ring-1 ring-orange-500/30'
+                            ? 'bg-terracotta-500/10 ring-1 ring-terracotta-500/30'
                             : 'hover:bg-white/80 dark:hover:bg-white/[0.04]'
                         }`}
                       >
                         <div
                           className="absolute inset-y-0 left-0 rounded-lg opacity-[0.06] bar-grow"
-                          style={{ width: `${barWidth}%`, backgroundColor: '#f97316' }}
+                          style={{ width: `${barWidth}%`, backgroundColor: '#d47149' }}
                         />
                         <div className="relative flex items-center justify-between">
                           <div className="min-w-0 flex-1">
@@ -958,13 +958,13 @@ export default function ParkingCitations() {
                             </p>
                             <p className="text-[10px] text-slate-400 dark:text-slate-600 font-mono italic">
                               {nhTrend?.priorYearCount ? (
-                                <span className={nhTrend.yoyPct > 0 ? 'text-red-400' : nhTrend.yoyPct < 0 ? 'text-emerald-400' : ''}>
+                                <span className={nhTrend.yoyPct > 0 ? 'text-brick-400' : nhTrend.yoyPct < 0 ? 'text-moss-400' : ''}>
                                   {nhTrend.yoyPct >= 0 ? '+' : ''}{nhTrend.yoyPct.toFixed(0)}%{' · '}
                                 </span>
                               ) : null}
                               {ns.citationCount.toLocaleString()} citations · ${Math.round(ns.totalFines).toLocaleString()}
                               {zScore !== undefined && (
-                                <span className={zScore > 1 ? 'text-red-400' : zScore < -1 ? 'text-blue-400' : ''}>
+                                <span className={zScore > 1 ? 'text-brick-400' : zScore < -1 ? 'text-teal-500' : ''}>
                                   {' · '}{zScore >= 0 ? '+' : ''}{zScore.toFixed(1)}σ
                                 </span>
                               )}

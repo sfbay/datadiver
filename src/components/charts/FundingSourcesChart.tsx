@@ -16,10 +16,10 @@ interface Props {
 }
 
 const SOURCE_COLORS: Record<string, string> = {
-  Individual: '#60a5fa',
-  Committee: '#a78bfa',
+  Individual: '#5c9693',
+  Committee: '#8b6282',
   Other: '#64748b',
-  Self: '#f59e0b',
+  Self: '#d4a435',
 }
 
 const SOURCE_LABELS: Record<string, string> = {

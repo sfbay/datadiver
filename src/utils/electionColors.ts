@@ -7,21 +7,21 @@
 import * as d3 from 'd3'
 
 const CANDIDATE_PALETTE = [
-  '#6366f1', // indigo
-  '#ef4444', // red
-  '#10b981', // emerald
-  '#f59e0b', // amber
-  '#8b5cf6', // violet
-  '#06b6d4', // cyan
-  '#f97316', // orange
-  '#ec4899', // pink
+  '#616a96', // indigo
+  '#b85545', // red
+  '#7a9954', // emerald
+  '#d4a435', // amber
+  '#8b6282', // violet
+  '#5c9693', // cyan
+  '#d47149', // orange
+  '#d17566', // pink
   '#14b8a6', // teal
-  '#a855f7', // purple
+  '#8b6282', // purple
   '#84cc16', // lime
-  '#f43f5e', // rose
-  '#0ea5e9', // sky
+  '#963e30', // rose
+  '#5c9693', // sky
   '#eab308', // yellow
-  '#22d3ee', // cyan-light
+  '#8bb5b2', // cyan-light
 ]
 
 /** Simple string hash → stable index */
@@ -69,7 +69,7 @@ export function marginColor(margin: number): string {
 export function turnoutColor(pct: number): string {
   const scale = d3.scaleLinear<string>()
     .domain([0.2, 0.5, 0.8])
-    .range(['#ef4444', '#f59e0b', '#10b981'])
+    .range(['#b85545', '#d4a435', '#7a9954'])
     .clamp(true)
   return scale(pct)
 }
@@ -78,9 +78,9 @@ export function turnoutColor(pct: number): string {
 export function measureColor(yesPct: number): string {
   const scale = d3.scaleLinear<string>()
     .domain([0.3, 0.5, 0.7])
-    .range(['#ef4444', '#f5f5f5', '#10b981'])
+    .range(['#b85545', '#f5f5f5', '#7a9954'])
     .clamp(true)
   return scale(yesPct)
 }
 
-export const ACCENT = '#6366f1'
+export const ACCENT = '#616a96'

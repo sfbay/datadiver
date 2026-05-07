@@ -73,7 +73,7 @@ export default function BusinessSearch() {
               border border-slate-200/60 dark:border-white/[0.08]
               rounded-lg pl-10 pr-3 py-2.5 text-slate-700 dark:text-slate-200
               placeholder:text-slate-400 dark:placeholder:text-slate-600
-              focus:outline-none focus:border-emerald-500/50 transition-colors"
+              focus:outline-none focus:border-moss-500/50 transition-colors"
           />
           <svg
             className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -123,7 +123,7 @@ export default function BusinessSearch() {
             <button
               onClick={() => setParam('corridor', null)}
               className="text-[10px] font-mono px-2 py-1 rounded-full
-                bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/15 transition-colors"
+                bg-moss-500/10 text-moss-400 hover:bg-moss-500/15 transition-colors"
             >
               Corridor: {corridor} ✕
             </button>
@@ -147,7 +147,7 @@ export default function BusinessSearch() {
 
           {error && (
             <div className="glass-card rounded-xl p-4 mb-3">
-              <p className="text-sm text-red-400">Search failed: {error}</p>
+              <p className="text-sm text-brick-400">Search failed: {error}</p>
             </div>
           )}
 
@@ -221,7 +221,7 @@ function FilterPill({ label, value, options, onChange }: FilterPillProps) {
         onChange={(e) => onChange(e.target.value)}
         className="bg-white/80 dark:bg-white/[0.04] border border-slate-200/50 dark:border-white/[0.06]
           rounded-md px-2 py-1 text-slate-600 dark:text-slate-300
-          focus:outline-none focus:border-emerald-500/40 transition-colors cursor-pointer"
+          focus:outline-none focus:border-moss-500/40 transition-colors cursor-pointer"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>
@@ -250,7 +250,7 @@ function FeaturedLanding() {
       </div>
 
       {error && (
-        <p className="text-[11px] text-red-400">Featured collections failed to load: {error}</p>
+        <p className="text-[11px] text-brick-400">Featured collections failed to load: {error}</p>
       )}
 
       {isLoading && (
@@ -269,7 +269,7 @@ function FeaturedLanding() {
           <FeaturedCard
             title="SF's old guard"
             subtitle="Oldest active businesses"
-            accent="#10b981"
+            accent="#7a9954"
           >
             {oldestActive.map((b) => (
               <FeaturedBusinessRow key={b.uniqueid} business={b} showStartYear />
@@ -279,7 +279,7 @@ function FeaturedLanding() {
           <FeaturedCard
             title="Notable closures"
             subtitle="Long-tenured businesses lost in the last year"
-            accent="#ef4444"
+            accent="#b85545"
           >
             {recentClosures.length === 0 && (
               <p className="text-[10px] text-slate-500 italic px-2 py-1">
@@ -294,7 +294,7 @@ function FeaturedLanding() {
           <FeaturedCard
             title="Biggest chains"
             subtitle="By location count under one BAN"
-            accent="#06b6d4"
+            accent="#5c9693"
           >
             {biggestChains.map((c) => (
               <FeaturedChainRow key={c.ban} chain={c} />
@@ -348,7 +348,7 @@ function FeaturedBusinessRow({
           {showStartYear && <>since {startYear} · </>}
           {showAge && <>{business.ageYears}y · </>}
           {business.sector}
-          {endYear && <span className="text-red-400"> · closed {endYear}</span>}
+          {endYear && <span className="text-brick-400"> · closed {endYear}</span>}
         </p>
       </Link>
     </li>
@@ -366,7 +366,7 @@ function FeaturedChainRow({ chain }: { chain: FeaturedChain }) {
           <p className="text-[11px] text-slate-700 dark:text-slate-200 truncate min-w-0">
             {chain.primaryDba}
           </p>
-          <p className="text-[10px] font-mono text-cyan-400 flex-shrink-0">
+          <p className="text-[10px] font-mono text-teal-400 flex-shrink-0">
             {chain.locationCount} locations
           </p>
         </div>

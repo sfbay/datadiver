@@ -6,12 +6,12 @@ import type { CensusVariable, CensusCategory, CensusVariableConfig, CivicMetricC
 // ---------------------------------------------------------------------------
 // Color ramp palettes
 // ---------------------------------------------------------------------------
-const INCOME_RAMP    = ['#92400e', '#f59e0b', '#14b8a6', '#7c3aed'] // amber → teal → purple (high=good)
-const STRESS_RAMP    = ['#14b8a6', '#f59e0b', '#ef4444', '#7f1d1d'] // teal → amber → red (high=bad)
-const POPULATION_RAMP = ['#1e293b', '#475569', '#7c3aed', '#a78bfa'] // slate → purple
+const INCOME_RAMP    = ['#92400e', '#d4a435', '#14b8a6', '#7c3aed'] // amber → teal → purple (high=good)
+const STRESS_RAMP    = ['#14b8a6', '#d4a435', '#b85545', '#6f2b20'] // teal → amber → red (high=bad)
+const POPULATION_RAMP = ['#1e293b', '#475569', '#7c3aed', '#8b6282'] // slate → purple
 
 // Race/ethnicity — unified purple sequential ramp (neutral, no chromatic bias per group)
-const RACE_RAMP = ['#1e1b2e', '#4c1d95', '#7c3aed', '#c4b5fd']
+const RACE_RAMP = ['#1e1b2e', '#4c1d95', '#7c3aed', '#b08aa8']
 
 // Language — cyan-based ramps
 const LANG_RAMP = ['#ecfeff', '#67e8f9', '#0891b2', '#164e63']

@@ -334,7 +334,7 @@ export default function ParkingRevenue() {
         'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, ['interpolate', ['linear'], ['get', 'revenue'], 0, 4, maxRev, 10], 16, ['interpolate', ['linear'], ['get', 'revenue'], 0, 6, maxRev, 14]],
         'circle-color': [
           'interpolate', ['linear'], ['get', 'revenue'],
-          0, '#0891b2', maxRev * 0.3, '#22d3ee', maxRev * 0.6, '#67e8f9', maxRev, '#ecfeff',
+          0, '#0891b2', maxRev * 0.3, '#8bb5b2', maxRev * 0.6, '#67e8f9', maxRev, '#ecfeff',
         ],
         'circle-opacity': 0.85,
         'circle-stroke-width': 1,
@@ -416,7 +416,7 @@ export default function ParkingRevenue() {
         label: 'Total Revenue',
         shortLabel: 'Revenue',
         value: formatCurrency(serverStats.totalRevenue),
-        color: '#60a5fa',
+        color: '#5c9693',
         delay: 0,
         info: 'total-revenue',
         defaultExpanded: true,
@@ -447,7 +447,7 @@ export default function ParkingRevenue() {
         label: 'Active Meters',
         shortLabel: 'Meters',
         value: formatNumber(serverStats.uniqueMeters),
-        color: '#a78bfa',
+        color: '#8b6282',
         delay: 240,
         info: 'active-meters',
         defaultExpanded: false,
@@ -511,8 +511,8 @@ export default function ParkingRevenue() {
       <div id="pr-capture" className="flex-1 overflow-hidden flex">
         <div className="flex-1 relative">
           <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
-            {isLoading && <MapScanOverlay label="Scanning meters" color="#06b6d4" />}
-            <MapProgressBar color="#06b6d4" />
+            {isLoading && <MapScanOverlay label="Scanning meters" color="#5c9693" />}
+            <MapProgressBar color="#5c9693" />
             {error && (
               <div className="absolute inset-0 flex items-center justify-center z-20">
                 <div className="glass-card rounded-xl p-6 max-w-sm">
@@ -526,7 +526,7 @@ export default function ParkingRevenue() {
               <DataFreshnessAlert
                 latestDate={freshness.latestDate}
                 suggestedRange={freshness.suggestedRange}
-                accentColor="#60a5fa"
+                accentColor="#5c9693"
               />
             )}
 
@@ -575,7 +575,7 @@ export default function ParkingRevenue() {
                   current={trend.currentPeriods}
                   priorYear={trend.priorYearPeriods}
                   granularity={trend.granularity}
-                  accentColor="#60a5fa"
+                  accentColor="#5c9693"
                   width={240}
                   height={130}
                 />
@@ -590,7 +590,7 @@ export default function ParkingRevenue() {
             {selectedNeighborhood && (
               <button
                 onClick={() => setSelectedNeighborhood(null)}
-                className="mb-3 text-[10px] font-mono text-blue-500 hover:text-blue-400 transition-colors"
+                className="mb-3 text-[10px] font-mono text-teal-500 hover:text-teal-500 transition-colors"
               >
                 {'\u2190'} Clear: {selectedNeighborhood}
               </button>
@@ -621,7 +621,7 @@ export default function ParkingRevenue() {
                     }}
                     className={`relative py-2 px-3 rounded-lg transition-colors cursor-pointer ${
                       selectedNeighborhood === ns.name
-                        ? 'bg-blue-500/10 ring-1 ring-blue-500/30'
+                        ? 'bg-teal-500/10 ring-1 ring-teal-500/30'
                         : 'hover:bg-white/60 dark:hover:bg-white/[0.03]'
                     }`}
                   >

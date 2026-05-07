@@ -111,10 +111,10 @@ export default function CrimeDetailPanel() {
       open={!!selectedCrimeIncident}
       onClose={onClose}
       isLoading={isLoading}
-      spinnerClass="border-red-400"
+      spinnerClass="border-brick-400"
       widthClass="w-80"
       buildShareUrl={buildShareUrl}
-      shareAccentClass="text-red-500"
+      shareAccentClass="text-brick-500"
     >
       {detail && (
         <>
@@ -135,12 +135,12 @@ export default function CrimeDetailPanel() {
           <div className="mb-3">
             <span className={`inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full ${
               isOpen
-                ? 'bg-blue-500/10 text-blue-500'
-                : detail.resolution.includes('Arrest') ? 'bg-red-500/10 text-red-500'
+                ? 'bg-teal-500/10 text-teal-500'
+                : detail.resolution.includes('Arrest') ? 'bg-brick-500/10 text-brick-500'
                 : 'bg-slate-500/10 text-slate-500'
             }`}>
               <span className={`w-1.5 h-1.5 rounded-full ${
-                isOpen ? 'bg-blue-500' : detail.resolution.includes('Arrest') ? 'bg-red-500' : 'bg-slate-500'
+                isOpen ? 'bg-teal-500' : detail.resolution.includes('Arrest') ? 'bg-brick-500' : 'bg-slate-500'
               }`} />
               {detail.resolution}
             </span>
@@ -201,9 +201,9 @@ export default function CrimeDetailPanel() {
                     return (
                       <div key={step.key} className="flex items-start gap-2.5 relative">
                         <div className="flex flex-col items-center w-3 flex-shrink-0">
-                          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${ts ? 'bg-red-500' : 'bg-slate-600/30'}`} />
+                          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${ts ? 'bg-brick-500' : 'bg-slate-600/30'}`} />
                           {i < POLICE_TIMELINE.length - 1 && (
-                            <div className={`w-px h-6 ${ts ? 'bg-red-500/30' : 'bg-slate-600/10'}`} />
+                            <div className={`w-px h-6 ${ts ? 'bg-brick-500/30' : 'bg-slate-600/10'}`} />
                           )}
                         </div>
                         <div className="flex-1 pb-1 -mt-0.5">
@@ -218,7 +218,7 @@ export default function CrimeDetailPanel() {
                             )}
                           </div>
                           {elapsed !== null && elapsed > 0 && (
-                            <p className="text-[9px] font-mono text-red-500/70">
+                            <p className="text-[9px] font-mono text-brick-500/70">
                               +{elapsed < 1 ? `${Math.round(elapsed * 60)}min` : formatResolution(elapsed)}
                             </p>
                           )}
@@ -236,7 +236,7 @@ export default function CrimeDetailPanel() {
             <div className="mt-2 pt-2 border-t border-slate-200 dark:border-white/[0.08]">
               <div className="flex items-baseline justify-between">
                 <p className="text-[10px] font-mono uppercase tracking-wider text-slate-600 dark:text-slate-300">Incident→Report</p>
-                <p className="text-sm font-bold font-mono text-red-500">
+                <p className="text-sm font-bold font-mono text-brick-500">
                   {formatResolution(reportLag)}
                 </p>
               </div>
@@ -260,7 +260,7 @@ export default function CrimeDetailPanel() {
 
             {detail.cadNumber && dispatchLoading && (
               <div className="flex items-center gap-2 py-2">
-                <div className="w-3 h-3 border border-violet-400 border-t-transparent rounded-full animate-spin" />
+                <div className="w-3 h-3 border border-plum-400 border-t-transparent rounded-full animate-spin" />
                 <span className="text-[10px] text-slate-400 font-mono">Loading dispatch record...</span>
               </div>
             )}
@@ -336,9 +336,9 @@ export default function CrimeDetailPanel() {
                       return (
                         <div key={step.key} className="flex items-start gap-2.5 relative">
                           <div className="flex flex-col items-center w-3 flex-shrink-0">
-                            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${ts ? 'bg-violet-500' : 'bg-slate-600/30'}`} />
+                            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${ts ? 'bg-plum-500' : 'bg-slate-600/30'}`} />
                             {i < DISPATCH_TIMELINE.length - 1 && (
-                              <div className={`w-px h-6 ${ts ? 'bg-violet-500/30' : 'bg-slate-600/10'}`} />
+                              <div className={`w-px h-6 ${ts ? 'bg-plum-500/30' : 'bg-slate-600/10'}`} />
                             )}
                           </div>
                           <div className="flex-1 pb-1 -mt-0.5">
@@ -353,7 +353,7 @@ export default function CrimeDetailPanel() {
                               )}
                             </div>
                             {elapsed !== null && elapsed > 0 && (
-                              <p className="text-[9px] font-mono text-violet-500/70">
+                              <p className="text-[9px] font-mono text-plum-500/70">
                                 +{elapsed < 1 ? `${Math.round(elapsed * 60)}min` : formatResolution(elapsed)}
                               </p>
                             )}
@@ -372,7 +372,7 @@ export default function CrimeDetailPanel() {
                   <div className="pt-2 border-t border-slate-200 dark:border-white/[0.08]">
                     <div className="flex items-baseline justify-between">
                       <p className="text-[10px] font-mono uppercase tracking-wider text-slate-600 dark:text-slate-300">911 Call→Report</p>
-                      <p className="text-sm font-bold font-mono text-violet-500">
+                      <p className="text-sm font-bold font-mono text-plum-500">
                         {(() => {
                           const lag = diffHours(dispatch.received_datetime, detail.timestamps.report!)
                           return lag !== null && lag > 0 ? formatResolution(lag) : 'N/A'

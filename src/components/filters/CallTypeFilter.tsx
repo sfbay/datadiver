@@ -68,7 +68,7 @@ export default function CallTypeFilter({ callTypes, selected, onChange }: CallTy
           onClick={handleSensitiveOnly}
           className={`px-2 py-1 rounded-md text-[10px] font-mono font-medium transition-all duration-150 flex items-center gap-1 ${
             !allSelected && callTypes.filter((c) => c.isSensitive).every((c) => selected.has(c.callType)) && selected.size === callTypes.filter((c) => c.isSensitive).length
-              ? 'bg-violet-500/15 text-violet-400'
+              ? 'bg-plum-500/15 text-plum-500'
               : 'bg-slate-100 dark:bg-white/[0.04] text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-white/[0.08]'
           }`}
         >
@@ -101,7 +101,7 @@ export default function CallTypeFilter({ callTypes, selected, onChange }: CallTy
                 className="absolute inset-y-0 left-0 rounded-lg opacity-[0.06]"
                 style={{
                   width: `${barWidth}%`,
-                  backgroundColor: entry.isSensitive ? '#a78bfa' : '#60a5fa',
+                  backgroundColor: entry.isSensitive ? '#8b6282' : '#5c9693',
                 }}
               />
 
@@ -113,8 +113,8 @@ export default function CallTypeFilter({ callTypes, selected, onChange }: CallTy
                     flex-shrink-0 w-3 h-3 rounded-sm border transition-all cursor-pointer
                     ${active
                       ? entry.isSensitive
-                        ? 'bg-violet-500 border-violet-500'
-                        : 'bg-blue-500 border-blue-500'
+                        ? 'bg-plum-500 border-plum-500'
+                        : 'bg-teal-500 border-teal-500'
                       : 'border-slate-300 dark:border-slate-600'
                     }
                   `}
@@ -143,7 +143,7 @@ export default function CallTypeFilter({ callTypes, selected, onChange }: CallTy
                 className="relative flex-1 min-w-0 flex items-center gap-1 cursor-pointer text-left"
               >
                 {entry.isSensitive && (
-                  <svg className="w-3 h-3 text-violet-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                  <svg className="w-3 h-3 text-plum-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
                   </svg>
                 )}

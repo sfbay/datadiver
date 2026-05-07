@@ -97,9 +97,9 @@ export default function CrashDetailPanel() {
       open={!!selectedCrash}
       onClose={onClose}
       isLoading={isLoading}
-      spinnerClass="border-red-400"
+      spinnerClass="border-brick-400"
       buildShareUrl={buildShareUrl}
-      shareAccentClass="text-red-500"
+      shareAccentClass="text-brick-500"
     >
       {detail && (
         <>
@@ -129,16 +129,16 @@ export default function CrashDetailPanel() {
           </p>
 
           {/* Casualties */}
-          <div className="flex gap-3 mb-3 p-2 rounded-lg bg-red-500/5">
+          <div className="flex gap-3 mb-3 p-2 rounded-lg bg-brick-500/5">
             <div>
-              <p className="text-[9px] font-mono uppercase tracking-wider text-red-400">Killed</p>
-              <p className="text-lg font-bold font-mono" style={{ color: detail.killed > 0 ? '#7f1d1d' : '#64748b' }}>
+              <p className="text-[9px] font-mono uppercase tracking-wider text-brick-400">Killed</p>
+              <p className="text-lg font-bold font-mono" style={{ color: detail.killed > 0 ? '#6f2b20' : '#64748b' }}>
                 {detail.killed}
               </p>
             </div>
             <div>
-              <p className="text-[9px] font-mono uppercase tracking-wider text-amber-400">Injured</p>
-              <p className="text-lg font-bold font-mono" style={{ color: detail.injured > 0 ? '#f59e0b' : '#64748b' }}>
+              <p className="text-[9px] font-mono uppercase tracking-wider text-ochre-500">Injured</p>
+              <p className="text-lg font-bold font-mono" style={{ color: detail.injured > 0 ? '#d4a435' : '#64748b' }}>
                 {detail.injured}
               </p>
             </div>

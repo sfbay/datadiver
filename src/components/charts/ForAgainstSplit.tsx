@@ -43,9 +43,9 @@ export default function ForAgainstSplit({
   return (
     <div className="grid grid-cols-2 gap-4">
       {/* Support side */}
-      <div className="glass-card rounded-xl p-4 border-l-2 border-emerald-500/50">
+      <div className="glass-card rounded-xl p-4 border-l-2 border-moss-500/50">
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-emerald-400 text-sm font-semibold">SUPPORT</span>
+          <span className="text-moss-400 text-sm font-semibold">SUPPORT</span>
         </div>
         <p className="font-mono text-lg text-ink dark:text-white mb-4">
           {formatCurrency(directContribTotal + supportTotal)}
@@ -66,7 +66,7 @@ export default function ForAgainstSplit({
                 <span className="text-slate-600 dark:text-slate-300 truncate max-w-[60%]">{f.name}</span>
                 <span className="font-mono text-slate-500 dark:text-slate-400">{formatCurrency(f.amount)}</span>
               </div>
-              <MiniBar value={f.amount} max={maxFunderAmount} color="#10b981" />
+              <MiniBar value={f.amount} max={maxFunderAmount} color="#7a9954" />
             </div>
           ))}
           {supportFunders.length === 0 && (
@@ -76,9 +76,9 @@ export default function ForAgainstSplit({
       </div>
 
       {/* Oppose side */}
-      <div className="glass-card rounded-xl p-4 border-l-2 border-red-500/50">
+      <div className="glass-card rounded-xl p-4 border-l-2 border-brick-500/50">
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-red-400 text-sm font-semibold">OPPOSE</span>
+          <span className="text-brick-400 text-sm font-semibold">OPPOSE</span>
         </div>
         <p className="font-mono text-lg text-ink dark:text-white mb-4">
           {formatCurrency(opposeTotal)}
@@ -94,7 +94,7 @@ export default function ForAgainstSplit({
                 <span className="text-slate-600 dark:text-slate-300 truncate max-w-[60%]">{f.name}</span>
                 <span className="font-mono text-slate-500 dark:text-slate-400">{formatCurrency(f.amount)}</span>
               </div>
-              <MiniBar value={f.amount} max={maxFunderAmount} color="#ef4444" />
+              <MiniBar value={f.amount} max={maxFunderAmount} color="#b85545" />
             </div>
           ))}
           {opposeFunders.length === 0 && (

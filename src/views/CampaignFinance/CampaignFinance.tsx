@@ -205,7 +205,7 @@ export default function CampaignFinance() {
           {cfData.error && (
             <div className="flex items-center justify-center py-16">
               <div className="glass-card rounded-xl p-6 max-w-sm">
-                <p className="text-sm font-medium text-red-400 mb-1">Data Error</p>
+                <p className="text-sm font-medium text-brick-400 mb-1">Data Error</p>
                 <p className="text-xs text-slate-400">{cfData.error}</p>
               </div>
             </div>
@@ -219,23 +219,23 @@ export default function CampaignFinance() {
                 <StatCard
                   label="Total Raised" info="cf-total-raised"
                   value={formatCurrency(cfData.stats.totalRaised)}
-                  color="#10b981" delay={0}
+                  color="#7a9954" delay={0}
                   yoyDelta={cfData.yoy.totalRaisedDelta}
                 />
                 <StatCard
                   label="Avg Contribution" info="cf-avg-contribution"
                   value={formatCurrency(cfData.stats.avgContribution)}
-                  color="#60a5fa" delay={80}
+                  color="#5c9693" delay={80}
                 />
                 <StatCard
                   label="Unique Donors" info="cf-unique-donors"
                   value={cfData.stats.uniqueDonors.toLocaleString()}
-                  color="#a78bfa" delay={160}
+                  color="#8b6282" delay={160}
                 />
                 <StatCard
                   label="Small Donor %" info="cf-small-donor-pct"
                   value={`${cfData.stats.smallDonorPct.toFixed(1)}%`}
-                  color="#f59e0b" delay={240}
+                  color="#d4a435" delay={240}
                   yoyDelta={cfData.yoy.smallDonorDelta}
                 />
               </div>
@@ -300,10 +300,10 @@ export default function CampaignFinance() {
                           <div className="space-y-1.5">
                             {detail.spendingCategories.map((cat, i) => (
                               <div key={i} className="flex items-center gap-2">
-                                <span className={`text-[10px] w-40 truncate ${cat.category === 'Uncoded / Pass-through' ? 'text-amber-400/70 italic' : 'text-slate-600 dark:text-slate-300'}`}>{cat.category}</span>
+                                <span className={`text-[10px] w-40 truncate ${cat.category === 'Uncoded / Pass-through' ? 'text-ochre-500/70 italic' : 'text-slate-600 dark:text-slate-300'}`}>{cat.category}</span>
                                 <div className="flex-1 h-3 bg-slate-200/50 dark:bg-slate-800/50 rounded-sm overflow-hidden">
                                   <div
-                                    className="h-full rounded-sm bg-amber-500/60"
+                                    className="h-full rounded-sm bg-ochre-500/60"
                                     style={{
                                       width: `${(cat.total / (detail.spendingCategories[0]?.total || 1)) * 100}%`,
                                     }}

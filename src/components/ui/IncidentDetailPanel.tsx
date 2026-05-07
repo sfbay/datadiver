@@ -202,7 +202,7 @@ export default function IncidentDetailPanel() {
               {/* Section 1: Fire Outcome */}
               <div className="mt-3 pt-2 border-t border-slate-200 dark:border-white/[0.08]">
                 <div className="flex items-center gap-2 mb-2">
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-red-400">
+                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-brick-400">
                     Fire Outcome
                   </p>
                   <div className="flex-1 h-[1px] bg-slate-200 dark:bg-white/[0.08]" />
@@ -222,14 +222,14 @@ export default function IncidentDetailPanel() {
                   )}
                   <div className="flex justify-between">
                     <span className="text-slate-500 dark:text-slate-400">Injuries</span>
-                    <span className={`font-mono ${(fireIncident.civilian_injuries + fireIncident.fire_injuries) > 0 ? 'text-red-400' : 'text-slate-800 dark:text-white'}`}>
+                    <span className={`font-mono ${(fireIncident.civilian_injuries + fireIncident.fire_injuries) > 0 ? 'text-brick-400' : 'text-slate-800 dark:text-white'}`}>
                       {(fireIncident.civilian_injuries || 0) + (fireIncident.fire_injuries || 0)}
                       {fireIncident.civilian_injuries > 0 && ` (${fireIncident.civilian_injuries} civilian)`}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500 dark:text-slate-400">Fatalities</span>
-                    <span className={`font-mono ${(fireIncident.civilian_fatalities + fireIncident.fire_fatalities) > 0 ? 'text-red-500 font-semibold' : 'text-slate-800 dark:text-white'}`}>
+                    <span className={`font-mono ${(fireIncident.civilian_fatalities + fireIncident.fire_fatalities) > 0 ? 'text-brick-500 font-semibold' : 'text-slate-800 dark:text-white'}`}>
                       {(fireIncident.civilian_fatalities || 0) + (fireIncident.fire_fatalities || 0)}
                     </span>
                   </div>
@@ -275,7 +275,7 @@ export default function IncidentDetailPanel() {
                     {fireIncident.heat_source && (
                       <div className="flex justify-between">
                         <span className="text-slate-500 dark:text-slate-400">Heat Source</span>
-                        <span className={`font-mono text-right max-w-[55%] ${fireIncident.heat_source.includes('Rechargeable') ? 'text-amber-400 font-semibold' : 'text-slate-800 dark:text-white'}`}>
+                        <span className={`font-mono text-right max-w-[55%] ${fireIncident.heat_source.includes('Rechargeable') ? 'text-ochre-500 font-semibold' : 'text-slate-800 dark:text-white'}`}>
                           {fireIncident.heat_source}
                         </span>
                       </div>
@@ -309,7 +309,7 @@ export default function IncidentDetailPanel() {
                     {fireIncident.detectors_present && (
                       <div className="flex justify-between">
                         <span className="text-slate-500 dark:text-slate-400">Detectors</span>
-                        <span className={`font-mono ${fireIncident.detectors_present.includes('Present') && !fireIncident.detectors_present.includes('Not') ? 'text-emerald-400' : 'text-red-400'}`}>
+                        <span className={`font-mono ${fireIncident.detectors_present.includes('Present') && !fireIncident.detectors_present.includes('Not') ? 'text-moss-400' : 'text-brick-400'}`}>
                           {fireIncident.detectors_present}
                         </span>
                       </div>
@@ -323,7 +323,7 @@ export default function IncidentDetailPanel() {
                     {fireIncident.automatic_extinguishing_system_present && (
                       <div className="flex justify-between">
                         <span className="text-slate-500 dark:text-slate-400">Sprinklers</span>
-                        <span className={`font-mono ${fireIncident.automatic_extinguishing_system_present.includes('Present') && !fireIncident.automatic_extinguishing_system_present.includes('Not') ? 'text-emerald-400' : 'text-red-400'}`}>
+                        <span className={`font-mono ${fireIncident.automatic_extinguishing_system_present.includes('Present') && !fireIncident.automatic_extinguishing_system_present.includes('Not') ? 'text-moss-400' : 'text-brick-400'}`}>
                           {fireIncident.automatic_extinguishing_system_present}
                         </span>
                       </div>

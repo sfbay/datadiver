@@ -29,7 +29,7 @@ interface SpendingTimelineProps {
   height?: number
 }
 
-const DEFAULT_COLOR = '#0ea5e9' // sky
+const DEFAULT_COLOR = '#5c9693' // sky
 
 export default function SpendingTimeline({
   data,
@@ -135,7 +135,7 @@ export default function SpendingTimeline({
         .attr('cx', x(peak.fy))
         .attr('cy', y(peak.amount))
         .attr('r', 3)
-        .attr('fill', '#f59e0b')
+        .attr('fill', '#d4a435')
         .attr('opacity', 0.7)
     }
 

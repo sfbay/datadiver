@@ -58,8 +58,8 @@ export const BUSINESS_HEATMAP_LAYERS = {
         'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 4, 16, 10],
         'circle-color': [
           'match', ['get', 'status'],
-          'opened', '#10b981',
-          'closed', '#ef4444',
+          'opened', '#7a9954',
+          'closed', '#b85545',
           'active', '#64748b',
           '#64748b',
         ],
@@ -80,12 +80,12 @@ export const ANOMALY_LAYERS: mapboxgl.AnyLayer[] = [
     paint: {
       'fill-color': [
         'interpolate', ['linear'], ['get', 'zScore'],
-        -2, '#3b82f6',
-        -1, '#93c5fd',
+        -2, '#3f7573',
+        -1, '#8bb5b2',
         0, '#e2e8f0',
-        1, '#fbbf24',
-        2, '#ef4444',
-        3, '#7f1d1d',
+        1, '#e8c06b',
+        2, '#b85545',
+        3, '#6f2b20',
       ],
       'fill-opacity': 0.55,
     },

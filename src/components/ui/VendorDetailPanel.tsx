@@ -98,7 +98,7 @@ export default function VendorDetailPanel({ vendor, onClose, inline }: VendorDet
     <>
       {vendor && error && (
         <div className="py-4">
-          <p className="text-sm font-medium text-red-400 mb-1">Failed to load</p>
+          <p className="text-sm font-medium text-brick-400 mb-1">Failed to load</p>
           <p className="text-xs text-slate-400">{error}</p>
         </div>
       )}
@@ -111,7 +111,7 @@ export default function VendorDetailPanel({ vendor, onClose, inline }: VendorDet
                 {toSentenceCase(vendor ?? '')}
               </h3>
               {nonProfit && (
-                <span className="inline-flex items-center text-[9px] font-mono bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded-full">
+                <span className="inline-flex items-center text-[9px] font-mono bg-moss-500/10 text-moss-500 px-1.5 py-0.5 rounded-full">
                   Nonprofit
                 </span>
               )}
@@ -160,7 +160,7 @@ export default function VendorDetailPanel({ vendor, onClose, inline }: VendorDet
                       </div>
                       <div className="h-1 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-sky-500/60"
+                          className="h-full rounded-full bg-teal-500/60"
                           style={{ width: `${(amount / maxDeptTotal) * 100}%` }}
                         />
                       </div>
@@ -180,7 +180,7 @@ export default function VendorDetailPanel({ vendor, onClose, inline }: VendorDet
               <div className="space-y-2">
                 {contractData.map((r) => (
                   <div key={r.contract_number} className="glass-card rounded-lg p-2">
-                    <p className="text-[10px] font-mono text-sky-400">{r.contract_number}</p>
+                    <p className="text-[10px] font-mono text-teal-500">{r.contract_number}</p>
                     {r.contract_title && (
                       <p className="text-[10px] text-slate-600 dark:text-slate-300 mt-0.5 line-clamp-2">
                         {r.contract_title}
@@ -213,7 +213,7 @@ export default function VendorDetailPanel({ vendor, onClose, inline }: VendorDet
         </div>
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <span className="w-5 h-5 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
+            <span className="w-5 h-5 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : content}
       </div>
@@ -225,7 +225,7 @@ export default function VendorDetailPanel({ vendor, onClose, inline }: VendorDet
       open={vendor !== null}
       onClose={onClose}
       isLoading={isLoading}
-      spinnerClass="border-sky-400"
+      spinnerClass="border-teal-400"
       widthClass="w-80"
     >
       {content}

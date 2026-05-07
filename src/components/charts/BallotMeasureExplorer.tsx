@@ -77,7 +77,7 @@ export default function BallotMeasureExplorer({ measures }: BallotMeasureExplore
         <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60">
           {filtered.length} Measures
         </p>
-        <span className="text-[9px] font-mono text-emerald-500">
+        <span className="text-[9px] font-mono text-moss-500">
           {passRate}% passed
         </span>
       </div>
@@ -88,7 +88,7 @@ export default function BallotMeasureExplorer({ measures }: BallotMeasureExplore
           onClick={() => setSelectedTopic(null)}
           className={`px-2 py-0.5 rounded-full text-[9px] font-mono transition-all ${
             !selectedTopic
-              ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
+              ? 'bg-indigo-500/20 text-indigo-500 border border-indigo-500/30'
               : 'text-slate-500 hover:text-slate-300 border border-transparent'
           }`}
         >
@@ -100,7 +100,7 @@ export default function BallotMeasureExplorer({ measures }: BallotMeasureExplore
             onClick={() => setSelectedTopic(selectedTopic === topic ? null : topic)}
             className={`px-2 py-0.5 rounded-full text-[9px] font-mono transition-all ${
               selectedTopic === topic
-                ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
+                ? 'bg-indigo-500/20 text-indigo-500 border border-indigo-500/30'
                 : 'text-slate-500 hover:text-slate-300 border border-transparent'
             }`}
           >
@@ -117,7 +117,7 @@ export default function BallotMeasureExplorer({ measures }: BallotMeasureExplore
             onClick={() => setSelectedDecade(selectedDecade === d ? null : d)}
             className={`px-1.5 py-0.5 rounded text-[8px] font-mono transition-all ${
               selectedDecade === d
-                ? 'bg-indigo-500/20 text-indigo-400'
+                ? 'bg-indigo-500/20 text-indigo-500'
                 : 'text-slate-600 hover:text-slate-400'
             }`}
           >
@@ -138,13 +138,13 @@ export default function BallotMeasureExplorer({ measures }: BallotMeasureExplore
               <div className="flex items-center gap-2">
                 <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
                   m.passed
-                    ? 'bg-emerald-500/20 text-emerald-400'
-                    : 'bg-red-500/20 text-red-400'
+                    ? 'bg-moss-500/20 text-moss-400'
+                    : 'bg-brick-500/20 text-brick-400'
                 }`}>
                   {m.passed ? 'PASS' : 'FAIL'}
                 </span>
                 <span className="text-[10px] font-mono text-slate-500">{year}</span>
-                <span className="text-[10px] font-mono text-indigo-400">{m.letter}</span>
+                <span className="text-[10px] font-mono text-indigo-500">{m.letter}</span>
               </div>
               <p className="text-[11px] text-slate-700 dark:text-slate-300 mt-0.5 leading-tight">
                 {m.title}
@@ -156,7 +156,7 @@ export default function BallotMeasureExplorer({ measures }: BallotMeasureExplore
                     className="h-full rounded-full transition-all duration-300"
                     style={{
                       width: `${m.yesPct * 100}%`,
-                      backgroundColor: m.passed ? '#10b981' : '#ef4444',
+                      backgroundColor: m.passed ? '#7a9954' : '#b85545',
                     }}
                   />
                 </div>

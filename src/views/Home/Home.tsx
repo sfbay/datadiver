@@ -440,7 +440,7 @@ export default function Home() {
               <div className="px-6 pt-5 pb-3 flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2.5">
-                    <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md bg-purple-500/15 text-purple-400 tracking-wider">
+                    <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md bg-plum-500/15 text-plum-500 tracking-wider">
                       NH
                     </span>
                     <h2 className="text-[17px] font-display italic text-white leading-none">
@@ -451,7 +451,7 @@ export default function Home() {
                     5 datasets, 41 neighborhoods — civic fingerprints reveal each community's unique signature
                   </p>
                 </div>
-                <div className="flex-shrink-0 text-slate-500 group-hover:text-purple-400 transition-colors">
+                <div className="flex-shrink-0 text-slate-500 group-hover:text-plum-500 transition-colors">
                   <svg className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M4 10h12M12 5.5L16.5 10 12 14.5" />
                   </svg>
@@ -486,7 +486,7 @@ export default function Home() {
                           />
                           {/* Anomaly count badge */}
                           {profile.anomalyCount > 0 && (
-                            <span className="absolute -top-1 -right-1 text-[8px] font-mono font-bold w-4 h-4 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center ring-1 ring-amber-500/20">
+                            <span className="absolute -top-1 -right-1 text-[8px] font-mono font-bold w-4 h-4 rounded-full bg-ochre-500/20 text-ochre-500 flex items-center justify-center ring-1 ring-ochre-500/20">
                               {profile.anomalyCount}
                             </span>
                           )}

@@ -77,8 +77,8 @@ export default function ChainMap({ locations, height = 280 }: ChainMapProps) {
         'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4, 14, 8, 17, 12],
         'circle-color': [
           'case',
-          ['get', 'isActive'], '#10b981',
-          '#ef4444',
+          ['get', 'isActive'], '#7a9954',
+          '#b85545',
         ],
         'circle-stroke-width': 1.5,
         'circle-stroke-color': 'rgba(255,255,255,0.5)',
@@ -89,8 +89,8 @@ export default function ChainMap({ locations, height = 280 }: ChainMapProps) {
 
   useMapTooltip(mapInstance, 'chain-points', (props) => {
     const status = props.isActive
-      ? `<span style="color:#10b981;font-weight:600">Active since ${props.startYear}</span>`
-      : `<span style="color:#ef4444;font-weight:600">Closed ${props.endYear}</span>`
+      ? `<span style="color:#7a9954;font-weight:600">Active since ${props.startYear}</span>`
+      : `<span style="color:#b85545;font-weight:600">Closed ${props.endYear}</span>`
     return `
       <div class="tooltip-value">${props.dbaName}</div>
       <div style="margin-top:4px;font-size:10px">${status}</div>

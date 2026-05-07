@@ -297,7 +297,7 @@ export default function Cases311() {
         id: 'resolution-histogram',
         label: 'Resolution Time Distribution',
         shortLabel: 'Resolution',
-        color: '#10b981',
+        color: '#7a9954',
         defaultExpanded: true,
         render: () => (
           <ResolutionHistogram data={histogramData} width={320} height={100} />
@@ -309,7 +309,7 @@ export default function Cases311() {
         id: 'daily-trend',
         label: `Daily Trend${comparison.isLoading ? ' (loading…)' : ''}`,
         shortLabel: 'Trend',
-        color: '#60a5fa',
+        color: '#5c9693',
         defaultExpanded: true,
         render: () => (
           <TrendChart
@@ -404,7 +404,7 @@ export default function Cases311() {
       minzoom: 13,
       paint: {
         'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 3, 16, 6],
-        'circle-color': '#10b981',
+        'circle-color': '#7a9954',
         'circle-opacity': 0.7,
         'circle-stroke-width': 1,
         'circle-stroke-color': 'rgba(255,255,255,0.15)',
@@ -436,12 +436,12 @@ export default function Cases311() {
       paint: {
         'fill-color': [
           'interpolate', ['linear'], ['get', 'zScore'],
-          -2, '#3b82f6',
-          -1, '#93c5fd',
+          -2, '#3f7573',
+          -1, '#8bb5b2',
           0, '#e2e8f0',
-          1, '#fbbf24',
-          2, '#ef4444',
-          3, '#7f1d1d',
+          1, '#e8c06b',
+          2, '#b85545',
+          3, '#6f2b20',
         ],
         'fill-opacity': 0.55,
       },
@@ -595,7 +595,7 @@ export default function Cases311() {
       label: 'Total Cases',
       shortLabel: 'Total',
       value: formatNumber(stats.totalCases),
-      color: '#10b981',
+      color: '#7a9954',
       delay: 0,
       info: 'total-cases',
       defaultExpanded: true,
@@ -620,7 +620,7 @@ export default function Cases311() {
       label: 'Open Cases',
       shortLabel: 'Open',
       value: formatNumber(stats.openCases),
-      color: '#f59e0b',
+      color: '#d4a435',
       delay: 160,
       info: 'open-cases',
       defaultExpanded: true,
@@ -630,7 +630,7 @@ export default function Cases311() {
       label: 'Peak Hour',
       shortLabel: 'Peak',
       value: formatHour(stats.peakHour),
-      color: '#60a5fa',
+      color: '#5c9693',
       delay: 240,
       info: 'peak-hour',
       defaultExpanded: false,
@@ -655,12 +655,12 @@ export default function Cases311() {
             </div>
             {!isLoading && caseData.length > 0 && (
               <div className="flex items-center gap-1.5">
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-emerald-500/80 bg-emerald-500/10 px-2 py-1 rounded-full">
-                  <span className="w-1 h-1 rounded-full bg-emerald-500 pulse-live" />
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-moss-500/80 bg-moss-500/10 px-2 py-1 rounded-full">
+                  <span className="w-1 h-1 rounded-full bg-moss-500 pulse-live" />
                   {formatNumber(caseData.length)} records
                 </span>
                 {hitLimit && totalCount !== null && (
-                  <span className="text-[10px] font-mono text-amber-500/80 bg-amber-500/10 px-2 py-1 rounded-full">
+                  <span className="text-[10px] font-mono text-ochre-500/80 bg-ochre-500/10 px-2 py-1 rounded-full">
                     of {formatNumber(totalCount)} total
                   </span>
                 )}
@@ -723,8 +723,8 @@ export default function Cases311() {
         {/* Map hero */}
         <div className="flex-1 relative">
           <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
-            {isLoading && <MapScanOverlay label="Scanning 311 cases" color="#34d399" />}
-            <MapProgressBar color="#34d399" />
+            {isLoading && <MapScanOverlay label="Scanning 311 cases" color="#9db87a" />}
+            <MapProgressBar color="#9db87a" />
 
             {error && (
               <div className="absolute inset-0 flex items-center justify-center z-20">
@@ -739,7 +739,7 @@ export default function Cases311() {
               <DataFreshnessAlert
                 latestDate={freshness.latestDate}
                 suggestedRange={freshness.suggestedRange}
-                accentColor="#10b981"
+                accentColor="#7a9954"
               />
             )}
 
@@ -760,13 +760,13 @@ export default function Cases311() {
                   Complaint Anomaly
                 </p>
                 <div className="flex items-center gap-1">
-                  <span className="text-[9px] font-mono text-blue-400">−2σ</span>
+                  <span className="text-[9px] font-mono text-teal-500">−2σ</span>
                   <div className="flex h-2.5 rounded-full overflow-hidden" style={{ width: 100 }}>
-                    {['#3b82f6', '#93c5fd', '#e2e8f0', '#fbbf24', '#ef4444', '#7f1d1d'].map((c, i) => (
+                    {['#3f7573', '#8bb5b2', '#e2e8f0', '#e8c06b', '#b85545', '#6f2b20'].map((c, i) => (
                       <div key={i} className="flex-1" style={{ backgroundColor: c }} />
                     ))}
                   </div>
-                  <span className="text-[9px] font-mono text-red-400">+3σ</span>
+                  <span className="text-[9px] font-mono text-brick-400">+3σ</span>
                 </div>
                 <p className="text-[9px] text-slate-500 mt-1">below avg → above avg</p>
               </div>
@@ -787,7 +787,7 @@ export default function Cases311() {
                 onClick={() => setSidebarTab(key)}
                 className={`flex-1 py-2.5 text-[10px] font-mono uppercase tracking-[0.15em] transition-all duration-200 ${
                   sidebarTab === key
-                    ? 'text-ink dark:text-white border-b-2 border-emerald-500'
+                    ? 'text-ink dark:text-white border-b-2 border-moss-500'
                     : 'text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400'
                 }`}
               >
@@ -825,7 +825,7 @@ export default function Cases311() {
                 {selectedNeighborhood && (
                   <button
                     onClick={() => setSelectedNeighborhood(null)}
-                    className="mb-3 text-[10px] font-mono text-emerald-500 hover:text-emerald-400 transition-colors"
+                    className="mb-3 text-[10px] font-mono text-moss-500 hover:text-moss-400 transition-colors"
                   >
                     ← Clear filter: {selectedNeighborhood}
                   </button>
@@ -849,7 +849,7 @@ export default function Cases311() {
                   <div className="mb-4">
                     <HourlyHeatgrid grid={hourlyPattern.grid} width={264} height={160} />
                     <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-mono">
-                      Peak: <span className="text-emerald-500">{formatHour(hourlyPattern.peakHour)}</span>
+                      Peak: <span className="text-moss-500">{formatHour(hourlyPattern.peakHour)}</span>
                       {' · '}Quiet: <span className="text-slate-500">{formatHour(hourlyPattern.quietestHour)}</span>
                     </p>
                   </div>
@@ -864,7 +864,7 @@ export default function Cases311() {
                       current={trend.currentPeriods}
                       priorYear={trend.priorYearPeriods}
                       granularity={trend.granularity}
-                      accentColor="#10b981"
+                      accentColor="#7a9954"
                       width={264}
                       height={130}
                     />
@@ -884,13 +884,13 @@ export default function Cases311() {
                         onClick={() => handleNeighborhoodClick(ns.neighborhood)}
                         className={`relative py-2 px-3 rounded-lg cursor-pointer transition-all duration-200 ${
                           isActive
-                            ? 'bg-emerald-500/10 ring-1 ring-emerald-500/30'
+                            ? 'bg-moss-500/10 ring-1 ring-moss-500/30'
                             : 'hover:bg-white/80 dark:hover:bg-white/[0.04]'
                         }`}
                       >
                         <div
                           className="absolute inset-y-0 left-0 rounded-lg opacity-[0.06] bar-grow"
-                          style={{ width: `${barWidth}%`, backgroundColor: '#10b981' }}
+                          style={{ width: `${barWidth}%`, backgroundColor: '#7a9954' }}
                         />
                         <div className="relative flex items-center justify-between">
                           <div className="min-w-0 flex-1">
@@ -902,7 +902,7 @@ export default function Cases311() {
                                 const nhTrend = trend.neighborhoodMap.get(ns.neighborhood)
                                 if (nhTrend?.priorYearCount) {
                                   return (
-                                    <span className={nhTrend.yoyPct > 0 ? 'text-red-400' : nhTrend.yoyPct < 0 ? 'text-emerald-400' : ''}>
+                                    <span className={nhTrend.yoyPct > 0 ? 'text-brick-400' : nhTrend.yoyPct < 0 ? 'text-moss-400' : ''}>
                                       {nhTrend.yoyPct >= 0 ? '+' : ''}{nhTrend.yoyPct.toFixed(0)}%{' · '}
                                     </span>
                                   )
@@ -911,7 +911,7 @@ export default function Cases311() {
                               })()}
                               {ns.caseCount.toLocaleString()} cases
                               {zScore !== undefined && (
-                                <span className={zScore > 1 ? 'text-red-400' : zScore < -1 ? 'text-blue-400' : ''}>
+                                <span className={zScore > 1 ? 'text-brick-400' : zScore < -1 ? 'text-teal-500' : ''}>
                                   {' · '}{zScore >= 0 ? '+' : ''}{zScore.toFixed(1)}σ
                                 </span>
                               )}

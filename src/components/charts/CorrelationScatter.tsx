@@ -311,8 +311,8 @@ export default function CorrelationScatter({
     Math.abs(pearsonR) >= 0.2 ? 'weak' : 'very weak'
   const rDirection = pearsonR >= 0 ? 'positive' : 'negative'
   const rColor =
-    Math.abs(pearsonR) >= 0.7 ? '#10b981' :
-    Math.abs(pearsonR) >= 0.4 ? '#f59e0b' : '#94a3b8'
+    Math.abs(pearsonR) >= 0.7 ? '#7a9954' :
+    Math.abs(pearsonR) >= 0.4 ? '#d4a435' : '#94a3b8'
 
   return (
     <div ref={containerRef} className="relative select-none overflow-visible">
@@ -367,7 +367,7 @@ export default function CorrelationScatter({
               className="inline-block w-5 border-t border-dashed"
               style={{ borderColor: '#7c3aed', opacity: 0.6 }}
             />
-            <span style={{ color: isDark ? '#a78bfa' : '#7c3aed' }}>OLS trend</span>
+            <span style={{ color: isDark ? '#8b6282' : '#7c3aed' }}>OLS trend</span>
           </span>
         </div>
       )}

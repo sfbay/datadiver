@@ -31,18 +31,18 @@ export type MetricDomain = 'emergency' | 'crime' | 'cases311' | 'crashes' | 'cit
 export type SortKey = 'name' | 'totalEvents' | 'compositeZScore' | 'anomalyCount' | MetricDomain
 
 export const DOMAINS: { key: MetricDomain; label: string; short: string; color: string }[] = [
-  { key: 'emergency', label: 'Emergency Response', short: 'ER', color: '#ef4444' },
-  { key: 'crime', label: 'Crime Incidents', short: 'Crime', color: '#f97316' },
-  { key: 'cases311', label: '311 Cases', short: '311', color: '#3b82f6' },
+  { key: 'emergency', label: 'Emergency Response', short: 'ER', color: '#b85545' },
+  { key: 'crime', label: 'Crime Incidents', short: 'Crime', color: '#d47149' },
+  { key: 'cases311', label: '311 Cases', short: '311', color: '#3f7573' },
   { key: 'crashes', label: 'Traffic Crashes', short: 'Crash', color: '#eab308' },
-  { key: 'citations', label: 'Parking Citations', short: 'Cite', color: '#06b6d4' },
+  { key: 'citations', label: 'Parking Citations', short: 'Cite', color: '#5c9693' },
 ]
 
 /** Fixed color slots for comparison mode */
 export const SLOT_COLORS = [
-  { hex: '#a855f7', name: 'purple', dashArray: '' },       // slot 0: solid
-  { hex: '#22d3ee', name: 'cyan', dashArray: '4,3' },      // slot 1: dashed
-  { hex: '#34d399', name: 'green', dashArray: '2,3' },     // slot 2: dotted
+  { hex: '#8b6282', name: 'purple', dashArray: '' },       // slot 0: solid
+  { hex: '#8bb5b2', name: 'cyan', dashArray: '4,3' },      // slot 1: dashed
+  { hex: '#9db87a', name: 'green', dashArray: '2,3' },     // slot 2: dotted
 ] as const
 
 /** Cross-link routes: fingerprint axis → dataset view */

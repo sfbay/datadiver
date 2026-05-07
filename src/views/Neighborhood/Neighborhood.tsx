@@ -200,11 +200,11 @@ export default function Neighborhood() {
   const crashesGeojson = portrait.isActive && visibleDomains.has('crashes') ? portraitGeojsonByDomain.get('crashes') ?? null : null
   const citationsGeojson = portrait.isActive && visibleDomains.has('citations') ? portraitGeojsonByDomain.get('citations') ?? null : null
 
-  const erLayers = useMemo((): mapboxgl.AnyLayer[] => [{ id: 'portrait-emergency', type: 'circle', source: 'portrait-emergency', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 4, 16, 8], 'circle-color': '#ef4444', 'circle-opacity': 0.75, 'circle-stroke-color': 'rgba(0,0,0,0.5)', 'circle-stroke-width': 1 } } as mapboxgl.AnyLayer], [])
-  const crimeLayers = useMemo((): mapboxgl.AnyLayer[] => [{ id: 'portrait-crime', type: 'circle', source: 'portrait-crime', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 4, 16, 8], 'circle-color': '#f97316', 'circle-opacity': 0.75, 'circle-stroke-color': 'rgba(0,0,0,0.5)', 'circle-stroke-width': 1 } } as mapboxgl.AnyLayer], [])
-  const cases311MapLayers = useMemo((): mapboxgl.AnyLayer[] => [{ id: 'portrait-cases311', type: 'circle', source: 'portrait-cases311', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 4, 16, 8], 'circle-color': '#3b82f6', 'circle-opacity': 0.75, 'circle-stroke-color': 'rgba(0,0,0,0.5)', 'circle-stroke-width': 1 } } as mapboxgl.AnyLayer], [])
+  const erLayers = useMemo((): mapboxgl.AnyLayer[] => [{ id: 'portrait-emergency', type: 'circle', source: 'portrait-emergency', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 4, 16, 8], 'circle-color': '#b85545', 'circle-opacity': 0.75, 'circle-stroke-color': 'rgba(0,0,0,0.5)', 'circle-stroke-width': 1 } } as mapboxgl.AnyLayer], [])
+  const crimeLayers = useMemo((): mapboxgl.AnyLayer[] => [{ id: 'portrait-crime', type: 'circle', source: 'portrait-crime', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 4, 16, 8], 'circle-color': '#d47149', 'circle-opacity': 0.75, 'circle-stroke-color': 'rgba(0,0,0,0.5)', 'circle-stroke-width': 1 } } as mapboxgl.AnyLayer], [])
+  const cases311MapLayers = useMemo((): mapboxgl.AnyLayer[] => [{ id: 'portrait-cases311', type: 'circle', source: 'portrait-cases311', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 4, 16, 8], 'circle-color': '#3f7573', 'circle-opacity': 0.75, 'circle-stroke-color': 'rgba(0,0,0,0.5)', 'circle-stroke-width': 1 } } as mapboxgl.AnyLayer], [])
   const crashesMapLayers = useMemo((): mapboxgl.AnyLayer[] => [{ id: 'portrait-crashes', type: 'circle', source: 'portrait-crashes', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 5, 16, 10], 'circle-color': '#eab308', 'circle-opacity': 0.8, 'circle-stroke-color': 'rgba(0,0,0,0.5)', 'circle-stroke-width': 1 } } as mapboxgl.AnyLayer], [])
-  const citationsMapLayers = useMemo((): mapboxgl.AnyLayer[] => [{ id: 'portrait-citations', type: 'circle', source: 'portrait-citations', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 3, 16, 6], 'circle-color': '#06b6d4', 'circle-opacity': 0.65, 'circle-stroke-color': 'rgba(0,0,0,0.5)', 'circle-stroke-width': 1 } } as mapboxgl.AnyLayer], [])
+  const citationsMapLayers = useMemo((): mapboxgl.AnyLayer[] => [{ id: 'portrait-citations', type: 'circle', source: 'portrait-citations', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 3, 16, 6], 'circle-color': '#5c9693', 'circle-opacity': 0.65, 'circle-stroke-color': 'rgba(0,0,0,0.5)', 'circle-stroke-width': 1 } } as mapboxgl.AnyLayer], [])
 
   useMapLayer(mapInstance, 'portrait-emergency', erGeojson, erLayers)
   useMapLayer(mapInstance, 'portrait-crime', crimeGeojson, crimeLayers)
@@ -292,13 +292,13 @@ export default function Neighborhood() {
   useMapTooltip(mapInstance, 'nh-choropleth-fill', (props) => {
     const profile = profileMap.get(props.nhood as string)
     if (!profile) return `<div class="tooltip-value">${props.nhood}</div>`
-    const zColor = profile.compositeZScore > 1 ? '#ef4444' : profile.compositeZScore < -1 ? '#60a5fa' : '#94a3b8'
+    const zColor = profile.compositeZScore > 1 ? '#b85545' : profile.compositeZScore < -1 ? '#5c9693' : '#94a3b8'
     return `
       <div class="tooltip-value" style="font-size:13px">${props.nhood}</div>
       <div style="display:flex;gap:12px;margin-top:6px;font-size:10px;font-family:Space Mono,monospace">
         <span style="color:#94a3b8">${profile.totalEvents.toLocaleString()} events</span>
         <span style="color:${zColor}">${profile.compositeZScore >= 0 ? '+' : ''}${profile.compositeZScore.toFixed(1)}σ</span>
-        ${profile.anomalyCount > 0 ? `<span style="color:#fbbf24">${profile.anomalyCount} anomal${profile.anomalyCount === 1 ? 'y' : 'ies'}</span>` : ''}
+        ${profile.anomalyCount > 0 ? `<span style="color:#e8c06b">${profile.anomalyCount} anomal${profile.anomalyCount === 1 ? 'y' : 'ies'}</span>` : ''}
       </div>
     `
   })
@@ -432,13 +432,13 @@ export default function Neighborhood() {
             Composite Z-Score
           </p>
           <div className="flex items-center gap-1">
-            <span className="text-[8px] font-mono text-blue-400">Low</span>
+            <span className="text-[8px] font-mono text-teal-500">Low</span>
             <div className="flex h-2 rounded-full overflow-hidden">
-              {['#3b82f6', '#60a5fa', '#475569', '#475569', '#fbbf24', '#f97316', '#ef4444'].map((c, i) => (
+              {['#3f7573', '#5c9693', '#475569', '#475569', '#e8c06b', '#d47149', '#b85545'].map((c, i) => (
                 <div key={i} className="w-4 h-full" style={{ backgroundColor: c }} />
               ))}
             </div>
-            <span className="text-[8px] font-mono text-red-400">High</span>
+            <span className="text-[8px] font-mono text-brick-400">High</span>
           </div>
         </div>
       </div>

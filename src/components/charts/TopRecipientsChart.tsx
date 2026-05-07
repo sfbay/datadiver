@@ -17,12 +17,12 @@ interface Props {
 }
 
 const FILER_TYPE_COLORS: Record<string, string> = {
-  'Candidate or Officeholder': '#60a5fa',
-  'Primarily Formed Measure': '#10b981',
-  'General Purpose': '#a78bfa',
-  'Primarily Formed Candidate': '#60a5fa',
-  'Major Donor': '#f59e0b',
-  'Independent Expenditure': '#f97316',
+  'Candidate or Officeholder': '#5c9693',
+  'Primarily Formed Measure': '#7a9954',
+  'General Purpose': '#8b6282',
+  'Primarily Formed Candidate': '#5c9693',
+  'Major Donor': '#d4a435',
+  'Independent Expenditure': '#d47149',
 }
 
 function formatCurrency(value: number): string {

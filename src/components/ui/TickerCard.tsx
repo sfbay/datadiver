@@ -40,7 +40,7 @@ interface TickerCardProps {
 
 export default function TickerCard({ item }: TickerCardProps) {
   const navigate = useNavigate()
-  const accent = CATEGORY_COLORS[item.category] ?? '#60a5fa'
+  const accent = CATEGORY_COLORS[item.category] ?? '#5c9693'
   const severityColor = SEVERITY_COLORS[item.severity] ?? '#94a3b8'
 
   const handleClick = () => {

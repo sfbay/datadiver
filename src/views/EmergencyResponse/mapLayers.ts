@@ -75,7 +75,7 @@ export const APOT_LAYERS: mapboxgl.AnyLayer[] = [
       'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 3, 16, 6],
       'circle-color': [
         'interpolate', ['linear'], ['get', 'apotMinutes'],
-        0, '#10b981', 10, '#f59e0b', 15, '#f97316', 20, '#ef4444',
+        0, '#7a9954', 10, '#d4a435', 15, '#d47149', 20, '#b85545',
       ],
       'circle-opacity': 0.8,
       'circle-stroke-width': 1,
@@ -91,8 +91,8 @@ export const FIRE_SEVERITY_LAYER: mapboxgl.AnyLayer = {
   source: 'fire-severity',
   paint: {
     'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 5, 14, 10],
-    'circle-color': '#ef4444',
-    'circle-stroke-color': '#ef4444',
+    'circle-color': '#b85545',
+    'circle-stroke-color': '#b85545',
     'circle-stroke-width': 2,
     'circle-opacity': 0.7,
     'circle-stroke-opacity': 0.9,
@@ -106,8 +106,8 @@ export const FIRE_BATTERY_LAYER: mapboxgl.AnyLayer = {
   source: 'fire-battery',
   paint: {
     'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 4, 14, 8],
-    'circle-color': '#f59e0b',
-    'circle-stroke-color': '#f59e0b',
+    'circle-color': '#d4a435',
+    'circle-stroke-color': '#d4a435',
     'circle-stroke-width': 2,
     'circle-opacity': 0.6,
     'circle-stroke-opacity': 0.8,

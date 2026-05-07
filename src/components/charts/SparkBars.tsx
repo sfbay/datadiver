@@ -7,7 +7,7 @@
  *
  * Usage:
  *   <SparkBars values={[422, 498, 534, 414, 609, 712]} />
- *   <SparkBars values={[100, 120, 90, 110]} highlightLast accentColor="#ef4444" />
+ *   <SparkBars values={[100, 120, 90, 110]} highlightLast accentColor="#b85545" />
  *   <SparkBars values={monthlyData} labels={['J','F','M','A']} height={20} />
  */
 
@@ -36,7 +36,7 @@ export default function SparkBars({
   height = 16,
   gap = 1,
   barColor = '#64748b',
-  accentColor = '#34d399',
+  accentColor = '#9db87a',
   highlightLast = true,
   className = '',
 }: SparkBarsProps) {

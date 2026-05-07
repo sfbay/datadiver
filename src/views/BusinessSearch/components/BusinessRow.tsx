@@ -10,9 +10,9 @@ interface BusinessRowProps {
 }
 
 const STATUS_COLOR: Record<BusinessSearchResult['status'], string> = {
-  active: '#10b981',
-  closed: '#ef4444',
-  'admin-closed': '#f59e0b',
+  active: '#7a9954',
+  closed: '#b85545',
+  'admin-closed': '#d4a435',
 }
 
 const STATUS_LABEL: Record<BusinessSearchResult['status'], string> = {
@@ -56,7 +56,7 @@ export default function BusinessRow({ result }: BusinessRowProps) {
               {statusLabel}
             </span>
             {result.ageYears >= 10 && (
-              <span className="text-[9px] font-mono text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full">
+              <span className="text-[9px] font-mono text-ochre-500 bg-ochre-500/10 px-1.5 py-0.5 rounded-full">
                 {result.ageYears}y
               </span>
             )}

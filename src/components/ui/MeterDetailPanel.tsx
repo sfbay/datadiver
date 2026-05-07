@@ -146,9 +146,9 @@ export default function MeterDetailPanel() {
       open={!!selectedMeter}
       onClose={onClose}
       isLoading={isLoading}
-      spinnerClass="border-cyan-400"
+      spinnerClass="border-teal-400"
       buildShareUrl={buildShareUrl}
-      shareAccentClass="text-cyan-500"
+      shareAccentClass="text-teal-500"
     >
       {detail && (
         <>
@@ -176,10 +176,10 @@ export default function MeterDetailPanel() {
             )}
             <span className={`inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full ${
               detail.active
-                ? 'bg-emerald-500/10 text-emerald-500'
+                ? 'bg-moss-500/10 text-moss-500'
                 : 'bg-slate-500/10 text-slate-400'
             }`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${detail.active ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+              <span className={`w-1.5 h-1.5 rounded-full ${detail.active ? 'bg-moss-500' : 'bg-slate-400'}`} />
               {detail.active ? 'Active' : 'Inactive'}
             </span>
           </div>
@@ -219,15 +219,15 @@ export default function MeterDetailPanel() {
               </div>
               <div className="grid grid-cols-3 gap-2 mb-4">
                 <div className="text-center">
-                  <p className="text-sm font-bold font-mono text-cyan-400">{formatCurrency(txStats.total)}</p>
+                  <p className="text-sm font-bold font-mono text-teal-400">{formatCurrency(txStats.total)}</p>
                   <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500">Revenue</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-sm font-bold font-mono text-emerald-400">{formatNumber(txStats.count)}</p>
+                  <p className="text-sm font-bold font-mono text-moss-400">{formatNumber(txStats.count)}</p>
                   <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500">Sessions</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-sm font-bold font-mono text-amber-400">
+                  <p className="text-sm font-bold font-mono text-ochre-500">
                     {txStats.avgDuration > 0 ? formatDuration(txStats.avgDuration) : '—'}
                   </p>
                   <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500">Avg Dur</p>
@@ -261,7 +261,7 @@ export default function MeterDetailPanel() {
                         {tx.durationMinutes ? ` · ${formatDuration(tx.durationMinutes)}` : ''}
                       </p>
                     </div>
-                    <span className="text-[11px] font-mono font-semibold text-cyan-400 ml-2 tabular-nums">
+                    <span className="text-[11px] font-mono font-semibold text-teal-400 ml-2 tabular-nums">
                       {formatCurrency(tx.amount)}
                     </span>
                   </div>

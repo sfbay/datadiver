@@ -55,7 +55,7 @@ export default function ComplianceTracker() {
   return (
     <InvestigationCard
       eyebrow="Resolution 240210 · Compliance"
-      accentColor="#10b981"
+      accentColor="#7a9954"
       headline={`The city spends ${pct.toFixed(1)}% where law requires 50%`}
       subtitle="Discretionary ad spend → Community & ethnic media"
       explorePath="/city-budget"
@@ -66,7 +66,7 @@ export default function ComplianceTracker() {
         {/* Big pct + target */}
         <div className="flex items-baseline gap-1.5">
           <span
-            className="font-mono font-bold text-emerald-300 leading-none tabular-nums"
+            className="font-mono font-bold text-moss-400 leading-none tabular-nums"
             style={{ fontSize: 28 }}
           >
             {pct.toFixed(1)}%
@@ -90,7 +90,7 @@ export default function ComplianceTracker() {
               className="absolute left-0 top-0 h-full rounded-full transition-all duration-700"
               style={{
                 width: `${barFill}%`,
-                background: 'linear-gradient(90deg, #059669, #10b981)',
+                background: 'linear-gradient(90deg, #5c7a3d, #7a9954)',
               }}
             />
             {/* Target marker at 50% position */}
@@ -99,7 +99,7 @@ export default function ComplianceTracker() {
               style={{
                 left: '50%',
                 width: 2,
-                backgroundColor: '#f59e0b',
+                backgroundColor: '#d4a435',
                 transform: 'translateX(-50%)',
               }}
             />
@@ -108,7 +108,7 @@ export default function ComplianceTracker() {
           {/* Scale labels */}
           <div className="flex justify-between mt-0.5 font-mono" style={{ fontSize: 7, color: '#475569' }}>
             <span>0%</span>
-            <span style={{ color: '#f59e0b' }}>50% target</span>
+            <span style={{ color: '#d4a435' }}>50% target</span>
             <span>100%</span>
           </div>
         </div>
@@ -128,7 +128,7 @@ export default function ComplianceTracker() {
                 y1={sparkline.targetY}
                 x2={sparkline.W}
                 y2={sparkline.targetY}
-                stroke="#f59e0b"
+                stroke="#d4a435"
                 strokeWidth={1}
                 strokeDasharray="3 2"
                 strokeOpacity={0.6}
@@ -137,13 +137,13 @@ export default function ComplianceTracker() {
               <path
                 d={sparkline.linePath}
                 fill="none"
-                stroke="#10b981"
+                stroke="#7a9954"
                 strokeWidth={1.5}
                 strokeLinejoin="round"
               />
             </svg>
             <div className="font-mono leading-tight" style={{ fontSize: 8 }}>
-              <div style={{ color: '#34d399' }}>
+              <div style={{ color: '#9db87a' }}>
                 {trendDir === 'rising' ? '▲ rising' : '▼ falling'}
               </div>
               <div style={{ color: '#475569' }}>but far from 50%</div>

@@ -491,7 +491,7 @@ export default function BusinessActivity() {
         id: 'net-formation',
         label: 'Net Formation',
         shortLabel: 'Formation',
-        color: '#10b981',
+        color: '#7a9954',
         defaultExpanded: true,
         render: () => (
           <NetFormationChart
@@ -508,7 +508,7 @@ export default function BusinessActivity() {
         id: 'top-sectors',
         label: 'Top Sectors',
         shortLabel: 'Sectors',
-        color: '#8b5cf6',
+        color: '#8b6282',
         defaultExpanded: true,
         render: () => <HorizontalBarChart data={sectorBars} width={320} height={120} maxBars={6} />,
       })
@@ -564,7 +564,7 @@ export default function BusinessActivity() {
   // Click opens the full detail panel with BAN, license, corridor, mailing,
   // dates, etc. Don't duplicate the panel here.
   useMapTooltip(mapInstance, 'business-points', (props) => {
-    const statusColor = props.status === 'opened' ? '#10b981' : props.status === 'closed' ? '#ef4444' : '#64748b'
+    const statusColor = props.status === 'opened' ? '#7a9954' : props.status === 'closed' ? '#b85545' : '#64748b'
     const statusLabel = props.status === 'opened' ? 'Opened in range'
       : props.status === 'closed' ? 'Closed in range'
       : 'Active'
@@ -588,9 +588,9 @@ export default function BusinessActivity() {
       <div style="color:#94a3b8">${Number(props.businessCount).toLocaleString()}</div>
       <div class="tooltip-label" style="margin-top:4px">Openings / Closures</div>
       <div style="color:#94a3b8">
-        <span style="color:#10b981">${Number(props.openings).toLocaleString()}</span>
+        <span style="color:#7a9954">${Number(props.openings).toLocaleString()}</span>
         /
-        <span style="color:#ef4444">${Number(props.closures).toLocaleString()}</span>
+        <span style="color:#b85545">${Number(props.closures).toLocaleString()}</span>
       </div>
     `
   })
@@ -712,12 +712,12 @@ export default function BusinessActivity() {
             </div>
             {!isLoading && filteredData.length > 0 && (
               <div className="flex items-center gap-1.5">
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-emerald-500/80 bg-emerald-500/10 px-2 py-1 rounded-full">
-                  <span className="w-1 h-1 rounded-full bg-emerald-500 pulse-live" />
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-moss-500/80 bg-moss-500/10 px-2 py-1 rounded-full">
+                  <span className="w-1 h-1 rounded-full bg-moss-500 pulse-live" />
                   {formatNumber(filteredData.length)} records
                 </span>
                 {hitLimit && totalCount !== null && (
-                  <span className="text-[10px] font-mono text-amber-500/80 bg-amber-500/10 px-2 py-1 rounded-full">
+                  <span className="text-[10px] font-mono text-ochre-500/80 bg-ochre-500/10 px-2 py-1 rounded-full">
                     of {formatNumber(totalCount)} total
                   </span>
                 )}
@@ -757,8 +757,8 @@ export default function BusinessActivity() {
       <div id="ba-capture" className="flex-1 overflow-hidden flex">
         <div className="flex-1 relative">
           <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
-            {isLoading && <MapScanOverlay label="Scanning businesses" color="#10b981" />}
-            <MapProgressBar color="#10b981" />
+            {isLoading && <MapScanOverlay label="Scanning businesses" color="#7a9954" />}
+            <MapProgressBar color="#7a9954" />
 
             {error && (
               <div className="absolute inset-0 flex items-center justify-center z-20">
@@ -773,7 +773,7 @@ export default function BusinessActivity() {
               <DataFreshnessAlert
                 latestDate={freshness.latestDate}
                 suggestedRange={freshness.suggestedRange}
-                accentColor="#10b981"
+                accentColor="#7a9954"
               />
             )}
 
@@ -795,13 +795,13 @@ export default function BusinessActivity() {
                   Business Anomaly<InfoTip term="anomaly-map" size={10} />
                 </p>
                 <div className="flex items-center gap-1">
-                  <span className="text-[9px] font-mono text-blue-400">-2{'\u03C3'}</span>
+                  <span className="text-[9px] font-mono text-teal-500">-2{'\u03C3'}</span>
                   <div className="flex h-2.5 rounded-full overflow-hidden" style={{ width: 100 }}>
-                    {['#3b82f6', '#93c5fd', '#e2e8f0', '#fbbf24', '#ef4444', '#7f1d1d'].map((c, i) => (
+                    {['#3f7573', '#8bb5b2', '#e2e8f0', '#e8c06b', '#b85545', '#6f2b20'].map((c, i) => (
                       <div key={i} className="flex-1" style={{ backgroundColor: c }} />
                     ))}
                   </div>
-                  <span className="text-[9px] font-mono text-red-400">+3{'\u03C3'}</span>
+                  <span className="text-[9px] font-mono text-brick-400">+3{'\u03C3'}</span>
                 </div>
                 <p className="text-[9px] text-slate-500 mt-1">below avg {'\u2192'} above avg</p>
               </div>
@@ -820,7 +820,7 @@ export default function BusinessActivity() {
                 onClick={() => setSidebarTab(key)}
                 className={`flex-1 py-2.5 text-[10px] font-mono uppercase tracking-[0.15em] transition-all duration-200 ${
                   sidebarTab === key
-                    ? 'text-ink dark:text-white border-b-2 border-emerald-500'
+                    ? 'text-ink dark:text-white border-b-2 border-moss-500'
                     : 'text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400'
                 }`}
               >
@@ -865,7 +865,7 @@ export default function BusinessActivity() {
                       onChange={(e) => setSelectedCorridor(e.target.value || null)}
                       className="w-full text-[11px] bg-white/80 dark:bg-white/[0.04] border border-slate-200/50 dark:border-white/[0.06]
                         rounded-md px-2 py-1.5 text-slate-700 dark:text-slate-300
-                        focus:outline-none focus:border-emerald-500/40 transition-colors"
+                        focus:outline-none focus:border-moss-500/40 transition-colors"
                     >
                       <option value="">All corridors</option>
                       {corridors.map((c) => (
@@ -877,7 +877,7 @@ export default function BusinessActivity() {
                     {selectedCorridor && (
                       <button
                         onClick={() => setSelectedCorridor(null)}
-                        className="mt-1.5 text-[10px] font-mono text-emerald-500 hover:text-emerald-400 transition-colors"
+                        className="mt-1.5 text-[10px] font-mono text-moss-500 hover:text-moss-400 transition-colors"
                       >
                         {'\u2190'} Clear corridor filter
                       </button>
@@ -895,7 +895,7 @@ export default function BusinessActivity() {
                 {selectedNeighborhood && (
                   <button
                     onClick={() => setSelectedNeighborhood(null)}
-                    className="mb-3 text-[10px] font-mono text-emerald-500 hover:text-emerald-400 transition-colors"
+                    className="mb-3 text-[10px] font-mono text-moss-500 hover:text-moss-400 transition-colors"
                   >
                     {'\u2190'} Clear filter: {selectedNeighborhood}
                   </button>
@@ -920,7 +920,7 @@ export default function BusinessActivity() {
                       current={trend.currentPeriods}
                       priorYear={trend.priorYearPeriods}
                       granularity={trend.granularity}
-                      accentColor="#10b981"
+                      accentColor="#7a9954"
                       width={264}
                       height={130}
                     />
@@ -941,13 +941,13 @@ export default function BusinessActivity() {
                         onClick={() => handleNeighborhoodClick(ns.neighborhood)}
                         className={`relative py-2 px-3 rounded-lg cursor-pointer transition-all duration-200 ${
                           isActive
-                            ? 'bg-emerald-500/10 ring-1 ring-emerald-500/30'
+                            ? 'bg-moss-500/10 ring-1 ring-moss-500/30'
                             : 'hover:bg-white/80 dark:hover:bg-white/[0.04]'
                         }`}
                       >
                         <div
                           className="absolute inset-y-0 left-0 rounded-lg opacity-[0.06] bar-grow"
-                          style={{ width: `${barWidth}%`, backgroundColor: '#10b981' }}
+                          style={{ width: `${barWidth}%`, backgroundColor: '#7a9954' }}
                         />
                         <div className="relative flex items-center justify-between">
                           <div className="min-w-0 flex-1">
@@ -956,19 +956,19 @@ export default function BusinessActivity() {
                             </p>
                             <p className="text-[10px] text-slate-400 dark:text-slate-600 font-mono italic">
                               {ns.total.toLocaleString()} businesses
-                              {ns.openings > 0 && <span className="text-emerald-400"> · {ns.openings} opened</span>}
-                              {ns.closures > 0 && <span className="text-red-400"> · {ns.closures} closed</span>}
+                              {ns.openings > 0 && <span className="text-moss-400"> · {ns.openings} opened</span>}
+                              {ns.closures > 0 && <span className="text-brick-400"> · {ns.closures} closed</span>}
                               {' · net '}
-                              <span className={ns.netChange >= 0 ? 'text-emerald-400' : 'text-red-400'}>
+                              <span className={ns.netChange >= 0 ? 'text-moss-400' : 'text-brick-400'}>
                                 {ns.netChange >= 0 ? '+' : ''}{ns.netChange}
                               </span>
                               {nhTrend?.priorYearCount ? (
-                                <span className={nhTrend.yoyPct > 0 ? 'text-emerald-400' : nhTrend.yoyPct < 0 ? 'text-red-400' : ''}>
+                                <span className={nhTrend.yoyPct > 0 ? 'text-moss-400' : nhTrend.yoyPct < 0 ? 'text-brick-400' : ''}>
                                   {' · '}{nhTrend.yoyPct >= 0 ? '+' : ''}{nhTrend.yoyPct.toFixed(0)}% since last yr
                                 </span>
                               ) : null}
                               {zScore !== undefined && (
-                                <span className={zScore > 1 ? 'text-red-400' : zScore < -1 ? 'text-blue-400' : ''}>
+                                <span className={zScore > 1 ? 'text-brick-400' : zScore < -1 ? 'text-teal-500' : ''}>
                                   {' · '}{zScore >= 0 ? '+' : ''}{zScore.toFixed(1)}{'\u03C3'}
                                 </span>
                               )}

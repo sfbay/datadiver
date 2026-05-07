@@ -67,7 +67,7 @@ export default function IncidentCategoryFilter({ categories, selected, onChange 
           onClick={handleSelectAll}
           className={`px-2 py-1 rounded-md text-[10px] font-mono font-medium transition-all duration-150 ${
             allSelected
-              ? 'bg-red-500/15 text-red-500'
+              ? 'bg-brick-500/15 text-brick-500'
               : 'bg-slate-100 dark:bg-white/[0.04] text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-white/[0.08]'
           }`}
         >
@@ -79,7 +79,7 @@ export default function IncidentCategoryFilter({ categories, selected, onChange 
             onClick={() => handleGroup(groupName)}
             className={`px-2 py-1 rounded-md text-[10px] font-mono font-medium transition-all duration-150 ${
               isGroupActive(groupName)
-                ? 'bg-red-500/15 text-red-500'
+                ? 'bg-brick-500/15 text-brick-500'
                 : 'bg-slate-100 dark:bg-white/[0.04] text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-white/[0.08]'
             }`}
           >
@@ -110,7 +110,7 @@ export default function IncidentCategoryFilter({ categories, selected, onChange 
                 className="absolute inset-y-0 left-0 rounded-lg opacity-[0.06]"
                 style={{
                   width: `${barWidth}%`,
-                  backgroundColor: '#ef4444',
+                  backgroundColor: '#b85545',
                 }}
               />
 
@@ -121,7 +121,7 @@ export default function IncidentCategoryFilter({ categories, selected, onChange 
                   className={`
                     flex-shrink-0 w-3 h-3 rounded-sm border transition-all cursor-pointer
                     ${active
-                      ? 'bg-red-500 border-red-500'
+                      ? 'bg-brick-500 border-brick-500'
                       : 'border-slate-300 dark:border-slate-600'
                     }
                   `}

@@ -28,12 +28,12 @@ export default function ShareLinkButton({ buildUrl, accentClass = 'text-slate-40
       title="Copy share link"
       className={`w-6 h-6 flex items-center justify-center rounded-full transition-all ${
         copied
-          ? 'bg-emerald-500/15'
+          ? 'bg-moss-500/15'
           : 'hover:bg-white/10 text-slate-400 hover:text-slate-300'
       }`}
     >
       {copied ? (
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" className="text-emerald-500">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" className="text-moss-500">
           <path d="M2 6l3 3 5-5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       ) : (

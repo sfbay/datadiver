@@ -12,7 +12,7 @@ export default function DataFreshnessAlert({
   latestDate,
   latestGeoDate,
   suggestedRange,
-  accentColor = '#f59e0b',
+  accentColor = '#d4a435',
 }: DataFreshnessAlertProps) {
   const setDateRange = useAppStore((s) => s.setDateRange)
 

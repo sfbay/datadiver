@@ -91,7 +91,7 @@ export function useTrafficSafetyData(params: UseTrafficSafetyDataParams) {
       label: 'Total Crashes',
       shortLabel: 'Total',
       value: formatNumber(totalCount ?? stats.totalCrashes),
-      color: '#dc2626',
+      color: '#963e30',
       delay: 0,
       info: 'total-crashes',
       defaultExpanded: true,
@@ -104,7 +104,7 @@ export function useTrafficSafetyData(params: UseTrafficSafetyDataParams) {
       label: 'Fatalities',
       shortLabel: 'Fatal',
       value: String(stats.fatalities),
-      color: '#7f1d1d',
+      color: '#6f2b20',
       delay: 80,
       info: 'fatalities',
       defaultExpanded: true,
@@ -114,7 +114,7 @@ export function useTrafficSafetyData(params: UseTrafficSafetyDataParams) {
       label: 'Injuries',
       shortLabel: 'Injuries',
       value: formatNumber(stats.injuries),
-      color: '#f59e0b',
+      color: '#d4a435',
       delay: 160,
       info: 'injuries',
       defaultExpanded: true,
@@ -126,7 +126,7 @@ export function useTrafficSafetyData(params: UseTrafficSafetyDataParams) {
       label: 'DUI Crashes',
       shortLabel: 'DUI',
       value: formatNumber(duiCount),
-      color: '#a855f7',
+      color: '#8b6282',
       delay: 240,
       info: 'dui-crashes',
       defaultExpanded: true,
@@ -140,7 +140,7 @@ export function useTrafficSafetyData(params: UseTrafficSafetyDataParams) {
       label: 'Ped/Bike %',
       shortLabel: 'Ped/Bike',
       value: `${stats.pedBikePct.toFixed(1)}%`,
-      color: '#3b82f6',
+      color: '#3f7573',
       delay: 320,
       info: 'ped-bike-pct',
       defaultExpanded: false,
@@ -171,7 +171,7 @@ export function useTrafficSafetyData(params: UseTrafficSafetyDataParams) {
     return modeEntries.slice(0, 8).map((m) => ({
       label: m.mode,
       value: m.count,
-      color: m.mode.includes('Ped') ? '#dc2626' : m.mode.includes('Bike') ? '#f59e0b' : '#64748b',
+      color: m.mode.includes('Ped') ? '#963e30' : m.mode.includes('Bike') ? '#d4a435' : '#64748b',
     }))
   }, [modeEntries])
 

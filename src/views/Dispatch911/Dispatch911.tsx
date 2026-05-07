@@ -236,7 +236,7 @@ export default function Dispatch911() {
       .map((r) => ({
         label: DISPOSITION_LABELS[r.disposition] || r.disposition,
         value: parseInt(r.call_count, 10),
-        color: '#a78bfa',
+        color: '#8b6282',
       }))
       .slice(0, 8)
   }, [dispositionRows])
@@ -264,7 +264,7 @@ export default function Dispatch911() {
                   {formatNumber(rawData.length)} records
                 </span>
                 {hitLimit && totalCount !== null && (
-                  <span className="text-[10px] font-mono text-amber-500/80 bg-amber-500/10 px-2 py-1 rounded-full">
+                  <span className="text-[10px] font-mono text-ochre-500/80 bg-ochre-500/10 px-2 py-1 rounded-full">
                     of {formatNumber(totalCount)} total
                   </span>
                 )}
@@ -345,7 +345,7 @@ export default function Dispatch911() {
               <DataFreshnessAlert
                 latestDate={freshness.latestDate}
                 suggestedRange={freshness.suggestedRange}
-                accentColor="#8b5cf6"
+                accentColor="#8b6282"
               />
             </div>
           )}
@@ -366,7 +366,7 @@ export default function Dispatch911() {
                 <StatCard
                   label="Avg Response"
                   value={stats.avg > 0 ? formatDuration(stats.avg) : 'N/A'}
-                  color={stats.avg > 10 ? '#ef4444' : stats.avg > 5 ? '#f59e0b' : '#10b981'}
+                  color={stats.avg > 10 ? '#b85545' : stats.avg > 5 ? '#d4a435' : '#7a9954'}
                   delay={80}
                   subtitle={comparison.deltas ? `${formatDelta(comparison.deltas.avg)} ${compLabel}` : undefined}
                   trend={comparison.deltas ? (comparison.deltas.avg > 0 ? 'up' : comparison.deltas.avg < 0 ? 'down' : 'neutral') : undefined}
@@ -374,13 +374,13 @@ export default function Dispatch911() {
                 <StatCard
                   label="Sensitive %" info="sensitive-pct"
                   value={`${stats.sensitivePct.toFixed(1)}%`}
-                  color="#a78bfa"
+                  color="#8b6282"
                   delay={160}
                 />
                 <StatCard
                   label="Peak Hour" info="peak-hour"
                   value={stats.peakHour >= 12 ? `${stats.peakHour === 12 ? 12 : stats.peakHour - 12}pm` : `${stats.peakHour === 0 ? 12 : stats.peakHour}am`}
-                  color="#f59e0b"
+                  color="#d4a435"
                   delay={240}
                 />
               </div>
@@ -418,7 +418,7 @@ export default function Dispatch911() {
                     current={trend.currentPeriods}
                     priorYear={trend.priorYearPeriods}
                     granularity={trend.granularity}
-                    accentColor="#8b5cf6"
+                    accentColor="#8b6282"
                     width={640}
                     height={160}
                   />
@@ -491,7 +491,7 @@ export default function Dispatch911() {
               </p>
               <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
               {selectedCallTypes.size > 0 && (
-                <span className="text-[10px] font-mono text-violet-400">
+                <span className="text-[10px] font-mono text-plum-500">
                   {selectedCallTypes.size} selected
                 </span>
               )}
