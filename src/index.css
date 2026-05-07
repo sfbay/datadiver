@@ -51,8 +51,62 @@
   --color-revenue-mid: #5c9693;   /* teal-500 */
   --color-revenue-high: #9db87a;  /* moss-400 */
 
-  /* Typography — Fraunces display, Roboto Serif body, Space Mono labels.
-     Font CDN links updated in next commit. */
+  /* Earth-tone pigment scales — exposed as Tailwind utility classes
+     (text-moss-500, bg-terracotta-400/20, border-brick-600, etc.) so
+     migrations from bright Tailwind defaults read as clean class swaps
+     instead of inline hex literals. Same values as the raw palette in
+     src/styles/tokens.css; duplicated here so Tailwind v4's class
+     generator picks them up. */
+  --color-terracotta-400: #e8896b;
+  --color-terracotta-500: #d47149;
+  --color-terracotta-600: #b85a33;
+  --color-terracotta-700: #8f4426;
+
+  --color-ochre-400: #e8c06b;
+  --color-ochre-500: #d4a435;
+  --color-ochre-600: #b58620;
+  --color-ochre-700: #8f6817;
+
+  --color-moss-400: #9db87a;
+  --color-moss-500: #7a9954;
+  --color-moss-600: #5c7a3d;
+  --color-moss-700: #445c2b;
+
+  --color-teal-400: #8bb5b2;
+  --color-teal-500: #5c9693;
+  --color-teal-600: #3f7573;
+  --color-teal-700: #2e5856;
+
+  --color-brick-400: #d17566;
+  --color-brick-500: #b85545;
+  --color-brick-600: #963e30;
+  --color-brick-700: #6f2b20;
+
+  --color-indigo-400: #8a92b5;
+  --color-indigo-500: #616a96;
+  --color-indigo-600: #474e74;
+
+  --color-plum-400: #b08aa8;
+  --color-plum-500: #8b6282;
+  --color-plum-600: #6b4563;
+
+  /* Espresso + cream scales — exposed as utilities for warm grayscale
+     surfaces (e.g., bg-espresso-800, border-cream-300). */
+  --color-espresso-1000: #140c08;
+  --color-espresso-900: #1e140d;
+  --color-espresso-800: #2a1d13;
+  --color-espresso-700: #3a2a1e;
+  --color-espresso-600: #4b3827;
+  --color-espresso-500: #5e4831;
+
+  --color-cream-50: #fbf6ea;
+  --color-cream-100: #f5ecd9;
+  --color-cream-200: #ecdfc5;
+  --color-cream-300: #ddcba8;
+  --color-cream-400: #c7b288;
+  --color-cream-500: #a8926a;
+
+  /* Typography — Fraunces display, Roboto Serif body, Space Mono labels. */
   --font-display: "Fraunces", "Roboto Serif", Georgia, serif;
   --font-sans: "Roboto Serif", Georgia, serif;
   --font-mono: "Space Mono", "Fira Code", monospace;
