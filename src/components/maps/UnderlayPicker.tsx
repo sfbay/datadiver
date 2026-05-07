@@ -104,7 +104,7 @@ export default function UnderlayPicker({ presets, activeVariable, onSelect }: Un
         title="Demographic underlay"
         className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-all duration-200 ${
           activeVariable
-            ? 'bg-violet-500/15 text-violet-300 dark:text-violet-300 ring-1 ring-violet-500/30'
+            ? 'bg-plum-500/15 text-plum-400 dark:text-plum-400 ring-1 ring-plum-500/30'
             : open
             ? 'bg-white dark:bg-white/[0.08] text-ink dark:text-white shadow-sm'
             : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
@@ -146,7 +146,7 @@ export default function UnderlayPicker({ presets, activeVariable, onSelect }: Un
                     onClick={() => handlePresetClick(config.key, config)}
                     className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-left text-xs transition-colors ${
                       isActive
-                        ? 'bg-violet-600/25 text-violet-200'
+                        ? 'bg-plum-600/25 text-plum-400'
                         : 'text-slate-300 hover:bg-white/5'
                     }`}
                   >
@@ -156,13 +156,13 @@ export default function UnderlayPicker({ presets, activeVariable, onSelect }: Un
                     />
                     <span className="flex-1 leading-tight">{config.shortLabel}</span>
                     {isActive && !config.parentGroup && (
-                      <svg className="w-3 h-3 flex-shrink-0 text-violet-400" fill="none" viewBox="0 0 12 12">
+                      <svg className="w-3 h-3 flex-shrink-0 text-plum-500" fill="none" viewBox="0 0 12 12">
                         <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     )}
                     {config.parentGroup && (
                       <svg
-                        className={`w-3 h-3 flex-shrink-0 transition-transform ${showSubPicker ? 'rotate-90' : ''} ${isActive ? 'text-violet-400' : 'text-slate-500'}`}
+                        className={`w-3 h-3 flex-shrink-0 transition-transform ${showSubPicker ? 'rotate-90' : ''} ${isActive ? 'text-plum-500' : 'text-slate-500'}`}
                         fill="none"
                         viewBox="0 0 12 12"
                       >
@@ -179,7 +179,7 @@ export default function UnderlayPicker({ presets, activeVariable, onSelect }: Un
                           onClick={() => handleSubPickerClick(sub.key)}
                           className={`w-full flex items-center gap-2 px-2 py-1 rounded text-left text-[11px] transition-colors ${
                             activeVariable === sub.key
-                              ? 'bg-violet-600/25 text-violet-200'
+                              ? 'bg-plum-600/25 text-plum-400'
                               : 'text-slate-400 hover:bg-white/5 hover:text-slate-300'
                           }`}
                         >
@@ -189,7 +189,7 @@ export default function UnderlayPicker({ presets, activeVariable, onSelect }: Un
                           />
                           <span className="flex-1 leading-tight">{sub.shortLabel}</span>
                           {activeVariable === sub.key && (
-                            <svg className="w-3 h-3 flex-shrink-0 text-violet-400" fill="none" viewBox="0 0 12 12">
+                            <svg className="w-3 h-3 flex-shrink-0 text-plum-500" fill="none" viewBox="0 0 12 12">
                               <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
                           )}
@@ -258,7 +258,7 @@ export default function UnderlayPicker({ presets, activeVariable, onSelect }: Un
                               }}
                               className={`w-full flex items-center gap-2 px-2 py-1 rounded text-left text-[11px] transition-colors ${
                                 isActive
-                                  ? 'bg-violet-600/25 text-violet-200'
+                                  ? 'bg-plum-600/25 text-plum-400'
                                   : presetKeys.has(config.key)
                                   ? 'text-slate-400 hover:bg-white/5'
                                   : 'text-slate-300 hover:bg-white/5'
@@ -270,13 +270,13 @@ export default function UnderlayPicker({ presets, activeVariable, onSelect }: Un
                               />
                               <span className="flex-1 leading-tight">{config.shortLabel}</span>
                               {isActive && !config.parentGroup && (
-                                <svg className="w-3 h-3 flex-shrink-0 text-violet-400" fill="none" viewBox="0 0 12 12">
+                                <svg className="w-3 h-3 flex-shrink-0 text-plum-500" fill="none" viewBox="0 0 12 12">
                                   <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                                 </svg>
                               )}
                               {config.parentGroup && (
                                 <svg
-                                  className={`w-3 h-3 flex-shrink-0 transition-transform ${showSubPicker ? 'rotate-90' : ''} ${isActive ? 'text-violet-400' : 'text-slate-500'}`}
+                                  className={`w-3 h-3 flex-shrink-0 transition-transform ${showSubPicker ? 'rotate-90' : ''} ${isActive ? 'text-plum-500' : 'text-slate-500'}`}
                                   fill="none"
                                   viewBox="0 0 12 12"
                                 >
@@ -295,7 +295,7 @@ export default function UnderlayPicker({ presets, activeVariable, onSelect }: Un
                                     }}
                                     className={`w-full flex items-center gap-2 px-2 py-1 rounded text-left text-[11px] transition-colors ${
                                       activeVariable === sub.key
-                                        ? 'bg-violet-600/25 text-violet-200'
+                                        ? 'bg-plum-600/25 text-plum-400'
                                         : 'text-slate-400 hover:bg-white/5 hover:text-slate-300'
                                     }`}
                                   >
@@ -305,7 +305,7 @@ export default function UnderlayPicker({ presets, activeVariable, onSelect }: Un
                                     />
                                     <span className="flex-1 leading-tight">{sub.shortLabel}</span>
                                     {activeVariable === sub.key && (
-                                      <svg className="w-3 h-3 flex-shrink-0 text-violet-400" fill="none" viewBox="0 0 12 12">
+                                      <svg className="w-3 h-3 flex-shrink-0 text-plum-500" fill="none" viewBox="0 0 12 12">
                                         <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                                       </svg>
                                     )}

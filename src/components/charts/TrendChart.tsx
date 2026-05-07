@@ -70,7 +70,7 @@ export default function TrendChart({ current, comparison, width = 260, height = 
     g.append('path')
       .datum(current)
       .attr('fill', 'none')
-      .attr('stroke', '#3b82f6')
+      .attr('stroke', '#3f7573')
       .attr('stroke-width', 1.5)
       .attr('d', line)
 
@@ -154,7 +154,7 @@ export default function TrendChart({ current, comparison, width = 260, height = 
       {comparison && comparison.length > 0 && (
         <div className="flex items-center gap-3 mt-1.5">
           <div className="flex items-center gap-1">
-            <div className="w-4 h-0.5 bg-blue-500 rounded" />
+            <div className="w-4 h-0.5 bg-teal-500 rounded" />
             <span className="text-[8px] font-mono text-slate-400">Current</span>
           </div>
           <div className="flex items-center gap-1">

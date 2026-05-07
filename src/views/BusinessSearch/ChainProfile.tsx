@@ -96,12 +96,12 @@ export default function ChainProfile() {
       <header className="flex-shrink-0 px-6 py-3 border-b border-slate-200/50 dark:border-white/[0.04]">
         <button
           onClick={() => navigate(-1)}
-          className="text-[10px] font-mono text-emerald-500 hover:text-emerald-400 transition-colors mb-2"
+          className="text-[10px] font-mono text-moss-500 hover:text-moss-400 transition-colors mb-2"
         >
           ← Back
         </button>
         {loading && <Skeleton className="h-6 w-1/2" />}
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="text-sm text-brick-400">{error}</p>}
         {!loading && primaryName && (
           <>
             <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">
@@ -112,9 +112,9 @@ export default function ChainProfile() {
               {' · '}
               <span className="text-slate-700 dark:text-slate-300">{locations.length}</span> location{locations.length !== 1 ? 's' : ''}
               {' · '}
-              <span className="text-emerald-400">{stats.active} active</span>
+              <span className="text-moss-400">{stats.active} active</span>
               {stats.closed > 0 && (
-                <>{' · '}<span className="text-red-400">{stats.closed} closed</span></>
+                <>{' · '}<span className="text-brick-400">{stats.closed} closed</span></>
               )}
               {stats.oldestStart && (
                 <> · since <span className="font-mono">{stats.oldestStart.split('T')[0].slice(0, 4)}</span></>
@@ -145,7 +145,7 @@ export default function ChainProfile() {
                       <span
                         key={s.sector}
                         className="text-[10px] font-mono px-2 py-1 rounded-full
-                          bg-cyan-500/10 text-cyan-400"
+                          bg-teal-500/10 text-teal-400"
                       >
                         {s.sector} · {s.count}
                       </span>
@@ -179,8 +179,8 @@ export default function ChainProfile() {
                           <p className="text-[10px] font-mono tabular-nums text-slate-500 flex-shrink-0">
                             {l.dba_start_date?.split('T')[0]?.slice(0, 4)}
                             {l.dba_end_date
-                              ? <span className="text-red-400"> – {l.dba_end_date.split('T')[0].slice(0, 4)}</span>
-                              : <span className="text-emerald-400"> – open</span>}
+                              ? <span className="text-brick-400"> – {l.dba_end_date.split('T')[0].slice(0, 4)}</span>
+                              : <span className="text-moss-400"> – open</span>}
                           </p>
                         </div>
                       </Link>

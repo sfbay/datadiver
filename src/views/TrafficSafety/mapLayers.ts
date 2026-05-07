@@ -33,10 +33,10 @@ export const CRASH_HEATMAP_LAYERS: mapboxgl.AnyLayer[] = [
       'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 4, 16, 10],
       'circle-color': [
         'match', ['get', 'severity'],
-        'Fatal', '#7f1d1d',
-        'Injury (Severe)', '#dc2626',
-        'Injury (Other Visible)', '#f59e0b',
-        'Injury (Complaint of Pain)', '#fbbf24',
+        'Fatal', '#6f2b20',
+        'Injury (Severe)', '#963e30',
+        'Injury (Other Visible)', '#d4a435',
+        'Injury (Complaint of Pain)', '#e8c06b',
         '#64748b',
       ],
       'circle-opacity': 0.8,
@@ -51,7 +51,7 @@ export const CRASH_HEATMAP_LAYERS: mapboxgl.AnyLayer[] = [
     filter: ['==', ['get', 'isDui'], 1],
     paint: {
       'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4, 13, 6, 16, 12],
-      'circle-color': '#a855f7',
+      'circle-color': '#8b6282',
       'circle-opacity': 0.85,
       'circle-stroke-width': 1.5,
       'circle-stroke-color': 'rgba(168, 85, 247, 0.4)',
@@ -68,12 +68,12 @@ export const ANOMALY_LAYERS: mapboxgl.AnyLayer[] = [
     paint: {
       'fill-color': [
         'interpolate', ['linear'], ['get', 'zScore'],
-        -2, '#3b82f6',
-        -1, '#93c5fd',
+        -2, '#3f7573',
+        -1, '#8bb5b2',
         0, '#e2e8f0',
-        1, '#fbbf24',
-        2, '#ef4444',
-        3, '#7f1d1d',
+        1, '#e8c06b',
+        2, '#b85545',
+        3, '#6f2b20',
       ],
       'fill-opacity': 0.55,
     },
@@ -94,10 +94,10 @@ export const SPEED_CAM_LAYERS: mapboxgl.AnyLayer[] = [
     source: 'speed-cam-data',
     paint: {
       'circle-radius': ['interpolate', ['linear'], ['get', 'citations'], 0, 5, 1000, 18],
-      'circle-color': '#f59e0b',
+      'circle-color': '#d4a435',
       'circle-opacity': 0.6,
       'circle-stroke-width': 1.5,
-      'circle-stroke-color': '#f59e0b',
+      'circle-stroke-color': '#d4a435',
     },
   } as mapboxgl.AnyLayer,
 ]
@@ -110,10 +110,10 @@ export const RED_LIGHT_LAYERS: mapboxgl.AnyLayer[] = [
     source: 'redlight-data',
     paint: {
       'circle-radius': ['interpolate', ['linear'], ['get', 'count'], 0, 5, 500, 16],
-      'circle-color': '#dc2626',
+      'circle-color': '#963e30',
       'circle-opacity': 0.5,
       'circle-stroke-width': 1.5,
-      'circle-stroke-color': '#dc2626',
+      'circle-stroke-color': '#963e30',
     },
   } as mapboxgl.AnyLayer,
 ]
@@ -148,7 +148,7 @@ export const HIN_LAYERS: mapboxgl.AnyLayer[] = [
     type: 'line',
     source: 'hin-data',
     paint: {
-      'line-color': '#a855f7',
+      'line-color': '#8b6282',
       'line-width': ['interpolate', ['linear'], ['zoom'], 10, 1.5, 14, 4, 17, 8],
       'line-opacity': 0.7,
     },

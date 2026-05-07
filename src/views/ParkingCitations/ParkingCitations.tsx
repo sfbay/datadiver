@@ -490,11 +490,11 @@ export default function ParkingCitations() {
         'fill-color': [
           'interpolate', ['linear'], ['get', 'zScore'],
           -2, '#3f7573',
-          -1, '#93c5fd',
+          -1, '#8bb5b2',
           0, '#e2e8f0',
           1, '#e8c06b',
           2, '#b85545',
-          3, '#7f1d1d',
+          3, '#6f2b20',
         ],
         'fill-opacity': 0.55,
       },
@@ -815,7 +815,7 @@ export default function ParkingCitations() {
                 <div className="flex items-center gap-1">
                   <span className="text-[9px] font-mono text-teal-500">−2σ</span>
                   <div className="flex h-2.5 rounded-full overflow-hidden" style={{ width: 100 }}>
-                    {['#3f7573', '#93c5fd', '#e2e8f0', '#e8c06b', '#b85545', '#7f1d1d'].map((c, i) => (
+                    {['#3f7573', '#8bb5b2', '#e2e8f0', '#e8c06b', '#b85545', '#6f2b20'].map((c, i) => (
                       <div key={i} className="flex-1" style={{ backgroundColor: c }} />
                     ))}
                   </div>

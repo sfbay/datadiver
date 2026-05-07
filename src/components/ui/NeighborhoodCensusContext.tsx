@@ -36,14 +36,14 @@ function formatNumber(value: number): string {
 function incomeColor(value: number, cityAvg: number | undefined): string {
   if (cityAvg == null) return 'text-slate-200'
   const ratio = value / cityAvg
-  if (ratio < 0.5) return 'text-red-400'
-  if (ratio < 0.7) return 'text-amber-400'
-  return 'text-emerald-400'
+  if (ratio < 0.5) return 'text-brick-400'
+  if (ratio < 0.7) return 'text-ochre-500'
+  return 'text-moss-400'
 }
 
 function rentBurdenColor(value: number): string {
-  if (value > 50) return 'text-red-400'
-  if (value > 40) return 'text-amber-400'
+  if (value > 50) return 'text-brick-400'
+  if (value > 40) return 'text-ochre-500'
   return 'text-slate-200'
 }
 
@@ -67,7 +67,7 @@ function ComparisonBar({ label, value, cityAvg, maxValue, formatFn, higherIsBett
   // Determine bar color: green if above avg and higher is better, or below avg and lower is better
   const aboveAvg = value > cityAvg
   const isGood = higherIsBetter ? aboveAvg : !aboveAvg
-  const barColor = isGood ? '#10b981' : '#f59e0b'
+  const barColor = isGood ? '#7a9954' : '#d4a435'
 
   return (
     <div className="space-y-0.5">
@@ -116,8 +116,8 @@ export default function NeighborhoodCensusContext({
       >
         <div className="flex items-center gap-1.5">
           {/* Purple circle icon */}
-          <span className="w-2 h-2 rounded-full bg-violet-500 flex-shrink-0" />
-          <span className="text-xs font-semibold text-violet-300 uppercase tracking-wide">
+          <span className="w-2 h-2 rounded-full bg-plum-500 flex-shrink-0" />
+          <span className="text-xs font-semibold text-plum-400 uppercase tracking-wide">
             Census Context
           </span>
         </div>

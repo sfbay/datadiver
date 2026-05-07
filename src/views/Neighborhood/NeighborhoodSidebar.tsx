@@ -34,7 +34,7 @@ function fmt(n: number): string {
 function YoYBadge({ pct }: { pct: number }) {
   const positive = pct > 0
   return (
-    <span className={`text-[10px] font-mono tabular-nums ${positive ? 'text-red-400' : pct < 0 ? 'text-emerald-400' : 'text-slate-500'}`}>
+    <span className={`text-[10px] font-mono tabular-nums ${positive ? 'text-brick-400' : pct < 0 ? 'text-moss-400' : 'text-slate-500'}`}>
       {positive ? '+' : ''}{pct.toFixed(0)}%
     </span>
   )
@@ -44,7 +44,7 @@ function ZDot({ z }: { z: number }) {
   if (Math.abs(z) <= 1) return null
   return (
     <span
-      className={`inline-block w-1.5 h-1.5 rounded-full ${z > 1 ? 'bg-red-400' : 'bg-blue-400'}`}
+      className={`inline-block w-1.5 h-1.5 rounded-full ${z > 1 ? 'bg-brick-400' : 'bg-teal-400'}`}
       title={`z-score: ${z >= 0 ? '+' : ''}${z.toFixed(1)}`}
     />
   )
@@ -142,7 +142,7 @@ function ProfileView({ profile, onDiveIn, isDiveInActive, isDiveInLoading, visib
         <button
           onClick={onDiveIn}
           disabled={isDiveInLoading}
-          className="w-full py-2.5 rounded-xl glass-card text-[11px] font-mono uppercase tracking-wider text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 transition-all duration-200 flex items-center justify-center gap-2"
+          className="w-full py-2.5 rounded-xl glass-card text-[11px] font-mono uppercase tracking-wider text-plum-500 hover:text-plum-400 hover:bg-plum-500/10 transition-all duration-200 flex items-center justify-center gap-2"
         >
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <path d="M6 2v8M3 7l3 3 3-3" />
@@ -152,7 +152,7 @@ function ProfileView({ profile, onDiveIn, isDiveInActive, isDiveInLoading, visib
       )}
       {isDiveInActive && (
         <div className="text-center py-1">
-          <span className="text-[9px] font-mono text-purple-400/60 uppercase tracking-wider">Data portrait active on map</span>
+          <span className="text-[9px] font-mono text-plum-500/60 uppercase tracking-wider">Data portrait active on map</span>
         </div>
       )}
 
@@ -171,13 +171,13 @@ function ProfileView({ profile, onDiveIn, isDiveInActive, isDiveInLoading, visib
           <p className="text-[8px] font-mono text-slate-500 uppercase tracking-wider mt-0.5">Events</p>
         </div>
         <div className="glass-card rounded-xl px-3 py-2.5 text-center">
-          <p className={`text-[16px] font-mono font-semibold tabular-nums ${profile.compositeZScore > 1 ? 'text-red-400' : profile.compositeZScore < -1 ? 'text-blue-400' : 'text-slate-300'}`}>
+          <p className={`text-[16px] font-mono font-semibold tabular-nums ${profile.compositeZScore > 1 ? 'text-brick-400' : profile.compositeZScore < -1 ? 'text-teal-500' : 'text-slate-300'}`}>
             {profile.compositeZScore >= 0 ? '+' : ''}{profile.compositeZScore.toFixed(1)}
           </p>
           <p className="text-[8px] font-mono text-slate-500 uppercase tracking-wider mt-0.5">Z-Score</p>
         </div>
         <div className="glass-card rounded-xl px-3 py-2.5 text-center">
-          <p className={`text-[16px] font-mono font-semibold tabular-nums ${profile.anomalyCount > 2 ? 'text-red-400' : profile.anomalyCount > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+          <p className={`text-[16px] font-mono font-semibold tabular-nums ${profile.anomalyCount > 2 ? 'text-brick-400' : profile.anomalyCount > 0 ? 'text-ochre-500' : 'text-moss-400'}`}>
             {profile.anomalyCount}/5
           </p>
           <p className="text-[8px] font-mono text-slate-500 uppercase tracking-wider mt-0.5">Anomalies</p>
@@ -190,8 +190,8 @@ function ProfileView({ profile, onDiveIn, isDiveInActive, isDiveInLoading, visib
           Safety
         </p>
         <div className="space-y-0.5">
-          <MetricRow label="Emergency Response" metric={profile.emergency} color="#ef4444" maxCount={maxCount} domainKey="emergency" neighborhood={profile.name} isVisible={visibleDomains?.has('emergency')} onToggle={() => isDiveInActive ? onToggleDomain?.('emergency') : onDiveIn?.()} isPortraitActive={isDiveInActive} />
-          <MetricRow label="Crime Incidents" metric={profile.crime} color="#f97316" maxCount={maxCount} domainKey="crime" neighborhood={profile.name} isVisible={visibleDomains?.has('crime')} onToggle={() => isDiveInActive ? onToggleDomain?.('crime') : onDiveIn?.()} isPortraitActive={isDiveInActive} />
+          <MetricRow label="Emergency Response" metric={profile.emergency} color="#b85545" maxCount={maxCount} domainKey="emergency" neighborhood={profile.name} isVisible={visibleDomains?.has('emergency')} onToggle={() => isDiveInActive ? onToggleDomain?.('emergency') : onDiveIn?.()} isPortraitActive={isDiveInActive} />
+          <MetricRow label="Crime Incidents" metric={profile.crime} color="#d47149" maxCount={maxCount} domainKey="crime" neighborhood={profile.name} isVisible={visibleDomains?.has('crime')} onToggle={() => isDiveInActive ? onToggleDomain?.('crime') : onDiveIn?.()} isPortraitActive={isDiveInActive} />
           <MetricRow label="Traffic Crashes" metric={profile.crashes} color="#eab308" maxCount={maxCount} domainKey="crashes" neighborhood={profile.name} isVisible={visibleDomains?.has('crashes')} onToggle={() => isDiveInActive ? onToggleDomain?.('crashes') : onDiveIn?.()} isPortraitActive={isDiveInActive} />
         </div>
       </div>
@@ -202,8 +202,8 @@ function ProfileView({ profile, onDiveIn, isDiveInActive, isDiveInLoading, visib
           Quality of Life
         </p>
         <div className="space-y-0.5">
-          <MetricRow label="311 Cases" metric={profile.cases311} color="#3b82f6" maxCount={maxCount} domainKey="cases311" neighborhood={profile.name} isVisible={visibleDomains?.has('cases311')} onToggle={() => isDiveInActive ? onToggleDomain?.('cases311') : onDiveIn?.()} isPortraitActive={isDiveInActive} />
-          <MetricRow label="Parking Citations" metric={profile.citations} color="#06b6d4" maxCount={maxCount} domainKey="citations" neighborhood={profile.name} isVisible={visibleDomains?.has('citations')} onToggle={() => isDiveInActive ? onToggleDomain?.('citations') : onDiveIn?.()} isPortraitActive={isDiveInActive} />
+          <MetricRow label="311 Cases" metric={profile.cases311} color="#3f7573" maxCount={maxCount} domainKey="cases311" neighborhood={profile.name} isVisible={visibleDomains?.has('cases311')} onToggle={() => isDiveInActive ? onToggleDomain?.('cases311') : onDiveIn?.()} isPortraitActive={isDiveInActive} />
+          <MetricRow label="Parking Citations" metric={profile.citations} color="#5c9693" maxCount={maxCount} domainKey="citations" neighborhood={profile.name} isVisible={visibleDomains?.has('citations')} onToggle={() => isDiveInActive ? onToggleDomain?.('citations') : onDiveIn?.()} isPortraitActive={isDiveInActive} />
         </div>
       </div>
 
@@ -275,7 +275,7 @@ export default function NeighborhoodSidebar({
             {compareMode && (
               <button
                 onClick={onToggleCompare}
-                className="text-[9px] font-mono text-purple-400 hover:text-purple-300 transition-colors"
+                className="text-[9px] font-mono text-plum-500 hover:text-plum-400 transition-colors"
               >
                 Exit compare
               </button>
@@ -283,7 +283,7 @@ export default function NeighborhoodSidebar({
             {!compareMode && selectedNeighborhood && (
               <button
                 onClick={() => onSelectNeighborhood(null)}
-                className="text-[9px] font-mono text-purple-400 hover:text-purple-300 transition-colors"
+                className="text-[9px] font-mono text-plum-500 hover:text-plum-400 transition-colors"
               >
                 All neighborhoods
               </button>
@@ -307,7 +307,7 @@ export default function NeighborhoodSidebar({
                 onClick={() => setSortKey(key)}
                 className={`text-[9px] font-mono px-2 py-0.5 rounded-full transition-all duration-200 ${
                   sortKey === key
-                    ? 'bg-purple-500/20 text-purple-300 ring-1 ring-purple-500/20'
+                    ? 'bg-plum-500/20 text-plum-400 ring-1 ring-plum-500/20'
                     : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]'
                 }`}
               >
@@ -319,7 +319,7 @@ export default function NeighborhoodSidebar({
               onClick={onToggleCompare}
               className={`text-[9px] font-mono px-2 py-0.5 rounded-full transition-all duration-200 ml-auto ${
                 compareMode
-                  ? 'bg-purple-500/30 text-purple-300 ring-1 ring-purple-500/30'
+                  ? 'bg-plum-500/30 text-plum-400 ring-1 ring-plum-500/30'
                   : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]'
               }`}
               title="Compare up to 3 neighborhoods"
@@ -392,7 +392,7 @@ export default function NeighborhoodSidebar({
                       <p className="text-[10px] text-slate-500 font-mono italic">
                         {fmt(profile.totalEvents)} events
                         {profile.anomalyCount > 0 && (
-                          <span className="text-amber-400/80">
+                          <span className="text-ochre-500/80">
                             {' '}{profile.anomalyCount} anomal{profile.anomalyCount === 1 ? 'y' : 'ies'}
                           </span>
                         )}
@@ -439,7 +439,7 @@ export default function NeighborhoodSidebar({
                     <p className="text-[10px] text-slate-500 font-mono italic">
                       {fmt(profile.totalEvents)} events
                       {profile.anomalyCount > 0 && (
-                        <span className="text-amber-400/80">
+                        <span className="text-ochre-500/80">
                           {' '}{profile.anomalyCount} anomal{profile.anomalyCount === 1 ? 'y' : 'ies'}
                         </span>
                       )}

@@ -80,7 +80,7 @@ export default function HorizontalBarChart({
       .attr('width', 0)
       .attr('height', barHeight)
       .attr('rx', 2)
-      .attr('fill', (d) => d.color || '#a78bfa')
+      .attr('fill', (d) => d.color || '#8b6282')
       .attr('opacity', 0.8)
 
     if (onBarClick) {

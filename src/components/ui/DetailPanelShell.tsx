@@ -8,7 +8,7 @@ interface DetailPanelShellProps {
   onClose: () => void
   /** Loading state — shows spinner instead of children */
   isLoading: boolean
-  /** Accent color for the spinner border (e.g. "border-cyan-400") */
+  /** Accent color for the spinner border (e.g. "border-teal-400") */
   spinnerClass?: string
   /** Width class override (default "w-72") */
   widthClass?: string

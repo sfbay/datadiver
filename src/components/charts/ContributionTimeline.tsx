@@ -14,7 +14,7 @@ interface Props {
   accentColor?: string
 }
 
-export default function ContributionTimeline({ data, width = 400, height = 160, accentColor = '#10b981' }: Props) {
+export default function ContributionTimeline({ data, width = 400, height = 160, accentColor = '#7a9954' }: Props) {
   const svgRef = useRef<SVGSVGElement>(null)
   const isDark = useAppStore((s) => s.isDarkMode)
 

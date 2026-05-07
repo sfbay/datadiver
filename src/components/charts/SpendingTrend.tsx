@@ -22,8 +22,8 @@ interface DeptSeries {
 }
 
 const DEPT_COLORS = [
-  '#0ea5e9', '#a78bfa', '#f59e0b', '#10b981', '#ef4444',
-  '#ec4899', '#8b5cf6', '#06b6d4', '#f97316', '#84cc16',
+  '#5c9693', '#8b6282', '#d4a435', '#7a9954', '#b85545',
+  '#d17566', '#8b6282', '#5c9693', '#d47149', '#84cc16',
 ]
 
 export default function SpendingTrend({

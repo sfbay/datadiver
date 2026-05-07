@@ -25,7 +25,7 @@ export default function ScannerFeedChips({ neighborhood, serviceFilter }: Scanne
             href={feed.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-cyan-500/10 dark:bg-cyan-400/10 text-cyan-600 dark:text-cyan-400 text-[10px] font-mono hover:bg-cyan-500/20 dark:hover:bg-cyan-400/20 transition-colors"
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-teal-500/10 dark:bg-teal-400/10 text-teal-600 dark:text-teal-400 text-[10px] font-mono hover:bg-teal-500/20 dark:hover:bg-teal-400/20 transition-colors"
             title={feed.description}
           >
             <svg className="w-2.5 h-2.5 flex-shrink-0" viewBox="0 0 16 16" fill="currentColor">

@@ -78,9 +78,9 @@ export default function DepartmentBars({
       .attr('height', y.bandwidth())
       .attr('rx', 2)
       .attr('fill', (d) => {
-        if (d.variance_pct > 5) return '#ef4444' // over budget
+        if (d.variance_pct > 5) return '#b85545' // over budget
         if (d.variance_pct < -5) return '#22c55e' // under budget
-        return '#0ea5e9' // on track
+        return '#5c9693' // on track
       })
       .attr('opacity', (d) => (selectedDepartment && d.department !== selectedDepartment ? 0.3 : 0.75))
       .attr('cursor', 'pointer')

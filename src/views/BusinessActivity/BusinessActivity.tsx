@@ -797,7 +797,7 @@ export default function BusinessActivity() {
                 <div className="flex items-center gap-1">
                   <span className="text-[9px] font-mono text-teal-500">-2{'\u03C3'}</span>
                   <div className="flex h-2.5 rounded-full overflow-hidden" style={{ width: 100 }}>
-                    {['#3f7573', '#93c5fd', '#e2e8f0', '#e8c06b', '#b85545', '#7f1d1d'].map((c, i) => (
+                    {['#3f7573', '#8bb5b2', '#e2e8f0', '#e8c06b', '#b85545', '#6f2b20'].map((c, i) => (
                       <div key={i} className="flex-1" style={{ backgroundColor: c }} />
                     ))}
                   </div>

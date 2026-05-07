@@ -44,10 +44,10 @@ function statusFor(r: BusinessLocationRecord): { label: string; color: string } 
   const isAdmin = r.administratively_closed?.trim().toLowerCase() === 'yes'
   if (r.dba_end_date) {
     return isAdmin
-      ? { label: 'Forced closure', color: '#f59e0b' }
-      : { label: 'Closed', color: '#ef4444' }
+      ? { label: 'Forced closure', color: '#d4a435' }
+      : { label: 'Closed', color: '#b85545' }
   }
-  return { label: 'Active', color: '#10b981' }
+  return { label: 'Active', color: '#7a9954' }
 }
 
 export default function BusinessProfile() {
@@ -62,7 +62,7 @@ export default function BusinessProfile() {
       <header className="flex-shrink-0 px-6 py-3 border-b border-slate-200/50 dark:border-white/[0.04]">
         <button
           onClick={() => navigate(-1)}
-          className="text-[10px] font-mono text-emerald-500 hover:text-emerald-400 transition-colors mb-2"
+          className="text-[10px] font-mono text-moss-500 hover:text-moss-400 transition-colors mb-2"
         >
           ← Back
         </button>
@@ -73,7 +73,7 @@ export default function BusinessProfile() {
           </div>
         )}
         {error && (
-          <p className="text-sm text-red-400">{error}</p>
+          <p className="text-sm text-brick-400">{error}</p>
         )}
         {business && (
           <div className="flex items-center gap-3 flex-wrap">
@@ -231,7 +231,7 @@ function ChainCard({ ban, primaryDba, locations }: { ban: string | null; primary
         {ban && (
           <Link
             to={`/business/chain/${encodeURIComponent(ban)}`}
-            className="text-[10px] font-mono text-emerald-500 hover:text-emerald-400 transition-colors"
+            className="text-[10px] font-mono text-moss-500 hover:text-moss-400 transition-colors"
           >
             View full chain →
           </Link>
@@ -240,7 +240,7 @@ function ChainCard({ ban, primaryDba, locations }: { ban: string | null; primary
       <p className="text-[10px] text-slate-500 mb-3">
         {primaryDba && <span className="text-slate-300">{primaryDba} </span>}
         operates from {locations.length + 1} locations under the same Business Account Number.
-        <span className="text-emerald-400"> {active + (locations.find((l) => !l.dba_end_date) ? 0 : 1)} active.</span>
+        <span className="text-moss-400"> {active + (locations.find((l) => !l.dba_end_date) ? 0 : 1)} active.</span>
       </p>
       <ul className="space-y-1">
         {locations.slice(0, 8).map((l) => (
@@ -254,7 +254,7 @@ function ChainCard({ ban, primaryDba, locations }: { ban: string | null; primary
               </p>
               <p className="text-[9px] text-slate-500 font-mono truncate">
                 {l.full_business_address}
-                {l.dba_end_date ? <span className="text-red-400"> · closed {l.dba_end_date.split('T')[0].slice(0, 4)}</span> : ''}
+                {l.dba_end_date ? <span className="text-brick-400"> · closed {l.dba_end_date.split('T')[0].slice(0, 4)}</span> : ''}
               </p>
             </Link>
           </li>
@@ -279,7 +279,7 @@ function OwnerOtherCard({ ownerName, businesses }: { ownerName: string | undefin
         {ownerName && (
           <Link
             to={`/business/owner/${encodeURIComponent(ownerName)}`}
-            className="text-[10px] font-mono text-emerald-500 hover:text-emerald-400 transition-colors"
+            className="text-[10px] font-mono text-moss-500 hover:text-moss-400 transition-colors"
           >
             View owner →
           </Link>
@@ -365,8 +365,8 @@ function Row({ label, value, muted }: { label: string; value: string; muted?: bo
 
 function Badge({ color, label }: { color: 'amber' | 'cyan'; label: string }) {
   const cls = color === 'amber'
-    ? 'bg-amber-500/10 text-amber-400'
-    : 'bg-cyan-500/10 text-cyan-400'
+    ? 'bg-ochre-500/10 text-ochre-500'
+    : 'bg-teal-500/10 text-teal-400'
   return (
     <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded ${cls}`}>
       {label}

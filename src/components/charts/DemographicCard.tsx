@@ -139,7 +139,7 @@ export default function DemographicCard({
     <div
       className={[
         'rounded-lg bg-white/5 border transition-colors cursor-pointer',
-        isActive ? 'border-purple-500/40' : 'border-white/5 hover:border-white/10',
+        isActive ? 'border-plum-500/40' : 'border-white/5 hover:border-white/10',
       ].join(' ')}
       onClick={() => onActivate(variable)}
     >
@@ -148,8 +148,8 @@ export default function DemographicCard({
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-xs font-medium text-slate-200 truncate">{config.shortLabel}</span>
           {isActive && (
-            <span className="flex items-center gap-1 text-[10px] text-purple-400 font-mono shrink-0">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-purple-400" />
+            <span className="flex items-center gap-1 text-[10px] text-plum-500 font-mono shrink-0">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-plum-400" />
               active
             </span>
           )}
@@ -186,7 +186,7 @@ export default function DemographicCard({
             height={20}
             gap={1}
             barColor="#7c3aed"
-            accentColor="#a78bfa"
+            accentColor="#8b6282"
             highlightLast={false}
             className="w-full"
           />

@@ -321,7 +321,7 @@ export default function Demographics() {
               </p>
             </div>
             {!isEmpty && (
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-purple-400/80 bg-purple-500/10 px-2 py-1 rounded-full">
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-plum-500/80 bg-plum-500/10 px-2 py-1 rounded-full">
                 {neighborhoods.length} neighborhoods
               </span>
             )}
@@ -494,7 +494,7 @@ export default function Demographics() {
                 <select
                   value={scatterYMetric ?? ''}
                   onChange={e => setScatterYMetric(e.target.value || null)}
-                  className="flex-1 text-[11px] bg-slate-900 border border-white/[0.06] rounded-md px-2 py-1 text-slate-200 focus:outline-none focus:ring-1 focus:ring-purple-500/40"
+                  className="flex-1 text-[11px] bg-slate-900 border border-white/[0.06] rounded-md px-2 py-1 text-slate-200 focus:outline-none focus:ring-1 focus:ring-plum-500/40"
                   style={{ colorScheme: 'dark' }}
                 >
                   <optgroup label="Civic Metrics">
@@ -566,7 +566,7 @@ export default function Demographics() {
                           onClick={() => setSelectedNeighborhood(isSelected ? null : n.name)}
                           className={`relative py-1.5 px-3 rounded-lg cursor-pointer transition-all duration-200 ${
                             isSelected
-                              ? 'bg-purple-500/10 ring-1 ring-purple-500/30'
+                              ? 'bg-plum-500/10 ring-1 ring-plum-500/30'
                               : 'hover:bg-white/[0.04]'
                           }`}
                         >

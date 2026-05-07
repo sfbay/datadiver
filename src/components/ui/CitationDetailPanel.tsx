@@ -79,9 +79,9 @@ export default function CitationDetailPanel() {
       open={!!selectedCitation}
       onClose={onClose}
       isLoading={isLoading}
-      spinnerClass="border-orange-400"
+      spinnerClass="border-terracotta-400"
       buildShareUrl={buildShareUrl}
-      shareAccentClass="text-orange-500"
+      shareAccentClass="text-terracotta-500"
     >
       {detail && (
         <>
@@ -98,9 +98,9 @@ export default function CitationDetailPanel() {
           )}
 
           {/* Fine amount — prominent */}
-          <div className="mb-3 p-2 rounded-lg bg-orange-500/10">
-            <p className="text-[9px] font-mono uppercase tracking-wider text-orange-400">Fine</p>
-            <p className="text-xl font-bold font-mono text-orange-500">
+          <div className="mb-3 p-2 rounded-lg bg-terracotta-500/10">
+            <p className="text-[9px] font-mono uppercase tracking-wider text-terracotta-500">Fine</p>
+            <p className="text-xl font-bold font-mono text-terracotta-500">
               {formatCurrency(detail.fineAmount)}
             </p>
           </div>
@@ -136,7 +136,7 @@ export default function CitationDetailPanel() {
               </p>
               <span className={`inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full ${
                 isOutOfState
-                  ? 'bg-blue-500/10 text-blue-400'
+                  ? 'bg-teal-500/10 text-teal-500'
                   : 'bg-slate-100 dark:bg-white/[0.04] text-slate-500'
               }`}>
                 {detail.plateState}

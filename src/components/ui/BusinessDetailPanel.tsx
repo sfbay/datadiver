@@ -175,9 +175,9 @@ export default function BusinessDetailPanel() {
               <div>
                 <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500">Status</p>
                 <p className={`text-[11px] font-semibold ${
-                  detail.status === 'Active' ? 'text-emerald-400'
-                    : detail.status === 'Forced closure' ? 'text-amber-400'
-                    : 'text-red-400'
+                  detail.status === 'Active' ? 'text-moss-400'
+                    : detail.status === 'Forced closure' ? 'text-ochre-500'
+                    : 'text-brick-400'
                 }`}>
                   {detail.status}
                 </p>
@@ -202,17 +202,17 @@ export default function BusinessDetailPanel() {
             {(detail.status === 'Forced closure' || detail.parkingTax || detail.transientTax) && (
               <div className="flex gap-2 pt-1 flex-wrap">
                 {detail.status === 'Forced closure' && (
-                  <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400">
+                  <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-ochre-500/10 text-ochre-500">
                     Administratively closed
                   </span>
                 )}
                 {detail.parkingTax && (
-                  <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400">
+                  <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-ochre-500/10 text-ochre-500">
                     Parking Tax
                   </span>
                 )}
                 {detail.transientTax && (
-                  <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400">
+                  <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-teal-500/10 text-teal-400">
                     Hotel Tax
                   </span>
                 )}

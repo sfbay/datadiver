@@ -75,12 +75,12 @@ export default function OwnerProfile() {
       <header className="flex-shrink-0 px-6 py-3 border-b border-slate-200/50 dark:border-white/[0.04]">
         <button
           onClick={() => navigate(-1)}
-          className="text-[10px] font-mono text-emerald-500 hover:text-emerald-400 transition-colors mb-2"
+          className="text-[10px] font-mono text-moss-500 hover:text-moss-400 transition-colors mb-2"
         >
           ← Back
         </button>
         {loading && <Skeleton className="h-6 w-1/2" />}
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="text-sm text-brick-400">{error}</p>}
         {!loading && decoded && (
           <>
             <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">
@@ -111,7 +111,7 @@ export default function OwnerProfile() {
                       <span
                         key={s.sector}
                         className="text-[10px] font-mono px-2 py-1 rounded-full
-                          bg-cyan-500/10 text-cyan-400"
+                          bg-teal-500/10 text-teal-400"
                       >
                         {s.sector} · {s.count}
                       </span>
@@ -147,8 +147,8 @@ export default function OwnerProfile() {
 
 function DisambiguationBanner() {
   return (
-    <div className="rounded-lg p-3 bg-amber-500/5 border border-amber-500/15">
-      <p className="text-[10px] text-amber-200/70 leading-relaxed">
+    <div className="rounded-lg p-3 bg-ochre-500/5 border border-ochre-500/15">
+      <p className="text-[10px] text-ochre-400/70 leading-relaxed">
         <span className="font-semibold">Note:</span> owner names in the SF business registry are free-text.
         This page groups by exact match on <span className="font-mono">ownership_name</span> only —
         variants like <em>“Smith John”</em> vs <em>“John Smith LLC”</em> are <em>not</em> combined here.
@@ -184,8 +184,8 @@ function BanClusterRow({ cluster }: { cluster: { ban: string | null; primaryDba:
             <p className="text-[10px] text-slate-500 dark:text-slate-500 font-mono mt-0.5">
               {cluster.locations.length} location{cluster.locations.length === 1 ? '' : 's'}
               {' · '}
-              <span className="text-emerald-400">{active} active</span>
-              {closed > 0 && <>{' · '}<span className="text-red-400">{closed} closed</span></>}
+              <span className="text-moss-400">{active} active</span>
+              {closed > 0 && <>{' · '}<span className="text-brick-400">{closed} closed</span></>}
               {cluster.ban && <> · BAN <span className="text-slate-400">{cluster.ban}</span></>}
             </p>
           </div>

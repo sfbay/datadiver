@@ -218,7 +218,7 @@ export default function Elections() {
       type: 'line',
       source: 'election-choropleth',
       paint: {
-        'line-color': mapMode === 'turnout' ? '#e2e8f0' : mapMode === 'margin' ? '#f59e0b' : (
+        'line-color': mapMode === 'turnout' ? '#e2e8f0' : mapMode === 'margin' ? '#d4a435' : (
           activeRace?.candidates.find((c) => c.isWinner)
             ? candidateColors.get(activeRace.candidates.find((c) => c.isWinner)!.name) || ACCENT
             : ACCENT
@@ -241,7 +241,7 @@ export default function Elections() {
         <div class="tooltip-value">${nhood}</div>
         ${dist ? `<div style="color:#64748b;font-size:10px">${dist}</div>` : ''}
         <div class="tooltip-label" style="margin-top:6px">City Turnout</div>
-        <div style="color:#10b981;font-weight:600">${(Number(props.turnoutPct) * 100).toFixed(1)}%</div>
+        <div style="color:#7a9954;font-weight:600">${(Number(props.turnoutPct) * 100).toFixed(1)}%</div>
       `
     }
     if (mapMode === 'margin') {
@@ -250,7 +250,7 @@ export default function Elections() {
         <div class="tooltip-value">${nhood}</div>
         ${dist ? `<div style="color:#64748b;font-size:10px">${dist}</div>` : ''}
         <div class="tooltip-label" style="margin-top:6px">City Margin</div>
-        <div style="color:#f59e0b;font-weight:600">${(Number(props.margin) * 100).toFixed(1)}%</div>
+        <div style="color:#d4a435;font-weight:600">${(Number(props.margin) * 100).toFixed(1)}%</div>
       `
     }
     return `
@@ -337,7 +337,7 @@ export default function Elections() {
         label: 'Margin',
         shortLabel: 'Margin',
         value: `${margin.toFixed(1)}%`,
-        color: margin < 5 ? '#ef4444' : '#64748b',
+        color: margin < 5 ? '#b85545' : '#64748b',
         subtitle: margin < 5 ? 'Competitive' : undefined,
       })
     }
@@ -407,7 +407,7 @@ export default function Elections() {
                   {displayResults.races.length} races
                 </span>
                 {displayResults.races.filter((r) => r.isRCV).length > 0 && (
-                  <span className="text-[10px] font-mono text-indigo-400/80 bg-indigo-400/10 px-2 py-1 rounded-full">
+                  <span className="text-[10px] font-mono text-indigo-500/80 bg-indigo-400/10 px-2 py-1 rounded-full">
                     {displayResults.races.filter((r) => r.isRCV).length} RCV
                   </span>
                 )}
@@ -464,7 +464,7 @@ export default function Elections() {
               onClick={() => setTimeMachineActive(!timeMachineActive)}
               className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all duration-200 border ${
                 timeMachineActive
-                  ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30'
+                  ? 'bg-indigo-500/20 text-indigo-500 border-indigo-500/30'
                   : 'text-slate-400 border-slate-200 dark:border-white/10 hover:text-slate-300 hover:border-white/20'
               }`}
               title="Cross-election playback"
@@ -481,7 +481,7 @@ export default function Elections() {
       {timeMachineActive && (
         <div className="flex-shrink-0 px-6 py-1.5 bg-indigo-500/10 border-b border-indigo-500/20 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-          <p className="text-[10px] font-mono text-indigo-400">
+          <p className="text-[10px] font-mono text-indigo-500">
             TIME MACHINE — {displayElectionLabel}
           </p>
           {timeline.isLoading && (
@@ -500,7 +500,7 @@ export default function Elections() {
             {error && (
               <div className="absolute inset-0 flex items-center justify-center z-20">
                 <div className="glass-card rounded-xl p-6 max-w-sm">
-                  <p className="text-sm font-medium text-red-400 mb-1">Failed to load election data</p>
+                  <p className="text-sm font-medium text-brick-400 mb-1">Failed to load election data</p>
                   <p className="text-xs text-slate-400">{error}</p>
                 </div>
               </div>
@@ -529,7 +529,7 @@ export default function Elections() {
             {!isLoading && activeRace?.isRCV && rcvData && (
               <div className="absolute bottom-6 left-5 z-10 glass-card rounded-xl p-4" style={{ maxWidth: rcvViewMode === 'sankey' ? 620 : 420 }}>
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
+                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-500">
                     RCV
                   </span>
                   <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 flex-1">
@@ -541,7 +541,7 @@ export default function Elections() {
                       onClick={() => setRcvViewMode('rounds')}
                       className={`px-2 py-0.5 rounded text-[9px] font-mono transition-all ${
                         rcvViewMode === 'rounds'
-                          ? 'bg-indigo-500/20 text-indigo-400'
+                          ? 'bg-indigo-500/20 text-indigo-500'
                           : 'text-slate-500 hover:text-slate-300'
                       }`}
                     >
@@ -551,7 +551,7 @@ export default function Elections() {
                       onClick={() => setRcvViewMode('sankey')}
                       className={`px-2 py-0.5 rounded text-[9px] font-mono transition-all ${
                         rcvViewMode === 'sankey'
-                          ? 'bg-indigo-500/20 text-indigo-400'
+                          ? 'bg-indigo-500/20 text-indigo-500'
                           : 'text-slate-500 hover:text-slate-300'
                       }`}
                     >
@@ -644,7 +644,7 @@ export default function Elections() {
                       onClick={() => setRaceFilter(filter)}
                       className={`px-2.5 py-1 rounded-full text-[10px] font-mono transition-all ${
                         raceFilter === filter
-                          ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
+                          ? 'bg-indigo-500/20 text-indigo-500 border border-indigo-500/30'
                           : 'text-slate-400 hover:text-slate-300 border border-transparent hover:border-slate-700'
                       }`}
                     >
@@ -675,7 +675,7 @@ export default function Elections() {
                               {race.title.toLowerCase()}
                             </p>
                             {race.isRCV && (
-                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex-shrink-0">
+                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-500 flex-shrink-0">
                                 RCV
                               </span>
                             )}
@@ -718,7 +718,7 @@ export default function Elections() {
                             <Link
                               to={`/campaign-finance?search=${encodeURIComponent(winner.name.split(',')[0])}`}
                               onClick={(e) => e.stopPropagation()}
-                              className="block mt-1.5 text-[9px] font-mono text-indigo-400/70 hover:text-indigo-400 transition-colors"
+                              className="block mt-1.5 text-[9px] font-mono text-indigo-500/70 hover:text-indigo-500 transition-colors"
                             >
                               See who funded this campaign →
                             </Link>
@@ -814,7 +814,7 @@ function NeighborhoodsSidebarContent({
       {selectedNeighborhood && (
         <button
           onClick={() => setSelectedNeighborhood(null)}
-          className="mb-3 text-[10px] font-mono text-indigo-500 hover:text-indigo-400 transition-colors"
+          className="mb-3 text-[10px] font-mono text-indigo-500 hover:text-indigo-500 transition-colors"
         >
           ← Clear filter: {selectedNeighborhood}
         </button>
@@ -926,7 +926,7 @@ function NeighborhoodElectionPanel({
                   </div>
                 ))}
                 {race.isRCV && (
-                  <p className="text-[9px] font-mono text-indigo-400 mt-0.5">Ranked Choice Voting</p>
+                  <p className="text-[9px] font-mono text-indigo-500 mt-0.5">Ranked Choice Voting</p>
                 )}
               </div>
             )

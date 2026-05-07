@@ -26,14 +26,14 @@ interface AdSpendCompositionChartProps {
 // Visual progression narrows scope: purple (all agencies) → slate-hatched
 // (legal, excluded) → teal (discretionary, the compliance basis) → emerald
 // (community media, the goal).
-const COLOR_AGENCY = '#a855f7'        // purple — agency-managed
+const COLOR_AGENCY = '#8b6282'        // purple — agency-managed
 const COLOR_LEGAL = '#64748b'         // slate — legal notices (within direct, excluded)
 const COLOR_DISCRETIONARY = '#2dd4bf' // teal — discretionary (within direct, the compliance basis)
-const COLOR_PCARD = '#ef4444'         // red — p-card untraceable
-const COLOR_COMMUNITY = '#10b981'     // emerald — community media share inside discretionary
+const COLOR_PCARD = '#b85545'         // red — p-card untraceable
+const COLOR_COMMUNITY = '#7a9954'     // emerald — community media share inside discretionary
 // Target line uses the SAME hue as community media on purpose: the 50% line
 // is "where community media should reach." Green dashed line = community's goal.
-const COLOR_TARGET = '#10b981'
+const COLOR_TARGET = '#7a9954'
 // Resolution 240210 took effect in FY2024-25 (our internal fiscalYear = 2025).
 // Any year strictly before that is shown with a faint "advisory" target line.
 const RESOLUTION_EFFECTIVE_FY = 2025
@@ -231,7 +231,7 @@ export default function AdSpendCompositionChart({
       const labelColor = !isPostRes
         ? '#64748b'                                // neutral slate pre-resolution
         : d.compliancePct >= 50 ? COLOR_COMMUNITY  // green when hitting 50%+
-        : '#f59e0b'                                // amber warning below target
+        : '#d4a435'                                // amber warning below target
       g.append('text')
         .attr('x', cx + bw / 2)
         .attr('y', labelY)

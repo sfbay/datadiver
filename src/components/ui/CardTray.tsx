@@ -147,8 +147,8 @@ export default function CardTray({ viewId, cards, className = '' }: CardTrayProp
               ? card.yoyDelta > 0 ? '↑' : card.yoyDelta < 0 ? '↓' : '→'
               : card.trend === 'up' ? '↑' : card.trend === 'down' ? '↓' : null
             const trendColor = card.yoyDelta != null
-              ? card.yoyDelta > 0 ? '#ef4444' : card.yoyDelta < 0 ? '#10b981' : '#64748b'
-              : card.trend === 'up' ? '#ef4444' : card.trend === 'down' ? '#10b981' : null
+              ? card.yoyDelta > 0 ? '#b85545' : card.yoyDelta < 0 ? '#7a9954' : '#64748b'
+              : card.trend === 'up' ? '#b85545' : card.trend === 'down' ? '#7a9954' : null
 
             return (
               <button
@@ -168,7 +168,7 @@ export default function CardTray({ viewId, cards, className = '' }: CardTrayProp
                 {!trendArrow && card.zScore != null && Math.abs(card.zScore) > 1 && (
                   <span
                     className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: card.zScore > 1 ? '#ef4444' : '#3b82f6' }}
+                    style={{ backgroundColor: card.zScore > 1 ? '#b85545' : '#3f7573' }}
                   />
                 )}
                 {!trendArrow && (card.zScore == null || Math.abs(card.zScore) <= 1) && (

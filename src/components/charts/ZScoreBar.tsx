@@ -36,8 +36,8 @@ export default function ZScoreBar({
   zScore,
   height = 4,
   maxSigma = 3,
-  greenColor = '#34d399',
-  redColor = '#f87171',
+  greenColor = '#9db87a',
+  redColor = '#d17566',
   showCenter = true,
 }: ZScoreBarProps) {
   if (zScore === null) {

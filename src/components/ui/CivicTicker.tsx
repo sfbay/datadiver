@@ -69,19 +69,19 @@ function timeAgo(date: Date): string {
 
 /** Category → dot color */
 const DOT_COLORS: Record<string, string> = {
-  anomaly: '#ef4444',
-  compliance: '#f59e0b',
-  trend: '#60a5fa',
-  milestone: '#6366f1',
-  live: '#ef4444',
+  anomaly: '#b85545',
+  compliance: '#d4a435',
+  trend: '#5c9693',
+  milestone: '#616a96',
+  live: '#b85545',
 }
 
 /** Severity → delta text color */
 const DELTA_COLORS: Record<string, string> = {
-  positive: '#10b981',
-  negative: '#ef4444',
+  positive: '#7a9954',
+  negative: '#b85545',
   neutral: '#94a3b8',
-  alert: '#f59e0b',
+  alert: '#d4a435',
 }
 
 // ─── Scroll Hook ────────────────────────────────────────
@@ -156,10 +156,10 @@ function HeroTicker({ items, lastUpdated, className = '' }: Omit<CivicTickerProp
       <div className="flex items-center gap-3 mb-3 px-1">
         <div className="flex items-center gap-1.5">
           <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-moss-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-moss-500" />
           </span>
-          <span className="text-[10px] font-mono uppercase tracking-[0.25em] font-bold text-emerald-500">
+          <span className="text-[10px] font-mono uppercase tracking-[0.25em] font-bold text-moss-500">
             Live Civic Data
           </span>
         </div>

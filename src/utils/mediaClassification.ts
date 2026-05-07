@@ -23,17 +23,17 @@ export interface MediaCategoryInfo {
 export const MEDIA_CATEGORIES: Record<MediaCategory, MediaCategoryInfo> = {
   'major-metro-print': {
     label: 'Major Metro Print',
-    color: '#3b82f6',
+    color: '#3f7573',
     description: 'SF Chronicle, SF Examiner, Daily Journal Corp — largest traditional spend',
   },
   'community-ethnic-press': {
     label: 'Community & Ethnic Press',
-    color: '#10b981',
+    color: '#7a9954',
     description: 'Sing Tao, El Mensajero, Bay Area Reporter, World Journal, El Tecolote',
   },
   'radio-tv': {
     label: 'Radio & TV',
-    color: '#f59e0b',
+    color: '#d4a435',
     description: 'Univision, Comcast/Effectv, iHeart, KTSF, Entercom, Audacy',
   },
   'out-of-home': {
@@ -42,7 +42,7 @@ export const MEDIA_CATEGORIES: Record<MediaCategory, MediaCategoryInfo> = {
     // which is fine because out-of-home transit + billboards have no
     // strong color association and pink reads well for physical/transit.
     label: 'Out-of-Home / Transit',
-    color: '#ec4899',
+    color: '#d17566',
     description: 'CBS Outdoor, Clear Channel, Titan Outdoor, Intersection Media',
   },
   'full-service-agency': {
@@ -51,12 +51,12 @@ export const MEDIA_CATEGORIES: Record<MediaCategory, MediaCategoryInfo> = {
     // Most Likely To, O'Rorke) and should render in the same purple
     // anywhere it appears on the page.
     label: 'Full-Service Agency',
-    color: '#a855f7',
+    color: '#8b6282',
     description: 'Zeba Consulting, Most Likely To, O\'Rorke — may include digital/social',
   },
   'digital-agency': {
     label: 'Digital / Interactive',
-    color: '#06b6d4',
+    color: '#5c9693',
     description: 'CKR Interactive, Better World Advertising — likely running platform campaigns',
   },
   'recruitment': {
@@ -70,12 +70,12 @@ export const MEDIA_CATEGORIES: Record<MediaCategory, MediaCategoryInfo> = {
     // blue family (appropriate for a digital/tech platform category) while
     // being unmistakably distinct from sky.
     label: 'Direct Social Platform',
-    color: '#6366f1',
+    color: '#616a96',
     description: 'LinkedIn Corporation — only confirmed direct platform vendor',
   },
   'p-card': {
     label: 'P-Card (Untraceable)',
-    color: '#ef4444',
+    color: '#b85545',
     description: 'US Bank procurement card — almost certainly direct-to-platform digital buys',
   },
   'production': {

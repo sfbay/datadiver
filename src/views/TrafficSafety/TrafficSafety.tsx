@@ -443,7 +443,7 @@ export default function TrafficSafety() {
       <div style="color:#94a3b8">${props.neighborhood || 'Unknown'}</div>
       <div class="tooltip-label" style="margin-top:6px">Casualties</div>
       <div style="color:#94a3b8">Injured: ${props.injured || 0} · Killed: ${props.killed || 0}</div>
-      ${Number(props.isDui) === 1 ? '<div style="margin-top:6px;color:#a855f7;font-weight:600">⚠ DUI-Involved</div>' : ''}
+      ${Number(props.isDui) === 1 ? '<div style="margin-top:6px;color:#8b6282;font-weight:600">⚠ DUI-Involved</div>' : ''}
     `
   })
 
@@ -480,14 +480,14 @@ export default function TrafficSafety() {
       <div class="tooltip-label">Red Light Camera</div>
       <div class="tooltip-value">${props.intersection || 'Unknown'}</div>
       <div class="tooltip-label" style="margin-top:6px">Violations</div>
-      <div style="color:#dc2626;font-weight:600">${Number(props.count).toLocaleString()}</div>
+      <div style="color:#963e30;font-weight:600">${Number(props.count).toLocaleString()}</div>
     `
   })
 
   useMapTooltip(mapInstance, 'hin-lines', (props) => {
     return `
       <div class="tooltip-label">High Injury Network</div>
-      <div class="tooltip-value" style="color:#a855f7">${props.street_name || props.full_street_name || 'Street segment'}</div>
+      <div class="tooltip-value" style="color:#8b6282">${props.street_name || props.full_street_name || 'Street segment'}</div>
       <div style="color:#94a3b8;font-size:10px;margin-top:4px">Vision Zero priority corridor</div>
     `
   })
@@ -716,7 +716,7 @@ export default function TrafficSafety() {
                 <div className="flex items-center gap-1">
                   <span className="text-[9px] font-mono text-teal-500">−2σ</span>
                   <div className="flex h-2.5 rounded-full overflow-hidden" style={{ width: 100 }}>
-                    {['#3f7573', '#93c5fd', '#e2e8f0', '#e8c06b', '#b85545', '#7f1d1d'].map((c, i) => (
+                    {['#3f7573', '#8bb5b2', '#e2e8f0', '#e8c06b', '#b85545', '#6f2b20'].map((c, i) => (
                       <div key={i} className="flex-1" style={{ backgroundColor: c }} />
                     ))}
                   </div>

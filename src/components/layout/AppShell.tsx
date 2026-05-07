@@ -271,7 +271,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
                 >
                   {item.shortLabel}
                   {item.path === '/live-feeds' && (
-                    <span className="pulse-live absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-red-500" />
+                    <span className="pulse-live absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-brick-500" />
                   )}
                 </div>
                 {isSidebarOpen && (

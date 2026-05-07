@@ -111,7 +111,7 @@ export function MapLoadingIndicator({ label = 'Loading data', color = '#94a3b8' 
 }
 
 /** Full-map radar sweep overlay — sharp leading line with gradient trail */
-export function MapScanOverlay({ color = '#06b6d4', label = 'Scanning' }: { color?: string; label?: string }) {
+export function MapScanOverlay({ color = '#5c9693', label = 'Scanning' }: { color?: string; label?: string }) {
   return (
     <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center overflow-hidden">
       {/* Outer ring */}
@@ -175,7 +175,7 @@ export function MapScanOverlay({ color = '#06b6d4', label = 'Scanning' }: { colo
 }
 
 /** Slim progress band at the top of the map — shows real query completion progress */
-export function MapProgressBar({ color = '#06b6d4' }: { color?: string }) {
+export function MapProgressBar({ color = '#5c9693' }: { color?: string }) {
   const { fraction, active, completed, total } = useLoadingProgressHook()
 
   if (!active && fraction === 0) return null

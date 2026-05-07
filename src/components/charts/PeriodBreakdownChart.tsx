@@ -18,7 +18,7 @@ export default function PeriodBreakdownChart({
   granularity,
   width = 260,
   height = 140,
-  accentColor = '#3b82f6',
+  accentColor = '#3f7573',
 }: PeriodBreakdownChartProps) {
   const svgRef = useRef<SVGSVGElement>(null)
   const isDarkMode = useAppStore((s) => s.isDarkMode)

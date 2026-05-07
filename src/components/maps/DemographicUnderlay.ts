@@ -100,7 +100,7 @@ export function useDemographicUnderlay(options: UseDemographicUnderlayOptions): 
     const c0  = ramp[0] ?? '#1e293b'
     const c1  = ramp[1] ?? ramp[0] ?? '#475569'
     const c2  = ramp[2] ?? ramp[1] ?? '#7c3aed'
-    const c3  = ramp[3] ?? ramp[2] ?? '#a78bfa'
+    const c3  = ramp[3] ?? ramp[2] ?? '#8b6282'
 
     // Enrich features with _censusValue
     const enrichedFeatures = boundaries.features.map((feature) => {

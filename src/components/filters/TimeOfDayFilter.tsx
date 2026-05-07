@@ -148,7 +148,7 @@ export default function TimeOfDayFilter({ hourTotals }: TimeOfDayFilterProps) {
       {/* Drag hint */}
       <div className="h-3 relative">
         {dragPreview && dragPreview.start !== dragPreview.end && (
-          <span className="absolute left-1/2 -translate-x-1/2 top-0 text-[9px] font-mono text-amber-400/80 animate-pulse">
+          <span className="absolute left-1/2 -translate-x-1/2 top-0 text-[9px] font-mono text-ochre-500/80 animate-pulse">
             {formatHour(dragPreview.start)} – {formatHour(dragPreview.end)}
           </span>
         )}

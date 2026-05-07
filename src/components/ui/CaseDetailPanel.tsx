@@ -103,9 +103,9 @@ export default function CaseDetailPanel() {
       open={!!selected311Case}
       onClose={onClose}
       isLoading={isLoading}
-      spinnerClass="border-emerald-400"
+      spinnerClass="border-moss-400"
       buildShareUrl={buildShareUrl}
-      shareAccentClass="text-emerald-500"
+      shareAccentClass="text-moss-500"
     >
       {detail && (
         <>
@@ -126,10 +126,10 @@ export default function CaseDetailPanel() {
           <div className="mb-3">
             <span className={`inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full ${
               isOpen
-                ? 'bg-amber-500/10 text-amber-500'
-                : 'bg-emerald-500/10 text-emerald-500'
+                ? 'bg-ochre-500/10 text-ochre-500'
+                : 'bg-moss-500/10 text-moss-500'
             }`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${isOpen ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+              <span className={`w-1.5 h-1.5 rounded-full ${isOpen ? 'bg-ochre-500' : 'bg-moss-500'}`} />
               {detail.status}
             </span>
           </div>
@@ -174,10 +174,10 @@ export default function CaseDetailPanel() {
                   {/* Vertical line */}
                   <div className="flex flex-col items-center w-3 flex-shrink-0">
                     <div
-                      className={`w-2 h-2 rounded-full flex-shrink-0 ${ts ? 'bg-emerald-500' : 'bg-slate-600/30'}`}
+                      className={`w-2 h-2 rounded-full flex-shrink-0 ${ts ? 'bg-moss-500' : 'bg-slate-600/30'}`}
                     />
                     {i < TIMELINE_STEPS.length - 1 && (
-                      <div className={`w-px h-6 ${ts ? 'bg-emerald-500/30' : 'bg-slate-600/10'}`} />
+                      <div className={`w-px h-6 ${ts ? 'bg-moss-500/30' : 'bg-slate-600/10'}`} />
                     )}
                   </div>
 
@@ -194,7 +194,7 @@ export default function CaseDetailPanel() {
                       )}
                     </div>
                     {elapsed !== null && elapsed > 0 && (
-                      <p className="text-[9px] font-mono text-emerald-500/70">
+                      <p className="text-[9px] font-mono text-moss-500/70">
                         +{formatResolution(elapsed)}
                       </p>
                     )}
@@ -209,7 +209,7 @@ export default function CaseDetailPanel() {
             <div className="mt-3 pt-2 border-t border-slate-200 dark:border-white/[0.08]">
               <div className="flex items-baseline justify-between">
                 <p className="text-[10px] font-mono uppercase tracking-wider text-slate-600 dark:text-slate-300">Total Resolution</p>
-                <p className="text-sm font-bold font-mono text-emerald-500">
+                <p className="text-sm font-bold font-mono text-moss-500">
                   {formatResolution(resolutionHours)}
                 </p>
               </div>
@@ -239,7 +239,7 @@ export default function CaseDetailPanel() {
                   href={detail.mediaUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block rounded-lg overflow-hidden ring-1 ring-slate-200/50 dark:ring-white/10 hover:ring-emerald-500/40 transition-all"
+                  className="block rounded-lg overflow-hidden ring-1 ring-slate-200/50 dark:ring-white/10 hover:ring-moss-500/40 transition-all"
                 >
                   <img
                     src={detail.mediaUrl}
@@ -253,7 +253,7 @@ export default function CaseDetailPanel() {
                       if (fallback) fallback.style.display = ''
                     }}
                   />
-                  <span className="text-[10px] font-mono text-emerald-500 px-2 py-1.5 block" style={{ display: 'none' }}>
+                  <span className="text-[10px] font-mono text-moss-500 px-2 py-1.5 block" style={{ display: 'none' }}>
                     View attached media →
                   </span>
                 </a>

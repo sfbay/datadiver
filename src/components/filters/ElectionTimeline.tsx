@@ -40,19 +40,19 @@ export default function ElectionTimeline({
         className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center hover:bg-indigo-500/30 transition-colors flex-shrink-0"
       >
         {isPlaying ? (
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="#6366f1">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="#616a96">
             <rect x="2" y="1" width="3" height="10" rx="0.5" />
             <rect x="7" y="1" width="3" height="10" rx="0.5" />
           </svg>
         ) : (
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="#6366f1">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="#616a96">
             <path d="M3 1L10 6L3 11Z" />
           </svg>
         )}
       </button>
 
       {/* Year counter */}
-      <div className="text-2xl font-mono font-bold text-indigo-400 tabular-nums min-w-[60px]">
+      <div className="text-2xl font-mono font-bold text-indigo-500 tabular-nums min-w-[60px]">
         {year}
       </div>
 
@@ -91,7 +91,7 @@ export default function ElectionTimeline({
               {/* Year label (show on every other dot or if hovered) */}
               <span
                 className={`absolute top-5 left-1/2 -translate-x-1/2 text-[8px] font-mono whitespace-nowrap transition-opacity ${
-                  isActive ? 'text-indigo-400 opacity-100' : 'text-slate-500 opacity-0 group-hover:opacity-100'
+                  isActive ? 'text-indigo-500 opacity-100' : 'text-slate-500 opacity-0 group-hover:opacity-100'
                 }`}
               >
                 {elYear}
@@ -109,7 +109,7 @@ export default function ElectionTimeline({
             onClick={() => onSpeedChange(s)}
             className={`px-1.5 py-0.5 rounded text-[9px] font-mono transition-all ${
               speed === s
-                ? 'bg-indigo-500/20 text-indigo-400'
+                ? 'bg-indigo-500/20 text-indigo-500'
                 : 'text-slate-500 hover:text-slate-300'
             }`}
           >

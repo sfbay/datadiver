@@ -23,7 +23,7 @@ export default function DataSourceLine({ dataset, source, id, caveats, vintage, 
         <span> · Based on {recordCount.toLocaleString()} records</span>
       )}
       {caveats && caveats.length > 0 && (
-        <div className="mt-0.5 text-amber-600/70 dark:text-amber-500/50">
+        <div className="mt-0.5 text-ochre-600/70 dark:text-ochre-500/50">
           {caveats.map((c, i) => <div key={i}>⚠ {c}</div>)}
         </div>
       )}

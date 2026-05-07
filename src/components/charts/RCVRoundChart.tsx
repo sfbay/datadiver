@@ -144,7 +144,7 @@ export default function RCVRoundChart({
             className="w-6 h-6 rounded-md bg-indigo-500/10 flex items-center justify-center hover:bg-indigo-500/20 disabled:opacity-20 transition-colors"
             title="Previous round"
           >
-            <svg width="8" height="8" viewBox="0 0 8 8" fill="#6366f1">
+            <svg width="8" height="8" viewBox="0 0 8 8" fill="#616a96">
               <path d="M5.5 1L2 4L5.5 7Z" />
             </svg>
           </button>
@@ -161,12 +161,12 @@ export default function RCVRoundChart({
             title={isPlaying ? 'Pause' : 'Play all rounds'}
           >
             {isPlaying ? (
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="#6366f1">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="#616a96">
                 <rect x="2" y="1" width="2" height="8" rx="0.5" />
                 <rect x="6" y="1" width="2" height="8" rx="0.5" />
               </svg>
             ) : (
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="#6366f1">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="#616a96">
                 <path d="M2.5 1L8.5 5L2.5 9Z" />
               </svg>
             )}
@@ -177,7 +177,7 @@ export default function RCVRoundChart({
             className="w-6 h-6 rounded-md bg-indigo-500/10 flex items-center justify-center hover:bg-indigo-500/20 disabled:opacity-20 transition-colors"
             title="Next round"
           >
-            <svg width="8" height="8" viewBox="0 0 8 8" fill="#6366f1">
+            <svg width="8" height="8" viewBox="0 0 8 8" fill="#616a96">
               <path d="M2.5 1L6 4L2.5 7Z" />
             </svg>
           </button>
@@ -204,11 +204,11 @@ export default function RCVRoundChart({
 
       {/* Elimination callout */}
       {justEliminated && (
-        <div className="mb-2 px-2 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 animate-pulse">
-          <p className="text-[10px] font-mono text-red-400">
+        <div className="mb-2 px-2 py-1.5 rounded-lg bg-brick-500/10 border border-brick-500/20 animate-pulse">
+          <p className="text-[10px] font-mono text-brick-400">
             <span className="font-bold">{toSentenceCase(justEliminated)}</span> eliminated
             {voteTransfers.length > 0 && (
-              <span className="text-red-400/70">
+              <span className="text-brick-400/70">
                 {' — votes transfer to '}
                 {voteTransfers.slice(0, 3).map((t, i) => (
                   <span key={t.to}>
@@ -216,10 +216,10 @@ export default function RCVRoundChart({
                     <span style={{ color: candidateColors.get(t.to) || '#94a3b8' }}>
                       {toSentenceCase(t.to.split(' ').pop() || t.to)}
                     </span>
-                    <span className="text-red-400/50"> (+{t.amount.toLocaleString()})</span>
+                    <span className="text-brick-400/50"> (+{t.amount.toLocaleString()})</span>
                   </span>
                 ))}
-                {voteTransfers.length > 3 && <span className="text-red-400/50"> + {voteTransfers.length - 3} more</span>}
+                {voteTransfers.length > 3 && <span className="text-brick-400/50"> + {voteTransfers.length - 3} more</span>}
               </span>
             )}
           </p>
@@ -241,7 +241,7 @@ export default function RCVRoundChart({
               y1={0}
               x2={labelWidth + (threshold / maxVotes) * chartWidth}
               y2={svgHeight}
-              stroke="#f59e0b"
+              stroke="#d4a435"
               strokeWidth={1}
               strokeDasharray="3,3"
               opacity={0.5}
@@ -249,7 +249,7 @@ export default function RCVRoundChart({
             <text
               x={labelWidth + (threshold / maxVotes) * chartWidth + 3}
               y={10}
-              fill="#f59e0b"
+              fill="#d4a435"
               fontSize={8}
               fontFamily="JetBrains Mono, monospace"
               opacity={0.6}
@@ -372,7 +372,7 @@ export default function RCVRoundChart({
                 x={labelWidth - 4}
                 y={y + barHeight / 2 + 1}
                 textAnchor="end"
-                fill={isJust ? '#ef4444' : '#64748b'}
+                fill={isJust ? '#b85545' : '#64748b'}
                 fontSize={9}
                 fontFamily="Inter, system-ui, sans-serif"
                 textDecoration="line-through"
@@ -385,7 +385,7 @@ export default function RCVRoundChart({
                 width={barW}
                 height={barHeight}
                 rx={3}
-                fill={isJust ? '#ef4444' : color}
+                fill={isJust ? '#b85545' : color}
                 opacity={0.4}
                 style={{ transition: 'width 0.4s, fill 0.3s' }}
               />

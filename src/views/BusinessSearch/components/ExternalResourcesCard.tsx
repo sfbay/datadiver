@@ -156,7 +156,7 @@ function ResourceSection({ title, links }: { title: string; links: ResourceLink[
               className="block px-2 py-1.5 -mx-2 rounded-md
                 hover:bg-white/[0.04] transition-colors group"
             >
-              <p className="text-[11px] text-emerald-400 group-hover:text-emerald-300 transition-colors flex items-center gap-1">
+              <p className="text-[11px] text-moss-400 group-hover:text-moss-400 transition-colors flex items-center gap-1">
                 {link.label}
                 <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.4" className="opacity-60">
                   <path d="M3 7l4-4M3 3h4v4" strokeLinecap="round" strokeLinejoin="round" />

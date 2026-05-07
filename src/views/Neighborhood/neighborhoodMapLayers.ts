@@ -58,7 +58,7 @@ export const NEIGHBORHOOD_SELECTION_LAYERS: mapboxgl.AnyLayer[] = [
     type: 'fill',
     source: 'nh-boundaries',
     paint: {
-      'fill-color': '#a855f7',
+      'fill-color': '#8b6282',
       'fill-opacity': 0.08,
     },
     filter: ['==', 'nhood', ''],
@@ -69,7 +69,7 @@ export const NEIGHBORHOOD_SELECTION_LAYERS: mapboxgl.AnyLayer[] = [
     type: 'line',
     source: 'nh-boundaries',
     paint: {
-      'line-color': '#a855f7',
+      'line-color': '#8b6282',
       'line-width': 8,
       'line-opacity': 0.2,
       'line-blur': 6,
@@ -82,7 +82,7 @@ export const NEIGHBORHOOD_SELECTION_LAYERS: mapboxgl.AnyLayer[] = [
     type: 'line',
     source: 'nh-boundaries',
     paint: {
-      'line-color': '#a855f7',
+      'line-color': '#8b6282',
       'line-width': 2,
       'line-opacity': 0.85,
     },
@@ -98,11 +98,11 @@ export function buildZScoreColorExpression(
   for (const [name, profile] of profileMap) {
     const z = profile.compositeZScore
     let color: string
-    if (z > 2) color = '#ef4444'
-    else if (z > 1) color = '#f97316'
-    else if (z > 0.5) color = '#fbbf24'
-    else if (z < -2) color = '#3b82f6'
-    else if (z < -1) color = '#60a5fa'
+    if (z > 2) color = '#b85545'
+    else if (z > 1) color = '#d47149'
+    else if (z > 0.5) color = '#e8c06b'
+    else if (z < -2) color = '#3f7573'
+    else if (z < -1) color = '#5c9693'
     else color = '#475569'
     stops.push(name, color)
   }

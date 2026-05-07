@@ -61,7 +61,7 @@ export default function CrashModeFilter({ categories, selected, onChange }: Cras
           onClick={handleSelectAll}
           className={`px-2 py-1 rounded-md text-[10px] font-mono font-medium transition-all duration-150 ${
             allSelected
-              ? 'bg-red-500/15 text-red-500'
+              ? 'bg-brick-500/15 text-brick-500'
               : 'bg-slate-100 dark:bg-white/[0.04] text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-white/[0.08]'
           }`}
         >
@@ -73,7 +73,7 @@ export default function CrashModeFilter({ categories, selected, onChange }: Cras
             onClick={() => handleGroup(groupName)}
             className={`px-2 py-1 rounded-md text-[10px] font-mono font-medium transition-all duration-150 ${
               isGroupActive(groupName)
-                ? 'bg-red-500/15 text-red-500'
+                ? 'bg-brick-500/15 text-brick-500'
                 : 'bg-slate-100 dark:bg-white/[0.04] text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-white/[0.08]'
             }`}
           >
@@ -110,7 +110,7 @@ export default function CrashModeFilter({ categories, selected, onChange }: Cras
                   onClick={() => handleToggle(entry.mode)}
                   className={`
                     flex-shrink-0 w-3 h-3 rounded-sm border transition-all cursor-pointer
-                    ${active ? 'border-red-500' : 'border-slate-300 dark:border-slate-600'}
+                    ${active ? 'border-brick-500' : 'border-slate-300 dark:border-slate-600'}
                   `}
                   style={active ? { backgroundColor: modeColor, borderColor: modeColor } : undefined}
                 >
