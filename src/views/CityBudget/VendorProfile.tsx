@@ -17,7 +17,7 @@ import { toSentenceCase } from '@/utils/format'
 import { computeContractFlags, computePaymentPatternFlags, type VendorFlag } from '@/utils/vendorFlags'
 import type { FiscalYear } from '@/types/budget'
 
-const ACCENT = '#0ea5e9'
+const ACCENT = '#616a96'
 
 interface VendorProfileProps {
   vendor: string
@@ -109,7 +109,7 @@ export default function VendorProfile({ vendor, fiscalYear, onBack: _onBack }: V
           <div className="flex items-center justify-between mb-1">
             <div>
               {metrics?.isNonprofit && (
-                <span className="text-[9px] font-mono font-semibold bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded-full">
+                <span className="text-[9px] font-mono font-semibold bg-moss-500/10 text-moss-500 px-1.5 py-0.5 rounded-full">
                   Nonprofit
                 </span>
               )}
@@ -160,7 +160,7 @@ export default function VendorProfile({ vendor, fiscalYear, onBack: _onBack }: V
                 {soleSourceCount > 0 && (
                   <>
                     <span className="text-[9px] font-mono text-slate-600">·</span>
-                    <span className="text-[9px] font-mono text-amber-500/80" title="Contracts awarded without competitive bidding">
+                    <span className="text-[9px] font-mono text-ochre-500/80" title="Contracts awarded without competitive bidding">
                       {soleSourceCount} sole source
                     </span>
                   </>
@@ -180,9 +180,9 @@ export default function VendorProfile({ vendor, fiscalYear, onBack: _onBack }: V
                     backgroundColor: f.severity === 'red' ? 'rgba(239,68,68,0.1)'
                       : f.severity === 'amber' ? 'rgba(245,158,11,0.1)'
                       : 'rgba(148,163,184,0.1)',
-                    color: f.severity === 'red' ? '#ef4444'
-                      : f.severity === 'amber' ? '#f59e0b'
-                      : '#94a3b8',
+                    color: f.severity === 'red' ? '#b85545'
+                      : f.severity === 'amber' ? '#d4a435'
+                      : '#a8926a',
                   }}
                   title={f.detail}
                 >
@@ -221,7 +221,7 @@ export default function VendorProfile({ vendor, fiscalYear, onBack: _onBack }: V
       {profile.error && (
         <div className="flex-1 flex items-center justify-center">
           <div className="glass-card rounded-xl p-6 max-w-sm">
-            <p className="text-sm font-medium text-red-400 mb-1">Failed to load</p>
+            <p className="text-sm font-medium text-brick-400 mb-1">Failed to load</p>
             <p className="text-xs text-slate-400">{profile.error}</p>
           </div>
         </div>
@@ -253,7 +253,7 @@ export default function VendorProfile({ vendor, fiscalYear, onBack: _onBack }: V
                   label="YoY Change"
                   value={metrics.yoyChange !== null ? `${metrics.yoyChange > 0 ? '+' : ''}${metrics.yoyChange.toFixed(1)}%` : '—'}
                   color={metrics.yoyChange !== null
-                    ? metrics.yoyChange > 0 ? '#22c55e' : metrics.yoyChange < 0 ? '#ef4444' : undefined
+                    ? metrics.yoyChange > 0 ? '#22c55e' : metrics.yoyChange < 0 ? '#b85545' : undefined
                     : undefined}
                 />
                 <MetricCard
@@ -348,7 +348,7 @@ export default function VendorProfile({ vendor, fiscalYear, onBack: _onBack }: V
                 {deptFilter && (
                   <button
                     onClick={clearFilter}
-                    className="text-[9px] font-mono text-sky-400 hover:text-sky-300 transition-colors flex items-center gap-1"
+                    className="text-[9px] font-mono text-indigo-400 hover:text-indigo-400 transition-colors flex items-center gap-1"
                   >
                     {activeFilterLabel} ✕
                   </button>
@@ -370,7 +370,7 @@ export default function VendorProfile({ vendor, fiscalYear, onBack: _onBack }: V
               <button
                 onClick={payments.loadMore}
                 disabled={payments.isLoading}
-                className="w-full mt-2 py-2 text-[10px] font-mono text-sky-400 hover:text-sky-300 bg-sky-500/5 hover:bg-sky-500/10 rounded-lg transition-colors disabled:opacity-50"
+                className="w-full mt-2 py-2 text-[10px] font-mono text-indigo-400 hover:text-indigo-400 bg-indigo-500/5 hover:bg-indigo-500/10 rounded-lg transition-colors disabled:opacity-50"
               >
                 {payments.isLoading ? 'Loading…' : 'Load more payments'}
               </button>
@@ -454,13 +454,13 @@ function DepartmentBreakdown({
         return (
           <div
             key={r.department}
-            className={`rounded-md transition-all duration-150 ${onClickDept ? 'cursor-pointer hover:bg-white/[0.03]' : ''} ${isActive ? 'bg-sky-500/[0.06] ring-1 ring-sky-500/20' : ''}`}
+            className={`rounded-md transition-all duration-150 ${onClickDept ? 'cursor-pointer hover:bg-white/[0.03]' : ''} ${isActive ? 'bg-indigo-500/[0.06] ring-1 ring-indigo-500/20' : ''}`}
             onClick={() => onClickDept?.(r.department)}
             role={onClickDept ? 'button' : undefined}
             title={onClickDept ? `Filter payments to ${r.department}` : r.department}
           >
             <div className="flex items-center justify-between mb-0.5">
-              <span className={`text-[10px] truncate max-w-[200px] ${isActive ? 'text-sky-300' : 'text-slate-600 dark:text-slate-300'}`}>
+              <span className={`text-[10px] truncate max-w-[200px] ${isActive ? 'text-indigo-400' : 'text-slate-600 dark:text-slate-300'}`}>
                 {r.department}
               </span>
               <div className="flex items-center gap-2 flex-shrink-0 ml-2">
@@ -580,26 +580,26 @@ function ContractInventory({ contracts, activeContract, onClickContract }: {
         return (
           <div
             key={c.contract_no}
-            className={`glass-card rounded-lg p-2.5 transition-all duration-150 ${onClickContract ? 'cursor-pointer hover:bg-white/[0.03]' : ''} ${isActiveContract ? 'ring-1 ring-sky-500/20 bg-sky-500/[0.06]' : ''}`}
+            className={`glass-card rounded-lg p-2.5 transition-all duration-150 ${onClickContract ? 'cursor-pointer hover:bg-white/[0.03]' : ''} ${isActiveContract ? 'ring-1 ring-indigo-500/20 bg-indigo-500/[0.06]' : ''}`}
             onClick={() => onClickContract?.(c.contract_no, c.department)}
             role={onClickContract ? 'button' : undefined}
             title={onClickContract ? `Filter payments to ${c.department} (${c.contract_no})` : undefined}
           >
             <div className="flex items-center justify-between mb-1">
-              <span className={`text-[10px] font-mono ${isActiveContract ? 'text-sky-300' : 'text-sky-400'}`}>{c.contract_no}</span>
+              <span className={`text-[10px] font-mono ${isActiveContract ? 'text-indigo-400' : 'text-indigo-400'}`}>{c.contract_no}</span>
               <div className="flex items-center gap-1">
                 {isSoleSource && (
-                  <span className="text-[7px] font-mono font-bold bg-amber-500/10 text-amber-500 px-1 py-0.5 rounded">
+                  <span className="text-[7px] font-mono font-bold bg-ochre-500/10 text-ochre-500 px-1 py-0.5 rounded">
                     SOLE SOURCE
                   </span>
                 )}
                 {isOverrun && (
-                  <span className="text-[7px] font-mono font-bold bg-red-500/10 text-red-500 px-1 py-0.5 rounded">
+                  <span className="text-[7px] font-mono font-bold bg-brick-500/10 text-brick-500 px-1 py-0.5 rounded">
                     OVERRUN
                   </span>
                 )}
                 {isFullyConsumed && !isOverrun && (
-                  <span className="text-[7px] font-mono font-bold bg-amber-500/10 text-amber-500 px-1 py-0.5 rounded">
+                  <span className="text-[7px] font-mono font-bold bg-ochre-500/10 text-ochre-500 px-1 py-0.5 rounded">
                     ⚠ CONSUMED
                   </span>
                 )}
@@ -625,7 +625,7 @@ function ContractInventory({ contracts, activeContract, onClickContract }: {
                     className="h-full rounded-full transition-all duration-500"
                     style={{
                       width: `${Math.min(utilization, 100)}%`,
-                      backgroundColor: isOverrun ? '#ef4444' : utilization > 80 ? '#f59e0b' : ACCENT,
+                      backgroundColor: isOverrun ? '#b85545' : utilization > 80 ? '#d4a435' : ACCENT,
                       opacity: 0.7,
                     }}
                   />
@@ -702,7 +702,7 @@ function PaymentTable({
               <td className="py-1.5 pr-3 text-right text-ink dark:text-white tabular-nums">
                 {formatBudgetAmount(parseFloat(p.vouchers_paid) || 0)}
               </td>
-              <td className="py-1.5 pr-3 text-sky-400 tabular-nums">{p.voucher}</td>
+              <td className="py-1.5 pr-3 text-indigo-400 tabular-nums">{p.voucher}</td>
               <td className="py-1.5 text-slate-400 tabular-nums">{p.purchase_order}</td>
             </tr>
           ))}
@@ -710,7 +710,7 @@ function PaymentTable({
       </table>
       {isLoading && (
         <div className="flex items-center justify-center py-4">
-          <span className="w-4 h-4 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
+          <span className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
         </div>
       )}
     </div>
@@ -767,7 +767,7 @@ function PaymentHeatgrid({ data }: { data: MonthlySpendRow[] }) {
       .interpolator(d3.interpolateRgb('rgba(14,165,233,0.05)', 'rgba(14,165,233,0.8)'))
 
     // Month labels (top)
-    const labelColor = isDarkMode ? '#64748b' : '#94a3b8'
+    const labelColor = isDarkMode ? '#a8926a' : '#a8926a'
     svg.selectAll('.month-label')
       .data(MONTH_LABELS)
       .join('text')

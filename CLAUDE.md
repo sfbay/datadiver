@@ -154,21 +154,21 @@ The Advertising & Media tab has a dense architectural story worth preserving. **
 
 ### Color palette commitment (drill-down hierarchy)
 
-**Note: this is a scoped exception to the project-wide earth-tone aesthetic.** The compliance dashboard's drill-down hierarchy depends on saturated, well-spaced hues to keep the narrowing-scope narrative readable across dense stacked bars and trapezoid connectors. Earth-tone substitutes lose that contrast and confuse the visual story. These specific colors stay; everything else on the site uses the earth-tone palette.
+The compliance dashboard and related views enforce **reserved color semantics** in the earth-tone palette. Same concept = same color everywhere:
 
-The compliance dashboard and related views enforce **reserved color semantics**. Same concept = same color everywhere:
-
-| Concept | Color | Hex |
+| Concept | Pigment | Hex |
 |---|---|---|
-| Agencies (full-service agency) | Purple | `#a855f7` |
-| Direct ad placements | Sky | `#0ea5e9` |
-| Discretionary (compliance basis) | Teal | `#2dd4bf` |
-| Community media (goal + actual + target line) | Emerald | `#10b981` |
-| Legal notices (excluded) | Slate | `#64748b` / `#94a3b8` |
-| P-card (untraceable) | Red | `#ef4444` |
-| Warning / below-target | Amber | `#f59e0b` |
+| Agencies (full-service agency) | Plum-500 | `#8b6282` |
+| Direct ad placements | Indigo-500 | `#616a96` |
+| Discretionary (compliance basis) | Teal-500 | `#5c9693` |
+| Community media (goal + actual + target line) | Moss-500 | `#7a9954` |
+| Legal notices (excluded) | Paper-500 | `#a8926a` |
+| P-card (untraceable) | Brick-500 | `#b85545` |
+| Warning / below-target | Ochre-500 | `#d4a435` |
 
-The visual progression **purple → sky → teal → emerald** is the narrative of narrowing scope. Don't introduce collisions — `full-service-agency` in `MEDIA_CATEGORIES` is purple (not pink), and `out-of-home` is pink (not violet) to avoid competing with the agency purple.
+The visual progression **plum → indigo → teal → moss** is the narrative of narrowing scope (purple-cool → cool → info → growth). The non-default mapping that preserves this story: **sky → indigo** (NOT teal — would collide with Discretionary). All other compliance accents use the standard earth-tone migration map.
+
+Don't introduce collisions — `full-service-agency` in `MEDIA_CATEGORIES` is plum (matches Agencies layer), and `out-of-home` is brick-400 (kept warm, doesn't compete with the cool drill-down tier).
 
 ### SVG gradient pattern for adjacent semi-transparent shapes
 When two semi-transparent shapes meet at a 1-pixel boundary (e.g., compliance card bar meeting trapezoid connector), alpha compositing produces a brighter line at the overlap. **Fix**: fade to zero alpha at the exact overlap edge. Safe gradient shape:
