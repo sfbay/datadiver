@@ -27,6 +27,8 @@ DataDiver runs an **earth-tone visual system** — espresso (`#1e140d`) for dark
 
 The previous "Bloomberg Terminal" cool slate-950 + signal-red/cyan/violet aesthetic was deliberately replaced. The new direction keeps the information density, the glass cards, the Mapbox dark basemap, and the editorial serif display face — but pulls DataDiver out of the "generic Claude analytics dashboard" visual cluster.
 
+**Status (May 2026):** earth-tone refactor is complete end-to-end across 8 PRs (#9–#16). Every dot, halo, chip, card, fill, stroke, and gradient stop site-wide is on the unified palette — including the previously-exempt CityBudget compliance dashboard, which migrated in PR #15 with a non-default `sky → indigo` mapping to preserve its drill-down narrative (see Color palette commitment below). For future palette work, the grep pattern that catches all three CSS color forms (#hex, rgba channel, hsl) lives in `memory/feedback_palette_migration_grep.md`.
+
 ### Pigment vocabulary
 
 Each accent has a 400/500/600/700 ramp. Same dataset = same pigment across sidebar nav, viz card, on-map detail, and stat cards. The pigment palette + their semantic meanings:
