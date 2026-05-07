@@ -55,27 +55,31 @@ Locations: `src/hooks/useAdvertisingData.ts`, `src/hooks/useComplianceData.ts`, 
 
 **Same concept = same color everywhere.** This was enforced through multiple passes of color unification. Violating it is the single most confusing thing you can do on this dashboard.
 
-| Concept | Color | Hex |
-|---|---|---|
-| Agencies (full-service-agency) | Purple | `#a855f7` |
-| Direct ad placements | Sky | `#0ea5e9` |
-| Discretionary (compliance basis) | Teal | `#2dd4bf` |
-| Community media (goal + actual + target line) | Emerald | `#10b981` |
-| Legal notices (excluded) | Slate | `#64748b` / `#94a3b8` |
-| P-card (untraceable) | Red | `#ef4444` |
-| Warning / below-target | Amber | `#f59e0b` |
+The compliance dashboard was migrated to the earth-tone palette in May 2026 (PR #15) — same drill-down narrative, warmer hues:
 
-**The visual progression purple → sky → teal → emerald** is the narrative of narrowing scope: all agencies → direct placements → the subset subject to compliance → the goal. Each color appears in multiple places and must stay consistent:
+| Concept | Pigment | Hex |
+|---|---|---|
+| Agencies (full-service-agency) | Plum-500 | `#8b6282` |
+| Direct ad placements | Indigo-500 | `#616a96` |
+| Discretionary (compliance basis) | Teal-500 | `#5c9693` |
+| Community media (goal + actual + target line) | Moss-500 | `#7a9954` |
+| Legal notices (excluded) | Paper-500 | `#a8926a` |
+| P-card (untraceable) | Brick-500 | `#b85545` |
+| Warning / below-target | Ochre-500 | `#d4a435` |
+
+**The visual progression plum → indigo → teal → moss** is the narrative of narrowing scope: all agencies → direct placements → the subset subject to compliance → the goal. Same arc as the original purple → sky → teal → emerald, expressed in earth-tone. Each color appears in multiple places and must stay consistent:
 - **Compliance card bars** (bar 1/2/3, inline segment fills, trapezoid gradients)
 - **AdSpendCompositionChart** (stacked bar segments by fiscal year)
 - **Top stat tiles** (Total / Agencies / P-Card / Discretionary / Community Media)
 - **Department rail bars** (composition segments per dept)
-- **Media Mix category rows** (full-service-agency must be purple, NOT pink)
+- **Media Mix category rows** (full-service-agency must be plum, NOT pink/brick-400)
 
 **Reserved uses**:
-- **Emerald is reserved exclusively for community media** — the goal, the actual, the 50% target dashed line. Nothing else may use emerald.
-- **Amber is reserved for the "below target" warning state** (compliance % labels when <50%).
-- **Slate appears in two shades**: `#64748b` (compliance card hatched legal) and `#94a3b8` (Media Mix legal-notices row). These are intentionally similar.
+- **Moss is reserved exclusively for community media** — the goal, the actual, the 50% target dashed line. Nothing else may use moss-500 in the compliance dashboard context.
+- **Ochre is reserved for the "below target" warning state** (compliance % labels when <50%).
+- **Paper-500 (`#a8926a`)** is the muted neutral for legal-notices rows in both the compliance card hatched legal segment and the Media Mix row.
+
+**Critical non-default mapping — `sky → indigo` (NOT teal)**: the standard site-wide migration (`src/utils/colors.ts`) maps `sky-500` → `teal-500`, but in this dashboard sky was the **Direct ad placements** color, and teal was already taken by Discretionary. Mapping sky to teal would have collapsed the two colors and broken the drill-down narrative. So Direct → indigo is a deliberate exception. **Don't "fix" it back to teal in future palette work.**
 
 ## Compliance card structure: three aligned stepped bars + trapezoid connectors
 
@@ -84,18 +88,18 @@ The main compliance card (`ComplianceDashboard` function in `CityBudget.tsx`) us
 - **Right column**: the three bars and two trapezoid connectors, rendered as siblings so the trapezoids flow contiguously between bars without header rows interrupting
 
 **Bar 1 — "All city ad-related spending"**:
-- Segments: `[Agencies (purple)][P-card bumper][Direct (sky)]`
+- Segments: `[Agencies (plum)][P-card bumper][Direct (indigo)]`
 - **P-card is intentionally between agencies and direct** so Direct's right edge lines up with 100% of the bar. This is a cosmetic choice that makes trapezoid 1's apex reach the full right edge of the bar.
 - Rounded top only (`rounded-t-md`), flat bottom
 
-**Trapezoid 1 — sky gradient**:
+**Trapezoid 1 — indigo gradient**:
 - SVG path: `M conn1Left,0 L 100,0 L 100,44 L 0,44 Z` where `conn1Left = agencyPct + pcardPct`
 - Fill: linear gradient `0% → 0 alpha, 5% → 0.22 alpha, 100% → 0 alpha` (plateau-to-fade shape)
 - Three `↓ ↓ ↓` arrows riding the centerline at `top: 42%`
 
 **Bar 2 — "Direct ad placements"**:
-- Segments: `[Legal hatched (slate)][Discretionary (TEAL, not sky)]`
-- **Discretionary MUST be teal**, not sky. Sky is reserved for the top-level direct concept; teal is the narrower compliance-basis subset. This distinction was the single biggest color clarification of the session.
+- Segments: `[Legal hatched (paper)][Discretionary (TEAL, not indigo)]`
+- **Discretionary MUST be teal**, not indigo. Indigo is reserved for the top-level Direct concept; teal is the narrower compliance-basis subset. This distinction was the single biggest color clarification of the original purple/sky/teal/emerald compliance build, and it carries forward unchanged in the earth-tone migration — the colors moved, but the visual-distinction story didn't.
 - No rounding (flat top AND bottom)
 
 **Trapezoid 2 — teal gradient**:
@@ -104,9 +108,9 @@ The main compliance card (`ComplianceDashboard` function in `CityBudget.tsx`) us
 
 **Bar 3 — "Discretionary / Community media share"**:
 - Teal container (`rgba(45,212,191,0.1)` background + `border-teal-400/25`)
-- Green community fill from the left (`bg-emerald-500/60`)
+- Moss community fill from the left (`bg-moss-500/60`)
 - Green dashed 50% target marker at `left: 50%`
-- Label in the container: `$XX,XXX community` (full dollars, emerald text)
+- Label in the container: `$XX,XXX community` (full dollars, moss text)
 - The label floats to the RIGHT of the fill when community share is <85% (so it doesn't get clipped inside a thin sliver)
 - Rounded bottom only (`rounded-b-md`), flat top
 
@@ -155,9 +159,9 @@ Absence of compliance data is itself information — surface it, don't swallow i
 
 Right sidebar has three tabs, each a different **lens** on the same 23 departments (not just a different sort — the scale and meaning change too):
 
-1. **`$ Ad Spend`** (default): sorted by `dept.total` desc. Bar composition: `[green community][sky direct-residual][purple agencies][red p-card]`. 4 segments gated at 0.5% minimum width to avoid sub-pixel noise.
-2. **`$ Community`**: sorted by `communitySpend` desc. Single emerald bar scaled to the top community spender (NOT top total spender — different scale). Small departments that spend meaningful community dollars rise to the top.
-3. **`% Community`**: sorted by `communityPct` desc with **secondary sort by absolute community $** to break ties. Single emerald bar, 0-100% scale, dashed 50% target marker on every row. Small denominators (dept.total < $5K) are dimmed to 45% opacity with a tooltip explaining the small sample.
+1. **`$ Ad Spend`** (default): sorted by `dept.total` desc. Bar composition: `[moss community][indigo direct-residual][plum agencies][brick p-card]`. 4 segments gated at 0.5% minimum width to avoid sub-pixel noise.
+2. **`$ Community`**: sorted by `communitySpend` desc. Single moss bar scaled to the top community spender (NOT top total spender — different scale). Small departments that spend meaningful community dollars rise to the top.
+3. **`% Community`**: sorted by `communityPct` desc with **secondary sort by absolute community $** to break ties. Single moss bar, 0-100% scale, dashed 50% target marker on every row. Small denominators (dept.total < $5K) are dimmed to 45% opacity with a tooltip explaining the small sample.
 
 **Denominator semantics** (important for labels):
 - The rail's `% Community` tab uses `community / total` ("share of total ad spend")
@@ -187,7 +191,7 @@ Location: `src/components/charts/SpendingTimeline.tsx`
 **Props**:
 - `data: SpendingTimelineRow[]` — `{ fiscal_year, total_paid }` pairs
 - `currentFY: FiscalYear` — highlights this year with a larger dot
-- `color?: string` — optional fill/stroke color (defaults to sky)
+- `color?: string` — optional fill/stroke color (defaults to indigo)
 - `height?: number` — defaults to 180
 
 **Visual conventions**:
@@ -217,10 +221,10 @@ This is how the AIR Airport Commission timeline bug was caught in Sept 2026. The
 
 The top tile row on the Advertising & Media root view should always mirror the order of bar 1 in the compliance card:
 1. Total Ad Spend · FY label (the time anchor)
-2. Agencies (purple, % of ad spend subtitle)
+2. Agencies (plum, % of ad spend subtitle)
 3. P-Card Ad Spend (red, % of ad spend subtitle)
 4. Discretionary (teal, % of ad spend subtitle)
-5. Community Media (emerald, N outlets subtitle)
+5. Community Media (moss, N outlets subtitle)
 
 **The FY anchor belongs ONLY in the Total Ad Spend tile label** (`Total Ad Spend · FY2025-26`). Don't duplicate it across other tiles — one time-period anchor is enough.
 

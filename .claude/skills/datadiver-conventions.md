@@ -108,10 +108,10 @@ path.attr('stroke-dasharray', `${totalLength} ${totalLength}`)
     .attr('stroke-dashoffset', 0)
 ```
 
-**Dark/light mode colors inside charts**: read `isDarkMode` from `useAppStore` and branch accordingly:
+**Dark/light mode colors inside charts**: read `isDarkMode` from `useAppStore` and branch accordingly. Earth-tone neutral mid-tones for axis text, warm-tinted alpha grids:
 ```tsx
-const textColor = isDarkMode ? '#94a3b8' : '#64748b'
-const gridColor = isDarkMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.05)'
+const textColor = isDarkMode ? '#a8926a' : '#7a5f42'  // paper-500 / ink-500
+const gridColor = isDarkMode ? 'rgba(255,235,200,0.04)' : 'rgba(58,42,30,0.06)'
 ```
 
 ## Number formatting rules
@@ -175,24 +175,40 @@ const buildShareUrl = useCallback(() => {
 
 ## Color palette (cross-view)
 
-Beyond the compliance dashboard palette documented in `datadiver-compliance` skill, these colors recur across the project:
+DataDiver runs an **earth-tone palette** site-wide as of the May 2026 refactor (PRs #9–#16). Espresso `#1e140d` for dark mode, cream `#f5ecd9` for light mode, with seven pigment-named accent ramps. Source of truth: `src/styles/tokens.css` and the `@theme` block in `src/index.css`.
 
-- **Sky `#0ea5e9`** — default chart accent, "active" state, primary data color
-- **Emerald `#10b981`** — positive / good / community media
-- **Red `#ef4444`** — negative / warning / p-card / crimes
-- **Amber `#f59e0b`** — caution / below-target / flag / pending
-- **Purple `#7c3aed`** — demographics accent, census data, agencies (when in compliance context)
-- **Slate family** — neutral / excluded / muted / borders
+| Pigment | Hex (-500) | Role |
+|---|---|---|
+| Terracotta | `#d47149` | Primary brand, emergency, alert |
+| Ochre | `#d4a435` | Warning, money, ledger feel |
+| Moss | `#7a9954` | Success, business formation, civic upkeep |
+| Dusty teal | `#5c9693` | Info, Dana's color, civic-place |
+| Brick | `#b85545` | Critical, errors, crash severity, P-card |
+| Indigo | `#616a96` | Rare cool, civic ceremony, sensitive calls, Direct ad placements |
+| Plum | `#8b6282` | Campaign finance, agency routing, demographics |
 
-**Dark-v11 heatmap colors must be bright** — as noted in the Mapbox section, dark blues/purples are invisible on the dark basemap. Use cyan, red, emerald, or amber for heatmaps.
+**`text-{pigment}-{400|500|600|700}` and `bg-{pigment}-{...}` Tailwind utility classes are available** site-wide via `@theme` in `src/index.css`. Use these instead of arbitrary-value hex literals (`text-[#7a9954]`).
+
+**Migration note for any future palette work** — the cleanest grep covers all three CSS color formats since each surfaces different gaps:
+
+```bash
+# Catches hex AND rgba() channel form AND hsl() form in one pass
+grep -rE "#[0-9a-fA-F]{3,8}|rgba?\([0-9]+[, ]+[0-9]+[, ]+[0-9]+|hsla?\(" src/
+```
+
+The earth-tone refactor's first sweep grepped only `#hex` and missed all the `rgba(R, G, B, A)` channel literals in Mapbox heatmap configs (`mapLayers.ts` files), which had to be migrated in a follow-up PR. Heatmap configs structurally use `rgba()` for alpha-controlled color stops, so always grep all three forms.
+
+**Heatmap colors on dark-v11 basemap** — the original "dark blues/purples are invisible" rule still applies. Earth-tone equivalents to use: brick (severity), terracotta (alerts), ochre (warnings), moss (positive). Avoid plum and indigo for heatmap density gradients on dark — they don't pop enough.
 
 ## Fonts
 
-- **Playfair Display** — headlines, italic `.font-display` (H1/H2 titles on detail pages)
-- **Inter** — body text
-- **JetBrains Mono** — data values, `.font-mono` (numbers, tabular info, labels)
+All three loaded from Google Fonts CDN via `<link>` in `index.html`. Type-stack tokens live in `src/styles/tokens.css` as `--font-display` / `--font-body` / `--font-mono`.
 
-**Italic display font for main titles**: the `font-display text-Nxl italic` pattern signals "this is a content subject" (department name, vendor name, neighborhood name). Used on drill-down page H2s.
+- **Fraunces** — display face, headlines, hero. Variable axis `opsz 9..144`, `SOFT 0..100`. Italic at hero scale; upright at card titles. Class: `.font-display`.
+- **Roboto Serif** — body. Variable axis `opsz 8..144`, weights 300–700. Oldstyle figures (`font-feature-settings: "onum"`) in prose; lining tabular figures (`"tnum","lnum"`) in data values.
+- **Space Mono** — mono labels, data values, eyebrows, timestamps, coordinates. Has real italics. Class: `.font-mono`.
+
+**Italic display font for main titles**: the `font-display italic text-Nxl` pattern signals "this is a content subject" (department name, vendor name, neighborhood name). Used on drill-down page H2s. Fraunces' `SOFT 100` axis at hero scale gives an editorial drop that the previous Playfair/Roboto Serif setup didn't.
 
 ## Memory and conversation persistence
 
