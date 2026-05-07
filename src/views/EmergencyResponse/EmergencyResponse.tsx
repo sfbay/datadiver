@@ -17,7 +17,7 @@ import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { useFireHourlyPattern } from '@/hooks/useHourlyPatternFactory'
 import { useFireComparisonData } from '@/hooks/useComparisonDataFactory'
 import { useAppStore } from '@/stores/appStore'
-import type { FireEMSDispatch } from '@/types/datasets'
+import type { FireEMSDispatch, FireDispatchNhStatsRow, FireDispatchCityStatsRow, FireDispatchHistogramRow } from '@/types/datasets'
 import { formatDelta } from '@/utils/time'
 import { formatDuration, formatNumber } from '@/utils/time'
 import { responseTimeColor, apotTimeColor } from '@/utils/colors'
@@ -56,6 +56,26 @@ const SERVICE_LABELS: Record<ServiceFilter, string> = {
 
 type SidebarTab = 'neighborhoods' | 'patterns'
 type MapOverlay = 'response' | 'apot'
+
+// Socrata's SoQL on the Fire/EMS dispatch dataset doesn't expose
+// `date_diff_ss`. Compute response seconds via component decomposition:
+// (hh*3600 + mm*60 + ss) extracted from each timestamp, subtracted.
+const RESPONSE_SECONDS = (
+  '((date_extract_hh(on_scene_dttm) - date_extract_hh(received_dttm)) * 3600 + ' +
+  '(date_extract_mm(on_scene_dttm) - date_extract_mm(received_dttm)) * 60 + ' +
+  '(date_extract_ss(on_scene_dttm) - date_extract_ss(received_dttm)))'
+)
+
+// Same-day filter drops <0.5% of calls that cross midnight, but keeps the
+// component-decomposition arithmetic free of negative-diff edge cases.
+const SAME_DAY = (
+  'date_extract_y(on_scene_dttm) = date_extract_y(received_dttm) AND ' +
+  'date_extract_m(on_scene_dttm) = date_extract_m(received_dttm) AND ' +
+  'date_extract_d(on_scene_dttm) = date_extract_d(received_dttm)'
+)
+
+// Drop responses < 0s (data errors) or > 2 hours (stale dispatch / data noise)
+const VALID_RESPONSE = `${RESPONSE_SECONDS} > 0 AND ${RESPONSE_SECONDS} < 7200`
 
 export default function EmergencyResponse() {
   const { dateRange, timeOfDayFilter, comparisonPeriod, selectedIncident, setSelectedIncident, selectedNeighborhood, setSelectedNeighborhood } = useAppStore()
@@ -183,7 +203,52 @@ export default function EmergencyResponse() {
   )
   const totalCount = countRows[0] ? parseInt(countRows[0].count, 10) : null
 
+  // Citywide-true response stats — bypasses the 5K row cap on rawData.
+  // The valid-response filter drops cross-midnight + bad-data rows.
+  const validResponseWhere = useMemo(
+    () => `${whereClause} AND ${SAME_DAY} AND ${VALID_RESPONSE}`,
+    [whereClause]
+  )
+
+  const { data: cityStatsRows } = useDataset<FireDispatchCityStatsRow>(
+    'fireEMSDispatch',
+    {
+      $select: `AVG(${RESPONSE_SECONDS}) as avg_response_seconds, COUNT(*) as call_count`,
+      $where: validResponseWhere,
+      $limit: 1,
+    },
+    [validResponseWhere]
+  )
+
+  const { data: nhStatsRows } = useDataset<FireDispatchNhStatsRow>(
+    'fireEMSDispatch',
+    {
+      $select: `neighborhoods_analysis_boundaries as neighborhood, AVG(${RESPONSE_SECONDS}) as avg_response_seconds, COUNT(*) as call_count`,
+      $where: validResponseWhere,
+      $group: 'neighborhoods_analysis_boundaries',
+      $having: 'COUNT(*) > 5',
+      $limit: 100,
+    },
+    [validResponseWhere]
+  )
+
+  const { data: histogramRows } = useDataset<FireDispatchHistogramRow>(
+    'fireEMSDispatch',
+    {
+      $select: `floor(${RESPONSE_SECONDS} / 60) as minute_bucket, COUNT(*) as call_count`,
+      $where: validResponseWhere,
+      $group: 'minute_bucket',
+      $order: 'minute_bucket',
+      $limit: 200,
+    },
+    [validResponseWhere]
+  )
+
   // --- Computed data (extracted to hook) ---
+  // Sample-bound (5K rawData) values from the hook are renamed; we shadow
+  // stats/neighborhoodStats/histogramData below with citywide-true server
+  // aggregates. APOT stats stay sample-bound — they require the full transport
+  // chain that the server-side aggregations don't cover (separate fix).
   const {
     responseData,
     apotData,
@@ -191,9 +256,8 @@ export default function EmergencyResponse() {
     apotGeojson,
     severityGeojson,
     batteryGeojson,
-    stats,
-    neighborhoodStats,
-    histogramData,
+    stats: sampleStats,
+    neighborhoodStats: sampleNeighborhoodStats,
   } = useEmergencyResponseData({
     rawData,
     mapOverlay,
@@ -201,6 +265,95 @@ export default function EmergencyResponse() {
     fireInsightsSeverityOverlay: fireInsights.severityOverlay,
     fireInsightsBatteryOverlay: fireInsights.batteryOverlay,
   })
+
+  // Citywide stat-card values: AVG response from cityStatsRows, median + p90
+  // derived from histogramRows cumulative distribution. APOT carries through
+  // from sampleStats unchanged.
+  const stats = useMemo(() => {
+    const cityRow = cityStatsRows[0]
+    const cityAvgMin = cityRow ? (parseFloat(cityRow.avg_response_seconds) || 0) / 60 : 0
+    const cityTotal = cityRow ? parseInt(cityRow.call_count, 10) : 0
+
+    const buckets = histogramRows
+      .map(r => ({ minute: parseInt(r.minute_bucket, 10), count: parseInt(r.call_count, 10) }))
+      .filter(b => Number.isFinite(b.minute) && b.count > 0)
+      .sort((a, b) => a.minute - b.minute)
+    const totalBucketed = buckets.reduce((s, b) => s + b.count, 0) || 1
+    let cum = 0, median = 0, p90 = 0
+    for (const b of buckets) {
+      cum += b.count
+      if (median === 0 && cum >= totalBucketed * 0.5) median = b.minute
+      if (p90 === 0 && cum >= totalBucketed * 0.9) { p90 = b.minute; break }
+    }
+
+    return {
+      avg: cityAvgMin,
+      median,
+      total: cityTotal,
+      p90,
+      apotAvg: sampleStats.apotAvg,
+      apotCount: sampleStats.apotCount,
+    }
+  }, [cityStatsRows, histogramRows, sampleStats.apotAvg, sampleStats.apotCount])
+
+  // Neighborhood centroid lookup from the boundary GeoJSON. Decoupled from
+  // rawData so neighborhoods absent from the 5K sample still get flyTo targets.
+  const neighborhoodCenters = useMemo(() => {
+    const m = new Map<string, [number, number]>()
+    if (!neighborhoodBoundaries) return m
+    for (const f of neighborhoodBoundaries.features) {
+      const name = (f.properties as any)?.nhood as string | undefined
+      if (!name || !f.geometry) continue
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+      const visit = (a: any): void => {
+        if (typeof a[0] === 'number') {
+          if (a[0] < minX) minX = a[0]; if (a[0] > maxX) maxX = a[0]
+          if (a[1] < minY) minY = a[1]; if (a[1] > maxY) maxY = a[1]
+        } else {
+          for (const sub of a) visit(sub)
+        }
+      }
+      visit((f.geometry as any).coordinates)
+      if (Number.isFinite(minX)) m.set(name, [(minX + maxX) / 2, (minY + maxY) / 2])
+    }
+    return m
+  }, [neighborhoodBoundaries])
+
+  const neighborhoodStats = useMemo(() => {
+    return nhStatsRows
+      .filter(r => r.neighborhood)
+      .map(r => {
+        const center = neighborhoodCenters.get(r.neighborhood)
+        const sampleCenter = sampleNeighborhoodStats.find(n => n.neighborhood === r.neighborhood)
+        const lat = center?.[1] ?? sampleCenter?.centerLat ?? 37.7749
+        const lng = center?.[0] ?? sampleCenter?.centerLng ?? -122.4194
+        const avgSeconds = parseFloat(r.avg_response_seconds) || 0
+        const avgMin = avgSeconds / 60
+        return {
+          neighborhood: r.neighborhood,
+          avgResponseTime: avgMin,
+          medianResponseTime: avgMin, // per-neighborhood median not in server query
+          totalIncidents: parseInt(r.call_count, 10) || 0,
+          centerLat: lat,
+          centerLng: lng,
+        }
+      })
+      .sort((a, b) => b.avgResponseTime - a.avgResponseTime)
+  }, [nhStatsRows, neighborhoodCenters, sampleNeighborhoodStats])
+
+  // Citywide histogram: expand bucket counts back to a flat number[] of
+  // minute values so the existing ResponseHistogram (D3-bin-based) renders
+  // citywide-true counts without component changes.
+  const histogramData = useMemo(() => {
+    const arr: number[] = []
+    for (const r of histogramRows) {
+      const minute = parseInt(r.minute_bucket, 10)
+      const count = parseInt(r.call_count, 10)
+      if (!Number.isFinite(minute) || !Number.isFinite(count) || count <= 0) continue
+      for (let i = 0; i < count; i++) arr.push(minute)
+    }
+    return arr
+  }, [histogramRows])
 
   // Heatmap + circle layers definition
   const mapLayers = RESPONSE_HEATMAP_LAYERS

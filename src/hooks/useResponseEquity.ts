@@ -95,11 +95,26 @@ async function fetchEquityData(
   const startStr = `${dateRange.start}T00:00:00`
   const endStr = `${dateRange.end}T23:59:59`
 
+  // Same-day filter drops <0.5% of calls that cross midnight, but allows the
+  // component-decomposition arithmetic below to compute response seconds
+  // without negative diffs from the day-rollover edge case.
   const baseWhere = [
     `received_dttm >= '${startStr}'`,
     `received_dttm <= '${endStr}'`,
     `on_scene_dttm IS NOT NULL`,
+    `date_extract_y(on_scene_dttm) = date_extract_y(received_dttm)`,
+    `date_extract_m(on_scene_dttm) = date_extract_m(received_dttm)`,
+    `date_extract_d(on_scene_dttm) = date_extract_d(received_dttm)`,
   ].join(' AND ')
+
+  // Socrata's SoQL no longer exposes `date_diff_ss` on this dataset's query
+  // engine. Compute response seconds via component decomposition: extract
+  // hh+mm+ss from each timestamp and subtract.
+  const RESPONSE_SECONDS = (
+    '((date_extract_hh(on_scene_dttm) - date_extract_hh(received_dttm)) * 3600 + ' +
+    '(date_extract_mm(on_scene_dttm) - date_extract_mm(received_dttm)) * 60 + ' +
+    '(date_extract_ss(on_scene_dttm) - date_extract_ss(received_dttm)))'
+  )
 
   // 3 parallel queries
   const [nhRows, cityRows, heatRows] = await Promise.all([
@@ -107,7 +122,7 @@ async function fetchEquityData(
     fetchDataset<NeighborhoodRow>('fireEMSDispatch', {
       $select: [
         'neighborhoods_analysis_boundaries as neighborhood',
-        'AVG(date_diff_ss(on_scene_dttm, received_dttm)) as avg_response',
+        `AVG(${RESPONSE_SECONDS}) as avg_response`,
         'COUNT(*) as call_count',
       ].join(', '),
       $where: baseWhere,
@@ -119,7 +134,7 @@ async function fetchEquityData(
     // Query 2: City-wide AVG response time
     fetchDataset<CityRow>('fireEMSDispatch', {
       $select: [
-        'AVG(date_diff_ss(on_scene_dttm, received_dttm)) as avg_response',
+        `AVG(${RESPONSE_SECONDS}) as avg_response`,
         'COUNT(*) as call_count',
       ].join(', '),
       $where: baseWhere,
@@ -131,7 +146,7 @@ async function fetchEquityData(
       $select: [
         'neighborhoods_analysis_boundaries as neighborhood',
         'call_type_group as call_type',
-        'AVG(date_diff_ss(on_scene_dttm, received_dttm)) as avg_response',
+        `AVG(${RESPONSE_SECONDS}) as avg_response`,
         'COUNT(*) as call_count',
       ].join(', '),
       $where: baseWhere,
