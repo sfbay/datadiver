@@ -31,10 +31,10 @@ const SERVICE_ICONS: Record<string, string> = {
 }
 
 const SERVICE_COLORS: Record<string, string> = {
-  police: '#60a5fa',
-  fire: '#f97316',
-  ems: '#34d399',
-  mixed: '#a78bfa',
+  police: '#5c9693',
+  fire: '#d47149',
+  ems: '#9db87a',
+  mixed: '#8b6282',
 }
 
 // ── Source label helper ───────────────────────────────────────────────────────
@@ -191,7 +191,7 @@ export default function LiveFeeds() {
           'fill-color': [
             'case',
             ['==', ['get', 'selected'], 1],
-            '#60a5fa',
+            '#5c9693',
             'rgba(96, 165, 250, 0.07)',
           ],
           'fill-opacity': [
@@ -210,7 +210,7 @@ export default function LiveFeeds() {
           'line-color': [
             'case',
             ['==', ['get', 'selected'], 1],
-            '#60a5fa',
+            '#5c9693',
             'rgba(148, 163, 184, 0.35)',
           ],
           'line-width': [
@@ -342,8 +342,8 @@ export default function LiveFeeds() {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-blue-400/80 bg-blue-500/10 px-2 py-1 rounded-full">
-              <span className="w-1 h-1 rounded-full bg-blue-400 pulse-live" />
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-teal-500/80 bg-teal-500/10 px-2 py-1 rounded-full">
+              <span className="w-1 h-1 rounded-full bg-teal-400 pulse-live" />
               {totalFeeds} active feeds
             </span>
           </div>
@@ -357,7 +357,7 @@ export default function LiveFeeds() {
           <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
             {/* Loading indicator while boundaries fetch */}
             {districtLoading && (
-              <MapLoadingIndicator label="Loading districts" color="#60a5fa" />
+              <MapLoadingIndicator label="Loading districts" color="#5c9693" />
             )}
 
             {/* ── Stat cards — top left ──────────────────────────────────── */}
@@ -365,13 +365,13 @@ export default function LiveFeeds() {
               <StatCard
                 label="Scanner Feeds"
                 value={String(totalFeeds)}
-                color="#60a5fa"
+                color="#5c9693"
                 delay={0}
               />
               <StatCard
                 label="Platforms"
                 value={String(totalPlatforms)}
-                color="#a78bfa"
+                color="#8b6282"
                 delay={80}
               />
             </div>
@@ -379,7 +379,7 @@ export default function LiveFeeds() {
             {/* Selected district badge */}
             {selectedDistrict && (
               <div className="absolute top-5 right-5 z-10 flex items-center gap-2 glass-card rounded-full px-3 py-1.5">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-blue-400">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-teal-500">
                   {selectedDistrict} District
                 </span>
                 <button
@@ -418,7 +418,7 @@ export default function LiveFeeds() {
                 onClick={() => setSidebarTab(key)}
                 className={`flex-1 py-2.5 text-[10px] font-mono uppercase tracking-[0.15em] transition-all duration-200 ${
                   sidebarTab === key
-                    ? 'text-ink dark:text-white border-b-2 border-blue-500'
+                    ? 'text-ink dark:text-white border-b-2 border-teal-500'
                     : 'text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400'
                 }`}
               >
@@ -460,12 +460,12 @@ export default function LiveFeeds() {
                 {(selectedDistrict || selectedBattalion) && contextFeeds && (
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-blue-400">
+                      <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-teal-500">
                         {selectedDistrict
                           ? `${selectedDistrict} District Feeds`
                           : `${selectedBattalion} Feeds`}
                       </p>
-                      <div className="flex-1 h-[1px] bg-blue-500/20" />
+                      <div className="flex-1 h-[1px] bg-teal-500/20" />
                     </div>
                     <div className="space-y-2 mb-4">
                       {contextFeeds.map((feed) => (
@@ -495,7 +495,7 @@ export default function LiveFeeds() {
                           }
                           className={`w-full text-left py-2 px-3 rounded-lg transition-all duration-150 flex items-center justify-between ${
                             isActive
-                              ? 'bg-blue-500/10 ring-1 ring-blue-500/30 text-blue-400'
+                              ? 'bg-teal-500/10 ring-1 ring-teal-500/30 text-teal-500'
                               : 'hover:bg-white/80 dark:hover:bg-white/[0.04] text-ink dark:text-slate-200'
                           }`}
                         >
@@ -529,7 +529,7 @@ export default function LiveFeeds() {
                           }
                           className={`w-full text-left py-2 px-3 rounded-lg transition-all duration-150 flex items-center justify-between ${
                             isActive
-                              ? 'bg-orange-500/10 ring-1 ring-orange-500/30 text-orange-400'
+                              ? 'bg-terracotta-500/10 ring-1 ring-terracotta-500/30 text-terracotta-500'
                               : 'hover:bg-white/80 dark:hover:bg-white/[0.04] text-ink dark:text-slate-200'
                           }`}
                         >

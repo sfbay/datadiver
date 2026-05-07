@@ -267,9 +267,9 @@ export default function EmergencyResponse() {
     if (injuries > 0) casualties.push(`${injuries} injured`)
     if (fatalities > 0) casualties.push(`${fatalities} fatal`)
     return `<div class="font-mono text-[10px]">
-      <div class="font-semibold text-red-400 mb-1">Fire with Casualties</div>
+      <div class="font-semibold text-brick-400 mb-1">Fire with Casualties</div>
       <div>${props.situation}</div>
-      <div class="text-red-300">${casualties.join(', ')}</div>
+      <div class="text-brick-400">${casualties.join(', ')}</div>
       ${loss > 0 ? `<div>Loss: $${loss.toLocaleString()}</div>` : ''}
       <div class="text-slate-400 mt-1">${props.address}</div>
       <div class="text-slate-500">${props.date ? new Date(String(props.date)).toLocaleDateString() : ''}</div>
@@ -279,7 +279,7 @@ export default function EmergencyResponse() {
   // Battery fire tooltip
   useMapTooltip(mapInstance, 'fire-battery-points', (props) => {
     return `<div class="font-mono text-[10px]">
-      <div class="font-semibold text-amber-400 mb-1">Battery Fire</div>
+      <div class="font-semibold text-ochre-500 mb-1">Battery Fire</div>
       <div>${props.factor || props.situation}</div>
       ${props.origin ? `<div>Origin: ${props.origin}</div>` : ''}
       ${props.property ? `<div>${props.property}</div>` : ''}
@@ -378,7 +378,7 @@ export default function EmergencyResponse() {
         id: 'response-histogram',
         label: 'Response Time Distribution',
         shortLabel: 'Distribution',
-        color: '#f59e0b',
+        color: '#d4a435',
         defaultExpanded: true,
         render: () => <ResponseHistogram data={histogramData} width={320} height={100} />,
       })
@@ -389,7 +389,7 @@ export default function EmergencyResponse() {
         id: 'daily-trend',
         label: `Daily Trend ${comparison.isLoading ? '(loading…)' : ''}`,
         shortLabel: 'Trend',
-        color: '#3b82f6',
+        color: '#3f7573',
         defaultExpanded: true,
         render: () => (
           <TrendChart
@@ -408,7 +408,7 @@ export default function EmergencyResponse() {
         id: 'battery-trend',
         label: 'Battery Fire Trend',
         shortLabel: 'Battery',
-        color: '#f59e0b',
+        color: '#d4a435',
         defaultExpanded: true,
         render: () => <BatteryTrendChart data={fireInsights.batteryTrend} width={320} height={140} />,
       })
@@ -461,7 +461,7 @@ export default function EmergencyResponse() {
         label: 'Incidents',
         shortLabel: 'Inc',
         value: formatNumber(stats.total),
-        color: '#60a5fa',
+        color: '#5c9693',
         delay: 240,
         defaultExpanded: false,
         subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined,
@@ -475,7 +475,7 @@ export default function EmergencyResponse() {
         label: 'Avg On-Scene',
         shortLabel: 'Scene',
         value: formatDuration(stats.apotAvg),
-        color: stats.apotAvg > 20 ? '#ef4444' : stats.apotAvg > 10 ? '#f59e0b' : '#10b981',
+        color: stats.apotAvg > 20 ? '#b85545' : stats.apotAvg > 10 ? '#d4a435' : '#7a9954',
         delay: 320,
         info: 'avg-apot',
         defaultExpanded: false,
@@ -488,7 +488,7 @@ export default function EmergencyResponse() {
         label: 'Casualties',
         shortLabel: 'Cas',
         value: String(currTotal),
-        color: '#ef4444',
+        color: '#b85545',
         delay: 400,
         info: 'fire-casualties',
         defaultExpanded: false,
@@ -509,7 +509,7 @@ export default function EmergencyResponse() {
           : fireInsights.casualties.totalLoss >= 1_000
           ? `$${(fireInsights.casualties.totalLoss / 1_000).toFixed(0)}K`
           : `$${fireInsights.casualties.totalLoss.toLocaleString()}`,
-        color: '#f59e0b',
+        color: '#d4a435',
         delay: 480,
         info: 'fire-property-loss',
         defaultExpanded: false,
@@ -548,7 +548,7 @@ export default function EmergencyResponse() {
                   {formatNumber(responseData.length)} records
                 </span>
                 {hitLimit && totalCount !== null && (
-                  <span className="text-[10px] font-mono text-amber-500/80 bg-amber-500/10 px-2 py-1 rounded-full">
+                  <span className="text-[10px] font-mono text-ochre-500/80 bg-ochre-500/10 px-2 py-1 rounded-full">
                     of {formatNumber(totalCount)} total
                   </span>
                 )}
@@ -628,8 +628,8 @@ export default function EmergencyResponse() {
         {/* Map — hero element */}
         <div className="flex-1 relative">
           <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
-            {isLoading && <MapScanOverlay label="Scanning dispatches" color="#f59e0b" />}
-            <MapProgressBar color="#f59e0b" />
+            {isLoading && <MapScanOverlay label="Scanning dispatches" color="#d4a435" />}
+            <MapProgressBar color="#d4a435" />
 
             {error && (
               <div className="absolute inset-0 flex items-center justify-center z-20">
@@ -644,7 +644,7 @@ export default function EmergencyResponse() {
               <DataFreshnessAlert
                 latestDate={freshness.latestDate}
                 suggestedRange={freshness.suggestedRange}
-                accentColor="#3b82f6"
+                accentColor="#3f7573"
               />
             )}
 
@@ -701,7 +701,7 @@ export default function EmergencyResponse() {
                   <>
                     <button
                       onClick={() => setSelectedNeighborhood(null)}
-                      className="mb-3 text-[10px] font-mono text-blue-500 hover:text-blue-400 transition-colors"
+                      className="mb-3 text-[10px] font-mono text-teal-500 hover:text-teal-500 transition-colors"
                     >
                       {'\u2190'} Clear: {selectedNeighborhood}
                     </button>
@@ -735,7 +735,7 @@ export default function EmergencyResponse() {
                         }}
                         className={`relative py-2 px-3 rounded-lg cursor-pointer transition-all duration-200 ${
                           selectedNeighborhood === ns.neighborhood
-                            ? 'bg-blue-500/10 ring-1 ring-blue-500/30'
+                            ? 'bg-teal-500/10 ring-1 ring-teal-500/30'
                             : 'hover:bg-white/80 dark:hover:bg-white/[0.04]'
                         }`}
                       >
@@ -754,11 +754,11 @@ export default function EmergencyResponse() {
                                 if (!nhTrend || !nhTrend.priorYearCount) return null
                                 return (
                                   <>
-                                    <span className={nhTrend.yoyPct > 0 ? 'text-red-400' : nhTrend.yoyPct < 0 ? 'text-emerald-400' : ''}>
+                                    <span className={nhTrend.yoyPct > 0 ? 'text-brick-400' : nhTrend.yoyPct < 0 ? 'text-moss-400' : ''}>
                                       {nhTrend.yoyPct >= 0 ? '+' : ''}{nhTrend.yoyPct.toFixed(0)}%
                                     </span>
                                     {Math.abs(nhTrend.zScore) > 1 && (
-                                      <span className={nhTrend.zScore > 1 ? 'text-red-400' : 'text-blue-400'}>
+                                      <span className={nhTrend.zScore > 1 ? 'text-brick-400' : 'text-teal-500'}>
                                         {' '}{nhTrend.zScore >= 0 ? '+' : ''}{nhTrend.zScore.toFixed(1)}σ
                                       </span>
                                     )}
@@ -773,12 +773,12 @@ export default function EmergencyResponse() {
                                 if (!fireStat) return null
                                 return (
                                   <>
-                                    <span className="text-red-400/80"> · {fireStat.count} fires</span>
+                                    <span className="text-brick-400/80"> · {fireStat.count} fires</span>
                                     {fireStat.injuries > 0 && (
-                                      <span className="text-red-400"> · {fireStat.injuries} inj</span>
+                                      <span className="text-brick-400"> · {fireStat.injuries} inj</span>
                                     )}
                                     {fireStat.fatalities > 0 && (
-                                      <span className="text-red-500 font-semibold"> · {fireStat.fatalities} fatal</span>
+                                      <span className="text-brick-500 font-semibold"> · {fireStat.fatalities} fatal</span>
                                     )}
                                   </>
                                 )
@@ -836,7 +836,7 @@ export default function EmergencyResponse() {
                       current={trend.currentPeriods}
                       priorYear={trend.priorYearPeriods}
                       granularity={trend.granularity}
-                      accentColor="#3b82f6"
+                      accentColor="#3f7573"
                       width={232}
                       height={130}
                     />
@@ -847,7 +847,7 @@ export default function EmergencyResponse() {
                 {isFireMode && !fireInsights.isLoading && (fireInsights.causes.length > 0 || fireInsights.propertyTypes.length > 0) && (
                   <div className="mt-5">
                     <div className="flex items-center gap-2 mb-3">
-                      <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-red-400/80">
+                      <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-brick-400/80">
                         Fire Insights
                       </p>
                       <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
@@ -860,7 +860,7 @@ export default function EmergencyResponse() {
                           Top Causes
                         </p>
                         <HorizontalBarChart
-                          data={fireInsights.causes.map(c => ({ label: c.label, value: c.count, color: '#ef4444' }))}
+                          data={fireInsights.causes.map(c => ({ label: c.label, value: c.count, color: '#b85545' }))}
                           width={232}
                           height={100}
                           maxBars={5}
@@ -875,7 +875,7 @@ export default function EmergencyResponse() {
                           Property Types
                         </p>
                         <HorizontalBarChart
-                          data={fireInsights.propertyTypes.map(p => ({ label: p.label, value: p.count, color: '#fb923c' }))}
+                          data={fireInsights.propertyTypes.map(p => ({ label: p.label, value: p.count, color: '#e8896b' }))}
                           width={232}
                           height={80}
                           maxBars={4}
@@ -891,7 +891,7 @@ export default function EmergencyResponse() {
                         </p>
                         <div className="flex gap-2">
                           <div className="flex-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-lg p-2 text-center">
-                            <p className="font-mono text-emerald-400 text-sm font-bold">
+                            <p className="font-mono text-moss-400 text-sm font-bold">
                               {fireInsights.detectionStats.detectorsPresent}%
                             </p>
                             <p className="text-[8px] text-slate-500 dark:text-slate-600 mt-0.5">
@@ -899,7 +899,7 @@ export default function EmergencyResponse() {
                             </p>
                           </div>
                           <div className="flex-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-lg p-2 text-center">
-                            <p className="font-mono text-amber-400 text-sm font-bold">
+                            <p className="font-mono text-ochre-500 text-sm font-bold">
                               {fireInsights.detectionStats.effectiveAlert}%
                             </p>
                             <p className="text-[8px] text-slate-500 dark:text-slate-600 mt-0.5">
@@ -907,7 +907,7 @@ export default function EmergencyResponse() {
                             </p>
                           </div>
                           <div className="flex-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-lg p-2 text-center">
-                            <p className="font-mono text-red-400 text-sm font-bold">
+                            <p className="font-mono text-brick-400 text-sm font-bold">
                               {fireInsights.detectionStats.sprinklersPresent}%
                             </p>
                             <p className="text-[8px] text-slate-500 dark:text-slate-600 mt-0.5">

@@ -380,7 +380,7 @@ export default function TrafficSafety() {
         id: 'severity',
         label: 'Severity Breakdown',
         shortLabel: 'Severity',
-        color: '#ef4444',
+        color: '#b85545',
         defaultExpanded: true,
         render: () => <SeverityBreakdown data={severityData} width={320} height={110} />,
       })
@@ -400,7 +400,7 @@ export default function TrafficSafety() {
         id: 'daily-trend',
         label: `Daily Trend${comparison.isLoading ? ' (loading…)' : ''}`,
         shortLabel: 'Trend',
-        color: '#3b82f6',
+        color: '#3f7573',
         defaultExpanded: true,
         render: () => (
           <TrendChart
@@ -462,7 +462,7 @@ export default function TrafficSafety() {
       <div class="tooltip-label" style="margin-top:6px">Crashes</div>
       <div style="color:#94a3b8">${Number(props.crashCount).toLocaleString()}</div>
       <div class="tooltip-label" style="margin-top:4px">Injured</div>
-      <div style="color:#f59e0b">${Number(props.totalInjured).toLocaleString()}</div>
+      <div style="color:#d4a435">${Number(props.totalInjured).toLocaleString()}</div>
     `
   })
 
@@ -471,7 +471,7 @@ export default function TrafficSafety() {
       <div class="tooltip-label">Speed Camera</div>
       <div class="tooltip-value">${props.location || 'Unknown'}</div>
       <div class="tooltip-label" style="margin-top:6px">Citations</div>
-      <div style="color:#f59e0b;font-weight:600">${Number(props.citations).toLocaleString()}</div>
+      <div style="color:#d4a435;font-weight:600">${Number(props.citations).toLocaleString()}</div>
     `
   })
 
@@ -585,12 +585,12 @@ export default function TrafficSafety() {
             </div>
             {!isLoading && crashData.length > 0 && (
               <div className="flex items-center gap-1.5">
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-red-500/80 bg-red-500/10 px-2 py-1 rounded-full">
-                  <span className="w-1 h-1 rounded-full bg-red-500 pulse-live" />
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-brick-500/80 bg-brick-500/10 px-2 py-1 rounded-full">
+                  <span className="w-1 h-1 rounded-full bg-brick-500 pulse-live" />
                   {formatNumber(crashData.length)} records
                 </span>
                 {hitLimit && totalCount !== null && (
-                  <span className="text-[10px] font-mono text-amber-500/80 bg-amber-500/10 px-2 py-1 rounded-full">
+                  <span className="text-[10px] font-mono text-ochre-500/80 bg-ochre-500/10 px-2 py-1 rounded-full">
                     of {formatNumber(totalCount)} total
                   </span>
                 )}
@@ -618,10 +618,10 @@ export default function TrafficSafety() {
             {/* Overlay toggles */}
             <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-lg p-0.5">
               {([
-                { key: 'speed' as Overlay, label: 'SC', title: 'Speed Cameras', color: '#f59e0b' },
-                { key: 'redlight' as Overlay, label: 'RL', title: 'Red Light Cameras', color: '#dc2626' },
-                { key: 'pci' as Overlay, label: 'PCI', title: 'Pavement Condition', color: '#10b981' },
-                { key: 'hin' as Overlay, label: 'HIN', title: 'High Injury Network', color: '#a855f7' },
+                { key: 'speed' as Overlay, label: 'SC', title: 'Speed Cameras', color: '#d4a435' },
+                { key: 'redlight' as Overlay, label: 'RL', title: 'Red Light Cameras', color: '#963e30' },
+                { key: 'pci' as Overlay, label: 'PCI', title: 'Pavement Condition', color: '#7a9954' },
+                { key: 'hin' as Overlay, label: 'HIN', title: 'High Injury Network', color: '#8b6282' },
               ]).map((ov) => (
                 <button
                   key={ov.key}
@@ -676,8 +676,8 @@ export default function TrafficSafety() {
       <div id="ts-capture" className="flex-1 overflow-hidden flex">
         <div className="flex-1 relative">
           <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
-            {isLoading && <MapScanOverlay label="Scanning crashes" color="#f87171" />}
-            <MapProgressBar color="#f87171" />
+            {isLoading && <MapScanOverlay label="Scanning crashes" color="#d17566" />}
+            <MapProgressBar color="#d17566" />
 
             {error && (
               <div className="absolute inset-0 flex items-center justify-center z-20">
@@ -692,7 +692,7 @@ export default function TrafficSafety() {
               <DataFreshnessAlert
                 latestDate={freshness.latestDate}
                 suggestedRange={freshness.suggestedRange}
-                accentColor="#dc2626"
+                accentColor="#963e30"
               />
             )}
 
@@ -714,13 +714,13 @@ export default function TrafficSafety() {
                   Crash Anomaly<InfoTip term="anomaly-map" size={10} />
                 </p>
                 <div className="flex items-center gap-1">
-                  <span className="text-[9px] font-mono text-blue-400">−2σ</span>
+                  <span className="text-[9px] font-mono text-teal-500">−2σ</span>
                   <div className="flex h-2.5 rounded-full overflow-hidden" style={{ width: 100 }}>
-                    {['#3b82f6', '#93c5fd', '#e2e8f0', '#fbbf24', '#ef4444', '#7f1d1d'].map((c, i) => (
+                    {['#3f7573', '#93c5fd', '#e2e8f0', '#e8c06b', '#b85545', '#7f1d1d'].map((c, i) => (
                       <div key={i} className="flex-1" style={{ backgroundColor: c }} />
                     ))}
                   </div>
-                  <span className="text-[9px] font-mono text-red-400">+3σ</span>
+                  <span className="text-[9px] font-mono text-brick-400">+3σ</span>
                 </div>
                 <p className="text-[9px] text-slate-500 mt-1">below avg → above avg</p>
               </div>
@@ -739,7 +739,7 @@ export default function TrafficSafety() {
                 onClick={() => setSidebarTab(key)}
                 className={`flex-1 py-2.5 text-[10px] font-mono uppercase tracking-[0.15em] transition-all duration-200 ${
                   sidebarTab === key
-                    ? 'text-ink dark:text-white border-b-2 border-red-500'
+                    ? 'text-ink dark:text-white border-b-2 border-brick-500'
                     : 'text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400'
                 }`}
               >
@@ -777,7 +777,7 @@ export default function TrafficSafety() {
                 {selectedNeighborhood && (
                   <button
                     onClick={() => setSelectedNeighborhood(null)}
-                    className="mb-3 text-[10px] font-mono text-red-500 hover:text-red-400 transition-colors"
+                    className="mb-3 text-[10px] font-mono text-brick-500 hover:text-brick-400 transition-colors"
                   >
                     ← Clear filter: {selectedNeighborhood}
                   </button>
@@ -800,7 +800,7 @@ export default function TrafficSafety() {
                   <div className="mb-4">
                     <HourlyHeatgrid grid={hourlyPattern.grid} width={264} height={160} />
                     <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-mono">
-                      Peak: <span className="text-red-500">{formatHour(hourlyPattern.peakHour)}</span>
+                      Peak: <span className="text-brick-500">{formatHour(hourlyPattern.peakHour)}</span>
                       {' · '}Quiet: <span className="text-slate-500">{formatHour(hourlyPattern.quietestHour)}</span>
                     </p>
                   </div>
@@ -815,7 +815,7 @@ export default function TrafficSafety() {
                       current={trend.currentPeriods}
                       priorYear={trend.priorYearPeriods}
                       granularity={trend.granularity}
-                      accentColor="#dc2626"
+                      accentColor="#963e30"
                       width={264}
                       height={130}
                     />
@@ -836,13 +836,13 @@ export default function TrafficSafety() {
                         onClick={() => handleNeighborhoodClick(ns.neighborhood)}
                         className={`relative py-2 px-3 rounded-lg cursor-pointer transition-all duration-200 ${
                           isActive
-                            ? 'bg-red-500/10 ring-1 ring-red-500/30'
+                            ? 'bg-brick-500/10 ring-1 ring-brick-500/30'
                             : 'hover:bg-white/80 dark:hover:bg-white/[0.04]'
                         }`}
                       >
                         <div
                           className="absolute inset-y-0 left-0 rounded-lg opacity-[0.06] bar-grow"
-                          style={{ width: `${barWidth}%`, backgroundColor: '#dc2626' }}
+                          style={{ width: `${barWidth}%`, backgroundColor: '#963e30' }}
                         />
                         <div className="relative flex items-center justify-between">
                           <div className="min-w-0 flex-1">
@@ -851,15 +851,15 @@ export default function TrafficSafety() {
                             </p>
                             <p className="text-[10px] text-slate-400 dark:text-slate-600 font-mono italic">
                               {ns.crashCount.toLocaleString()} crashes
-                              {ns.totalInjured > 0 && <span className="text-amber-400"> · {ns.totalInjured} injured</span>}
-                              {ns.totalKilled > 0 && <span className="text-red-400"> · {ns.totalKilled} killed</span>}
+                              {ns.totalInjured > 0 && <span className="text-ochre-500"> · {ns.totalInjured} injured</span>}
+                              {ns.totalKilled > 0 && <span className="text-brick-400"> · {ns.totalKilled} killed</span>}
                               {nhTrend?.priorYearCount ? (
-                                <span className={nhTrend.yoyPct > 0 ? 'text-red-400' : nhTrend.yoyPct < 0 ? 'text-emerald-400' : ''}>
+                                <span className={nhTrend.yoyPct > 0 ? 'text-brick-400' : nhTrend.yoyPct < 0 ? 'text-moss-400' : ''}>
                                   {' · '}{nhTrend.yoyPct >= 0 ? '+' : ''}{nhTrend.yoyPct.toFixed(0)}% since last yr
                                 </span>
                               ) : null}
                               {zScore !== undefined && (
-                                <span className={zScore > 1 ? 'text-red-400' : zScore < -1 ? 'text-blue-400' : ''}>
+                                <span className={zScore > 1 ? 'text-brick-400' : zScore < -1 ? 'text-teal-500' : ''}>
                                   {' · '}{zScore >= 0 ? '+' : ''}{zScore.toFixed(1)}σ
                                 </span>
                               )}

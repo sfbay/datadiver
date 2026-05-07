@@ -324,7 +324,7 @@ export default function CrimeIncidents() {
         label: 'Total Incidents',
         shortLabel: 'Total',
         value: formatNumber(totalVal),
-        color: '#ef4444',
+        color: '#b85545',
         delay: 0,
         info: 'total-incidents',
         defaultExpanded: true,
@@ -337,7 +337,7 @@ export default function CrimeIncidents() {
         label: 'Top Category',
         shortLabel: 'Top Cat',
         value: stats.topCategory,
-        color: '#f59e0b',
+        color: '#d4a435',
         delay: 80,
         info: 'top-category',
         defaultExpanded: true,
@@ -347,7 +347,7 @@ export default function CrimeIncidents() {
         label: '911 Linked',
         shortLabel: '911%',
         value: `${stats.linkedPct.toFixed(0)}%`,
-        color: '#a78bfa',
+        color: '#8b6282',
         delay: 160,
         info: '911-linked',
         defaultExpanded: true,
@@ -357,7 +357,7 @@ export default function CrimeIncidents() {
         label: 'Peak Hour',
         shortLabel: 'Peak',
         value: formatHour(stats.peakHour),
-        color: '#60a5fa',
+        color: '#5c9693',
         delay: 240,
         info: 'peak-hour',
         defaultExpanded: false,
@@ -373,7 +373,7 @@ export default function CrimeIncidents() {
         id: 'resolution',
         label: 'Resolution Breakdown',
         shortLabel: 'Resolution',
-        color: '#a78bfa',
+        color: '#8b6282',
         defaultExpanded: true,
         render: () => (
           <HorizontalBarChart
@@ -391,7 +391,7 @@ export default function CrimeIncidents() {
         id: 'daily-trend',
         label: `Daily Trend${comparison.isLoading ? ' (loading\u2026)' : ''}`,
         shortLabel: 'Trend',
-        color: '#ef4444',
+        color: '#b85545',
         defaultExpanded: true,
         render: () => (
           <TrendChart
@@ -487,7 +487,7 @@ export default function CrimeIncidents() {
       minzoom: 13,
       paint: {
         'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 3, 16, 6],
-        'circle-color': '#ef4444',
+        'circle-color': '#b85545',
         'circle-opacity': 0.7,
         'circle-stroke-width': 1,
         'circle-stroke-color': 'rgba(255,255,255,0.15)',
@@ -519,11 +519,11 @@ export default function CrimeIncidents() {
       paint: {
         'fill-color': [
           'interpolate', ['linear'], ['get', 'zScore'],
-          -2, '#3b82f6',
+          -2, '#3f7573',
           -1, '#93c5fd',
           0, '#e2e8f0',
-          1, '#fbbf24',
-          2, '#ef4444',
+          1, '#e8c06b',
+          2, '#b85545',
           3, '#7f1d1d',
         ],
         'fill-opacity': 0.55,
@@ -554,7 +554,7 @@ export default function CrimeIncidents() {
     const timeStr = dt
       ? dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
       : null
-    const linked = props.cadNumber ? '<span style="color:#a78bfa;font-size:9px;margin-left:4px">911 LINKED</span>' : ''
+    const linked = props.cadNumber ? '<span style="color:#8b6282;font-size:9px;margin-left:4px">911 LINKED</span>' : ''
     return `
       ${dateStr ? `<div style="color:#e2e8f0">${dateStr} · ${timeStr}${linked}</div>` : ''}
       <div class="tooltip-label" style="margin-top:6px">Category</div>
@@ -690,12 +690,12 @@ export default function CrimeIncidents() {
             </div>
             {!isLoading && incidentData.length > 0 && (
               <div className="flex items-center gap-1.5">
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-red-500/80 bg-red-500/10 px-2 py-1 rounded-full">
-                  <span className="w-1 h-1 rounded-full bg-red-500 pulse-live" />
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-brick-500/80 bg-brick-500/10 px-2 py-1 rounded-full">
+                  <span className="w-1 h-1 rounded-full bg-brick-500 pulse-live" />
                   {formatNumber(incidentData.length)} records
                 </span>
                 {hitLimit && totalCount !== null && (
-                  <span className="text-[10px] font-mono text-amber-500/80 bg-amber-500/10 px-2 py-1 rounded-full">
+                  <span className="text-[10px] font-mono text-ochre-500/80 bg-ochre-500/10 px-2 py-1 rounded-full">
                     of {formatNumber(totalCount)} total
                   </span>
                 )}
@@ -758,8 +758,8 @@ export default function CrimeIncidents() {
         {/* Map hero */}
         <div className="flex-1 relative">
           <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
-            {isLoading && <MapScanOverlay label="Scanning incidents" color="#f87171" />}
-            <MapProgressBar color="#f87171" />
+            {isLoading && <MapScanOverlay label="Scanning incidents" color="#d17566" />}
+            <MapProgressBar color="#d17566" />
 
             {error && (
               <div className="absolute inset-0 flex items-center justify-center z-20">
@@ -774,7 +774,7 @@ export default function CrimeIncidents() {
               <DataFreshnessAlert
                 latestDate={freshness.latestDate}
                 suggestedRange={freshness.suggestedRange}
-                accentColor="#ef4444"
+                accentColor="#b85545"
               />
             )}
 
@@ -796,13 +796,13 @@ export default function CrimeIncidents() {
                   Crime Anomaly<InfoTip term="anomaly-map" size={10} />
                 </p>
                 <div className="flex items-center gap-1">
-                  <span className="text-[9px] font-mono text-blue-400">{'\u2212'}2\u03C3</span>
+                  <span className="text-[9px] font-mono text-teal-500">{'\u2212'}2\u03C3</span>
                   <div className="flex h-2.5 rounded-full overflow-hidden" style={{ width: 100 }}>
-                    {['#3b82f6', '#93c5fd', '#e2e8f0', '#fbbf24', '#ef4444', '#7f1d1d'].map((c, i) => (
+                    {['#3f7573', '#93c5fd', '#e2e8f0', '#e8c06b', '#b85545', '#7f1d1d'].map((c, i) => (
                       <div key={i} className="flex-1" style={{ backgroundColor: c }} />
                     ))}
                   </div>
-                  <span className="text-[9px] font-mono text-red-400">+3\u03C3</span>
+                  <span className="text-[9px] font-mono text-brick-400">+3\u03C3</span>
                 </div>
                 <p className="text-[9px] text-slate-500 mt-1">below avg {'\u2192'} above avg</p>
               </div>
@@ -823,7 +823,7 @@ export default function CrimeIncidents() {
                 onClick={() => setSidebarTab(key)}
                 className={`flex-1 py-2.5 text-[10px] font-mono uppercase tracking-[0.15em] transition-all duration-200 ${
                   sidebarTab === key
-                    ? 'text-ink dark:text-white border-b-2 border-red-500'
+                    ? 'text-ink dark:text-white border-b-2 border-brick-500'
                     : 'text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400'
                 }`}
               >
@@ -861,7 +861,7 @@ export default function CrimeIncidents() {
                 {selectedNeighborhood && (
                   <button
                     onClick={() => setSelectedNeighborhood(null)}
-                    className="mb-3 text-[10px] font-mono text-red-500 hover:text-red-400 transition-colors"
+                    className="mb-3 text-[10px] font-mono text-brick-500 hover:text-brick-400 transition-colors"
                   >
                     {'\u2190'} Clear filter: {selectedNeighborhood}
                   </button>
@@ -885,7 +885,7 @@ export default function CrimeIncidents() {
                   <div className="mb-4">
                     <HourlyHeatgrid grid={hourlyPattern.grid} width={264} height={160} />
                     <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-mono">
-                      Peak: <span className="text-red-500">{formatHour(hourlyPattern.peakHour)}</span>
+                      Peak: <span className="text-brick-500">{formatHour(hourlyPattern.peakHour)}</span>
                       {' \u00B7 '}Quiet: <span className="text-slate-500">{formatHour(hourlyPattern.quietestHour)}</span>
                     </p>
                   </div>
@@ -900,7 +900,7 @@ export default function CrimeIncidents() {
                       current={trend.currentPeriods}
                       priorYear={trend.priorYearPeriods}
                       granularity={trend.granularity}
-                      accentColor="#ef4444"
+                      accentColor="#b85545"
                       width={264}
                       height={130}
                     />
@@ -920,13 +920,13 @@ export default function CrimeIncidents() {
                         onClick={() => handleNeighborhoodClick(ns.neighborhood)}
                         className={`relative py-2 px-3 rounded-lg cursor-pointer transition-all duration-200 ${
                           isActive
-                            ? 'bg-red-500/10 ring-1 ring-red-500/30'
+                            ? 'bg-brick-500/10 ring-1 ring-brick-500/30'
                             : 'hover:bg-white/80 dark:hover:bg-white/[0.04]'
                         }`}
                       >
                         <div
                           className="absolute inset-y-0 left-0 rounded-lg opacity-[0.06] bar-grow"
-                          style={{ width: `${barWidth}%`, backgroundColor: '#ef4444' }}
+                          style={{ width: `${barWidth}%`, backgroundColor: '#b85545' }}
                         />
                         <div className="relative flex items-center justify-between">
                           <div className="min-w-0 flex-1">
@@ -938,7 +938,7 @@ export default function CrimeIncidents() {
                                 const nhTrend = trend.neighborhoodMap.get(ns.neighborhood)
                                 if (nhTrend?.priorYearCount) {
                                   return (
-                                    <span className={nhTrend.yoyPct > 0 ? 'text-red-400' : nhTrend.yoyPct < 0 ? 'text-emerald-400' : ''}>
+                                    <span className={nhTrend.yoyPct > 0 ? 'text-brick-400' : nhTrend.yoyPct < 0 ? 'text-moss-400' : ''}>
                                       {nhTrend.yoyPct >= 0 ? '+' : ''}{nhTrend.yoyPct.toFixed(0)}%{' \u00B7 '}
                                     </span>
                                   )
@@ -947,7 +947,7 @@ export default function CrimeIncidents() {
                               })()}
                               {ns.incidentCount.toLocaleString()} incidents
                               {zScore !== undefined && (
-                                <span className={zScore > 1 ? 'text-red-400' : zScore < -1 ? 'text-blue-400' : ''}>
+                                <span className={zScore > 1 ? 'text-brick-400' : zScore < -1 ? 'text-teal-500' : ''}>
                                   {' \u00B7 '}{zScore >= 0 ? '+' : ''}{zScore.toFixed(1)}{'\u03C3'}
                                 </span>
                               )}
