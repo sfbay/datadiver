@@ -36,7 +36,9 @@ function buildDetail(record: Cases311Record): CaseDetail {
     district: record.supervisor_district || 'Unknown',
     source: record.source || 'Unknown',
     agency: record.agency_responsible || 'Unknown',
-    mediaUrl: record.media_url || null,
+    mediaUrl: record.media_url?.url
+      ? record.media_url.url.replace(/^http:\/\//, 'https://')
+      : null,
     timestamps: {
       requested: record.requested_datetime || null,
       updated: record.updated_datetime || null,

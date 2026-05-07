@@ -298,7 +298,7 @@ export interface Cases311Record {
   police_district: string
   source: string
   agency_responsible: string
-  media_url: string
+  media_url: { url: string } | null
   point: { type: string; coordinates: [number, number] }
 }
 
