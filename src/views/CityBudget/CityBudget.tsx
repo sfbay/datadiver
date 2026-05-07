@@ -30,7 +30,7 @@ const TAB_LABELS: Record<BudgetTab, string> = {
   advertising: 'Advertising & Media',
 }
 
-const ACCENT = '#0ea5e9'
+const ACCENT = '#616a96'
 
 export default function CityBudget() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -159,7 +159,7 @@ function BudgetOverview({ fiscalYear }: { fiscalYear: FiscalYear }) {
         label: 'Total Spending',
         shortLabel: 'Spending',
         value: formatBudgetAmount(totals.spending),
-        color: '#a78bfa',
+        color: '#8b6282',
         subtitle: `${totals.spendingPct.toFixed(1)}% of budget`,
         defaultExpanded: true,
       },
@@ -168,7 +168,7 @@ function BudgetOverview({ fiscalYear }: { fiscalYear: FiscalYear }) {
         label: 'Largest Department',
         shortLabel: 'Top Dept',
         value: largestDept.length > 20 ? largestDept.slice(0, 19) + '…' : largestDept,
-        color: '#f59e0b',
+        color: '#d4a435',
         defaultExpanded: true,
       },
       {
@@ -176,7 +176,7 @@ function BudgetOverview({ fiscalYear }: { fiscalYear: FiscalYear }) {
         label: 'YoY Spending Growth',
         shortLabel: 'YoY',
         value: `${totals.yoyGrowth >= 0 ? '+' : ''}${totals.yoyGrowth.toFixed(1)}%`,
-        color: totals.yoyGrowth > 0 ? '#ef4444' : '#22c55e',
+        color: totals.yoyGrowth > 0 ? '#b85545' : '#22c55e',
         trend: totals.yoyGrowth > 0 ? 'up' : totals.yoyGrowth < 0 ? 'down' : 'neutral',
         yoyDelta: totals.yoyGrowth,
         defaultExpanded: true,
@@ -222,7 +222,7 @@ function BudgetOverview({ fiscalYear }: { fiscalYear: FiscalYear }) {
         {totals.error && (
           <div className="flex items-center justify-center py-16">
             <div className="glass-card rounded-xl p-6 max-w-sm">
-              <p className="text-sm font-medium text-red-400 mb-1">Data Error</p>
+              <p className="text-sm font-medium text-brick-400 mb-1">Data Error</p>
               <p className="text-xs text-slate-400">{totals.error}</p>
             </div>
           </div>
@@ -340,14 +340,14 @@ function BudgetOverview({ fiscalYear }: { fiscalYear: FiscalYear }) {
                   onClick={() => handleSelectDepartment(dept.name)}
                   className={`w-full text-left px-2 py-1.5 rounded-md transition-all duration-150 group
                     ${selectedDepartment === dept.name
-                      ? 'bg-sky-500/10 dark:bg-sky-400/10'
+                      ? 'bg-indigo-500/10 dark:bg-indigo-400/10'
                       : 'hover:bg-slate-50 dark:hover:bg-white/[0.02]'
                     }`}
                 >
                   <div className="flex items-center justify-between mb-0.5">
                     <span className={`text-[10px] truncate max-w-[160px] ${
                       selectedDepartment === dept.name
-                        ? 'text-sky-600 dark:text-sky-400 font-medium'
+                        ? 'text-indigo-600 dark:text-indigo-400 font-medium'
                         : 'text-slate-600 dark:text-slate-400'
                     }`}>
                       {dept.name}
@@ -552,7 +552,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
           label: 'Vendors',
           shortLabel: 'Vendors',
           value: String(aggregatedVendors.length),
-          color: '#f59e0b',
+          color: '#d4a435',
           defaultExpanded: true,
         },
         {
@@ -560,7 +560,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
           label: '% of Ad Spend',
           shortLabel: 'Share',
           value: ad.totalAdSpend > 0 ? `${((filteredTotal / ad.totalAdSpend) * 100).toFixed(1)}%` : '—',
-          color: '#a78bfa',
+          color: '#8b6282',
           defaultExpanded: true,
         },
       ]
@@ -586,7 +586,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
           label: 'Agencies',
           shortLabel: 'Agency',
           value: formatBudgetFull(agencyTotal),
-          color: '#a855f7',
+          color: '#8b6282',
           subtitle: filteredTotal > 0 && agencyTotal > 0
             ? `${((agencyTotal / filteredTotal) * 100).toFixed(0)}% of ad spend`
             : undefined,
@@ -597,7 +597,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
           label: 'Discretionary',
           shortLabel: 'Discr.',
           value: formatBudgetFull(discretionaryTotal),
-          color: '#2dd4bf',
+          color: '#5c9693',
           subtitle: discretionaryTotal > 0
             ? 'compliance basis'
             : 'no discretionary spend',
@@ -608,7 +608,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
           label: 'Community Media',
           shortLabel: 'Community',
           value: formatBudgetFull(ethnicMediaSpend),
-          color: '#10b981',
+          color: '#7a9954',
           subtitle: discretionaryTotal > 0
             ? `${((ethnicMediaSpend / discretionaryTotal) * 100).toFixed(1)}% of discretionary`
             : undefined,
@@ -619,7 +619,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
           label: 'P-Card %',
           shortLabel: 'P-Card',
           value: deptInfo ? `${(100 - deptInfo.transparency_pct).toFixed(0)}%` : '—',
-          color: '#ef4444',
+          color: '#b85545',
           defaultExpanded: true,
         },
       ]
@@ -653,7 +653,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
         label: 'Agencies',
         shortLabel: 'Agency',
         value: formatBudgetFull(agencyTotalTop),
-        color: '#a855f7',
+        color: '#8b6282',
         subtitle: ad.totalAdSpend > 0
           ? `${((agencyTotalTop / ad.totalAdSpend) * 100).toFixed(0)}% of ad spend`
           : undefined,
@@ -664,7 +664,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
         label: 'P-Card Ad Spend',
         shortLabel: 'P-Card',
         value: formatBudgetFull(ad.totalPcardSpend),
-        color: '#ef4444',
+        color: '#b85545',
         subtitle: ad.totalAdSpend > 0
           ? `${((ad.totalPcardSpend / ad.totalAdSpend) * 100).toFixed(1)}% of ad spend`
           : undefined,
@@ -675,7 +675,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
         label: 'Discretionary',
         shortLabel: 'Discr.',
         value: formatBudgetFull(compliance.totalDiscretionary),
-        color: '#2dd4bf',
+        color: '#5c9693',
         subtitle: ad.totalAdSpend > 0
           ? `${((compliance.totalDiscretionary / ad.totalAdSpend) * 100).toFixed(0)}% of ad spend`
           : undefined,
@@ -686,7 +686,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
         label: 'Community Media',
         shortLabel: 'Ethnic',
         value: formatBudgetFull(compliance.ethnicMediaSpend),
-        color: '#10b981',
+        color: '#7a9954',
         subtitle: `${compliance.outletCount} outlet${compliance.outletCount !== 1 ? 's' : ''}`,
         subtitleAction: () => navigateToCategory('community-ethnic-press'),
         defaultExpanded: true,
@@ -827,7 +827,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
         {ad.error && (
           <div className="flex items-center justify-center py-16">
             <div className="glass-card rounded-xl p-6 max-w-sm">
-              <p className="text-sm font-medium text-red-400 mb-1">Data Error</p>
+              <p className="text-sm font-medium text-brick-400 mb-1">Data Error</p>
               <p className="text-xs text-slate-400">{ad.error}</p>
             </div>
           </div>
@@ -851,7 +851,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                       card.subtitleAction ? (
                         <button
                           onClick={card.subtitleAction}
-                          className="text-[10px] font-mono text-slate-400 mt-1 hover:text-sky-400 transition-colors underline decoration-dotted underline-offset-2 cursor-pointer"
+                          className="text-[10px] font-mono text-slate-400 mt-1 hover:text-indigo-400 transition-colors underline decoration-dotted underline-offset-2 cursor-pointer"
                         >
                           {card.subtitle}
                         </button>
@@ -1048,7 +1048,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                         style={{ backgroundColor: 'rgba(45,212,191,0.1)' }}
                       >
                         <div
-                          className="absolute inset-y-0 left-0 bg-emerald-500/65 transition-all duration-500"
+                          className="absolute inset-y-0 left-0 bg-moss-500/65 transition-all duration-500"
                           style={{
                             width: deptDiscretionary > 0
                               ? `${Math.min((deptEthnic / deptDiscretionary) * 100, 100)}%`
@@ -1056,12 +1056,12 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                           }}
                         />
                         <div
-                          className="absolute inset-y-0 border-l border-dashed border-emerald-400/70"
+                          className="absolute inset-y-0 border-l border-dashed border-moss-400/70"
                           style={{ left: '50%' }}
                         />
                       </div>
                       <div className="flex items-center justify-between mt-1.5 text-[9px] font-mono">
-                        <span className="text-emerald-400 tabular-nums">
+                        <span className="text-moss-400 tabular-nums">
                           {formatBudgetFull(deptEthnic)} community
                         </span>
                         <span className="text-slate-400/60 tabular-nums">
@@ -1151,10 +1151,10 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                 </div>
 
                 {/* P-card transparency callout */}
-                <div className="glass-card rounded-xl p-4 border border-red-500/20">
+                <div className="glass-card rounded-xl p-4 border border-brick-500/20">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-2 h-2 rounded-full bg-red-500" />
-                    <p className="text-xs font-semibold text-red-400">P-Card Transparency</p>
+                    <div className="w-2 h-2 rounded-full bg-brick-500" />
+                    <p className="text-xs font-semibold text-brick-400">P-Card Transparency</p>
                   </div>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
                     These purchases are made via procurement cards (US Bank) and do not identify the specific platform or media outlet.
@@ -1168,7 +1168,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                           <div className="flex items-center justify-between text-[10px] mb-0.5">
                             <span className="text-slate-600 dark:text-slate-300 truncate max-w-[300px]">{d.department}</span>
                             <div className="flex items-center gap-2">
-                              <span className="font-mono text-red-400 tabular-nums">{formatBudgetAmount(d.pcard_total)}</span>
+                              <span className="font-mono text-brick-400 tabular-nums">{formatBudgetAmount(d.pcard_total)}</span>
                               <span className="font-mono text-slate-400 tabular-nums">
                                 ({(100 - d.transparency_pct).toFixed(0)}% opaque)
                               </span>
@@ -1176,7 +1176,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                           </div>
                           <div className="h-1 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
                             <div
-                              className="h-full rounded-full bg-red-500/60"
+                              className="h-full rounded-full bg-brick-500/60"
                               style={{ width: `${(d.pcard_total / maxPcardTotal) * 100}%` }}
                             />
                           </div>
@@ -1209,9 +1209,9 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
           {/* Tab selector — three lenses on the same 23 departments */}
           <div className="flex gap-0.5 mb-1 rounded-md overflow-hidden bg-slate-100/50 dark:bg-white/[0.03] p-0.5">
             {([
-              { key: 'spend', label: '$ Ad Spend', activeClass: 'bg-sky-500/20 text-sky-300', title: 'Sort by total ad spend (largest departments first)' },
-              { key: 'communityDollars', label: '$ Community', activeClass: 'bg-emerald-500/20 text-emerald-300', title: 'Sort by absolute community-media dollars' },
-              { key: 'communityPct', label: '% Community', activeClass: 'bg-emerald-500/20 text-emerald-300', title: 'Sort by community share of total ad spend. Not compliance % — which uses discretionary as denominator' },
+              { key: 'spend', label: '$ Ad Spend', activeClass: 'bg-indigo-500/20 text-indigo-400', title: 'Sort by total ad spend (largest departments first)' },
+              { key: 'communityDollars', label: '$ Community', activeClass: 'bg-moss-500/20 text-moss-400', title: 'Sort by absolute community-media dollars' },
+              { key: 'communityPct', label: '% Community', activeClass: 'bg-moss-500/20 text-moss-400', title: 'Sort by community share of total ad spend. Not compliance % — which uses discretionary as denominator' },
             ] as const).map((tab) => (
               <button
                 key={tab.key}
@@ -1244,7 +1244,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
               {sortedRailDepts.map((dept) => {
                 const isActive = drilldown.dept === dept.department
                 const hoverClass = isActive
-                  ? 'bg-sky-500/10 dark:bg-sky-400/10'
+                  ? 'bg-indigo-500/10 dark:bg-indigo-400/10'
                   : 'hover:bg-slate-50 dark:hover:bg-white/[0.02]'
                 // In % Community tab, dim small-total depts to flag them
                 // as "small denominator — percentage may mislead"
@@ -1261,13 +1261,13 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                     break
                   case 'communityDollars':
                     primaryValue = formatBudgetAmount(dept.communitySpend)
-                    primaryColor = dept.communitySpend > 0 ? 'text-emerald-400' : 'text-slate-600'
+                    primaryColor = dept.communitySpend > 0 ? 'text-moss-400' : 'text-slate-600'
                     break
                   case 'communityPct':
                     primaryValue = `${dept.communityPct.toFixed(dept.communityPct < 1 && dept.communityPct > 0 ? 1 : 0)}%`
                     primaryColor = dept.communityPct >= 50
-                      ? 'text-emerald-400'
-                      : dept.communityPct > 0 ? 'text-emerald-400/70' : 'text-slate-600'
+                      ? 'text-moss-400'
+                      : dept.communityPct > 0 ? 'text-moss-400/70' : 'text-slate-600'
                     break
                 }
 
@@ -1281,7 +1281,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                     <div className="flex items-center justify-between mb-0.5">
                       <span className={`text-[10px] truncate max-w-[140px] ${
                         isActive
-                          ? 'text-sky-600 dark:text-sky-400 font-medium'
+                          ? 'text-indigo-600 dark:text-indigo-400 font-medium'
                           : 'text-slate-600 dark:text-slate-400'
                       }`}>
                         {dept.department}
@@ -1311,16 +1311,16 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                       return (
                         <div className="h-1 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden flex">
                           {communityW >= MIN_SEGMENT_PCT && (
-                            <div className="h-full bg-emerald-500/80" style={{ width: `${communityW}%` }} />
+                            <div className="h-full bg-moss-500/80" style={{ width: `${communityW}%` }} />
                           )}
                           {skyW >= MIN_SEGMENT_PCT && (
-                            <div className="h-full bg-sky-500/50" style={{ width: `${skyW}%` }} />
+                            <div className="h-full bg-indigo-500/50" style={{ width: `${skyW}%` }} />
                           )}
                           {purpleW >= MIN_SEGMENT_PCT && (
-                            <div className="h-full bg-purple-500/55" style={{ width: `${purpleW}%` }} />
+                            <div className="h-full bg-plum-500/55" style={{ width: `${purpleW}%` }} />
                           )}
                           {pcardW >= MIN_SEGMENT_PCT && (
-                            <div className="h-full bg-red-500/50" style={{ width: `${pcardW}%` }} />
+                            <div className="h-full bg-brick-500/50" style={{ width: `${pcardW}%` }} />
                           )}
                         </div>
                       )
@@ -1332,7 +1332,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                       return (
                         <div className="h-1 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
                           {dept.communitySpend > 0 && (
-                            <div className="h-full bg-emerald-500/75" style={{ width: `${communityW}%` }} />
+                            <div className="h-full bg-moss-500/75" style={{ width: `${communityW}%` }} />
                           )}
                         </div>
                       )
@@ -1345,13 +1345,13 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                         <div className="relative h-1 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
                           {dept.communityPct > 0 && (
                             <div
-                              className={`h-full ${dept.communityPct >= 50 ? 'bg-emerald-500/90' : 'bg-emerald-500/60'}`}
+                              className={`h-full ${dept.communityPct >= 50 ? 'bg-moss-500/90' : 'bg-moss-500/60'}`}
                               style={{ width: `${pctW}%` }}
                             />
                           )}
                           {/* 50% target marker */}
                           <div
-                            className="absolute inset-y-0 border-l border-dashed border-emerald-300/40"
+                            className="absolute inset-y-0 border-l border-dashed border-moss-400/40"
                             style={{ left: '50%' }}
                           />
                         </div>
@@ -1366,17 +1366,17 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                       return (
                         <p className="text-[8px] font-mono mt-0.5 flex gap-2 flex-wrap">
                           {dept.communityPct > 0 && (
-                            <span className="text-emerald-400/80">
+                            <span className="text-moss-400/80">
                               {dept.communityPct.toFixed(dept.communityPct < 1 ? 1 : 0)}% community
                             </span>
                           )}
                           {agencyPct >= 1 && (
-                            <span className="text-purple-400/80">
+                            <span className="text-plum-500/80">
                               {agencyPct.toFixed(0)}% agency
                             </span>
                           )}
                           {dept.pcard_total > 0 && (
-                            <span className="text-red-400/60">
+                            <span className="text-brick-400/60">
                               {(100 - dept.transparency_pct).toFixed(0)}% P-card
                             </span>
                           )}
@@ -1387,7 +1387,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                     {railTab === 'communityDollars' && dept.communitySpend > 0 && (
                       <p className="text-[8px] font-mono text-slate-500 mt-0.5">
                         of {formatBudgetAmount(dept.total)} total ·{' '}
-                        <span className="text-emerald-400/80">
+                        <span className="text-moss-400/80">
                           {dept.communityPct.toFixed(dept.communityPct < 1 ? 1 : 0)}%
                         </span>
                       </p>
@@ -1395,7 +1395,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
 
                     {railTab === 'communityPct' && dept.communityPct > 0 && (
                       <p className="text-[8px] font-mono text-slate-500 mt-0.5">
-                        <span className="text-emerald-400/80">{formatBudgetAmount(dept.communitySpend)}</span>
+                        <span className="text-moss-400/80">{formatBudgetAmount(dept.communitySpend)}</span>
                         {' '}of {formatBudgetAmount(dept.total)}
                       </p>
                     )}
@@ -1460,7 +1460,7 @@ function AdBreadcrumb({
       {/* Back-link eyebrow — explicit "← Back to X" affordance */}
       <button
         onClick={backHandler}
-        className="group flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500 hover:text-sky-500 dark:hover:text-sky-400 transition-colors mb-1.5"
+        className="group flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors mb-1.5"
       >
         <span className="transition-transform group-hover:-translate-x-0.5">←</span>
         <span>Back to {backLabel}</span>
@@ -1587,10 +1587,10 @@ function FilteredVendorList({
 // ── Compliance Dashboard ──────────────────────────────────
 
 const STATUS_CONFIG: Record<ComplianceStatus, { icon: string; color: string; bg: string; label: string }> = {
-  compliant: { icon: '✓', color: '#10b981', bg: 'bg-emerald-500/10', label: '≥ 50%' },
-  below: { icon: '⚠', color: '#f59e0b', bg: 'bg-amber-500/10', label: '30–49%' },
-  critical: { icon: '✗', color: '#ef4444', bg: 'bg-red-500/10', label: '< 30%' },
-  none: { icon: '—', color: '#64748b', bg: 'bg-slate-500/10', label: 'No ad spend' },
+  compliant: { icon: '✓', color: '#7a9954', bg: 'bg-moss-500/10', label: '≥ 50%' },
+  below: { icon: '⚠', color: '#d4a435', bg: 'bg-ochre-500/10', label: '30–49%' },
+  critical: { icon: '✗', color: '#b85545', bg: 'bg-brick-500/10', label: '< 30%' },
+  none: { icon: '—', color: '#a8926a', bg: 'bg-slate-500/10', label: 'No ad spend' },
 }
 
 function ComplianceDashboard({
@@ -1651,7 +1651,7 @@ function ComplianceDashboard({
 
   // Compliance % — bar fill is ALWAYS emerald (it represents community media spend).
   const pct = compliance.compliancePct
-  const barColor = '#10b981'
+  const barColor = '#7a9954'
 
   return (
     <div className="space-y-4">
@@ -1672,7 +1672,7 @@ function ComplianceDashboard({
           </div>
           <button
             onClick={onExportRecords}
-            className="flex items-center gap-1.5 text-[8px] font-mono text-slate-400/50 hover:text-sky-400 transition-colors"
+            className="flex items-center gap-1.5 text-[8px] font-mono text-slate-400/50 hover:text-indigo-400 transition-colors"
             title="Export the advertising records backing this compliance calculation"
           >
             <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
@@ -1744,10 +1744,10 @@ function ComplianceDashboard({
                   >
                     {agencyPct > 8 && (
                       <>
-                        <span className="text-[11px] font-mono font-semibold text-purple-200 tabular-nums leading-tight">
+                        <span className="text-[11px] font-mono font-semibold text-plum-400 tabular-nums leading-tight">
                           {formatBudgetFull(agencyTotal)}
                         </span>
-                        <span className="text-[9px] font-mono text-purple-300/70 leading-tight mt-0.5">
+                        <span className="text-[9px] font-mono text-plum-400/70 leading-tight mt-0.5">
                           agencies · {Math.round(agencyPct)}%
                         </span>
                       </>
@@ -1775,10 +1775,10 @@ function ComplianceDashboard({
                   >
                     {taggedPct > 6 && (
                       <>
-                        <span className="text-[11px] font-mono font-semibold text-sky-200 tabular-nums leading-tight">
+                        <span className="text-[11px] font-mono font-semibold text-indigo-400 tabular-nums leading-tight">
                           {formatBudgetFull(taggedTotal)}
                         </span>
-                        <span className="text-[9px] font-mono text-sky-300/70 leading-tight mt-0.5">
+                        <span className="text-[9px] font-mono text-indigo-400/70 leading-tight mt-0.5">
                           direct · {Math.round(taggedPct)}%
                         </span>
                       </>
@@ -1822,7 +1822,7 @@ function ComplianceDashboard({
                   />
                 </svg>
                 <span
-                  className="absolute text-sky-200/85 pointer-events-none leading-none"
+                  className="absolute text-indigo-400/85 pointer-events-none leading-none"
                   style={{
                     left: `${(conn1Left + conn1Right) / 2}%`,
                     top: '42%',
@@ -1839,13 +1839,13 @@ function ComplianceDashboard({
               {totalTaggedAdSpend > 0 ? (
                 <>
                   <div className="self-center">
-                    <p className="text-[9px] font-mono uppercase tracking-[0.15em] text-sky-300 leading-snug">
+                    <p className="text-[9px] font-mono uppercase tracking-[0.15em] text-indigo-400 leading-snug">
                       Direct ad placements
                     </p>
                     <p className="text-[8px] font-mono text-slate-500 leading-snug mt-0.5">
                       {compliance.departmentCards.length} departments paid directly · {fyLabel}
                     </p>
-                    <p className="text-[11px] font-mono font-semibold text-sky-200 tabular-nums mt-1">
+                    <p className="text-[11px] font-mono font-semibold text-indigo-400 tabular-nums mt-1">
                       {formatBudgetFull(totalTaggedAdSpend)}
                     </p>
                   </div>
@@ -1964,7 +1964,7 @@ function ComplianceDashboard({
                   >
                     {/* Community media actual — emerald fill inside the teal container */}
                     <div
-                      className="absolute inset-y-0 left-0 bg-emerald-500/65 transition-all duration-700"
+                      className="absolute inset-y-0 left-0 bg-moss-500/65 transition-all duration-700"
                       style={{ width: `${communityWithinDiscretionary}%` }}
                       title={`Community/ethnic media spend: ${formatBudgetFull(compliance.ethnicMediaSpend)}`}
                     />
@@ -1975,7 +1975,7 @@ function ComplianceDashboard({
                         className="absolute inset-y-0 flex items-center pl-2 pointer-events-none"
                         style={{ left: `${communityWithinDiscretionary}%` }}
                       >
-                        <span className="text-[11px] font-mono font-semibold text-emerald-300 tabular-nums leading-tight whitespace-nowrap">
+                        <span className="text-[11px] font-mono font-semibold text-moss-400 tabular-nums leading-tight whitespace-nowrap">
                           {formatBudgetFull(compliance.ethnicMediaSpend)} community
                         </span>
                       </div>
@@ -1991,8 +1991,8 @@ function ComplianceDashboard({
                       className="absolute inset-y-0 pointer-events-none"
                       style={{ left: '50%' }}
                     >
-                      <div className="h-full border-l-2 border-dashed border-emerald-400/80" />
-                      <span className="absolute top-0.5 left-1 text-[8px] font-mono text-emerald-300/90 leading-tight whitespace-nowrap">
+                      <div className="h-full border-l-2 border-dashed border-moss-400/80" />
+                      <span className="absolute top-0.5 left-1 text-[8px] font-mono text-moss-400/90 leading-tight whitespace-nowrap">
                         50% target
                       </span>
                     </div>
@@ -2007,31 +2007,31 @@ function ComplianceDashboard({
         <div className="grid grid-cols-3 gap-4 mt-3 mb-2">
           <div>
             <p className="text-[9px] font-mono uppercase tracking-wider text-slate-400/60 mb-0.5">Community Media Spend</p>
-            <p className="text-lg font-bold font-mono tabular-nums text-emerald-400">{formatBudgetFull(compliance.ethnicMediaSpend)}</p>
-            <p className="text-[10px] font-mono text-emerald-300/90">
+            <p className="text-lg font-bold font-mono tabular-nums text-moss-400">{formatBudgetFull(compliance.ethnicMediaSpend)}</p>
+            <p className="text-[10px] font-mono text-moss-400/90">
               across <span className="font-semibold">{compliance.outletCount}</span> {compliance.outletCount === 1 ? 'outlet' : 'outlets'}
             </p>
           </div>
           <div>
             <p className="text-[9px] font-mono uppercase tracking-wider text-slate-400/60 mb-0.5">50% Target</p>
-            <p className="text-lg font-bold font-mono tabular-nums text-amber-400">{formatBudgetFull(compliance.totalDiscretionary * 0.5)}</p>
+            <p className="text-lg font-bold font-mono tabular-nums text-ochre-500">{formatBudgetFull(compliance.totalDiscretionary * 0.5)}</p>
             <p className="text-[9px] font-mono text-slate-400/60">of {formatBudgetFull(compliance.totalDiscretionary)} discretionary</p>
           </div>
           <div>
             <p className="text-[9px] font-mono uppercase tracking-wider text-slate-400/60 mb-0.5">Shortfall</p>
             {compliance.totalDiscretionary * 0.5 > compliance.ethnicMediaSpend ? (
               <>
-                <p className="text-lg font-bold font-mono tabular-nums text-red-400">
+                <p className="text-lg font-bold font-mono tabular-nums text-brick-400">
                   {formatBudgetFull(compliance.totalDiscretionary * 0.5 - compliance.ethnicMediaSpend)}
                 </p>
-                <p className="text-[9px] font-mono text-red-400/60">below 50% target</p>
+                <p className="text-[9px] font-mono text-brick-400/60">below 50% target</p>
               </>
             ) : (
               <>
-                <p className="text-lg font-bold font-mono tabular-nums text-emerald-400">
+                <p className="text-lg font-bold font-mono tabular-nums text-moss-400">
                   +{formatBudgetFull(compliance.ethnicMediaSpend - compliance.totalDiscretionary * 0.5)}
                 </p>
-                <p className="text-[9px] font-mono text-emerald-400/60">above 50% target</p>
+                <p className="text-[9px] font-mono text-moss-400/60">above 50% target</p>
               </>
             )}
           </div>
@@ -2183,9 +2183,9 @@ function ComplianceDashboard({
               <div>
                 <p className="font-mono uppercase tracking-wider text-slate-400/60 mb-1 text-[8px]">Numerator</p>
                 <p className="text-slate-600 dark:text-slate-300">
-                  Sum of payments to vendors classified as <strong className="text-emerald-500">Community &amp; Ethnic Press</strong>
+                  Sum of payments to vendors classified as <strong className="text-moss-500">Community &amp; Ethnic Press</strong>
                 </p>
-                <p className="font-mono text-emerald-500 mt-0.5 tabular-nums">{formatBudgetFull(compliance.ethnicMediaSpend)}</p>
+                <p className="font-mono text-moss-500 mt-0.5 tabular-nums">{formatBudgetFull(compliance.ethnicMediaSpend)}</p>
                 <p className="text-slate-400 mt-0.5">{compliance.outletCount} distinct outlet{compliance.outletCount !== 1 ? 's' : ''}</p>
               </div>
               <div>
@@ -2193,7 +2193,7 @@ function ComplianceDashboard({
                 <p className="text-slate-600 dark:text-slate-300">
                   All advertising spend (<code className="text-[9px]">sub_object = &apos;Advertising&apos;</code>) minus mandatory legal notices
                 </p>
-                <p className="font-mono text-sky-400 mt-0.5 tabular-nums">{formatBudgetFull(compliance.totalDiscretionary)}</p>
+                <p className="font-mono text-indigo-400 mt-0.5 tabular-nums">{formatBudgetFull(compliance.totalDiscretionary)}</p>
               </div>
             </div>
 
@@ -2227,8 +2227,8 @@ function ComplianceDashboard({
 
             {/* P-card caveat */}
             {compliance.pcardTotal > 0 && (
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 bg-red-500/5 rounded-md px-3 py-2">
-                <strong className="text-red-400">P-Card note:</strong> {formatBudgetFull(compliance.pcardTotal)} in procurement card purchases are included in the denominator but the outlet is unknown — these may or may not be ethnic/community media.
+              <div className="text-[10px] text-slate-500 dark:text-slate-400 bg-brick-500/5 rounded-md px-3 py-2">
+                <strong className="text-brick-400">P-Card note:</strong> {formatBudgetFull(compliance.pcardTotal)} in procurement card purchases are included in the denominator but the outlet is unknown — these may or may not be ethnic/community media.
               </div>
             )}
 

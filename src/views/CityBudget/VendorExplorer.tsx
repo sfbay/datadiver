@@ -16,7 +16,7 @@ import { toSentenceCase } from '@/utils/format'
 import { computeLandscapeFlags, computeCohortStats, filterBySensitivity, type VendorFlag } from '@/utils/vendorFlags'
 import type { FiscalYear } from '@/types/budget'
 
-const ACCENT = '#0ea5e9'
+const ACCENT = '#616a96'
 const MIN_FY = 2007
 const PLAY_INTERVAL_MS = 1500
 
@@ -233,7 +233,7 @@ export default function VendorExplorer({ fiscalYear }: { fiscalYear: FiscalYear 
         <div className="flex-shrink-0 px-6 pt-5 pb-2 animate-[fadeSlideIn_200ms_ease-out_both]">
           <button
             onClick={() => selectVendor(null)}
-            className="group flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500 hover:text-sky-500 dark:hover:text-sky-400 transition-colors mb-1.5"
+            className="group flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors mb-1.5"
           >
             <span className="transition-transform group-hover:-translate-x-0.5">←</span>
             <span>Back to Vendor Explorer</span>
@@ -265,7 +265,7 @@ export default function VendorExplorer({ fiscalYear }: { fiscalYear: FiscalYear 
           value={searchQuery}
           onChange={(e) => setParam('q', e.target.value || null)}
           placeholder="Filter vendors…"
-          className="w-full max-w-xl h-9 rounded-lg bg-slate-100/80 dark:bg-white/[0.04] border border-slate-200/50 dark:border-white/[0.06] px-3 text-sm text-ink dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500/50 transition-all font-mono"
+          className="w-full max-w-xl h-9 rounded-lg bg-slate-100/80 dark:bg-white/[0.04] border border-slate-200/50 dark:border-white/[0.06] px-3 text-sm text-ink dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500/50 transition-all font-mono"
         />
 
         {/* Filter row */}
@@ -331,7 +331,7 @@ export default function VendorExplorer({ fiscalYear }: { fiscalYear: FiscalYear 
               type="checkbox"
               checked={showDeparted}
               onChange={(e) => setParam('departed', e.target.checked ? '1' : null)}
-              className="rounded border-slate-300 dark:border-slate-600 text-sky-500 focus:ring-sky-500/30 h-3 w-3"
+              className="rounded border-slate-300 dark:border-slate-600 text-indigo-500 focus:ring-indigo-500/30 h-3 w-3"
             />
             Show departed
           </label>
@@ -378,7 +378,7 @@ export default function VendorExplorer({ fiscalYear }: { fiscalYear: FiscalYear 
         {landscape.error && (
           <div className="flex items-center justify-center py-16">
             <div className="glass-card rounded-xl p-6 max-w-sm">
-              <p className="text-sm font-medium text-red-400 mb-1">Data Error</p>
+              <p className="text-sm font-medium text-brick-400 mb-1">Data Error</p>
               <p className="text-xs text-slate-400">{landscape.error}</p>
             </div>
           </div>
@@ -500,7 +500,7 @@ function VendorBarRow({
       {/* Rank or badge */}
       <div className="w-8 flex-shrink-0 text-right">
         {item.isNew ? (
-          <span className="text-[7px] font-mono font-bold tracking-wide text-emerald-500 bg-emerald-500/10 px-1 py-0.5 rounded">
+          <span className="text-[7px] font-mono font-bold tracking-wide text-moss-500 bg-moss-500/10 px-1 py-0.5 rounded">
             NEW
           </span>
         ) : item.isDeparted ? (
@@ -578,9 +578,9 @@ function VendorBarRow({
           ${item.yoyDelta === null
             ? 'text-slate-400 dark:text-slate-500'
             : item.yoyDelta > 0
-              ? 'text-emerald-500 dark:text-emerald-400'
+              ? 'text-moss-500 dark:text-moss-400'
               : item.yoyDelta < -0.5
-                ? 'text-red-500 dark:text-red-400'
+                ? 'text-brick-500 dark:text-brick-400'
                 : 'text-slate-400 dark:text-slate-500'
           }`}
       >
@@ -603,10 +603,10 @@ function VendorBarRow({
                   : f.severity === 'amber' ? 'rgba(245,158,11,0.1)'
                   : f.severity === 'green' ? 'rgba(34,197,94,0.1)'
                   : 'rgba(148,163,184,0.1)',
-                color: f.severity === 'red' ? '#ef4444'
-                  : f.severity === 'amber' ? '#f59e0b'
+                color: f.severity === 'red' ? '#b85545'
+                  : f.severity === 'amber' ? '#d4a435'
                   : f.severity === 'green' ? '#22c55e'
-                  : '#94a3b8',
+                  : '#a8926a',
               }}
               title={f.detail}
             >
@@ -621,7 +621,7 @@ function VendorBarRow({
         <svg
           width="12" height="12" viewBox="0 0 12 12"
           fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-          className="flex-shrink-0 text-slate-300 dark:text-slate-600 group-hover:text-sky-500 dark:group-hover:text-sky-400 transition-colors"
+          className="flex-shrink-0 text-slate-300 dark:text-slate-600 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors"
         >
           <path d="M4.5 3L7.5 6L4.5 9" />
         </svg>
@@ -662,7 +662,7 @@ function FYScrubber({
         {/* Play / Pause button */}
         <button
           onClick={isPlaying ? onPause : onPlay}
-          className="flex items-center justify-center w-7 h-7 rounded-md bg-sky-500/10 hover:bg-sky-500/20 text-sky-500 transition-colors"
+          className="flex items-center justify-center w-7 h-7 rounded-md bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-500 transition-colors"
           title={isPlaying ? 'Pause' : 'Play through fiscal years'}
         >
           {isPlaying ? (
@@ -716,7 +716,7 @@ function FYScrubber({
 
         {/* Playing indicator */}
         {isPlaying && (
-          <span className="text-[9px] font-mono text-sky-400 animate-pulse ml-auto">
+          <span className="text-[9px] font-mono text-indigo-400 animate-pulse ml-auto">
             {currentFY - minFY + 1} / {maxFY - minFY + 1}
           </span>
         )}
