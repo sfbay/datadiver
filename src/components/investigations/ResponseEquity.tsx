@@ -159,8 +159,11 @@ export default function ResponseEquity() {
                         ? (cell.medianSeconds - minSec) / range
                         : null
 
-                      let bg = 'rgba(255,255,255,0.03)'
-                      if (intensity !== null) {
+                      let bg = 'transparent'
+                      let backgroundImage: string | undefined
+                      let title: string
+
+                      if (intensity !== null && cell) {
                         if (intensity < 0.35) {
                           // moss-500 (#7a9954) — fast tier
                           bg = `rgba(122, 153, 84, ${0.15 + intensity * 0.5})`
@@ -171,6 +174,16 @@ export default function ResponseEquity() {
                           // brick-600 (#963e30) — slow / critical tier
                           bg = `rgba(150, 62, 48, ${0.25 + (intensity - 0.6) * 0.7})`
                         }
+                        title = `${nh} / ${ct}: ${cell.medianFormatted}`
+                      } else {
+                        // Insufficient data: diagonal-stripe pattern in paper-500
+                        // signals "suppressed for sample size" — visually distinct
+                        // from a colored cell (data present) and from a blank
+                        // background (no neighborhood selected).
+                        bg = 'rgba(168, 146, 106, 0.04)'
+                        backgroundImage =
+                          'repeating-linear-gradient(45deg, rgba(168, 146, 106, 0.22) 0 1px, transparent 1px 5px)'
+                        title = `${nh} / ${ct}: fewer than 20 calls in this category — suppressed to avoid unreliable averages`
                       }
 
                       return (
@@ -180,14 +193,31 @@ export default function ResponseEquity() {
                           style={{
                             height: 14,
                             backgroundColor: bg,
+                            backgroundImage,
                           }}
-                          title={cell ? `${nh} / ${ct}: ${cell.medianFormatted}` : `${nh} / ${ct}: no data`}
+                          title={title}
                         />
                       )
                     })}
                   </>
                 ))
               })()}
+            </div>
+          )}
+
+          {/* Legend: explain the suppression pattern. Editorial principle —
+              never hide insufficient data; surface it with explicit rationale. */}
+          {data.heatgrid.length > 0 && data.heatgrid.length < (data.heatgridNeighborhoods.length * data.heatgridCallTypes.length) && (
+            <div className="flex items-center gap-1.5 mt-2 text-[8px] font-mono text-slate-500">
+              <span
+                className="inline-block w-3 h-2 rounded-sm flex-shrink-0"
+                style={{
+                  backgroundColor: 'rgba(168, 146, 106, 0.04)',
+                  backgroundImage:
+                    'repeating-linear-gradient(45deg, rgba(168, 146, 106, 0.22) 0 1px, transparent 1px 5px)',
+                }}
+              />
+              <span>n &lt; 20 — sample suppressed for reliability</span>
             </div>
           )}
         </div>

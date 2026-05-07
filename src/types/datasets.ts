@@ -84,6 +84,25 @@ export interface BatteryTrendAggRow {
   cnt: string
 }
 
+/** Per-neighborhood AVG response time + call count for Fire/EMS dispatch */
+export interface FireDispatchNhStatsRow {
+  neighborhood: string
+  avg_response_seconds: string
+  call_count: string
+}
+
+/** Citywide AVG response time + total call count for Fire/EMS dispatch */
+export interface FireDispatchCityStatsRow {
+  avg_response_seconds: string
+  call_count: string
+}
+
+/** Minute-bucket histogram row for Fire/EMS dispatch response times */
+export interface FireDispatchHistogramRow {
+  minute_bucket: string
+  call_count: string
+}
+
 /** Fire/EMS Dispatched Calls (nuek-vuh3) */
 export interface FireEMSDispatch {
   call_number: string
