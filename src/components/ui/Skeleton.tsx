@@ -125,13 +125,16 @@ export function MapScanOverlay({ color = '#5c9693', label = 'Scanning' }: { colo
         }}
       />
 
-      {/* Gradient trail — rotating sweep */}
+      {/* Gradient trail — rotating sweep. The wisp extends counterclockwise
+          from the bright peak in element-local space so that under clockwise
+          rotation it reads as "trailing behind" the leading edge — like CRT
+          phosphor decaying after the electron beam passes, not preceding it. */}
       <div
         className="absolute rounded-full radar-sweep"
         style={{
           width: '70%',
           height: '70%',
-          background: `conic-gradient(from 0deg, ${color}50 0deg, ${color}30 2deg, ${color}18 15deg, ${color}08 35deg, transparent 60deg, transparent 360deg)`,
+          background: `conic-gradient(from 0deg, transparent 0deg, transparent 300deg, ${color}08 325deg, ${color}18 345deg, ${color}30 358deg, ${color}50 360deg)`,
         }}
       />
 
