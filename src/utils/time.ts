@@ -15,10 +15,19 @@ export function diffMinutes(start: string, end: string): number | null {
   return (e.getTime() - s.getTime()) / 60_000
 }
 
-/** Format minutes as human-readable duration */
+/** Format minutes as human-readable duration. Sub-minute uses seconds,
+ *  sub-hour uses M and S decomposition (e.g. 14.5 → "14m 30s"), hour-scale
+ *  uses H and M. The Mm Ss form is more readable than decimal minutes
+ *  ("14.5min" reads as math, "14m 30s" reads as time). */
 export function formatDuration(minutes: number): string {
   if (minutes < 1) return `${Math.round(minutes * 60)}s`
-  if (minutes < 60) return `${minutes.toFixed(1)}min`
+  if (minutes < 60) {
+    const m = Math.floor(minutes)
+    const s = Math.round((minutes - m) * 60)
+    // Rounding can push s to 60 (e.g. 14.999 → 14m + 60s); roll into the next minute
+    if (s === 60) return `${m + 1}m 0s`
+    return `${m}m ${s}s`
+  }
   const hrs = Math.floor(minutes / 60)
   const mins = Math.round(minutes % 60)
   return `${hrs}h ${mins}m`
