@@ -23,6 +23,7 @@ import { formatDuration, formatNumber } from '@/utils/time'
 import { responseTimeColor, apotTimeColor } from '@/utils/colors'
 import { RESPONSE_HEATMAP_LAYERS, APOT_LAYERS, FIRE_SEVERITY_LAYER, FIRE_BATTERY_LAYER } from './mapLayers'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
+import MapSidebar from '@/components/layout/MapSidebar'
 import CardTray, { type CardDef } from '@/components/ui/CardTray'
 import ResponseHistogram from '@/components/charts/ResponseHistogram'
 import ExportButton from '@/components/export/ExportButton'
@@ -822,7 +823,7 @@ export default function EmergencyResponse() {
         </div>
 
         {/* Right panel */}
-        <aside className="w-72 flex-shrink-0 border-l border-slate-200/50 dark:border-white/[0.04] overflow-y-auto bg-white/50 dark:bg-slate-900/30 backdrop-blur-xl flex flex-col">
+        <MapSidebar>
           {/* Tab bar */}
           <div className="flex border-b border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
             {([['neighborhoods', 'Neighborhoods'], ['patterns', 'Patterns']] as const).map(([key, label]) => (
@@ -1075,7 +1076,7 @@ export default function EmergencyResponse() {
               </>
             )}
           </div>
-        </aside>
+        </MapSidebar>
       </div>
     </div>
   )

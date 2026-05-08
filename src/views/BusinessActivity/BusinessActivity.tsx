@@ -15,6 +15,7 @@ import { useAppStore } from '@/stores/appStore'
 import type { BusinessLocationRecord, SectorAggRow, BusinessMonthlyRow } from '@/types/datasets'
 import { formatNumber } from '@/utils/time'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
+import MapSidebar from '@/components/layout/MapSidebar'
 import CardTray from '@/components/ui/CardTray'
 import ChartTray, { type ChartTileDef } from '@/components/ui/ChartTray'
 import SectorFilter from '@/components/filters/SectorFilter'
@@ -812,7 +813,7 @@ export default function BusinessActivity() {
         </div>
 
         {/* Sidebar */}
-        <aside className="w-80 flex-shrink-0 border-l border-slate-200/50 dark:border-white/[0.04] overflow-y-auto bg-white/50 dark:bg-slate-900/30 backdrop-blur-xl flex flex-col">
+        <MapSidebar>
           <div className="flex border-b border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
             {([['sectors', 'Sectors'], ['neighborhoods', 'Neighborhoods']] as const).map(([key, label]) => (
               <button
@@ -982,7 +983,7 @@ export default function BusinessActivity() {
               </>
             )}
           </div>
-        </aside>
+        </MapSidebar>
       </div>
     </div>
   )

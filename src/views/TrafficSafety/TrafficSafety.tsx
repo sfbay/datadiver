@@ -21,6 +21,7 @@ import type { TrafficCrashRecord, CrashModeAggRow, NeighborhoodAggRowCrashes, Sp
 import { formatDelta, formatNumber, formatHour } from '@/utils/time'
 import { CRASH_SEVERITY_COLORS } from '@/utils/colors'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
+import MapSidebar from '@/components/layout/MapSidebar'
 import CardTray from '@/components/ui/CardTray'
 import SeverityBreakdown from '@/components/charts/SeverityBreakdown'
 import HorizontalBarChart from '@/components/charts/HorizontalBarChart'
@@ -731,7 +732,7 @@ export default function TrafficSafety() {
         </div>
 
         {/* Sidebar */}
-        <aside className="w-80 flex-shrink-0 border-l border-slate-200/50 dark:border-white/[0.04] overflow-y-auto bg-white/50 dark:bg-slate-900/30 backdrop-blur-xl flex flex-col">
+        <MapSidebar>
           <div className="flex border-b border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
             {([['modes', 'Crash Types'], ['neighborhoods', 'Neighborhoods']] as const).map(([key, label]) => (
               <button
@@ -873,7 +874,7 @@ export default function TrafficSafety() {
               </>
             )}
           </div>
-        </aside>
+        </MapSidebar>
       </div>
     </div>
   )

@@ -22,6 +22,7 @@ import { formatDelta, formatNumber, formatHour } from '@/utils/time'
 import { coordsFromFields, extractCoordinates } from '@/utils/geo'
 import { resolutionColor } from '@/utils/colors'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
+import MapSidebar from '@/components/layout/MapSidebar'
 import CardTray, { type CardDef } from '@/components/ui/CardTray'
 import ChartTray, { type ChartTileDef } from '@/components/ui/ChartTray'
 import HorizontalBarChart, { type BarDatum } from '@/components/charts/HorizontalBarChart'
@@ -814,7 +815,7 @@ export default function CrimeIncidents() {
         </div>
 
         {/* Sidebar */}
-        <aside className="w-80 flex-shrink-0 border-l border-slate-200/50 dark:border-white/[0.04] overflow-y-auto bg-white/50 dark:bg-slate-900/30 backdrop-blur-xl flex flex-col">
+        <MapSidebar>
           {/* Tab bar */}
           <div className="flex border-b border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
             {([['categories', 'Categories'], ['neighborhoods', 'Neighborhoods']] as const).map(([key, label]) => (
@@ -961,7 +962,7 @@ export default function CrimeIncidents() {
               </>
             )}
           </div>
-        </aside>
+        </MapSidebar>
       </div>
     </div>
   )
