@@ -66,32 +66,37 @@ export default function MapSidebar({ children }: MapSidebarProps) {
           ${widthClass}
           relative flex-shrink-0 flex flex-col
           border-l border-slate-200/50 dark:border-white/[0.04]
-          ${isOpen ? 'overflow-y-auto' : 'overflow-hidden'}
           bg-white/50 dark:bg-slate-900/30
           backdrop-blur-xl
           transition-[width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]
         `}
       >
-        {/* Chevron toggle — sits at top-left, pointing into the map area when
-            open (collapse hint) and back into the sidebar when collapsed
-            (expand hint). Absolutely positioned so it doesn't shift content. */}
+        {/* Chevron toggle — half-tabbed onto the sidebar's left edge, vertically
+            centered. Sits on the boundary line between map and sidebar so it
+            never overlaps content (tab strips, headers) regardless of which
+            view is rendered. Lives OUTSIDE the inner scroll container so it
+            stays visible when sidebar contents are scrolled. */}
         <button
           onClick={toggle}
-          className="absolute top-3 left-1 z-10 w-7 h-7 rounded-md flex items-center justify-center
-            text-slate-400 dark:text-slate-600
-            hover:text-slate-600 dark:hover:text-slate-300
-            hover:bg-slate-100 dark:hover:bg-white/[0.04]
+          className="absolute top-1/2 -translate-y-1/2 z-20
+            -left-3 w-6 h-12 flex items-center justify-center
+            rounded-l-lg
+            bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl
+            border border-r-0 border-slate-200/60 dark:border-white/[0.06]
+            text-slate-500 dark:text-slate-500
+            hover:text-slate-800 dark:hover:text-slate-200
+            hover:bg-white/95 dark:hover:bg-slate-900/85
             transition-all duration-150"
           aria-label={isOpen ? 'Collapse context sidebar' : 'Expand context sidebar'}
           title={isOpen ? 'Collapse' : 'Expand context'}
         >
           <svg
-            width="14"
-            height="14"
+            width="12"
+            height="12"
             viewBox="0 0 16 16"
             fill="none"
             stroke="currentColor"
-            strokeWidth="1.5"
+            strokeWidth="1.75"
             strokeLinecap="round"
             strokeLinejoin="round"
           >
@@ -99,7 +104,13 @@ export default function MapSidebar({ children }: MapSidebarProps) {
           </svg>
         </button>
 
-        {isOpen && children}
+        {/* Inner scroll container — keeps the chevron pinned to the visible
+            viewport even when children content is scrolled. */}
+        {isOpen && (
+          <div className="flex-1 overflow-y-auto flex flex-col min-h-0">
+            {children}
+          </div>
+        )}
       </aside>
     </MapSidebarContext.Provider>
   )
