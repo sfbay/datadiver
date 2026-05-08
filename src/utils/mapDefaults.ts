@@ -198,7 +198,8 @@ export const CORRIDOR_VIEWS: Record<string, CameraView> = {
 
 /** Per-neighborhood presets. Keys must match
  *  `neighborhoods_analysis_boundaries` text values exactly (case sensitive).
- *  Tuned 2026-04-29 via the ?debug=map overlay. Covers 30 of SF's 41 official
+ *  Initial set tuned 2026-04-29; geographic-edge + park neighborhoods added
+ *  2026-05-07 via the ?debug=map overlay. Covers 37 of SF's 41 official
  *  neighborhoods — long-tail districts fall back to centroid-flyTo. */
 export const NEIGHBORHOOD_VIEWS: Record<string, CameraView> = {
   'Financial District/South Beach': {
@@ -320,6 +321,40 @@ export const NEIGHBORHOOD_VIEWS: Record<string, CameraView> = {
   'Portola': {
     pitch: 49.3, bearing: -54.7, zoom: 15.35,
     center: { lat: 37.7240, lng: -122.4059 },
+  },
+
+  // Added 2026-05-07 — geographic-edge and park-character neighborhoods.
+  // Several use unusually low or high pitch / dramatic bearings to honor
+  // each spot's defining feature: Treasure Island looks back across the bay,
+  // McLaren Park rotates to follow its hill axis, Presidio uses a wider zoom
+  // to keep the headlands and Golden Gate context in frame.
+  'Presidio': {
+    pitch: 42.5, bearing: 19.2, zoom: 13.89,
+    center: { lat: 37.7895, lng: -122.4674 },
+  },
+  'Lincoln Park': {
+    pitch: 39.4, bearing: 26.4, zoom: 15.25,
+    center: { lat: 37.7808, lng: -122.5038 },
+  },
+  'Visitacion Valley': {
+    pitch: 62, bearing: 63.2, zoom: 16.13,
+    center: { lat: 37.7087, lng: -122.4205 },
+  },
+  'McLaren Park': {
+    pitch: 53, bearing: 20.5, zoom: 15.15,
+    center: { lat: 37.7141, lng: -122.4184 },
+  },
+  'Lakeshore': {
+    pitch: 57.5, bearing: -32.8, zoom: 15.32,
+    center: { lat: 37.7150, lng: -122.4748 },
+  },
+  'Treasure Island': {
+    pitch: 72.5, bearing: -141.6, zoom: 15.46,
+    center: { lat: 37.8284, lng: -122.3681 },
+  },
+  'Twin Peaks': {
+    pitch: 48, bearing: 0, zoom: 15.09,
+    center: { lat: 37.7473, lng: -122.4505 },
   },
 }
 
