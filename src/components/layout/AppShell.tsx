@@ -152,6 +152,41 @@ export default function AppShell({ children }: { children: ReactNode }) {
           ${isSidebarOpen ? 'w-64' : 'w-[52px]'}
         `}
       >
+        {/* Drawer-pull collapse toggle — vertically centered on the right
+            edge of the nav, sticking half into the main content area.
+            Mirror-symmetric with the right context sidebar's pill so both
+            sidebars share the same toggle vocabulary. Chevron always points
+            in the direction the sidebar will move when clicked. */}
+        <button
+          onClick={toggleSidebar}
+          className="absolute top-1/2 -translate-y-1/2 z-30
+            -right-3.5 w-7 h-14 flex items-center justify-center
+            rounded-lg
+            bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl
+            border border-slate-300/80 dark:border-white/15
+            shadow-md shadow-slate-900/15 dark:shadow-black/50
+            text-slate-700 dark:text-slate-200
+            hover:text-slate-900 dark:hover:text-white
+            hover:bg-white dark:hover:bg-slate-900
+            hover:shadow-lg hover:scale-105
+            transition-all duration-150"
+          aria-label={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+          title={isSidebarOpen ? 'Collapse' : 'Expand sidebar'}
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d={isSidebarOpen ? 'M10 3L5 8l5 5' : 'M6 3l5 5-5 5'} />
+          </svg>
+        </button>
+
         {/* Brand mark */}
         <div className={`flex items-center gap-3 py-5 border-b border-slate-200/50 dark:border-white/[0.04] ${isSidebarOpen ? 'px-5' : 'px-2.5 justify-center'}`}>
           <button
@@ -171,36 +206,14 @@ export default function AppShell({ children }: { children: ReactNode }) {
             />
           </button>
           {isSidebarOpen && (
-            <>
-              <div className="flex flex-col min-w-0 flex-1">
-                <span className="font-display text-xl italic text-ink dark:text-white leading-none tracking-tight">
-                  DataDiver
-                </span>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono uppercase tracking-widest mt-0.5">
-                  SF Open Data
-                </span>
-              </div>
-              {/* Top-of-window collapse affordance — paired with the bottom
-                  collapse so users have a control wherever their eye lands. */}
-              <button
-                onClick={toggleSidebar}
-                className="flex-shrink-0 w-7 h-7 rounded-md flex items-center justify-center
-                  text-slate-400 dark:text-slate-600
-                  hover:text-slate-600 dark:hover:text-slate-300
-                  hover:bg-slate-100 dark:hover:bg-white/[0.04]
-                  transition-all duration-150"
-                aria-label="Collapse sidebar"
-                title="Collapse sidebar"
-              >
-                <svg
-                  width="14" height="14" viewBox="0 0 16 16"
-                  fill="none" stroke="currentColor"
-                  strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-                >
-                  <path d="M10 3L5 8l5 5" />
-                </svg>
-              </button>
-            </>
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="font-display text-xl italic text-ink dark:text-white leading-none tracking-tight">
+                DataDiver
+              </span>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono uppercase tracking-widest mt-0.5">
+                SF Open Data
+              </span>
+            </div>
           )}
         </div>
 
