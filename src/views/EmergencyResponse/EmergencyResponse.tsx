@@ -571,20 +571,59 @@ export default function EmergencyResponse() {
     return tiles
   }, [histogramData, comparisonPeriod, comparison.currentTrend, comparison.comparisonTrend, comparison.isLoading, isFireMode, fireInsights.batteryTrend])
 
+  // Selected-neighborhood comparison context — when a neighborhood is
+  // selected, derive the data needed to swap stat cards from citywide
+  // values to neighborhood values + position-on-scale microvis. Returns
+  // null when no neighborhood is selected, or when the selected one fell
+  // below the COUNT > 5 threshold (rare; sidebar wouldn't show it either).
+  const selectedNhStats = useMemo(() => {
+    if (!selectedNeighborhood || neighborhoodStats.length === 0) return null
+    const nh = neighborhoodStats.find((n) => n.neighborhood === selectedNeighborhood)
+    if (!nh) return null
+    const allAvgs = neighborhoodStats.map((n) => n.avgResponseTime)
+    const allCounts = neighborhoodStats.map((n) => n.totalIncidents)
+    return {
+      nh,
+      avgRange: [Math.min(...allAvgs), Math.max(...allAvgs)] as [number, number],
+      countRange: [Math.min(...allCounts), Math.max(...allCounts)] as [number, number],
+      avgDeltaPct: stats.avg > 0 ? ((nh.avgResponseTime - stats.avg) / stats.avg) * 100 : 0,
+      countSharePct: stats.total > 0 ? (nh.totalIncidents / stats.total) * 100 : 0,
+    }
+  }, [selectedNeighborhood, neighborhoodStats, stats.avg, stats.total])
+
   // Card tray definitions
   const cardDefs = useMemo((): CardDef[] => {
+    // When a neighborhood is selected, the Avg Response card swaps to that
+    // neighborhood's value and renders a position-on-scale microvis showing
+    // where it falls along the citywide gap. Median and Slowest 10% stay
+    // citywide (per-neighborhood histograms aren't available yet).
+    const avgValue = selectedNhStats ? selectedNhStats.nh.avgResponseTime : stats.avg
+    const avgSubtitle = selectedNhStats
+      ? `${selectedNhStats.nh.neighborhood} · ${selectedNhStats.avgDeltaPct >= 0 ? '+' : ''}${selectedNhStats.avgDeltaPct.toFixed(0)}% from city`
+      : (comparison.deltas ? `${formatDelta(comparison.deltas.avg)} ${compLabel}` : undefined)
+    const avgTrend: 'up' | 'down' | 'neutral' | undefined = selectedNhStats
+      ? (selectedNhStats.avgDeltaPct > 0 ? 'up' : selectedNhStats.avgDeltaPct < 0 ? 'down' : 'neutral')
+      : (comparison.deltas ? (comparison.deltas.avg > 0 ? 'up' : comparison.deltas.avg < 0 ? 'down' : 'neutral') : undefined)
+
     const cards: CardDef[] = [
       {
         id: 'avg-response',
         label: 'Avg Response',
         shortLabel: 'Avg',
-        value: formatDuration(stats.avg),
-        color: responseTimeColor(stats.avg),
+        value: formatDuration(avgValue),
+        color: responseTimeColor(avgValue),
         delay: 0,
         info: 'avg-response',
         defaultExpanded: true,
-        subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.avg)} ${compLabel}` : undefined,
-        trend: comparison.deltas ? (comparison.deltas.avg > 0 ? 'up' : comparison.deltas.avg < 0 ? 'down' : 'neutral') : undefined,
+        subtitle: avgSubtitle,
+        trend: avgTrend,
+        positionScale: selectedNhStats
+          ? {
+              value: selectedNhStats.nh.avgResponseTime,
+              range: selectedNhStats.avgRange,
+              reference: stats.avg,
+            }
+          : undefined,
       },
       {
         id: 'median',
@@ -614,13 +653,25 @@ export default function EmergencyResponse() {
         id: 'incidents',
         label: 'Incidents',
         shortLabel: 'Inc',
-        value: formatNumber(stats.total),
+        value: formatNumber(selectedNhStats ? selectedNhStats.nh.totalIncidents : stats.total),
         color: '#5c9693',
         delay: 240,
         defaultExpanded: false,
-        subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined,
-        trend: comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined,
-        yoyDelta: !comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null,
+        subtitle: selectedNhStats
+          ? `${selectedNhStats.nh.neighborhood} · ${selectedNhStats.countSharePct.toFixed(1)}% of citywide`
+          : (comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined),
+        trend: selectedNhStats
+          ? undefined
+          : (comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined),
+        yoyDelta: !selectedNhStats && !comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null,
+        positionScale: selectedNhStats
+          ? {
+              value: selectedNhStats.nh.totalIncidents,
+              range: selectedNhStats.countRange,
+              // No reference tick on the count card — citywide total isn't a
+              // member of the neighborhood-count distribution; it's the sum.
+            }
+          : undefined,
       },
     ]
     if (stats.apotCount > 0) {
@@ -673,7 +724,7 @@ export default function EmergencyResponse() {
       })
     }
     return cards
-  }, [stats, comparison.deltas, compLabel, trend.cityWideYoY, isFireMode, fireInsights.casualties, fireInsights.priorYearCasualties])
+  }, [stats, comparison.deltas, compLabel, trend.cityWideYoY, isFireMode, fireInsights.casualties, fireInsights.priorYearCasualties, selectedNhStats])
 
   const handleMapReady = useCallback((map: mapboxgl.Map) => {
     setMapInstance(map)

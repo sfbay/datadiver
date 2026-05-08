@@ -31,6 +31,13 @@ export interface CardDef {
   sparkData?: { values: number[]; labels?: string[] }
   /** Optional click handler for the subtitle text (makes it a link) */
   subtitleAction?: () => void
+  /** Optional "you are here" microvis — selected entity's position vs the
+   *  population. Use to surface neighborhood-vs-citywide comparison. */
+  positionScale?: {
+    value: number
+    range: [number, number]
+    reference?: number
+  }
 }
 
 type CardState = 'expanded' | 'minimized' | 'hidden'
@@ -268,6 +275,7 @@ export default function CardTray({ viewId, cards, className = '' }: CardTrayProp
                 zScore={card.zScore}
                 info={card.info}
                 sparkData={card.sparkData}
+                positionScale={card.positionScale}
               />
               {/* Minimize button — top-left on hover */}
               <button

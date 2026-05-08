@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import InfoTip from '@/components/ui/InfoTip'
 import SparkBars from '@/components/charts/SparkBars'
+import PositionScale from '@/components/charts/PositionScale'
 
 interface StatCardProps {
   label: string
@@ -15,9 +16,19 @@ interface StatCardProps {
   info?: string
   /** Optional annual spark data: values for the last N years, last value = current period */
   sparkData?: { values: number[]; labels?: string[] }
+  /** Optional "you are here" microvis — shows where this entity's value
+   *  falls along the population's range. Use when the displayed `value`
+   *  belongs to a selected entity (e.g., a neighborhood) and you want to
+   *  surface its position relative to the citywide gap. Mutually
+   *  exclusive with sparkData visually — both can't share the slot. */
+  positionScale?: {
+    value: number
+    range: [number, number]
+    reference?: number
+  }
 }
 
-export default function StatCard({ label, value, color, subtitle, delay = 0, trend, yoyDelta, zScore, info, sparkData }: StatCardProps) {
+export default function StatCard({ label, value, color, subtitle, delay = 0, trend, yoyDelta, zScore, info, sparkData, positionScale }: StatCardProps) {
   const [visible, setVisible] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -85,7 +96,18 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
             </span>
           </p>
         )}
-        {sparkData && sparkData.values.length > 0 && (
+        {positionScale ? (
+          <div className="relative mt-2 -mx-1">
+            <PositionScale
+              value={positionScale.value}
+              range={positionScale.range}
+              reference={positionScale.reference}
+              color={color}
+              width={120}
+              height={12}
+            />
+          </div>
+        ) : sparkData && sparkData.values.length > 0 && (
           <div className="relative mt-2">
             <SparkBars
               values={sparkData.values}
