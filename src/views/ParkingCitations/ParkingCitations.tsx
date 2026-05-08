@@ -19,6 +19,7 @@ import type { ParkingCitationRecord, ViolationTypeAggRow, NeighborhoodAggRowCita
 import { formatCurrency, formatDelta, formatNumber, formatHour } from '@/utils/time'
 import { extractCoordinates } from '@/utils/geo'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
+import MapSidebar from '@/components/layout/MapSidebar'
 import CardTray, { type CardDef } from '@/components/ui/CardTray'
 import FineHistogram from '@/components/charts/FineHistogram'
 import HorizontalBarChart from '@/components/charts/HorizontalBarChart'
@@ -831,7 +832,7 @@ export default function ParkingCitations() {
         </div>
 
         {/* Sidebar */}
-        <aside className="w-80 flex-shrink-0 border-l border-slate-200/50 dark:border-white/[0.04] overflow-y-auto bg-white/50 dark:bg-slate-900/30 backdrop-blur-xl flex flex-col">
+        <MapSidebar>
           <div className="flex border-b border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
             {([['violations', 'Violations'], ['neighborhoods', 'Neighborhoods']] as const).map(([key, label]) => (
               <button
@@ -978,7 +979,7 @@ export default function ParkingCitations() {
               </>
             )}
           </div>
-        </aside>
+        </MapSidebar>
       </div>
     </div>
   )

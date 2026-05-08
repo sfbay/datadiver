@@ -80,7 +80,6 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
   const mapRef = useRef<mapboxgl.Map | null>(null)
   const [isReady, setIsReady] = useState(false)
   const isDarkMode = useAppStore((s) => s.isDarkMode)
-  const isSidebarOpen = useAppStore((s) => s.isSidebarOpen)
   const onMapReadyRef = useRef(onMapReady)
   onMapReadyRef.current = onMapReady
 
@@ -161,12 +160,31 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
     mapRef.current.setStyle(style)
   }, [isDarkMode, isReady])
 
-  // Resize map when sidebar toggles — wait for CSS transition to finish
+  // Auto-resize map on any container geometry change — sidebar toggles
+  // (left or right), window resize, layout shifts, theme transitions that
+  // alter chrome height. Mapbox caches canvas dimensions at init and only
+  // repaints to new dimensions when map.resize() is called explicitly, so
+  // a CSS-driven width change leaves the canvas stretched to the old size
+  // until we tell it otherwise. ResizeObserver fires per frame during a CSS
+  // transition; we throttle to one call per RAF tick so we don't spam
+  // resize during a 300ms animation.
   useEffect(() => {
-    if (!mapRef.current || !isReady) return
-    const timer = setTimeout(() => mapRef.current?.resize(), 520)
-    return () => clearTimeout(timer)
-  }, [isSidebarOpen, isReady])
+    if (!mapRef.current || !isReady || !containerRef.current) return
+    let rafId: number | null = null
+    const onResize = () => {
+      if (rafId !== null) return
+      rafId = requestAnimationFrame(() => {
+        mapRef.current?.resize()
+        rafId = null
+      })
+    }
+    const observer = new ResizeObserver(onResize)
+    observer.observe(containerRef.current)
+    return () => {
+      observer.disconnect()
+      if (rafId !== null) cancelAnimationFrame(rafId)
+    }
+  }, [isReady])
 
   // Debug camera readout — gated by `?debug=map` URL param. When enabled,
   // shows live pitch/bearing/zoom/center as the user pans/rotates/tilts the

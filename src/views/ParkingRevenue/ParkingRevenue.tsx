@@ -17,6 +17,7 @@ import type { ParkingMeter, MeterRevenueRecord, MeterAggRow, ParkingStatsAggRow,
 import { formatCurrency, formatNumber } from '@/utils/time'
 import { PAYMENT_COLORS } from '@/utils/colors'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
+import MapSidebar from '@/components/layout/MapSidebar'
 import CardTray, { type CardDef } from '@/components/ui/CardTray'
 import ExportButton from '@/components/export/ExportButton'
 import MeterDetailPanel from '@/components/ui/MeterDetailPanel'
@@ -537,7 +538,7 @@ export default function ParkingRevenue() {
           </MapView>
         </div>
 
-        <aside className="w-72 flex-shrink-0 border-l border-slate-200/50 dark:border-white/[0.04] overflow-y-auto bg-white/50 dark:bg-slate-900/30 backdrop-blur-xl">
+        <MapSidebar>
           <div className="p-4">
             <div className="flex items-center gap-2 mb-3">
               <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">Payment Methods</p>
@@ -638,7 +639,7 @@ export default function ParkingRevenue() {
               })}
             </div>
           </div>
-        </aside>
+        </MapSidebar>
       </div>
     </div>
   )

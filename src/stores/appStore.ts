@@ -8,8 +8,11 @@ interface AppState {
   /** Dark mode toggle */
   isDarkMode: boolean
 
-  /** Sidebar open state */
+  /** Left nav sidebar open state */
   isSidebarOpen: boolean
+
+  /** Right context sidebar open state (per-view neighborhood ranking, patterns, etc.) */
+  isContextSidebarOpen: boolean
 
   /** Global date range filter */
   dateRange: { start: string; end: string }
@@ -54,6 +57,7 @@ interface AppState {
   setView: (view: ViewId) => void
   toggleDarkMode: () => void
   toggleSidebar: () => void
+  toggleContextSidebar: () => void
   setDateRange: (start: string, end: string) => void
   setSelectedNeighborhood: (neighborhood: string | null) => void
   setTimeOfDayFilter: (filter: { startHour: number; endHour: number } | null) => void
@@ -77,6 +81,7 @@ export const useAppStore = create<AppState>((set) => ({
   currentView: 'home',
   isDarkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
   isSidebarOpen: localStorage.getItem('dd-sidebar') !== 'collapsed',
+  isContextSidebarOpen: localStorage.getItem('dd-context-sidebar') !== 'collapsed',
   dateRange: {
     start: thirtyDaysAgo.toISOString().split('T')[0],
     end: now.toISOString().split('T')[0],
@@ -105,6 +110,11 @@ export const useAppStore = create<AppState>((set) => ({
     const next = !state.isSidebarOpen
     localStorage.setItem('dd-sidebar', next ? 'open' : 'collapsed')
     return { isSidebarOpen: next }
+  }),
+  toggleContextSidebar: () => set((state) => {
+    const next = !state.isContextSidebarOpen
+    localStorage.setItem('dd-context-sidebar', next ? 'open' : 'collapsed')
+    return { isContextSidebarOpen: next }
   }),
   setDateRange: (start, end) => set({ dateRange: { start, end } }),
   setSelectedNeighborhood: (neighborhood) => set({ selectedNeighborhood: neighborhood }),
