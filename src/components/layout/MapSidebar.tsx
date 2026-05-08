@@ -79,24 +79,26 @@ export default function MapSidebar({ children }: MapSidebarProps) {
         <button
           onClick={toggle}
           className="absolute top-1/2 -translate-y-1/2 z-20
-            -left-3 w-6 h-12 flex items-center justify-center
-            rounded-l-lg
-            bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl
-            border border-r-0 border-slate-200/60 dark:border-white/[0.06]
-            text-slate-500 dark:text-slate-500
-            hover:text-slate-800 dark:hover:text-slate-200
-            hover:bg-white/95 dark:hover:bg-slate-900/85
+            -left-3.5 w-7 h-14 flex items-center justify-center
+            rounded-lg
+            bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl
+            border border-slate-300/80 dark:border-white/15
+            shadow-md shadow-slate-900/15 dark:shadow-black/50
+            text-slate-700 dark:text-slate-200
+            hover:text-slate-900 dark:hover:text-white
+            hover:bg-white dark:hover:bg-slate-900
+            hover:shadow-lg hover:scale-105
             transition-all duration-150"
           aria-label={isOpen ? 'Collapse context sidebar' : 'Expand context sidebar'}
           title={isOpen ? 'Collapse' : 'Expand context'}
         >
           <svg
-            width="12"
-            height="12"
+            width="14"
+            height="14"
             viewBox="0 0 16 16"
             fill="none"
             stroke="currentColor"
-            strokeWidth="1.75"
+            strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
           >
