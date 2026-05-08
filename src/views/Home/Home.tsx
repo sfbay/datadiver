@@ -390,7 +390,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Investigations — hero visualizations */}
+        {/* Visualizations — hero data stories */}
         <section
           className={`relative z-10 mb-8 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
         >
@@ -400,7 +400,7 @@ export default function Home() {
           >
             <div className="glow-corner is-sm" />
             <p className="relative text-[10px] font-mono uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400">
-              Investigations
+              Visualizations
             </p>
             <div className="relative flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
           </div>
