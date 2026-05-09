@@ -199,8 +199,8 @@ export const CORRIDOR_VIEWS: Record<string, CameraView> = {
 /** Per-neighborhood presets. Keys must match
  *  `neighborhoods_analysis_boundaries` text values exactly (case sensitive).
  *  Initial set tuned 2026-04-29; geographic-edge + park neighborhoods added
- *  2026-05-07 via the ?debug=map overlay. Covers 37 of SF's 41 official
- *  neighborhoods — long-tail districts fall back to centroid-flyTo. */
+ *  2026-05-07; revised + remaining 4 added 2026-05-08 via the ?debug=map
+ *  overlay. **Covers all 41 of SF's official neighborhoods.** */
 export const NEIGHBORHOOD_VIEWS: Record<string, CameraView> = {
   'Financial District/South Beach': {
     pitch: 47.5, bearing: 31, zoom: 14.42,
@@ -219,8 +219,8 @@ export const NEIGHBORHOOD_VIEWS: Record<string, CameraView> = {
     center: { lat: 37.7740, lng: -122.4073 },
   },
   'Castro/Upper Market': {
-    pitch: 62.5, bearing: 27.9, zoom: 15.45,
-    center: { lat: 37.7577, lng: -122.4381 },
+    pitch: 57.5, bearing: 42.3, zoom: 15.38,
+    center: { lat: 37.7597, lng: -122.4389 },
   },
   'Outer Richmond': {
     pitch: 54, bearing: 53.5, zoom: 14.77,
@@ -235,8 +235,8 @@ export const NEIGHBORHOOD_VIEWS: Record<string, CameraView> = {
     center: { lat: 37.7216, lng: -122.3850 },
   },
   'Marina': {
-    pitch: 46.5, bearing: 36.3, zoom: 14.96,
-    center: { lat: 37.7971, lng: -122.4377 },
+    pitch: 51.5, bearing: 24.3, zoom: 14.96,
+    center: { lat: 37.7977, lng: -122.4376 },
   },
   'Nob Hill': {
     pitch: 49, bearing: 0, zoom: 15.76,
@@ -251,24 +251,24 @@ export const NEIGHBORHOOD_VIEWS: Record<string, CameraView> = {
     center: { lat: 37.7881, lng: -122.4382 },
   },
   'Mission Bay': {
-    pitch: 52.5, bearing: 36.8, zoom: 14.83,
-    center: { lat: 37.7670, lng: -122.3956 },
+    pitch: 68.5, bearing: 32.8, zoom: 15.44,
+    center: { lat: 37.7663, lng: -122.3967 },
   },
   'Inner Sunset': {
     pitch: 52, bearing: 11.2, zoom: 14.86,
     center: { lat: 37.7531, lng: -122.4646 },
   },
   'Chinatown': {
-    pitch: 57, bearing: -88, zoom: 16.56,
-    center: { lat: 37.7963, lng: -122.4031 },
+    pitch: 64, bearing: 0, zoom: 16.25,
+    center: { lat: 37.7948, lng: -122.4063 },
   },
   'Noe Valley': {
     pitch: 60.8, bearing: 49.8, zoom: 15.25,
     center: { lat: 37.7457, lng: -122.4363 },
   },
   'Western Addition': {
-    pitch: 54.9, bearing: 44, zoom: 15.36,
-    center: { lat: 37.7775, lng: -122.4346 },
+    pitch: 61.9, bearing: 39.2, zoom: 15.58,
+    center: { lat: 37.7791, lng: -122.4357 },
   },
   'Hayes Valley': {
     pitch: 41.8, bearing: 40, zoom: 15.46,
@@ -303,8 +303,8 @@ export const NEIGHBORHOOD_VIEWS: Record<string, CameraView> = {
     center: { lat: 37.7651, lng: -122.4465 },
   },
   'Outer Mission': {
-    pitch: 48.8, bearing: 17.6, zoom: 14.5,
-    center: { lat: 37.7116, lng: -122.4505 },
+    pitch: 58.3, bearing: 13.6, zoom: 14.79,
+    center: { lat: 37.7101, lng: -122.4512 },
   },
   'Lone Mountain/USF': {
     pitch: 48.8, bearing: 17.6, zoom: 15.46,
@@ -315,12 +315,12 @@ export const NEIGHBORHOOD_VIEWS: Record<string, CameraView> = {
     center: { lat: 37.7119, lng: -122.4636 },
   },
   'Presidio Heights': {
-    pitch: 48.8, bearing: 17.6, zoom: 15.64,
-    center: { lat: 37.7831, lng: -122.4507 },
+    pitch: 48.8, bearing: 17.6, zoom: 15.09,
+    center: { lat: 37.7832, lng: -122.4510 },
   },
   'Portola': {
-    pitch: 49.3, bearing: -54.7, zoom: 15.35,
-    center: { lat: 37.7240, lng: -122.4059 },
+    pitch: 49.3, bearing: -90.7, zoom: 14.92,
+    center: { lat: 37.7252, lng: -122.4053 },
   },
 
   // Added 2026-05-07 — geographic-edge and park-character neighborhoods.
@@ -337,8 +337,8 @@ export const NEIGHBORHOOD_VIEWS: Record<string, CameraView> = {
     center: { lat: 37.7808, lng: -122.5038 },
   },
   'Visitacion Valley': {
-    pitch: 62, bearing: 63.2, zoom: 16.13,
-    center: { lat: 37.7087, lng: -122.4205 },
+    pitch: 59.6, bearing: 13.6, zoom: 15.33,
+    center: { lat: 37.7101, lng: -122.4143 },
   },
   'McLaren Park': {
     pitch: 53, bearing: 20.5, zoom: 15.15,
@@ -349,12 +349,32 @@ export const NEIGHBORHOOD_VIEWS: Record<string, CameraView> = {
     center: { lat: 37.7150, lng: -122.4748 },
   },
   'Treasure Island': {
-    pitch: 72.5, bearing: -141.6, zoom: 15.46,
-    center: { lat: 37.8284, lng: -122.3681 },
+    pitch: 64.5, bearing: -140.8, zoom: 15.45,
+    center: { lat: 37.8269, lng: -122.3698 },
   },
   'Twin Peaks': {
     pitch: 48, bearing: 0, zoom: 15.09,
     center: { lat: 37.7473, lng: -122.4505 },
+  },
+
+  // Added 2026-05-08 — completes coverage of all 41 SF neighborhoods.
+  // Park-character neighborhoods (Glen Park, Golden Gate Park) get
+  // wider zooms; Seacliff and Japantown sit at conventional density.
+  'Japantown': {
+    pitch: 60.6, bearing: 38, zoom: 15.86,
+    center: { lat: 37.7836, lng: -122.4375 },
+  },
+  'Seacliff': {
+    pitch: 46, bearing: 22.4, zoom: 15.71,
+    center: { lat: 37.7843, lng: -122.4865 },
+  },
+  'Golden Gate Park': {
+    pitch: 46, bearing: 24.8, zoom: 13.87,
+    center: { lat: 37.7628, lng: -122.4862 },
+  },
+  'Glen Park': {
+    pitch: 52, bearing: 12.4, zoom: 15.41,
+    center: { lat: 37.7363, lng: -122.4337 },
   },
 }
 
