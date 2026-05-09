@@ -339,27 +339,47 @@ export default function Home() {
         >
           <button
             onClick={() => setComicOpen(true)}
-            className="dd-ribbon-hover w-full group flex items-center gap-5 glass-card rounded-2xl px-5 py-3 hover:bg-white/[0.06] transition-all duration-300 overflow-hidden text-left relative isolate"
+            className="dd-ribbon-hover w-full group flex items-center gap-[clamp(20px,2vw,40px)] glass-card rounded-2xl px-[clamp(20px,2vw,40px)] py-[clamp(12px,1.2vw,24px)] hover:bg-white/[0.06] transition-all duration-300 overflow-hidden text-left relative isolate"
             style={{ '--glow': '#5c9693' } as CSSProperties}
           >
-            {/* Comic thumbnail */}
+            {/* Comic thumbnail — fluid sizing so the ribbon feels proportional
+                at any width. ~112px on narrow viewports, ~200px on ultrawide.
+                Aspect ratio kept ~7:4 (matches the comic strip's natural crop). */}
             <img
               src="/dana-comic-1-thumb.jpg"
               alt="Dana the DataDiver comic strip"
-              className="w-28 h-16 object-cover rounded-lg flex-shrink-0 ring-1 ring-white/10 group-hover:ring-white/20 transition-all relative z-10"
+              className="object-cover rounded-lg flex-shrink-0 ring-1 ring-white/10 group-hover:ring-white/20 transition-all relative z-10"
+              style={{
+                width: 'clamp(112px, 11vw, 200px)',
+                height: 'clamp(64px, 6.3vw, 114px)',
+              }}
             />
-            {/* Text */}
+            {/* Text — typography also scales fluidly with the thumbnail so the
+                ribbon reads as a single proportional composition rather than
+                a small image with under-served copy beside it. */}
             <div className="flex-1 min-w-0 relative z-10">
-              <p className="text-sm font-display italic text-ink dark:text-white leading-tight">
+              <p
+                className="font-display italic text-ink dark:text-white leading-tight"
+                style={{ fontSize: 'clamp(0.95rem, 1.1vw + 0.5rem, 1.6rem)' }}
+              >
                 Meet Dana, the data-diving Harbor Seal!
               </p>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-                Follow her adventures diving for data — and fish! New comic strips & data tidbits on Instagram.
+              <p
+                className="text-slate-500 dark:text-slate-400 mt-1 leading-snug"
+                style={{ fontSize: 'clamp(0.72rem, 0.55vw + 0.4rem, 1rem)' }}
+              >
+                Follow Dana's adventures diving for civic data — and fish! New comic strips &amp; data tidbits on Instagram.
               </p>
             </div>
-            {/* Arrow */}
+            {/* Arrow — also scales with the rest so it stays visually weighted
+                with the new thumbnail and type at wide widths. */}
             <div className="flex-shrink-0 text-slate-400 dark:text-slate-600 group-hover:text-ink dark:group-hover:text-white transition-colors relative z-10">
-              <svg className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                className="group-hover:translate-x-0.5 transition-transform"
+                style={{ width: 'clamp(16px, 1.4vw, 28px)', height: 'clamp(16px, 1.4vw, 28px)' }}
+              >
                 <path d="M3 8h10M10 4.5L13.5 8 10 11.5" />
               </svg>
             </div>
