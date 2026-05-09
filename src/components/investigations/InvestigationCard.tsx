@@ -14,7 +14,7 @@ export interface InvestigationCardProps {
 
 function InvestigationSkeleton({ accentColor }: { accentColor: string }) {
   return (
-    <div className="glass-card rounded-2xl overflow-hidden">
+    <div className="glass-card rounded-2xl overflow-hidden flex flex-col h-full">
       {/* Header skeleton */}
       <div className="px-4 pt-4 pb-3">
         {/* Eyebrow */}
@@ -38,7 +38,7 @@ function InvestigationSkeleton({ accentColor }: { accentColor: string }) {
       </div>
 
       {/* Footer skeleton */}
-      <div className="px-4 py-3 border-t border-white/[0.03] flex items-center justify-between">
+      <div className="mt-auto px-4 py-3 border-t border-white/[0.03] flex items-center justify-between">
         <Skeleton className="h-2 w-28" />
         <Skeleton className="h-2 w-16" />
       </div>
@@ -65,7 +65,7 @@ export function InvestigationCard({
   return (
     <button
       onClick={() => navigate(explorePath)}
-      className="glass-card rounded-2xl hover:bg-white/[0.04] transition-all duration-300 text-left w-full overflow-hidden"
+      className="glass-card rounded-2xl hover:bg-white/[0.04] transition-all duration-300 text-left w-full overflow-hidden flex flex-col h-full"
     >
       {/* Header */}
       <div className="px-4 pt-4 pb-3">
@@ -102,8 +102,12 @@ export function InvestigationCard({
         {children}
       </div>
 
-      {/* Footer */}
-      <div className="px-4 py-2.5 border-t border-slate-200/50 dark:border-white/[0.04] flex items-center justify-between">
+      {/* Footer — mt-auto pushes it to the bottom of the card so when the
+          grid row stretches taller than the natural content (e.g., one card
+          has a small error state while siblings have rich viz), the empty
+          space settles BELOW the body content rather than centering or
+          floating awkwardly. Content top-aligns; void anchors bottom. */}
+      <div className="mt-auto px-4 py-2.5 border-t border-slate-200/50 dark:border-white/[0.04] flex items-center justify-between">
         <span className="text-[8px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-500">
           {sourceName}
         </span>
