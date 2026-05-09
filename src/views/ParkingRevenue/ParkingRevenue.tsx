@@ -3,6 +3,7 @@ import type { CensusVariable } from '@/types/census'
 import { useCensusData } from '@/hooks/useCensusData'
 import { useDemographicUnderlay } from '@/components/maps/DemographicUnderlay'
 import UnderlayPicker from '@/components/maps/UnderlayPicker'
+import UnderlayLegend from '@/components/maps/UnderlayLegend'
 import NeighborhoodCensusContext from '@/components/ui/NeighborhoodCensusContext'
 import { UNDERLAY_PRESETS } from '@/utils/censusVariables'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
@@ -514,6 +515,7 @@ export default function ParkingRevenue() {
           <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
             {isLoading && <MapScanOverlay label="Scanning meters" color="#5c9693" />}
             <MapProgressBar color="#5c9693" />
+            <UnderlayLegend variable={underlayVariable} data={censusNeighborhoods} />
             {error && (
               <div className="absolute inset-0 flex items-center justify-center z-20">
                 <div className="glass-card rounded-xl p-6 max-w-sm">

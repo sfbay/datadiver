@@ -5,6 +5,7 @@ import type { CensusVariable } from '@/types/census'
 import { useCensusData } from '@/hooks/useCensusData'
 import { useDemographicUnderlay } from '@/components/maps/DemographicUnderlay'
 import UnderlayPicker from '@/components/maps/UnderlayPicker'
+import UnderlayLegend from '@/components/maps/UnderlayLegend'
 import NeighborhoodCensusContext from '@/components/ui/NeighborhoodCensusContext'
 import { UNDERLAY_PRESETS } from '@/utils/censusVariables'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
@@ -784,6 +785,7 @@ export default function EmergencyResponse() {
           <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
             {isLoading && <MapScanOverlay label="Scanning dispatches" color="#d4a435" />}
             <MapProgressBar color="#d4a435" />
+            <UnderlayLegend variable={underlayVariable} data={censusNeighborhoods} />
 
             {error && (
               <div className="absolute inset-0 flex items-center justify-center z-20">
