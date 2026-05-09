@@ -186,21 +186,39 @@ export default function EmergencyResponse() {
     return avg as any
   }, [censusNeighborhoods])
 
+  // Map-layer WHERE — adds the neighborhood filter when one is selected.
+  // The heatmap query is the only one we drill in; citywide aggregations
+  // (avg/median/p90/total + sidebar ranking + histogram) stay unfiltered
+  // because they ARE the comparison frame the user is reading against.
+  // The 5K cap doesn't bite per-neighborhood since the largest SF
+  // neighborhood (~2,300 fire/EMS calls/month) fits comfortably; smaller
+  // ones fit 10–50× over. Selecting a neighborhood gives a complete,
+  // uncapped heatmap of that neighborhood instead of the recent-13-days
+  // sample we get citywide.
+  const mapWhereClause = useMemo(() => {
+    if (!selectedNeighborhood) return whereClause
+    const escaped = selectedNeighborhood.replace(/'/g, "''")
+    return `${whereClause} AND neighborhoods_analysis_boundaries = '${escaped}'`
+  }, [whereClause, selectedNeighborhood])
+
   const { data: rawData, isLoading, error, hitLimit } = useDataset<FireEMSDispatch>(
     'fireEMSDispatch',
     {
-      $where: whereClause,
+      $where: mapWhereClause,
       $limit: 5000,
       $select: 'call_number,call_type,call_type_group,received_dttm,on_scene_dttm,transport_dttm,hospital_dttm,available_dttm,neighborhoods_analysis_boundaries,supervisor_district,final_priority,case_location',
     },
-    [whereClause]
+    [mapWhereClause]
   )
 
-  // Total count query (lightweight, for truncation indicator)
+  // Total count query — uses mapWhereClause so the "X of Y" truncation
+  // indicator reflects the same scope as the visible heatmap. When a
+  // neighborhood is selected, the per-neighborhood total + uncapped
+  // rawData mean hitLimit is false and the indicator hides naturally.
   const { data: countRows } = useDataset<{ count: string }>(
     'fireEMSDispatch',
-    { $select: 'count(*) as count', $where: whereClause },
-    [whereClause]
+    { $select: 'count(*) as count', $where: mapWhereClause },
+    [mapWhereClause]
   )
   const totalCount = countRows[0] ? parseInt(countRows[0].count, 10) : null
 
