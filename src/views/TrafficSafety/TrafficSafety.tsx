@@ -27,7 +27,6 @@ import SeverityBreakdown from '@/components/charts/SeverityBreakdown'
 import HorizontalBarChart from '@/components/charts/HorizontalBarChart'
 import ExportButton from '@/components/export/ExportButton'
 import TimeOfDayFilter from '@/components/filters/TimeOfDayFilter'
-import ComparisonToggle from '@/components/filters/ComparisonToggle'
 import HourlyHeatgrid from '@/components/charts/HourlyHeatgrid'
 import TrendChart from '@/components/charts/TrendChart'
 import CrashModeFilter from '@/components/filters/CrashModeFilter'
@@ -573,7 +572,7 @@ export default function TrafficSafety() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <header className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl z-10">
+      <header className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl z-20">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div>
@@ -640,7 +639,6 @@ export default function TrafficSafety() {
               ))}
             </div>
 
-            <ComparisonToggle />
               <UnderlayPicker
                 presets={UNDERLAY_PRESETS['traffic-safety'] ?? []}
                 activeVariable={underlayVariable}

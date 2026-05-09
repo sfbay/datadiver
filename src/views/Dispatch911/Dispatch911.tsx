@@ -12,7 +12,6 @@ import ResponseHistogram from '@/components/charts/ResponseHistogram'
 import HourlyHeatgrid from '@/components/charts/HourlyHeatgrid'
 import TrendChart from '@/components/charts/TrendChart'
 import TimeOfDayFilter from '@/components/filters/TimeOfDayFilter'
-import ComparisonToggle from '@/components/filters/ComparisonToggle'
 import ExportButton from '@/components/export/ExportButton'
 import HorizontalBarChart, { type BarDatum } from '@/components/charts/HorizontalBarChart'
 import CallTypeFilter, { type CallTypeEntry } from '@/components/filters/CallTypeFilter'
@@ -246,7 +245,7 @@ export default function Dispatch911() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <header className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl z-10">
+      <header className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl z-20">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div>
@@ -273,7 +272,6 @@ export default function Dispatch911() {
           </div>
 
           <div className="flex items-center gap-2">
-            <ComparisonToggle />
             <ExportButton targetSelector="#d911-capture" filename="dispatch-911" />
 
             {/* Sensitivity filter toggle */}

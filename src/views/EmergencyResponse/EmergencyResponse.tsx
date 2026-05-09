@@ -28,7 +28,6 @@ import CardTray, { type CardDef } from '@/components/ui/CardTray'
 import ResponseHistogram from '@/components/charts/ResponseHistogram'
 import ExportButton from '@/components/export/ExportButton'
 import TimeOfDayFilter from '@/components/filters/TimeOfDayFilter'
-import ComparisonToggle from '@/components/filters/ComparisonToggle'
 import HourlyHeatgrid from '@/components/charts/HourlyHeatgrid'
 import TrendChart from '@/components/charts/TrendChart'
 import IncidentDetailPanel from '@/components/ui/IncidentDetailPanel'
@@ -752,12 +751,17 @@ export default function EmergencyResponse() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Compact header */}
-      <header className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl z-10">
+      {/* Compact header. z-20 (vs the ticker row's z-10) ensures dropdowns
+          opened from this header — Demographic Underlay, Compare popover —
+          appear ABOVE the ticker rather than getting clobbered by it.
+          backdrop-blur-xl creates a stacking context, so the header's
+          global z-index is what determines whether children-with-z-50
+          sit above sibling rows or under them. */}
+      <header className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl z-20">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div>
-              <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">
+              <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none whitespace-nowrap">
                 Emergency Response
               </h1>
               <p className="text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
@@ -780,7 +784,6 @@ export default function EmergencyResponse() {
           </div>
 
           <div className="flex items-center gap-2">
-            <ComparisonToggle />
               <UnderlayPicker
                 presets={UNDERLAY_PRESETS['emergency-response'] ?? []}
                 activeVariable={underlayVariable}
