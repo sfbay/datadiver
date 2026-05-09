@@ -237,7 +237,12 @@ export default function Home() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="max-w-5xl mx-auto px-8 pt-8 pb-16 relative">
+      {/* Liquid wrapper — flows from a comfortable mobile/laptop minimum to
+          ~1800px on ultrawide displays. Padding uses clamp so the inset
+          breathes proportionally instead of stair-stepping at breakpoints.
+          Echoes the 1990s/2000s LiquidEx pattern (percentage-width tables
+          with spacer-GIF gutters), updated with modern clamp() controls. */}
+      <div className="mx-auto pt-8 pb-16 relative w-full max-w-[1800px] px-[clamp(16px,3vw,64px)]">
         {/* OmniSearch ribbon hidden pending entity-search infrastructure —
             the static index only matches neighborhoods + dataset names, so
             queries like "salesforce" or "uber" silently produced no results.
@@ -270,8 +275,12 @@ export default function Home() {
           {/* Extra overlay on narrow screens where text and Dana overlap */}
           <div className="absolute inset-0 bg-white/50 dark:bg-slate-950/50 md:hidden" />
 
-          {/* Text content — left side on desktop, full width with overlay on mobile */}
-          <div className="relative py-6 px-8 md:py-8 md:px-14 md:max-w-[50%]">
+          {/* Text content — left side on desktop, full width with overlay on mobile.
+              Cap at 640px on ultrawide so the headline + body never stretch into
+              uncomfortable line lengths. The hero card itself keeps growing with
+              the viewport (revealing more of the bg illustration on the right);
+              only the text panel inside it caps. */}
+          <div className="relative py-6 px-8 md:py-8 md:px-14 md:max-w-[min(50%,640px)]">
             <div className={`transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
               <div className="flex items-center gap-2.5 mb-6">
                 <div className="h-[1px] w-8 bg-signal-blue/60" />
@@ -282,7 +291,15 @@ export default function Home() {
             </div>
 
             <h1
-              className={`font-display text-5xl md:text-7xl lg:text-[5.5rem] text-ink dark:text-white leading-[0.9] mb-6 transition-all duration-1000 delay-150 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
+              className={`font-display text-ink dark:text-white leading-[0.9] mb-6 transition-all duration-1000 delay-150 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
+              style={{
+                // Fluid type: scales smoothly from 2.75rem at narrow viewports
+                // to 7rem at ~2000px-wide displays. No breakpoint jumps — the
+                // headline grows continuously with the viewport. The 5vw + 1rem
+                // formula gives enough kick at desktop sizes without overshooting
+                // on ultrawide.
+                fontSize: 'clamp(2.75rem, 5vw + 1rem, 7rem)',
+              }}
             >
               <em
                 style={{
@@ -404,7 +421,11 @@ export default function Home() {
             </p>
             <div className="relative flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
+          {/* Auto-fit fluid grid: 1 column when viewport < 460px, 2 columns
+              from there to ~960px, 3 columns at ~1380px, 4 columns at ~1840px+.
+              No breakpoint jumps — the grid reflows continuously as the
+              viewport widens. Each card stays in the [460px, 1fr] band. */}
+          <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(460px,1fr))]">
             <DeficitCounter />
             <ResponseEquity />
             <DispatchUnanswered />
@@ -530,7 +551,10 @@ export default function Home() {
             <div className="relative flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
           </div>
 
-          <div className="grid gap-2.5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {/* Auto-fit explorations grid: ~2 columns at narrow viewports, scaling
+              up to 6+ columns on ultrawide. Smaller minmax than the viz grid
+              since each tile is a smaller card. */}
+          <div className="grid gap-2.5 grid-cols-[repeat(auto-fit,minmax(220px,1fr))]">
             {VISUALIZATIONS.map((viz, idx) => (
               <VizCard
                 key={viz.path}
