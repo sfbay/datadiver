@@ -357,14 +357,19 @@ body {
   100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
 }
 
-/* Mapbox popups (used for the .datadiver-tooltip hover cards) sit inside
-   the map container's stacking context. The MapView's children layer (where
-   stat-card overlays render) is at z-[2] in the same parent — by default
-   popups render UNDERNEATH the cards because Mapbox doesn't set an explicit
-   z-index. Lifting popups above the overlay layer keeps hover details
-   readable when they overlap with floating stat cards. */
+/* Mapbox popups (used for the .datadiver-tooltip hover cards) need to
+   cover the CardTray overlay layer (z-10) but stay below the page header
+   (z-20). The full layer stack on a map view, ascending:
+     - Map basemap                         z-auto
+     - MapView gradient overlays           z-[1]
+     - MapView children container          z-[2]
+     - CardTray (stat cards + pill bar)    z-10  ← popups need to clear THIS
+     - Mapbox popup (this rule)            z-15  ← here
+     - Page header                         z-20
+   z-15 lifts popups above the floating stat cards so hover details are
+   never clipped. Applies globally — every popup, every map view. */
 .mapboxgl-popup {
-  z-index: 5;
+  z-index: 15;
 }
 
 /* Mapbox tooltip overrides — paired light/dark variants. Light mode is
