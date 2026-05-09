@@ -250,10 +250,18 @@ export default function Home() {
             indexing in a follow-up PR. ⌘K modal kept active as a
             power-user surface (limited but discoverable only by intent). */}
 
-        {/* Hero — full-width background with Dana on right, text on left */}
+        {/* Hero — full-width background with Dana on right, text on left.
+            min-height scales with the viewport so the hero stays cinematic at
+            wide widths instead of looking shallow. clamp(0, 30vw, 600px) means:
+            no effect at narrow viewports (content height wins), kicks in at
+            ~1280px+ where 30vw exceeds the natural text-panel height, and caps
+            at 600px so it can't grow indefinitely on ultrawide. */}
         <header
-          className="glow-host mb-20 relative z-10 overflow-hidden rounded-3xl"
-          style={{ '--glow': '#b85a33' } as CSSProperties}
+          className="glow-host mb-20 relative z-10 overflow-hidden rounded-3xl flex flex-col justify-center"
+          style={{
+            '--glow': '#b85a33',
+            minHeight: 'clamp(0px, 30vw, 600px)',
+          } as CSSProperties}
         >
           {/* Large terracotta corner glow behind Dana — anchored top-right
               with a generous offset so the disc bleeds in from off-canvas
