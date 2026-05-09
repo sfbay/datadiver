@@ -237,7 +237,12 @@ export default function Home() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="max-w-5xl mx-auto px-8 pt-8 pb-16 relative">
+      {/* Liquid wrapper — flows from a comfortable mobile/laptop minimum to
+          ~1800px on ultrawide displays. Padding uses clamp so the inset
+          breathes proportionally instead of stair-stepping at breakpoints.
+          Echoes the 1990s/2000s LiquidEx pattern (percentage-width tables
+          with spacer-GIF gutters), updated with modern clamp() controls. */}
+      <div className="mx-auto pt-8 pb-16 relative w-full max-w-[1800px] px-[clamp(16px,3vw,64px)]">
         {/* OmniSearch ribbon hidden pending entity-search infrastructure —
             the static index only matches neighborhoods + dataset names, so
             queries like "salesforce" or "uber" silently produced no results.
@@ -245,10 +250,18 @@ export default function Home() {
             indexing in a follow-up PR. ⌘K modal kept active as a
             power-user surface (limited but discoverable only by intent). */}
 
-        {/* Hero — full-width background with Dana on right, text on left */}
+        {/* Hero — full-width background with Dana on right, text on left.
+            min-height scales with the viewport so the hero stays cinematic at
+            wide widths instead of looking shallow. clamp(0, 30vw, 600px) means:
+            no effect at narrow viewports (content height wins), kicks in at
+            ~1280px+ where 30vw exceeds the natural text-panel height, and caps
+            at 600px so it can't grow indefinitely on ultrawide. */}
         <header
-          className="glow-host mb-20 relative z-10 overflow-hidden rounded-3xl"
-          style={{ '--glow': '#b85a33' } as CSSProperties}
+          className="glow-host mb-20 relative z-10 overflow-hidden rounded-3xl flex flex-col justify-center"
+          style={{
+            '--glow': '#b85a33',
+            minHeight: 'clamp(0px, 30vw, 600px)',
+          } as CSSProperties}
         >
           {/* Large terracotta corner glow behind Dana — anchored top-right
               with a generous offset so the disc bleeds in from off-canvas
@@ -270,8 +283,12 @@ export default function Home() {
           {/* Extra overlay on narrow screens where text and Dana overlap */}
           <div className="absolute inset-0 bg-white/50 dark:bg-slate-950/50 md:hidden" />
 
-          {/* Text content — left side on desktop, full width with overlay on mobile */}
-          <div className="relative py-6 px-8 md:py-8 md:px-14 md:max-w-[50%]">
+          {/* Text content — left side on desktop, full width with overlay on mobile.
+              Cap at 640px on ultrawide so the headline + body never stretch into
+              uncomfortable line lengths. The hero card itself keeps growing with
+              the viewport (revealing more of the bg illustration on the right);
+              only the text panel inside it caps. */}
+          <div className="relative py-6 px-8 md:py-8 md:px-14 md:max-w-[min(50%,640px)]">
             <div className={`transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
               <div className="flex items-center gap-2.5 mb-6">
                 <div className="h-[1px] w-8 bg-signal-blue/60" />
@@ -282,7 +299,15 @@ export default function Home() {
             </div>
 
             <h1
-              className={`font-display text-5xl md:text-7xl lg:text-[5.5rem] text-ink dark:text-white leading-[0.9] mb-6 transition-all duration-1000 delay-150 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
+              className={`font-display text-ink dark:text-white leading-[0.9] mb-6 transition-all duration-1000 delay-150 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
+              style={{
+                // Fluid type: scales smoothly from 2.75rem at narrow viewports
+                // to 7rem at ~2000px-wide displays. No breakpoint jumps — the
+                // headline grows continuously with the viewport. The 5vw + 1rem
+                // formula gives enough kick at desktop sizes without overshooting
+                // on ultrawide.
+                fontSize: 'clamp(2.75rem, 5vw + 1rem, 7rem)',
+              }}
             >
               <em
                 style={{
@@ -322,27 +347,47 @@ export default function Home() {
         >
           <button
             onClick={() => setComicOpen(true)}
-            className="dd-ribbon-hover w-full group flex items-center gap-5 glass-card rounded-2xl px-5 py-3 hover:bg-white/[0.06] transition-all duration-300 overflow-hidden text-left relative isolate"
+            className="dd-ribbon-hover w-full group flex items-center gap-[clamp(20px,2vw,40px)] glass-card rounded-2xl px-[clamp(20px,2vw,40px)] py-[clamp(12px,1.2vw,24px)] hover:bg-white/[0.06] transition-all duration-300 overflow-hidden text-left relative isolate"
             style={{ '--glow': '#5c9693' } as CSSProperties}
           >
-            {/* Comic thumbnail */}
+            {/* Comic thumbnail — fluid sizing so the ribbon feels proportional
+                at any width. ~112px on narrow viewports, ~200px on ultrawide.
+                Aspect ratio kept ~7:4 (matches the comic strip's natural crop). */}
             <img
               src="/dana-comic-1-thumb.jpg"
               alt="Dana the DataDiver comic strip"
-              className="w-28 h-16 object-cover rounded-lg flex-shrink-0 ring-1 ring-white/10 group-hover:ring-white/20 transition-all relative z-10"
+              className="object-cover rounded-lg flex-shrink-0 ring-1 ring-white/10 group-hover:ring-white/20 transition-all relative z-10"
+              style={{
+                width: 'clamp(112px, 11vw, 200px)',
+                height: 'clamp(64px, 6.3vw, 114px)',
+              }}
             />
-            {/* Text */}
+            {/* Text — typography also scales fluidly with the thumbnail so the
+                ribbon reads as a single proportional composition rather than
+                a small image with under-served copy beside it. */}
             <div className="flex-1 min-w-0 relative z-10">
-              <p className="text-sm font-display italic text-ink dark:text-white leading-tight">
+              <p
+                className="font-display italic text-ink dark:text-white leading-tight"
+                style={{ fontSize: 'clamp(0.95rem, 1.1vw + 0.5rem, 1.6rem)' }}
+              >
                 Meet Dana, the data-diving Harbor Seal!
               </p>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-                Follow her adventures diving for data — and fish! New comic strips & data tidbits on Instagram.
+              <p
+                className="text-slate-500 dark:text-slate-400 mt-1 leading-snug"
+                style={{ fontSize: 'clamp(0.72rem, 0.55vw + 0.4rem, 1rem)' }}
+              >
+                Follow Dana's adventures diving for civic data — and fish! New comic strips &amp; data tidbits on Instagram.
               </p>
             </div>
-            {/* Arrow */}
+            {/* Arrow — also scales with the rest so it stays visually weighted
+                with the new thumbnail and type at wide widths. */}
             <div className="flex-shrink-0 text-slate-400 dark:text-slate-600 group-hover:text-ink dark:group-hover:text-white transition-colors relative z-10">
-              <svg className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                className="group-hover:translate-x-0.5 transition-transform"
+                style={{ width: 'clamp(16px, 1.4vw, 28px)', height: 'clamp(16px, 1.4vw, 28px)' }}
+              >
                 <path d="M3 8h10M10 4.5L13.5 8 10 11.5" />
               </svg>
             </div>
@@ -404,7 +449,11 @@ export default function Home() {
             </p>
             <div className="relative flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
+          {/* Auto-fit fluid grid: 1 column when viewport < 460px, 2 columns
+              from there to ~960px, 3 columns at ~1380px, 4 columns at ~1840px+.
+              No breakpoint jumps — the grid reflows continuously as the
+              viewport widens. Each card stays in the [460px, 1fr] band. */}
+          <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(460px,1fr))]">
             <DeficitCounter />
             <ResponseEquity />
             <DispatchUnanswered />
@@ -530,7 +579,10 @@ export default function Home() {
             <div className="relative flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
           </div>
 
-          <div className="grid gap-2.5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {/* Auto-fit explorations grid: ~2 columns at narrow viewports, scaling
+              up to 6+ columns on ultrawide. Smaller minmax than the viz grid
+              since each tile is a smaller card. */}
+          <div className="grid gap-2.5 grid-cols-[repeat(auto-fit,minmax(220px,1fr))]">
             {VISUALIZATIONS.map((viz, idx) => (
               <VizCard
                 key={viz.path}
