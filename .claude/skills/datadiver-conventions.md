@@ -140,6 +140,46 @@ Every view file follows the same structure:
 
 See any existing view file (e.g., `src/views/CrimeIncidents/CrimeIncidents.tsx`) as a reference implementation.
 
+## Shared map-view components (May 2026 sprint additions)
+
+| Component | Path | Use for |
+|---|---|---|
+| `<MapSidebar>` | `src/components/layout/MapSidebar.tsx` | Right context sidebar wrapper. Three states (full ≥1024 / compressed <1024 / collapsed-stub). Children read `useMapSidebarMode().isCompressed` to opt into compressed rendering. Sticky toggle via `appStore.isContextSidebarOpen`. |
+| `<PositionScale>` | `src/components/charts/PositionScale.tsx` | "You are here" microvis — small SVG track with min/max endpoint dots, optional reference tick (citywide avg), colored focal dot. Dataset-agnostic; accepts `value`, `range: [min,max]`, optional `reference`, `color`. Reusable for any entity-vs-population comparison. Wired into `<StatCard>` via the optional `positionScale` prop. |
+| `<UnderlayLegend>` | `src/components/maps/UnderlayLegend.tsx` | Floating glass-card legend for the active demographic underlay. Renders nothing when `variable` is null. Matches `DemographicUnderlay`'s 0/33/66/100 percentile stops so the legend gradient lines up with the choropleth. Position: `absolute bottom-4 right-4` on each view's `MapView` children. |
+| `<ComparisonPopover>` | `src/components/filters/ComparisonPopover.tsx` | Compact "Compare ▾" pill that lives in `<CardTray>`'s pill bar above the stat cards. Replaces the old wide `<ComparisonToggle>` in view headers. Drives Zustand `comparisonPeriod` — same semantics, smaller footprint, contextually placed near the deltas it controls. |
+
+When adding map-view comparison UX, prefer the **neighborhood comparison framing** pattern (see `memory/feedback_comparison_framing_not_drilldown.md`): keep citywide as canvas, render neighborhood as context via `<PositionScale>` + stat-card swap. Don't drill everything down.
+
+## Liquid layout pattern (Home page)
+
+Inspired by Jesse's 2000-era LiquidEx, translated to modern controls in PR #25. When working on Home or any new hero-like section:
+
+- Prefer `clamp(min, vw-formula, max)` over breakpoint-based size classes (`md:` / `lg:` / `xl:`).
+- Prefer `grid-cols-[repeat(auto-fit,minmax(N,1fr))]` over `md:grid-cols-X lg:grid-cols-Y`.
+- Hero `min-height: clamp(0px, 30vw, 600px)` is a beautiful trick — natural content height wins at narrow widths, kicks in only at wide widths.
+- The proportion control modern CSS adds over 2000 is `min`/`max` bounds; `clamp` is the spiritual successor to raw `width="N%"` with the guards that 2000 couldn't have.
+
+Full pattern docs: `memory/project_liquid_layout_pattern.md`.
+
+## Z-index hierarchy on map views
+
+Documented inline in `src/index.css` and in CLAUDE.md. Quick reference, ascending:
+
+| Layer | z-index |
+|---|---|
+| Map basemap | auto |
+| MapView overlay layers | `z-[1]`, `z-[2]` |
+| `<CardTray>` | `z-10` |
+| `.mapboxgl-popup` | `z-15` (global rule in `index.css`) |
+| Page header | `z-20` |
+| Detail panels | `z-30` |
+| Modals | `z-50+` |
+
+`backdrop-blur-*` creates a stacking context — sibling rows both at `backdrop-blur + z-10` will compete via DOM order, not z-index. Bump the one that needs to win to a higher z-index.
+
+Full reference + deferred extract-as-constants TODO: `memory/project_zindex_stack.md`.
+
 ## URL state and navigation
 
 **`useUrlSync`** lives in `AppShell` and syncs the global date range (`start`/`end` params) to/from the Zustand store. Every view inherits this for free.

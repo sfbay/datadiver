@@ -29,6 +29,8 @@ The previous "Bloomberg Terminal" cool slate-950 + signal-red/cyan/violet aesthe
 
 **Status (May 2026):** earth-tone refactor is complete end-to-end across 8 PRs (#9–#16). Every dot, halo, chip, card, fill, stroke, and gradient stop site-wide is on the unified palette — including the previously-exempt CityBudget compliance dashboard, which migrated in PR #15 with a non-default `sky → indigo` mapping to preserve its drill-down narrative (see Color palette commitment below). For future palette work, the grep pattern that catches all three CSS color forms (#hex, rgba channel, hsl) lives in `memory/feedback_palette_migration_grep.md`.
 
+**Status (May 8–11 sprint):** PRs #19–#26 shipped a series of compounding improvements: citywide-true server-side stats for EmergencyResponse + the `useResponseEquity` hook rescue (PR #19); completed 41/41 SF neighborhood camera presets (PRs #20, #24); human-readable durations (`Mm Ss`) and CRT-correct radar sweep (PR #21); unified `<MapSidebar>` primitive with symmetric pill chevrons on both nav and context sidebars (PR #22); position-on-scale microvis + neighborhood drill heatmap + relocated ComparisonPopover (PR #23); demographic underlay legend + more prominent picker (PR #24); liquid Home layout inspired by Jesse's 2000-era LiquidEx pattern, translated to modern `clamp()` + `auto-fit` (PR #25); investigation-card top-alignment + map popup z-index hierarchy (PR #26).
+
 ### Pigment vocabulary
 
 Each accent has a 400/500/600/700 ramp. Same dataset = same pigment across sidebar nav, viz card, on-map detail, and stat cards. The pigment palette + their semantic meanings:
@@ -180,6 +182,52 @@ When two semi-transparent shapes meet at a 1-pixel boundary (e.g., compliance ca
 100% → rgba(color, 0)     // linear fade to zero over remaining height
 ```
 **Alpha-only fades** (constant hue, varying alpha) work in both light and dark modes. Fading to a specific dark color introduces a visible smudge in light mode. Used in `CityBudget.tsx` trapezoid connectors — see also `.claude/skills/datadiver-compliance.md`.
+
+### Z-index hierarchy
+
+Layer stack on map views, ascending (documented inline in `src/index.css` next to the `.mapboxgl-popup` rule):
+
+| Layer | z-index | Notes |
+|---|---|---|
+| Map basemap (Mapbox canvas) | auto | |
+| MapView gradient overlays (top/bottom) | `z-[1]` | Subtle gradients on `MapView` for legibility |
+| MapView children container | `z-[2]` | Where view-specific stat-card overlays + `UnderlayLegend` live |
+| `<CardTray>` (stat cards + pill bar) | `z-10` | The visible stat card overlay |
+| `.mapboxgl-popup` (hover details) | `z-15` | Lifted above CardTray; raised from default by global rule in `index.css` |
+| Page header (compact title bar) | `z-20` | Each view's `<header>` was bumped from `z-10` in PR #23 so dropdowns opened from the header (UnderlayPicker, Compare popover) escape the ticker row's stacking context |
+| Detail panels (`IncidentDetailPanel` etc.) | `z-30` | Slide-in panels above all map layers |
+| Modal overlays (`OmniSearch`, comic) | `z-50+` | Full-screen modal layer |
+
+Reasoning: numbering close to neighbors forces explicit hierarchy thinking. Avoid jumping to `z-999` — if a popup needs that, the conflict is somewhere else.
+
+**Deferred audit**: extract these into a central `src/utils/zIndex.ts` constants module so values are self-documenting. Tracked but not urgent.
+
+### Liquid layout (Home page)
+
+Inspired by [Jesse's `LiquidEx c.2000`](https://web.archive.org/web/20000815052829/http://www.examiner.com/) — proportion-based design that flows continuously to any viewport without breakpoints — translated to modern CSS via `clamp()` and `auto-fit`.
+
+Patterns in use on `src/views/Home/Home.tsx`:
+
+- **Wrapper width**: `max-w-[1800px]` + `px-[clamp(16px,3vw,64px)]`. Page flows from mobile to ~1800px ultrawide without snapping.
+- **Hero typography**: `fontSize: clamp(2.75rem, 5vw + 1rem, 7rem)`. Headline scales continuously.
+- **Hero min-height**: `clamp(0px, 30vw, 600px)` + `flex flex-col justify-center` so the hero card grows cinematic on wide displays without empty-space awkwardness.
+- **Visualizations grid**: `grid-cols-[repeat(auto-fit,minmax(460px,1fr))]`. Cards reflow 1 → 2 → 3 → 4 columns smoothly.
+- **Explorations grid**: `grid-cols-[repeat(auto-fit,minmax(220px,1fr))]`. Same pattern, tighter minmax.
+
+When adding new sections to Home, prefer `clamp` + `auto-fit` over breakpoint-based classes (`md:`, `lg:`, `xl:`). The whole point of liquid is *no* breakpoints.
+
+### Neighborhood-vs-citywide comparison framing
+
+**When a user selects a neighborhood on a map view**, the editorial decision is **keep citywide as the canvas, layer the neighborhood as comparison context** — NOT drill the entire view down to one neighborhood.
+
+This means:
+- **Heatmap**: drills to the selected neighborhood (per-neighborhood query is uncapped since the 5K limit doesn't bite at neighborhood scale).
+- **Stat cards (Avg, Incidents)**: swap to the neighborhood's value AND render a `<PositionScale>` microvis showing where the neighborhood sits on the citywide gap. Reference tick = citywide avg.
+- **Sidebar ranking, histogram, citywide stats queries**: stay UNFILTERED. They're the comparison frame.
+
+Implemented on `EmergencyResponse` in PR #23. Pattern is reusable: Cases311, Crime, Citations, TrafficSafety could adopt the same comparison framing in follow-up work (the `<PositionScale>` primitive at `src/components/charts/PositionScale.tsx` is dataset-agnostic).
+
+The editorial argument: a number alone is meaningless; a number's *position on a scale* is a story. Clicking "Visitacion Valley" should light up "this is the slowest-response neighborhood by 30%", not just show 14m 32s in isolation.
 
 ## Deployment
 - **Vercel** auto-deploys from `main` branch
