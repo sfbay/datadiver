@@ -3,6 +3,7 @@ import type { CensusVariable } from '@/types/census'
 import { useCensusData } from '@/hooks/useCensusData'
 import { useDemographicUnderlay } from '@/components/maps/DemographicUnderlay'
 import UnderlayPicker from '@/components/maps/UnderlayPicker'
+import UnderlayLegend from '@/components/maps/UnderlayLegend'
 import NeighborhoodCensusContext from '@/components/ui/NeighborhoodCensusContext'
 import { UNDERLAY_PRESETS } from '@/utils/censusVariables'
 import { useSearchParams } from 'react-router-dom'
@@ -760,6 +761,7 @@ export default function BusinessActivity() {
           <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
             {isLoading && <MapScanOverlay label="Scanning businesses" color="#7a9954" />}
             <MapProgressBar color="#7a9954" />
+            <UnderlayLegend variable={underlayVariable} data={censusNeighborhoods} />
 
             {error && (
               <div className="absolute inset-0 flex items-center justify-center z-20">

@@ -98,30 +98,44 @@ export default function UnderlayPicker({ presets, activeVariable, onSelect }: Un
 
   return (
     <div ref={containerRef} className="relative select-none">
-      {/* Compact trigger button */}
+      {/* Trigger button. Adds an explicit text label ("Underlay" or the
+          active variable's shortLabel) and a chevron to make the control
+          visually weighty enough to match its power — previously it was
+          icon-only and easily missed in the toolbar. */}
       <button
         onClick={() => { setOpen(prev => !prev); if (open) { setShowMore(false); setSubPickerGroup(null) } }}
-        title="Demographic underlay"
-        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-all duration-200 ${
+        title={activeConfig ? `Demographic underlay: ${activeConfig.label}` : 'Add a demographic underlay'}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-mono uppercase tracking-wider transition-all duration-200 ${
           activeVariable
             ? 'bg-plum-500/15 text-plum-400 dark:text-plum-400 ring-1 ring-plum-500/30'
             : open
             ? 'bg-white dark:bg-white/[0.08] text-ink dark:text-white shadow-sm'
-            : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100/50 dark:hover:bg-white/[0.04]'
         }`}
       >
         {/* Layers icon */}
-        <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+        <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
           <path d="M8 2L2 5.5 8 9l6-3.5L8 2z" />
           <path d="M2 8.5L8 12l6-3.5" />
           <path d="M2 11.5L8 15l6-3.5" />
         </svg>
+        <span className="whitespace-nowrap">
+          {activeConfig ? activeConfig.shortLabel : 'Underlay'}
+        </span>
         {activeConfig && (
           <span
             className="w-2 h-2 rounded-sm flex-shrink-0"
             style={{ backgroundColor: getSwatchColor(activeConfig) }}
           />
         )}
+        <svg
+          width="9" height="9" viewBox="0 0 9 9"
+          fill="none" stroke="currentColor"
+          strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"
+          className={`flex-shrink-0 opacity-60 transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
+        >
+          <path d="M2 3.5l2.5 2.5 2.5-2.5" />
+        </svg>
       </button>
 
       {/* Dropdown panel */}
