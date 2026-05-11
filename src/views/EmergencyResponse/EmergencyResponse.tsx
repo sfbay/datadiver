@@ -29,7 +29,6 @@ import CardTray, { type CardDef } from '@/components/ui/CardTray'
 import ResponseHistogram from '@/components/charts/ResponseHistogram'
 import ExportButton from '@/components/export/ExportButton'
 import TimeOfDayFilter from '@/components/filters/TimeOfDayFilter'
-import ComparisonToggle from '@/components/filters/ComparisonToggle'
 import HourlyHeatgrid from '@/components/charts/HourlyHeatgrid'
 import TrendChart from '@/components/charts/TrendChart'
 import IncidentDetailPanel from '@/components/ui/IncidentDetailPanel'
@@ -187,21 +186,39 @@ export default function EmergencyResponse() {
     return avg as any
   }, [censusNeighborhoods])
 
+  // Map-layer WHERE — adds the neighborhood filter when one is selected.
+  // The heatmap query is the only one we drill in; citywide aggregations
+  // (avg/median/p90/total + sidebar ranking + histogram) stay unfiltered
+  // because they ARE the comparison frame the user is reading against.
+  // The 5K cap doesn't bite per-neighborhood since the largest SF
+  // neighborhood (~2,300 fire/EMS calls/month) fits comfortably; smaller
+  // ones fit 10–50× over. Selecting a neighborhood gives a complete,
+  // uncapped heatmap of that neighborhood instead of the recent-13-days
+  // sample we get citywide.
+  const mapWhereClause = useMemo(() => {
+    if (!selectedNeighborhood) return whereClause
+    const escaped = selectedNeighborhood.replace(/'/g, "''")
+    return `${whereClause} AND neighborhoods_analysis_boundaries = '${escaped}'`
+  }, [whereClause, selectedNeighborhood])
+
   const { data: rawData, isLoading, error, hitLimit } = useDataset<FireEMSDispatch>(
     'fireEMSDispatch',
     {
-      $where: whereClause,
+      $where: mapWhereClause,
       $limit: 5000,
       $select: 'call_number,call_type,call_type_group,received_dttm,on_scene_dttm,transport_dttm,hospital_dttm,available_dttm,neighborhoods_analysis_boundaries,supervisor_district,final_priority,case_location',
     },
-    [whereClause]
+    [mapWhereClause]
   )
 
-  // Total count query (lightweight, for truncation indicator)
+  // Total count query — uses mapWhereClause so the "X of Y" truncation
+  // indicator reflects the same scope as the visible heatmap. When a
+  // neighborhood is selected, the per-neighborhood total + uncapped
+  // rawData mean hitLimit is false and the indicator hides naturally.
   const { data: countRows } = useDataset<{ count: string }>(
     'fireEMSDispatch',
-    { $select: 'count(*) as count', $where: whereClause },
-    [whereClause]
+    { $select: 'count(*) as count', $where: mapWhereClause },
+    [mapWhereClause]
   )
   const totalCount = countRows[0] ? parseInt(countRows[0].count, 10) : null
 
@@ -572,20 +589,59 @@ export default function EmergencyResponse() {
     return tiles
   }, [histogramData, comparisonPeriod, comparison.currentTrend, comparison.comparisonTrend, comparison.isLoading, isFireMode, fireInsights.batteryTrend])
 
+  // Selected-neighborhood comparison context — when a neighborhood is
+  // selected, derive the data needed to swap stat cards from citywide
+  // values to neighborhood values + position-on-scale microvis. Returns
+  // null when no neighborhood is selected, or when the selected one fell
+  // below the COUNT > 5 threshold (rare; sidebar wouldn't show it either).
+  const selectedNhStats = useMemo(() => {
+    if (!selectedNeighborhood || neighborhoodStats.length === 0) return null
+    const nh = neighborhoodStats.find((n) => n.neighborhood === selectedNeighborhood)
+    if (!nh) return null
+    const allAvgs = neighborhoodStats.map((n) => n.avgResponseTime)
+    const allCounts = neighborhoodStats.map((n) => n.totalIncidents)
+    return {
+      nh,
+      avgRange: [Math.min(...allAvgs), Math.max(...allAvgs)] as [number, number],
+      countRange: [Math.min(...allCounts), Math.max(...allCounts)] as [number, number],
+      avgDeltaPct: stats.avg > 0 ? ((nh.avgResponseTime - stats.avg) / stats.avg) * 100 : 0,
+      countSharePct: stats.total > 0 ? (nh.totalIncidents / stats.total) * 100 : 0,
+    }
+  }, [selectedNeighborhood, neighborhoodStats, stats.avg, stats.total])
+
   // Card tray definitions
   const cardDefs = useMemo((): CardDef[] => {
+    // When a neighborhood is selected, the Avg Response card swaps to that
+    // neighborhood's value and renders a position-on-scale microvis showing
+    // where it falls along the citywide gap. Median and Slowest 10% stay
+    // citywide (per-neighborhood histograms aren't available yet).
+    const avgValue = selectedNhStats ? selectedNhStats.nh.avgResponseTime : stats.avg
+    const avgSubtitle = selectedNhStats
+      ? `${selectedNhStats.nh.neighborhood} · ${selectedNhStats.avgDeltaPct >= 0 ? '+' : ''}${selectedNhStats.avgDeltaPct.toFixed(0)}% from city`
+      : (comparison.deltas ? `${formatDelta(comparison.deltas.avg)} ${compLabel}` : undefined)
+    const avgTrend: 'up' | 'down' | 'neutral' | undefined = selectedNhStats
+      ? (selectedNhStats.avgDeltaPct > 0 ? 'up' : selectedNhStats.avgDeltaPct < 0 ? 'down' : 'neutral')
+      : (comparison.deltas ? (comparison.deltas.avg > 0 ? 'up' : comparison.deltas.avg < 0 ? 'down' : 'neutral') : undefined)
+
     const cards: CardDef[] = [
       {
         id: 'avg-response',
         label: 'Avg Response',
         shortLabel: 'Avg',
-        value: formatDuration(stats.avg),
-        color: responseTimeColor(stats.avg),
+        value: formatDuration(avgValue),
+        color: responseTimeColor(avgValue),
         delay: 0,
         info: 'avg-response',
         defaultExpanded: true,
-        subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.avg)} ${compLabel}` : undefined,
-        trend: comparison.deltas ? (comparison.deltas.avg > 0 ? 'up' : comparison.deltas.avg < 0 ? 'down' : 'neutral') : undefined,
+        subtitle: avgSubtitle,
+        trend: avgTrend,
+        positionScale: selectedNhStats
+          ? {
+              value: selectedNhStats.nh.avgResponseTime,
+              range: selectedNhStats.avgRange,
+              reference: stats.avg,
+            }
+          : undefined,
       },
       {
         id: 'median',
@@ -615,13 +671,25 @@ export default function EmergencyResponse() {
         id: 'incidents',
         label: 'Incidents',
         shortLabel: 'Inc',
-        value: formatNumber(stats.total),
+        value: formatNumber(selectedNhStats ? selectedNhStats.nh.totalIncidents : stats.total),
         color: '#5c9693',
         delay: 240,
         defaultExpanded: false,
-        subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined,
-        trend: comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined,
-        yoyDelta: !comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null,
+        subtitle: selectedNhStats
+          ? `${selectedNhStats.nh.neighborhood} · ${selectedNhStats.countSharePct.toFixed(1)}% of citywide`
+          : (comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined),
+        trend: selectedNhStats
+          ? undefined
+          : (comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined),
+        yoyDelta: !selectedNhStats && !comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null,
+        positionScale: selectedNhStats
+          ? {
+              value: selectedNhStats.nh.totalIncidents,
+              range: selectedNhStats.countRange,
+              // No reference tick on the count card — citywide total isn't a
+              // member of the neighborhood-count distribution; it's the sum.
+            }
+          : undefined,
       },
     ]
     if (stats.apotCount > 0) {
@@ -674,7 +742,7 @@ export default function EmergencyResponse() {
       })
     }
     return cards
-  }, [stats, comparison.deltas, compLabel, trend.cityWideYoY, isFireMode, fireInsights.casualties, fireInsights.priorYearCasualties])
+  }, [stats, comparison.deltas, compLabel, trend.cityWideYoY, isFireMode, fireInsights.casualties, fireInsights.priorYearCasualties, selectedNhStats])
 
   const handleMapReady = useCallback((map: mapboxgl.Map) => {
     setMapInstance(map)
@@ -684,12 +752,17 @@ export default function EmergencyResponse() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Compact header */}
-      <header className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl z-10">
+      {/* Compact header. z-20 (vs the ticker row's z-10) ensures dropdowns
+          opened from this header — Demographic Underlay, Compare popover —
+          appear ABOVE the ticker rather than getting clobbered by it.
+          backdrop-blur-xl creates a stacking context, so the header's
+          global z-index is what determines whether children-with-z-50
+          sit above sibling rows or under them. */}
+      <header className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl z-20">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div>
-              <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">
+              <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none whitespace-nowrap">
                 Emergency Response
               </h1>
               <p className="text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
@@ -712,7 +785,6 @@ export default function EmergencyResponse() {
           </div>
 
           <div className="flex items-center gap-2">
-            <ComparisonToggle />
               <UnderlayPicker
                 presets={UNDERLAY_PRESETS['emergency-response'] ?? []}
                 activeVariable={underlayVariable}

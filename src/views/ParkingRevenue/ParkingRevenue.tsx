@@ -461,7 +461,7 @@ export default function ParkingRevenue() {
 
   return (
     <div className="h-full flex flex-col">
-      <header className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl z-10">
+      <header className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl z-20">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div>

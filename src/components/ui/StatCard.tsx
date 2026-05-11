@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import InfoTip from '@/components/ui/InfoTip'
 import SparkBars from '@/components/charts/SparkBars'
+import PositionScale from '@/components/charts/PositionScale'
 
 interface StatCardProps {
   label: string
@@ -15,9 +16,19 @@ interface StatCardProps {
   info?: string
   /** Optional annual spark data: values for the last N years, last value = current period */
   sparkData?: { values: number[]; labels?: string[] }
+  /** Optional "you are here" microvis — shows where this entity's value
+   *  falls along the population's range. Use when the displayed `value`
+   *  belongs to a selected entity (e.g., a neighborhood) and you want to
+   *  surface its position relative to the citywide gap. Mutually
+   *  exclusive with sparkData visually — both can't share the slot. */
+  positionScale?: {
+    value: number
+    range: [number, number]
+    reference?: number
+  }
 }
 
-export default function StatCard({ label, value, color, subtitle, delay = 0, trend, yoyDelta, zScore, info, sparkData }: StatCardProps) {
+export default function StatCard({ label, value, color, subtitle, delay = 0, trend, yoyDelta, zScore, info, sparkData, positionScale }: StatCardProps) {
   const [visible, setVisible] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -62,30 +73,55 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
           {value}
         </p>
         {subtitle && (
-          <p className="relative text-[11px] mt-1.5 font-mono flex items-center gap-1">
+          <p
+            className={`relative text-[11px] mt-1.5 font-mono flex items-center gap-1 ${
+              trend === 'up'
+                ? 'text-brick-600 dark:text-brick-400'
+                : trend === 'down'
+                ? 'text-moss-600 dark:text-moss-400'
+                : 'text-slate-500 dark:text-slate-400'
+            }`}
+          >
             {trend === 'up' && (
               <svg width="10" height="10" viewBox="0 0 10 10" className="flex-shrink-0">
-                <path d="M5 2 L8 6 L2 6 Z" fill="#963e30" />
+                <path d="M5 2 L8 6 L2 6 Z" fill="currentColor" />
               </svg>
             )}
             {trend === 'down' && (
               <svg width="10" height="10" viewBox="0 0 10 10" className="flex-shrink-0">
-                <path d="M5 8 L8 4 L2 4 Z" fill="#5c7a3d" />
+                <path d="M5 8 L8 4 L2 4 Z" fill="currentColor" />
               </svg>
             )}
-            <span className={trend === 'up' ? 'text-[#963e30]' : trend === 'down' ? 'text-[#5c7a3d]' : 'text-slate-500 dark:text-slate-400'}>
-              {subtitle}
-            </span>
+            <span>{subtitle}</span>
           </p>
         )}
         {yoyText && !subtitle && (
           <p className="relative text-[11px] mt-1.5 font-mono flex items-center gap-1">
-            <span className={yoyDelta! > 0 ? 'text-[#963e30]' : yoyDelta! < 0 ? 'text-[#5c7a3d]' : 'text-slate-500 dark:text-slate-400'}>
+            <span
+              className={
+                yoyDelta! > 0
+                  ? 'text-brick-600 dark:text-brick-400'
+                  : yoyDelta! < 0
+                  ? 'text-moss-600 dark:text-moss-400'
+                  : 'text-slate-500 dark:text-slate-400'
+              }
+            >
               {yoyText}
             </span>
           </p>
         )}
-        {sparkData && sparkData.values.length > 0 && (
+        {positionScale ? (
+          <div className="relative mt-2 -mx-1">
+            <PositionScale
+              value={positionScale.value}
+              range={positionScale.range}
+              reference={positionScale.reference}
+              color={color}
+              width={120}
+              height={12}
+            />
+          </div>
+        ) : sparkData && sparkData.values.length > 0 && (
           <div className="relative mt-2">
             <SparkBars
               values={sparkData.values}

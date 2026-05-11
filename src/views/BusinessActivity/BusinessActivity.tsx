@@ -24,7 +24,6 @@ import NetFormationChart from '@/components/charts/NetFormationChart'
 import HorizontalBarChart from '@/components/charts/HorizontalBarChart'
 import BusinessDetailPanel from '@/components/ui/BusinessDetailPanel'
 import ExportButton from '@/components/export/ExportButton'
-import ComparisonToggle from '@/components/filters/ComparisonToggle'
 import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
 import { SkeletonStatCards, SkeletonSidebarRows, MapScanOverlay, MapProgressBar } from '@/components/ui/Skeleton'
 import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
@@ -701,7 +700,7 @@ export default function BusinessActivity() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <header className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl z-10">
+      <header className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl z-20">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div>
@@ -744,7 +743,6 @@ export default function BusinessActivity() {
               ))}
             </div>
 
-            <ComparisonToggle />
               <UnderlayPicker
                 presets={UNDERLAY_PRESETS['business-activity'] ?? []}
                 activeVariable={underlayVariable}
