@@ -357,6 +357,21 @@ body {
   100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
 }
 
+/* Mapbox popups (used for the .datadiver-tooltip hover cards) need to
+   cover the CardTray overlay layer (z-10) but stay below the page header
+   (z-20). The full layer stack on a map view, ascending:
+     - Map basemap                         z-auto
+     - MapView gradient overlays           z-[1]
+     - MapView children container          z-[2]
+     - CardTray (stat cards + pill bar)    z-10  ← popups need to clear THIS
+     - Mapbox popup (this rule)            z-15  ← here
+     - Page header                         z-20
+   z-15 lifts popups above the floating stat cards so hover details are
+   never clipped. Applies globally — every popup, every map view. */
+.mapboxgl-popup {
+  z-index: 15;
+}
+
 /* Mapbox tooltip overrides — paired light/dark variants. Light mode is
    the default; .dark variants match espresso ground tone. */
 .datadiver-tooltip .mapboxgl-popup-content {
