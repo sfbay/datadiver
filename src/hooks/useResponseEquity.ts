@@ -141,7 +141,11 @@ async function fetchEquityData(
       $limit: 1,
     }),
 
-    // Query 3: Heatgrid — AVG response by neighborhood × call_type_group
+    // Query 3: Heatgrid — AVG response by neighborhood × call_type_group.
+    // $having floor is 50: each (nh, callType) cell shown must rest on at
+    // least 50 dispatches. This also serves as the row-level signal floor,
+    // because a neighborhood missing one of the top-4 call types in this
+    // result set is filtered out entirely below.
     fetchDataset<HeatgridRow>('fireEMSDispatch', {
       $select: [
         'neighborhoods_analysis_boundaries as neighborhood',
@@ -151,10 +155,46 @@ async function fetchEquityData(
       ].join(', '),
       $where: baseWhere,
       $group: 'neighborhoods_analysis_boundaries, call_type_group',
-      $having: 'COUNT(*) > 20',
+      $having: 'COUNT(*) > 50',
       $limit: 1000,
     }),
   ])
+
+  // ── Heatgrid call type selection (moved earlier) ────────────
+  // Top 4 call types by total call count across all neighborhoods. Done
+  // before neighborhood filtering because the row-level signal filter
+  // below needs to know which 4 call types form the heatgrid columns.
+
+  const callTypeTotals = new Map<string, number>()
+  for (const row of heatRows) {
+    if (!row.call_type) continue
+    const cnt = parseInt(row.call_count, 10) || 0
+    callTypeTotals.set(row.call_type, (callTypeTotals.get(row.call_type) ?? 0) + cnt)
+  }
+
+  const heatgridCallTypes = Array.from(callTypeTotals.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .map(([ct]) => ct)
+
+  // ── Per-neighborhood "full signal" presence map ──────────────
+  // For each neighborhood, track which of the top-4 call types it has
+  // a heatgrid cell in. Because the heatRows query uses $having > 50,
+  // any cell that exists here already meets the per-cell threshold —
+  // so "presence in all 4" = "≥50 calls in every visualized category".
+
+  const heatgridCallTypeSet = new Set(heatgridCallTypes)
+  const nhPresence = new Map<string, Set<string>>()
+  for (const row of heatRows) {
+    if (!row.neighborhood || !row.call_type) continue
+    if (!heatgridCallTypeSet.has(row.call_type)) continue
+    let set = nhPresence.get(row.neighborhood)
+    if (!set) {
+      set = new Set()
+      nhPresence.set(row.neighborhood, set)
+    }
+    set.add(row.call_type)
+  }
 
   // ── Process neighborhood rankings ───────────────────────────
 
@@ -166,6 +206,14 @@ async function fetchEquityData(
       callCount: parseInt(r.call_count, 10) || 0,
     }))
     .filter((r) => r.medianSeconds > 0)
+    // Row-level signal filter — drop neighborhoods that lack ≥50 dispatches
+    // in any of the top-4 call types. Removes low-volume neighborhoods like
+    // Lincoln Park whose per-category averages would be statistically
+    // unreliable across the matrix.
+    .filter((r) => {
+      const cells = nhPresence.get(r.name)
+      return cells != null && cells.size === heatgridCallTypes.length
+    })
     .sort((a, b) => a.medianSeconds - b.medianSeconds)
 
   if (validNh.length < 2) {
@@ -229,25 +277,10 @@ async function fetchEquityData(
   if (nhCount > 2) addNh(validNh[nhCount - 2].name) // 2nd worst
   addNh(validNh[nhCount - 1].name)                  // worst
 
-  // ── Heatgrid call type selection ─────────────────────────────
-  // Top 4 call types by total call count across all neighborhoods
-
-  const callTypeTotals = new Map<string, number>()
-  for (const row of heatRows) {
-    if (!row.call_type) continue
-    const cnt = parseInt(row.call_count, 10) || 0
-    callTypeTotals.set(row.call_type, (callTypeTotals.get(row.call_type) ?? 0) + cnt)
-  }
-
-  const heatgridCallTypes = Array.from(callTypeTotals.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 4)
-    .map(([ct]) => ct)
-
   // ── Build heatgrid cells ─────────────────────────────────────
 
   const nhSet = new Set(heatgridNeighborhoods)
-  const ctSet = new Set(heatgridCallTypes)
+  const ctSet = heatgridCallTypeSet
 
   const heatgrid: HeatgridCell[] = heatRows
     .filter((r) => r.neighborhood && r.call_type && nhSet.has(r.neighborhood) && ctSet.has(r.call_type))

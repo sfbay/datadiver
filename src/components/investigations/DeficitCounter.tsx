@@ -141,6 +141,17 @@ export default function DeficitCounter() {
                 {fmtMillions(data.perDay)}/day
               </span>
             </div>
+
+            {/* Editorial explainer — defines deficit + disclaims the
+                animation so a first-time viewer doesn't mistake the ticking
+                counter for a real-time meter. */}
+            <p
+              className="mt-2 italic leading-snug"
+              style={{ fontSize: 11, color: '#a8926a' }}
+            >
+              Projected FY shortfall — the gap between expected spending and
+              revenue. Animated at projected rate.
+            </p>
           </div>
 
           {/* Trend sparkline */}
