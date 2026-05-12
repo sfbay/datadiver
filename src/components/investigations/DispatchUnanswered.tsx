@@ -17,7 +17,7 @@ export default function DispatchUnanswered() {
 
   return (
     <InvestigationCard
-      eyebrow="911 Dispatch · Unanswered"
+      eyebrow="Fire/EMS Dispatch · Unanswered"
       accentColor="#d47149"
       headline={headline}
       subtitle="Fire/EMS Dispatch · Calls exceeding 10-min response target"

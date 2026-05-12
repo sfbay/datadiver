@@ -72,12 +72,28 @@ async function loadUnansweredData(dateRange: {
   const priStart = `${yearAgo(dateRange.start)}T00:00:00`
   const priEnd = `${yearAgo(dateRange.end)}T23:59:59`
 
-  // "Slow" call predicate: no on_scene OR response time > 10 minutes.
-  // Socrata SoQL exposes date diffs through unit-specific arity-2 functions
-  // (date_diff_ss, date_diff_mm, date_diff_h, date_diff_d, date_diff_y …)
-  // — not the 3-arg `date_diff_d(a, b, 'unit')` form (which doesn't exist
-  // and rejects with `query.soql.no-such-function`).
-  const slowPredicate = `(on_scene_dttm IS NULL OR date_diff_mm(on_scene_dttm, received_dttm) > 10)`
+  // "Slow" call predicate: no on_scene timestamp OR response > 10 minutes.
+  //
+  // Socrata has retired the `date_diff_mm` / `date_diff_ss` arity-2 functions
+  // on this dataset's query engine (rejects with `query.soql.no-such-function`).
+  // Compute response seconds via component decomposition — extract hh+mm+ss
+  // from each timestamp and subtract — same pattern as `useResponseEquity`.
+  //
+  // The SAME_DAY guard drops <0.5% of calls that roll across midnight, in
+  // exchange for keeping the arithmetic positive (without it, a call received
+  // at 23:55 and resolved at 00:05 would compute as a negative 86,400-second
+  // diff and never trigger the > 600 threshold).
+  const SAME_DAY = (
+    '(date_extract_y(on_scene_dttm) = date_extract_y(received_dttm) AND ' +
+    'date_extract_m(on_scene_dttm) = date_extract_m(received_dttm) AND ' +
+    'date_extract_d(on_scene_dttm) = date_extract_d(received_dttm))'
+  )
+  const RESPONSE_SECONDS = (
+    '((date_extract_hh(on_scene_dttm) - date_extract_hh(received_dttm)) * 3600 + ' +
+    '(date_extract_mm(on_scene_dttm) - date_extract_mm(received_dttm)) * 60 + ' +
+    '(date_extract_ss(on_scene_dttm) - date_extract_ss(received_dttm)))'
+  )
+  const slowPredicate = `(on_scene_dttm IS NULL OR (${SAME_DAY} AND ${RESPONSE_SECONDS} > 600))`
 
   const curWhere = `received_dttm >= '${curStart}' AND received_dttm <= '${curEnd}' AND ${slowPredicate}`
   const priWhere = `received_dttm >= '${priStart}' AND received_dttm <= '${priEnd}' AND ${slowPredicate}`
