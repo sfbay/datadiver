@@ -51,7 +51,9 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
     lastFirstId.current = firstId
   }, [events])
 
-  const limited = events.slice(0, 80)
+  // Spec cap: 50 visible rows. Older events are accessible by scrolling
+  // a longer list later (Phase 3 polish); MVP keeps the rail short.
+  const limited = events.slice(0, 50)
 
   return (
     <aside

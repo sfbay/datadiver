@@ -5,15 +5,18 @@ interface Props {
 
 export default function ModeToggle({ mode, onChange }: Props) {
   return (
+    // Semantically a segmented control (two exclusive choices), not a
+    // tab pattern — tab pattern requires an associated tabpanel which
+    // isn't relevant here. role="group" + aria-pressed on each button
+    // is the correct ARIA shape and matches DatasetFilterChips.
     <div
       className="inline-flex border border-paper-300 dark:border-espresso-600 rounded-md overflow-hidden font-mono text-[10px] tracking-wider"
-      role="tablist"
+      role="group"
       aria-label="Last 48 mode"
     >
       <button
         type="button"
-        role="tab"
-        aria-selected={mode === 'flow'}
+        aria-pressed={mode === 'flow'}
         onClick={() => onChange('flow')}
         className={`
           px-3 py-1.5 transition-colors
@@ -26,8 +29,7 @@ export default function ModeToggle({ mode, onChange }: Props) {
       </button>
       <button
         type="button"
-        role="tab"
-        aria-selected={mode === 'hotspots'}
+        aria-pressed={mode === 'hotspots'}
         onClick={() => onChange('hotspots')}
         className={`
           px-3 py-1.5 transition-colors border-l border-paper-300 dark:border-espresso-600

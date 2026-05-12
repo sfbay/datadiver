@@ -87,11 +87,18 @@ export default function FlowMapLayer({ map, events, onEventClick }: Props) {
       const ev = events.find((x) => x.id === id)
       if (ev && onClickRef.current) onClickRef.current(ev)
     }
+    // Named handlers so we can remove ALL three on cleanup — without this
+    // the cursor listeners accumulated on every events update (a slow leak
+    // that grew with each 2-minute 911-realtime poll cycle).
+    const enterHandler = () => { map.getCanvas().style.cursor = 'pointer' }
+    const leaveHandler = () => { map.getCanvas().style.cursor = '' }
     map.on('click', LAYER_ID, handler)
-    map.on('mouseenter', LAYER_ID, () => { map.getCanvas().style.cursor = 'pointer' })
-    map.on('mouseleave', LAYER_ID, () => { map.getCanvas().style.cursor = '' })
+    map.on('mouseenter', LAYER_ID, enterHandler)
+    map.on('mouseleave', LAYER_ID, leaveHandler)
     return () => {
       map.off('click', LAYER_ID, handler)
+      map.off('mouseenter', LAYER_ID, enterHandler)
+      map.off('mouseleave', LAYER_ID, leaveHandler)
     }
   }, [map, events])
 

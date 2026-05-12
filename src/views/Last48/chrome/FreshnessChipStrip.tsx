@@ -40,15 +40,17 @@ function lagColor(ms: number | null): string {
 }
 
 export default function FreshnessChipStrip({ freshness }: { freshness: FreshnessMap }) {
+  // Render ALL datasets always (with em-dash placeholders for null lag
+  // values) so the chrome is visually stable across initial load and
+  // partial-fetch states. The strip should never flash blank.
   const datasets = Object.keys(freshness) as DatasetId[]
-  const present = datasets.filter((id) => freshness[id].maxEventTime != null)
 
   return (
     <div className="flex flex-col gap-1 font-mono text-[10px] leading-tight">
       {/* Row 1 — DATA REFRESH */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className="text-paper-600 tracking-wider">DATA REFRESH</span>
-        {present.map((id) => {
+        {datasets.map((id) => {
           const f = freshness[id]
           return (
             <span key={`refresh-${id}`} className="flex items-baseline gap-1">
@@ -62,7 +64,7 @@ export default function FreshnessChipStrip({ freshness }: { freshness: Freshness
       {/* Row 2 — EVENT LAG */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className="text-paper-600 tracking-wider">EVENT LAG&nbsp;&nbsp;</span>
-        {present.map((id) => {
+        {datasets.map((id) => {
           const f = freshness[id]
           return (
             <span key={`lag-${id}`} className="flex items-baseline gap-1">

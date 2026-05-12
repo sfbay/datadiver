@@ -215,11 +215,24 @@ export function useLast48Window(opts: {
 
         const now = Date.now()
 
-        // Normalise and merge into byId (replace Map reference for snapshot stability)
+        // Normalise and merge into byId (replace Map reference for snapshot stability).
+        // Also extract `data_loaded_at` per row so we can compute a real
+        // `rowsUpdatedAt` for the freshness chip strip — Socrata stamps each
+        // row with the timestamp at which it was last published to the API.
         const newById = new Map(state.byId)
         let maxEventTime = 0
+        let maxLoadedAt = 0
 
         for (const row of rows) {
+          // Pull rows-updated timestamp from the dataset metadata column.
+          // Both `data_loaded_at` and `data_as_of` appear in different SF
+          // datasets; try the more common one first.
+          const loadedRaw = row.data_loaded_at ?? row.data_as_of
+          if (typeof loadedRaw === 'string') {
+            const ms = Date.parse(loadedRaw)
+            if (!isNaN(ms) && ms > maxLoadedAt) maxLoadedAt = ms
+          }
+
           const event = normalizeEvent(datasetId, row)
           if (!event) continue
           newById.set(event.id, event)
@@ -234,12 +247,14 @@ export function useLast48Window(opts: {
           }
         }
 
-        // Update freshness
+        // Update freshness — refreshLagMs derives from the row's own
+        // data_loaded_at, NOT "now". Falls back to null when the dataset
+        // doesn't expose the field.
         const freshDatasetEntry: DatasetFreshness = {
-          rowsUpdatedAt: now,
+          rowsUpdatedAt: maxLoadedAt > 0 ? maxLoadedAt : null,
           maxEventTime: maxEventTime > 0 ? maxEventTime : null,
           eventLagMs: maxEventTime > 0 ? now - maxEventTime : null,
-          refreshLagMs: 0,
+          refreshLagMs: maxLoadedAt > 0 ? now - maxLoadedAt : null,
           error: null,
         }
 
