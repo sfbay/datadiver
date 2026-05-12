@@ -40,9 +40,10 @@ export default function ParkingRevenue() {
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
   const mapHandleRef = useRef<MapHandle>(null)
 
-  // Rehydrate detail from URL on mount
+  // Rehydrate detail from URL on mount.
+  // Supports both ?detail= (internal share links) and ?meter= (Last48EventPeek deep links).
   useEffect(() => {
-    const detailParam = searchParams.get('detail')
+    const detailParam = searchParams.get('detail') || searchParams.get('meter')
     if (detailParam) setSelectedMeter(detailParam)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
