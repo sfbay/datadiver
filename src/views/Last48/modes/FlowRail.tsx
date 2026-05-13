@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { NormalizedEvent, DatasetId } from '@/types/last48'
+import type { KeyboardEvent } from 'react'
 
 const DATASET_ABBREV: Record<DatasetId, { label: string; color: string }> = {
   '911-realtime':      { label: '911',   color: '#616a96' },
@@ -40,7 +41,7 @@ interface Props {
 export default function FlowRail({ events, selectedId, onSelect }: Props) {
   const scrollRef    = useRef<HTMLDivElement>(null)
   const lastFirstId  = useRef<string | null>(null)
-  const selectedRowRef = useRef<HTMLButtonElement | null>(null)
+  const selectedRowRef = useRef<HTMLDivElement | null>(null)
 
   // When a new event appears at the top, scroll the rail to the top
   useEffect(() => {
@@ -77,6 +78,31 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
     ? [...top50, selectedOutsideTop].sort((a, b) => b.receivedAt - a.receivedAt)
     : top50
 
+  // ------------------------------------------------------------------
+  // Keyboard navigation — listbox pattern (WAI-ARIA 1.1)
+  // Esc is handled at the FlowMode level (document keydown) so it works
+  // regardless of where focus currently sits.
+  // ------------------------------------------------------------------
+  function handleKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End', 'Enter'].includes(e.key)) return
+    e.preventDefault()
+
+    const idx = limited.findIndex((ev) => ev.id === selectedId)
+    if (e.key === 'ArrowDown') {
+      const next = idx < 0 ? 0 : Math.min(idx + 1, limited.length - 1)
+      if (limited[next]) onSelect(limited[next])
+    }
+    if (e.key === 'ArrowUp') {
+      const next = idx < 0 ? 0 : Math.max(idx - 1, 0)
+      if (limited[next]) onSelect(limited[next])
+    }
+    if (e.key === 'Home' && limited[0]) onSelect(limited[0])
+    if (e.key === 'End' && limited[limited.length - 1]) onSelect(limited[limited.length - 1])
+    // Enter is a no-op here — the popover opens automatically on selection
+    // change (driven by selectedEvent in FlowMode). We catch it only to
+    // preventDefault so it doesn't trigger native scroll or button activation.
+  }
+
   return (
     <aside
       className="w-[clamp(180px,16vw,260px)] border-l border-paper-200/40 dark:border-espresso-700 dark:bg-espresso-950/60 flex flex-col"
@@ -91,7 +117,15 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
         </p>
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-2 py-2 flex flex-col gap-1">
+      <div
+        ref={scrollRef}
+        role="listbox"
+        aria-label="48-hour event log"
+        aria-activedescendant={selectedId ? `flow-row-${selectedId}` : undefined}
+        tabIndex={0}
+        onKeyDown={handleKeyDown}
+        className="flex-1 overflow-y-auto px-2 py-2 flex flex-col gap-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ochre-500 focus-visible:ring-inset"
+      >
         {limited.map((ev) => {
           const meta  = DATASET_ABBREV[ev.datasetId]
           const isSel = ev.id === selectedId
@@ -100,21 +134,25 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
           // soft ochre tint + ring on selected (vs aggressive cream
           // inversion). py-2 px-3 rounded-lg matches the ER row chrome
           // so the rails feel like siblings across the app.
+          //
+          // role="option" + aria-selected: WAI-ARIA listbox semantics.
+          // <button> is replaced with <div role="option"> because using
+          // <button> inside role="listbox" produces invalid ARIA markup.
           return (
-            <button
+            <div
               key={ev.id}
-              type="button"
+              id={`flow-row-${ev.id}`}
+              role="option"
+              aria-selected={isSel}
               ref={isSel ? selectedRowRef : undefined}
               onClick={() => onSelect(ev)}
               className={`
                 relative text-left py-2 px-3 rounded-lg font-mono text-[10px]
                 leading-tight cursor-pointer transition-all duration-200
-                focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ochre-500
                 ${isSel
                   ? 'bg-ochre-500/10 ring-1 ring-ochre-500/30 text-paper-200 dark:text-paper-200'
                   : 'text-paper-700 dark:text-paper-400 hover:bg-white/80 dark:hover:bg-white/[0.04]'}
               `}
-              aria-pressed={isSel}
             >
               <div className="flex items-baseline gap-1.5">
                 <span className="tabular-nums text-paper-500 dark:text-paper-600">
@@ -137,7 +175,7 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
                   {ev.headline}
                 </div>
               )}
-            </button>
+            </div>
           )
         })}
         {events.length === 0 && (

@@ -1,6 +1,6 @@
 // src/views/Last48/modes/FlowMode.tsx
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import mapboxgl from 'mapbox-gl'
 import MapView from '@/components/maps/MapView'
 import type { Last48WindowResult } from '@/hooks/useLast48Window'
@@ -54,6 +54,24 @@ export default function FlowMode({ window48, datasets }: Props) {
   // Close — clears selection entirely
   // ------------------------------------------------------------------
   const handleClose = useCallback(() => setSelectedEvent(null), [])
+
+  // ------------------------------------------------------------------
+  // Page-level Esc handler — deselects from anywhere on the page,
+  // regardless of where focus currently sits. Coexists with
+  // DetailPanelShell's own Esc handler (both call setSelectedEvent(null),
+  // which is idempotent). Only active when there is a selection to clear.
+  // ------------------------------------------------------------------
+  useEffect(() => {
+    if (!selectedEvent) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setSelectedEvent(null)
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [selectedEvent])
 
   return (
     <div className="absolute inset-0 flex">
