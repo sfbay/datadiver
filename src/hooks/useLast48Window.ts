@@ -196,7 +196,12 @@ export function useLast48Window(opts: {
       state.isPollingByDataset = { ...state.isPollingByDataset, [datasetId]: true }
       notify()
 
-      const cutoff = new Date(Date.now() - WINDOW_MS).toISOString()
+      // Socrata SoQL date comparison rejects the trailing `.000Z` produced
+      // by `toISOString()` — it parses that form as a text literal and
+      // throws `query.soql.type-mismatch`. The convention across DataDiver
+      // (see useResponseEquity, useTrendBaseline, etc.) is the trimmed
+      // form `YYYY-MM-DDTHH:MM:SS`.
+      const cutoff = new Date(Date.now() - WINDOW_MS).toISOString().slice(0, 19)
       const dateField = DATE_FIELD[datasetId]
       const registryKey = DATASET_REGISTRY_KEY[datasetId]
 

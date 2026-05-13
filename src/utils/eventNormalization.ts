@@ -13,17 +13,43 @@ interface RawCoord {
   latitude?: string | number
 }
 
-/** Parse "POINT (lon lat)" Socrata strings to { lon, lat }, or undefined */
+/**
+ * Parse a Socrata location field to { lon, lat }, or undefined.
+ *
+ * Socrata serves geo in two formats depending on the dataset:
+ *   1. "POINT (lon lat)" WKT string (Fire/EMS Dispatch, 311 Cases)
+ *   2. GeoJSON object { type: 'Point', coordinates: [lon, lat] }
+ *      (911 Realtime / Historical use this for `intersection_point`)
+ */
 function parsePoint(p: unknown): { lon: number; lat: number } | undefined {
-  if (typeof p !== 'string') return undefined
-  const match = p.match(/POINT\s*\(\s*(-?\d+\.?\d*)\s+(-?\d+\.?\d*)\s*\)/i)
-  if (!match) return undefined
-  return { lon: parseFloat(match[1]), lat: parseFloat(match[2]) }
+  if (typeof p === 'string') {
+    const match = p.match(/POINT\s*\(\s*(-?\d+\.?\d*)\s+(-?\d+\.?\d*)\s*\)/i)
+    if (match) return { lon: parseFloat(match[1]), lat: parseFloat(match[2]) }
+    return undefined
+  }
+  if (p && typeof p === 'object') {
+    const obj = p as { type?: string; coordinates?: unknown }
+    if (
+      obj.type === 'Point' &&
+      Array.isArray(obj.coordinates) &&
+      obj.coordinates.length >= 2 &&
+      typeof obj.coordinates[0] === 'number' &&
+      typeof obj.coordinates[1] === 'number'
+    ) {
+      return { lon: obj.coordinates[0], lat: obj.coordinates[1] }
+    }
+  }
+  return undefined
 }
 
-/** Pull a coord pair from either Socrata `point` shape or scattered fields */
+/** Pull a coord pair from any of Socrata's location-field aliases */
 function coords(row: Record<string, unknown>, fields: RawCoord = {}): { lon?: number; lat?: number } {
-  const point = parsePoint(row.point) || parsePoint(row.case_location) || parsePoint(row.intersection)
+  const point =
+    parsePoint(row.point) ||
+    parsePoint(row.case_location) ||
+    parsePoint(row.intersection) ||
+    parsePoint(row.intersection_point) || // 911 Realtime/Historical
+    parsePoint(row.location)
   if (point) return { lon: point.lon, lat: point.lat }
   const lon = fields.longitude ?? row.longitude ?? row.long ?? row.lon
   const lat = fields.latitude ?? row.latitude ?? row.lat
