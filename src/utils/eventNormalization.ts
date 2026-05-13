@@ -76,6 +76,14 @@ export function normalizeEvent(
       const t = parseTimestamp(row.received_datetime)
       if (!t) return null
       const c = coords(row)
+      // 911 lifecycle: presence of a `disposition` field marks the call as
+      // closed (the call had a final outcome assigned: CIT, ADV, NCR, etc.).
+      // ~79% of 911 calls close within 48h; the remaining open calls are
+      // editorially interesting — they represent active or long-duration
+      // situations.
+      const disposition = typeof row.disposition === 'string' ? row.disposition : undefined
+      const closeAt = parseTimestamp(row.close_datetime)?.ms
+      const state: 'open' | 'closed' = disposition ? 'closed' : 'open'
       return {
         id: `${datasetId}:${row.cad_number ?? row.dispatch_id ?? row.id}`,
         datasetId,
@@ -86,6 +94,9 @@ export function normalizeEvent(
         latitude: c.lat,
         callType: row.call_type_final_desc as string | undefined,
         headline: (row.call_type_final_desc as string | undefined) ?? '911 dispatch',
+        state,
+        closeAt,
+        disposition,
         raw: row,
       }
     }

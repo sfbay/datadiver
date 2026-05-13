@@ -4,7 +4,7 @@ import type { NormalizedEvent, DatasetId } from '@/types/last48'
 const DATASET_ABBREV: Record<DatasetId, { label: string; color: string }> = {
   '911-realtime':      { label: '911',   color: '#616a96' },
   'fire-ems-dispatch': { label: 'FIRE',  color: '#b85a33' },
-  '311-cases':         { label: '311',   color: '#d47149' },
+  '311-cases':         { label: '311',   color: '#7a9954' },  // moss — civic upkeep
   '911-historical':    { label: '911H',  color: '#5c9693' },
   'parking-revenue':   { label: 'PARK',  color: '#d4a435' },
   'police-incidents':  { label: 'SFPD',  color: '#963e30' },

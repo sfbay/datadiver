@@ -31,7 +31,7 @@ const DATASET_META: Record<DatasetId, { label: string; color: string; exploreLab
   },
   '311-cases': {
     label: '311 CASE',
-    color: '#d47149',
+    color: '#7a9954',  // moss — civic upkeep
     exploreLabel: 'Explore 311 Cases',
     exploreRoute: (id) => `/cases-311?case=${encodeURIComponent(id)}`,
     exploreCaption: 'See all 311 service requests, filter by type and neighborhood.',
