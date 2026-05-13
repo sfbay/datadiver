@@ -88,11 +88,12 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
               ref={isSel ? selectedRowRef : undefined}
               onClick={() => onSelect(ev)}
               className={`
-                relative text-left px-2 py-1.5 rounded font-mono text-[10px]
-                transition-colors duration-100
+                relative text-left px-2 py-1.5 rounded-sm font-mono text-[10px]
+                leading-tight transition-colors duration-150
+                focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ochre-500
                 ${isSel
-                  ? 'bg-paper-100 dark:bg-paper-200 text-espresso-950'
-                  : 'hover:bg-paper-200/40 dark:hover:bg-espresso-800/60 text-paper-700 dark:text-paper-400'}
+                  ? 'bg-paper-200 text-espresso-900 shadow-[inset_0_0_0_1px_rgba(184,90,51,0.4)]'
+                  : 'hover:bg-paper-100/40 dark:hover:bg-espresso-800/60 text-paper-700 dark:text-paper-400'}
               `}
               aria-pressed={isSel}
             >
@@ -100,7 +101,7 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
               {isSel && (
                 <span
                   aria-hidden
-                  className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l"
+                  className="absolute left-0 top-0 bottom-0 w-1 rounded-l"
                   style={{ backgroundColor: meta.color }}
                 />
               )}
@@ -113,7 +114,7 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
                 </span>
                 <span
                   className="font-bold tracking-wider"
-                  style={{ color: isSel ? meta.color : meta.color }}
+                  style={{ color: meta.color }}
                 >
                   {meta.label}
                 </span>

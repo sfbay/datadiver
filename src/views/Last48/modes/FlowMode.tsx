@@ -7,6 +7,7 @@ import type { Last48WindowResult } from '@/hooks/useLast48Window'
 import type { DatasetId, NormalizedEvent } from '@/types/last48'
 import FlowMapLayer from './FlowMapLayer'
 import FlowRail from './FlowRail'
+import FlowSelectedRadar from './FlowSelectedRadar'
 import Last48EventCard from '../detail/Last48EventCard'
 
 interface Props {
@@ -72,6 +73,9 @@ export default function FlowMode({ window48, datasets }: Props) {
             loading 48h window…
           </div>
         )}
+
+        {/* Radar sweep overlay — tracks selected dot's screen position via map.project */}
+        <FlowSelectedRadar map={map} event={selectedEvent} />
 
         {/* Detail panel — top-right, fixed via DetailPanelShell */}
         <Last48EventCard
