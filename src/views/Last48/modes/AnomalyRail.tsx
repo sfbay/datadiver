@@ -1,8 +1,11 @@
 // src/views/Last48/modes/AnomalyRail.tsx
 //
-// Right-rail ranked list for HOTSPOTS mode. Shows the top-30
-// neighborhoods by |z-score| with their σ value, color-coded by
-// magnitude. Click a row → handler flies the map / opens peek.
+// Right-rail ranked list for HOTSPOTS mode. Always shows the top-N
+// neighborhoods by |z-score|, even when none clear the notable
+// threshold — so a reader can SEE what was checked and what the
+// closest-to-anomaly values actually are. A dashed divider marks
+// the |σ| ≥ 0.5 threshold; rows above are "notable," rows below
+// are "ordinary fluctuation."
 
 function zColor(z: number): string {
   if (z >= 2)   return '#963e30'  // brick — strong above
@@ -12,6 +15,8 @@ function zColor(z: number): string {
   return '#7a5f42'                 // muted — normal
 }
 
+const NOTABLE_THRESHOLD = 0.5
+
 interface Props {
   /** Combined per-neighborhood z-score (averaged across selected datasets) */
   combinedAnomalies: Record<string, number>
@@ -20,10 +25,20 @@ interface Props {
 }
 
 export default function AnomalyRail({ combinedAnomalies, selectedNeighborhood, onSelect }: Props) {
-  const entries = Object.entries(combinedAnomalies)
-    .filter(([, z]) => Math.abs(z) >= 0.5)
+  // Sort everything we have by absolute z; always show at least top-12
+  // even when below threshold, so the reader can verify what was checked.
+  const allSorted = Object.entries(combinedAnomalies)
     .sort(([, a], [, b]) => Math.abs(b) - Math.abs(a))
-    .slice(0, 30)
+
+  const notable = allSorted.filter(([, z]) => Math.abs(z) >= NOTABLE_THRESHOLD)
+  // If we have plenty of notable, render those (max 30); otherwise
+  // pad with closest-to-threshold so the rail isn't empty.
+  const TARGET_VISIBLE = 12
+  const visible = notable.length >= TARGET_VISIBLE
+    ? notable.slice(0, 30)
+    : allSorted.slice(0, Math.max(TARGET_VISIBLE, notable.length))
+
+  const checkedCount = allSorted.length
 
   return (
     <aside className="w-[clamp(180px,16vw,260px)] border-l border-paper-200/40 dark:border-espresso-700 bg-paper-50/40 dark:bg-espresso-950/60 flex flex-col">
@@ -34,14 +49,30 @@ export default function AnomalyRail({ combinedAnomalies, selectedNeighborhood, o
         <p className="font-mono text-[9px] text-paper-500 dark:text-paper-600 mt-0.5">
           vs typical 48h window · 12-week baseline
         </p>
+        <p className="font-mono text-[9px] text-paper-500 dark:text-paper-600 mt-0.5">
+          {notable.length > 0
+            ? `${notable.length} notable · ${checkedCount} checked`
+            : `0 notable · ${checkedCount} checked`}
+        </p>
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 py-2 flex flex-col gap-1">
-        {entries.map(([nh, z], idx) => {
+        {visible.length === 0 && (
+          <div className="text-paper-500 dark:text-paper-600 text-center italic py-6 text-[10px]">
+            baseline still loading…
+          </div>
+        )}
+
+        {visible.flatMap(([nh, z], idx) => {
           const isSel = nh === selectedNeighborhood
-          return (
+          const isNotable = Math.abs(z) >= NOTABLE_THRESHOLD
+          const prevWasNotable =
+            idx === 0 ? true : Math.abs(visible[idx - 1][1]) >= NOTABLE_THRESHOLD
+          const showDivider = !isNotable && prevWasNotable && notable.length > 0
+
+          const row = (
             <button
-              key={nh}
+              key={`row-${nh}`}
               type="button"
               onClick={() => onSelect(nh)}
               className={`
@@ -49,6 +80,7 @@ export default function AnomalyRail({ combinedAnomalies, selectedNeighborhood, o
                 ${isSel
                   ? 'bg-ochre-500/20 ring-1 ring-ochre-500'
                   : 'hover:bg-paper-200/40 dark:hover:bg-espresso-800/60'}
+                ${!isNotable ? 'opacity-60' : ''}
               `}
               aria-pressed={isSel}
             >
@@ -61,12 +93,30 @@ export default function AnomalyRail({ combinedAnomalies, selectedNeighborhood, o
               </span>
             </button>
           )
+
+          if (!showDivider) return [row]
+
+          return [
+            <div
+              key="threshold-divider"
+              className="my-1 flex items-center gap-2 text-paper-500 dark:text-paper-600"
+            >
+              <span className="flex-1 border-t border-dashed border-paper-300 dark:border-espresso-700" />
+              <span className="font-mono text-[8px] tracking-widest uppercase">
+                below notable (|σ| &lt; {NOTABLE_THRESHOLD})
+              </span>
+              <span className="flex-1 border-t border-dashed border-paper-300 dark:border-espresso-700" />
+            </div>,
+            row,
+          ]
         })}
-        {entries.length === 0 && (
-          <div className="text-paper-500 dark:text-paper-600 text-center italic py-6">
-            no notable anomalies right now
-          </div>
-        )}
+      </div>
+
+      {/* Methodology footer */}
+      <div className="px-3 py-2 border-t border-paper-200/40 dark:border-espresso-800 font-mono text-[8px] leading-snug text-paper-500 dark:text-paper-600">
+        Compares this 48h to 42 typical 48h windows over the trailing 12 weeks
+        (per neighborhood per dataset, averaged). Threshold for "notable":
+        |σ| ≥ {NOTABLE_THRESHOLD}.
       </div>
     </aside>
   )
