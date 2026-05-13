@@ -38,22 +38,38 @@ const PAPER_ANCHOR        = '#d4c8a8'  // paper-300 — the "drying-out" fill ta
 const STROKE_FRESH_OPEN   = '#f5ecd9'  // cream — open-event stroke at age 0
 const STROKE_AGED_OPEN    = '#a8926a'  // paper-500 — open-event stroke at full age
 
-// Hours-since-event boundaries and the corresponding mix coefficient. Both
-// the fill (toward PAPER_ANCHOR) and the open-event stroke (cream → paper)
-// use the same coefficient so they age in lockstep.
+// Effective-age bucket boundaries (hours since each dataset's natural
+// freshness floor) and the corresponding mix coefficient. Both the fill
+// (toward PAPER_ANCHOR) and the open-event stroke (cream → paper) use the
+// same coefficient so they age in lockstep.
 //
 // Asymmetric curve: most of the tonal motion happens in the first 24 hours
 // (where editorial differentiation matters — fresh news vs day-old news);
 // the curve flattens in the second 24h so aged events still hold enough
-// pigment identity to remain readable as their dataset. Without this
-// flattening, late-stage events from different datasets converged toward
-// near-identical paper tones and lost cross-dataset distinguishability.
+// pigment identity to remain readable as their dataset.
 const AGE_BUCKETS: Array<{ maxHours: number; mix: number }> = [
-  { maxHours: 6,  mix: 0    },  // < 6h    — fresh (full pigment)
-  { maxHours: 18, mix: 0.45 },  // 6–18h   — recent (strongest single jump)
-  { maxHours: 30, mix: 0.60 },  // 18–30h  — settling
-  { maxHours: 48, mix: 0.70 },  // 30–48h  — aged (preserves pigment identity)
+  { maxHours: 6,  mix: 0    },  // freshness floor → +6h     — fresh
+  { maxHours: 18, mix: 0.45 },  // +6h → +18h                — recent
+  { maxHours: 30, mix: 0.60 },  // +18h → +30h               — settling
+  { maxHours: 48, mix: 0.70 },  // +30h → +48h               — aged
 ]
+
+// Per-dataset "freshness floor" — SF data publishes with intrinsic lag, so
+// the freshest event we ever fetch for each dataset is already several hours
+// old. Subtracting the baseline before bucketing means "fresh" tone (0% mix)
+// is reserved for events at the freshest end of each dataset's natural
+// delivery range — not at literal age 0, which never occurs.
+//
+// Values are inferred from observed event-lag floors (see brief). These are
+// static; if a dataset's typical lag drifts substantially, recalibrate.
+const LATENCY_BASELINE_MS: Record<DatasetId, number> = {
+  '911-realtime':       7 * 60 * 60 * 1000,
+  'fire-ems-dispatch': 12 * 60 * 60 * 1000,
+  '311-cases':         15 * 60 * 60 * 1000,
+  '911-historical':    15 * 60 * 60 * 1000,
+  'parking-revenue':   17 * 60 * 60 * 1000,
+  'police-incidents':  39 * 60 * 60 * 1000,
+}
 
 function hexToRgb(hex: string): [number, number, number] {
   const h = hex.replace('#', '')
@@ -78,11 +94,21 @@ function mixHex(a: string, b: string, t: number): string {
   )
 }
 
+/**
+ * Resolve the bucket for an event's effective age — `rawAgeMs` minus the
+ * dataset's freshness-floor baseline. An event right at the dataset's floor
+ * (the freshest one we can practically see) lands in bucket 0.
+ */
+function ageBucket(datasetId: DatasetId, rawAgeMs: number) {
+  const effectiveMs = Math.max(0, rawAgeMs - LATENCY_BASELINE_MS[datasetId])
+  const hours = effectiveMs / (60 * 60 * 1000)
+  return AGE_BUCKETS.find((b) => hours < b.maxHours) ?? AGE_BUCKETS[AGE_BUCKETS.length - 1]
+}
+
 /** Resolve the dataset's pigment shifted by age toward the paper anchor. */
-function ageColor(datasetId: DatasetId, ageMs: number): string {
+function ageColor(datasetId: DatasetId, rawAgeMs: number): string {
   const base = COLORS[datasetId]
-  const hours = ageMs / (60 * 60 * 1000)
-  const bucket = AGE_BUCKETS.find((b) => hours < b.maxHours) ?? AGE_BUCKETS[AGE_BUCKETS.length - 1]
+  const bucket = ageBucket(datasetId, rawAgeMs)
   if (bucket.mix === 0) return base
   return mixHex(base, PAPER_ANCHOR, bucket.mix)
 }
@@ -92,9 +118,8 @@ function ageColor(datasetId: DatasetId, ageMs: number): string {
  * paper-tone. Closed events render a dark espresso stroke regardless of age
  * (their stroke recedes by virtue of low contrast against the basemap).
  */
-function ageStrokeOpen(ageMs: number): string {
-  const hours = ageMs / (60 * 60 * 1000)
-  const bucket = AGE_BUCKETS.find((b) => hours < b.maxHours) ?? AGE_BUCKETS[AGE_BUCKETS.length - 1]
+function ageStrokeOpen(datasetId: DatasetId, rawAgeMs: number): string {
+  const bucket = ageBucket(datasetId, rawAgeMs)
   if (bucket.mix === 0) return STROKE_FRESH_OPEN
   return mixHex(STROKE_FRESH_OPEN, STROKE_AGED_OPEN, bucket.mix)
 }
@@ -144,7 +169,7 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect }: Prop
             // Stroke ages in lockstep with the fill for OPEN events so the
             // cream halo doesn't bleach the ramp. Closed events keep the
             // dark espresso stroke (which recedes naturally).
-            strokeColor: isOpen ? ageStrokeOpen(age) : '#1e140d',
+            strokeColor: isOpen ? ageStrokeOpen(e.datasetId, age) : '#1e140d',
             age,
             isOpen,
             headline: e.headline ?? '',
