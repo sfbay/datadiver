@@ -106,6 +106,21 @@
   --color-cream-400: #c7b288;
   --color-cream-500: #a8926a;
 
+  /* Paper scale — warm parchment text-on-espresso ramp, used across
+     the Last48 view and any espresso-surface component. Parallels the
+     cream scale but covers text-on-dark use cases (paper-100 = brightest
+     text, paper-900 = near-espresso, dimmed text). */
+  --color-paper-50:  #fbf6ea;   /* cream-50 — very pale tint */
+  --color-paper-100: #f5ecd9;   /* cream-100 — bright parchment */
+  --color-paper-200: #ecdfc5;   /* cream-200 — slightly dimmed */
+  --color-paper-300: #d9c9a7;   /* paper-300 per tokens.css */
+  --color-paper-400: #c7b288;   /* cream-400 — mid parchment */
+  --color-paper-500: #a8926a;   /* paper-500 per tokens.css — muted mid */
+  --color-paper-600: #8a7050;   /* between paper-500 and paper-700 */
+  --color-paper-700: #7a5f42;   /* paper-700 per tokens.css — dark muted */
+  --color-paper-800: #5e4831;   /* espresso-500 — dark text on light */
+  --color-paper-900: #4b3827;   /* espresso-600 — near-espresso */
+
   /* Typography — Fraunces display, Roboto Serif body, Space Mono labels. */
   --font-display: "Fraunces", "Roboto Serif", Georgia, serif;
   --font-sans: "Roboto Serif", Georgia, serif;

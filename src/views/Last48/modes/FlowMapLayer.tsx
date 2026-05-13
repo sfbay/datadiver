@@ -135,6 +135,7 @@ interface Props {
 
 const SOURCE_ID        = 'last48-flow-events'
 const LAYER_ID         = 'last48-flow-events-circles'
+const DIM_MASK_ID      = 'last48-flow-events-dim-mask'
 const SELECTED_RING_ID = 'last48-flow-events-selected-ring'
 
 export default function FlowMapLayer({ map, events, selectedId, onSelect }: Props) {
@@ -208,6 +209,24 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect }: Prop
       },
     } as mapboxgl.AnyLayer,
     {
+      // Dim mask — semi-transparent espresso overlay on non-selected dots,
+      // creating the "spotlight" effect when an event is selected.
+      // Default filter matches nothing; updated via setFilter when selectedId changes.
+      id: DIM_MASK_ID,
+      type: 'circle',
+      source: SOURCE_ID,
+      filter: ['==', ['get', 'id'], '__none__'],
+      paint: {
+        'circle-color': '#1e140d',  // espresso-900 — matches dark basemap
+        'circle-radius': [
+          'interpolate', ['linear'], ['zoom'],
+          10, ['case', ['get', 'isOpen'], 4, 3],
+          14, ['case', ['get', 'isOpen'], 7, 6],
+        ],
+        'circle-opacity': 0.55,
+      },
+    } as mapboxgl.AnyLayer,
+    {
       // Selected-event ring — cream stroke circle, larger than the base dot.
       // Rendered above the base circles so it acts as a visible selection ring.
       // Filter is set to match no features initially; updated via setFilter below.
@@ -232,17 +251,26 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect }: Prop
   useMapLayer(map, SOURCE_ID, geojson, layers)
 
   // -------------------------------------------------------------------------
-  // Sync the selected-ring filter to selectedId without a full layer rebuild.
+  // Sync the selected-ring + dim-mask filters to selectedId without a
+  // full layer rebuild.
   // -------------------------------------------------------------------------
   useEffect(() => {
     if (!map) return
-    // Poll until the layer is available (useMapLayer may still be retrying).
+    // Poll until both layers are available (useMapLayer may still be retrying).
     const trySet = () => {
       try {
         if (map.getLayer(SELECTED_RING_ID)) {
+          // Selected ring: matches only the selected event
           map.setFilter(SELECTED_RING_ID, [
             '==', ['get', 'id'], selectedId ?? '',
           ])
+          // Dim mask: matches every feature EXCEPT the selected one,
+          // but only activates when something is selected.
+          map.setFilter(DIM_MASK_ID,
+            selectedId
+              ? ['!=', ['get', 'id'], selectedId]
+              : ['==', ['get', 'id'], '__none__']
+          )
           return true
         }
       } catch (_err) {
