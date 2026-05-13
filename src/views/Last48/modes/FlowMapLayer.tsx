@@ -34,15 +34,21 @@ const COLORS: Record<DatasetId, string> = {
 // (continuous interpolation smears the gradient illegibly on a dark basemap).
 // ─────────────────────────────────────────────────────────────────────────────
 
-const PAPER_ANCHOR = '#d4c8a8'  // paper-300 — the "drying-out" target tone
+const PAPER_ANCHOR        = '#d4c8a8'  // paper-300 — the "drying-out" fill target
+const STROKE_FRESH_OPEN   = '#f5ecd9'  // cream — open-event stroke at age 0
+const STROKE_AGED_OPEN    = '#a8926a'  // paper-500 — open-event stroke at full age
 
-// Hours-since-event boundaries and the corresponding mix toward PAPER_ANCHOR.
-// 0% mix = pure dataset pigment; 75% mix = mostly paper-toned.
+// Hours-since-event boundaries and the corresponding mix coefficient. Both
+// the fill (toward PAPER_ANCHOR) and the open-event stroke (cream → paper)
+// use the same coefficient so they age in lockstep. Bumped from the initial
+// 0.30/0.55/0.75 set because the cream stroke on every dot was attenuating
+// the fill ramp — needed a steeper curve plus stroke-aging to let old events
+// truly recede.
 const AGE_BUCKETS: Array<{ maxHours: number; mix: number }> = [
   { maxHours: 6,  mix: 0    },  // < 6h    — fresh
-  { maxHours: 18, mix: 0.30 },  // 6–18h   — recent
-  { maxHours: 30, mix: 0.55 },  // 18–30h  — settling
-  { maxHours: 48, mix: 0.75 },  // 30–48h  — aged
+  { maxHours: 18, mix: 0.40 },  // 6–18h   — recent
+  { maxHours: 30, mix: 0.65 },  // 18–30h  — settling
+  { maxHours: 48, mix: 0.85 },  // 30–48h  — aged
 ]
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -75,6 +81,18 @@ function ageColor(datasetId: DatasetId, ageMs: number): string {
   const bucket = AGE_BUCKETS.find((b) => hours < b.maxHours) ?? AGE_BUCKETS[AGE_BUCKETS.length - 1]
   if (bucket.mix === 0) return base
   return mixHex(base, PAPER_ANCHOR, bucket.mix)
+}
+
+/**
+ * Open-event stroke color, aged toward paper. Fresh = bright cream; aged =
+ * paper-tone. Closed events render a dark espresso stroke regardless of age
+ * (their stroke recedes by virtue of low contrast against the basemap).
+ */
+function ageStrokeOpen(ageMs: number): string {
+  const hours = ageMs / (60 * 60 * 1000)
+  const bucket = AGE_BUCKETS.find((b) => hours < b.maxHours) ?? AGE_BUCKETS[AGE_BUCKETS.length - 1]
+  if (bucket.mix === 0) return STROKE_FRESH_OPEN
+  return mixHex(STROKE_FRESH_OPEN, STROKE_AGED_OPEN, bucket.mix)
 }
 
 interface Props {
@@ -112,14 +130,19 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect }: Prop
       .filter((e) => e.longitude != null && e.latitude != null)
       .map((e) => {
         const age = now - e.receivedAt
+        const isOpen = e.state === undefined || e.state === 'open'
         return {
           type: 'Feature',
           properties: {
             id: e.id,
             datasetId: e.datasetId,
             color: ageColor(e.datasetId, age),
+            // Stroke ages in lockstep with the fill for OPEN events so the
+            // cream halo doesn't bleach the ramp. Closed events keep the
+            // dark espresso stroke (which recedes naturally).
+            strokeColor: isOpen ? ageStrokeOpen(age) : '#1e140d',
             age,
-            isOpen: e.state === undefined || e.state === 'open',
+            isOpen,
             headline: e.headline ?? '',
           },
           geometry: { type: 'Point', coordinates: [e.longitude!, e.latitude!] },
@@ -149,9 +172,7 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect }: Prop
           ['interpolate', ['linear'], ['get', 'age'], 0, 1.0, 172800000, 0.55],
           ['interpolate', ['linear'], ['get', 'age'], 0, 0.7, 172800000, 0.25],
         ],
-        'circle-stroke-color': [
-          'case', ['get', 'isOpen'], '#f5ecd9', '#1e140d',
-        ],
+        'circle-stroke-color': ['get', 'strokeColor'],
         'circle-stroke-width': [
           'case', ['get', 'isOpen'], 1, 0.5,
         ],
