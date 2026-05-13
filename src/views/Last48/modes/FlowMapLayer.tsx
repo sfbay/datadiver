@@ -26,6 +26,57 @@ const COLORS: Record<DatasetId, string> = {
   'police-incidents':  '#963e30',
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Tonal age ramp — within each pigment family, events fade toward a paper-tone
+// anchor as they age. Preserves the dataset's pigment identity (so the eye
+// still reads "this is 911" from a glance) while making age legible as a
+// tonal shift. Four discrete buckets across the 48h window for clarity
+// (continuous interpolation smears the gradient illegibly on a dark basemap).
+// ─────────────────────────────────────────────────────────────────────────────
+
+const PAPER_ANCHOR = '#d4c8a8'  // paper-300 — the "drying-out" target tone
+
+// Hours-since-event boundaries and the corresponding mix toward PAPER_ANCHOR.
+// 0% mix = pure dataset pigment; 75% mix = mostly paper-toned.
+const AGE_BUCKETS: Array<{ maxHours: number; mix: number }> = [
+  { maxHours: 6,  mix: 0    },  // < 6h    — fresh
+  { maxHours: 18, mix: 0.30 },  // 6–18h   — recent
+  { maxHours: 30, mix: 0.55 },  // 18–30h  — settling
+  { maxHours: 48, mix: 0.75 },  // 30–48h  — aged
+]
+
+function hexToRgb(hex: string): [number, number, number] {
+  const h = hex.replace('#', '')
+  return [
+    parseInt(h.slice(0, 2), 16),
+    parseInt(h.slice(2, 4), 16),
+    parseInt(h.slice(4, 6), 16),
+  ]
+}
+
+function rgbToHex(r: number, g: number, b: number): string {
+  return '#' + [r, g, b].map((c) => Math.round(c).toString(16).padStart(2, '0')).join('')
+}
+
+function mixHex(a: string, b: string, t: number): string {
+  const [ar, ag, ab] = hexToRgb(a)
+  const [br, bg, bb] = hexToRgb(b)
+  return rgbToHex(
+    ar + (br - ar) * t,
+    ag + (bg - ag) * t,
+    ab + (bb - ab) * t,
+  )
+}
+
+/** Resolve the dataset's pigment shifted by age toward the paper anchor. */
+function ageColor(datasetId: DatasetId, ageMs: number): string {
+  const base = COLORS[datasetId]
+  const hours = ageMs / (60 * 60 * 1000)
+  const bucket = AGE_BUCKETS.find((b) => hours < b.maxHours) ?? AGE_BUCKETS[AGE_BUCKETS.length - 1]
+  if (bucket.mix === 0) return base
+  return mixHex(base, PAPER_ANCHOR, bucket.mix)
+}
+
 interface Props {
   map: mapboxgl.Map | null
   events: NormalizedEvent[]
@@ -49,22 +100,31 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect }: Prop
   selectedIdRef.current = selectedId
 
   // Build GeoJSON from events that have coordinates.
+  //
+  // The dot's `color` is age-shifted: dataset pigment mixed toward the paper
+  // anchor by age bucket. Fresh events render in full pigment; older events
+  // visually "dry out" toward paper tone. Re-evaluated whenever `events`
+  // changes (every poll), which is sufficient — bucket boundaries are wider
+  // than any poll interval.
   const geojson = useMemo<GeoJSON.FeatureCollection>(() => {
     const now = Date.now()
     const features: GeoJSON.Feature[] = events
       .filter((e) => e.longitude != null && e.latitude != null)
-      .map((e) => ({
-        type: 'Feature',
-        properties: {
-          id: e.id,
-          datasetId: e.datasetId,
-          color: COLORS[e.datasetId],
-          age: now - e.receivedAt,
-          isOpen: e.state === undefined || e.state === 'open',
-          headline: e.headline ?? '',
-        },
-        geometry: { type: 'Point', coordinates: [e.longitude!, e.latitude!] },
-      }))
+      .map((e) => {
+        const age = now - e.receivedAt
+        return {
+          type: 'Feature',
+          properties: {
+            id: e.id,
+            datasetId: e.datasetId,
+            color: ageColor(e.datasetId, age),
+            age,
+            isOpen: e.state === undefined || e.state === 'open',
+            headline: e.headline ?? '',
+          },
+          geometry: { type: 'Point', coordinates: [e.longitude!, e.latitude!] },
+        }
+      })
     return { type: 'FeatureCollection', features }
   }, [events])
 
