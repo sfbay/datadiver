@@ -2,7 +2,15 @@
 //
 // Mapbox layer rendering one circle per NormalizedEvent.
 // Older events fade in opacity across the 48h window.
-// Click handler delegates to parent via onEventClick.
+//
+// Interaction model:
+//   onHover — fired after 350ms dwell on a dot (avoids flicker on dense pan).
+//             Caller should open the hover-box in non-pinned mode.
+//   onPin   — fired on click. Caller should open the hover-box in pinned mode.
+//
+// The mouseleave handler on the map cancels any pending dwell timer but does
+// NOT dismiss the popover — the popover manages its own dismissal via its
+// internal exit-timer (hover-box) or Esc / outside-click (pinned).
 
 import { useEffect, useMemo, useRef } from 'react'
 import mapboxgl from 'mapbox-gl'
@@ -21,15 +29,23 @@ const COLORS: Record<DatasetId, string> = {
 interface Props {
   map: mapboxgl.Map | null
   events: NormalizedEvent[]
-  onEventClick?: (event: NormalizedEvent) => void
+  /** Called after 350ms hover dwell — open the hover-box (not pinned). */
+  onHover?: (event: NormalizedEvent, anchor: { x: number; y: number }) => void
+  /** Called on click — open the hover-box pinned. */
+  onPin?: (event: NormalizedEvent, anchor: { x: number; y: number }) => void
 }
 
 const SOURCE_ID = 'last48-flow-events'
-const LAYER_ID = 'last48-flow-events-circles'
+const LAYER_ID  = 'last48-flow-events-circles'
 
-export default function FlowMapLayer({ map, events, onEventClick }: Props) {
-  const onClickRef = useRef(onEventClick)
-  onClickRef.current = onEventClick
+export default function FlowMapLayer({ map, events, onHover, onPin }: Props) {
+  // Stable refs so event handlers don't need to re-attach when props change.
+  const eventsRef  = useRef(events)
+  const onHoverRef = useRef(onHover)
+  const onPinRef   = useRef(onPin)
+  eventsRef.current  = events
+  onHoverRef.current = onHover
+  onPinRef.current   = onPin
 
   // Build GeoJSON from events that have coordinates.
   //
@@ -97,31 +113,71 @@ export default function FlowMapLayer({ map, events, onEventClick }: Props) {
 
   useMapLayer(map, SOURCE_ID, geojson, layers)
 
-  // Click handler — wire once when the map is ready
+  // -------------------------------------------------------------------------
+  // Interaction handlers — dwell timer for hover; immediate for click
+  // -------------------------------------------------------------------------
   useEffect(() => {
     if (!map) return
-    const handler = (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
+
+    const dwellTimerRef: { current: ReturnType<typeof setTimeout> | null } = { current: null }
+    const lastHoverIdRef: { current: string | null } = { current: null }
+
+    const onMouseEnter = (
+      e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] },
+    ) => {
+      map.getCanvas().style.cursor = 'pointer'
       const feature = e.features?.[0]
       if (!feature) return
       const id = feature.properties?.id as string | undefined
       if (!id) return
-      const ev = events.find((x) => x.id === id)
-      if (ev && onClickRef.current) onClickRef.current(ev)
+      if (lastHoverIdRef.current === id) return  // already dwelling on this one
+
+      lastHoverIdRef.current = id
+      if (dwellTimerRef.current) clearTimeout(dwellTimerRef.current)
+
+      dwellTimerRef.current = setTimeout(() => {
+        const ev = eventsRef.current.find((x) => x.id === id)
+        if (!ev || ev.longitude == null || ev.latitude == null) return
+        const point = map.project([ev.longitude, ev.latitude])
+        onHoverRef.current?.(ev, { x: point.x, y: point.y })
+      }, 350)
     }
-    // Named handlers so we can remove ALL three on cleanup — without this
-    // the cursor listeners accumulated on every events update (a slow leak
-    // that grew with each 2-minute 911-realtime poll cycle).
-    const enterHandler = () => { map.getCanvas().style.cursor = 'pointer' }
-    const leaveHandler = () => { map.getCanvas().style.cursor = '' }
-    map.on('click', LAYER_ID, handler)
-    map.on('mouseenter', LAYER_ID, enterHandler)
-    map.on('mouseleave', LAYER_ID, leaveHandler)
+
+    const onMouseLeave = () => {
+      map.getCanvas().style.cursor = ''
+      lastHoverIdRef.current = null
+      if (dwellTimerRef.current) {
+        clearTimeout(dwellTimerRef.current)
+        dwellTimerRef.current = null
+      }
+      // NOTE: we do NOT dismiss the popover here. The popover's own internal
+      // exit-timer (100ms) handles the dot→popover gap traversal gracefully.
+    }
+
+    const onClick = (
+      e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] },
+    ) => {
+      const feature = e.features?.[0]
+      if (!feature) return
+      const id = feature.properties?.id as string | undefined
+      if (!id) return
+      const ev = eventsRef.current.find((x) => x.id === id)
+      if (!ev || ev.longitude == null || ev.latitude == null) return
+      const point = map.project([ev.longitude, ev.latitude])
+      onPinRef.current?.(ev, { x: point.x, y: point.y })
+    }
+
+    map.on('mouseenter', LAYER_ID, onMouseEnter)
+    map.on('mouseleave', LAYER_ID, onMouseLeave)
+    map.on('click',      LAYER_ID, onClick)
+
     return () => {
-      map.off('click', LAYER_ID, handler)
-      map.off('mouseenter', LAYER_ID, enterHandler)
-      map.off('mouseleave', LAYER_ID, leaveHandler)
+      map.off('mouseenter', LAYER_ID, onMouseEnter)
+      map.off('mouseleave', LAYER_ID, onMouseLeave)
+      map.off('click',      LAYER_ID, onClick)
+      if (dwellTimerRef.current) clearTimeout(dwellTimerRef.current)
     }
-  }, [map, events])
+  }, [map])  // intentionally stable — refs handle live props
 
   return null
 }
