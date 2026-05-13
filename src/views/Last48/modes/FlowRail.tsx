@@ -64,14 +64,14 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
 
   return (
     <aside
-      className="w-[clamp(180px,16vw,260px)] border-l border-paper-200/40 dark:border-espresso-700 bg-paper-50/40 dark:bg-espresso-950/60 flex flex-col"
+      className="w-[clamp(180px,16vw,260px)] border-l border-paper-200/40 dark:border-espresso-700 dark:bg-espresso-950/60 flex flex-col"
       aria-label="Recent events"
     >
       <div className="px-3 pt-3 pb-2 border-b border-paper-200/40 dark:border-espresso-800">
         <h2 className="font-mono text-[10px] tracking-widest text-paper-600 dark:text-paper-500">
           FRESHEST
         </h2>
-        <p className="font-mono text-[9px] text-paper-500 dark:text-paper-600 mt-0.5">
+        <p className="font-mono text-[9px] text-paper-500 dark:text-paper-600 mt-0.5 tabular-nums">
           {events.length} events · 48h window
         </p>
       </div>

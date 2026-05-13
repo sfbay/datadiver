@@ -58,7 +58,7 @@ export default function Last48() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <header className="px-[clamp(16px,3vw,64px)] pt-6 pb-3 flex items-baseline gap-6 flex-wrap z-20">
-        <div className="flex-1 min-w-[200px]">
+        <div className="flex-1 min-w-[200px] max-w-[640px]">
           <h1 className="font-display text-xl md:text-2xl tracking-tight">
             <span className="text-paper-500">── LIVE · </span>
             <span>The Last 48</span>
@@ -67,7 +67,13 @@ export default function Last48() {
             What's flowed in across SF in the past 48 hours
           </p>
         </div>
-        <div className="flex items-center gap-3">
+
+        {/* Pull-quote margin note — visible only at lg+ to avoid cluttering narrow viewports */}
+        <aside className="hidden lg:block max-w-[280px] font-display italic text-[11px] leading-snug text-paper-500 dark:text-paper-400 border-l border-paper-300 dark:border-espresso-700 pl-3">
+          Public data update on different cycles with varying latency, as shown.
+        </aside>
+
+        <div className="flex items-center gap-3 ml-auto">
           <ModeToggle mode={mode} onChange={setMode} />
           <a
             href="?mode=kiosk"

@@ -47,6 +47,14 @@ export default function FreshnessChipStrip({ freshness }: { freshness: Freshness
 
   return (
     <div className="flex flex-col gap-1 font-mono text-[10px] leading-tight">
+      {/* Editorial eyebrow + trailing rule */}
+      <div className="flex items-baseline gap-2 mb-1">
+        <span className="font-display italic text-[10px] text-paper-500 tracking-normal">
+          Per-source freshness
+        </span>
+        <span className="flex-1 border-t border-paper-300/40 dark:border-espresso-700 mb-1" />
+      </div>
+
       {/* Row 1 — DATA REFRESH */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className="text-paper-600 tracking-wider">DATA REFRESH</span>
@@ -55,7 +63,7 @@ export default function FreshnessChipStrip({ freshness }: { freshness: Freshness
           return (
             <span key={`refresh-${id}`} className="flex items-baseline gap-1">
               <span className="text-paper-700 dark:text-paper-500">{DATASET_LABELS[id]}</span>
-              <span className={lagColor(f.refreshLagMs)}>{formatLag(f.refreshLagMs)}</span>
+              <span className={`${lagColor(f.refreshLagMs)} tabular-nums`}>{formatLag(f.refreshLagMs)}</span>
             </span>
           )
         })}
@@ -69,7 +77,7 @@ export default function FreshnessChipStrip({ freshness }: { freshness: Freshness
           return (
             <span key={`lag-${id}`} className="flex items-baseline gap-1">
               <span className="text-paper-700 dark:text-paper-500">{DATASET_LABELS[id]}</span>
-              <span className={lagColor(f.eventLagMs)}>{formatLag(f.eventLagMs)}</span>
+              <span className={`${lagColor(f.eventLagMs)} tabular-nums`}>{formatLag(f.eventLagMs)}</span>
             </span>
           )
         })}

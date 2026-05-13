@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'react'
+
 interface Props {
   mode: 'flow' | 'hotspots'
   onChange: (next: 'flow' | 'hotspots') => void
@@ -19,26 +21,30 @@ export default function ModeToggle({ mode, onChange }: Props) {
         aria-pressed={mode === 'flow'}
         onClick={() => onChange('flow')}
         className={`
-          px-3 py-1.5 transition-colors
+          relative px-3 py-1.5 transition-colors overflow-hidden
           ${mode === 'flow'
-            ? 'bg-ochre-500 text-espresso-900'
+            ? 'bg-ochre-500 text-espresso-900 glow-host'
             : 'text-paper-600 dark:text-paper-400 hover:bg-paper-100 dark:hover:bg-espresso-700'}
         `}
+        style={mode === 'flow' ? ({ ['--glow' as string]: '#f5ecd9' } as CSSProperties) : undefined}
       >
-        FLOW
+        {mode === 'flow' && <span className="glow-corner is-sm" aria-hidden />}
+        <span className="relative">FLOW</span>
       </button>
       <button
         type="button"
         aria-pressed={mode === 'hotspots'}
         onClick={() => onChange('hotspots')}
         className={`
-          px-3 py-1.5 transition-colors border-l border-paper-300 dark:border-espresso-600
+          relative px-3 py-1.5 transition-colors overflow-hidden border-l border-paper-300 dark:border-espresso-600
           ${mode === 'hotspots'
-            ? 'bg-ochre-500 text-espresso-900'
+            ? 'bg-ochre-500 text-espresso-900 glow-host'
             : 'text-paper-600 dark:text-paper-400 hover:bg-paper-100 dark:hover:bg-espresso-700'}
         `}
+        style={mode === 'hotspots' ? ({ ['--glow' as string]: '#f5ecd9' } as CSSProperties) : undefined}
       >
-        HOTSPOTS
+        {mode === 'hotspots' && <span className="glow-corner is-sm" aria-hidden />}
+        <span className="relative">HOTSPOTS</span>
       </button>
     </div>
   )
