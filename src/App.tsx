@@ -19,6 +19,7 @@ import CampaignFinance from '@/views/CampaignFinance/CampaignFinance'
 import Demographics from '@/views/Demographics/Demographics'
 import CityBudget from '@/views/CityBudget/CityBudget'
 import LiveFeeds from '@/views/LiveFeeds/LiveFeeds'
+import Last48 from '@/views/Last48/Last48'
 import Elections from '@/views/Elections/Elections'
 import Neighborhood from '@/views/Neighborhood/Neighborhood'
 
@@ -51,7 +52,7 @@ export default function App() {
           <Route path="/city-budget" element={<CityBudget />} />
           <Route path="/elections" element={<Elections />} />
           <Route path="/neighborhood" element={<Neighborhood />} />
-          <Route path="/live-feeds" element={<LiveFeeds />} />
+          <Route path="/live-feeds" element={<Last48 />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppShell>

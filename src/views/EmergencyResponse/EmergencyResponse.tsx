@@ -88,9 +88,10 @@ export default function EmergencyResponse() {
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
   const mapHandleRef = useRef<MapHandle>(null)
 
-  // Deep-link: rehydrate detail panel + neighborhood from URL on mount
+  // Deep-link: rehydrate detail panel + neighborhood from URL on mount.
+  // Supports both ?detail= (internal share links) and ?incident= (Last48EventPeek deep links).
   useEffect(() => {
-    const detailParam = searchParams.get('detail')
+    const detailParam = searchParams.get('detail') || searchParams.get('incident')
     if (detailParam) setSelectedIncident(detailParam)
     const neighborhoodParam = searchParams.get('neighborhood')
     if (neighborhoodParam) setSelectedNeighborhood(neighborhoodParam)

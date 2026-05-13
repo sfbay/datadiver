@@ -56,9 +56,10 @@ export default function Cases311() {
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
   const mapHandleRef = useRef<MapHandle>(null)
 
-  // Deep-link: rehydrate detail panel from URL on mount
+  // Deep-link: rehydrate detail panel from URL on mount.
+  // Supports both ?detail= (internal share links) and ?case= (Last48EventPeek deep links).
   useEffect(() => {
-    const detailParam = searchParams.get('detail')
+    const detailParam = searchParams.get('detail') || searchParams.get('case')
     if (detailParam) setSelected311Case(detailParam)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
