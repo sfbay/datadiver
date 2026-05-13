@@ -259,6 +259,111 @@ All three loaded from Google Fonts CDN via `<link>` in `index.html`. Type-stack 
 
 When in doubt about where to capture knowledge: architectural facts → CLAUDE.md, focused domain workflows → skills, evolving project state → memory files.
 
+## ER-style sidebar row pattern (cross-view standard)
+
+When a rail or sidebar row can be selected, the standard selection treatment is a **soft tint + ring**, NOT a cream-on-espresso inversion. This is the pattern established in EmergencyResponse and adopted in The Last 48's FlowRail:
+
+```tsx
+className={`
+  py-2 px-3 rounded-lg transition-colors duration-150
+  ${isSelected
+    ? 'bg-ochre-500/10 ring-1 ring-ochre-500/30'
+    : 'hover:bg-paper-100/30 dark:hover:bg-espresso-800/50'
+  }
+`}
+```
+
+The `bg-{pigment}-500/10` + `ring-1 ring-{pigment}-500/30` pattern adapts to any pigment. Use the dataset's own pigment (ochre for Last 48 FLOW, terracotta for emergency, etc.) so selection reinforces the dataset identity.
+
+**When the cream-inversion is appropriate:** only for listbox-style components where strong contrast is required for accessibility (see "Listbox keyboard nav" below and the design-doc history). In most sidebar contexts the soft tint is sufficient and less visually jarring at the density DataDiver operates at.
+
+## Listbox keyboard nav recipe
+
+When a scroll-list needs keyboard navigation (e.g., FlowRail), implement it as a proper `listbox`:
+
+```tsx
+<div
+  role="listbox"
+  aria-label="48-hour event log"
+  aria-activedescendant={selectedId ? `flow-row-${selectedId}` : undefined}
+  tabIndex={0}
+  onKeyDown={handleKeyDown}
+  className="... focus-visible:ring-1 focus-visible:ring-ochre-500"
+>
+  {rows.map((row) => (
+    <div
+      key={row.id}
+      id={`flow-row-${row.id}`}
+      role="option"
+      aria-selected={row.id === selectedId}
+      onClick={() => onSelect(row)}
+    >
+      {/* row content */}
+    </div>
+  ))}
+</div>
+```
+
+Keyboard handler covers `ArrowDown` / `ArrowUp` / `Home` / `End` / `Enter` (Enter is a no-op or confirmation, not required for selection since selection auto-updates on navigation) / `Escape`.
+
+**Esc must be hoisted to page level.** Put an `Escape` listener on `document` in the parent mode component so Esc deselects regardless of what element currently has focus — this is critical when the user has clicked the map or somewhere else on the page.
+
+Don't use `role="tab"` for a segmented control / mode toggle. `role="group"` + `aria-pressed` on each button is the correct ARIA pattern for a segmented control.
+
+## AP-style date helper
+
+DataDiver formats dates in AP style — the same convention used by SF print and broadcast journalism:
+
+- Weekday abbreviated with period: `Mon.`, `Tue.`, `Wed.`, `Thu.`, `Fri.`, `Sat.`, `Sun.`
+- Months with 5 or fewer letters **unabbreviated**: `March`, `April`, `May`, `June`, `July`
+- Months with 6+ letters abbreviated with period: `Jan.`, `Feb.`, `Aug.`, `Sept.`, `Oct.`, `Nov.`, `Dec.`
+
+Reference implementation: `AP_MONTH` lookup and `formatApDate` function in `src/views/Last48/detail/Last48EventCard.tsx`. Extract to `src/utils/format.ts` when a second consumer arises — don't duplicate.
+
+## Sonar-ping emanation pattern
+
+For indicating "this event/dot is selected and alive," use **two staggered concentric rings** scaling outward and fading — the sonar-ping / emanate pattern. This replaced the rotating radar-wedge approach, which reads as "scanning" rather than "here, alive."
+
+The `@keyframes emanate` animation lives in `src/index.css`. Two rings share the same keyframe with a 0.95s stagger (second ring's `animation-delay`):
+
+```tsx
+// Two <circle> elements, same center, staggered animation
+<circle
+  cx="40" cy="40" r="10"
+  className="origin-center"
+  style={{
+    transformBox: 'view-box',         // REQUIRED — see SVG transform-box note
+    transformOrigin: 'center center',
+    animation: 'emanate 1.9s ease-out infinite',
+  }}
+/>
+<circle
+  cx="40" cy="40" r="10"
+  style={{
+    transformBox: 'view-box',
+    transformOrigin: 'center center',
+    animation: 'emanate 1.9s ease-out 0.95s infinite',
+  }}
+/>
+```
+
+**`transform-box: view-box` is required** on SVG elements using `transform-origin` — without it, the origin references the element's own bounding box, not the SVG viewport, and the animation appears off-center. See `[[svg-transform-box-view-box]]`.
+
+All emanation animations respect `motion-reduce:hidden` on the wrapper SVG.
+
+## Tonal age ramp helpers
+
+When encoding event age as dot color in FLOW mode, use the helpers in `src/views/Last48/modes/FlowMapLayer.tsx`:
+
+- `LATENCY_BASELINE_MS` — per-dataset floor: 911 Realtime 7h, Fire/EMS 12h, 311 15h, etc. Subtract from raw age before bucketing.
+- `AGE_BUCKETS` — asymmetric `[0, 0.45, 0.60, 0.70]` t-values across 4 buckets. Heaviest tonal shift in the first 18h post-floor.
+- `ageColor(datasetId, rawAgeMs)` — returns hex, fades toward `#d4c8a8` (paper anchor).
+- `ageStrokeOpen(datasetId, rawAgeMs)` — same fade for open-event stroke color.
+
+Do not calibrate against absolute age 0 — no SF dataset has events younger than its natural floor. Calibrating to the floor means the "freshest" tone actually appears on real data.
+
+See also `[[sf-data-latency-baseline]]` and `[[tonal-age-ramp-pattern]]` for the editorial rationale.
+
 ## The tile-and-chart consistency self-check
 
 **Before committing any new visualization**, verify that the chart's current-FY value matches the corresponding stat tile or text display. This is how the AIR Airport Commission timeline bug was caught in April 2026 — the tiles said `$863K` and the chart peaked at `$100K` because the hook only queried the tagged layer. Each piece was individually correct but together they told contradictory stories.
