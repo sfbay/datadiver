@@ -43,7 +43,12 @@ export default function FlowSelectedRadar({ map, event }: Props) {
 
   return (
     <svg
-      className="pointer-events-none fixed z-20 motion-reduce:hidden"
+      // `absolute` (not `fixed`) so the SVG positions relative to the
+      // FlowMode map container's `relative` ancestor. map.project() returns
+      // coords in the map's canvas space — those align with absolute
+      // positioning inside that container but NOT with viewport-fixed
+      // positioning (which would offset by the sidebar + header).
+      className="pointer-events-none absolute z-20 motion-reduce:hidden"
       width="96"
       height="96"
       viewBox="0 0 96 96"
