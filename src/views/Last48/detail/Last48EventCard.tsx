@@ -262,21 +262,30 @@ export default function Last48EventCard({ event, onClose }: Props) {
               </p>
             )}
 
-            {/* ── Compact field rows ────────────────────────────────── */}
-            {fields.length > 0 && (
-              <ul className="mb-3 flex flex-col gap-1">
-                {fields.map(([label, value]) => (
-                  <li key={label} className="flex justify-between items-baseline gap-3">
-                    <span className="font-display italic text-[11px] text-paper-500 dark:text-paper-600 shrink-0">
-                      {label}
-                    </span>
-                    <span className="font-mono text-[11px] text-paper-200 dark:text-paper-300 tabular-nums text-right truncate">
-                      {value}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
+            {/* ── Compact field rows ──────────────────────────────────
+                Render only fields with real values. Em-dash placeholder
+                rows waste vertical space on lifecycle-incomplete events
+                (OPEN 911 calls have no disposition yet; new 311 cases
+                lack agency, etc.). Visual hierarchy: tiny mono-caps label
+                recedes, the value reads as the data. */}
+            {(() => {
+              const populated = fields.filter(([, v]) => v !== '—' && v.trim() !== '')
+              if (populated.length === 0) return null
+              return (
+                <ul className="mb-3 flex flex-col gap-1.5">
+                  {populated.map(([label, value]) => (
+                    <li key={label} className="flex justify-between items-baseline gap-3">
+                      <span className="font-mono uppercase tracking-[0.14em] text-[9px] text-paper-600 dark:text-paper-600 shrink-0 pt-0.5">
+                        {label}
+                      </span>
+                      <span className="font-mono text-[13px] text-paper-100 dark:text-paper-100 tabular-nums text-right truncate leading-tight">
+                        {value}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )
+            })()}
 
             {/* ── Double-rule divider ───────────────────────────────── */}
             <div className="border-t border-paper-200/20 dark:border-espresso-700/60 mb-px" />
