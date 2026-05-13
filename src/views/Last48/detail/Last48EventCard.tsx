@@ -29,75 +29,94 @@ const DATASET_META: Record<
   '911-realtime': {
     label: '911 DISPATCH',
     color: '#616a96',
-    exploreLabel: 'Explore 911 Dispatch',
+    exploreLabel: 'Explore in 911 Dispatch',
     exploreCaption: 'Filter by this incident in the Dispatch view',
     exploreRoute: (id) => `/dispatch-911?incident=${encodeURIComponent(id)}`,
   },
   '911-historical': {
     label: '911 DISPATCH',
     color: '#5c9693',
-    exploreLabel: 'Explore 911 Dispatch',
+    exploreLabel: 'Explore in 911 Dispatch',
     exploreCaption: 'Filter by this incident in the Dispatch view',
     exploreRoute: (id) => `/dispatch-911?incident=${encodeURIComponent(id)}`,
   },
   'fire-ems-dispatch': {
-    label: 'FIRE / EMS',
+    label: 'FIRE/EMS',
     color: '#b85a33',
-    exploreLabel: 'Explore Fire / EMS',
+    exploreLabel: 'Explore in Fire/EMS',
     exploreCaption: 'See full response timeline in Emergency Response',
     exploreRoute: (id) => `/emergency-response?incident=${encodeURIComponent(id)}`,
   },
   '311-cases': {
     label: '311 CASE',
     color: '#7a9954',
-    exploreLabel: 'Explore 311 Cases',
+    exploreLabel: 'Explore in 311',
     exploreCaption: 'Browse related cases in the 311 view',
     exploreRoute: (id) => `/cases-311?case=${encodeURIComponent(id)}`,
   },
   'parking-revenue': {
     label: 'PARKING METER',
     color: '#d4a435',
-    exploreLabel: 'Explore Parking Revenue',
+    exploreLabel: 'Explore in Parking Revenue',
     exploreCaption: "See this meter's session history",
     exploreRoute: (id) => `/parking-revenue?meter=${encodeURIComponent(id)}`,
   },
   'police-incidents': {
     label: 'POLICE INCIDENT',
     color: '#963e30',
-    exploreLabel: 'Explore Crime Incidents',
+    exploreLabel: 'Explore in Crime',
     exploreCaption: 'See this report in the Crime view',
     exploreRoute: (id) => `/crime-incidents?incident=${encodeURIComponent(id)}`,
   },
 }
 
 // ---------------------------------------------------------------------------
-// Age formatting — returns magnitude + unit for the big-number headline
+// Age formatting — returns magnitude + a full-word "X ago" unit phrase
+// so the headline reads as one line: "43 minutes ago", "2 hours ago", etc.
 // ---------------------------------------------------------------------------
 
 function formatAge(receivedAt: number): { magnitude: string; unit: string } {
   const ms = Date.now() - receivedAt
-  const sec = Math.floor(ms / 1000)
-  if (sec < 90) return { magnitude: String(sec), unit: 's' }
+  const sec = Math.max(1, Math.floor(ms / 1000))
+  if (sec < 90) return { magnitude: String(sec), unit: sec === 1 ? 'second ago' : 'seconds ago' }
   const min = Math.floor(sec / 60)
-  if (min < 90) return { magnitude: String(min), unit: 'm' }
+  if (min < 90) return { magnitude: String(min), unit: min === 1 ? 'minute ago' : 'minutes ago' }
   const h = Math.floor(min / 60)
-  if (h < 48) return { magnitude: String(h), unit: 'h' }
+  if (h < 48) return { magnitude: String(h), unit: h === 1 ? 'hour ago' : 'hours ago' }
   const d = Math.floor(h / 24)
-  return { magnitude: String(d), unit: 'd' }
+  return { magnitude: String(d), unit: d === 1 ? 'day ago' : 'days ago' }
+}
+
+// AP-style month abbreviations: short forms get a period; months ≤5 letters
+// (March, April, May, June, July) remain unabbreviated.
+const AP_MONTH: Record<string, string> = {
+  January: 'Jan.',
+  February: 'Feb.',
+  March: 'March',
+  April: 'April',
+  May: 'May',
+  June: 'June',
+  July: 'July',
+  August: 'Aug.',
+  September: 'Sept.',
+  October: 'Oct.',
+  November: 'Nov.',
+  December: 'Dec.',
+}
+
+/** AP style: "Wed. May 13, 2026" — weekday abbreviated w/ period; month per AP_MONTH. */
+function formatApDate(ms: number): string {
+  const d = new Date(ms)
+  const weekday = d.toLocaleDateString('en-US', { weekday: 'short' }) // "Wed"
+  const monthLong = d.toLocaleDateString('en-US', { month: 'long' })   // "September"
+  const month = AP_MONTH[monthLong] ?? monthLong
+  return `${weekday}. ${month} ${d.getDate()}, ${d.getFullYear()}`
 }
 
 function formatTimeOfDay(ms: number): string {
   return new Date(ms).toLocaleTimeString('en-US', {
     hour: '2-digit', minute: '2-digit', hour12: false,
   })
-}
-
-function formatDayDate(ms: number): string {
-  const d = new Date(ms)
-  const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }) // "Tue"
-  const month   = d.toLocaleDateString('en-US', { month: 'short' })   // "May"
-  const day     = d.getDate()                                          // 13
-  return `${dayName} · ${month} ${day}`
 }
 
 // ---------------------------------------------------------------------------
@@ -189,25 +208,21 @@ export default function Last48EventCard({ event, onClose }: Props) {
         return (
           <>
             {/* ── Age headline ─────────────────────────────────────── */}
+            {/* Big italic Fraunces number + "X ago" unit phrase on the
+                same line. AP-style date + time of day on the next line.   */}
             <div className="mb-3 mt-1">
-              {/* Big age number — the "2h" treatment */}
-              <div className="flex items-baseline gap-0.5 leading-none">
-                <span className="font-display text-[48px] leading-none text-paper-100 dark:text-paper-100 tabular-nums">
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <span className="font-display italic text-[48px] leading-none text-paper-100 dark:text-paper-100 tabular-nums">
                   {magnitude}
                 </span>
-                <span className="font-mono text-[18px] text-paper-400 dark:text-paper-500 ml-0.5">
+                <span className="font-display italic text-[16px] text-paper-300 dark:text-paper-400 leading-tight">
                   {unit}
                 </span>
               </div>
 
-              {/* Time of day + "ago" label */}
-              <p className="font-mono text-[11px] text-paper-400 dark:text-paper-500 mt-0.5 tabular-nums">
-                ago · {formatTimeOfDay(event.receivedAt)} PT
-              </p>
-
-              {/* Day + date */}
-              <p className="font-mono text-[10px] text-paper-500 dark:text-paper-600 tabular-nums">
-                {formatDayDate(event.receivedAt)}
+              {/* AP-style date + time on a single subdued line below the headline */}
+              <p className="font-mono text-[11px] text-paper-400 dark:text-paper-500 mt-1.5 tabular-nums">
+                {formatApDate(event.receivedAt)} · {formatTimeOfDay(event.receivedAt)} PT
               </p>
             </div>
 
