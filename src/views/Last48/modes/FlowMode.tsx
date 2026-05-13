@@ -1,13 +1,13 @@
 // src/views/Last48/modes/FlowMode.tsx
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import mapboxgl from 'mapbox-gl'
 import MapView from '@/components/maps/MapView'
 import type { Last48WindowResult } from '@/hooks/useLast48Window'
 import type { DatasetId, NormalizedEvent } from '@/types/last48'
 import FlowMapLayer from './FlowMapLayer'
 import FlowRail from './FlowRail'
-import Last48EventPeek from '../detail/Last48EventPeek'
+import Last48EventCard from '../detail/Last48EventCard'
 
 interface Props {
   window48: Last48WindowResult
@@ -16,20 +16,43 @@ interface Props {
 
 export default function FlowMode({ window48, datasets }: Props) {
   const [map, setMap] = useState<mapboxgl.Map | null>(null)
-  const [selected, setSelected] = useState<NormalizedEvent | null>(null)
+
+  // Single source of truth for selection.
+  // Both the map dot ring and the rail row highlight derive from this.
+  const [selectedEvent, setSelectedEvent] = useState<NormalizedEvent | null>(null)
 
   const visibleEvents = window48.events.filter((e) => datasets.includes(e.datasetId))
 
-  const handleEventSelect = (ev: NormalizedEvent) => {
-    setSelected(ev)
+  // ------------------------------------------------------------------
+  // Map dot click — toggle: clicking the same dot again deselects
+  // ------------------------------------------------------------------
+  const handleMapSelect = useCallback((ev: NormalizedEvent) => {
+    setSelectedEvent((prev) => (prev?.id === ev.id ? null : ev))
+  }, [])
+
+  // ------------------------------------------------------------------
+  // Rail row click — select + fly to the event on the map
+  // ------------------------------------------------------------------
+  const handleRailSelect = useCallback((ev: NormalizedEvent) => {
+    // Toggle if already selected
+    if (selectedEvent?.id === ev.id) {
+      setSelectedEvent(null)
+      return
+    }
+    setSelectedEvent(ev)
     if (map && ev.longitude != null && ev.latitude != null) {
       map.flyTo({
         center: [ev.longitude, ev.latitude],
         zoom: 14,
-        duration: 800,
+        duration: 600,
       })
     }
-  }
+  }, [map, selectedEvent])
+
+  // ------------------------------------------------------------------
+  // Close — clears selection entirely
+  // ------------------------------------------------------------------
+  const handleClose = useCallback(() => setSelectedEvent(null), [])
 
   return (
     <div className="absolute inset-0 flex">
@@ -39,7 +62,8 @@ export default function FlowMode({ window48, datasets }: Props) {
           <FlowMapLayer
             map={map}
             events={visibleEvents}
-            onEventClick={handleEventSelect}
+            selectedId={selectedEvent?.id}
+            onSelect={handleMapSelect}
           />
         </MapView>
 
@@ -48,22 +72,20 @@ export default function FlowMode({ window48, datasets }: Props) {
             loading 48h window…
           </div>
         )}
+
+        {/* Detail panel — top-right, fixed via DetailPanelShell */}
+        <Last48EventCard
+          event={selectedEvent}
+          onClose={handleClose}
+        />
       </div>
 
-      {/* Right rail */}
+      {/* Right rail — must stay scrollable at all times */}
       <FlowRail
         events={visibleEvents}
-        selectedId={selected?.id}
-        onSelect={handleEventSelect}
+        selectedId={selectedEvent?.id}
+        onSelect={handleRailSelect}
       />
-
-      {/* Detail panel */}
-      {selected && (
-        <Last48EventPeek
-          event={selected}
-          onClose={() => setSelected(null)}
-        />
-      )}
     </div>
   )
 }

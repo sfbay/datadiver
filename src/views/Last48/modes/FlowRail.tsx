@@ -4,7 +4,7 @@ import type { NormalizedEvent, DatasetId } from '@/types/last48'
 const DATASET_ABBREV: Record<DatasetId, { label: string; color: string }> = {
   '911-realtime':      { label: '911',   color: '#616a96' },
   'fire-ems-dispatch': { label: 'FIRE',  color: '#b85a33' },
-  '311-cases':         { label: '311',   color: '#7a9954' },  // moss — civic upkeep
+  '311-cases':         { label: '311',   color: '#7a9954' },
   '911-historical':    { label: '911H',  color: '#5c9693' },
   'parking-revenue':   { label: 'PARK',  color: '#d4a435' },
   'police-incidents':  { label: 'SFPD',  color: '#963e30' },
@@ -18,7 +18,6 @@ function formatTime(receivedAt: number): string {
 
 function shortNeighborhood(name: string | undefined): string {
   if (!name) return ''
-  // Compact common SF neighborhoods to 3-5 char codes
   const map: Record<string, string> = {
     'Mission': 'MIS',
     'Tenderloin': 'TL',
@@ -39,8 +38,9 @@ interface Props {
 }
 
 export default function FlowRail({ events, selectedId, onSelect }: Props) {
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const lastFirstId = useRef<string | null>(null)
+  const scrollRef    = useRef<HTMLDivElement>(null)
+  const lastFirstId  = useRef<string | null>(null)
+  const selectedRowRef = useRef<HTMLButtonElement | null>(null)
 
   // When a new event appears at the top, scroll the rail to the top
   useEffect(() => {
@@ -51,8 +51,15 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
     lastFirstId.current = firstId
   }, [events])
 
-  // Spec cap: 50 visible rows. Older events are accessible by scrolling
-  // a longer list later (Phase 3 polish); MVP keeps the rail short.
+  // When selection changes (e.g. from a map click), scroll the selected row
+  // into view so the user can see the highlight in the rail.
+  useEffect(() => {
+    if (selectedRowRef.current) {
+      selectedRowRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    }
+  }, [selectedId])
+
+  // Spec cap: 50 visible rows.
   const limited = events.slice(0, 50)
 
   return (
@@ -71,37 +78,53 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-2 py-2 flex flex-col gap-1">
         {limited.map((ev) => {
-          const meta = DATASET_ABBREV[ev.datasetId]
+          const meta  = DATASET_ABBREV[ev.datasetId]
           const isSel = ev.id === selectedId
+
           return (
             <button
               key={ev.id}
               type="button"
+              ref={isSel ? selectedRowRef : undefined}
               onClick={() => onSelect(ev)}
               className={`
-                text-left px-2 py-1.5 rounded font-mono text-[10px]
+                relative text-left px-2 py-1.5 rounded font-mono text-[10px]
+                transition-colors duration-100
                 ${isSel
-                  ? 'bg-ochre-500/20 ring-1 ring-ochre-500'
-                  : 'hover:bg-paper-200/40 dark:hover:bg-espresso-800/60'}
+                  ? 'bg-paper-100 dark:bg-paper-200 text-espresso-950'
+                  : 'hover:bg-paper-200/40 dark:hover:bg-espresso-800/60 text-paper-700 dark:text-paper-400'}
               `}
               aria-pressed={isSel}
             >
+              {/* Dataset-pigment accent tab on left edge when selected */}
+              {isSel && (
+                <span
+                  aria-hidden
+                  className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l"
+                  style={{ backgroundColor: meta.color }}
+                />
+              )}
+
               <div className="flex items-baseline gap-1.5">
-                <span className="text-paper-500 dark:text-paper-600 tabular-nums">{formatTime(ev.receivedAt)}</span>
+                <span
+                  className={`tabular-nums ${isSel ? 'text-espresso-700' : 'text-paper-500 dark:text-paper-600'}`}
+                >
+                  {formatTime(ev.receivedAt)}
+                </span>
                 <span
                   className="font-bold tracking-wider"
-                  style={{ color: meta.color }}
+                  style={{ color: isSel ? meta.color : meta.color }}
                 >
                   {meta.label}
                 </span>
                 {ev.neighborhood && (
-                  <span className="text-ochre-700 dark:text-ochre-500">
+                  <span className={isSel ? 'text-espresso-600' : 'text-ochre-700 dark:text-ochre-500'}>
                     {shortNeighborhood(ev.neighborhood)}
                   </span>
                 )}
               </div>
               {ev.headline && (
-                <div className="text-paper-700 dark:text-paper-400 truncate mt-0.5 leading-tight">
+                <div className={`truncate mt-0.5 leading-tight ${isSel ? 'text-espresso-800' : 'text-paper-700 dark:text-paper-400'}`}>
                   {ev.headline}
                 </div>
               )}
