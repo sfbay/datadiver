@@ -12,6 +12,13 @@ import DateRangePicker from '@/components/filters/DateRangePicker'
 // across every surface; deliberately not interchangeable.
 const NAV_ITEMS = [
   {
+    path: '/live-feeds',
+    label: 'The Last 48',
+    shortLabel: 'LIVE',
+    description: "What's flowed in across SF in the past 48 hours",
+    accentColor: '#d4a435', // ochre-500 — live / warm yellow
+  },
+  {
     path: '/',
     label: 'Overview',
     shortLabel: 'OV',
@@ -116,7 +123,6 @@ const NAV_ITEMS = [
     description: 'Cross-dataset civic profiles',
     accentColor: '#5c9693', // teal-500 — Dana's color, civic-place
   },
-  { path: '/live-feeds', label: 'Live Feeds', shortLabel: 'LIVE', description: 'Scanner radio feeds — SFPD, SFFD, EMS', accentColor: '#d4a435' /* ochre-500 — live / warm yellow */ },
 ] as const
 
 export default function AppShell({ children }: { children: ReactNode }) {

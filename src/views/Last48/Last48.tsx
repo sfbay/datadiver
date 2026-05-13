@@ -58,7 +58,7 @@ export default function Last48() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <header className="px-[clamp(16px,3vw,64px)] pt-6 pb-3 flex items-baseline gap-6 flex-wrap z-20">
-        <div className="flex-1 min-w-[200px]">
+        <div className="flex-1 min-w-[200px] max-w-[640px]">
           <h1 className="font-display text-xl md:text-2xl tracking-tight">
             <span className="text-paper-500">── LIVE · </span>
             <span>The Last 48</span>
@@ -67,7 +67,8 @@ export default function Last48() {
             What's flowed in across SF in the past 48 hours
           </p>
         </div>
-        <div className="flex items-center gap-3">
+
+        <div className="flex items-center gap-3 ml-auto">
           <ModeToggle mode={mode} onChange={setMode} />
           <a
             href="?mode=kiosk"

@@ -36,7 +36,6 @@ export default function DatasetFilterChips({ selected, onChange }: Props) {
     <div className="flex flex-wrap gap-2 items-center">
       {allChips.map((id) => {
         const active = isSelected(id)
-        const isTier2 = TIER_2_DATASETS.includes(id)
         return (
           <button
             key={id}
@@ -47,8 +46,7 @@ export default function DatasetFilterChips({ selected, onChange }: Props) {
               border transition-colors
               ${active
                 ? 'border-transparent text-white shadow-sm'
-                : 'border-paper-300 dark:border-espresso-600 text-paper-600 dark:text-paper-400 hover:border-paper-500'}
-              ${isTier2 && !active ? 'opacity-60' : ''}
+                : 'opacity-50 border-paper-300 dark:border-espresso-600 text-paper-600 dark:text-paper-400 hover:border-paper-500 hover:opacity-75'}
             `}
             style={active ? { backgroundColor: COLORS[id] } : undefined}
             aria-pressed={active}

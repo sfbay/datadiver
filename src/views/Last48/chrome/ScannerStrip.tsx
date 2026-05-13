@@ -12,21 +12,27 @@ export default function ScannerStrip() {
   if (!DEFAULT_FEED) return null
 
   return (
-    <div className="h-12 px-[clamp(16px,3vw,64px)] flex items-center gap-3 font-mono text-[11px] text-paper-700 dark:text-paper-400 border-t border-paper-200/40 dark:border-espresso-700 bg-paper-50/30 dark:bg-espresso-900/40">
-      <span className="text-ochre-600 dark:text-ochre-500" aria-hidden>
-        📡
-      </span>
-      <span className="tracking-wider">SCANNER</span>
-      <span className="text-paper-500">·</span>
-      <span className="truncate">{DEFAULT_FEED.name}</span>
-      <a
-        href={DEFAULT_FEED.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="ml-auto px-3 py-1 rounded bg-moss-500 text-espresso-900 hover:bg-moss-400 text-[10px] tracking-wider"
-      >
-        ▶ TUNE IN
-      </a>
-    </div>
+    <>
+      {/* Double-rule top edge — newspaper-style section break */}
+      <div className="border-t border-paper-300/40 dark:border-espresso-700 mx-[clamp(16px,3vw,64px)]" />
+      <div className="border-t border-paper-300/20 dark:border-espresso-800 mx-[clamp(16px,3vw,64px)] mt-px" />
+
+      <div className="h-12 px-[clamp(16px,3vw,64px)] flex items-center gap-3 font-mono text-[11px] text-paper-700 dark:text-paper-400 bg-paper-50/20 dark:bg-espresso-900/30">
+        <span className="text-ochre-600 dark:text-ochre-500" aria-hidden>
+          📡
+        </span>
+        <span className="tracking-wider">SCANNER</span>
+        <span className="text-paper-500">·</span>
+        <span className="truncate">{DEFAULT_FEED.name}</span>
+        <a
+          href={DEFAULT_FEED.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ml-auto px-3 py-1 rounded border border-moss-500/60 text-moss-600 dark:text-moss-400 hover:bg-moss-500/10 hover:border-moss-500 text-[10px] tracking-wider transition-colors"
+        >
+          ▶ TUNE IN →
+        </a>
+      </div>
+    </>
   )
 }

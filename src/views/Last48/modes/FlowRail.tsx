@@ -59,19 +59,34 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
     }
   }, [selectedId])
 
-  // Spec cap: 50 visible rows.
-  const limited = events.slice(0, 50)
+  // Spec cap: 50 most-recent rows. BUT — if the selected event is older
+  // than the 50 most recent (the map shows thousands of events; a click
+  // can land anywhere in the 48h window), we MUST also render the
+  // selected event or the rail can't show the inversion at all. Find
+  // the selected event in the full buffer if it's outside the top 50
+  // and append it; sort keeps chronological order.
+  const top50 = events.slice(0, 50)
+  const selectedInTop = selectedId
+    ? top50.some((e) => e.id === selectedId)
+    : true
+  const selectedOutsideTop =
+    !selectedInTop && selectedId
+      ? events.find((e) => e.id === selectedId) ?? null
+      : null
+  const limited = selectedOutsideTop
+    ? [...top50, selectedOutsideTop].sort((a, b) => b.receivedAt - a.receivedAt)
+    : top50
 
   return (
     <aside
-      className="w-[clamp(180px,16vw,260px)] border-l border-paper-200/40 dark:border-espresso-700 bg-paper-50/40 dark:bg-espresso-950/60 flex flex-col"
+      className="w-[clamp(180px,16vw,260px)] border-l border-paper-200/40 dark:border-espresso-700 dark:bg-espresso-950/60 flex flex-col"
       aria-label="Recent events"
     >
       <div className="px-3 pt-3 pb-2 border-b border-paper-200/40 dark:border-espresso-800">
         <h2 className="font-mono text-[10px] tracking-widest text-paper-600 dark:text-paper-500">
           FRESHEST
         </h2>
-        <p className="font-mono text-[9px] text-paper-500 dark:text-paper-600 mt-0.5">
+        <p className="font-mono text-[9px] text-paper-500 dark:text-paper-600 mt-0.5 tabular-nums">
           {events.length} events · 48h window
         </p>
       </div>
@@ -81,6 +96,10 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
           const meta  = DATASET_ABBREV[ev.datasetId]
           const isSel = ev.id === selectedId
 
+          // Row styling emulates the EmergencyResponse sidebar pattern:
+          // soft ochre tint + ring on selected (vs aggressive cream
+          // inversion). py-2 px-3 rounded-lg matches the ER row chrome
+          // so the rails feel like siblings across the app.
           return (
             <button
               key={ev.id}
@@ -88,28 +107,17 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
               ref={isSel ? selectedRowRef : undefined}
               onClick={() => onSelect(ev)}
               className={`
-                relative text-left px-2 py-1.5 rounded-sm font-mono text-[10px]
-                leading-tight transition-colors duration-150
+                relative text-left py-2 px-3 rounded-lg font-mono text-[10px]
+                leading-tight cursor-pointer transition-all duration-200
                 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ochre-500
                 ${isSel
-                  ? 'bg-paper-200 text-espresso-900 shadow-[inset_0_0_0_1px_rgba(184,90,51,0.4)]'
-                  : 'hover:bg-paper-100/40 dark:hover:bg-espresso-800/60 text-paper-700 dark:text-paper-400'}
+                  ? 'bg-ochre-500/10 ring-1 ring-ochre-500/30 text-paper-200 dark:text-paper-200'
+                  : 'text-paper-700 dark:text-paper-400 hover:bg-white/80 dark:hover:bg-white/[0.04]'}
               `}
               aria-pressed={isSel}
             >
-              {/* Dataset-pigment accent tab on left edge when selected */}
-              {isSel && (
-                <span
-                  aria-hidden
-                  className="absolute left-0 top-0 bottom-0 w-1 rounded-l"
-                  style={{ backgroundColor: meta.color }}
-                />
-              )}
-
               <div className="flex items-baseline gap-1.5">
-                <span
-                  className={`tabular-nums ${isSel ? 'text-espresso-700' : 'text-paper-500 dark:text-paper-600'}`}
-                >
+                <span className="tabular-nums text-paper-500 dark:text-paper-600">
                   {formatTime(ev.receivedAt)}
                 </span>
                 <span
@@ -119,13 +127,13 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
                   {meta.label}
                 </span>
                 {ev.neighborhood && (
-                  <span className={isSel ? 'text-espresso-600' : 'text-ochre-700 dark:text-ochre-500'}>
+                  <span className="text-ochre-700 dark:text-ochre-500">
                     {shortNeighborhood(ev.neighborhood)}
                   </span>
                 )}
               </div>
               {ev.headline && (
-                <div className={`truncate mt-0.5 leading-tight ${isSel ? 'text-espresso-800' : 'text-paper-700 dark:text-paper-400'}`}>
+                <div className={`truncate mt-0.5 leading-tight ${isSel ? 'text-paper-300' : 'text-paper-700 dark:text-paper-400'}`}>
                   {ev.headline}
                 </div>
               )}
