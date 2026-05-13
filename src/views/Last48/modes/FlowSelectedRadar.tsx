@@ -83,10 +83,17 @@ export default function FlowSelectedRadar({ map, event }: Props) {
         strokeWidth="0.5"
       />
 
-      {/* Rotating sweep wedge — transformOrigin must be the SVG center */}
+      {/* Rotating sweep wedge — transformOrigin must be the SVG center.
+          transformBox: view-box makes transform-origin reference the SVG
+          viewport's coord system rather than the wedge's own bounding
+          box (which is just the top-right quadrant of the path; applying
+          50% to that bbox puts the pivot OFF the wedge). */}
       <g
         className="radar-sweep"
-        style={{ transformOrigin: '48px 48px' }}
+        style={{
+          transformBox: 'view-box',
+          transformOrigin: '48px 48px',
+        }}
       >
         <path
           d="M48,48 L48,4 A44,44 0 0,1 84,28 Z"
