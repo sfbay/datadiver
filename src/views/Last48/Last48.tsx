@@ -68,11 +68,6 @@ export default function Last48() {
           </p>
         </div>
 
-        {/* Pull-quote margin note — visible only at lg+ to avoid cluttering narrow viewports */}
-        <aside className="hidden lg:block max-w-[280px] font-display italic text-[11px] leading-snug text-paper-500 dark:text-paper-400 border-l border-paper-300 dark:border-espresso-700 pl-3">
-          Public data update on different cycles with varying latency, as shown.
-        </aside>
-
         <div className="flex items-center gap-3 ml-auto">
           <ModeToggle mode={mode} onChange={setMode} />
           <a

@@ -59,8 +59,23 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
     }
   }, [selectedId])
 
-  // Spec cap: 50 visible rows.
-  const limited = events.slice(0, 50)
+  // Spec cap: 50 most-recent rows. BUT — if the selected event is older
+  // than the 50 most recent (the map shows thousands of events; a click
+  // can land anywhere in the 48h window), we MUST also render the
+  // selected event or the rail can't show the inversion at all. Find
+  // the selected event in the full buffer if it's outside the top 50
+  // and append it; sort keeps chronological order.
+  const top50 = events.slice(0, 50)
+  const selectedInTop = selectedId
+    ? top50.some((e) => e.id === selectedId)
+    : true
+  const selectedOutsideTop =
+    !selectedInTop && selectedId
+      ? events.find((e) => e.id === selectedId) ?? null
+      : null
+  const limited = selectedOutsideTop
+    ? [...top50, selectedOutsideTop].sort((a, b) => b.receivedAt - a.receivedAt)
+    : top50
 
   return (
     <aside
