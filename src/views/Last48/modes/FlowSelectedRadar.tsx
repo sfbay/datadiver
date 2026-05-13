@@ -1,13 +1,17 @@
 // src/views/Last48/modes/FlowSelectedRadar.tsx
 //
-// Single SVG element positioned over the selected event's map dot.
-// Synced to map.project() on every move/zoom. Reuses the radar-sweep
-// keyframe from src/index.css (PR #21 precedent). Decorative only —
-// motion-reduce:hidden so reduced-motion users get the simple cream
-// ring from FlowMapLayer instead.
+// SVG overlay positioned over the selected event's map dot. Two staggered
+// cream rings emanate outward (scale up + fade), creating a sonar-ping
+// rhythm that says "this one is selected" without the busier rotation of
+// a radar sweep. The static cream ring on the map dot (from FlowMapLayer's
+// SELECTED_RING_ID layer) provides the anchor; this overlay adds the
+// breathing motion on top.
 //
-// transformOrigin must be set inline — SVG transform-origin semantics
-// differ from CSS box-model. Without it the wedge rotates from a corner.
+// motion-reduce:hidden — under prefers-reduced-motion, only the static
+// cream ring remains. The emanation is decorative reinforcement.
+//
+// transformBox: view-box is critical for SVG scaling to pivot on the
+// viewBox center (60,60) rather than each circle's bounding box.
 
 import { useEffect, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
@@ -17,6 +21,8 @@ interface Props {
   map: mapboxgl.Map | null
   event: NormalizedEvent | null
 }
+
+const RING_SIZE = 120
 
 export default function FlowSelectedRadar({ map, event }: Props) {
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
@@ -41,65 +47,46 @@ export default function FlowSelectedRadar({ map, event }: Props) {
 
   if (!pos || !event) return null
 
+  const center = RING_SIZE / 2
+
   return (
     <svg
-      // `absolute` (not `fixed`) so the SVG positions relative to the
-      // FlowMode map container's `relative` ancestor. map.project() returns
-      // coords in the map's canvas space — those align with absolute
-      // positioning inside that container but NOT with viewport-fixed
-      // positioning (which would offset by the sidebar + header).
       className="pointer-events-none absolute z-20 motion-reduce:hidden"
-      width="96"
-      height="96"
-      viewBox="0 0 96 96"
-      style={{ left: pos.x - 48, top: pos.y - 48 }}
+      width={RING_SIZE}
+      height={RING_SIZE}
+      viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}
+      style={{ left: pos.x - center, top: pos.y - center }}
       aria-hidden
     >
-      <defs>
-        <radialGradient id="radar-grad" cx="50%" cy="50%" r="50%">
-          <stop offset="55%" stopColor="rgba(245,236,217,0)" />
-          <stop offset="88%" stopColor="rgba(245,236,217,0.5)" />
-          <stop offset="100%" stopColor="rgba(245,236,217,0)" />
-        </radialGradient>
-      </defs>
-
-      {/* Outer ring */}
+      {/* First emanation — leading ping */}
       <circle
-        cx="48"
-        cy="48"
-        r="34"
+        cx={center}
+        cy={center}
+        r="18"
         fill="none"
-        stroke="rgba(245,236,217,0.45)"
-        strokeWidth="1"
-      />
-
-      {/* Faint farther ring */}
-      <circle
-        cx="48"
-        cy="48"
-        r="44"
-        fill="none"
-        stroke="rgba(245,236,217,0.2)"
-        strokeWidth="0.5"
-      />
-
-      {/* Rotating sweep wedge — transformOrigin must be the SVG center.
-          transformBox: view-box makes transform-origin reference the SVG
-          viewport's coord system rather than the wedge's own bounding
-          box (which is just the top-right quadrant of the path; applying
-          50% to that bbox puts the pivot OFF the wedge). */}
-      <g
-        className="radar-sweep"
+        stroke="rgba(245,236,217,0.75)"
+        strokeWidth="1.5"
         style={{
           transformBox: 'view-box',
-          transformOrigin: '48px 48px',
+          transformOrigin: `${center}px ${center}px`,
+          animation: 'emanate 1.9s ease-out infinite',
         }}
-      >
-        <path
-          d="M48,48 L48,4 A44,44 0 0,1 84,28 Z"
-          fill="url(#radar-grad)"
-        />
-      </g>
+      />
+
+      {/* Second emanation — staggered, slightly fainter */}
+      <circle
+        cx={center}
+        cy={center}
+        r="18"
+        fill="none"
+        stroke="rgba(245,236,217,0.55)"
+        strokeWidth="1"
+        style={{
+          transformBox: 'view-box',
+          transformOrigin: `${center}px ${center}px`,
+          animation: 'emanate 1.9s ease-out 0.95s infinite',
+        }}
+      />
     </svg>
   )
 }

@@ -317,6 +317,15 @@ body {
   background-size: 200% 100%;
 }
 
+/* Selected-event emanation — sonar-ping ring scales outward and fades.
+   Used by FlowSelectedRadar; consumers should set transform-box: view-box
+   and transform-origin to their SVG center for the scale to pivot on
+   the selected dot. */
+@keyframes emanate {
+  0%   { transform: scale(0.55); opacity: 0.85; }
+  100% { transform: scale(2.6);  opacity: 0;    }
+}
+
 /* Radar scan overlay */
 @keyframes radarSweep {
   from { transform: rotate(0deg); }
