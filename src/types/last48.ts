@@ -15,15 +15,25 @@ export type DatasetId =
 
 export type EventTier = 'tier1' | 'tier2'
 
+// Tier 1 = default-on for Last 48 FLOW + HOTSPOTS. The three core
+// editorial streams: fresh 911, fire/EMS, 311 service requests.
 export const TIER_1_DATASETS: DatasetId[] = [
   '911-realtime',
   'fire-ems-dispatch',
   '311-cases',
-  '911-historical',
-  'parking-revenue',
 ]
 
-export const TIER_2_DATASETS: DatasetId[] = ['police-incidents']
+// Tier 2 = default-off, opt-in via filter chip. 911 Historical is
+// superseded by the open/closed state model on 911 Realtime (the
+// freshest 48h already includes closure data). Parking Revenue is
+// most useful in HOTSPOTS pattern-spotting, not in FLOW's stream.
+// Police is daily-cadence (~39h event lag) and visually swamps as
+// a low-volume layer; user opts in when they need it.
+export const TIER_2_DATASETS: DatasetId[] = [
+  '911-historical',
+  'parking-revenue',
+  'police-incidents',
+]
 
 export const ALL_LAST48_DATASETS: DatasetId[] = [
   ...TIER_1_DATASETS,
@@ -41,6 +51,17 @@ export interface NormalizedEvent {
   latitude?: number
   callType?: string                   // dataset-specific category
   headline?: string                   // human-readable one-line summary
+  /**
+   * For datasets that track lifecycle (911 currently; Fire/EMS could
+   * adopt in the future), the event's open/closed state derived from
+   * the presence of a closure stamp (e.g., 911's `disposition` field).
+   * Undefined for datasets without a lifecycle concept (311, Parking, …).
+   */
+  state?: 'open' | 'closed'
+  /** Unix ms — when the event was closed (only set when state === 'closed'). */
+  closeAt?: number
+  /** Human-readable closure label (e.g., 911 disposition: "CIT", "ADV", "NCR"). */
+  disposition?: string
   raw: Record<string, unknown>        // original Socrata row, for detail panels
 }
 
