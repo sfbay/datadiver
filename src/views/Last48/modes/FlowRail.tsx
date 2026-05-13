@@ -96,6 +96,10 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
           const meta  = DATASET_ABBREV[ev.datasetId]
           const isSel = ev.id === selectedId
 
+          // Row styling emulates the EmergencyResponse sidebar pattern:
+          // soft ochre tint + ring on selected (vs aggressive cream
+          // inversion). py-2 px-3 rounded-lg matches the ER row chrome
+          // so the rails feel like siblings across the app.
           return (
             <button
               key={ev.id}
@@ -103,28 +107,17 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
               ref={isSel ? selectedRowRef : undefined}
               onClick={() => onSelect(ev)}
               className={`
-                relative text-left px-2 py-1.5 rounded-sm font-mono text-[10px]
-                leading-tight transition-colors duration-150
+                relative text-left py-2 px-3 rounded-lg font-mono text-[10px]
+                leading-tight cursor-pointer transition-all duration-200
                 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ochre-500
                 ${isSel
-                  ? 'bg-paper-200 text-espresso-900 shadow-[inset_0_0_0_1px_rgba(184,90,51,0.4)]'
-                  : 'hover:bg-paper-100/40 dark:hover:bg-espresso-800/60 text-paper-700 dark:text-paper-400'}
+                  ? 'bg-ochre-500/10 ring-1 ring-ochre-500/30 text-paper-200 dark:text-paper-200'
+                  : 'text-paper-700 dark:text-paper-400 hover:bg-white/80 dark:hover:bg-white/[0.04]'}
               `}
               aria-pressed={isSel}
             >
-              {/* Dataset-pigment accent tab on left edge when selected */}
-              {isSel && (
-                <span
-                  aria-hidden
-                  className="absolute left-0 top-0 bottom-0 w-1 rounded-l"
-                  style={{ backgroundColor: meta.color }}
-                />
-              )}
-
               <div className="flex items-baseline gap-1.5">
-                <span
-                  className={`tabular-nums ${isSel ? 'text-espresso-700' : 'text-paper-500 dark:text-paper-600'}`}
-                >
+                <span className="tabular-nums text-paper-500 dark:text-paper-600">
                   {formatTime(ev.receivedAt)}
                 </span>
                 <span
@@ -134,13 +127,13 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
                   {meta.label}
                 </span>
                 {ev.neighborhood && (
-                  <span className={isSel ? 'text-espresso-600' : 'text-ochre-700 dark:text-ochre-500'}>
+                  <span className="text-ochre-700 dark:text-ochre-500">
                     {shortNeighborhood(ev.neighborhood)}
                   </span>
                 )}
               </div>
               {ev.headline && (
-                <div className={`truncate mt-0.5 leading-tight ${isSel ? 'text-espresso-800' : 'text-paper-700 dark:text-paper-400'}`}>
+                <div className={`truncate mt-0.5 leading-tight ${isSel ? 'text-paper-300' : 'text-paper-700 dark:text-paper-400'}`}>
                   {ev.headline}
                 </div>
               )}
