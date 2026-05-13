@@ -40,15 +40,19 @@ const STROKE_AGED_OPEN    = '#a8926a'  // paper-500 — open-event stroke at ful
 
 // Hours-since-event boundaries and the corresponding mix coefficient. Both
 // the fill (toward PAPER_ANCHOR) and the open-event stroke (cream → paper)
-// use the same coefficient so they age in lockstep. Bumped from the initial
-// 0.30/0.55/0.75 set because the cream stroke on every dot was attenuating
-// the fill ramp — needed a steeper curve plus stroke-aging to let old events
-// truly recede.
+// use the same coefficient so they age in lockstep.
+//
+// Asymmetric curve: most of the tonal motion happens in the first 24 hours
+// (where editorial differentiation matters — fresh news vs day-old news);
+// the curve flattens in the second 24h so aged events still hold enough
+// pigment identity to remain readable as their dataset. Without this
+// flattening, late-stage events from different datasets converged toward
+// near-identical paper tones and lost cross-dataset distinguishability.
 const AGE_BUCKETS: Array<{ maxHours: number; mix: number }> = [
-  { maxHours: 6,  mix: 0    },  // < 6h    — fresh
-  { maxHours: 18, mix: 0.40 },  // 6–18h   — recent
-  { maxHours: 30, mix: 0.65 },  // 18–30h  — settling
-  { maxHours: 48, mix: 0.85 },  // 30–48h  — aged
+  { maxHours: 6,  mix: 0    },  // < 6h    — fresh (full pigment)
+  { maxHours: 18, mix: 0.45 },  // 6–18h   — recent (strongest single jump)
+  { maxHours: 30, mix: 0.60 },  // 18–30h  — settling
+  { maxHours: 48, mix: 0.70 },  // 30–48h  — aged (preserves pigment identity)
 ]
 
 function hexToRgb(hex: string): [number, number, number] {
