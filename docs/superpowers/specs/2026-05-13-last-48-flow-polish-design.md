@@ -790,12 +790,12 @@ If the view feels like *another analytics dashboard*, something has gone wrong. 
 
 ---
 
-## Open questions for the user
+## Decisions (locked 2026-05-13)
 
-1. **The italic Fraunces editorial line in the header** — proposed text is "A retrospective view — public data carries an honest lag. The chips below tell you exactly how old each stream is." That's my voice; user may want to write their own.
-2. **Diamond vs. circle-with-stroke for Police** — proposed diamond. If the user prefers to keep everything circular and rely on stroke/halo for hierarchy, that's also defensible.
-3. **Phase 7 (open-call breathing)** — keep optional or commit to shipping it?
-4. **Mode cross-fade duration** — proposed 200ms. Snappier (120ms)? Slower for editorial pace (300ms)?
+1. **Header italic editorial line:** *"Public data update on different cycles with varying latency, as shown."* — terser, journalistic, factual. The "as shown" phrase ties the line directly to the freshness chip strip below it.
+2. **Police mark:** Diamond. Ship and judge in production.
+3. **Open-call breathing (PR 7):** Skipped. The static visual distinction already in main (open events: cream stroke + larger radius + gentler fade; closed events: dark stroke + smaller + faster fade) carries the lifecycle signal without ongoing motion. PR 7 dropped from the roadmap.
+4. **Mode cross-fade duration:** 200ms.
 
 ---
 
