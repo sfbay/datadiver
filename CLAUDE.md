@@ -103,7 +103,7 @@ src/
   stores/        # Zustand appStore
   types/         # TypeScript interfaces (datasets.ts, trends.ts)
   utils/         # Colors, time formatting, geo helpers
-  views/         # 7 dataset views + Home
+  views/         # 8 dataset views + Home (The Last 48 at nav position 1)
 ```
 
 ## Key Conventions
@@ -134,6 +134,18 @@ src/
 - `PeriodBreakdownChart` renders D3 bars with ghost prior-year series
 - `StatCard` accepts optional `yoyDelta` and `zScore` props
 - `useDataFreshness` detects stale date ranges via `MAX(dateField)`, `DataFreshnessAlert` offers auto-adjust
+
+### Views inventory
+
+- **The Last 48** (`/live-feeds`, nav position 1): comprehensive surface for SF's freshest civic data. Two modes — **FLOW** (animated event arrival on map; ~6000 events in 48h window) and **HOTSPOTS** (z-score anomaly choropleth). Tier-1 datasets default on: 911 Realtime, Fire/EMS, 311. Tier-2 opt-in: 911 Historical, Parking Revenue, Police. The brand line "The Last 48" is editorial — public data publishes with intrinsic lag (no SF dataset is truly real-time), and the name names that honestly. See `docs/superpowers/specs/2026-05-12-last-48-design.md` for the design rationale; `docs/superpowers/specs/2026-05-13-last-48-flow-polish-design.md` for the visual stance ("civic observatory" — calm wall-display register, sparse motion). Phase 2.5b polish complete in PRs #34–#39.
+- **EmergencyResponse**: Fire/EMS heatmap, response time stats, histogram, neighborhood breakdown
+- **ParkingRevenue**: Cyan heatmap (server-side per-meter aggregation), payment methods, neighborhoods
+- **Dispatch911**: Chart-centric (no map), sensitive call patterns, call type filter
+- **Cases311**: Heatmap + anomaly choropleth, category filter with quick groups, resolution histogram
+- **CrimeIncidents**: Red heatmap, category filter (violent/property/QoL), 911 cross-ref via cad_number
+- **ParkingCitations**: Orange heatmap, dual WHERE (mapWhere with geo, statsWhere without)
+- **TrafficSafety**: Crash heatmap/anomaly, severity breakdown, speed camera overlay
+- **Home**: Hero + exploration cards
 
 ### Views Pattern
 Each view follows the same structure:
@@ -228,6 +240,23 @@ This means:
 Implemented on `EmergencyResponse` in PR #23. Pattern is reusable: Cases311, Crime, Citations, TrafficSafety could adopt the same comparison framing in follow-up work (the `<PositionScale>` primitive at `src/components/charts/PositionScale.tsx` is dataset-agnostic).
 
 The editorial argument: a number alone is meaningless; a number's *position on a scale* is a story. Clicking "Visitacion Valley" should light up "this is the slowest-response neighborhood by 30%", not just show 14m 32s in isolation.
+
+### Tonal age ramp + per-dataset latency baseline
+
+For map dots encoding age in a multi-stream visualization (introduced in The Last 48 FLOW), each dataset's pigment fades toward a paper anchor (`#d4c8a8`) in 4 discrete buckets across its delivery window. The bucket boundaries are NOT measured from absolute age (which would never include the "fresh" tone — no SF dataset publishes events less than ~7h old). Instead, subtract a per-dataset `LATENCY_BASELINE_MS` from raw age before bucketing — the fresh tone is reserved for events at each dataset's natural floor.
+
+Helpers live in `src/views/Last48/modes/FlowMapLayer.tsx`:
+- `LATENCY_BASELINE_MS`: per-dataset offset (911 Realtime 7h, Fire/EMS 12h, 311 15h, etc.)
+- `AGE_BUCKETS`: asymmetric curve `[0, 0.45, 0.60, 0.70]` over 4 buckets (heaviest tonal motion in the first 18h post-floor)
+- `mixHex(a, b, t)`, `ageColor(datasetId, rawAgeMs)`, `ageStrokeOpen(datasetId, rawAgeMs)`
+
+Editorial framing: tone = stream-relative recency ("as fresh as this dataset gets"); the row's timestamp in the rail communicates absolute clock time. The two signals reinforce, don't contradict.
+
+### Detail panel pattern: click-driven, top-right corner, DetailPanelShell
+
+All map-based detail panels in DataDiver use `src/components/ui/DetailPanelShell` — top-right anchored (`absolute top-5 right-5`), slide-in-from-right animation, max-h-[80vh], corner-glow with dataset pigment color, X close button. Selection is click-driven (no hover-dwell — tried and abandoned in Phase 2.5b for The Last 48). The hover-to-show pattern doesn't translate cleanly to mobile and added complexity without clear value.
+
+Wrap dataset-specific body content inside DetailPanelShell. See `Last48EventCard.tsx`, `IncidentDetailPanel.tsx`, `CaseDetailPanel.tsx` for examples.
 
 ## Deployment
 - **Vercel** auto-deploys from `main` branch

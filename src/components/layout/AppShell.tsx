@@ -12,18 +12,18 @@ import DateRangePicker from '@/components/filters/DateRangePicker'
 // across every surface; deliberately not interchangeable.
 const NAV_ITEMS = [
   {
-    path: '/live-feeds',
-    label: 'The Last 48',
-    shortLabel: 'LIVE',
-    description: "What's flowed in across SF in the past 48 hours",
-    accentColor: '#d4a435', // ochre-500 — live / warm yellow
-  },
-  {
     path: '/',
     label: 'Overview',
     shortLabel: 'OV',
     description: 'Data stories & viz picker',
     accentColor: '#b85a33', // terracotta-600 — primary brand
+  },
+  {
+    path: '/live-feeds',
+    label: 'The Last 48',
+    shortLabel: 'LIVE',
+    description: "What's flowed in across SF in the past 48 hours",
+    accentColor: '#d4a435', // ochre-500 — live / warm yellow
   },
   {
     path: '/emergency-response',

@@ -800,3 +800,35 @@ If the view feels like *another analytics dashboard*, something has gone wrong. 
 ---
 
 **End of design direction.** Roadmap above lists PRs in dependency-safe order — implement PR 1 first; everything else can follow in any order after.
+
+---
+
+## Implementation status (updated 2026-05-13)
+
+Phase 2.5b shipped across PRs #34–#39. The design direction document above was the authoritative spec; this section records what shipped vs. what was revised in flight.
+
+### Shipped as designed
+- PR 1: click-driven `DetailPanelShell` card (hover-dwell concept replaced with click-only, matching DataDiver convention)
+- PR 2: selected-event ring + rail tint treatment; paper-* `@theme` token gap discovered and fixed
+- PR 3: keyboard browsability — FlowRail as `role="listbox"`, page-level Esc deselect
+- PR 4a: tonal age ramp with per-dataset `LATENCY_BASELINE_MS` floors
+- PR 6: chrome polish — italic Fraunces freshness eyebrow, corner-glow on active mode toggle, double-rule on scanner strip, transparent moss TUNE IN button
+
+### Design decisions reversed in flight
+
+**Hover-dwell detail panel (§1):** The 350ms dwell pattern was designed in §1 and implemented in PR 1, then abandoned in favor of click-only. Click matches the convention established across every other DataDiver view and avoids the mobile/complexity tradeoffs. The component was renamed from `Last48EventHoverBox` to `Last48EventCard` to reflect its click-driven nature.
+
+**Dim-mask "spotlight by dimming others" (§2):** The `filter: saturate(0.6) brightness(0.9)` overlay on non-selected dots was implemented in PR 2 and removed in PR 6. At citywide zoom with 5k–15k dots, per-feature espresso overlays stacked into dark blots rather than subtle dimming. The selected event's sonar-ping emanation provides sufficient differentiation without a dim overlay.
+
+**Rotating radar-wedge animation (§2):** Replaced by sonar-ping emanation (two staggered concentric rings). Emanation reads as "this is alive" vs. radar sweep's "this is being scanned" — the former matches the civic-observatory register better.
+
+**Pull-quote header margin note (§7a):** Designed and added in PR 6, then removed by user request. The italic editorial aside didn't earn its real estate at The Last 48's compact header height.
+
+**Open-call breathing (PR 7):** Not shipped. The static visual distinction (open events: cream stroke + larger radius; closed events: dark espresso stroke + smaller radius) carries the lifecycle signal without ongoing animation. PR 7 dropped per the §"Decisions (locked)" note.
+
+### Gotchas discovered during implementation
+
+- Tailwind v4 `@theme` gap: `bg-paper-200` and related classes produced no CSS until the paper-* scale was added to `src/index.css`'s `@theme` block. See `[[tailwind-v4-theme-tokens-required]]`.
+- SVG `transform-origin` defaults to element bbox: sonar-ping circles required `transform-box: view-box` to rotate around the SVG center. See `[[svg-transform-box-view-box]]`.
+- `map.project()` returns canvas-relative coords — SVG overlays use `position: absolute` inside the map's `relative` container, not `position: fixed`.
+- Socrata SoQL rejects `.000Z` in ISO strings — strip with `.slice(0, 19)` before passing date values in WHERE clauses.
