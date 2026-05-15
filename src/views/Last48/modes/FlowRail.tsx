@@ -107,16 +107,19 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
         className: 'flex flex-col focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ochre-500 focus-visible:ring-inset',
       }}
     >
-      {/* Subtle header — follows EmergencyResponse's "BY NEIGHBORHOOD" register:
-          mono small-caps label + thin right divider, count line below in italic. */}
-      <div className="sticky top-0 z-10 px-4 pt-4 pb-3 flex-shrink-0 bg-paper-50/95 dark:bg-espresso-950/95 backdrop-blur-sm border-b border-paper-200/30 dark:border-espresso-800">
+      {/* Subtle header — follows EmergencyResponse's "BY NEIGHBORHOOD" /
+          "COLLISION MODES" register: mono small-caps label + thin right
+          divider, count line below in italic. Lean on backdrop-blur for
+          occlusion rather than opaque color — keeps it from reading as a
+          dark band against MapSidebar's translucent parent. */}
+      <div className="sticky top-0 z-10 px-4 pt-3.5 pb-2.5 flex-shrink-0 bg-paper-50/40 dark:bg-espresso-950/40 backdrop-blur-md">
         <div className="flex items-center gap-2">
-          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-paper-500/70 dark:text-paper-600">
+          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-paper-500/60 dark:text-paper-600">
             Freshest
           </p>
-          <div className="flex-1 h-[1px] bg-paper-200/40 dark:bg-white/[0.04]" />
+          <div className="flex-1 h-[1px] bg-paper-200/30 dark:bg-white/[0.04]" />
         </div>
-        <p className="text-[10px] text-paper-500 dark:text-paper-600 italic mt-1 tabular-nums">
+        <p className="text-[10px] text-paper-500/80 dark:text-paper-600 italic mt-1 tabular-nums">
           {events.length} events &middot; 48h window
           {withheldCount > 0 && ` · ${withheldCount} location-withheld`}
         </p>
@@ -150,31 +153,38 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
               ref={isSel ? selectedRowRef : undefined}
               onClick={() => onSelect(ev)}
               className={`
-                relative py-2 px-3 rounded-lg cursor-pointer transition-all duration-200
+                relative py-2 px-2.5 rounded-lg cursor-pointer transition-all duration-200
                 ${!hasCoords ? 'opacity-70' : ''}
                 ${isSel
                   ? 'bg-ochre-500/10 ring-1 ring-ochre-500/30'
                   : 'hover:bg-paper-100/50 dark:hover:bg-white/[0.04]'}
               `}
             >
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-start gap-2">
                 {/* Pigment dot on the LEFT — forms a vertical legend column
                     down the rail's leading edge, so the dataset is identifiable
-                    at a glance for every row in the stack. */}
+                    at a glance for every row in the stack. Aligned to the
+                    first text line via mt-[5px] to sit cleanly against the
+                    headline cap-height regardless of row length. */}
                 <div
-                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-[5px]"
                   style={{ backgroundColor: meta.color }}
                   aria-hidden="true"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="text-[12px] font-medium text-ink dark:text-paper-200 truncate leading-tight">
+                  {/* line-clamp-2 lets long headlines (e.g., "Blocking driveway
+                      cite only", "Other illegal parking") show in full across
+                      two lines instead of truncating mid-word. Row height
+                      varies with content length — acceptable per editorial
+                      register; ER does the same on long neighborhood names. */}
+                  <p className="text-[12px] font-medium text-ink dark:text-paper-200 leading-tight line-clamp-2">
                     {formatHeadline(ev.headline ?? meta.label)}
                   </p>
                   <p className="text-[10px] text-paper-500 dark:text-paper-600 font-mono italic mt-0.5 truncate">
                     {subtitleBits.join(' · ')}
                   </p>
                 </div>
-                <span className="text-[11px] font-mono text-paper-700 dark:text-paper-300 whitespace-nowrap tabular-nums flex-shrink-0">
+                <span className="text-[10px] font-mono text-paper-600 dark:text-paper-400 whitespace-nowrap tabular-nums flex-shrink-0 mt-[2px]">
                   {formatApTime(ev.receivedAt)}
                 </span>
               </div>
