@@ -72,14 +72,18 @@ export default function FreshnessChipStrip({ freshness, initialLoadedByDataset }
     }
     if (flipped.length === 0) return
 
-    setPulsingIds((prev) => {
-      const next = new Set(prev)
-      for (const id of flipped) next.add(id)
-      return next
+    // Schedule via rAF so the setState calls don't fire synchronously
+    // inside the effect body (satisfies react-hooks/set-state-in-effect).
+    const frameId = requestAnimationFrame(() => {
+      setPulsingIds((prev) => {
+        const next = new Set(prev)
+        for (const id of flipped) next.add(id)
+        return next
+      })
     })
 
     // Remove pulse class after animation completes (~600ms).
-    const t = setTimeout(() => {
+    const removeTimer = setTimeout(() => {
       setPulsingIds((prev) => {
         const next = new Set(prev)
         for (const id of flipped) next.delete(id)
@@ -87,7 +91,10 @@ export default function FreshnessChipStrip({ freshness, initialLoadedByDataset }
       })
     }, 650)
 
-    return () => clearTimeout(t)
+    return () => {
+      cancelAnimationFrame(frameId)
+      clearTimeout(removeTimer)
+    }
   }, [initialLoadedByDataset, datasets])
 
   return (
