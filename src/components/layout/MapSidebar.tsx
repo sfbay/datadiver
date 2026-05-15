@@ -16,7 +16,7 @@
  *  it just sets width, chrome, and the compression flag.
  */
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, type ReactNode, type ComponentPropsWithRef } from 'react'
 import { useAppStore } from '@/stores/appStore'
 
 interface MapSidebarContextValue {
@@ -34,11 +34,21 @@ export function useMapSidebarMode(): MapSidebarContextValue {
 
 const NARROW_BREAKPOINT = 1024
 
+type MapSidebarWidth = 'default' | 'lean'
+
 interface MapSidebarProps {
   children: ReactNode
+  /** Open-width variant. 'default' = 320px (w-80). 'lean' = 260px (w-[260px]) for map-hero-forward views like The Last 48. */
+  width?: MapSidebarWidth
+  /** Props spread onto the inner scroll <div>. Required if children need the
+   *  scrolling element to be a listbox (role + aria-activedescendant must sit
+   *  on the scrolling element for scrollIntoView + activedescendant to work).
+   *  Accepts ref (via ComponentPropsWithRef) so FlowRail can forward its
+   *  scrollRef for auto-scroll on new events and selection changes. */
+  scrollContainerProps?: ComponentPropsWithRef<'div'>
 }
 
-export default function MapSidebar({ children }: MapSidebarProps) {
+export default function MapSidebar({ children, width = 'default', scrollContainerProps }: MapSidebarProps) {
   const isOpen = useAppStore((s) => s.isContextSidebarOpen)
   const toggle = useAppStore((s) => s.toggleContextSidebar)
 
@@ -57,7 +67,10 @@ export default function MapSidebar({ children }: MapSidebarProps) {
   const isCompressed = isOpen && isNarrow
 
   // 320px full / 240px compressed / 36px collapsed-stub
-  const widthClass = isOpen ? (isNarrow ? 'w-60' : 'w-80') : 'w-9'
+  // lean variant: 260px full (map-hero-forward views), still 240px compressed
+  const widthClass = isOpen
+    ? (isNarrow ? 'w-60' : (width === 'lean' ? 'w-[260px]' : 'w-80'))
+    : 'w-9'
 
   return (
     <MapSidebarContext.Provider value={{ isCompressed }}>
@@ -109,7 +122,10 @@ export default function MapSidebar({ children }: MapSidebarProps) {
         {/* Inner scroll container — keeps the chevron pinned to the visible
             viewport even when children content is scrolled. */}
         {isOpen && (
-          <div className="flex-1 overflow-y-auto flex flex-col min-h-0">
+          <div
+            {...scrollContainerProps}
+            className={`flex-1 overflow-y-auto flex flex-col min-h-0 ${scrollContainerProps?.className ?? ''}`}
+          >
             {children}
           </div>
         )}

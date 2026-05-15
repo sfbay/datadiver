@@ -32,14 +32,18 @@ export default function FlowMode({ window48, datasets }: Props) {
   }, [])
 
   // ------------------------------------------------------------------
-  // Rail row click — select + fly to the event on the map
+  // Rail row click — select + fly to the event on the map.
+  //
+  // Clicking an already-selected row is a no-op (NOT a toggle-off).
+  // Rationale: when the selected event is out-of-sequence (older than
+  // the top 50, appended below a divider), a toggle-off click would
+  // make the row vanish from the rail — surprising. Deselection is
+  // reserved for Esc, the X on the detail card, or an empty-area map
+  // click via `handleMapSelect` (which DOES toggle, since clicking
+  // the same dot is the natural "deselect" gesture there).
   // ------------------------------------------------------------------
   const handleRailSelect = useCallback((ev: NormalizedEvent) => {
-    // Toggle if already selected
-    if (selectedEvent?.id === ev.id) {
-      setSelectedEvent(null)
-      return
-    }
+    if (selectedEvent?.id === ev.id) return
     setSelectedEvent(ev)
     if (map && ev.longitude != null && ev.latitude != null) {
       map.flyTo({
