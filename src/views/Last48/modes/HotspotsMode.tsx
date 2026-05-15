@@ -53,6 +53,7 @@ export default function HotspotsMode({ window48, datasets }: Props) {
             selectedNeighborhood={selectedNh ?? undefined}
             onSelect={setSelectedNh}
           />
+          {/* Positioned absolute against Last48Map's outer flex container — don't add position:relative to AnomalyRail or this peek will reposition. */}
           {selectedNh && (
             <Last48NeighborhoodPeek
               neighborhood={selectedNh}
@@ -63,8 +64,7 @@ export default function HotspotsMode({ window48, datasets }: Props) {
           )}
         </>
       )}
-    >
-      {(map) => (
+      mapOverlay={(map) => (
         <>
           <HotspotsChoropleth
             map={map}
@@ -79,6 +79,6 @@ export default function HotspotsMode({ window48, datasets }: Props) {
           )}
         </>
       )}
-    </Last48Map>
+    />
   )
 }

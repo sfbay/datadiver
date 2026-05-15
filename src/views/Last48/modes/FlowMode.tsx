@@ -71,8 +71,7 @@ export default function FlowMode({ window48, datasets }: Props) {
           }}
         />
       )}
-    >
-      {(map) => (
+      mapOverlay={(map) => (
         <>
           <FlowMapLayer
             map={map}
@@ -94,6 +93,6 @@ export default function FlowMode({ window48, datasets }: Props) {
           <Last48EventCard event={selectedEvent} onClose={handleClose} />
         </>
       )}
-    </Last48Map>
+    />
   )
 }
