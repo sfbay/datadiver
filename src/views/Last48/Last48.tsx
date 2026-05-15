@@ -16,6 +16,9 @@ import FreshnessChipStrip from './chrome/FreshnessChipStrip'
 import DatasetFilterChips from './chrome/DatasetFilterChips'
 import ModeToggle from './chrome/ModeToggle'
 import ScannerStrip from './chrome/ScannerStrip'
+import ExportButton from '@/components/export/ExportButton'
+import CivicTicker from '@/components/ui/CivicTicker'
+import { useCivicIndicators } from '@/hooks/useCivicIndicators'
 
 type Mode = 'flow' | 'hotspots'
 
@@ -38,6 +41,7 @@ export default function Last48() {
   const datasets = useMemo(() => parseDatasets(searchParams.get('datasets')), [searchParams])
 
   const window48 = useLast48Window({ datasets })
+  const civicIndicators = useCivicIndicators()
 
   const setMode = (next: Mode) => {
     const np = new URLSearchParams(searchParams)
@@ -57,29 +61,42 @@ export default function Last48() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <header className="px-[clamp(16px,3vw,64px)] pt-6 pb-3 flex items-baseline gap-6 flex-wrap z-20">
-        <div className="flex-1 min-w-[200px] max-w-[640px]">
-          <h1 className="font-display text-xl md:text-2xl tracking-tight">
-            <span className="text-paper-500">── LIVE · </span>
-            <span>The Last 48</span>
-          </h1>
-          <p className="font-mono text-[11px] text-paper-600 mt-1">
-            What's flowed in across SF in the past 48 hours
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3 ml-auto">
-          <ModeToggle mode={mode} onChange={setMode} />
-          <a
-            href="?mode=kiosk"
-            className="font-mono text-[11px] text-paper-500 hover:text-paper-300 underline-offset-2 hover:underline"
-            title="Open in kiosk mode (coming soon)"
-            onClick={(e) => { e.preventDefault(); /* Phase 4 */ }}
-          >
-            📺 Open in kiosk
-          </a>
+      <header className="flex-shrink-0 border-b border-paper-200/40 dark:border-espresso-700 px-[clamp(16px,3vw,64px)] py-3 bg-paper-50/50 dark:bg-espresso-950/50 backdrop-blur-xl z-20">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="min-w-0">
+              <div className="font-mono text-[10px] tracking-widest text-paper-500 dark:text-paper-600">
+                LIVE
+              </div>
+              {/* paper-100 (warm cream) vs sibling-standard text-white — intentional earth-tone purity */}
+              <h1 className="font-display italic text-2xl text-ink dark:text-paper-100 leading-none whitespace-nowrap">
+                The Last 48
+              </h1>
+              <p className="font-mono text-[10px] text-paper-500 dark:text-paper-600 mt-0.5">
+                48 hours of civic data, updated continuously via official and public APIs
+              </p>
+            </div>
+            {!window48.isLoading && window48.events.length > 0 && (
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-moss-500/80 bg-moss-500/10 px-2 py-1 rounded-full whitespace-nowrap">
+                <span className="w-1 h-1 rounded-full bg-moss-500 pulse-live" />
+                {window48.events.length.toLocaleString()} events
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <ModeToggle mode={mode} onChange={setMode} />
+            <ExportButton targetSelector="#last48-capture" filename="last-48" />
+          </div>
         </div>
       </header>
+
+      {/* Cross-view ticker — signals from other datasets */}
+      <div className="flex-shrink-0 border-b border-paper-200/40 dark:border-espresso-800 px-[clamp(16px,3vw,64px)] py-1 bg-paper-50/30 dark:bg-espresso-950/30 backdrop-blur-xl z-10">
+        <CivicTicker
+          items={civicIndicators.items.filter(i => i.source.view !== '/live-feeds')}
+          size="compact"
+        />
+      </div>
 
       {/* Freshness honesty chip strip */}
       <div className="px-[clamp(16px,3vw,64px)] pb-2">
@@ -92,7 +109,7 @@ export default function Last48() {
       </div>
 
       {/* Mode renderer */}
-      <div className="flex-1 relative">
+      <div id="last48-capture" className="flex-1 relative">
         {mode === 'flow' && <FlowMode window48={window48} datasets={datasets} />}
         {mode === 'hotspots' && <HotspotsMode window48={window48} datasets={datasets} />}
       </div>
