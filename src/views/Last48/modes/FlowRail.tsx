@@ -2,7 +2,7 @@ import { useEffect, useRef, Fragment } from 'react'
 import type { NormalizedEvent, DatasetId } from '@/types/last48'
 import type { KeyboardEvent } from 'react'
 import MapSidebar from '@/components/layout/MapSidebar'
-import { toSentenceCase, formatApTime } from '@/utils/format'
+import { formatHeadline, formatApTime } from '@/utils/format'
 
 const DATASET_LABEL: Record<DatasetId, { label: string; color: string }> = {
   '911-realtime':      { label: '911',   color: '#616a96' },
@@ -157,24 +157,26 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
                   : 'hover:bg-paper-100/50 dark:hover:bg-white/[0.04]'}
               `}
             >
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                {/* Pigment dot on the LEFT — forms a vertical legend column
+                    down the rail's leading edge, so the dataset is identifiable
+                    at a glance for every row in the stack. */}
+                <div
+                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: meta.color }}
+                  aria-hidden="true"
+                />
                 <div className="min-w-0 flex-1">
                   <p className="text-[12px] font-medium text-ink dark:text-paper-200 truncate leading-tight">
-                    {toSentenceCase(ev.headline ?? meta.label)}
+                    {formatHeadline(ev.headline ?? meta.label)}
                   </p>
                   <p className="text-[10px] text-paper-500 dark:text-paper-600 font-mono italic mt-0.5 truncate">
                     {subtitleBits.join(' · ')}
                   </p>
                 </div>
-                <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
-                  <div
-                    className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: meta.color }}
-                  />
-                  <span className="text-[11px] font-mono text-paper-700 dark:text-paper-300 whitespace-nowrap tabular-nums">
-                    {formatApTime(ev.receivedAt)}
-                  </span>
-                </div>
+                <span className="text-[11px] font-mono text-paper-700 dark:text-paper-300 whitespace-nowrap tabular-nums flex-shrink-0">
+                  {formatApTime(ev.receivedAt)}
+                </span>
               </div>
             </div>
           )

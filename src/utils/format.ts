@@ -17,6 +17,25 @@ export function toTitleCase(str: string): string {
   return toSentenceCase(str)
 }
 
+/** Headline normalizer for event call types / service subtypes.
+ *  Detects input shape and routes to the right transform:
+ *    - snake_case_values  → "Snake case values" (sentence case, _ → space,
+ *      capitalize only the first letter — descriptive, not titular)
+ *    - ALL CAPS / mixed   → title case via toSentenceCase (preserves SF/CA
+ *      and other known abbreviations — categorical-label register)
+ *
+ *  Choose by detection: presence of underscores in the source string. 311's
+ *  service_subtype values are descriptive (snake_case sentences); 911 and
+ *  Fire/EMS call types are categorical labels (ALL CAPS or mixed case). */
+export function formatHeadline(s: string | undefined): string {
+  if (!s) return ''
+  if (s.includes('_')) {
+    const spaced = s.replace(/_/g, ' ').toLowerCase()
+    return spaced.charAt(0).toUpperCase() + spaced.slice(1)
+  }
+  return toSentenceCase(s)
+}
+
 /** AP-style time of day: "2:22 p.m.", "12:05 a.m.", "10:55 a.m." — lowercase
  *  meridiem with periods, single-digit hours unpadded, minutes always 2 digits.
  *  Use for absolute timestamps in calm reading contexts where 24-hour mono
