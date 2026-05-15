@@ -79,16 +79,11 @@ export default function Last48UnifiedView({
   // ── ANOMALY state ───────────────────────────────────────────────────────────
   const [selectedNh, setSelectedNh] = useState<string | null>(null)
 
-  const eventsForBaseline = useMemo(
-    () => window48.events.filter((e) => datasets.includes(e.datasetId)),
-    [window48.events, datasets],
-  )
-
   // Always compute anomalies — so the choropleth is ready immediately when the
   // user toggles fill=anomaly, without a cold-start wait.
   const { anomalies, isLoading: anomalyLoading } = useAnomalyBaseline({
     datasets,
-    currentEvents: eventsForBaseline,
+    currentEvents: visibleEvents,
   })
 
   const combinedAnomalies = useMemo(() => {
@@ -209,7 +204,7 @@ export default function Last48UnifiedView({
             </div>
           )}
           {fill === 'anomaly' && anomalyLoading && (
-            <div className="absolute top-3 left-3 font-mono text-[10px] text-paper-500 bg-espresso-900/70 px-2 py-1 rounded">
+            <div className="absolute top-10 left-3 font-mono text-[10px] text-paper-500 bg-espresso-900/70 px-2 py-1 rounded">
               computing 12-week baseline…
             </div>
           )}

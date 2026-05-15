@@ -63,7 +63,7 @@ export default function LayerControls({
       {/* Demographic variable picker — shows only when demographic fill is active */}
       {fill === 'demographic' && (
         <UnderlayPicker
-          presets={UNDERLAY_PRESETS['emergency-response'] ?? []}
+          presets={UNDERLAY_PRESETS['last48'] ?? []}
           activeVariable={underlayVariable}
           onSelect={onUnderlayChange}
         />

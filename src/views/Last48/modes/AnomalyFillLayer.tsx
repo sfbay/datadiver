@@ -37,7 +37,7 @@ export default function AnomalyFillLayer({
 }: Props) {
   const { boundaries } = useNeighborhoodBoundaries()
   const onClickRef = useRef(onNeighborhoodClick)
-  // Keep ref in sync — accessed only inside event handlers, never during render.
+  // Pattern: stable ref updated each render; accessed only in effects/handlers, not during render.
   // eslint-disable-next-line react-hooks/refs
   onClickRef.current = onNeighborhoodClick
 
@@ -62,8 +62,12 @@ export default function AnomalyFillLayer({
     }
   }, [boundaries, combinedAnomalies, selectedNeighborhood])
 
-  // Fill layer — z-score → color expression lifted verbatim from HotspotsChoropleth.
-  const fillLayers: mapboxgl.AnyLayer[] = useMemo(() => [
+  // Fill + outline layers — combined into a single useMapLayer call so both
+  // layers are registered when the source is first added. Two separate calls
+  // with the same SOURCE_ID caused the outline layer to silently never render
+  // because useMapLayer only calls addLayer on the first (source-creation) pass.
+  const choroplethLayers: mapboxgl.AnyLayer[] = useMemo(() => [
+    // Fill layer — z-score → color expression.
     {
       id: FILL_LAYER_ID,
       type: 'fill',
@@ -71,7 +75,7 @@ export default function AnomalyFillLayer({
       paint: {
         'fill-color': [
           'case',
-          ['<', ['get', 'zScore'], -0.5], '#bda37d',           // below baseline — faint paper
+          ['<', ['get', 'zScore'], -0.5], '#c7b288',           // below baseline — paper-400 (earth-tone palette)
           ['<', ['get', 'zScore'],  0.5], 'rgba(0,0,0,0)',     // within ±0.5σ — transparent
           ['<', ['get', 'zScore'],  1.0], '#d4a435',           // ochre (0.5 to 1.0)
           ['<', ['get', 'zScore'],  2.0], '#d47149',           // terracotta (1.0 to 2.0)
@@ -85,10 +89,7 @@ export default function AnomalyFillLayer({
         'fill-opacity-transition': { duration: 300 },
       },
     } as mapboxgl.AnyLayer,
-  ], [])
-
-  // Outline layer — dashed on quiet neighborhoods, solid on elevated.
-  const lineLayers: mapboxgl.AnyLayer[] = useMemo(() => [
+    // Outline layer — visible border on elevated/quiet neighborhoods.
     {
       id: LINE_LAYER_ID,
       type: 'line',
@@ -109,9 +110,7 @@ export default function AnomalyFillLayer({
     } as mapboxgl.AnyLayer,
   ], [])
 
-  // Both calls share the same SOURCE_ID — useMapLayer coalesces the source.
-  useMapLayer(map, SOURCE_ID, geojson, fillLayers)
-  useMapLayer(map, SOURCE_ID, geojson, lineLayers)
+  useMapLayer(map, SOURCE_ID, geojson, choroplethLayers)
 
   // Click + cursor handlers on the fill layer.
   useEffect(() => {
