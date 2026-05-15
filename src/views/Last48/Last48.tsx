@@ -66,14 +66,14 @@ export default function Last48() {
           <div className="flex items-center gap-4 min-w-0">
             <div className="min-w-0">
               <div className="font-mono text-[10px] tracking-widest text-paper-500 dark:text-paper-600">
-                <span className="text-paper-400 dark:text-paper-700">——</span> LIVE
+                LIVE
               </div>
               {/* paper-100 (warm cream) vs sibling-standard text-white — intentional earth-tone purity */}
               <h1 className="font-display italic text-2xl text-ink dark:text-paper-100 leading-none whitespace-nowrap">
                 The Last 48
               </h1>
               <p className="font-mono text-[10px] text-paper-500 dark:text-paper-600 mt-0.5">
-                What's flowed in across SF in the past 48 hours
+                48 hours of civic data, updated continuously via official and public APIs
               </p>
             </div>
             {!window48.isLoading && window48.events.length > 0 && (
