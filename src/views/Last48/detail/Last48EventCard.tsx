@@ -139,7 +139,6 @@ function compactFields(event: NormalizedEvent): Array<[string, string]> {
     case '911-historical':
       return [
         ['Disposition', extractField(raw, 'disposition') ?? '—'],
-        ['Priority',    extractField(raw, 'priority_final', 'original_priority', 'priority') ?? '—'],
         ['Unit',        extractField(raw, 'unit_id', 'primary_unit') ?? '—'],
       ]
     case 'fire-ems-dispatch':
@@ -259,12 +258,34 @@ export default function Last48EventCard({ event, onClose }: Props) {
               {event.headline ?? 'Event'}
             </h3>
 
-            {/* ── Location ─────────────────────────────────────────── */}
-            {event.neighborhood && (
-              <p className="font-mono text-[10px] text-paper-400 dark:text-paper-500 mb-3">
-                {event.neighborhood}
-              </p>
+            {/* ── Priority (911 only) ───────────────────────────────── */}
+            {(event.datasetId === '911-realtime' || event.datasetId === '911-historical') && event.priority && (
+              <div className="mt-3">
+                <div className="font-mono text-[10px] tracking-widest text-paper-500 dark:text-paper-600">PRIORITY</div>
+                <div className={`font-mono text-[12px] mt-0.5 ${event.priority === 'A' ? 'text-indigo-300 font-semibold' : 'text-paper-300'}`}>
+                  {event.priority}
+                  {event.priority === 'A' && ' — life-threatening'}
+                </div>
+              </div>
             )}
+
+            {/* ── Location ─────────────────────────────────────────── */}
+            <div className="mt-3 mb-3">
+              <div className="font-mono text-[10px] tracking-widest text-paper-500 dark:text-paper-600">LOCATION</div>
+              {(event.longitude != null && event.latitude != null) ? (
+                <div className="font-mono text-[11px] text-paper-300 mt-0.5">
+                  {event.neighborhood ?? 'SF'}
+                  <span className="text-paper-600 dark:text-paper-700">
+                    {' · '}
+                    {event.latitude.toFixed(4)}, {event.longitude.toFixed(4)}
+                  </span>
+                </div>
+              ) : (
+                <div className="font-mono text-[11px] italic text-paper-500 dark:text-paper-600 mt-0.5">
+                  Suppressed — sensitive call type. No map position available.
+                </div>
+              )}
+            </div>
 
             {/* ── Compact field rows ──────────────────────────────────
                 Render only fields with real values. Em-dash placeholder
