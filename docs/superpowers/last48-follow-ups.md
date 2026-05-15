@@ -75,6 +75,68 @@ read `Thu. May 14, 2026 · 11:05 p.m. PT`.
 
 ---
 
+### 4. `Last48NeighborhoodPeek.tsx` — apply the "human-centered" register
+
+**Status:** Small polish PR.
+**Identified:** PR #43 review, 2026-05-15.
+**Scope:** Single file (`src/views/Last48/detail/Last48NeighborhoodPeek.tsx`).
+
+The HOTSPOTS-mode neighborhood detail panel was built before the Phase 2
+warm-over-mono register landed. Three concrete fixes:
+
+- **Event-row headlines** show raw `snake_case` values
+  (`blocking_driveway_cite_only`, `other_illegal_parking`) — should run
+  through `formatHeadline` from `src/utils/format.ts` ("Blocking driveway
+  cite only", "Other illegal parking").
+- **Event-row times** are 24-hour mono (`22:28`, `19:47`) — should use
+  `formatApTime` ("10:28 p.m.", "7:47 p.m.") for consistency with FlowRail.
+- **Typography is all-mono** — bring into the ER/FlowRail register: body
+  serif for primary labels (the section headers PER-DATASET BREAKDOWN /
+  TOP CONTRIBUTING EVENTS stay in small-caps mono per the established
+  pattern, but the row content shifts from all-mono to body-font where
+  appropriate).
+
+See [[feedback_warm_over_mono_last48]] for the established conventions
+and pigment column guidance.
+
+### 5. Replace the "TUNE IN" pill with simpler navigation OR add Census data
+
+**Status:** Two paths — pick one.
+**Identified:** PR #43 review, 2026-05-15.
+
+The bottom-of-panel "See Pacific Heights across SF →" link + italic
+subtitle + "▶ TUNE IN →" pill reads as awkward in the user's view.
+
+**Path A (lightweight, fold into item 4's polish PR):** Drop the TUNE IN
+pill. Keep the simple link "See Pacific Heights across SF →" as the
+single CTA. Tighter, less marketingese.
+
+**Path B (richer follow-up, separate PR):** Replace the CTA block with
+Census-data context the way EmergencyResponse does via
+`NeighborhoodCensusContext` (`useCensusData` + boundary lookup → renders
+median income / poverty rate / rent burden / LEP rate / renter %
+compared to city averages). Adds editorial value. Bigger scope.
+
+Recommendation: ship Path A in item 4's polish PR, defer Path B as its
+own follow-up after the Phase 3 merge train clears.
+
+### 6. HOTSPOTS choropleth monotone in combined-z-score view
+
+**Status:** Observation, not a defect.
+**Identified:** PR #43 review, 2026-05-15.
+
+When multiple datasets are enabled simultaneously in HOTSPOTS mode, the
+combined z-score (averaged across 911-realtime + Fire/EMS + 311)
+regresses toward zero, so the choropleth shows mostly uniform pale
+neighborhoods. This is the correct math but visually quiet. The
+demographic underlay coming in Phase 5 (PR #45) uses Census variables
+with per-variable color ramps that produce real visual variation, so the
+"interesting maps" arrive via #45 — not via tweaks to the anomaly paint.
+
+No action; logged for context.
+
+---
+
 ## Closed / Landed
 
 *(none yet)*
