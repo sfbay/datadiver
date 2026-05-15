@@ -181,13 +181,17 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
           // <button> would produce invalid ARIA inside role="listbox".
           // Visual treatment emulates EmergencyResponse: body-font name +
           // italic mono subtitle + small pigment dot + AP-style time.
-          // NOTE: priority field is added in Phase 4 (PR #44); once that lands
-          // on main, surface "Priority A" here for 911-realtime events whose
-          // priority === 'A' — Phase 5's wiring of the rail through
-          // Last48UnifiedView is the natural place.
+          //
+          // Priority-A 911 events get two reinforcing row-level signals:
+          // a brighter pigment dot (indigo-300 vs the default indigo-500)
+          // and an explicit "Priority A" tag in the subtitle. The dot is
+          // the at-a-glance scan cue; the text is the confirmation.
+          const isPriorityA911 = ev.datasetId === '911-realtime' && ev.priority === 'A'
+          const dotColor = isPriorityA911 ? '#aab3d4' : meta.color
           const subtitleBits: string[] = [meta.label]
           if (hasCoords && ev.neighborhood) subtitleBits.push(ev.neighborhood)
           if (!hasCoords) subtitleBits.push('location withheld')
+          if (isPriorityA911) subtitleBits.push('Priority A')
 
           const row = (
             <div
@@ -213,7 +217,7 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
                     headline cap-height regardless of row length. */}
                 <div
                   className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-[5px]"
-                  style={{ backgroundColor: meta.color }}
+                  style={{ backgroundColor: dotColor }}
                   aria-hidden="true"
                 />
                 <div className="min-w-0 flex-1">
