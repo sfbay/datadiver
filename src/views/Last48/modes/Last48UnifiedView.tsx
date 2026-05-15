@@ -231,6 +231,7 @@ export default function Last48UnifiedView({
               selectedId={selectedEvent?.id}
               onSelect={handleMapSelect}
               onNewRipples={handleNewRipples}
+              initialLoadedByDataset={window48.initialLoadedByDataset}
             />
           )}
 
