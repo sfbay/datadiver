@@ -7,6 +7,7 @@
 // Color-coded by lag magnitude. Click anywhere → methodology popover
 // (deferred to Phase 1.x polish; for now no popover).
 
+import { useRef } from 'react'
 import type { FreshnessMap, DatasetId } from '@/types/last48'
 
 const DATASET_LABELS: Record<DatasetId, string> = {
@@ -39,11 +40,22 @@ function lagColor(ms: number | null): string {
   return 'text-brick-700 dark:text-brick-500'                          // >= 24h — concern
 }
 
-export default function FreshnessChipStrip({ freshness }: { freshness: FreshnessMap }) {
+interface Props {
+  freshness: FreshnessMap
+  initialLoadedByDataset: Record<DatasetId, boolean>
+}
+
+export default function FreshnessChipStrip({ freshness, initialLoadedByDataset }: Props) {
   // Render ALL datasets always (with em-dash placeholders for null lag
   // values) so the chrome is visually stable across initial load and
   // partial-fetch states. The strip should never flash blank.
   const datasets = Object.keys(freshness) as DatasetId[]
+
+  // Track previous initialLoadedByDataset per chip for resolve-pulse detection.
+  // The pulse class is applied in Task 6.6; the ref is established here.
+  const prevLoadedRef = useRef<Record<DatasetId, boolean>>(
+    Object.fromEntries(datasets.map((id) => [id, false])) as Record<DatasetId, boolean>
+  )
 
   return (
     <div className="flex flex-col gap-1 font-mono text-[10px] leading-tight">
@@ -60,10 +72,15 @@ export default function FreshnessChipStrip({ freshness }: { freshness: Freshness
         <span className="text-paper-600 tracking-wider">DATA REFRESH</span>
         {datasets.map((id) => {
           const f = freshness[id]
+          const isInitialLoaded = initialLoadedByDataset[id] ?? false
           return (
             <span key={`refresh-${id}`} className="flex items-baseline gap-1">
               <span className="text-paper-700 dark:text-paper-500">{DATASET_LABELS[id]}</span>
-              <span className={`${lagColor(f.refreshLagMs)} tabular-nums`}>{formatLag(f.refreshLagMs)}</span>
+              {isInitialLoaded ? (
+                <span className={`${lagColor(f.refreshLagMs)} tabular-nums`}>{formatLag(f.refreshLagMs)}</span>
+              ) : (
+                <span className="animate-pulse text-paper-600 dark:text-paper-700">loading…</span>
+              )}
             </span>
           )
         })}
@@ -74,10 +91,17 @@ export default function FreshnessChipStrip({ freshness }: { freshness: Freshness
         <span className="text-paper-600 tracking-wider">EVENT LAG&nbsp;&nbsp;</span>
         {datasets.map((id) => {
           const f = freshness[id]
+          const isInitialLoaded = initialLoadedByDataset[id] ?? false
+          // Update the prev-loaded ref for Task 6.6 pulse detection.
+          prevLoadedRef.current[id] = isInitialLoaded
           return (
             <span key={`lag-${id}`} className="flex items-baseline gap-1">
               <span className="text-paper-700 dark:text-paper-500">{DATASET_LABELS[id]}</span>
-              <span className={`${lagColor(f.eventLagMs)} tabular-nums`}>{formatLag(f.eventLagMs)}</span>
+              {isInitialLoaded ? (
+                <span className={`${lagColor(f.eventLagMs)} tabular-nums`}>{formatLag(f.eventLagMs)}</span>
+              ) : (
+                <span className="animate-pulse text-paper-600 dark:text-paper-700">loading…</span>
+              )}
             </span>
           )
         })}
