@@ -160,18 +160,31 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect }: Prop
       .map((e) => {
         const age = now - e.receivedAt
         const isOpen = e.state === undefined || e.state === 'open'
+        // historical excluded — backfilled data; priority-A urgency cue
+        // is only meaningful on the realtime stream
+        const isPriorityA = e.datasetId === '911-realtime' && e.priority === 'A'
         return {
           type: 'Feature',
           properties: {
             id: e.id,
             datasetId: e.datasetId,
-            color: ageColor(e.datasetId, age),
-            // Stroke ages in lockstep with the fill for OPEN events so the
-            // cream halo doesn't bleach the ramp. Closed events keep the
-            // dark espresso stroke (which recedes naturally).
-            strokeColor: isOpen ? ageStrokeOpen(e.datasetId, age) : '#1e140d',
+            // Priority-A keeps full pigment regardless of age — the age
+            // tonal ramp was bleaching priority-A toward paper at the same
+            // rate as routine, erasing visual hierarchy at the back of the
+            // 48h window. Routine events still fade with age.
+            color: isPriorityA ? COLORS[e.datasetId] : ageColor(e.datasetId, age),
+            // Priority-A gets a bright indigo-300 halo via circle-stroke
+            // (extends OUTSIDE the radius in Mapbox), regardless of state
+            // or age. Routine: open events age cream → paper; closed
+            // events get the dark espresso stroke that recedes naturally.
+            strokeColor: isPriorityA
+              ? '#aab3d4'
+              : isOpen
+                ? ageStrokeOpen(e.datasetId, age)
+                : '#1e140d',
             age,
             isOpen,
+            isPriorityA,
             headline: e.headline ?? '',
           },
           geometry: { type: 'Point', coordinates: [e.longitude!, e.latitude!] },
@@ -192,18 +205,33 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect }: Prop
         'circle-color': ['get', 'color'],
         'circle-radius': [
           'interpolate', ['linear'], ['zoom'],
-          10, ['case', ['get', 'isOpen'], 4, 3],
-          14, ['case', ['get', 'isOpen'], 7, 6],
+          10, ['case',
+            ['get', 'isPriorityA'], ['case', ['get', 'isOpen'], 6, 5],
+            ['case', ['get', 'isOpen'], 4, 3],
+          ],
+          14, ['case',
+            ['get', 'isPriorityA'], ['case', ['get', 'isOpen'], 10, 9],
+            ['case', ['get', 'isOpen'], 7, 6],
+          ],
         ],
         'circle-opacity': [
           'case',
-          ['get', 'isOpen'],
-          ['interpolate', ['linear'], ['get', 'age'], 0, 1.0, 172800000, 0.55],
-          ['interpolate', ['linear'], ['get', 'age'], 0, 0.7, 172800000, 0.25],
+          ['get', 'isPriorityA'],
+          // Priority-A: full opacity at age 0, slower decay
+          ['interpolate', ['linear'], ['get', 'age'], 0, 1.0, 172800000, 0.8],
+          ['case',
+            ['get', 'isOpen'],
+            ['interpolate', ['linear'], ['get', 'age'], 0, 1.0, 172800000, 0.55],
+            ['interpolate', ['linear'], ['get', 'age'], 0, 0.7, 172800000, 0.25],
+          ],
         ],
         'circle-stroke-color': ['get', 'strokeColor'],
         'circle-stroke-width': [
-          'case', ['get', 'isOpen'], 1, 0.5,
+          'case',
+          // Priority-A: 2.5px halo extending outside the dot.
+          ['get', 'isPriorityA'], 2.5,
+          // Routine: thin open-event stroke, thinner closed-event stroke.
+          ['case', ['get', 'isOpen'], 1, 0.5],
         ],
       },
     } as mapboxgl.AnyLayer,

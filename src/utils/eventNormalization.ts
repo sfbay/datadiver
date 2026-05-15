@@ -66,6 +66,14 @@ function parseTimestamp(s: unknown): { iso: string; ms: number } | null {
   return { iso: s, ms }
 }
 
+function extractPriority(row: Record<string, unknown>): string | undefined {
+  // SF 911 CAD rows expose priority on one of these columns depending on
+  // dataset version. Prefer the final assignment over the original.
+  const v = row.priority_final ?? row.priority_original ?? row.priority
+  if (typeof v === 'string' && v.length > 0) return v.toUpperCase()
+  return undefined
+}
+
 export function normalizeEvent(
   datasetId: DatasetId,
   row: Record<string, unknown>
@@ -84,6 +92,7 @@ export function normalizeEvent(
       const disposition = typeof row.disposition === 'string' ? row.disposition : undefined
       const closeAt = parseTimestamp(row.close_datetime)?.ms
       const state: 'open' | 'closed' = disposition ? 'closed' : 'open'
+      const priority = extractPriority(row)
       return {
         id: `${datasetId}:${row.cad_number ?? row.dispatch_id ?? row.id}`,
         datasetId,
@@ -97,6 +106,7 @@ export function normalizeEvent(
         state,
         closeAt,
         disposition,
+        priority,
         raw: row,
       }
     }
