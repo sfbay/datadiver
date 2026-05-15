@@ -78,6 +78,15 @@ export default function Last48UnifiedView({
     return () => document.removeEventListener('keydown', onKey)
   }, [selectedEvent])
 
+  // Clear ripples when FLOW is toggled off. Without this, in-flight ripple
+  // ring components unmount mid-animation (their setTimeout for onDone gets
+  // cancelled), leaving stale ripples in parent state. When FLOW toggles
+  // back on, FlowArrivalRipples remounts and renders every accumulated
+  // ripple at once — a visible ripple storm.
+  useEffect(() => {
+    if (!pointsOn) setRipples([])
+  }, [pointsOn])
+
   // ── ANOMALY state ───────────────────────────────────────────────────────────
   const [selectedNh, setSelectedNh] = useState<string | null>(null)
 
@@ -122,34 +131,19 @@ export default function Last48UnifiedView({
   }, [])
 
   // ── Rail resolution ─────────────────────────────────────────────────────────
-  // Rule: rail follows pointsOn.
-  // - pointsOn → FlowRail
-  // - !pointsOn && fill=anomaly → AnomalyRail
-  // - everything else → no rail (camera gets full canvas width)
+  // FlowRail is the default — the events list is the editorial canvas of
+  // Last 48 and stays useful even when FLOW dots are off (browsing the
+  // stream still works, clicking still flies the map). AnomalyRail only
+  // takes over when the user has explicitly entered anomaly-without-points
+  // mode (fill=anomaly AND !pointsOn) — the narrow case where the
+  // editorial focus shifts from event-stream to neighborhood-anomaly.
+
+  const railIsAnomaly = fill === 'anomaly' && !pointsOn
 
   return (
     <Last48Map
       rail={(map) => {
-        if (pointsOn) {
-          return (
-            <FlowRail
-              events={visibleEvents}
-              selectedId={selectedEvent?.id}
-              onSelect={(ev) => {
-                if (selectedEvent?.id === ev.id) {
-                  setSelectedEvent(null)
-                  return
-                }
-                setSelectedEvent(ev)
-                if (map && ev.longitude != null && ev.latitude != null) {
-                  map.flyTo({ center: [ev.longitude, ev.latitude], zoom: 14, duration: 600 })
-                }
-              }}
-            />
-          )
-        }
-
-        if (fill === 'anomaly') {
+        if (railIsAnomaly) {
           return (
             <>
               <AnomalyRail
@@ -173,7 +167,22 @@ export default function Last48UnifiedView({
           )
         }
 
-        return null
+        return (
+          <FlowRail
+            events={visibleEvents}
+            selectedId={selectedEvent?.id}
+            onSelect={(ev) => {
+              if (selectedEvent?.id === ev.id) {
+                setSelectedEvent(null)
+                return
+              }
+              setSelectedEvent(ev)
+              if (map && ev.longitude != null && ev.latitude != null) {
+                map.flyTo({ center: [ev.longitude, ev.latitude], zoom: 14, duration: 600 })
+              }
+            }}
+          />
+        )
       }}
       mapOverlay={(map) => (
         <>
