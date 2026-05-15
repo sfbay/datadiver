@@ -71,7 +71,12 @@ export default function Last48() {
                 What's flowed in across SF in the past 48 hours
               </p>
             </div>
-            {/* Event count chip — Task 1.2 */}
+            {!window48.isLoading && window48.events.length > 0 && (
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-moss-500/80 bg-moss-500/10 px-2 py-1 rounded-full whitespace-nowrap">
+                <span className="w-1 h-1 rounded-full bg-moss-500 pulse-live" />
+                {window48.events.length.toLocaleString()} events
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <ModeToggle mode={mode} onChange={setMode} />
