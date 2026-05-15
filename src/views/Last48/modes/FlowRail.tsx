@@ -52,16 +52,22 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
   const [pinnedOlder, setPinnedOlder] = useState<NormalizedEvent | null>(null)
 
   // When selection changes (e.g. from a map click), scroll the selected row
-  // into view so the user can see the highlight in the rail.
+  // into view AND move keyboard focus to the rail listbox so arrow keys
+  // advance through rows instead of panning the Mapbox canvas.
   //
   // Depends on pinnedOlder as well as selectedId: when a map click selects
   // an out-of-sequence event, selectedId updates BEFORE pinnedOlder commits.
   // On the first render, the pinned row doesn't exist yet, so the ref is
   // null and scrollIntoView no-ops. The second firing — after pinnedOlder
   // settles and the row mounts — is the one that actually scrolls.
+  //
+  // focus({ preventScroll: true }) avoids the browser's default focus-
+  // induced scroll, which would compete with the explicit scrollIntoView
+  // we just called on the row.
   useEffect(() => {
     if (selectedRowRef.current) {
       selectedRowRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      scrollRef.current?.focus({ preventScroll: true })
     }
   }, [selectedId, pinnedOlder])
 
