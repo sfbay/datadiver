@@ -131,21 +131,43 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
       }}
     >
       {/* Subtle header — solid bg matching the rail's visual register so it
-          reads as part of the rail chrome, not a contrast band or a window
-          to scrolled content beneath. Hairline border-b is the only visual
-          edge — it tells the reader the scroll area lives beneath. No
-          backdrop-blur: a solid bg has nothing translucent to blur. */}
-      <div className="sticky top-0 z-10 px-4 pt-3.5 pb-2.5 flex-shrink-0 bg-paper-50 dark:bg-espresso-900 border-b border-paper-200/50 dark:border-espresso-800">
-        <div className="flex items-center gap-2">
+          reads as part of the rail chrome, not a contrast band. Hairline
+          border-b is the only visual edge. Below the label, three labeled
+          stat pills (events / window / no GPS) carry the at-a-glance
+          context that used to live in a single italic line. */}
+      <div className="sticky top-0 z-10 px-3 pt-3 pb-2.5 flex-shrink-0 bg-paper-50 dark:bg-espresso-900 border-b border-paper-200/50 dark:border-espresso-800">
+        <div className="flex items-center gap-2 px-1">
           <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-paper-500/60 dark:text-paper-600">
-            Freshest
+            Latest
           </p>
           <div className="flex-1 h-[1px] bg-paper-200/30 dark:bg-white/[0.04]" />
         </div>
-        <p className="text-[10px] text-paper-500/80 dark:text-paper-600 italic mt-1 tabular-nums">
-          {events.length} events &middot; 48h window
-          {withheldCount > 0 && ` · ${withheldCount} location-withheld`}
-        </p>
+        <div className="grid grid-cols-3 gap-1.5 mt-2">
+          <div className="rounded-md bg-paper-100/50 dark:bg-espresso-800/40 px-2 py-1.5">
+            <p className="font-mono text-[12px] font-semibold text-paper-800 dark:text-paper-200 tabular-nums leading-none">
+              {events.length.toLocaleString()}
+            </p>
+            <p className="font-mono text-[8px] text-paper-500/70 dark:text-paper-600 uppercase tracking-[0.15em] mt-1">
+              events
+            </p>
+          </div>
+          <div className="rounded-md bg-paper-100/50 dark:bg-espresso-800/40 px-2 py-1.5">
+            <p className="font-mono text-[12px] font-semibold text-paper-800 dark:text-paper-200 tabular-nums leading-none">
+              48h
+            </p>
+            <p className="font-mono text-[8px] text-paper-500/70 dark:text-paper-600 uppercase tracking-[0.15em] mt-1">
+              window
+            </p>
+          </div>
+          <div className="rounded-md bg-paper-100/50 dark:bg-espresso-800/40 px-2 py-1.5">
+            <p className="font-mono text-[12px] font-semibold text-paper-800 dark:text-paper-200 tabular-nums leading-none">
+              {withheldCount.toLocaleString()}
+            </p>
+            <p className="font-mono text-[8px] text-paper-500/70 dark:text-paper-600 uppercase tracking-[0.15em] mt-1">
+              no gps
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="px-2 py-2 flex flex-col gap-0.5">
