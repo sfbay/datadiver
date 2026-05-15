@@ -16,6 +16,7 @@ import FreshnessChipStrip from './chrome/FreshnessChipStrip'
 import DatasetFilterChips from './chrome/DatasetFilterChips'
 import ModeToggle from './chrome/ModeToggle'
 import ScannerStrip from './chrome/ScannerStrip'
+import ExportButton from '@/components/export/ExportButton'
 
 type Mode = 'flow' | 'hotspots'
 
@@ -80,7 +81,7 @@ export default function Last48() {
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <ModeToggle mode={mode} onChange={setMode} />
-            {/* ExportButton — Task 1.3 */}
+            <ExportButton targetSelector="#last48-capture" filename="last-48" />
           </div>
         </div>
       </header>
@@ -96,7 +97,7 @@ export default function Last48() {
       </div>
 
       {/* Mode renderer */}
-      <div className="flex-1 relative">
+      <div id="last48-capture" className="flex-1 relative">
         {mode === 'flow' && <FlowMode window48={window48} datasets={datasets} />}
         {mode === 'hotspots' && <HotspotsMode window48={window48} datasets={datasets} />}
       </div>
