@@ -224,11 +224,8 @@ export default function Last48UnifiedView({
           )}
 
           {/* ── Loading pills ─────────────────────────────────────────── */}
-          {window48.isLoading && (
-            <div className="absolute top-3 left-3 font-mono text-[10px] text-paper-500 bg-espresso-900/70 px-2 py-1 rounded">
-              loading 48h window…
-            </div>
-          )}
+          {/* isLoading gate REMOVED — events paint per-stream as they arrive.
+              The StreamProgressBar (Task 6.3) replaces this inline pill. */}
           {fill === 'anomaly' && anomalyLoading && (
             <div className="absolute top-10 left-3 font-mono text-[10px] text-paper-500 bg-espresso-900/70 px-2 py-1 rounded">
               computing 12-week baseline…
