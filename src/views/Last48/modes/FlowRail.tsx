@@ -133,10 +133,13 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
           // <button> would produce invalid ARIA inside role="listbox".
           // Visual treatment emulates EmergencyResponse: body-font name +
           // italic mono subtitle + small pigment dot + AP-style time.
+          // NOTE: priority field is added in Phase 4 (PR #44); once that lands
+          // on main, surface "Priority A" here for 911-realtime events whose
+          // priority === 'A' — Phase 5's wiring of the rail through
+          // Last48UnifiedView is the natural place.
           const subtitleBits: string[] = [meta.label]
           if (hasCoords && ev.neighborhood) subtitleBits.push(ev.neighborhood)
           if (!hasCoords) subtitleBits.push('location withheld')
-          if (ev.priority === 'A') subtitleBits.push('Priority A')
 
           const row = (
             <div
