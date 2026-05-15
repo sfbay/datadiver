@@ -44,6 +44,8 @@ interface ProjectedRipple extends Ripple {
 export default function FlowArrivalRipples({ map, ripples, onDone }: Props) {
   const [projected, setProjected] = useState<ProjectedRipple[]>([])
   const onDoneRef = useRef(onDone)
+  // Keep ref in sync — only accessed in effects, never during render.
+  // eslint-disable-next-line react-hooks/refs
   onDoneRef.current = onDone
 
   // Project all active ripples to screen coords. Re-project on map move/zoom.
@@ -101,6 +103,8 @@ interface RingProps {
 
 function RippleRing({ ripple, center, onDone }: RingProps) {
   const doneRef = useRef(onDone)
+  // Keep ref in sync — only accessed in effects, never during render.
+  // eslint-disable-next-line react-hooks/refs
   doneRef.current = onDone
 
   // Schedule onDone after the animation completes.

@@ -37,6 +37,8 @@ export default function AnomalyFillLayer({
 }: Props) {
   const { boundaries } = useNeighborhoodBoundaries()
   const onClickRef = useRef(onNeighborhoodClick)
+  // Keep ref in sync — accessed only inside event handlers, never during render.
+  // eslint-disable-next-line react-hooks/refs
   onClickRef.current = onNeighborhoodClick
 
   const geojson = useMemo<GeoJSON.FeatureCollection>(() => {
