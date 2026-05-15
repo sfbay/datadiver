@@ -19,6 +19,13 @@ interface DetailPanelShellProps {
   /** Hex color driving the panel's top-left corner glow. Defaults to the
    *  brand terracotta. Pass the dataset's pigment for per-view consistency. */
   glowColor?: string
+  /** Optional CSS selectors for additional regions that should be treated
+   *  as "inside" the panel for outside-click dismiss purposes. Clicks within
+   *  elements matching any of these selectors will NOT dismiss the panel.
+   *  Use when the panel coexists with another interactive surface that
+   *  drives its content — e.g., Last 48's FlowRail (listbox) is the
+   *  selection driver, so rail clicks shouldn't dismiss the event card. */
+  additionalInsideSelectors?: string[]
   /** Panel content — only rendered when not loading */
   children: ReactNode
 }
@@ -43,17 +50,26 @@ export default function DetailPanelShell({
   buildShareUrl,
   shareAccentClass,
   glowColor = '#b85a33', // terracotta-600 — brand fallback
+  additionalInsideSelectors,
   children,
 }: DetailPanelShellProps) {
   const panelRef = useRef<HTMLDivElement>(null)
 
-  // Close on outside click
+  // Close on outside click. `additionalInsideSelectors` extends the
+  // "inside" boundary beyond the panel itself — useful when the panel is
+  // driven by another interactive surface (e.g., a sidebar listbox).
   useEffect(() => {
     if (!open) return
     const handler = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        onClose()
+      const target = e.target as Node | null
+      if (!target) return
+      if (panelRef.current && panelRef.current.contains(target)) return
+      if (additionalInsideSelectors && target instanceof Element) {
+        for (const selector of additionalInsideSelectors) {
+          if (target.closest(selector)) return
+        }
       }
+      onClose()
     }
     // Delay to avoid catching the click that opened the panel
     const timer = setTimeout(() => document.addEventListener('mousedown', handler), 100)
@@ -61,7 +77,7 @@ export default function DetailPanelShell({
       clearTimeout(timer)
       document.removeEventListener('mousedown', handler)
     }
-  }, [open, onClose])
+  }, [open, onClose, additionalInsideSelectors])
 
   if (!open) return null
 

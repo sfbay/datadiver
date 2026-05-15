@@ -199,6 +199,10 @@ export default function Last48EventCard({ event, onClose }: Props) {
       isLoading={false}
       widthClass="w-[clamp(260px,22vw,320px)]"
       glowColor={meta?.color ?? '#b85a33'}
+      // The FLOW rail is a selection-driving listbox — clicks on its rows
+      // shouldn't dismiss this card. Treat any element inside a [role="listbox"]
+      // as "inside" the panel for outside-click-dismiss purposes.
+      additionalInsideSelectors={['[role="listbox"]']}
     >
       {event && meta && (() => {
         const { magnitude, unit } = formatAge(event.receivedAt)
