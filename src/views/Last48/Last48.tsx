@@ -17,6 +17,8 @@ import DatasetFilterChips from './chrome/DatasetFilterChips'
 import ModeToggle from './chrome/ModeToggle'
 import ScannerStrip from './chrome/ScannerStrip'
 import ExportButton from '@/components/export/ExportButton'
+import CivicTicker from '@/components/ui/CivicTicker'
+import { useCivicIndicators } from '@/hooks/useCivicIndicators'
 
 type Mode = 'flow' | 'hotspots'
 
@@ -39,6 +41,7 @@ export default function Last48() {
   const datasets = useMemo(() => parseDatasets(searchParams.get('datasets')), [searchParams])
 
   const window48 = useLast48Window({ datasets })
+  const civicIndicators = useCivicIndicators()
 
   const setMode = (next: Mode) => {
     const np = new URLSearchParams(searchParams)
@@ -85,6 +88,14 @@ export default function Last48() {
           </div>
         </div>
       </header>
+
+      {/* Cross-view ticker — signals from other datasets */}
+      <div className="flex-shrink-0 border-b border-paper-200/40 dark:border-espresso-800 px-[clamp(16px,3vw,64px)] py-1 bg-paper-50/30 dark:bg-espresso-950/30 backdrop-blur-xl z-10">
+        <CivicTicker
+          items={civicIndicators.items.filter(i => i.source.view !== '/live-feeds')}
+          size="compact"
+        />
+      </div>
 
       {/* Freshness honesty chip strip */}
       <div className="px-[clamp(16px,3vw,64px)] pb-2">
