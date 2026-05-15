@@ -16,7 +16,7 @@
  *  it just sets width, chrome, and the compression flag.
  */
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, type ReactNode, type HTMLAttributes } from 'react'
 import { useAppStore } from '@/stores/appStore'
 
 interface MapSidebarContextValue {
@@ -40,9 +40,13 @@ interface MapSidebarProps {
   children: ReactNode
   /** Open-width variant. 'default' = 320px (w-80). 'lean' = 260px (w-[260px]) for map-hero-forward views like The Last 48. */
   width?: MapSidebarWidth
+  /** Props spread onto the inner scroll <div>. Required if children need the
+   *  scrolling element to be a listbox (role + aria-activedescendant must sit
+   *  on the scrolling element for scrollIntoView + activedescendant to work). */
+  scrollContainerProps?: HTMLAttributes<HTMLDivElement>
 }
 
-export default function MapSidebar({ children, width = 'default' }: MapSidebarProps) {
+export default function MapSidebar({ children, width = 'default', scrollContainerProps }: MapSidebarProps) {
   const isOpen = useAppStore((s) => s.isContextSidebarOpen)
   const toggle = useAppStore((s) => s.toggleContextSidebar)
 
@@ -116,7 +120,10 @@ export default function MapSidebar({ children, width = 'default' }: MapSidebarPr
         {/* Inner scroll container — keeps the chevron pinned to the visible
             viewport even when children content is scrolled. */}
         {isOpen && (
-          <div className="flex-1 overflow-y-auto flex flex-col min-h-0">
+          <div
+            {...scrollContainerProps}
+            className={`flex-1 overflow-y-auto flex flex-col min-h-0 ${scrollContainerProps?.className ?? ''}`}
+          >
             {children}
           </div>
         )}
