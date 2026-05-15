@@ -1,4 +1,4 @@
-import { useEffect, useRef, Fragment } from 'react'
+import { useEffect, useRef, useState, Fragment } from 'react'
 import type { NormalizedEvent, DatasetId } from '@/types/last48'
 import type { KeyboardEvent } from 'react'
 import MapSidebar from '@/components/layout/MapSidebar'
@@ -41,24 +41,47 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
     }
   }, [selectedId])
 
-  // Spec cap: 50 most-recent rows. BUT — if the selected event is older
-  // than the 50 most recent (the map shows thousands of events; a click
-  // can land anywhere in the 48h window), we MUST also render the
-  // selected event or the rail can't show the inversion at all. Find
-  // the selected event in the full buffer if it's outside the top 50
-  // and append it; sort keeps chronological order. A divider rendered
-  // above this out-of-sequence row tells the reader why it appears
-  // below the recent stream.
+  // Spec cap: 50 most-recent rows. BUT — if the user clicks a map dot for
+  // an event older than the 50 most recent (the map shows thousands of
+  // events; a click can land anywhere in the 48h window), we MUST also
+  // render the selected event or the rail can't show the inversion at all.
+  //
+  // Behavior contract: once an out-of-sequence event is selected (clicked
+  // on the map), we PIN it in the rail below a "selected · older" divider.
+  // The pinned row persists across in-rail navigation (arrow keys, clicks
+  // on other rows) — it only clears when the panel itself closes
+  // (selectedId becomes undefined) or when the user clicks a DIFFERENT
+  // out-of-sequence event (which replaces the pin).
+  //
+  // Why pin instead of derive-from-selectedId-each-render: if the row
+  // vanishes the moment the user navigates away from it, the rail effectively
+  // hides the older event — surprising, since the user just surfaced it.
+  // Pinning matches Finder's "recently revealed file stays visible" pattern.
+  const [pinnedOlder, setPinnedOlder] = useState<NormalizedEvent | null>(null)
+
+  useEffect(() => {
+    // Panel closed (no selection) → clear pin.
+    if (!selectedId) {
+      setPinnedOlder(null)
+      return
+    }
+    // Selected event is in the top 50 → keep existing pin unchanged.
+    const isInTop50 = events.slice(0, 50).some((e) => e.id === selectedId)
+    if (isInTop50) return
+    // Selected event lives outside top 50 → pin it (replacing any prior pin).
+    const sel = events.find((e) => e.id === selectedId)
+    if (sel) setPinnedOlder(sel)
+  }, [selectedId, events])
+
   const top50 = events.slice(0, 50)
-  const selectedInTop = selectedId
-    ? top50.some((e) => e.id === selectedId)
-    : true
-  const selectedOutsideTop =
-    !selectedInTop && selectedId
-      ? events.find((e) => e.id === selectedId) ?? null
-      : null
-  const limited = selectedOutsideTop
-    ? [...top50, selectedOutsideTop].sort((a, b) => b.receivedAt - a.receivedAt)
+  // Render the pinned older event only when it's still in the events buffer
+  // AND not already part of the top 50 (a new poll could have brought it in).
+  const showPin =
+    pinnedOlder != null &&
+    events.some((e) => e.id === pinnedOlder.id) &&
+    !top50.some((e) => e.id === pinnedOlder.id)
+  const limited = showPin
+    ? [...top50, pinnedOlder!].sort((a, b) => b.receivedAt - a.receivedAt)
     : top50
 
   const withheldCount = events.filter((e) => e.longitude == null || e.latitude == null).length
@@ -129,7 +152,7 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
         {limited.map((ev, idx) => {
           const meta = DATASET_LABEL[ev.datasetId]
           const isSel = ev.id === selectedId
-          const isOutOfSequence = selectedOutsideTop != null && ev.id === selectedOutsideTop.id
+          const isOutOfSequence = showPin && ev.id === pinnedOlder!.id
           const hasCoords = ev.longitude != null && ev.latitude != null
 
           // role="option" + aria-selected: WAI-ARIA listbox semantics.
