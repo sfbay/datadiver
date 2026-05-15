@@ -93,6 +93,7 @@
   /* Espresso + cream scales — exposed as utilities for warm grayscale
      surfaces (e.g., bg-espresso-800, border-cream-300). */
   --color-espresso-1000: #140c08;
+  --color-espresso-950: #160e09;
   --color-espresso-900: #1e140d;
   --color-espresso-800: #2a1d13;
   --color-espresso-700: #3a2a1e;

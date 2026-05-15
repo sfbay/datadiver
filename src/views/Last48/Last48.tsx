@@ -68,6 +68,7 @@ export default function Last48() {
               <div className="font-mono text-[10px] tracking-widest text-paper-500 dark:text-paper-600">
                 <span className="text-paper-400 dark:text-paper-700">——</span> LIVE
               </div>
+              {/* paper-100 (warm cream) vs sibling-standard text-white — intentional earth-tone purity */}
               <h1 className="font-display italic text-2xl text-ink dark:text-paper-100 leading-none whitespace-nowrap">
                 The Last 48
               </h1>
