@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react'
 export default function BootEmanation() {
   const [visible, setVisible] = useState(true)
   useEffect(() => {
-    const t = setTimeout(() => setVisible(false), 2400)
+    const t = setTimeout(() => setVisible(false), 3000)
     return () => clearTimeout(t)
   }, [])
 

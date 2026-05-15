@@ -18,7 +18,7 @@ export default function StreamProgressBar({ initialLoadedByDataset, enabled, col
   const fraction = total > 0 ? completed / total : 0
   const active = completed < total
 
-  if (!active && completed === total) return null
+  if (!active) return null
 
   return (
     <div className={`absolute top-0 left-0 right-0 z-20 h-1 overflow-hidden transition-opacity duration-500 ${active ? 'opacity-100' : 'opacity-0'}`}>
