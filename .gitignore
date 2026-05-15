@@ -49,3 +49,4 @@ reports/resolution-240210-compliance-report-*.docx
 docs/design-handoff/
 public/DataDiver Design System.zip
 .env*.local
+.superpowers/
