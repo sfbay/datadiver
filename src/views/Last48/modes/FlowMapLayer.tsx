@@ -172,6 +172,7 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect }: Prop
             strokeColor: isOpen ? ageStrokeOpen(e.datasetId, age) : '#1e140d',
             age,
             isOpen,
+            // historical excluded — backfilled data; priority-A urgency cue is only meaningful on the realtime stream
             isPriorityA: e.datasetId === '911-realtime' && e.priority === 'A',
             headline: e.headline ?? '',
           },
