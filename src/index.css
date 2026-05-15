@@ -352,6 +352,17 @@ body {
   to { opacity: 1; transform: translateX(0); }
 }
 
+/* FreshnessChipStrip — resolve pulse when a per-stream chip flips loading → value */
+@keyframes chipResolvePulse {
+  0%   { box-shadow: 0 0 0 0 rgba(122,153,84,0.45); }
+  50%  { box-shadow: 0 0 0 6px rgba(122,153,84,0.20); }
+  100% { box-shadow: 0 0 0 0 rgba(122,153,84,0.00); }
+}
+.chip-resolve-pulse {
+  animation: chipResolvePulse 600ms ease-out;
+  border-radius: 999px;
+}
+
 /* Selected-meter marker — pulsing ring + solid dot on the map */
 .selected-meter-marker {
   position: relative;
