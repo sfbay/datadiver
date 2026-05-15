@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { NormalizedEvent, DatasetId } from '@/types/last48'
 import type { KeyboardEvent } from 'react'
+import MapSidebar from '@/components/layout/MapSidebar'
 
 const DATASET_ABBREV: Record<DatasetId, { label: string; color: string }> = {
   '911-realtime':      { label: '911',   color: '#616a96' },
@@ -80,6 +81,13 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
 
   // ------------------------------------------------------------------
   // Keyboard navigation — listbox pattern (WAI-ARIA 1.1)
+  // CRITICAL: The listbox semantics (role, aria-activedescendant,
+  // tabIndex, onKeyDown) are passed via scrollContainerProps so they
+  // land on the SCROLLING element inside MapSidebar. This is required
+  // for scrollIntoView({ block: 'nearest' }) and aria-activedescendant
+  // to work correctly — both expect the listbox to be the scroll root.
+  // Do NOT move these props to a non-scrolling wrapper div.
+  //
   // Esc is handled at the FlowMode level (document keydown) so it works
   // regardless of where focus currently sits.
   // ------------------------------------------------------------------
@@ -104,11 +112,19 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
   }
 
   return (
-    <aside
-      className="w-[clamp(180px,16vw,260px)] border-l border-paper-200/40 dark:border-espresso-700 dark:bg-espresso-950/60 flex flex-col"
-      aria-label="Recent events"
+    <MapSidebar
+      width="lean"
+      scrollContainerProps={{
+        ref: scrollRef,
+        role: 'listbox',
+        'aria-label': '48-hour event log',
+        'aria-activedescendant': selectedId ? `flow-row-${selectedId}` : undefined,
+        tabIndex: 0,
+        onKeyDown: handleKeyDown,
+        className: 'px-2 py-2 flex flex-col gap-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ochre-500 focus-visible:ring-inset',
+      }}
     >
-      <div className="px-3 pt-3 pb-2 border-b border-paper-200/40 dark:border-espresso-800">
+      <div className="px-3 pt-3 pb-2 border-b border-paper-200/40 dark:border-espresso-800 flex-shrink-0">
         <h2 className="font-mono text-[10px] tracking-widest text-paper-600 dark:text-paper-500">
           FRESHEST
         </h2>
@@ -117,73 +133,64 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
         </p>
       </div>
 
-      <div
-        ref={scrollRef}
-        role="listbox"
-        aria-label="48-hour event log"
-        aria-activedescendant={selectedId ? `flow-row-${selectedId}` : undefined}
-        tabIndex={0}
-        onKeyDown={handleKeyDown}
-        className="flex-1 overflow-y-auto px-2 py-2 flex flex-col gap-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ochre-500 focus-visible:ring-inset"
-      >
-        {limited.map((ev) => {
-          const meta  = DATASET_ABBREV[ev.datasetId]
-          const isSel = ev.id === selectedId
+      {limited.map((ev) => {
+        const meta  = DATASET_ABBREV[ev.datasetId]
+        const isSel = ev.id === selectedId
 
-          // Row styling emulates the EmergencyResponse sidebar pattern:
-          // soft ochre tint + ring on selected (vs aggressive cream
-          // inversion). py-2 px-3 rounded-lg matches the ER row chrome
-          // so the rails feel like siblings across the app.
-          //
-          // role="option" + aria-selected: WAI-ARIA listbox semantics.
-          // <button> is replaced with <div role="option"> because using
-          // <button> inside role="listbox" produces invalid ARIA markup.
-          return (
-            <div
-              key={ev.id}
-              id={`flow-row-${ev.id}`}
-              role="option"
-              aria-selected={isSel}
-              ref={isSel ? selectedRowRef : undefined}
-              onClick={() => onSelect(ev)}
-              className={`
-                relative text-left py-2 px-3 rounded-lg font-mono text-[10px]
-                leading-tight cursor-pointer transition-all duration-200
-                ${isSel
-                  ? 'bg-ochre-500/10 ring-1 ring-ochre-500/30 text-paper-200 dark:text-paper-200'
-                  : 'text-paper-700 dark:text-paper-400 hover:bg-white/80 dark:hover:bg-white/[0.04]'}
-              `}
-            >
-              <div className="flex items-baseline gap-1.5">
-                <span className="tabular-nums text-paper-500 dark:text-paper-600">
-                  {formatTime(ev.receivedAt)}
+        // Row styling emulates the EmergencyResponse sidebar pattern:
+        // soft ochre tint + ring on selected (vs aggressive cream
+        // inversion). py-2 px-3 rounded-lg matches the ER row chrome
+        // so the rails feel like siblings across the app.
+        //
+        // role="option" + aria-selected: WAI-ARIA listbox semantics.
+        // <button> is replaced with <div role="option"> because using
+        // <button> inside role="listbox" produces invalid ARIA markup.
+        return (
+          <div
+            key={ev.id}
+            id={`flow-row-${ev.id}`}
+            role="option"
+            aria-selected={isSel}
+            ref={isSel ? selectedRowRef : undefined}
+            onClick={() => onSelect(ev)}
+            className={`
+              relative text-left py-2 px-3 rounded-lg font-mono text-[10px]
+              leading-tight cursor-pointer transition-all duration-200
+              ${isSel
+                ? 'bg-ochre-500/10 ring-1 ring-ochre-500/30 text-paper-200 dark:text-paper-200'
+                : 'text-paper-700 dark:text-paper-400 hover:bg-white/80 dark:hover:bg-white/[0.04]'}
+            `}
+          >
+            <div className="flex items-baseline gap-1.5">
+              <span className="tabular-nums text-paper-500 dark:text-paper-600">
+                {formatTime(ev.receivedAt)}
+              </span>
+              <span
+                className="font-bold tracking-wider"
+                style={{ color: meta.color }}
+              >
+                {meta.label}
+              </span>
+              {ev.neighborhood && (
+                <span className="text-ochre-700 dark:text-ochre-500">
+                  {shortNeighborhood(ev.neighborhood)}
                 </span>
-                <span
-                  className="font-bold tracking-wider"
-                  style={{ color: meta.color }}
-                >
-                  {meta.label}
-                </span>
-                {ev.neighborhood && (
-                  <span className="text-ochre-700 dark:text-ochre-500">
-                    {shortNeighborhood(ev.neighborhood)}
-                  </span>
-                )}
-              </div>
-              {ev.headline && (
-                <div className={`truncate mt-0.5 leading-tight ${isSel ? 'text-paper-300' : 'text-paper-700 dark:text-paper-400'}`}>
-                  {ev.headline}
-                </div>
               )}
             </div>
-          )
-        })}
-        {events.length === 0 && (
-          <div className="text-paper-500 dark:text-paper-600 text-center italic py-6">
-            no events in window yet
+            {ev.headline && (
+              <div className={`truncate mt-0.5 leading-tight ${isSel ? 'text-paper-300' : 'text-paper-700 dark:text-paper-400'}`}>
+                {ev.headline}
+              </div>
+            )}
           </div>
-        )}
-      </div>
-    </aside>
+        )
+      })}
+
+      {events.length === 0 && (
+        <div className="text-paper-500 dark:text-paper-600 text-center italic py-6">
+          no events in window yet
+        </div>
+      )}
+    </MapSidebar>
   )
 }
