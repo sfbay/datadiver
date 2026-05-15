@@ -34,11 +34,15 @@ export function useMapSidebarMode(): MapSidebarContextValue {
 
 const NARROW_BREAKPOINT = 1024
 
+type MapSidebarWidth = 'default' | 'lean'
+
 interface MapSidebarProps {
   children: ReactNode
+  /** Open-width variant. 'default' = 320px (w-80). 'lean' = 260px (w-[260px]) for map-hero-forward views like The Last 48. */
+  width?: MapSidebarWidth
 }
 
-export default function MapSidebar({ children }: MapSidebarProps) {
+export default function MapSidebar({ children, width = 'default' }: MapSidebarProps) {
   const isOpen = useAppStore((s) => s.isContextSidebarOpen)
   const toggle = useAppStore((s) => s.toggleContextSidebar)
 
@@ -57,7 +61,10 @@ export default function MapSidebar({ children }: MapSidebarProps) {
   const isCompressed = isOpen && isNarrow
 
   // 320px full / 240px compressed / 36px collapsed-stub
-  const widthClass = isOpen ? (isNarrow ? 'w-60' : 'w-80') : 'w-9'
+  // lean variant: 260px full (map-hero-forward views), still 240px compressed
+  const widthClass = isOpen
+    ? (isNarrow ? 'w-60' : (width === 'lean' ? 'w-[260px]' : 'w-80'))
+    : 'w-9'
 
   return (
     <MapSidebarContext.Provider value={{ isCompressed }}>
