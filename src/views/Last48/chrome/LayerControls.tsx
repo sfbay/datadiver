@@ -126,21 +126,25 @@ export default function LayerControls({
         {menuOpen && (
           <div
             role="menu"
-            className="absolute right-0 top-full mt-1.5 z-50 min-w-[200px] rounded-lg bg-paper-50 dark:bg-espresso-900 border border-paper-200/50 dark:border-espresso-800 shadow-lg shadow-black/20 overflow-hidden py-1"
+            className="absolute right-0 top-full mt-1.5 z-50 min-w-[220px] rounded-lg bg-paper-50/95 dark:bg-espresso-900/95 backdrop-blur-lg border border-paper-200/50 dark:border-espresso-800 shadow-xl shadow-black/20 p-2"
           >
-            <MenuItem active={isCurrent('none')} onClick={() => handleSelect('none')}>
-              None
-            </MenuItem>
-            <MenuItem active={isCurrent('anomaly')} onClick={() => handleSelect('anomaly')}>
-              <span>Anomaly</span>
-              <span className="ml-auto text-[8px] font-mono uppercase tracking-widest text-paper-500/60 dark:text-paper-600">
-                z-score
-              </span>
-            </MenuItem>
+            <MenuItem
+              active={isCurrent('none')}
+              onClick={() => handleSelect('none')}
+              swatch={null}
+              label="None"
+            />
+            <MenuItem
+              active={isCurrent('anomaly')}
+              onClick={() => handleSelect('anomaly')}
+              swatch="#d4a435"
+              label="Anomaly"
+              hint="z-score"
+            />
 
-            <div className="my-1 mx-3 h-px bg-paper-200/40 dark:bg-espresso-800" />
-            <div className="px-3 pt-1 pb-0.5 text-[8px] font-mono uppercase tracking-[0.2em] text-paper-500/60 dark:text-paper-600">
-              Demographic
+            <div className="my-1.5 mx-1 h-px bg-paper-200/40 dark:bg-espresso-800" />
+            <div className="px-2 pb-1 text-[9px] font-mono uppercase tracking-[0.2em] text-paper-500/70 dark:text-paper-600">
+              Demographic underlay
             </div>
 
             {presetConfigs.map(config => (
@@ -148,9 +152,9 @@ export default function LayerControls({
                 key={config.key}
                 active={isCurrent(config.key as CensusVariable)}
                 onClick={() => handleSelect(config.key as CensusVariable)}
-              >
-                {config.label}
-              </MenuItem>
+                swatch={swatchColor(config)}
+                label={config.shortLabel ?? config.label}
+              />
             ))}
           </div>
         )}
@@ -159,28 +163,66 @@ export default function LayerControls({
   )
 }
 
+// Representative swatch color = middle stop of the variable's color ramp.
+// Reads as "this variable's pigment" in the dropdown without committing to
+// a specific value's color.
+function swatchColor(config: { colorRamp?: string[] }): string {
+  const ramp = config.colorRamp
+  if (!ramp || ramp.length === 0) return '#a8926a'
+  return ramp[Math.floor(ramp.length / 2)] ?? ramp[ramp.length - 1] ?? '#a8926a'
+}
+
 // ---------------------------------------------------------------------------
 // MenuItem — uniform row chrome for the dropdown
+//
+// Body serif (Roboto Serif via the global font stack — NOT mono) for the
+// option name, small mono uppercase hint, optional rounded swatch dot, ochre
+// check on the active row. Matches the EmergencyResponse UnderlayPicker's
+// warmer human-readable feel.
 // ---------------------------------------------------------------------------
 
 interface MenuItemProps {
   active: boolean
   onClick: () => void
-  children: React.ReactNode
+  swatch: string | null
+  label: string
+  hint?: string
 }
 
-function MenuItem({ active, onClick, children }: MenuItemProps) {
+function MenuItem({ active, onClick, swatch, label, hint }: MenuItemProps) {
   return (
     <button
       role="menuitem"
       onClick={onClick}
-      className={`flex items-center w-full text-left px-3 py-1.5 text-[11px] font-mono transition-colors ${
+      className={`flex items-center gap-2 w-full text-left px-2 py-1.5 rounded-md text-[12px] transition-colors ${
         active
-          ? 'bg-paper-200/60 dark:bg-espresso-800 text-ink dark:text-paper-100'
-          : 'text-paper-700 dark:text-paper-300 hover:bg-paper-100/60 dark:hover:bg-espresso-800/50'
+          ? 'bg-ochre-500/15 text-ink dark:text-paper-100'
+          : 'text-paper-800 dark:text-paper-300 hover:bg-paper-100/60 dark:hover:bg-espresso-800/60'
       }`}
     >
-      {children}
+      {swatch ? (
+        <span
+          className="flex-shrink-0 w-2.5 h-2.5 rounded-full"
+          style={{ backgroundColor: swatch }}
+          aria-hidden
+        />
+      ) : (
+        <span
+          className="flex-shrink-0 w-2.5 h-2.5 rounded-full border border-paper-300/60 dark:border-espresso-700"
+          aria-hidden
+        />
+      )}
+      <span className="flex-1 leading-tight">{label}</span>
+      {hint && (
+        <span className="ml-auto text-[8px] font-mono uppercase tracking-widest text-paper-500/70 dark:text-paper-600">
+          {hint}
+        </span>
+      )}
+      {active && (
+        <svg className="w-3 h-3 flex-shrink-0 text-ochre-600 dark:text-ochre-500" fill="none" viewBox="0 0 12 12" aria-hidden>
+          <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )}
     </button>
   )
 }
