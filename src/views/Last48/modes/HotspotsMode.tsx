@@ -1,11 +1,10 @@
 // src/views/Last48/modes/HotspotsMode.tsx
 
 import { useMemo, useState } from 'react'
-import mapboxgl from 'mapbox-gl'
-import MapView from '@/components/maps/MapView'
 import { useAnomalyBaseline } from '@/hooks/useAnomalyBaseline'
 import type { Last48WindowResult } from '@/hooks/useLast48Window'
 import type { DatasetId } from '@/types/last48'
+import Last48Map from './Last48Map'
 import HotspotsChoropleth from './HotspotsChoropleth'
 import AnomalyRail from './AnomalyRail'
 import Last48NeighborhoodPeek from '../detail/Last48NeighborhoodPeek'
@@ -16,7 +15,6 @@ interface Props {
 }
 
 export default function HotspotsMode({ window48, datasets }: Props) {
-  const [map, setMap] = useState<mapboxgl.Map | null>(null)
   const [selectedNh, setSelectedNh] = useState<string | null>(null)
 
   const eventsForBaseline = useMemo(
@@ -47,36 +45,40 @@ export default function HotspotsMode({ window48, datasets }: Props) {
   }, [anomalies])
 
   return (
-    <div className="absolute inset-0 flex">
-      <div className="flex-1 relative">
-        <MapView onMapReady={setMap}>
+    <Last48Map
+      rail={() => (
+        <>
+          <AnomalyRail
+            combinedAnomalies={combined}
+            selectedNeighborhood={selectedNh ?? undefined}
+            onSelect={setSelectedNh}
+          />
+          {selectedNh && (
+            <Last48NeighborhoodPeek
+              neighborhood={selectedNh}
+              anomalies={anomalies.filter((a) => a.neighborhood === selectedNh)}
+              events={window48.events.filter((e) => e.neighborhood === selectedNh && datasets.includes(e.datasetId))}
+              onClose={() => setSelectedNh(null)}
+            />
+          )}
+        </>
+      )}
+    >
+      {(map) => (
+        <>
           <HotspotsChoropleth
             map={map}
             combinedAnomalies={combined}
             onNeighborhoodClick={setSelectedNh}
           />
-        </MapView>
-        {isLoading && (
-          <div className="absolute top-3 left-3 font-mono text-[10px] text-paper-500 bg-espresso-900/70 px-2 py-1 rounded">
-            computing 12-week baseline…
-          </div>
-        )}
-      </div>
 
-      <AnomalyRail
-        combinedAnomalies={combined}
-        selectedNeighborhood={selectedNh ?? undefined}
-        onSelect={setSelectedNh}
-      />
-
-      {selectedNh && (
-        <Last48NeighborhoodPeek
-          neighborhood={selectedNh}
-          anomalies={anomalies.filter((a) => a.neighborhood === selectedNh)}
-          events={window48.events.filter((e) => e.neighborhood === selectedNh && datasets.includes(e.datasetId))}
-          onClose={() => setSelectedNh(null)}
-        />
+          {isLoading && (
+            <div className="absolute top-3 left-3 font-mono text-[10px] text-paper-500 bg-espresso-900/70 px-2 py-1 rounded">
+              computing 12-week baseline…
+            </div>
+          )}
+        </>
       )}
-    </div>
+    </Last48Map>
   )
 }
