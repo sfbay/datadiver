@@ -136,13 +136,31 @@ interface Props {
   /** Called when significant new events arrive (priority-A 911 or newly-open 911).
    *  Receives an array of ripple descriptors to forward to FlowArrivalRipples. */
   onNewRipples?: (ripples: Ripple[]) => void
+  /** Per-dataset initial-load flags from useLast48Window. When a flag flips
+   *  false → true, the layer runs a brief fade-in (circle-opacity 0 → expression)
+   *  via Mapbox's circle-opacity-transition. */
+  initialLoadedByDataset?: Record<DatasetId, boolean>
 }
 
 const SOURCE_ID        = 'last48-flow-events'
 const LAYER_ID         = 'last48-flow-events-circles'
 const SELECTED_RING_ID = 'last48-flow-events-selected-ring'
 
-export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewRipples }: Props) {
+// The circle-opacity expression — extracted as a constant so the stream-batch
+// fade-in effect can restore it after briefly zeroing the opacity.
+const OPACITY_EXPRESSION: mapboxgl.ExpressionSpecification = [
+  'case',
+  ['get', 'isPriorityA'],
+  // Priority-A: full opacity at age 0, slower decay
+  ['interpolate', ['linear'], ['get', 'age'], 0, 1.0, 172800000, 0.8],
+  ['case',
+    ['get', 'isOpen'],
+    ['interpolate', ['linear'], ['get', 'age'], 0, 1.0, 172800000, 0.55],
+    ['interpolate', ['linear'], ['get', 'age'], 0, 0.7, 172800000, 0.25],
+  ],
+]
+
+export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewRipples, initialLoadedByDataset }: Props) {
   // Stable refs so event handlers don't need to re-attach when props change.
   const eventsRef      = useRef(events)
   const onSelectRef    = useRef(onSelect)
@@ -152,6 +170,46 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewR
   onSelectRef.current   = onSelect
   onNewRipplesRef.current = onNewRipples
   selectedIdRef.current = selectedId
+
+  // ── Stream-batch fade-in ─────────────────────────────────────────────────
+  // Track which datasets have completed their initial load. When a dataset
+  // flips false → true, briefly set the layer opacity to 0, then restore the
+  // expression. Mapbox's circle-opacity-transition handles the smooth fade-in.
+  const prevLoadedRef = useRef<Record<DatasetId, boolean>>(
+    Object.fromEntries(
+      Object.keys(initialLoadedByDataset ?? {}).map((id) => [id, false])
+    ) as Record<DatasetId, boolean>
+  )
+
+  useEffect(() => {
+    if (!map || !initialLoadedByDataset) return
+
+    // Check for any false → true flips
+    let hadFlip = false
+    for (const [id, loaded] of Object.entries(initialLoadedByDataset) as [DatasetId, boolean][]) {
+      if (loaded && !prevLoadedRef.current[id]) {
+        hadFlip = true
+        prevLoadedRef.current[id] = true
+      }
+    }
+
+    if (!hadFlip) return
+
+    // Briefly set opacity to 0, then restore expression via rAF.
+    // The transition (400ms) is set on the layer in the paint config below.
+    try {
+      if (map.getLayer(LAYER_ID)) {
+        map.setPaintProperty(LAYER_ID, 'circle-opacity', 0)
+        requestAnimationFrame(() => {
+          try {
+            if (map.getLayer(LAYER_ID)) {
+              map.setPaintProperty(LAYER_ID, 'circle-opacity', OPACITY_EXPRESSION)
+            }
+          } catch { /* layer may have been removed */ }
+        })
+      }
+    } catch { /* layer not yet registered */ }
+  }, [map, initialLoadedByDataset])
 
   // ── Significant-arrivals tracking ────────────────────────────────────────
   // seenIds accumulates all event IDs we have ever rendered. On each `events`
@@ -258,17 +316,8 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewR
             ['case', ['get', 'isOpen'], 7, 6],
           ],
         ],
-        'circle-opacity': [
-          'case',
-          ['get', 'isPriorityA'],
-          // Priority-A: full opacity at age 0, slower decay
-          ['interpolate', ['linear'], ['get', 'age'], 0, 1.0, 172800000, 0.8],
-          ['case',
-            ['get', 'isOpen'],
-            ['interpolate', ['linear'], ['get', 'age'], 0, 1.0, 172800000, 0.55],
-            ['interpolate', ['linear'], ['get', 'age'], 0, 0.7, 172800000, 0.25],
-          ],
-        ],
+        'circle-opacity': OPACITY_EXPRESSION,
+        'circle-opacity-transition': { duration: 400, delay: 0 },
         'circle-stroke-color': ['get', 'strokeColor'],
         'circle-stroke-width': [
           'case',
