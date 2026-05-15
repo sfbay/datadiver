@@ -16,7 +16,7 @@
  *  it just sets width, chrome, and the compression flag.
  */
 
-import { createContext, useContext, useEffect, useState, type ReactNode, type HTMLAttributes } from 'react'
+import { createContext, useContext, useEffect, useState, type ReactNode, type ComponentPropsWithRef } from 'react'
 import { useAppStore } from '@/stores/appStore'
 
 interface MapSidebarContextValue {
@@ -42,8 +42,10 @@ interface MapSidebarProps {
   width?: MapSidebarWidth
   /** Props spread onto the inner scroll <div>. Required if children need the
    *  scrolling element to be a listbox (role + aria-activedescendant must sit
-   *  on the scrolling element for scrollIntoView + activedescendant to work). */
-  scrollContainerProps?: HTMLAttributes<HTMLDivElement>
+   *  on the scrolling element for scrollIntoView + activedescendant to work).
+   *  Accepts ref (via ComponentPropsWithRef) so FlowRail can forward its
+   *  scrollRef for auto-scroll on new events and selection changes. */
+  scrollContainerProps?: ComponentPropsWithRef<'div'>
 }
 
 export default function MapSidebar({ children, width = 'default', scrollContainerProps }: MapSidebarProps) {
