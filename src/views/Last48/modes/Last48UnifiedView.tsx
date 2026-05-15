@@ -32,6 +32,8 @@ import DemographicFillLayer from './DemographicFillLayer'
 import AnomalyRail from './AnomalyRail'
 import Last48EventCard from '../detail/Last48EventCard'
 import Last48NeighborhoodPeek from '../detail/Last48NeighborhoodPeek'
+import UnderlayLegend from '@/components/maps/UnderlayLegend'
+import { useCensusData } from '@/hooks/useCensusData'
 
 interface Props {
   window48: Last48WindowResult
@@ -85,6 +87,12 @@ export default function Last48UnifiedView({
     datasets,
     currentEvents: visibleEvents,
   })
+
+  // Census data — fed to UnderlayLegend below when fill=demographic so the
+  // legend pill ("MEDIAN HOME VALUE $X → $Y") renders the same as it does in
+  // EmergencyResponse. DemographicFillLayer fetches its own copy internally;
+  // this duplication is a known cost of keeping each component self-contained.
+  const { neighborhoods: censusNeighborhoods } = useCensusData()
 
   const combinedAnomalies = useMemo(() => {
     const sums: Record<string, { total: number; n: number }> = {}
@@ -180,10 +188,19 @@ export default function Last48UnifiedView({
           )}
 
           {fill === 'demographic' && (
-            <DemographicFillLayer
-              map={map}
-              variable={underlayVariable}
-            />
+            <>
+              <DemographicFillLayer
+                map={map}
+                variable={underlayVariable}
+              />
+              {/* Legend pill ("MEDIAN HOME VALUE $X → $Y") — matches the
+                  visual register used in EmergencyResponse's underlay so
+                  reviewers see the same data legend across views. */}
+              <UnderlayLegend
+                variable={underlayVariable}
+                data={censusNeighborhoods}
+              />
+            </>
           )}
 
           {/* ── FLOW dots (mount LAST — must render on top of fill layers) ── */}
