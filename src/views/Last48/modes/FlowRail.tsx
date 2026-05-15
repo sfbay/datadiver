@@ -107,12 +107,12 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
         className: 'flex flex-col focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ochre-500 focus-visible:ring-inset',
       }}
     >
-      {/* Subtle header — follows EmergencyResponse's "BY NEIGHBORHOOD" /
-          "COLLISION MODES" register: mono small-caps label + thin right
-          divider, count line below in italic. Lean on backdrop-blur for
-          occlusion rather than opaque color — keeps it from reading as a
-          dark band against MapSidebar's translucent parent. */}
-      <div className="sticky top-0 z-10 px-4 pt-3.5 pb-2.5 flex-shrink-0 bg-paper-50/40 dark:bg-espresso-950/40 backdrop-blur-md">
+      {/* Subtle header — solid bg matching the rail's visual register so it
+          reads as part of the rail chrome, not a contrast band or a window
+          to scrolled content beneath. Hairline border-b is the only visual
+          edge — it tells the reader the scroll area lives beneath. No
+          backdrop-blur: a solid bg has nothing translucent to blur. */}
+      <div className="sticky top-0 z-10 px-4 pt-3.5 pb-2.5 flex-shrink-0 bg-paper-50 dark:bg-espresso-900 border-b border-paper-200/50 dark:border-espresso-800">
         <div className="flex items-center gap-2">
           <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-paper-500/60 dark:text-paper-600">
             Freshest
