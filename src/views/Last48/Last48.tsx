@@ -57,27 +57,26 @@ export default function Last48() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <header className="px-[clamp(16px,3vw,64px)] pt-6 pb-3 flex items-baseline gap-6 flex-wrap z-20">
-        <div className="flex-1 min-w-[200px] max-w-[640px]">
-          <h1 className="font-display text-xl md:text-2xl tracking-tight">
-            <span className="text-paper-500">── LIVE · </span>
-            <span>The Last 48</span>
-          </h1>
-          <p className="font-mono text-[11px] text-paper-600 mt-1">
-            What's flowed in across SF in the past 48 hours
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3 ml-auto">
-          <ModeToggle mode={mode} onChange={setMode} />
-          <a
-            href="?mode=kiosk"
-            className="font-mono text-[11px] text-paper-500 hover:text-paper-300 underline-offset-2 hover:underline"
-            title="Open in kiosk mode (coming soon)"
-            onClick={(e) => { e.preventDefault(); /* Phase 4 */ }}
-          >
-            📺 Open in kiosk
-          </a>
+      <header className="flex-shrink-0 border-b border-paper-200/40 dark:border-espresso-700 px-[clamp(16px,3vw,64px)] py-3 bg-paper-50/50 dark:bg-espresso-950/50 backdrop-blur-xl z-20">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="min-w-0">
+              <div className="font-mono text-[10px] tracking-widest text-paper-500 dark:text-paper-600">
+                <span className="text-paper-400 dark:text-paper-700">——</span> LIVE
+              </div>
+              <h1 className="font-display italic text-2xl text-ink dark:text-paper-100 leading-none whitespace-nowrap">
+                The Last 48
+              </h1>
+              <p className="font-mono text-[10px] text-paper-500 dark:text-paper-600 mt-0.5">
+                What's flowed in across SF in the past 48 hours
+              </p>
+            </div>
+            {/* Event count chip — Task 1.2 */}
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <ModeToggle mode={mode} onChange={setMode} />
+            {/* ExportButton — Task 1.3 */}
+          </div>
         </div>
       </header>
 
