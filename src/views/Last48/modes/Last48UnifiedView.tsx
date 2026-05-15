@@ -33,6 +33,8 @@ import AnomalyRail from './AnomalyRail'
 import Last48EventCard from '../detail/Last48EventCard'
 import Last48NeighborhoodPeek from '../detail/Last48NeighborhoodPeek'
 import UnderlayLegend from '@/components/maps/UnderlayLegend'
+import StreamProgressBar from '../chrome/StreamProgressBar'
+import BootEmanation from './BootEmanation'
 import { useCensusData } from '@/hooks/useCensusData'
 
 interface Props {
@@ -186,6 +188,15 @@ export default function Last48UnifiedView({
       }}
       mapOverlay={(map) => (
         <>
+          {/* ── Boot emanation — mounts once, self-unmounts after ~2.4s ─── */}
+          <BootEmanation />
+
+          {/* ── Stream progress bar — slim top band, fades when complete ─── */}
+          <StreamProgressBar
+            initialLoadedByDataset={window48.initialLoadedByDataset}
+            enabled={datasets}
+          />
+
           {/* ── Base fill layers (mount FIRST so FLOW dots render on top) ── */}
           {fill === 'anomaly' && (
             <AnomalyFillLayer
