@@ -62,6 +62,11 @@ export interface NormalizedEvent {
   closeAt?: number
   /** Human-readable closure label (e.g., 911 disposition: "CIT", "ADV", "NCR"). */
   disposition?: string
+  /** 911 priority code, when available. Typically 'A', 'B', 'C', etc.
+   *  Pulled from priority_final, priority_original, or priority on 911
+   *  dispatch rows. Undefined for non-911 datasets or rows with no
+   *  priority field. */
+  priority?: string
   raw: Record<string, unknown>        // original Socrata row, for detail panels
 }
 
