@@ -162,6 +162,7 @@ export function useDemographicUnderlay(options: UseDemographicUnderlayOptions): 
             paint: {
               'fill-color': fillColorExpression,
               'fill-opacity': opacity,
+              'fill-opacity-transition': { duration: 300 },
             },
           }
 

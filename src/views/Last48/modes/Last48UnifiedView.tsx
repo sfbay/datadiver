@@ -174,18 +174,7 @@ export default function Last48UnifiedView({
       }}
       mapOverlay={(map) => (
         <>
-          {/* ── FLOW dots ─────────────────────────────────────────────── */}
-          {pointsOn && (
-            <FlowMapLayer
-              map={map}
-              events={visibleEvents}
-              selectedId={selectedEvent?.id}
-              onSelect={handleMapSelect}
-              onNewRipples={handleNewRipples}
-            />
-          )}
-
-          {/* ── Base fill layers ────────────────────────────────────── */}
+          {/* ── Base fill layers (mount FIRST so FLOW dots render on top) ── */}
           {fill === 'anomaly' && (
             <AnomalyFillLayer
               map={map}
@@ -199,6 +188,17 @@ export default function Last48UnifiedView({
             <DemographicFillLayer
               map={map}
               variable={underlayVariable}
+            />
+          )}
+
+          {/* ── FLOW dots (mount LAST — must render on top of fill layers) ── */}
+          {pointsOn && (
+            <FlowMapLayer
+              map={map}
+              events={visibleEvents}
+              selectedId={selectedEvent?.id}
+              onSelect={handleMapSelect}
+              onNewRipples={handleNewRipples}
             />
           )}
 
