@@ -124,7 +124,7 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
         className: 'px-2 py-2 flex flex-col gap-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ochre-500 focus-visible:ring-inset',
       }}
     >
-      <div className="px-3 pt-3 pb-2 border-b border-paper-200/40 dark:border-espresso-800 flex-shrink-0">
+      <div className="sticky top-0 z-10 px-3 pt-3 pb-2 border-b border-paper-200/40 dark:border-espresso-800 flex-shrink-0 bg-paper-50/95 dark:bg-espresso-950/95 backdrop-blur-sm">
         <h2 className="font-mono text-[10px] tracking-widest text-paper-600 dark:text-paper-500">
           FRESHEST
         </h2>
