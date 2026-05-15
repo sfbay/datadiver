@@ -43,9 +43,10 @@ function lagColor(ms: number | null): string {
 interface Props {
   freshness: FreshnessMap
   initialLoadedByDataset: Record<DatasetId, boolean>
+  enabled: DatasetId[]
 }
 
-export default function FreshnessChipStrip({ freshness, initialLoadedByDataset }: Props) {
+export default function FreshnessChipStrip({ freshness, initialLoadedByDataset, enabled }: Props) {
   // Render ALL datasets always (with em-dash placeholders for null lag
   // values) so the chrome is visually stable across initial load and
   // partial-fetch states. The strip should never flash blank.
@@ -112,15 +113,18 @@ export default function FreshnessChipStrip({ freshness, initialLoadedByDataset }
         <span className="text-paper-600 tracking-wider">DATA REFRESH</span>
         {datasets.map((id) => {
           const f = freshness[id]
+          const isEnabled = enabled.includes(id)
           const isInitialLoaded = initialLoadedByDataset[id] ?? false
           const isPulsing = pulsingIds.has(id)
           return (
             <span key={`refresh-${id}`} className={`flex items-baseline gap-1${isPulsing ? ' chip-resolve-pulse' : ''}`}>
               <span className="text-paper-700 dark:text-paper-500">{DATASET_LABELS[id]}</span>
-              {isInitialLoaded ? (
-                <span className={`${lagColor(f.refreshLagMs)} tabular-nums`}>{formatLag(f.refreshLagMs)}</span>
-              ) : (
+              {!isEnabled ? (
+                <span className="text-paper-600 dark:text-paper-700">—</span>
+              ) : !isInitialLoaded ? (
                 <span className="animate-pulse text-paper-600 dark:text-paper-700">loading…</span>
+              ) : (
+                <span className={`${lagColor(f.refreshLagMs)} tabular-nums`}>{formatLag(f.refreshLagMs)}</span>
               )}
             </span>
           )
@@ -132,15 +136,18 @@ export default function FreshnessChipStrip({ freshness, initialLoadedByDataset }
         <span className="text-paper-600 tracking-wider">EVENT LAG&nbsp;&nbsp;</span>
         {datasets.map((id) => {
           const f = freshness[id]
+          const isEnabled = enabled.includes(id)
           const isInitialLoaded = initialLoadedByDataset[id] ?? false
           const isPulsing = pulsingIds.has(id)
           return (
             <span key={`lag-${id}`} className={`flex items-baseline gap-1${isPulsing ? ' chip-resolve-pulse' : ''}`}>
               <span className="text-paper-700 dark:text-paper-500">{DATASET_LABELS[id]}</span>
-              {isInitialLoaded ? (
-                <span className={`${lagColor(f.eventLagMs)} tabular-nums`}>{formatLag(f.eventLagMs)}</span>
-              ) : (
+              {!isEnabled ? (
+                <span className="text-paper-600 dark:text-paper-700">—</span>
+              ) : !isInitialLoaded ? (
                 <span className="animate-pulse text-paper-600 dark:text-paper-700">loading…</span>
+              ) : (
+                <span className={`${lagColor(f.eventLagMs)} tabular-nums`}>{formatLag(f.eventLagMs)}</span>
               )}
             </span>
           )

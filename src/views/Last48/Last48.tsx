@@ -138,6 +138,7 @@ export default function Last48() {
         <FreshnessChipStrip
           freshness={window48.freshness}
           initialLoadedByDataset={window48.initialLoadedByDataset}
+          enabled={datasets}
         />
       </div>
 

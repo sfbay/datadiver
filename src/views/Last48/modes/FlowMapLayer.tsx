@@ -197,18 +197,24 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewR
 
     // Briefly set opacity to 0, then restore expression via rAF.
     // The transition (400ms) is set on the layer in the paint config below.
+    // Store the rAF id so cleanup can cancel it if the component unmounts
+    // between the zero call and the frame fire — prevents setPaintProperty
+    // against a destroyed layer.
+    let frameId: number | undefined
     try {
       if (map.getLayer(LAYER_ID)) {
         map.setPaintProperty(LAYER_ID, 'circle-opacity', 0)
-        requestAnimationFrame(() => {
+        frameId = requestAnimationFrame(() => {
           try {
             if (map.getLayer(LAYER_ID)) {
-              map.setPaintProperty(LAYER_ID, 'circle-opacity', OPACITY_EXPRESSION)
+              map.setPaintProperty(LAYER_ID, 'circle-opacity', OPACITY_EXPRESSION as unknown as mapboxgl.Expression)
             }
           } catch { /* layer may have been removed */ }
         })
       }
     } catch { /* layer not yet registered */ }
+
+    return () => { if (frameId !== undefined) cancelAnimationFrame(frameId) }
   }, [map, initialLoadedByDataset])
 
   // ── Significant-arrivals tracking ────────────────────────────────────────
