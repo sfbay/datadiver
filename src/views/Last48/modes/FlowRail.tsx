@@ -33,14 +33,6 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
     lastFirstId.current = firstId
   }, [events])
 
-  // When selection changes (e.g. from a map click), scroll the selected row
-  // into view so the user can see the highlight in the rail.
-  useEffect(() => {
-    if (selectedRowRef.current) {
-      selectedRowRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-    }
-  }, [selectedId])
-
   // Spec cap: 50 most-recent rows. BUT — if the user clicks a map dot for
   // an event older than the 50 most recent (the map shows thousands of
   // events; a click can land anywhere in the 48h window), we MUST also
@@ -58,6 +50,20 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
   // hides the older event — surprising, since the user just surfaced it.
   // Pinning matches Finder's "recently revealed file stays visible" pattern.
   const [pinnedOlder, setPinnedOlder] = useState<NormalizedEvent | null>(null)
+
+  // When selection changes (e.g. from a map click), scroll the selected row
+  // into view so the user can see the highlight in the rail.
+  //
+  // Depends on pinnedOlder as well as selectedId: when a map click selects
+  // an out-of-sequence event, selectedId updates BEFORE pinnedOlder commits.
+  // On the first render, the pinned row doesn't exist yet, so the ref is
+  // null and scrollIntoView no-ops. The second firing — after pinnedOlder
+  // settles and the row mounts — is the one that actually scrolls.
+  useEffect(() => {
+    if (selectedRowRef.current) {
+      selectedRowRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    }
+  }, [selectedId, pinnedOlder])
 
   useEffect(() => {
     // Panel closed (no selection) → clear pin.
