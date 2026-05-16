@@ -24,9 +24,12 @@ function formatValue(v: number, format: 'currency' | 'percent' | 'number' | 'den
   if (!Number.isFinite(v)) return '—'
   switch (format) {
     case 'currency':
-      return v >= 1000
-        ? `$${Math.round(v / 1000)}k`
-        : `$${Math.round(v)}`
+      // Million-scale values render compactly as "$X.Xm" — the home-value
+      // ramp tops out around $2m, which read awkwardly as "$2000k" in the
+      // legend. Sub-million still uses the thousands-suffix form.
+      if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}m`
+      if (v >= 1000) return `$${Math.round(v / 1000)}k`
+      return `$${Math.round(v)}`
     case 'percent':
       return `${v.toFixed(1)}%`
     case 'density':

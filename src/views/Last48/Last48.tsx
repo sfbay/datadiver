@@ -1,29 +1,38 @@
 // src/views/Last48/Last48.tsx
 //
 // Top-level page for The Last 48. Owns:
-//   - Mode resolution from URL search params (?mode=flow|hotspots)
+//   - Layer state from URL search params (?fill=, ?points=)
+//     Legacy ?mode=hotspots URLs migrate at parse time → ?fill=anomaly
 //   - The useLast48Window hook (single instance per page)
-//   - Layout chrome (freshness chips, dataset filter chips, mode toggle, scanner strip)
-//   - Mode-specific renderer mounted in the map area
+//   - Layout chrome (freshness chips, dataset filter chips, layer controls, scanner strip)
+//   - Last48UnifiedView — single persistent MapView with composable layers
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useLast48Window } from '@/hooks/useLast48Window'
 import { TIER_1_DATASETS, TIER_2_DATASETS, type DatasetId } from '@/types/last48'
-import FlowMode from './modes/FlowMode'
-import HotspotsMode from './modes/HotspotsMode'
+import type { CensusVariable } from '@/types/census'
+import Last48UnifiedView from './modes/Last48UnifiedView'
+import LayerControls, { type BaseFill } from './chrome/LayerControls'
 import FreshnessChipStrip from './chrome/FreshnessChipStrip'
 import DatasetFilterChips from './chrome/DatasetFilterChips'
-import ModeToggle from './chrome/ModeToggle'
 import ScannerStrip from './chrome/ScannerStrip'
 import ExportButton from '@/components/export/ExportButton'
 import CivicTicker from '@/components/ui/CivicTicker'
 import { useCivicIndicators } from '@/hooks/useCivicIndicators'
 
-type Mode = 'flow' | 'hotspots'
+// ── URL param parsers ──────────────────────────────────────────────────────
 
-function parseMode(s: string | null): Mode {
-  return s === 'hotspots' ? 'hotspots' : 'flow'
+function parseFill(s: string | null, legacyMode: string | null): BaseFill {
+  // Legacy ?mode=hotspots → anomaly. Otherwise read ?fill=.
+  if (s === 'anomaly' || s === 'demographic' || s === 'none') return s
+  if (legacyMode === 'hotspots') return 'anomaly'
+  return 'none'
+}
+
+function parsePoints(s: string | null): boolean {
+  // Default on; only turn off if explicitly ?points=off.
+  return s !== 'off'
 }
 
 function parseDatasets(s: string | null): DatasetId[] {
@@ -34,25 +43,41 @@ function parseDatasets(s: string | null): DatasetId[] {
   return parts.filter((p) => known.has(p))
 }
 
+// ── Component ───────────────────────────────────────────────────────────────
+
 export default function Last48() {
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const mode = parseMode(searchParams.get('mode'))
+  const fill    = parseFill(searchParams.get('fill'), searchParams.get('mode'))
+  const pointsOn = parsePoints(searchParams.get('points'))
   const datasets = useMemo(() => parseDatasets(searchParams.get('datasets')), [searchParams])
+
+  // Underlay variable is transient UI state — no reason to URL-persist it.
+  const [underlayVariable, setUnderlayVariable] = useState<CensusVariable | null>(null)
 
   const window48 = useLast48Window({ datasets })
   const civicIndicators = useCivicIndicators()
 
-  const setMode = (next: Mode) => {
+  const setFill = (next: BaseFill) => {
     const np = new URLSearchParams(searchParams)
-    if (next === 'flow') np.delete('mode')
-    else np.set('mode', next)
+    if (next === 'none') np.delete('fill')
+    else np.set('fill', next)
+    np.delete('mode')   // retire legacy param
+    setSearchParams(np, { replace: true })
+  }
+
+  const setPointsOn = (next: boolean) => {
+    const np = new URLSearchParams(searchParams)
+    if (next) np.delete('points')
+    else np.set('points', 'off')
     setSearchParams(np, { replace: true })
   }
 
   const setDatasets = (next: DatasetId[]) => {
     const np = new URLSearchParams(searchParams)
-    const allTier1 = TIER_1_DATASETS.every((d) => next.includes(d)) && next.length === TIER_1_DATASETS.length
+    const allTier1 =
+      TIER_1_DATASETS.every((d) => next.includes(d)) &&
+      next.length === TIER_1_DATASETS.length
     if (allTier1) np.delete('datasets')
     else np.set('datasets', next.join(','))
     setSearchParams(np, { replace: true })
@@ -60,7 +85,10 @@ export default function Last48() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
+      {/* Header — Phase 1's compact-blur chrome with the rule-leading LIVE
+          eyebrow + italic display h1 + descriptive subtitle. The right
+          cluster now hosts Phase 5's LayerControls (FLOW toggle + base-fill
+          picker) in place of the retired ModeToggle, followed by ExportButton. */}
       <header className="flex-shrink-0 border-b border-paper-200/40 dark:border-espresso-700 px-[clamp(16px,3vw,64px)] py-3 bg-paper-50/50 dark:bg-espresso-950/50 backdrop-blur-xl z-20">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4 min-w-0">
@@ -84,7 +112,14 @@ export default function Last48() {
             )}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            <ModeToggle mode={mode} onChange={setMode} />
+            <LayerControls
+              pointsOn={pointsOn}
+              onPointsToggle={setPointsOn}
+              fill={fill}
+              onFillChange={setFill}
+              underlayVariable={underlayVariable}
+              onUnderlayChange={setUnderlayVariable}
+            />
             <ExportButton targetSelector="#last48-capture" filename="last-48" />
           </div>
         </div>
@@ -108,10 +143,15 @@ export default function Last48() {
         <DatasetFilterChips selected={datasets} onChange={setDatasets} />
       </div>
 
-      {/* Mode renderer */}
+      {/* Unified composable view */}
       <div id="last48-capture" className="flex-1 relative">
-        {mode === 'flow' && <FlowMode window48={window48} datasets={datasets} />}
-        {mode === 'hotspots' && <HotspotsMode window48={window48} datasets={datasets} />}
+        <Last48UnifiedView
+          window48={window48}
+          datasets={datasets}
+          pointsOn={pointsOn}
+          fill={fill}
+          underlayVariable={underlayVariable}
+        />
       </div>
 
       {/* Scanner launcher strip */}

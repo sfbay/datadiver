@@ -1,35 +1,46 @@
-// src/views/Last48/modes/HotspotsChoropleth.tsx
+// src/views/Last48/modes/AnomalyFillLayer.tsx
 //
-// Neighborhood polygon Mapbox layer for HOTSPOTS mode. Fills neighborhoods
-// by z-score relative to the 12-week baseline:
-//   - |z| < 0.5 → transparent (no editorial story)
-//   - z >= 0.5 → escalating ochre → terracotta → brick
-//   - z <= -0.5 → faint paper with dashed outline ("unusually quiet")
+// Composable Mapbox layer: neighborhood z-score choropleth.
+// Extracted from HotspotsChoropleth so it can be mounted alongside
+// FlowMapLayer in the single-MapView composable-layers architecture
+// (Phase 5). Accepts a click handler for neighborhood selection.
+//
+// Color ramp:
+//   |z| < 0.5              → transparent (no editorial story)
+//   z ∈ [0.5, 1.0)         → ochre (mild elevation)
+//   z ∈ [1.0, 2.0)         → terracotta (notable)
+//   z ≥ 2.0                → brick (standout)
+//   z < -0.5               → paper-300 (unusually quiet)
 
 import { useEffect, useMemo, useRef } from 'react'
 import mapboxgl from 'mapbox-gl'
 import { useMapLayer } from '@/hooks/useMapLayer'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 
-const SOURCE_ID = 'last48-hotspots-source'
-const FILL_LAYER_ID = 'last48-hotspots-fill'
-const OUTLINE_LAYER_ID = 'last48-hotspots-outline'
+const SOURCE_ID      = 'last48-anomaly-fill'
+const FILL_LAYER_ID  = 'last48-anomaly-fill-poly'
+const LINE_LAYER_ID  = 'last48-anomaly-fill-outline'
 
 interface Props {
   map: mapboxgl.Map | null
   /** Combined per-neighborhood z-score (averaged across selected datasets) */
   combinedAnomalies: Record<string, number>
+  selectedNeighborhood?: string
   onNeighborhoodClick?: (neighborhood: string) => void
 }
 
-export default function HotspotsChoropleth({ map, combinedAnomalies, onNeighborhoodClick }: Props) {
+export default function AnomalyFillLayer({
+  map,
+  combinedAnomalies,
+  selectedNeighborhood,
+  onNeighborhoodClick,
+}: Props) {
   const { boundaries } = useNeighborhoodBoundaries()
   const onClickRef = useRef(onNeighborhoodClick)
+  // Pattern: stable ref updated each render; accessed only in effects/handlers, not during render.
+  // eslint-disable-next-line react-hooks/refs
   onClickRef.current = onNeighborhoodClick
 
-  // Build choropleth GeoJSON: copy each boundary feature, attach the
-  // current z-score for the neighborhood it belongs to. Neighborhood
-  // name lives in feature.properties.nhood.
   const geojson = useMemo<GeoJSON.FeatureCollection>(() => {
     if (!boundaries) return { type: 'FeatureCollection', features: [] }
     return {
@@ -40,13 +51,23 @@ export default function HotspotsChoropleth({ map, combinedAnomalies, onNeighborh
         const z = combinedAnomalies[nhName] ?? 0
         return {
           ...f,
-          properties: { ...props, nhood: nhName, zScore: z },
+          properties: {
+            ...props,
+            nhood: nhName,
+            zScore: z,
+            selected: selectedNeighborhood === nhName,
+          },
         }
       }),
     }
-  }, [boundaries, combinedAnomalies])
+  }, [boundaries, combinedAnomalies, selectedNeighborhood])
 
-  const fillLayers: mapboxgl.AnyLayer[] = useMemo(() => [
+  // Fill + outline layers — combined into a single useMapLayer call so both
+  // layers are registered when the source is first added. Two separate calls
+  // with the same SOURCE_ID caused the outline layer to silently never render
+  // because useMapLayer only calls addLayer on the first (source-creation) pass.
+  const choroplethLayers: mapboxgl.AnyLayer[] = useMemo(() => [
+    // Fill layer — z-score → color expression.
     {
       id: FILL_LAYER_ID,
       type: 'fill',
@@ -54,7 +75,7 @@ export default function HotspotsChoropleth({ map, combinedAnomalies, onNeighborh
       paint: {
         'fill-color': [
           'case',
-          ['<', ['get', 'zScore'], -0.5], '#bda37d',           // below baseline — faint paper
+          ['<', ['get', 'zScore'], -0.5], '#c7b288',           // below baseline — paper-400 (earth-tone palette)
           ['<', ['get', 'zScore'],  0.5], 'rgba(0,0,0,0)',     // within ±0.5σ — transparent
           ['<', ['get', 'zScore'],  1.0], '#d4a435',           // ochre (0.5 to 1.0)
           ['<', ['get', 'zScore'],  2.0], '#d47149',           // terracotta (1.0 to 2.0)
@@ -63,15 +84,14 @@ export default function HotspotsChoropleth({ map, combinedAnomalies, onNeighborh
         'fill-opacity': [
           'case',
           ['<', ['abs', ['get', 'zScore']], 0.5], 0,
-          0.65,
+          0.55,
         ],
+        'fill-opacity-transition': { duration: 300 },
       },
     } as mapboxgl.AnyLayer,
-  ], [])
-
-  const outlineLayers: mapboxgl.AnyLayer[] = useMemo(() => [
+    // Outline layer — visible border on elevated/quiet neighborhoods.
     {
-      id: OUTLINE_LAYER_ID,
+      id: LINE_LAYER_ID,
       type: 'line',
       source: SOURCE_ID,
       paint: {
@@ -90,15 +110,14 @@ export default function HotspotsChoropleth({ map, combinedAnomalies, onNeighborh
     } as mapboxgl.AnyLayer,
   ], [])
 
-  // Two separate useMapLayer calls — one source, two layers (fill + outline).
-  // We use the same SOURCE_ID for both so the source is shared.
-  useMapLayer(map, SOURCE_ID, geojson, fillLayers)
-  useMapLayer(map, SOURCE_ID, geojson, outlineLayers)
+  useMapLayer(map, SOURCE_ID, geojson, choroplethLayers)
 
-  // Click handler — wire on the fill layer only.
+  // Click + cursor handlers on the fill layer.
   useEffect(() => {
     if (!map) return
-    const handler = (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
+    const handler = (
+      e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] },
+    ) => {
       const feature = e.features?.[0]
       const nh = feature?.properties?.nhood as string | undefined
       if (nh && onClickRef.current) onClickRef.current(nh)

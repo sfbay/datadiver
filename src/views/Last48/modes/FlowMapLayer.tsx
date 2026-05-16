@@ -124,6 +124,8 @@ function ageStrokeOpen(datasetId: DatasetId, rawAgeMs: number): string {
   return mixHex(STROKE_FRESH_OPEN, STROKE_AGED_OPEN, bucket.mix)
 }
 
+interface Ripple { id: string; lng: number; lat: number; bornAt: number }
+
 interface Props {
   map: mapboxgl.Map | null
   events: NormalizedEvent[]
@@ -131,20 +133,32 @@ interface Props {
   selectedId?: string
   /** Called on click — select this event. */
   onSelect?: (event: NormalizedEvent) => void
+  /** Called when significant new events arrive (priority-A 911 or newly-open 911).
+   *  Receives an array of ripple descriptors to forward to FlowArrivalRipples. */
+  onNewRipples?: (ripples: Ripple[]) => void
 }
 
 const SOURCE_ID        = 'last48-flow-events'
 const LAYER_ID         = 'last48-flow-events-circles'
 const SELECTED_RING_ID = 'last48-flow-events-selected-ring'
 
-export default function FlowMapLayer({ map, events, selectedId, onSelect }: Props) {
+export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewRipples }: Props) {
   // Stable refs so event handlers don't need to re-attach when props change.
-  const eventsRef   = useRef(events)
-  const onSelectRef = useRef(onSelect)
-  const selectedIdRef = useRef(selectedId)
-  eventsRef.current    = events
-  onSelectRef.current  = onSelect
+  const eventsRef      = useRef(events)
+  const onSelectRef    = useRef(onSelect)
+  const selectedIdRef  = useRef(selectedId)
+  const onNewRipplesRef = useRef(onNewRipples)
+  eventsRef.current     = events
+  onSelectRef.current   = onSelect
+  onNewRipplesRef.current = onNewRipples
   selectedIdRef.current = selectedId
+
+  // ── Significant-arrivals tracking ────────────────────────────────────────
+  // seenIds accumulates all event IDs we have ever rendered. On each `events`
+  // update we check for newcomers that pass the significance gate; the first
+  // poll seeds the set (no false-positive burst on mount).
+  const seenIdsRef = useRef<Set<string>>(new Set())
+  const isFirstPollRef = useRef(true)
 
   // Build GeoJSON from events that have coordinates.
   //
@@ -192,6 +206,36 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect }: Prop
       })
     return { type: 'FeatureCollection', features }
   }, [events])
+
+  // ── Significant-arrivals detection ───────────────────────────────────────
+  // Runs on every `events` update. Seeds seenIds on the first poll (no burst
+  // on mount); on subsequent polls, flags newcomers that pass the significance
+  // gate and calls onNewRipples with their screen-projectable descriptors.
+  useEffect(() => {
+    if (isFirstPollRef.current) {
+      // Seed: mark all current events as already-seen so the initial batch
+      // doesn't trigger a wall of ripples.
+      for (const ev of events) seenIdsRef.current.add(ev.id)
+      isFirstPollRef.current = false
+      return
+    }
+
+    const newRipples: Ripple[] = []
+    const bornAt = Date.now()
+    for (const ev of events) {
+      if (seenIdsRef.current.has(ev.id)) continue
+      seenIdsRef.current.add(ev.id)
+      const isSignificant =
+        (ev.datasetId === '911-realtime' && ev.priority === 'A') ||
+        (ev.datasetId === '911-realtime' && ev.state === 'open')
+      if (isSignificant && ev.longitude != null && ev.latitude != null) {
+        newRipples.push({ id: ev.id, lng: ev.longitude!, lat: ev.latitude!, bornAt })
+      }
+    }
+    if (newRipples.length > 0) {
+      onNewRipplesRef.current?.(newRipples)
+    }
+  }, [events])  // intentional — seenIdsRef + onNewRipplesRef are stable
 
   // Base circles layer + selected-ring overlay.
   // The ring is filtered to the selected id at the Mapbox expression level —

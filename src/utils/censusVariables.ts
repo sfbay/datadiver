@@ -547,6 +547,10 @@ export const UNDERLAY_PRESETS: Partial<Record<string, CensusVariable[]>> = {
   'parking-citations':  ['medianIncome', 'renterPct', 'pctDriveAlone'],
   'parking-revenue':    ['medianIncome', 'populationDensity'],
   'business-activity':  ['medianIncome', 'pctBachelorsPlus', 'pctAsian'],
+  // The Last 48 — socioeconomic context that pairs with live 911/Fire/311 streams:
+  // property values, monthly rent, household rent-stress, and elderly concentration
+  // (the last correlates with EMS demand).
+  'last48':             ['medianHomeValue', 'medianRent', 'rentBurden', 'pctOver65'],
 }
 
 // ---------------------------------------------------------------------------
