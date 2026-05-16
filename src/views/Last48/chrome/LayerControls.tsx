@@ -30,7 +30,7 @@ function currentLabel(fill: BaseFill, variable: CensusVariable | null): string {
   if (fill === 'anomaly') return 'Anomaly'
   if (fill === 'demographic' && variable) {
     const config = CENSUS_VARIABLES.find(v => v.key === variable)
-    return config?.label ?? 'Demographic'
+    return config?.shortLabel ?? config?.label ?? 'Demographic'
   }
   return 'None'
 }

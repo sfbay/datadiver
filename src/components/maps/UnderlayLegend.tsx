@@ -11,6 +11,7 @@
  */
 
 import { CENSUS_VARIABLES } from '@/utils/censusVariables'
+import { DEFAULT_EXCLUDED_NEIGHBORHOODS } from '@/components/maps/DemographicUnderlay'
 import type { CensusVariable, NeighborhoodCensusData } from '@/types/census'
 
 interface UnderlayLegendProps {
@@ -18,6 +19,10 @@ interface UnderlayLegendProps {
   variable: CensusVariable | null
   /** Census data for the population being colored — neighborhoods, tracts, etc. */
   data: NeighborhoodCensusData[]
+  /** Neighborhoods to omit from min/max calculation. Defaults to non-residential
+   *  zones (Golden Gate Park, McLaren Park) — matches DemographicUnderlay's
+   *  default so the legend reflects the actually-rendered color scale. */
+  excludedGeoIds?: readonly string[]
 }
 
 function formatValue(v: number, format: 'currency' | 'percent' | 'number' | 'density'): string {
@@ -42,15 +47,24 @@ function formatValue(v: number, format: 'currency' | 'percent' | 'number' | 'den
   }
 }
 
-export default function UnderlayLegend({ variable, data }: UnderlayLegendProps) {
+export default function UnderlayLegend({
+  variable,
+  data,
+  excludedGeoIds = DEFAULT_EXCLUDED_NEIGHBORHOODS,
+}: UnderlayLegendProps) {
   if (!variable) return null
 
   const config = CENSUS_VARIABLES.find((v) => v.key === variable)
   if (!config) return null
 
-  // Collect numeric values for this variable across the population.
+  // Collect numeric values for this variable across the population — but skip
+  // excluded (non-residential) neighborhoods so the legend's min/max reflects
+  // the actually-rendered scale rather than including park outliers that the
+  // map itself hatches instead of coloring.
+  const excluded = new Set<string>(excludedGeoIds)
   const values: number[] = []
   for (const d of data) {
+    if (excluded.has(d.geoId) || (d.name && excluded.has(d.name))) continue
     const v = d[variable]
     if (typeof v === 'number' && Number.isFinite(v)) values.push(v)
   }
@@ -59,6 +73,7 @@ export default function UnderlayLegend({ variable, data }: UnderlayLegendProps) 
   values.sort((a, b) => a - b)
   const min = values[0]
   const max = values[values.length - 1]
+  const hasExclusions = excludedGeoIds.length > 0
 
   // Build CSS gradient that matches DemographicUnderlay's 0/33/66/100
   // percentile stops. If the colorRamp has fewer than 4 entries, fall back
@@ -75,7 +90,7 @@ export default function UnderlayLegend({ variable, data }: UnderlayLegendProps) 
         ring-1 ring-slate-200/60 dark:ring-white/[0.08]
         shadow-md shadow-slate-900/10 dark:shadow-black/40">
         <p className="text-[9px] font-mono uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 mb-1.5 whitespace-nowrap">
-          {config.label}
+          {config.shortLabel ?? config.label}
         </p>
         <div
           className="h-2 w-32 rounded-full mb-1 ring-1 ring-slate-300/40 dark:ring-white/[0.06]"
@@ -85,6 +100,11 @@ export default function UnderlayLegend({ variable, data }: UnderlayLegendProps) 
           <span>{formatValue(min, config.format)}</span>
           <span>{formatValue(max, config.format)}</span>
         </div>
+        {hasExclusions && (
+          <p className="text-[8px] font-mono italic text-slate-500 dark:text-slate-500 mt-1 leading-tight">
+            parks excluded
+          </p>
+        )}
       </div>
     </div>
   )
