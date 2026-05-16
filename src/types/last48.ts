@@ -6,38 +6,19 @@
 // broken-data Parking Citations dataset.
 
 export type DatasetId =
-  | '911-realtime'        // gnap-fj3t — Tier 1, freshest
+  | '911-realtime'        // gnap-fj3t — freshest 911 (open + closed lifecycle state)
   | 'fire-ems-dispatch'   // nuek-vuh3
   | '311-cases'           // vw6y-z8j6
-  | '911-historical'      // 2zdj-bwza
-  | 'parking-revenue'     // imvp-dq3v
-  | 'police-incidents'    // wg3w-h783 — Tier 2 (off by default)
 
-export type EventTier = 'tier1' | 'tier2'
-
-// Tier 1 = default-on for Last 48 FLOW + HOTSPOTS. The three core
-// editorial streams: fresh 911, fire/EMS, 311 service requests.
-export const TIER_1_DATASETS: DatasetId[] = [
+// The three editorial streams that make up The Last 48. Other datasets
+// (police incidents, parking revenue, historical 911) were tested as
+// opt-in Tier 2 but didn't earn their place in a 48h stream view:
+// police has ~39h lag, parking is rate-shaped not event-shaped, and
+// historical 911 duplicates the lifecycle-aware realtime feed.
+export const LAST48_DATASETS: DatasetId[] = [
   '911-realtime',
   'fire-ems-dispatch',
   '311-cases',
-]
-
-// Tier 2 = default-off, opt-in via filter chip. 911 Historical is
-// superseded by the open/closed state model on 911 Realtime (the
-// freshest 48h already includes closure data). Parking Revenue is
-// most useful in HOTSPOTS pattern-spotting, not in FLOW's stream.
-// Police is daily-cadence (~39h event lag) and visually swamps as
-// a low-volume layer; user opts in when they need it.
-export const TIER_2_DATASETS: DatasetId[] = [
-  '911-historical',
-  'parking-revenue',
-  'police-incidents',
-]
-
-export const ALL_LAST48_DATASETS: DatasetId[] = [
-  ...TIER_1_DATASETS,
-  ...TIER_2_DATASETS,
 ]
 
 /** Normalized event shape — every dataset's raw rows are mapped to this. */

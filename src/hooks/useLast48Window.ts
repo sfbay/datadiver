@@ -9,7 +9,7 @@
 //    React batches their re-renders around a stable snapshot.
 //
 // 2. usePollCadence is called UNCONDITIONALLY once per entry in
-//    ALL_LAST48_DATASETS (a constant 6-item array), giving React a stable
+//    LAST48_DATASETS (a constant 3-item array), giving React a stable
 //    hook count regardless of which datasets the caller enables. The per-
 //    dataset fetcher checks enabledSet.has(datasetId) at its very top and
 //    returns immediately when the dataset is not enabled — polling is a
@@ -23,7 +23,7 @@ import { useCallback, useMemo, useRef, useSyncExternalStore } from 'react'
 import { fetchDataset } from '@/api/client'
 import { usePollCadence } from '@/hooks/usePollCadence'
 import {
-  ALL_LAST48_DATASETS,
+  LAST48_DATASETS,
   type DatasetId,
   type DatasetFreshness,
   type FreshnessMap,
@@ -41,9 +41,6 @@ const POLL_INTERVALS: Record<DatasetId, number> = {
   '911-realtime':      2 * 60 * 1000,
   'fire-ems-dispatch': 30 * 60 * 1000,
   '311-cases':         30 * 60 * 1000,
-  '911-historical':    30 * 60 * 1000,
-  'parking-revenue':   4 * 60 * 60 * 1000,
-  'police-incidents':  6 * 60 * 60 * 1000,
 }
 
 /** Maps our DatasetId to the key used in src/api/datasets.ts DATASETS record */
@@ -51,9 +48,6 @@ const DATASET_REGISTRY_KEY: Record<DatasetId, string> = {
   '911-realtime':      'dispatch911Realtime',
   'fire-ems-dispatch': 'fireEMSDispatch',
   '311-cases':         'cases311',
-  '911-historical':    'dispatch911Historical',
-  'parking-revenue':   'parkingRevenue',
-  'police-incidents':  'policeIncidents',
 }
 
 /** The date/time field used for the sliding-window $where clause */
@@ -61,9 +55,6 @@ const DATE_FIELD: Record<DatasetId, string> = {
   '911-realtime':      'received_datetime',
   'fire-ems-dispatch': 'received_dttm',
   '311-cases':         'requested_datetime',
-  '911-historical':    'received_datetime',
-  'parking-revenue':   'session_start_dt',
-  'police-incidents':  'incident_datetime',
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -120,7 +111,7 @@ interface Snapshot {
 
 function buildEmptyFreshness(): FreshnessMap {
   const out = {} as FreshnessMap
-  for (const id of ALL_LAST48_DATASETS) {
+  for (const id of LAST48_DATASETS) {
     out[id] = {
       rowsUpdatedAt: null,
       maxEventTime: null,
@@ -138,7 +129,6 @@ function buildEmptyFreshness(): FreshnessMap {
 
 export function useLast48Window(opts: {
   datasets: DatasetId[]
-  tier?: 'tier1' | 'tier2'
 }): Last48WindowResult {
   // ── Stable enabled-set memo ──────────────────────────────────────────────
   const enabledSet = useMemo(() => new Set(opts.datasets), [opts.datasets])
@@ -148,11 +138,11 @@ export function useLast48Window(opts: {
     byId: new Map(),
     freshness: buildEmptyFreshness(),
     isPollingByDataset: Object.fromEntries(
-      ALL_LAST48_DATASETS.map((id) => [id, false])
+      LAST48_DATASETS.map((id) => [id, false])
     ) as Record<DatasetId, boolean>,
     initialLoadComplete: false,
     initialLoadedByDataset: Object.fromEntries(
-      ALL_LAST48_DATASETS.map((id) => [id, false])
+      LAST48_DATASETS.map((id) => [id, false])
     ) as Record<DatasetId, boolean>,
   })
 
@@ -301,10 +291,10 @@ export function useLast48Window(opts: {
   }, [notify])
 
   // ── Polling scheduler — STABLE HOOK COUNT ───────────────────────────────
-  // ALL_LAST48_DATASETS is a module-level constant with 6 entries. The
+  // LAST48_DATASETS is a module-level constant with 3 entries. The
   // for-loop below is safe because the iteration count never changes — React
-  // sees exactly 6 usePollCadence calls on every render.
-  for (const datasetId of ALL_LAST48_DATASETS) {
+  // sees exactly 3 usePollCadence calls on every render.
+  for (const datasetId of LAST48_DATASETS) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     usePollCadence({
       intervalMs: POLL_INTERVALS[datasetId],
@@ -315,7 +305,7 @@ export function useLast48Window(opts: {
 
   // ── refetch ──────────────────────────────────────────────────────────────
   const refetch = useCallback(() => {
-    for (const datasetId of ALL_LAST48_DATASETS) {
+    for (const datasetId of LAST48_DATASETS) {
       if (enabledSetRef.current.has(datasetId)) {
         void buildFetcher(datasetId)()
       }
@@ -329,7 +319,7 @@ export function useLast48Window(opts: {
 
   const byDataset = useMemo<Record<DatasetId, NormalizedEvent[]>>(() => {
     const out = {} as Record<DatasetId, NormalizedEvent[]>
-    for (const id of ALL_LAST48_DATASETS) {
+    for (const id of LAST48_DATASETS) {
       out[id] = []
     }
     for (const ev of allEvents) {

@@ -21,9 +21,6 @@ const COLORS: Record<DatasetId, string> = {
   '911-realtime':      '#616a96',
   'fire-ems-dispatch': '#b85a33',
   '311-cases':         '#7a9954',
-  '911-historical':    '#5c9693',
-  'parking-revenue':   '#d4a435',
-  'police-incidents':  '#963e30',
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -66,9 +63,6 @@ const LATENCY_BASELINE_MS: Record<DatasetId, number> = {
   '911-realtime':       7 * 60 * 60 * 1000,
   'fire-ems-dispatch': 12 * 60 * 60 * 1000,
   '311-cases':         15 * 60 * 60 * 1000,
-  '911-historical':    15 * 60 * 60 * 1000,
-  'parking-revenue':   17 * 60 * 60 * 1000,
-  'police-incidents':  39 * 60 * 60 * 1000,
 }
 
 function hexToRgb(hex: string): [number, number, number] {

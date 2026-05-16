@@ -33,13 +33,6 @@ const DATASET_META: Record<
     exploreCaption: 'Filter by this incident in the Dispatch view',
     exploreRoute: (id) => `/dispatch-911?incident=${encodeURIComponent(id)}`,
   },
-  '911-historical': {
-    label: '911 DISPATCH',
-    color: '#5c9693',
-    exploreLabel: 'Explore in 911 Dispatch',
-    exploreCaption: 'Filter by this incident in the Dispatch view',
-    exploreRoute: (id) => `/dispatch-911?incident=${encodeURIComponent(id)}`,
-  },
   'fire-ems-dispatch': {
     label: 'FIRE/EMS',
     color: '#b85a33',
@@ -53,20 +46,6 @@ const DATASET_META: Record<
     exploreLabel: 'Explore in 311',
     exploreCaption: 'Browse related cases in the 311 view',
     exploreRoute: (id) => `/cases-311?case=${encodeURIComponent(id)}`,
-  },
-  'parking-revenue': {
-    label: 'PARKING METER',
-    color: '#d4a435',
-    exploreLabel: 'Explore in Parking Revenue',
-    exploreCaption: "See this meter's session history",
-    exploreRoute: (id) => `/parking-revenue?meter=${encodeURIComponent(id)}`,
-  },
-  'police-incidents': {
-    label: 'POLICE INCIDENT',
-    color: '#963e30',
-    exploreLabel: 'Explore in Crime',
-    exploreCaption: 'See this report in the Crime view',
-    exploreRoute: (id) => `/crime-incidents?incident=${encodeURIComponent(id)}`,
   },
 }
 
@@ -136,7 +115,6 @@ function compactFields(event: NormalizedEvent): Array<[string, string]> {
   const { raw, datasetId } = event
   switch (datasetId) {
     case '911-realtime':
-    case '911-historical':
       return [
         ['Disposition', extractField(raw, 'disposition') ?? '—'],
         ['Unit',        extractField(raw, 'unit_id', 'primary_unit') ?? '—'],
@@ -151,18 +129,6 @@ function compactFields(event: NormalizedEvent): Array<[string, string]> {
         ['Status', extractField(raw, 'status_description', 'status') ?? '—'],
         ['Agency', extractField(raw, 'agency_responsible') ?? '—'],
       ]
-    case 'parking-revenue':
-      return [
-        ['Amount', extractField(raw, 'session_paid_amt') ? `$${extractField(raw, 'session_paid_amt')}` : '—'],
-        ['Method', extractField(raw, 'payment_type') ?? '—'],
-      ]
-    case 'police-incidents':
-      return [
-        ['Subcategory', extractField(raw, 'incident_subcategory') ?? '—'],
-        ['Resolution',  extractField(raw, 'resolution') ?? '—'],
-      ]
-    default:
-      return []
   }
 }
 
@@ -259,7 +225,7 @@ export default function Last48EventCard({ event, onClose }: Props) {
             </h3>
 
             {/* ── Priority (911 only) ───────────────────────────────── */}
-            {(event.datasetId === '911-realtime' || event.datasetId === '911-historical') && event.priority && (
+            {event.datasetId === '911-realtime' && event.priority && (
               <div className="mt-3">
                 <div className="font-mono text-[10px] tracking-widest text-paper-500 dark:text-paper-600">PRIORITY</div>
                 <div className={`font-mono text-[12px] mt-0.5 ${event.priority === 'A' ? 'text-indigo-300 font-semibold' : 'text-paper-300'}`}>
