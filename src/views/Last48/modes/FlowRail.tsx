@@ -8,9 +8,6 @@ const DATASET_LABEL: Record<DatasetId, { label: string; color: string }> = {
   '911-realtime':      { label: '911',   color: '#616a96' },
   'fire-ems-dispatch': { label: 'Fire',  color: '#b85a33' },
   '311-cases':         { label: '311',   color: '#7a9954' },
-  '911-historical':    { label: '911H',  color: '#5c9693' },
-  'parking-revenue':   { label: 'Park',  color: '#d4a435' },
-  'police-incidents':  { label: 'SFPD',  color: '#963e30' },
 }
 
 interface Props {

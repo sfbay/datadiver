@@ -14,9 +14,6 @@ const DATASET_LABELS: Record<DatasetId, string> = {
   '911-realtime':      '911',
   'fire-ems-dispatch': 'Fire/EMS',
   '311-cases':         '311',
-  '911-historical':    '911 Hist',
-  'parking-revenue':   'Parking',
-  'police-incidents':  'Police',
 }
 
 function formatLag(ms: number | null): string {

@@ -10,7 +10,7 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useLast48Window } from '@/hooks/useLast48Window'
-import { TIER_1_DATASETS, TIER_2_DATASETS, type DatasetId } from '@/types/last48'
+import { LAST48_DATASETS, type DatasetId } from '@/types/last48'
 import type { CensusVariable } from '@/types/census'
 import Last48UnifiedView from './modes/Last48UnifiedView'
 import LayerControls, { type BaseFill } from './chrome/LayerControls'
@@ -36,10 +36,12 @@ function parsePoints(s: string | null): boolean {
 }
 
 function parseDatasets(s: string | null): DatasetId[] {
-  if (!s) return TIER_1_DATASETS
+  if (!s) return LAST48_DATASETS
   const parts = s.split(',').map((p) => p.trim()) as DatasetId[]
-  // Filter to known IDs to defend against URL tampering
-  const known = new Set<DatasetId>([...TIER_1_DATASETS, ...TIER_2_DATASETS])
+  // Filter to known IDs to defend against URL tampering. Legacy URL params
+  // with retired Tier 2 ids (911-historical, parking-revenue, police-incidents)
+  // are silently dropped — they're no longer in LAST48_DATASETS.
+  const known = new Set<DatasetId>(LAST48_DATASETS)
   return parts.filter((p) => known.has(p))
 }
 
@@ -75,10 +77,10 @@ export default function Last48() {
 
   const setDatasets = (next: DatasetId[]) => {
     const np = new URLSearchParams(searchParams)
-    const allTier1 =
-      TIER_1_DATASETS.every((d) => next.includes(d)) &&
-      next.length === TIER_1_DATASETS.length
-    if (allTier1) np.delete('datasets')
+    const allDefault =
+      LAST48_DATASETS.every((d) => next.includes(d)) &&
+      next.length === LAST48_DATASETS.length
+    if (allDefault) np.delete('datasets')
     else np.set('datasets', next.join(','))
     setSearchParams(np, { replace: true })
   }

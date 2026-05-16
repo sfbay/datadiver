@@ -36,25 +36,16 @@ const DATASET_REGISTRY_KEY: Record<DatasetId, string> = {
   '911-realtime':       'dispatch911Realtime',
   'fire-ems-dispatch':  'fireEMSDispatch',
   '311-cases':          'cases311',
-  '911-historical':     'dispatch911Historical',
-  'parking-revenue':    'parkingRevenue',
-  'police-incidents':   'policeIncidents',
 }
 const DATE_FIELD: Record<DatasetId, string> = {
   '911-realtime':       'received_datetime',
   'fire-ems-dispatch':  'received_dttm',
   '311-cases':          'requested_datetime',
-  '911-historical':     'received_datetime',
-  'parking-revenue':    'session_start_dt',
-  'police-incidents':   'incident_datetime',
 }
 const NEIGHBORHOOD_FIELD: Record<DatasetId, string> = {
   '911-realtime':       'analysis_neighborhood',
   'fire-ems-dispatch':  'neighborhoods_analysis_boundaries',
   '311-cases':          'neighborhoods_sffind_boundaries',
-  '911-historical':     'analysis_neighborhood',
-  'parking-revenue':    'analysis_neighborhood',
-  'police-incidents':   'analysis_neighborhood',
 }
 
 interface BaselineRow {

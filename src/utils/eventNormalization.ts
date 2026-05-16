@@ -79,8 +79,7 @@ export function normalizeEvent(
   row: Record<string, unknown>
 ): NormalizedEvent | null {
   switch (datasetId) {
-    case '911-realtime':
-    case '911-historical': {
+    case '911-realtime': {
       const t = parseTimestamp(row.received_datetime)
       if (!t) return null
       const c = coords(row)
@@ -94,7 +93,7 @@ export function normalizeEvent(
       const state: 'open' | 'closed' = disposition ? 'closed' : 'open'
       const priority = extractPriority(row)
       return {
-        id: `${datasetId}:${row.cad_number ?? row.dispatch_id ?? row.id}`,
+        id: `911-realtime:${row.cad_number ?? row.dispatch_id ?? row.id}`,
         datasetId,
         timestamp: t.iso,
         receivedAt: t.ms,
@@ -143,42 +142,6 @@ export function normalizeEvent(
         latitude: c.lat,
         callType: row.service_subtype as string | undefined,
         headline: (row.service_subtype as string | undefined) ?? (row.service_name as string | undefined) ?? '311 case',
-        raw: row,
-      }
-    }
-
-    case 'parking-revenue': {
-      const t = parseTimestamp(row.session_start_dt)
-      if (!t) return null
-      const c = coords(row)
-      return {
-        id: `parking-revenue:${row.post_id ?? row.session_id ?? `${row.session_start_dt}-${row.meter_id}`}`,
-        datasetId,
-        timestamp: t.iso,
-        receivedAt: t.ms,
-        neighborhood: row.analysis_neighborhood as string | undefined,
-        longitude: c.lon,
-        latitude: c.lat,
-        callType: row.payment_type as string | undefined,
-        headline: row.street_name ? `Meter @ ${row.street_name}` : 'Parking session',
-        raw: row,
-      }
-    }
-
-    case 'police-incidents': {
-      const t = parseTimestamp(row.incident_datetime)
-      if (!t) return null
-      const c = coords(row)
-      return {
-        id: `police-incidents:${row.incident_id ?? row.incident_number}`,
-        datasetId,
-        timestamp: t.iso,
-        receivedAt: t.ms,
-        neighborhood: row.analysis_neighborhood as string | undefined,
-        longitude: c.lon,
-        latitude: c.lat,
-        callType: row.incident_category as string | undefined,
-        headline: (row.incident_subcategory as string | undefined) ?? (row.incident_category as string | undefined) ?? 'Police incident',
         raw: row,
       }
     }

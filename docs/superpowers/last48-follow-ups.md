@@ -120,37 +120,6 @@ compared to city averages). Adds editorial value. Bigger scope.
 Recommendation: ship Path A in item 4's polish PR, defer Path B as its
 own follow-up after the Phase 3 merge train clears.
 
-### 7. Retire Tier 2 datasets from The Last 48
-
-**Status:** Small, focused PR — likely batchable with items 2 + 3 + 4.
-**Identified:** PR #45 review, 2026-05-15.
-
-The Tier 2 datasets (`911-historical`, `parking-revenue`, `police-incidents`)
-load and function, but don't earn their place in a 48h-stream view:
-
-- **Police** has a ~39h event lag → only ~9h of the 48h window is populated;
-  reads as "where are the dots?" to a user.
-- **Parking Revenue** is rate-of-activity data, not event-shaped — it doesn't
-  paint as a stream alongside 911 / Fire / 311 dots.
-- **911 Historical** mostly duplicates **911 Realtime**, which already
-  includes 48h of dispatch data with closed-disposition state.
-
-**Proposal:** drop the Tier 2 set entirely. Last 48 becomes the three-stream
-editorial canvas it was supposed to be — `911-realtime` + `fire-ems-dispatch`
-+ `311-cases`. Simplifies the dataset filter chip row, the freshness chip
-strip, and the `useLast48Window` poll engine (6 fetchers → 3).
-
-**Files:**
-- `src/types/last48.ts` — drop `TIER_2_DATASETS`, fold `ALL_LAST48_DATASETS`
-  into the Tier 1 set.
-- `src/hooks/useLast48Window.ts` — natural simplification (the
-  `ALL_LAST48_DATASETS` constant tightens; per-dataset poll-interval/date-field
-  maps drop the Tier 2 entries).
-- `src/views/Last48/chrome/DatasetFilterChips.tsx` — fewer options.
-- Whatever references TIER_2_DATASETS by name.
-
-Estimated effort: ~30 lines across 4 files. Quick.
-
 ### 6. HOTSPOTS choropleth monotone in combined-z-score view
 
 **Status:** Observation, not a defect.
@@ -203,4 +172,21 @@ User-flagged during PR #46 final review; deferred to ship the merge train.
 
 ## Closed / Landed
 
-*(none yet)*
+### 7. Retire Tier 2 datasets from The Last 48 ✅
+
+Landed 2026-05-15. Three editorial streams (911 Realtime, Fire/EMS, 311
+Cases) replaced the six-stream Tier 1 + Tier 2 model. Net change:
++32/−160 lines across 11 files. The `DatasetId` union shrank from 6 to
+3 members, which let TypeScript surface every consumer mechanically.
+`EventTier` and the dead `tier?:` opt on `useLast48Window` were retired
+as part of the same cleanup. `TIER_1_DATASETS` renamed to
+`LAST48_DATASETS` since the "tier 1" name only made sense against a
+tier 2 it no longer has.
+
+Why each Tier 2 dataset didn't earn its place:
+- **Police** has a ~39h event lag → only ~9h of the 48h window is populated.
+- **Parking Revenue** is rate-of-activity data, not event-shaped.
+- **911 Historical** duplicates **911 Realtime**'s lifecycle-aware feed.
+
+Legacy `?datasets=911-historical,parking-revenue,...` URL params silently
+drop the retired ids in `parseDatasets` rather than erroring.

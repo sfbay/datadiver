@@ -1,21 +1,15 @@
-import { TIER_1_DATASETS, TIER_2_DATASETS, type DatasetId } from '@/types/last48'
+import { LAST48_DATASETS, type DatasetId } from '@/types/last48'
 
 const LABELS: Record<DatasetId, string> = {
   '911-realtime':      '911 Realtime',
   'fire-ems-dispatch': 'Fire/EMS',
   '311-cases':         '311',
-  '911-historical':    '911 Historical',
-  'parking-revenue':   'Parking Revenue',
-  'police-incidents':  'Police',
 }
 
 const COLORS: Record<DatasetId, string> = {
   '911-realtime':      '#616a96',  // indigo (cool, sensitive)
   'fire-ems-dispatch': '#b85a33',  // terracotta
   '311-cases':         '#7a9954',  // moss — civic upkeep, distinct from terracotta Fire/EMS
-  '911-historical':    '#5c9693',  // teal (paired with 911)
-  'parking-revenue':   '#d4a435',  // ochre
-  'police-incidents':  '#963e30',  // brick
 }
 
 interface Props {
@@ -24,7 +18,7 @@ interface Props {
 }
 
 export default function DatasetFilterChips({ selected, onChange }: Props) {
-  const allChips: DatasetId[] = [...TIER_1_DATASETS, ...TIER_2_DATASETS]
+  const allChips: DatasetId[] = LAST48_DATASETS
   const isSelected = (id: DatasetId) => selected.includes(id)
 
   const toggle = (id: DatasetId) => {
