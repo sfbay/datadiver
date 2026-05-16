@@ -11,6 +11,7 @@
 import { Link } from 'react-router-dom'
 import type { NormalizedEvent, DatasetId } from '@/types/last48'
 import DetailPanelShell from '@/components/ui/DetailPanelShell'
+import { formatApTime, formatHeadline } from '@/utils/format'
 
 // ---------------------------------------------------------------------------
 // Dataset metadata — label, pigment accent, explore link + caption
@@ -90,12 +91,6 @@ function formatApDate(ms: number): string {
   const monthLong = d.toLocaleDateString('en-US', { month: 'long' })   // "September"
   const month = AP_MONTH[monthLong] ?? monthLong
   return `${weekday}. ${month} ${d.getDate()}, ${d.getFullYear()}`
-}
-
-function formatTimeOfDay(ms: number): string {
-  return new Date(ms).toLocaleTimeString('en-US', {
-    hour: '2-digit', minute: '2-digit', hour12: false,
-  })
 }
 
 // ---------------------------------------------------------------------------
@@ -191,7 +186,7 @@ export default function Last48EventCard({ event, onClose }: Props) {
 
               {/* AP-style date + time on a single subdued line below the headline */}
               <p className="font-mono text-[11px] text-paper-400 dark:text-paper-500 mt-1.5 tabular-nums">
-                {formatApDate(event.receivedAt)} · {formatTimeOfDay(event.receivedAt)} PT
+                {formatApDate(event.receivedAt)} · {formatApTime(event.receivedAt)} PT
               </p>
             </div>
 
@@ -221,8 +216,47 @@ export default function Last48EventCard({ event, onClose }: Props) {
 
             {/* ── Headline: call type / description ────────────────── */}
             <h3 className="font-display italic text-[18px] leading-snug text-paper-100 dark:text-paper-100 mb-1">
-              {event.headline ?? 'Event'}
+              {event.headline ? formatHeadline(event.headline) : 'Event'}
             </h3>
+
+            {/* ── 311 attached image (if available) ────────────────────
+                311 cases carry an optional `media_url` field — usually a
+                photo of the reported issue. When present we render it
+                prominently, before the metadata rows; clicking opens the
+                full-size image. Same http→https + onError fallback as
+                CaseDetailPanel uses elsewhere in the app. */}
+            {event.datasetId === '311-cases' && (() => {
+              const raw = event.raw as { media_url?: { url?: string } | null }
+              const mediaUrl = raw.media_url?.url?.replace(/^http:\/\//, 'https://')
+              if (!mediaUrl) return null
+              return (
+                <a
+                  href={mediaUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block mt-2 mb-3 rounded-md overflow-hidden ring-1 ring-paper-300/20 dark:ring-espresso-700/60 hover:ring-moss-500/40 transition-all"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <img
+                    src={mediaUrl}
+                    alt="311 case attachment"
+                    className="w-full h-auto max-h-44 object-cover bg-paper-200/30 dark:bg-espresso-800/40"
+                    onError={(e) => {
+                      const target = e.currentTarget
+                      target.style.display = 'none'
+                      const fallback = target.nextElementSibling as HTMLElement | null
+                      if (fallback) fallback.style.display = ''
+                    }}
+                  />
+                  <span
+                    className="font-mono text-[10px] tracking-wider text-moss-500 px-2 py-1.5 block"
+                    style={{ display: 'none' }}
+                  >
+                    View attached media →
+                  </span>
+                </a>
+              )
+            })()}
 
             {/* ── Priority (911 only) ───────────────────────────────── */}
             {event.datasetId === '911-realtime' && event.priority && (
