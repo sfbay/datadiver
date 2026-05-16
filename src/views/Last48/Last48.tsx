@@ -14,8 +14,7 @@ import { LAST48_DATASETS, type DatasetId } from '@/types/last48'
 import type { CensusVariable } from '@/types/census'
 import Last48UnifiedView from './modes/Last48UnifiedView'
 import LayerControls, { type BaseFill } from './chrome/LayerControls'
-import FreshnessChipStrip from './chrome/FreshnessChipStrip'
-import DatasetFilterChips from './chrome/DatasetFilterChips'
+import DatasetSuperChips from './chrome/DatasetSuperChips'
 import ScannerStrip from './chrome/ScannerStrip'
 import ExportButton from '@/components/export/ExportButton'
 import CivicTicker from '@/components/ui/CivicTicker'
@@ -85,6 +84,16 @@ export default function Last48() {
     setSearchParams(np, { replace: true })
   }
 
+  // Per-id toggle handler for DatasetSuperChips — adds the id if missing,
+  // removes it if present. The pill is the whole click target.
+  const toggleDataset = (id: DatasetId) => {
+    setDatasets(
+      datasets.includes(id)
+        ? datasets.filter((d) => d !== id)
+        : [...datasets, id]
+    )
+  }
+
   return (
     <div className="flex flex-col h-full">
       {/* Header — Phase 1's compact-blur chrome with the rule-leading LIVE
@@ -135,18 +144,16 @@ export default function Last48() {
         />
       </div>
 
-      {/* Freshness honesty chip strip */}
-      <div className="px-[clamp(16px,3vw,64px)] pb-2">
-        <FreshnessChipStrip
+      {/* Super-chip row — unified per-dataset control:
+          toggle + count + per-hour rate + 48h sparkline + twin freshness dots */}
+      <div className="px-[clamp(16px,3vw,64px)] py-3 border-b border-paper-200/40 dark:border-espresso-700">
+        <DatasetSuperChips
+          enabled={datasets}
+          onToggle={toggleDataset}
+          byDataset={window48.byDataset}
           freshness={window48.freshness}
           initialLoadedByDataset={window48.initialLoadedByDataset}
-          enabled={datasets}
         />
-      </div>
-
-      {/* Dataset filter chips */}
-      <div className="px-[clamp(16px,3vw,64px)] pb-3 border-b border-paper-200/40 dark:border-espresso-700">
-        <DatasetFilterChips selected={datasets} onChange={setDatasets} />
       </div>
 
       {/* Unified composable view */}

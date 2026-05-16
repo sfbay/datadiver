@@ -73,8 +73,8 @@ export interface Last48WindowResult {
   /** True while any enabled dataset is currently mid-fetch. */
   isPolling: boolean
   /** Per-dataset initial-load flags. Flips to true after each dataset's first
-   *  successful fetch; never resets. Drives FreshnessChipStrip shimmer and
-   *  StreamProgressBar. */
+   *  successful fetch; never resets. Drives DatasetSuperChips loading state
+   *  and StreamProgressBar. */
   initialLoadedByDataset: Record<DatasetId, boolean>
   /** Immediately re-fetch all enabled datasets, bypassing the cadence. */
   refetch: () => void
