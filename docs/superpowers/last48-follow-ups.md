@@ -42,39 +42,6 @@ entirely.
   ripple. No separate "Priority A" surface (decided in same review —
   the editorial signal is the ripple, not a tab).
 
-### 2. Detail card headline should use `formatHeadline`
-
-**Status:** Trivial fix.
-**Identified:** PR #42 review, 2026-05-15.
-**Scope:** One line in `src/views/Last48/detail/Last48EventCard.tsx`.
-
-Currently the detail card renders `event.headline` raw. For 311 events
-the headline is `snake_case` (e.g., `homelessness_and_supportive_housing`)
-which displays awkwardly in the italic display-serif title at the top
-of the card. Fix:
-
-```tsx
-import { formatHeadline } from '@/utils/format'
-// then in JSX:
-{formatHeadline(event.headline)}
-```
-
-Out of PR #42 scope (sidebar work) per user; fold in next time
-`Last48EventCard.tsx` is touched.
-
-### 3. Detail card time should use `formatApTime`
-
-**Status:** Trivial fix.
-**Identified:** PR #42 review, 2026-05-15.
-**Scope:** `src/views/Last48/detail/Last48EventCard.tsx` — replace
-`formatTimeOfDay` (24-hour `23:05`) with the project's `formatApTime`
-(`11:05 p.m.`). Consistency with the rail.
-
-The card currently shows e.g. `Thu. May 14, 2026 · 23:05 PT`. Should
-read `Thu. May 14, 2026 · 11:05 p.m. PT`.
-
----
-
 ### 4. `Last48NeighborhoodPeek.tsx` — apply the "human-centered" register
 
 **Status:** Small polish PR.
@@ -190,3 +157,15 @@ Why each Tier 2 dataset didn't earn its place:
 
 Legacy `?datasets=911-historical,parking-revenue,...` URL params silently
 drop the retired ids in `parseDatasets` rather than erroring.
+
+### 2. Detail card headline uses `formatHeadline` ✅
+
+Landed 2026-05-16 as part of the super-chips PR. 311 cases now display
+"Infestation rodent insect" instead of `infestation_rodent_insect` in
+the italic display-serif title at the top of the detail card.
+
+### 3. Detail card time uses `formatApTime` ✅
+
+Landed 2026-05-16 as part of the super-chips PR. AP-style `11:40 p.m.`
+replaces the 24-hour `23:40` in the date+time line below the age
+headline. Consistency with the FlowRail.

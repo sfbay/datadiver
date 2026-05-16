@@ -7,7 +7,10 @@
 //   - layer toggle (whole pill is the button)
 //   - dataset identity (pigment dot + small-caps eyebrow)
 //   - volume (big italic count + per-hour rate)
-//   - 48h rate microvis (SparkBars binned 2h × 24)
+//   - 48h rate microvis (24×2h bins) with a NOW tick at the right edge
+//     and a diagonal-hatch overlay marking the publish-lag zone, so the
+//     gap between "newest event" and "now" reads as latency rather than
+//     missing data (see feedback_latency_baseline_per_dataset.md)
 //   - twin freshness indicators (data refresh + event lag, color-coded)
 //
 // Active state earns the corner-glow signature (Tier 2 glow per
@@ -15,7 +18,6 @@
 // only with dimmed pigment.
 
 import type { CSSProperties } from 'react'
-import SparkBars from '@/components/charts/SparkBars'
 import {
   LAST48_DATASETS,
   type DatasetId,
@@ -36,6 +38,118 @@ const LABELS: Record<DatasetId, string> = {
 }
 
 const INACTIVE_BAR = '#a8926a' // paper-500
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LiveSparkline — 24×2h bar chart with publish-lag hatch + NOW tick
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Two visual affordances make the publishing latency legible:
+//   1. The right N bins (where N = ceil(eventLagMs / BIN_MS)) are covered
+//      by a diagonal-hatch overlay marking the "publish lag zone" — bins
+//      where data hasn't yet arrived from the source publisher.
+//   2. A 1px NOW tick at the right edge anchors "this point is now," so
+//      the gap between the last bar and NOW reads as latency, not absence.
+//
+// Without these cues, Fire/EMS (~20h lag) and 311 (~23h lag) sparklines
+// look like they "only have 24h of data" — when in fact they have the
+// full 48h, just shifted older.
+
+const SPARK_WIDTH  = 120
+const SPARK_HEIGHT = 26
+
+interface LiveSparklineProps {
+  values: number[]              // 24 bins, oldest → newest
+  pigment: string
+  isActive: boolean
+  isLoaded: boolean
+  eventLagMs: number | null
+  patternId: string             // per-chip id so multiple SVGs can coexist
+}
+
+function LiveSparkline({
+  values, pigment, isActive, isLoaded, eventLagMs, patternId,
+}: LiveSparklineProps) {
+  const max     = Math.max(...values, 1)
+  const barCount = values.length
+  const barUnit = SPARK_WIDTH / barCount     // slot = bar + 1px gap
+  const barWidth = Math.max(2, barUnit - 1)
+  const barColor = isActive ? pigment : INACTIVE_BAR
+  const barOpacity = !isLoaded ? 0.2 : isActive ? 0.9 : 0.45
+
+  // Number of bins to mark as "publish lag zone." Cap at total bins.
+  const lagBins = eventLagMs == null
+    ? 0
+    : Math.min(barCount, Math.ceil(eventLagMs / BIN_MS))
+  const lagStartIdx = barCount - lagBins
+  const lagX     = lagStartIdx * barUnit
+  const lagWidth = lagBins * barUnit - 1
+
+  return (
+    <svg
+      width={SPARK_WIDTH}
+      height={SPARK_HEIGHT + 3}
+      viewBox={`0 -1 ${SPARK_WIDTH} ${SPARK_HEIGHT + 3}`}
+      aria-hidden
+      style={{ overflow: 'visible' }}
+    >
+      <defs>
+        <pattern
+          id={patternId}
+          patternUnits="userSpaceOnUse"
+          width="5"
+          height="5"
+          patternTransform="rotate(-45)"
+        >
+          <line
+            x1="0" y1="0" x2="0" y2="5"
+            stroke="#a8926a"
+            strokeWidth="0.6"
+            opacity={isActive ? 0.45 : 0.25}
+          />
+        </pattern>
+      </defs>
+
+      {lagBins > 0 && isLoaded && (
+        <rect
+          x={lagX}
+          y={0}
+          width={lagWidth}
+          height={SPARK_HEIGHT}
+          fill={`url(#${patternId})`}
+        />
+      )}
+
+      {values.map((v, i) => {
+        if (v <= 0) return null
+        const h = Math.max(1, (v / max) * SPARK_HEIGHT)
+        return (
+          <rect
+            key={i}
+            x={i * barUnit}
+            y={SPARK_HEIGHT - h}
+            width={barWidth}
+            height={h}
+            fill={barColor}
+            opacity={barOpacity}
+            rx={0.5}
+          />
+        )
+      })}
+
+      {isLoaded && (
+        <line
+          x1={SPARK_WIDTH - 0.5}
+          x2={SPARK_WIDTH - 0.5}
+          y1={-1}
+          y2={SPARK_HEIGHT + 2}
+          stroke="#a8926a"
+          strokeWidth="1"
+          opacity={isActive ? 0.7 : 0.45}
+        />
+      )}
+    </svg>
+  )
+}
 
 // 24 bins of 2h each across the 48h window. Reads as a clean weekly-
 // rhythm shape: morning peaks, late-night troughs.
@@ -185,18 +299,14 @@ function SuperChip({
           )}
         </div>
 
-        <div
-          className="ml-auto flex-shrink-0 transition-opacity"
-          style={{ opacity: isActive && isLoaded ? 0.9 : isLoaded ? 0.4 : 0.2 }}
-          aria-hidden
-        >
-          <SparkBars
+        <div className="ml-auto flex-shrink-0" aria-hidden>
+          <LiveSparkline
             values={sparkData}
-            height={26}
-            gap={1}
-            barColor={isActive ? pigment : INACTIVE_BAR}
-            accentColor={pigment}
-            highlightLast={isActive && count > 0}
+            pigment={pigment}
+            isActive={isActive}
+            isLoaded={isLoaded}
+            eventLagMs={eventLag}
+            patternId={`lag-hatch-${datasetId}`}
           />
         </div>
       </div>
