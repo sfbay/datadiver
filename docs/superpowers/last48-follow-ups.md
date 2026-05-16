@@ -120,6 +120,37 @@ compared to city averages). Adds editorial value. Bigger scope.
 Recommendation: ship Path A in item 4's polish PR, defer Path B as its
 own follow-up after the Phase 3 merge train clears.
 
+### 7. Retire Tier 2 datasets from The Last 48
+
+**Status:** Small, focused PR — likely batchable with items 2 + 3 + 4.
+**Identified:** PR #45 review, 2026-05-15.
+
+The Tier 2 datasets (`911-historical`, `parking-revenue`, `police-incidents`)
+load and function, but don't earn their place in a 48h-stream view:
+
+- **Police** has a ~39h event lag → only ~9h of the 48h window is populated;
+  reads as "where are the dots?" to a user.
+- **Parking Revenue** is rate-of-activity data, not event-shaped — it doesn't
+  paint as a stream alongside 911 / Fire / 311 dots.
+- **911 Historical** mostly duplicates **911 Realtime**, which already
+  includes 48h of dispatch data with closed-disposition state.
+
+**Proposal:** drop the Tier 2 set entirely. Last 48 becomes the three-stream
+editorial canvas it was supposed to be — `911-realtime` + `fire-ems-dispatch`
++ `311-cases`. Simplifies the dataset filter chip row, the freshness chip
+strip, and the `useLast48Window` poll engine (6 fetchers → 3).
+
+**Files:**
+- `src/types/last48.ts` — drop `TIER_2_DATASETS`, fold `ALL_LAST48_DATASETS`
+  into the Tier 1 set.
+- `src/hooks/useLast48Window.ts` — natural simplification (the
+  `ALL_LAST48_DATASETS` constant tightens; per-dataset poll-interval/date-field
+  maps drop the Tier 2 entries).
+- `src/views/Last48/chrome/DatasetFilterChips.tsx` — fewer options.
+- Whatever references TIER_2_DATASETS by name.
+
+Estimated effort: ~30 lines across 4 files. Quick.
+
 ### 6. HOTSPOTS choropleth monotone in combined-z-score view
 
 **Status:** Observation, not a defect.
@@ -134,6 +165,39 @@ with per-variable color ramps that produce real visual variation, so the
 "interesting maps" arrive via #45 — not via tweaks to the anomaly paint.
 
 No action; logged for context.
+
+### 8. Stagger arrival-ripple bloom by event timestamp
+
+**Status:** Polish, ~1 PR.
+**Identified:** PR #46 review, 2026-05-15.
+
+When a batch of new events lands on the same poll (e.g., FLOW toggle on, or
+a 30s poll returns several events at once), all arrival ripples fire
+simultaneously — a synchronous "bloom" rather than a sequenced cascade.
+Even if the underlying event timestamps span minutes, the visualization
+shows them all at once.
+
+**Desired behavior:** sort the batch by event timestamp ascending and
+stagger ripple emission across a short window (~600–1200ms total),
+preserving temporal order even if the wall-clock arrival is bursty. The
+"bloom" still happens; it just *cascades* in event-order instead of
+*flashing* in lockstep.
+
+**Scope:** small change in the ripple queue setup (likely
+`FlowArrivalRipples.tsx` or wherever `setRipples` is called from the
+poll-diff path). Instead of pushing all new ids in one tick, schedule
+`setTimeout`-deferred pushes by sort index. The existing `pointsOn`-flip
+cleanup path (see [[feedback_useMapLayer_cleanup_required]]) should
+already clear the pending timeouts on toggle-off mid-cascade — verify.
+
+**Distinction from the earlier ripple-storm bug:** that one was about
+ripples *accumulating in state* while the component was unmounted, then
+firing all at once on remount (fixed by clearing ripples when
+`pointsOn` becomes false). This is the *correct* batch-arrival path —
+real new events on the same poll. The fix is presentational, not
+state-correctness.
+
+User-flagged during PR #46 final review; deferred to ship the merge train.
 
 ---
 
