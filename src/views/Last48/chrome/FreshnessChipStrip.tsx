@@ -7,6 +7,7 @@
 // Color-coded by lag magnitude. Click anywhere → methodology popover
 // (deferred to Phase 1.x polish; for now no popover).
 
+import { useEffect, useRef, useState } from 'react'
 import type { FreshnessMap, DatasetId } from '@/types/last48'
 
 const DATASET_LABELS: Record<DatasetId, string> = {
@@ -39,11 +40,63 @@ function lagColor(ms: number | null): string {
   return 'text-brick-700 dark:text-brick-500'                          // >= 24h — concern
 }
 
-export default function FreshnessChipStrip({ freshness }: { freshness: FreshnessMap }) {
+interface Props {
+  freshness: FreshnessMap
+  initialLoadedByDataset: Record<DatasetId, boolean>
+  enabled: DatasetId[]
+}
+
+export default function FreshnessChipStrip({ freshness, initialLoadedByDataset, enabled }: Props) {
   // Render ALL datasets always (with em-dash placeholders for null lag
   // values) so the chrome is visually stable across initial load and
   // partial-fetch states. The strip should never flash blank.
   const datasets = Object.keys(freshness) as DatasetId[]
+
+  // Track previous initialLoadedByDataset values to detect false → true flips.
+  const prevLoadedRef = useRef<Record<DatasetId, boolean>>(
+    Object.fromEntries(datasets.map((id) => [id, false])) as Record<DatasetId, boolean>
+  )
+
+  // Set of dataset IDs currently showing the resolve pulse class.
+  const [pulsingIds, setPulsingIds] = useState<Set<DatasetId>>(new Set())
+
+  // Detect false → true flips and trigger the chip-resolve-pulse animation.
+  useEffect(() => {
+    const flipped: DatasetId[] = []
+    for (const id of datasets) {
+      const prev = prevLoadedRef.current[id] ?? false
+      const curr = initialLoadedByDataset[id] ?? false
+      if (!prev && curr) {
+        flipped.push(id)
+        prevLoadedRef.current[id] = true
+      }
+    }
+    if (flipped.length === 0) return
+
+    // Schedule via rAF so the setState calls don't fire synchronously
+    // inside the effect body (satisfies react-hooks/set-state-in-effect).
+    const frameId = requestAnimationFrame(() => {
+      setPulsingIds((prev) => {
+        const next = new Set(prev)
+        for (const id of flipped) next.add(id)
+        return next
+      })
+    })
+
+    // Remove pulse class after animation completes (~600ms).
+    const removeTimer = setTimeout(() => {
+      setPulsingIds((prev) => {
+        const next = new Set(prev)
+        for (const id of flipped) next.delete(id)
+        return next
+      })
+    }, 650)
+
+    return () => {
+      cancelAnimationFrame(frameId)
+      clearTimeout(removeTimer)
+    }
+  }, [initialLoadedByDataset, datasets])
 
   return (
     <div className="flex flex-col gap-1 font-mono text-[10px] leading-tight">
@@ -60,10 +113,19 @@ export default function FreshnessChipStrip({ freshness }: { freshness: Freshness
         <span className="text-paper-600 tracking-wider">DATA REFRESH</span>
         {datasets.map((id) => {
           const f = freshness[id]
+          const isEnabled = enabled.includes(id)
+          const isInitialLoaded = initialLoadedByDataset[id] ?? false
+          const isPulsing = pulsingIds.has(id)
           return (
-            <span key={`refresh-${id}`} className="flex items-baseline gap-1">
+            <span key={`refresh-${id}`} className={`flex items-baseline gap-1${isPulsing ? ' chip-resolve-pulse' : ''}`}>
               <span className="text-paper-700 dark:text-paper-500">{DATASET_LABELS[id]}</span>
-              <span className={`${lagColor(f.refreshLagMs)} tabular-nums`}>{formatLag(f.refreshLagMs)}</span>
+              {!isEnabled ? (
+                <span className="text-paper-600 dark:text-paper-700">—</span>
+              ) : !isInitialLoaded ? (
+                <span className="animate-pulse text-paper-600 dark:text-paper-700">loading…</span>
+              ) : (
+                <span className={`${lagColor(f.refreshLagMs)} tabular-nums`}>{formatLag(f.refreshLagMs)}</span>
+              )}
             </span>
           )
         })}
@@ -74,10 +136,19 @@ export default function FreshnessChipStrip({ freshness }: { freshness: Freshness
         <span className="text-paper-600 tracking-wider">EVENT LAG&nbsp;&nbsp;</span>
         {datasets.map((id) => {
           const f = freshness[id]
+          const isEnabled = enabled.includes(id)
+          const isInitialLoaded = initialLoadedByDataset[id] ?? false
+          const isPulsing = pulsingIds.has(id)
           return (
-            <span key={`lag-${id}`} className="flex items-baseline gap-1">
+            <span key={`lag-${id}`} className={`flex items-baseline gap-1${isPulsing ? ' chip-resolve-pulse' : ''}`}>
               <span className="text-paper-700 dark:text-paper-500">{DATASET_LABELS[id]}</span>
-              <span className={`${lagColor(f.eventLagMs)} tabular-nums`}>{formatLag(f.eventLagMs)}</span>
+              {!isEnabled ? (
+                <span className="text-paper-600 dark:text-paper-700">—</span>
+              ) : !isInitialLoaded ? (
+                <span className="animate-pulse text-paper-600 dark:text-paper-700">loading…</span>
+              ) : (
+                <span className={`${lagColor(f.eventLagMs)} tabular-nums`}>{formatLag(f.eventLagMs)}</span>
+              )}
             </span>
           )
         })}

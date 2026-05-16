@@ -33,6 +33,8 @@ import AnomalyRail from './AnomalyRail'
 import Last48EventCard from '../detail/Last48EventCard'
 import Last48NeighborhoodPeek from '../detail/Last48NeighborhoodPeek'
 import UnderlayLegend from '@/components/maps/UnderlayLegend'
+import StreamProgressBar from '../chrome/StreamProgressBar'
+import BootEmanation from './BootEmanation'
 import { useCensusData } from '@/hooks/useCensusData'
 
 interface Props {
@@ -186,6 +188,15 @@ export default function Last48UnifiedView({
       }}
       mapOverlay={(map) => (
         <>
+          {/* ── Boot emanation — mounts once, self-unmounts after ~2.4s ─── */}
+          <BootEmanation />
+
+          {/* ── Stream progress bar — slim top band, fades when complete ─── */}
+          <StreamProgressBar
+            initialLoadedByDataset={window48.initialLoadedByDataset}
+            enabled={datasets}
+          />
+
           {/* ── Base fill layers (mount FIRST so FLOW dots render on top) ── */}
           {fill === 'anomaly' && (
             <AnomalyFillLayer
@@ -220,15 +231,13 @@ export default function Last48UnifiedView({
               selectedId={selectedEvent?.id}
               onSelect={handleMapSelect}
               onNewRipples={handleNewRipples}
+              initialLoadedByDataset={window48.initialLoadedByDataset}
             />
           )}
 
           {/* ── Loading pills ─────────────────────────────────────────── */}
-          {window48.isLoading && (
-            <div className="absolute top-3 left-3 font-mono text-[10px] text-paper-500 bg-espresso-900/70 px-2 py-1 rounded">
-              loading 48h window…
-            </div>
-          )}
+          {/* isLoading gate REMOVED — events paint per-stream as they arrive.
+              The StreamProgressBar (Task 6.3) replaces this inline pill. */}
           {fill === 'anomaly' && anomalyLoading && (
             <div className="absolute top-10 left-3 font-mono text-[10px] text-paper-500 bg-espresso-900/70 px-2 py-1 rounded">
               computing 12-week baseline…

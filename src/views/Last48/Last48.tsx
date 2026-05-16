@@ -135,7 +135,11 @@ export default function Last48() {
 
       {/* Freshness honesty chip strip */}
       <div className="px-[clamp(16px,3vw,64px)] pb-2">
-        <FreshnessChipStrip freshness={window48.freshness} />
+        <FreshnessChipStrip
+          freshness={window48.freshness}
+          initialLoadedByDataset={window48.initialLoadedByDataset}
+          enabled={datasets}
+        />
       </div>
 
       {/* Dataset filter chips */}

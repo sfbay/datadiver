@@ -81,6 +81,10 @@ export interface Last48WindowResult {
   isLoading: boolean
   /** True while any enabled dataset is currently mid-fetch. */
   isPolling: boolean
+  /** Per-dataset initial-load flags. Flips to true after each dataset's first
+   *  successful fetch; never resets. Drives FreshnessChipStrip shimmer and
+   *  StreamProgressBar. */
+  initialLoadedByDataset: Record<DatasetId, boolean>
   /** Immediately re-fetch all enabled datasets, bypassing the cadence. */
   refetch: () => void
 }
@@ -97,6 +101,9 @@ interface InternalState {
   isPollingByDataset: Record<DatasetId, boolean>
   /** Flips to true on first successful fetch; never goes back. */
   initialLoadComplete: boolean
+  /** Per-dataset version of initialLoadComplete — flips true on each
+   *  dataset's first successful fetch; never resets. */
+  initialLoadedByDataset: Record<DatasetId, boolean>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -108,6 +115,7 @@ interface Snapshot {
   freshness: FreshnessMap
   isPollingByDataset: Record<DatasetId, boolean>
   initialLoadComplete: boolean
+  initialLoadedByDataset: Record<DatasetId, boolean>
 }
 
 function buildEmptyFreshness(): FreshnessMap {
@@ -143,6 +151,9 @@ export function useLast48Window(opts: {
       ALL_LAST48_DATASETS.map((id) => [id, false])
     ) as Record<DatasetId, boolean>,
     initialLoadComplete: false,
+    initialLoadedByDataset: Object.fromEntries(
+      ALL_LAST48_DATASETS.map((id) => [id, false])
+    ) as Record<DatasetId, boolean>,
   })
 
   // ── useSyncExternalStore wiring ──────────────────────────────────────────
@@ -154,6 +165,7 @@ export function useLast48Window(opts: {
     freshness: stateRef.current.freshness,
     isPollingByDataset: stateRef.current.isPollingByDataset,
     initialLoadComplete: stateRef.current.initialLoadComplete,
+    initialLoadedByDataset: stateRef.current.initialLoadedByDataset,
   })
 
   const listenersRef = useRef<Set<() => void>>(new Set())
@@ -165,6 +177,7 @@ export function useLast48Window(opts: {
       freshness: s.freshness,
       isPollingByDataset: { ...s.isPollingByDataset },
       initialLoadComplete: s.initialLoadComplete,
+      initialLoadedByDataset: { ...s.initialLoadedByDataset },
     }
     listenersRef.current.forEach((l) => l())
   }, [])
@@ -266,6 +279,10 @@ export function useLast48Window(opts: {
         state.byId = newById
         state.freshness = { ...state.freshness, [datasetId]: freshDatasetEntry }
         state.initialLoadComplete = true
+        // Per-dataset flag — flip once, never reset.
+        if (!state.initialLoadedByDataset[datasetId]) {
+          state.initialLoadedByDataset = { ...state.initialLoadedByDataset, [datasetId]: true }
+        }
       } catch (err) {
         // Keep prior freshness values; update only the error field
         const prior = state.freshness[datasetId]
@@ -330,6 +347,7 @@ export function useLast48Window(opts: {
     freshness: snapshot.freshness,
     isLoading,
     isPolling,
+    initialLoadedByDataset: snapshot.initialLoadedByDataset,
     refetch,
   }
 }
