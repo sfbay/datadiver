@@ -15,6 +15,18 @@
 // pattern Mapbox documents for runtime per-feature state. The opacity
 // expression stays static.
 //
+// IMPORTANT lifecycle considerations (lessons learned):
+//   - The RAF lives in a ref that persists across renders. The effect's
+//     cleanup does NOT cancel it on every events change — only on unmount.
+//     Otherwise mid-sweep events updates (sibling streams arriving) kill the
+//     sweep before it completes, onComplete never fires, and the next stream
+//     in the serialized chain never starts.
+//   - Feature-state CAN get wiped by Mapbox's `setData` even for features
+//     with stable string ids (anecdotally observed during cross-stream
+//     events updates). The hook defensively re-reveals already-known events
+//     on every events change, after the sweep has progressed past them.
+//     setFeatureState is idempotent for same values, so the cost is cheap.
+//
 // Reusable across views — any DataDiver surface that loads time-stamped
 // point features and wants a chronological reveal instead of a bulk bloom.
 // Currently consumed by FlowMapLayer for The Last 48; could naturally extend
@@ -62,25 +74,37 @@ export function useChronologicalReveal<E extends RevealEvent>({
   durationMs = DEFAULT_SWEEP_DURATION_MS,
   onComplete,
 }: Options<E>): void {
-  // Track which event ids have been revealed (across the sweep and any
-  // subsequent polls). A Set ref so we can dedupe O(1) without re-rendering.
+  // Track which event ids have been revealed by the sweep. Set ref so we can
+  // dedupe O(1) without re-rendering. Also serves as the "re-reveal these"
+  // list for defensive restoration after setData.
   const revealedRef = useRef<Set<string>>(new Set())
   const sweepCompleteRef = useRef(false)
   const prevEnabledRef = useRef(false)
 
+  // RAF id in a ref — the sweep survives across events updates. The effect's
+  // cleanup is what used to cancel it; now only the unmount-effect does.
+  const rafRef = useRef<number | undefined>(undefined)
+
   // Keep onComplete in a ref so the effect doesn't re-fire when the parent
-  // re-creates the callback. The hook semantics — sweep on enabled-flip,
-  // re-reveal on event-update — are independent of which callback we have.
+  // re-creates the callback.
   const onCompleteRef = useRef(onComplete)
   onCompleteRef.current = onComplete
 
+  // Stable refs for the sweep's loop closure — the loop reads these so it
+  // doesn't capture stale values across re-renders.
+  const mapRef = useRef(map)
+  mapRef.current = map
+  const sourceIdRef = useRef(sourceId)
+  sourceIdRef.current = sourceId
+
+  // ── Main effect — start sweep on enable, defensively re-reveal on events ─
   useEffect(() => {
     if (!map) return
 
     const justEnabled = enabled && !prevEnabledRef.current
     prevEnabledRef.current = enabled
 
-    // ── Path 1: stream just became enabled — kick off the sweep ─────────────
+    // Path 1: stream just became enabled — kick off the sweep.
     if (justEnabled) {
       if (events.length === 0) {
         sweepCompleteRef.current = true
@@ -100,28 +124,28 @@ export function useChronologicalReveal<E extends RevealEvent>({
         return
       }
 
-      // Sort chronologically so the sweep advances a single pointer instead of
-      // scanning every event each frame. Snapshot the array — incremental
-      // polls that update `events` mid-sweep are handled by Path 2 below.
+      // Sort chronologically; snapshot the array. Even if `events` gets a
+      // new identity mid-sweep (sibling stream arrives), the RAF keeps
+      // running against this snapshot. Newcomers are picked up by Path 2.
       const sorted = [...events].sort((a, b) => a.receivedAt - b.receivedAt)
       const oldest = sorted[0].receivedAt
       const newest = sorted[sorted.length - 1].receivedAt
-      // Single-event or all-identical-timestamps edge: reveal at progress=0.
       const range = Math.max(1, newest - oldest)
 
       let nextIdx = 0
       let startMs = 0
-      let rafId: number | undefined
 
       const tick = (now: number) => {
-        // First tick establishes t0 — protects against the long pause that
-        // can happen between RAF schedule and first frame on heavy loads.
+        const m = mapRef.current
+        const sid = sourceIdRef.current
+        if (!m) return  // map disposed
+
         if (startMs === 0) startMs = now
 
         // Source may not be present yet if useMapLayer's retry-setTimeout
         // hasn't fired. Bail and retry on the next frame.
-        if (!map.getSource(sourceId)) {
-          rafId = requestAnimationFrame(tick)
+        if (!m.getSource(sid)) {
+          rafRef.current = requestAnimationFrame(tick)
           return
         }
 
@@ -131,7 +155,7 @@ export function useChronologicalReveal<E extends RevealEvent>({
           const ev = sorted[nextIdx]
           const eventPosition = (ev.receivedAt - oldest) / range
           if (eventPosition <= progress) {
-            revealEvent(map, sourceId, ev.id)
+            revealEvent(m, sid, ev.id)
             revealedRef.current.add(ev.id)
             nextIdx++
           } else {
@@ -140,30 +164,50 @@ export function useChronologicalReveal<E extends RevealEvent>({
         }
 
         if (progress < 1) {
-          rafId = requestAnimationFrame(tick)
+          rafRef.current = requestAnimationFrame(tick)
         } else {
+          rafRef.current = undefined
           sweepCompleteRef.current = true
           onCompleteRef.current?.()
         }
       }
 
-      rafId = requestAnimationFrame(tick)
-
-      return () => {
-        if (rafId !== undefined) cancelAnimationFrame(rafId)
-      }
+      rafRef.current = requestAnimationFrame(tick)
+      // NO cleanup that cancels RAF. The sweep is allowed to run to
+      // completion across events updates. The unmount-effect below
+      // handles teardown.
+      return
     }
 
-    // ── Path 2: sweep already done — new events from polls render immediately ─
-    if (sweepCompleteRef.current && enabled) {
+    // Path 2: events updated mid-life. Defensively re-reveal every event
+    // that's already in revealedRef — this both picks up newcomers from
+    // polls AND restores state that may have been wiped by setData. The
+    // restoration is no-op when state is already set (Mapbox internally
+    // dedupes same-value writes).
+    if (enabled) {
       for (const e of events) {
-        if (!revealedRef.current.has(e.id)) {
+        const alreadyKnown = revealedRef.current.has(e.id)
+        // Re-reveal if known (defensive against state-wipe), OR if new and
+        // sweep is complete (incremental poll arrival).
+        if (alreadyKnown || sweepCompleteRef.current) {
           revealEvent(map, sourceId, e.id)
           revealedRef.current.add(e.id)
         }
       }
     }
-  }, [map, sourceId, enabled, events])
+  }, [map, sourceId, enabled, events, durationMs])
+
+  // ── Unmount-only cleanup ────────────────────────────────────────────────
+  // The sweep RAF should survive events changes; only kill it when the
+  // hook truly unmounts (component teardown). Empty deps = mount/unmount only.
+  useEffect(() => {
+    return () => {
+      if (rafRef.current !== undefined) {
+        cancelAnimationFrame(rafRef.current)
+        rafRef.current = undefined
+      }
+    }
+  }, [])
 }
 
 function revealEvent(map: mapboxgl.Map, sourceId: string, id: string): void {
@@ -171,7 +215,6 @@ function revealEvent(map: mapboxgl.Map, sourceId: string, id: string): void {
     map.setFeatureState({ source: sourceId, id }, { revealed: true })
   } catch {
     // Feature not yet present in source — the next render's events update
-    // will retry via Path 2. Acceptable: chronological sweep tolerates a
-    // one-frame catch-up window.
+    // will retry via Path 2.
   }
 }
