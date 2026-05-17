@@ -15,7 +15,9 @@
 import { useEffect, useMemo, useRef } from 'react'
 import mapboxgl from 'mapbox-gl'
 import { useMapLayer } from '@/hooks/useMapLayer'
+import { useChronologicalReveal } from '@/hooks/useChronologicalReveal'
 import type { NormalizedEvent, DatasetId } from '@/types/last48'
+import { LAST48_DATASETS } from '@/types/last48'
 
 const COLORS: Record<DatasetId, string> = {
   '911-realtime':      '#616a96',
@@ -140,9 +142,8 @@ const SOURCE_ID        = 'last48-flow-events'
 const LAYER_ID         = 'last48-flow-events-circles'
 const SELECTED_RING_ID = 'last48-flow-events-selected-ring'
 
-// The circle-opacity expression — extracted as a constant so the stream-batch
-// fade-in effect can restore it after briefly zeroing the opacity.
-const OPACITY_EXPRESSION: mapboxgl.ExpressionSpecification = [
+// Baseline opacity expression — pigment-aged paint when a feature IS revealed.
+const BASELINE_OPACITY: mapboxgl.ExpressionSpecification = [
   'case',
   ['get', 'isPriorityA'],
   // Priority-A: full opacity at age 0, slower decay
@@ -152,6 +153,17 @@ const OPACITY_EXPRESSION: mapboxgl.ExpressionSpecification = [
     ['interpolate', ['linear'], ['get', 'age'], 0, 1.0, 172800000, 0.55],
     ['interpolate', ['linear'], ['get', 'age'], 0, 0.7, 172800000, 0.25],
   ],
+]
+
+// Wrapped opacity — features default to invisible until their per-event
+// `feature-state.revealed` flag is flipped to true by useChronologicalReveal.
+// The 400ms circle-opacity-transition (paint config below) gives each event
+// a soft per-dot fade-in when its flag flips.
+const OPACITY_EXPRESSION: mapboxgl.ExpressionSpecification = [
+  'case',
+  ['boolean', ['feature-state', 'revealed'], false],
+  BASELINE_OPACITY,
+  0,
 ]
 
 export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewRipples, initialLoadedByDataset }: Props) {
@@ -165,51 +177,45 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewR
   onNewRipplesRef.current = onNewRipples
   selectedIdRef.current = selectedId
 
-  // ── Stream-batch fade-in ─────────────────────────────────────────────────
-  // Track which datasets have completed their initial load. When a dataset
-  // flips false → true, briefly set the layer opacity to 0, then restore the
-  // expression. Mapbox's circle-opacity-transition handles the smooth fade-in.
-  const prevLoadedRef = useRef<Record<DatasetId, boolean>>(
-    Object.fromEntries(
-      Object.keys(initialLoadedByDataset ?? {}).map((id) => [id, false])
-    ) as Record<DatasetId, boolean>
-  )
-
-  useEffect(() => {
-    if (!map || !initialLoadedByDataset) return
-
-    // Check for any false → true flips
-    let hadFlip = false
-    for (const [id, loaded] of Object.entries(initialLoadedByDataset) as [DatasetId, boolean][]) {
-      if (loaded && !prevLoadedRef.current[id]) {
-        hadFlip = true
-        prevLoadedRef.current[id] = true
-      }
+  // ── Per-stream chronological reveal ─────────────────────────────────────
+  // The old "blanket setPaintProperty 0 → expression" stream-batch fade has
+  // been replaced by useChronologicalReveal — points appear in receivedAt
+  // order over ~2.5s per stream as each stream's initial fetch completes.
+  // Memoize per-stream event subarrays so the hook's effect deps are stable
+  // across renders where this stream's events haven't changed.
+  const eventsByStream = useMemo(() => {
+    const groups: Record<DatasetId, NormalizedEvent[]> = {
+      '911-realtime':      [],
+      'fire-ems-dispatch': [],
+      '311-cases':         [],
     }
+    for (const e of events) {
+      if (e.longitude == null || e.latitude == null) continue
+      groups[e.datasetId].push(e)
+    }
+    return groups
+  }, [events])
 
-    if (!hadFlip) return
-
-    // Briefly set opacity to 0, then restore expression via rAF.
-    // The transition (400ms) is set on the layer in the paint config below.
-    // Store the rAF id so cleanup can cancel it if the component unmounts
-    // between the zero call and the frame fire — prevents setPaintProperty
-    // against a destroyed layer.
-    let frameId: number | undefined
-    try {
-      if (map.getLayer(LAYER_ID)) {
-        map.setPaintProperty(LAYER_ID, 'circle-opacity', 0)
-        frameId = requestAnimationFrame(() => {
-          try {
-            if (map.getLayer(LAYER_ID)) {
-              map.setPaintProperty(LAYER_ID, 'circle-opacity', OPACITY_EXPRESSION as unknown as mapboxgl.Expression)
-            }
-          } catch { /* layer may have been removed */ }
-        })
-      }
-    } catch { /* layer not yet registered */ }
-
-    return () => { if (frameId !== undefined) cancelAnimationFrame(frameId) }
-  }, [map, initialLoadedByDataset])
+  // Three fixed hook calls — one per stream. Stable across renders because
+  // LAST48_DATASETS is a constant 3-item array.
+  useChronologicalReveal({
+    map,
+    sourceId: SOURCE_ID,
+    events: eventsByStream[LAST48_DATASETS[0]],
+    enabled: !!initialLoadedByDataset?.[LAST48_DATASETS[0]],
+  })
+  useChronologicalReveal({
+    map,
+    sourceId: SOURCE_ID,
+    events: eventsByStream[LAST48_DATASETS[1]],
+    enabled: !!initialLoadedByDataset?.[LAST48_DATASETS[1]],
+  })
+  useChronologicalReveal({
+    map,
+    sourceId: SOURCE_ID,
+    events: eventsByStream[LAST48_DATASETS[2]],
+    enabled: !!initialLoadedByDataset?.[LAST48_DATASETS[2]],
+  })
 
   // ── Significant-arrivals tracking ────────────────────────────────────────
   // seenIds accumulates all event IDs we have ever rendered. On each `events`
@@ -237,6 +243,10 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewR
         const isPriorityA = e.datasetId === '911-realtime' && e.priority === 'A'
         return {
           type: 'Feature',
+          // Top-level `id` is required for map.setFeatureState — Mapbox uses
+          // it as the lookup key. Keep `properties.id` too: existing click
+          // handlers + selected-ring filter read from properties.
+          id: e.id,
           properties: {
             id: e.id,
             datasetId: e.datasetId,
