@@ -23,7 +23,7 @@
 import { useEffect, useRef } from 'react'
 import type mapboxgl from 'mapbox-gl'
 
-const SWEEP_DURATION_MS = 2500
+const DEFAULT_SWEEP_DURATION_MS = 4000
 
 interface RevealEvent {
   id: string
@@ -37,10 +37,21 @@ interface Options<E extends RevealEvent> {
   /** Events belonging to this stream. The hook reads them on the
    *  false → true transition of `enabled`. */
   events: E[]
-  /** Flips false → true when the stream's initial fetch completes. The
-   *  sweep fires once, on that transition. Subsequent updates to `events`
-   *  (incremental polls) reveal new events immediately. */
+  /** Flips false → true when the caller decides this stream may sweep.
+   *  The sweep fires once, on that transition. Subsequent updates to
+   *  `events` (incremental polls) reveal new events immediately.
+   *  The caller is responsible for serializing streams (e.g., gating
+   *  enabled on the previous stream's onComplete). */
   enabled: boolean
+  /** Total time to reveal all events in this stream. Defaults to 4000ms.
+   *  Pass a longer duration for streams that establish the canvas (first
+   *  in the chain) and shorter durations for streams that overlay onto an
+   *  already-populated map. */
+  durationMs?: number
+  /** Fires when the sweep completes — either after the RAF loop finishes
+   *  on a normal sweep, or immediately after reduced-motion / empty-events
+   *  paths. Use to chain stream N+1 after stream N. */
+  onComplete?: () => void
 }
 
 export function useChronologicalReveal<E extends RevealEvent>({
@@ -48,12 +59,20 @@ export function useChronologicalReveal<E extends RevealEvent>({
   sourceId,
   events,
   enabled,
+  durationMs = DEFAULT_SWEEP_DURATION_MS,
+  onComplete,
 }: Options<E>): void {
   // Track which event ids have been revealed (across the sweep and any
   // subsequent polls). A Set ref so we can dedupe O(1) without re-rendering.
   const revealedRef = useRef<Set<string>>(new Set())
   const sweepCompleteRef = useRef(false)
   const prevEnabledRef = useRef(false)
+
+  // Keep onComplete in a ref so the effect doesn't re-fire when the parent
+  // re-creates the callback. The hook semantics — sweep on enabled-flip,
+  // re-reveal on event-update — are independent of which callback we have.
+  const onCompleteRef = useRef(onComplete)
+  onCompleteRef.current = onComplete
 
   useEffect(() => {
     if (!map) return
@@ -65,6 +84,7 @@ export function useChronologicalReveal<E extends RevealEvent>({
     if (justEnabled) {
       if (events.length === 0) {
         sweepCompleteRef.current = true
+        onCompleteRef.current?.()
         return
       }
 
@@ -76,6 +96,7 @@ export function useChronologicalReveal<E extends RevealEvent>({
           revealedRef.current.add(e.id)
         }
         sweepCompleteRef.current = true
+        onCompleteRef.current?.()
         return
       }
 
@@ -104,7 +125,7 @@ export function useChronologicalReveal<E extends RevealEvent>({
           return
         }
 
-        const progress = Math.min(1, (now - startMs) / SWEEP_DURATION_MS)
+        const progress = Math.min(1, (now - startMs) / durationMs)
 
         while (nextIdx < sorted.length) {
           const ev = sorted[nextIdx]
@@ -122,6 +143,7 @@ export function useChronologicalReveal<E extends RevealEvent>({
           rafId = requestAnimationFrame(tick)
         } else {
           sweepCompleteRef.current = true
+          onCompleteRef.current?.()
         }
       }
 

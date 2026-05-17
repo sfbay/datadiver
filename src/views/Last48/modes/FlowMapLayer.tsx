@@ -12,12 +12,40 @@
 // circle layer filtered to the selected event id. No radar sweep yet
 // (that arrives in PR 2); just a visible cream border circle.
 
-import { useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
 import { useMapLayer } from '@/hooks/useMapLayer'
 import { useChronologicalReveal } from '@/hooks/useChronologicalReveal'
 import type { NormalizedEvent, DatasetId } from '@/types/last48'
 import { LAST48_DATASETS } from '@/types/last48'
+
+// Inter-sweep buffer — once stream N completes, wait this long before
+// stream N+1 is allowed to start. Gives the eye time to register "stream 1
+// just finished, stream 2 is starting" rather than blurring into one event.
+const INTER_SWEEP_BUFFER_MS = 1200
+
+// Per-stream sweep durations, asymmetric by editorial weight:
+//   911 Realtime (6s)  — the editorial spine of The Last 48: live emergency
+//     response. Establishes the canvas with the most narrative weight, so
+//     it gets the most generous reveal. Per-event rate stays low (~24 events
+//     across 6s = ~4/s, easy for the eye to track).
+//   Fire/EMS (3.5s)    — overlays onto already-populated map; brisker tempo.
+//   311 Cases (3s)     — final layer; ~2,000 events across 3s = high rate
+//     but reads as "ambient density" against the already-visible 911 + Fire/EMS
+//     dots. The eye no longer needs to track individual arrivals.
+//
+// Total visual reveal arc (data-loaded case): 0 → ~14.5s
+//   0s     → 911 starts sweep
+//   6s     → 911 sweep ends
+//   7.2s   → Fire/EMS starts (post-buffer)
+//   10.7s  → Fire/EMS sweep ends
+//   11.9s  → 311 starts (post-buffer)
+//   14.9s  → 311 sweep ends, ambient pulse fades
+const SWEEP_DURATIONS_MS: Record<DatasetId, number> = {
+  '911-realtime':      6000,
+  'fire-ems-dispatch': 3500,
+  '311-cases':         3000,
+}
 
 const COLORS: Record<DatasetId, string> = {
   '911-realtime':      '#616a96',
@@ -177,12 +205,14 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewR
   onNewRipplesRef.current = onNewRipples
   selectedIdRef.current = selectedId
 
-  // ── Per-stream chronological reveal ─────────────────────────────────────
-  // The old "blanket setPaintProperty 0 → expression" stream-batch fade has
-  // been replaced by useChronologicalReveal — points appear in receivedAt
-  // order over ~2.5s per stream as each stream's initial fetch completes.
-  // Memoize per-stream event subarrays so the hook's effect deps are stable
-  // across renders where this stream's events haven't changed.
+  // ── Per-stream chronological reveal — serialized ────────────────────────
+  // Each stream's sweep waits for the previous stream's sweep to complete
+  // (plus INTER_SWEEP_BUFFER_MS). Without this, with warm Socrata caches
+  // all three fetches return within a 2-4s window and the sweeps overlap
+  // into one indistinct swarm. The data lands whenever; the *visual reveal*
+  // runs on its own clock with deliberate cadence.
+  //
+  // Order: 911 → Fire/EMS → 311 (LAST48_DATASETS index order).
   const eventsByStream = useMemo(() => {
     const groups: Record<DatasetId, NormalizedEvent[]> = {
       '911-realtime':      [],
@@ -196,25 +226,62 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewR
     return groups
   }, [events])
 
-  // Three fixed hook calls — one per stream. Stable across renders because
-  // LAST48_DATASETS is a constant 3-item array.
+  // Tracks which streams have finished sweeping (post-buffer). Each entry
+  // is added INTER_SWEEP_BUFFER_MS *after* its sweep onComplete fires —
+  // so dependent streams are gated on the buffer, not just on raw completion.
+  const [sweepReleased, setSweepReleased] = useState<Set<DatasetId>>(new Set())
+
+  const releaseSweep = useCallback((id: DatasetId) => {
+    setTimeout(() => {
+      setSweepReleased((prev) => {
+        if (prev.has(id)) return prev
+        const next = new Set(prev)
+        next.add(id)
+        return next
+      })
+    }, INTER_SWEEP_BUFFER_MS)
+  }, [])
+
+  // Stream N is enabled when:
+  //   1. its own initial fetch has completed (data present),
+  //   2. all earlier streams in the order have had their sweep released.
+  const stream0 = LAST48_DATASETS[0]
+  const stream1 = LAST48_DATASETS[1]
+  const stream2 = LAST48_DATASETS[2]
+
+  const enabled0 = !!initialLoadedByDataset?.[stream0]
+  const enabled1 = !!initialLoadedByDataset?.[stream1] && sweepReleased.has(stream0)
+  const enabled2 = !!initialLoadedByDataset?.[stream2] && sweepReleased.has(stream1)
+
+  // Memoized onComplete handlers — stable identity to keep the hook's deps
+  // clean. Each release advances the chain after the buffer delay.
+  const onComplete0 = useCallback(() => releaseSweep(stream0), [releaseSweep, stream0])
+  const onComplete1 = useCallback(() => releaseSweep(stream1), [releaseSweep, stream1])
+  const onComplete2 = useCallback(() => releaseSweep(stream2), [releaseSweep, stream2])
+
   useChronologicalReveal({
     map,
     sourceId: SOURCE_ID,
-    events: eventsByStream[LAST48_DATASETS[0]],
-    enabled: !!initialLoadedByDataset?.[LAST48_DATASETS[0]],
+    events: eventsByStream[stream0],
+    enabled: enabled0,
+    durationMs: SWEEP_DURATIONS_MS[stream0],
+    onComplete: onComplete0,
   })
   useChronologicalReveal({
     map,
     sourceId: SOURCE_ID,
-    events: eventsByStream[LAST48_DATASETS[1]],
-    enabled: !!initialLoadedByDataset?.[LAST48_DATASETS[1]],
+    events: eventsByStream[stream1],
+    enabled: enabled1,
+    durationMs: SWEEP_DURATIONS_MS[stream1],
+    onComplete: onComplete1,
   })
   useChronologicalReveal({
     map,
     sourceId: SOURCE_ID,
-    events: eventsByStream[LAST48_DATASETS[2]],
-    enabled: !!initialLoadedByDataset?.[LAST48_DATASETS[2]],
+    events: eventsByStream[stream2],
+    enabled: enabled2,
+    durationMs: SWEEP_DURATIONS_MS[stream2],
+    onComplete: onComplete2,
   })
 
   // ── Significant-arrivals tracking ────────────────────────────────────────
@@ -336,6 +403,18 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewR
           // Routine: thin open-event stroke, thinner closed-event stroke.
           ['case', ['get', 'isOpen'], 1, 0.5],
         ],
+        // Stroke must also gate on feature-state.revealed — otherwise
+        // unrevealed features render as stroke-only rings (Mapbox treats
+        // circle-opacity and circle-stroke-opacity as independent paint
+        // properties). Pre-sweep features need both fill AND stroke
+        // invisible; the chronological sweep flips them together.
+        'circle-stroke-opacity': [
+          'case',
+          ['boolean', ['feature-state', 'revealed'], false],
+          1,
+          0,
+        ],
+        'circle-stroke-opacity-transition': { duration: 400, delay: 0 },
       },
     } as mapboxgl.AnyLayer,
     {
