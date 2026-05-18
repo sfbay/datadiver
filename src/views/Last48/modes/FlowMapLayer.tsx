@@ -15,7 +15,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
 import { useMapLayer } from '@/hooks/useMapLayer'
-import { useChronologicalReveal } from '@/hooks/useChronologicalReveal'
+import { useChronologicalReveal, hashId } from '@/hooks/useChronologicalReveal'
 import type { NormalizedEvent, DatasetId } from '@/types/last48'
 import { LAST48_DATASETS } from '@/types/last48'
 
@@ -311,9 +311,12 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewR
         return {
           type: 'Feature',
           // Top-level `id` is required for map.setFeatureState — Mapbox uses
-          // it as the lookup key. Keep `properties.id` too: existing click
-          // handlers + selected-ring filter read from properties.
-          id: e.id,
+          // it as the lookup key. Use NUMERIC hash of the string id because
+          // Mapbox's feature-state lookup is unreliable for string IDs across
+          // setData calls (state can be silently dropped). Same hash is used
+          // by useChronologicalReveal so both ends agree. Keep `properties.id`
+          // as the original string for click handlers + selected-ring filter.
+          id: hashId(e.id),
           properties: {
             id: e.id,
             datasetId: e.datasetId,

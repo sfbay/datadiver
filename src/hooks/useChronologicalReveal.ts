@@ -37,6 +37,27 @@ import type mapboxgl from 'mapbox-gl'
 
 const DEFAULT_SWEEP_DURATION_MS = 4000
 
+/**
+ * FNV-1a 32-bit hash of a string. Maps stable string IDs to stable numeric
+ * IDs for Mapbox feature-state.
+ *
+ * Why: Mapbox's setFeatureState lookup table treats string IDs differently
+ * from numeric IDs internally, and feature-state can be silently dropped
+ * across setData calls when string IDs are used. Numeric IDs are robust.
+ *
+ * Exported so FlowMapLayer can hash the same way when populating feature.id
+ * at the GeoJSON level — both ends MUST agree on the hash. Collision risk
+ * for ~6000 events in a 32-bit space is ~5 per million; acceptable.
+ */
+export function hashId(s: string): number {
+  let h = 2166136261 >>> 0
+  for (let i = 0; i < s.length; i++) {
+    h = (h ^ s.charCodeAt(i)) >>> 0
+    h = (h * 16777619) >>> 0
+  }
+  return h >>> 0
+}
+
 interface RevealEvent {
   id: string
   receivedAt: number
@@ -181,19 +202,25 @@ export function useChronologicalReveal<E extends RevealEvent>({
 
     // Path 2: events updated mid-life. Defensively re-reveal every event
     // that's already in revealedRef — this both picks up newcomers from
-    // polls AND restores state that may have been wiped by setData. The
-    // restoration is no-op when state is already set (Mapbox internally
-    // dedupes same-value writes).
+    // polls AND restores state that may have been wiped by setData.
+    //
+    // Deferred to requestAnimationFrame so it runs AFTER Mapbox's setData
+    // (which fires in useMapLayer's parallel effect) has settled. Without
+    // the deferral, our setFeatureState calls can race with setData's
+    // internal state-wipe and lose. Belt-and-suspenders with the numeric
+    // hashId fix in revealEvent.
     if (enabled) {
-      for (const e of events) {
-        const alreadyKnown = revealedRef.current.has(e.id)
-        // Re-reveal if known (defensive against state-wipe), OR if new and
-        // sweep is complete (incremental poll arrival).
-        if (alreadyKnown || sweepCompleteRef.current) {
-          revealEvent(map, sourceId, e.id)
-          revealedRef.current.add(e.id)
+      const snapshot = events  // capture for the rAF closure
+      const restoreFrame = requestAnimationFrame(() => {
+        for (const e of snapshot) {
+          const alreadyKnown = revealedRef.current.has(e.id)
+          if (alreadyKnown || sweepCompleteRef.current) {
+            revealEvent(map, sourceId, e.id)
+            revealedRef.current.add(e.id)
+          }
         }
-      }
+      })
+      return () => cancelAnimationFrame(restoreFrame)
     }
   }, [map, sourceId, enabled, events, durationMs])
 
@@ -210,9 +237,11 @@ export function useChronologicalReveal<E extends RevealEvent>({
   }, [])
 }
 
-function revealEvent(map: mapboxgl.Map, sourceId: string, id: string): void {
+function revealEvent(map: mapboxgl.Map, sourceId: string, idStr: string): void {
   try {
-    map.setFeatureState({ source: sourceId, id }, { revealed: true })
+    // Use numeric hash — Mapbox feature-state is robust for numeric IDs;
+    // string IDs can be silently dropped across setData calls.
+    map.setFeatureState({ source: sourceId, id: hashId(idStr) }, { revealed: true })
   } catch {
     // Feature not yet present in source — the next render's events update
     // will retry via Path 2.
