@@ -346,15 +346,47 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewR
   }, [events])
 
   // ── Significant-arrivals detection ───────────────────────────────────────
-  // Runs on every `events` update. Seeds seenIds on the first poll (no burst
-  // on mount); on subsequent polls, flags newcomers that pass the significance
-  // gate and calls onNewRipples with their screen-projectable descriptors.
+  // Runs on every `events` update.
+  //
+  // Cold-load behavior: on the FIRST time we have non-empty events, seed
+  // every event as already-seen (so subsequent renders don't treat them as
+  // newcomers) AND fire ripples for priority-A 911 events as a curated
+  // "key events" spotlight. The wider previous gate (priority-A OR open)
+  // produced a 1000+-ring bloom that buried the signal; priority-A alone
+  // surfaces the editorially-significant calls — the 46th-and-Ulloa-style
+  // events worth noticing.
+  //
+  // Subsequent renders: any newcomer 911 priority-A event fires a ripple.
+  // This makes ripples a meaningful editorial signal both in cold-load and
+  // in live operation.
+  //
+  // Bug-fix note: the previous version flipped isFirstPollRef.current on
+  // the very first effect run, BEFORE any data had arrived (events was
+  // []). That meant the second run (when data actually landed) treated
+  // every event as a newcomer and fired a ripple for every open/priority-A
+  // 911 event — the "bloom too heavy" PR #52 video showed. Now seeding
+  // only happens once events.length > 0.
   useEffect(() => {
     if (isFirstPollRef.current) {
-      // Seed: mark all current events as already-seen so the initial batch
-      // doesn't trigger a wall of ripples.
-      for (const ev of events) seenIdsRef.current.add(ev.id)
+      if (events.length === 0) return  // wait for actual data
+
+      const newRipples: Ripple[] = []
+      const bornAt = Date.now()
+      for (const ev of events) {
+        seenIdsRef.current.add(ev.id)
+        if (
+          ev.datasetId === '911-realtime' &&
+          ev.priority === 'A' &&
+          ev.longitude != null &&
+          ev.latitude != null
+        ) {
+          newRipples.push({ id: ev.id, lng: ev.longitude!, lat: ev.latitude!, bornAt })
+        }
+      }
       isFirstPollRef.current = false
+      if (newRipples.length > 0) {
+        onNewRipplesRef.current?.(newRipples)
+      }
       return
     }
 
@@ -363,9 +395,11 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewR
     for (const ev of events) {
       if (seenIdsRef.current.has(ev.id)) continue
       seenIdsRef.current.add(ev.id)
+      // Priority-A 911 only — narrowed from the previous gate which also
+      // included `state === 'open'`. Open-but-routine calls don't deserve
+      // the visual emphasis; reserve ripples for the genuinely urgent.
       const isSignificant =
-        (ev.datasetId === '911-realtime' && ev.priority === 'A') ||
-        (ev.datasetId === '911-realtime' && ev.state === 'open')
+        ev.datasetId === '911-realtime' && ev.priority === 'A'
       if (isSignificant && ev.longitude != null && ev.latitude != null) {
         newRipples.push({ id: ev.id, lng: ev.longitude!, lat: ev.latitude!, bornAt })
       }
