@@ -231,6 +231,10 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewR
   // so dependent streams are gated on the buffer, not just on raw completion.
   const [sweepReleased, setSweepReleased] = useState<Set<DatasetId>>(new Set())
 
+  // Fast-forward state — clicking the map during loading flips this true
+  // and short-circuits all three hooks. See the click handler effect below.
+  const [forceCompleteAll, setForceCompleteAll] = useState(false)
+
   const releaseSweep = useCallback((id: DatasetId) => {
     setTimeout(() => {
       setSweepReleased((prev) => {
@@ -265,6 +269,7 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewR
     events: eventsByStream[stream0],
     enabled: enabled0,
     durationMs: SWEEP_DURATIONS_MS[stream0],
+    forceComplete: forceCompleteAll,
     onComplete: onComplete0,
   })
   useChronologicalReveal({
@@ -273,6 +278,7 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewR
     events: eventsByStream[stream1],
     enabled: enabled1,
     durationMs: SWEEP_DURATIONS_MS[stream1],
+    forceComplete: forceCompleteAll,
     onComplete: onComplete1,
   })
   useChronologicalReveal({
@@ -281,8 +287,42 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewR
     events: eventsByStream[stream2],
     enabled: enabled2,
     durationMs: SWEEP_DURATIONS_MS[stream2],
+    forceComplete: forceCompleteAll,
     onComplete: onComplete2,
   })
+
+  // ── Fast-forward: click anywhere on the map to skip the reveal ───────────
+  // While any stream is still mid-sweep or queued, a click on the Mapbox
+  // canvas fast-forwards: bumps sweepReleased to contain ALL streams (so
+  // each hook becomes "enabled") and flips forceCompleteAll which makes the
+  // hooks short-circuit their sweep. The result: every event currently
+  // loaded reveals at once, the scheduler unlocks downstream streams which
+  // also short-circuit if their data has landed, and the user is dropped
+  // straight into "settled" state.
+  //
+  // The ambient BootEmanation pulse stays controlled by isLoadingAny (data
+  // fetching) — if a slow stream is still mid-fetch when the user clicks,
+  // the pulse keeps going until that data lands. That's correct: clicking
+  // "skips the animation" but doesn't fake-skip the network.
+  //
+  // Uses a ref so the handler reads current eligibility on each click
+  // without re-attaching the listener every render.
+  const fastForwardEligibleRef = useRef(false)
+  fastForwardEligibleRef.current =
+    !forceCompleteAll && sweepReleased.size < LAST48_DATASETS.length
+
+  useEffect(() => {
+    if (!map) return
+    const handler = () => {
+      if (!fastForwardEligibleRef.current) return
+      setForceCompleteAll(true)
+      setSweepReleased(new Set(LAST48_DATASETS))
+    }
+    map.on('click', handler)
+    return () => {
+      map.off('click', handler)
+    }
+  }, [map])
 
   // ── Significant-arrivals tracking ────────────────────────────────────────
   // seenIds accumulates all event IDs we have ever rendered. On each `events`

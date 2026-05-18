@@ -81,9 +81,15 @@ interface Options<E extends RevealEvent> {
    *  in the chain) and shorter durations for streams that overlay onto an
    *  already-populated map. */
   durationMs?: number
+  /** Click-to-skip escape hatch. When true, the hook short-circuits: cancels
+   *  the in-flight RAF (if any), reveals every event in the current snapshot
+   *  immediately, marks the sweep complete, fires onComplete. Subsequent
+   *  poll-driven events updates are still handled normally (via Path 2). */
+  forceComplete?: boolean
   /** Fires when the sweep completes — either after the RAF loop finishes
    *  on a normal sweep, or immediately after reduced-motion / empty-events
-   *  paths. Use to chain stream N+1 after stream N. */
+   *  paths, or after a forceComplete trigger. Use to chain stream N+1 after
+   *  stream N. */
   onComplete?: () => void
 }
 
@@ -93,6 +99,7 @@ export function useChronologicalReveal<E extends RevealEvent>({
   events,
   enabled,
   durationMs = DEFAULT_SWEEP_DURATION_MS,
+  forceComplete = false,
   onComplete,
 }: Options<E>): void {
   // Track which event ids have been revealed by the sweep. Set ref so we can
@@ -121,6 +128,27 @@ export function useChronologicalReveal<E extends RevealEvent>({
   // ── Main effect — start sweep on enable, defensively re-reveal on events ─
   useEffect(() => {
     if (!map) return
+
+    // ── Force-complete short-circuit ───────────────────────────────────────
+    // Click-to-skip escape hatch. Bypass all normal Path 1/2 logic, cancel
+    // any in-flight sweep RAF, reveal every event in the current snapshot.
+    // Runs only ONCE — the !sweepCompleteRef.current guard ensures
+    // subsequent renders with forceComplete still true fall through to
+    // Path 2's defensive re-reveal for incremental polls.
+    if (forceComplete && !sweepCompleteRef.current) {
+      if (rafRef.current !== undefined) {
+        cancelAnimationFrame(rafRef.current)
+        rafRef.current = undefined
+      }
+      for (const e of events) {
+        revealEvent(map, sourceId, e.id)
+        revealedRef.current.add(e.id)
+      }
+      sweepCompleteRef.current = true
+      prevEnabledRef.current = enabled  // sync to current; Path 1 will not re-trigger
+      onCompleteRef.current?.()
+      return
+    }
 
     const justEnabled = enabled && !prevEnabledRef.current
     prevEnabledRef.current = enabled
@@ -225,7 +253,7 @@ export function useChronologicalReveal<E extends RevealEvent>({
         }
       }
     }
-  }, [map, sourceId, enabled, events, durationMs])
+  }, [map, sourceId, enabled, events, durationMs, forceComplete])
 
   // ── Unmount-only cleanup ────────────────────────────────────────────────
   // The sweep RAF should survive events changes; only kill it when the
