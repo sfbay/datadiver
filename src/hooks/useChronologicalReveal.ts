@@ -201,26 +201,29 @@ export function useChronologicalReveal<E extends RevealEvent>({
     }
 
     // Path 2: events updated mid-life. Defensively re-reveal every event
-    // that's already in revealedRef — this both picks up newcomers from
-    // polls AND restores state that may have been wiped by setData.
+    // already in revealedRef. Picks up newcomers from polls AND restores
+    // state that may have been wiped by setData.
     //
-    // Deferred to requestAnimationFrame so it runs AFTER Mapbox's setData
-    // (which fires in useMapLayer's parallel effect) has settled. Without
-    // the deferral, our setFeatureState calls can race with setData's
-    // internal state-wipe and lose. Belt-and-suspenders with the numeric
-    // hashId fix in revealEvent.
+    // Run SYNCHRONOUSLY (not via rAF). Effect order — React fires effects
+    // in declaration order. useMapLayer's data effect (setData) is called
+    // before this hook's effect in FlowMapLayer, so by the time we get
+    // here, setData has already run. Synchronous re-reveal restores any
+    // state setData wiped, immediately.
+    //
+    // A previous attempt deferred via requestAnimationFrame, but the
+    // effect's cleanup cancelled the rAF on every dep re-run — and since
+    // visibleEvents in Last48UnifiedView gets a new identity on every
+    // parent render (allEvents in useLast48Window isn't memoized), the
+    // effect re-runs frequently, cancelling the rAF before it could fire.
+    // The defensive re-reveal was never actually running.
     if (enabled) {
-      const snapshot = events  // capture for the rAF closure
-      const restoreFrame = requestAnimationFrame(() => {
-        for (const e of snapshot) {
-          const alreadyKnown = revealedRef.current.has(e.id)
-          if (alreadyKnown || sweepCompleteRef.current) {
-            revealEvent(map, sourceId, e.id)
-            revealedRef.current.add(e.id)
-          }
+      for (const e of events) {
+        const alreadyKnown = revealedRef.current.has(e.id)
+        if (alreadyKnown || sweepCompleteRef.current) {
+          revealEvent(map, sourceId, e.id)
+          revealedRef.current.add(e.id)
         }
-      })
-      return () => cancelAnimationFrame(restoreFrame)
+      }
     }
   }, [map, sourceId, enabled, events, durationMs])
 
