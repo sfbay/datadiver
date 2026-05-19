@@ -37,11 +37,36 @@ import { normalizeEvent } from '@/utils/eventNormalization'
 
 const WINDOW_MS = 48 * 60 * 60 * 1000 // 48 hours
 
+// ── Two-phase fetch parameters ─────────────────────────────────────────────
+// On cold-load, each stream's FIRST fetch is the "head" — a small, fast
+// query. As soon as it completes, the phase transitions to 'full' and a
+// backfill fetch fires immediately (without waiting for the next poll
+// interval). Subsequent polls at the regular cadence use the full window.
+//
+// Head query strategy: NO $where filter, just $order DESC + $limit. Socrata
+// indexes the `$order` field, so "give me the most recent N rows" hits a
+// fast indexed access path; a `$where date >= cutoff` filter sometimes
+// falls back to a full table scan depending on the dataset's index
+// configuration. The previous head strategy (2h window via $where) had
+// inconsistent latency — fast on hot caches, ~60s on cold caches. Dropping
+// $where pins the head query to the indexed path reliably.
+//
+// HEAD_LIMIT = 200: small enough that the chronological reveal is
+// visibly trackable (~33 events/sec over 6s for 911 — eye can follow),
+// large enough to feel populated rather than empty. For 911 with ~58
+// events/hr, 200 events ≈ 3.4 hours of data; for 311 with ~48/hr,
+// ~4.2 hours; for Fire/EMS with ~11/hr, ~18 hours. All within 48h
+// window. The useLast48Window eviction loop drops anything older.
+const HEAD_LIMIT = 200
+const FULL_LIMIT = 5000
+
 const POLL_INTERVALS: Record<DatasetId, number> = {
   '911-realtime':      2 * 60 * 1000,
   'fire-ems-dispatch': 30 * 60 * 1000,
   '311-cases':         30 * 60 * 1000,
 }
+
+type FetchPhase = 'head' | 'full'
 
 /** Maps our DatasetId to the key used in src/api/datasets.ts DATASETS record */
 const DATASET_REGISTRY_KEY: Record<DatasetId, string> = {
@@ -188,36 +213,56 @@ export function useLast48Window(opts: {
   const enabledSetRef = useRef(enabledSet)
   enabledSetRef.current = enabledSet
 
+  // Per-dataset fetch phase. Starts as 'head' for all; transitions to 'full'
+  // after the first successful (or failed — see catch) head fetch. Once
+  // 'full', all subsequent calls (poll-driven or otherwise) use the full
+  // 48h window. The transition is one-way; never resets.
+  const phaseRef = useRef<Record<DatasetId, FetchPhase>>(
+    Object.fromEntries(
+      LAST48_DATASETS.map((id) => [id, 'head' as FetchPhase])
+    ) as Record<DatasetId, FetchPhase>
+  )
+
   const buildFetcher = useCallback((datasetId: DatasetId) => {
-    return async (): Promise<void> => {
+    const fetcherFn = async (): Promise<void> => {
       // Early-return when this dataset is not currently enabled.
       if (!enabledSetRef.current.has(datasetId)) return
 
       const state = stateRef.current
 
+      // Determine phase + parameters for this call.
+      const isHead = phaseRef.current[datasetId] === 'head'
+      const limit = isHead ? HEAD_LIMIT : FULL_LIMIT
+
       // Mark polling start
       state.isPollingByDataset = { ...state.isPollingByDataset, [datasetId]: true }
       notify()
 
-      // Socrata SoQL date comparison rejects the trailing `.000Z` produced
-      // by `toISOString()` — it parses that form as a text literal and
-      // throws `query.soql.type-mismatch`. The convention across DataDiver
-      // (see useResponseEquity, useTrendBaseline, etc.) is the trimmed
-      // form `YYYY-MM-DDTHH:MM:SS`.
-      const cutoff = new Date(Date.now() - WINDOW_MS).toISOString().slice(0, 19)
       const dateField = DATE_FIELD[datasetId]
       const registryKey = DATASET_REGISTRY_KEY[datasetId]
+
+      // Head: $order DESC + $limit alone, no $where (indexed access path —
+      // reliably fast across Socrata cache states).
+      // Full: $where filtered to last 48h (the actual content window).
+      // Socrata SoQL date comparison rejects the trailing `.000Z` produced
+      // by `toISOString()` — use trimmed `YYYY-MM-DDTHH:MM:SS`.
+      const queryParams: Parameters<typeof fetchDataset>[1] = isHead
+        ? {
+            $order: `${dateField} DESC`,
+            $limit: limit,
+          }
+        : {
+            $where: `${dateField} >= '${new Date(Date.now() - WINDOW_MS).toISOString().slice(0, 19)}'`,
+            $order: `${dateField} DESC`,
+            $limit: limit,
+          }
 
       try {
         const rows = await fetchDataset<Record<string, unknown>>(
           // DatasetKey is just a string alias — cast is safe since all
           // DATASET_REGISTRY_KEY values are verified against datasets.ts
           registryKey as Parameters<typeof fetchDataset>[0],
-          {
-            $where: `${dateField} >= '${cutoff}'`,
-            $order: `${dateField} DESC`,
-            $limit: 5000,
-          },
+          queryParams,
           { skipCache: true }
         )
 
@@ -269,9 +314,22 @@ export function useLast48Window(opts: {
         state.byId = newById
         state.freshness = { ...state.freshness, [datasetId]: freshDatasetEntry }
         state.initialLoadComplete = true
-        // Per-dataset flag — flip once, never reset.
+        // Per-dataset flag — flip once, never reset. The head fetch is
+        // enough to satisfy "initial load complete" — Stream Curtain can
+        // start sweeping on the head's ~150 events while the backfill
+        // continues in the background.
         if (!state.initialLoadedByDataset[datasetId]) {
           state.initialLoadedByDataset = { ...state.initialLoadedByDataset, [datasetId]: true }
+        }
+
+        // Two-phase transition: after a successful head fetch, advance to
+        // 'full' phase and immediately schedule a backfill fetch. The
+        // setTimeout(0) defers to the next macrotask so React renders the
+        // head data first; the backfill query then fires without waiting
+        // for the next poll interval (which would be 2-30 minutes away).
+        if (isHead) {
+          phaseRef.current[datasetId] = 'full'
+          setTimeout(() => { void fetcherFn() }, 0)
         }
       } catch (err) {
         // Keep prior freshness values; update only the error field
@@ -283,11 +341,19 @@ export function useLast48Window(opts: {
             error: err instanceof Error ? err.message : String(err),
           },
         }
+        // If the head fetch failed, advance the phase anyway so the next
+        // poll uses the full window — don't get stuck retrying head queries.
+        // We don't schedule an immediate backfill in this case; let
+        // usePollCadence retry at its normal cadence.
+        if (isHead) {
+          phaseRef.current[datasetId] = 'full'
+        }
       } finally {
         state.isPollingByDataset = { ...state.isPollingByDataset, [datasetId]: false }
         notify()
       }
     }
+    return fetcherFn
   }, [notify])
 
   // ── Polling scheduler — STABLE HOOK COUNT ───────────────────────────────
