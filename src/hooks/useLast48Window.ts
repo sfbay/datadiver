@@ -38,22 +38,26 @@ import { normalizeEvent } from '@/utils/eventNormalization'
 const WINDOW_MS = 48 * 60 * 60 * 1000 // 48 hours
 
 // ── Two-phase fetch parameters ─────────────────────────────────────────────
-// On cold-load, each stream's FIRST fetch uses the head window — a much
-// smaller time slice and row cap. The head query returns in ~1-3s instead
-// of ~30-60s for the full 48h query. As soon as it completes, the phase
-// transitions to 'full' and a backfill fetch fires immediately (without
-// waiting for the next poll interval). Subsequent polls at the regular
-// cadence use the full window.
+// On cold-load, each stream's FIRST fetch is the "head" — a small, fast
+// query. As soon as it completes, the phase transitions to 'full' and a
+// backfill fetch fires immediately (without waiting for the next poll
+// interval). Subsequent polls at the regular cadence use the full window.
 //
-// Why 2 hours / 500 rows:
-//   - 911 publishes ~58 events/hr → 2h ≈ 116 events
-//   - Fire/EMS ~11/hr → 2h ≈ 22 events
-//   - 311 ~48/hr → 2h ≈ 96 events
-//   Total head: ~234 events across 3 streams. Sparse but visible on map,
-//   gives the Stream Curtain reveal a fast clean sweep. The 500-row cap
-//   is a safety ceiling — well above expected volume.
-const HEAD_WINDOW_MS = 2 * 60 * 60 * 1000 // 2 hours
-const HEAD_LIMIT = 500
+// Head query strategy: NO $where filter, just $order DESC + $limit. Socrata
+// indexes the `$order` field, so "give me the most recent N rows" hits a
+// fast indexed access path; a `$where date >= cutoff` filter sometimes
+// falls back to a full table scan depending on the dataset's index
+// configuration. The previous head strategy (2h window via $where) had
+// inconsistent latency — fast on hot caches, ~60s on cold caches. Dropping
+// $where pins the head query to the indexed path reliably.
+//
+// HEAD_LIMIT = 200: small enough that the chronological reveal is
+// visibly trackable (~33 events/sec over 6s for 911 — eye can follow),
+// large enough to feel populated rather than empty. For 911 with ~58
+// events/hr, 200 events ≈ 3.4 hours of data; for 311 with ~48/hr,
+// ~4.2 hours; for Fire/EMS with ~11/hr, ~18 hours. All within 48h
+// window. The useLast48Window eviction loop drops anything older.
+const HEAD_LIMIT = 200
 const FULL_LIMIT = 5000
 
 const POLL_INTERVALS: Record<DatasetId, number> = {
@@ -228,32 +232,37 @@ export function useLast48Window(opts: {
 
       // Determine phase + parameters for this call.
       const isHead = phaseRef.current[datasetId] === 'head'
-      const windowMs = isHead ? HEAD_WINDOW_MS : WINDOW_MS
       const limit = isHead ? HEAD_LIMIT : FULL_LIMIT
 
       // Mark polling start
       state.isPollingByDataset = { ...state.isPollingByDataset, [datasetId]: true }
       notify()
 
-      // Socrata SoQL date comparison rejects the trailing `.000Z` produced
-      // by `toISOString()` — it parses that form as a text literal and
-      // throws `query.soql.type-mismatch`. The convention across DataDiver
-      // (see useResponseEquity, useTrendBaseline, etc.) is the trimmed
-      // form `YYYY-MM-DDTHH:MM:SS`.
-      const cutoff = new Date(Date.now() - windowMs).toISOString().slice(0, 19)
       const dateField = DATE_FIELD[datasetId]
       const registryKey = DATASET_REGISTRY_KEY[datasetId]
+
+      // Head: $order DESC + $limit alone, no $where (indexed access path —
+      // reliably fast across Socrata cache states).
+      // Full: $where filtered to last 48h (the actual content window).
+      // Socrata SoQL date comparison rejects the trailing `.000Z` produced
+      // by `toISOString()` — use trimmed `YYYY-MM-DDTHH:MM:SS`.
+      const queryParams: Parameters<typeof fetchDataset>[1] = isHead
+        ? {
+            $order: `${dateField} DESC`,
+            $limit: limit,
+          }
+        : {
+            $where: `${dateField} >= '${new Date(Date.now() - WINDOW_MS).toISOString().slice(0, 19)}'`,
+            $order: `${dateField} DESC`,
+            $limit: limit,
+          }
 
       try {
         const rows = await fetchDataset<Record<string, unknown>>(
           // DatasetKey is just a string alias — cast is safe since all
           // DATASET_REGISTRY_KEY values are verified against datasets.ts
           registryKey as Parameters<typeof fetchDataset>[0],
-          {
-            $where: `${dateField} >= '${cutoff}'`,
-            $order: `${dateField} DESC`,
-            $limit: limit,
-          },
+          queryParams,
           { skipCache: true }
         )
 
