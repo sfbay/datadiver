@@ -389,44 +389,25 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewR
   // Runs on every `events` update.
   //
   // Cold-load behavior: on the FIRST time we have non-empty events, seed
-  // every event as already-seen (so subsequent renders don't treat them as
-  // newcomers) AND fire ripples for priority-A 911 events as a curated
-  // "key events" spotlight. The wider previous gate (priority-A OR open)
-  // produced a 1000+-ring bloom that buried the signal; priority-A alone
-  // surfaces the editorially-significant calls — the 46th-and-Ulloa-style
-  // events worth noticing.
+  // every event as already-seen. NO RIPPLES fire on cold load — the
+  // progressive chronological reveal (Stream Curtain) is the signal; ripples
+  // would compete with it. The priority-A *static* dot treatment (2.5px
+  // indigo-300 stroke, age-fade-immune fill, larger radius) still
+  // differentiates them visually without transient emanation.
   //
-  // Subsequent renders: any newcomer 911 priority-A event fires a ripple.
-  // This makes ripples a meaningful editorial signal both in cold-load and
-  // in live operation.
+  // Subsequent renders (live polls): newcomer priority-A 911 events DO fire
+  // ripples — that's the editorial signal of a genuinely new urgent call.
   //
-  // Bug-fix note: the previous version flipped isFirstPollRef.current on
-  // the very first effect run, BEFORE any data had arrived (events was
-  // []). That meant the second run (when data actually landed) treated
-  // every event as a newcomer and fired a ripple for every open/priority-A
-  // 911 event — the "bloom too heavy" PR #52 video showed. Now seeding
-  // only happens once events.length > 0.
+  // Bug-fix note (from earlier in PR #52): the previous version flipped
+  // isFirstPollRef.current on the very first effect run, BEFORE any data
+  // had arrived (events was []). That meant the second run (when data
+  // actually landed) treated every event as a newcomer. The seeding now
+  // only fires once events.length > 0.
   useEffect(() => {
     if (isFirstPollRef.current) {
       if (events.length === 0) return  // wait for actual data
-
-      const newRipples: Ripple[] = []
-      const bornAt = Date.now()
-      for (const ev of events) {
-        seenIdsRef.current.add(ev.id)
-        if (
-          ev.datasetId === '911-realtime' &&
-          ev.priority === 'A' &&
-          ev.longitude != null &&
-          ev.latitude != null
-        ) {
-          newRipples.push({ id: ev.id, lng: ev.longitude!, lat: ev.latitude!, bornAt })
-        }
-      }
+      for (const ev of events) seenIdsRef.current.add(ev.id)
       isFirstPollRef.current = false
-      if (newRipples.length > 0) {
-        onNewRipplesRef.current?.(newRipples)
-      }
       return
     }
 
