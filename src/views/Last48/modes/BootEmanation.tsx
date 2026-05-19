@@ -1,32 +1,60 @@
 // src/views/Last48/modes/BootEmanation.tsx
 //
-// Calm sonar-ping boot pulse — 2–3 rings expand from map center then fade.
-// Reuses @keyframes emanate from src/index.css. Mounts once on view mount,
-// self-unmounts after ~2.4s. Not rotating — that motion was rejected in PR #37.
-// Does NOT re-fire on layer toggles; the component is stable-mounted inside
-// Last48UnifiedView which persists for the view lifetime.
+// Ambient loading affordance — unified with the radar-sweep idiom used
+// across DataDiver's other map views (Emergency Response, CrimeIncidents,
+// BusinessActivity, ParkingCitations, TrafficSafety). The thin sonar pulse
+// that lived here previously was too small to carry a 60-second cold-load
+// gracefully; the radar sweep fills the time better.
+//
+// History: this used to be a one-shot 3-ring sonar burst (pre-Stream Curtain),
+// then an ambient looping sonar pulse (Stream Curtain v1). Now it wraps
+// MapScanOverlay with the same fade-out lifecycle: looping=true mounts the
+// scanner; looping=false fades it to opacity 0 over 800ms then unmounts.
+//
+// Component name kept as-is for backward compatibility with Last48UnifiedView's
+// import. (We're not renaming the file because the component IS still "the
+// boot-loading affordance" — the implementation just changed.)
 
 import { useEffect, useState } from 'react'
+import { MapScanOverlay } from '@/components/ui/Skeleton'
 
-export default function BootEmanation() {
-  const [visible, setVisible] = useState(true)
+const FADE_OUT_MS = 800
+
+interface Props {
+  /** While true, the scanner renders. False → fade out + unmount. */
+  looping: boolean
+}
+
+export default function BootEmanation({ looping }: Props) {
+  const [mounted, setMounted] = useState(looping)
+  const [fading, setFading] = useState(false)
+
   useEffect(() => {
-    const t = setTimeout(() => setVisible(false), 3000)
+    if (looping) {
+      setMounted(true)
+      setFading(false)
+      return
+    }
+    if (!mounted) return
+    setFading(true)
+    const t = setTimeout(() => {
+      setMounted(false)
+      setFading(false)
+    }, FADE_OUT_MS)
     return () => clearTimeout(t)
-  }, [])
+  }, [looping, mounted])
 
-  if (!visible) return null
+  if (!mounted) return null
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center motion-reduce:hidden">
-      <svg width="200" height="200" viewBox="0 0 200 200" style={{ overflow: 'visible' }}>
-        <circle cx="100" cy="100" r="20" fill="none" stroke="rgba(245,236,217,0.75)" strokeWidth="1"
-          style={{ transformBox: 'view-box', transformOrigin: '100px 100px', animation: 'emanate 1.9s ease-out forwards' }} />
-        <circle cx="100" cy="100" r="20" fill="none" stroke="rgba(245,236,217,0.55)" strokeWidth="1"
-          style={{ transformBox: 'view-box', transformOrigin: '100px 100px', animation: 'emanate 1.9s ease-out 0.5s forwards' }} />
-        <circle cx="100" cy="100" r="20" fill="none" stroke="rgba(245,236,217,0.35)" strokeWidth="1"
-          style={{ transformBox: 'view-box', transformOrigin: '100px 100px', animation: 'emanate 1.9s ease-out 1.0s forwards' }} />
-      </svg>
+    <div
+      className="pointer-events-none absolute inset-0 z-20 motion-reduce:hidden"
+      style={{
+        opacity: fading ? 0 : 1,
+        transition: `opacity ${FADE_OUT_MS}ms ease-out`,
+      }}
+    >
+      <MapScanOverlay color="#a8926a" label="Scanning the last 48 hours" />
     </div>
   )
 }

@@ -18,7 +18,7 @@
 import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useAnomalyBaseline } from '@/hooks/useAnomalyBaseline'
 import type { Last48WindowResult } from '@/hooks/useLast48Window'
-import type { DatasetId, NormalizedEvent } from '@/types/last48'
+import { LAST48_DATASETS, type DatasetId, type NormalizedEvent } from '@/types/last48'
 import type { CensusVariable } from '@/types/census'
 import type { BaseFill } from '../chrome/LayerControls'
 
@@ -142,6 +142,15 @@ export default function Last48UnifiedView({
 
   const railIsAnomaly = fill === 'anomaly' && !pointsOn
 
+  // ── Loading state for BootEmanation ─────────────────────────────────────
+  // True while any of the three Last 48 streams has not yet completed its
+  // initial fetch. Once all three flip to true, BootEmanation receives
+  // looping=false and runs its 800ms fade-out before unmounting.
+  const isLoadingAny = useMemo(
+    () => LAST48_DATASETS.some((id) => !window48.initialLoadedByDataset[id]),
+    [window48.initialLoadedByDataset],
+  )
+
   return (
     <Last48Map
       rail={(map) => {
@@ -188,8 +197,9 @@ export default function Last48UnifiedView({
       }}
       mapOverlay={(map) => (
         <>
-          {/* ── Boot emanation — mounts once, self-unmounts after ~2.4s ─── */}
-          <BootEmanation />
+          {/* ── Boot emanation — loops while any stream is loading, fades
+              cleanly once all three streams have arrived. ─────────────── */}
+          <BootEmanation looping={isLoadingAny} />
 
           {/* ── Stream progress bar — slim top band, fades when complete ─── */}
           <StreamProgressBar
