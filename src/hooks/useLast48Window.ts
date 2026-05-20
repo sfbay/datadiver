@@ -43,20 +43,27 @@ const WINDOW_MS = 48 * 60 * 60 * 1000 // 48 hours
 // backfill fetch fires immediately (without waiting for the next poll
 // interval). Subsequent polls at the regular cadence use the full window.
 //
-// Head query strategy: NO $where filter, just $order DESC + $limit. Socrata
-// indexes the `$order` field, so "give me the most recent N rows" hits a
-// fast indexed access path; a `$where date >= cutoff` filter sometimes
-// falls back to a full table scan depending on the dataset's index
-// configuration. The previous head strategy (2h window via $where) had
-// inconsistent latency — fast on hot caches, ~60s on cold caches. Dropping
-// $where pins the head query to the indexed path reliably.
+// Head query strategy: $where-bounded to a SMALL window (HEAD_WINDOW_MS) +
+// $order DESC + $limit.
 //
-// HEAD_LIMIT = 200: small enough that the chronological reveal is
-// visibly trackable (~33 events/sec over 6s for 911 — eye can follow),
-// large enough to feel populated rather than empty. For 911 with ~58
-// events/hr, 200 events ≈ 3.4 hours of data; for 311 with ~48/hr,
-// ~4.2 hours; for Fire/EMS with ~11/hr, ~18 hours. All within 48h
-// window. The useLast48Window eviction loop drops anything older.
+// History (PR #53): we briefly tried dropping $where entirely (just $order
+// + $limit) on the theory that "most recent N rows" would hit Socrata's
+// indexed path uniformly. That HUNG Fire/EMS and 311 in production —
+// without a $where bound, those large multi-year datasets had to materialize
+// a full sort before applying the limit, and the query stalled. 911 (smaller,
+// better-indexed) survived, which is why only it loaded. Restoring the
+// $where bound fixes the hang: the date filter lets Socrata's planner scope
+// the work to a small recent slice regardless of total table size.
+//
+// HEAD_WINDOW_MS = 6h: wider than the original 2h for safety against quiet
+// periods (a stream that's published nothing in 2h would return an empty
+// head), small enough that the bounded query stays fast.
+//
+// HEAD_LIMIT = 200: small enough that the chronological reveal is visibly
+// trackable (~33 events/sec over 6s for 911 — eye can follow), large enough
+// to feel populated. The useLast48Window eviction loop drops anything older
+// than 48h.
+const HEAD_WINDOW_MS = 6 * 60 * 60 * 1000 // 6 hours
 const HEAD_LIMIT = 200
 const FULL_LIMIT = 5000
 
@@ -98,9 +105,14 @@ export interface Last48WindowResult {
   /** True while any enabled dataset is currently mid-fetch. */
   isPolling: boolean
   /** Per-dataset initial-load flags. Flips to true after each dataset's first
-   *  successful fetch; never resets. Drives DatasetSuperChips loading state
-   *  and StreamProgressBar. */
+   *  successful (HEAD) fetch; never resets. Drives DatasetSuperChips loading
+   *  state and StreamProgressBar — the chip counts can populate from head data. */
   initialLoadedByDataset: Record<DatasetId, boolean>
+  /** Per-dataset FULL-load flags. Flips true after each dataset's backfill
+   *  (full 48h) fetch completes; never resets. The Stream Curtain serialized
+   *  sweep gates on THIS (not initialLoadedByDataset) so each stream sweeps
+   *  its complete data in one chronological pass — see FlowMapLayer. */
+  fullyLoadedByDataset: Record<DatasetId, boolean>
   /** Immediately re-fetch all enabled datasets, bypassing the cadence. */
   refetch: () => void
 }
@@ -118,8 +130,11 @@ interface InternalState {
   /** Flips to true on first successful fetch; never goes back. */
   initialLoadComplete: boolean
   /** Per-dataset version of initialLoadComplete — flips true on each
-   *  dataset's first successful fetch; never resets. */
+   *  dataset's first successful (HEAD) fetch; never resets. */
   initialLoadedByDataset: Record<DatasetId, boolean>
+  /** Per-dataset full-load flag — flips true after the backfill (full 48h)
+   *  fetch completes; never resets. */
+  fullyLoadedByDataset: Record<DatasetId, boolean>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -132,6 +147,7 @@ interface Snapshot {
   isPollingByDataset: Record<DatasetId, boolean>
   initialLoadComplete: boolean
   initialLoadedByDataset: Record<DatasetId, boolean>
+  fullyLoadedByDataset: Record<DatasetId, boolean>
 }
 
 function buildEmptyFreshness(): FreshnessMap {
@@ -169,6 +185,9 @@ export function useLast48Window(opts: {
     initialLoadedByDataset: Object.fromEntries(
       LAST48_DATASETS.map((id) => [id, false])
     ) as Record<DatasetId, boolean>,
+    fullyLoadedByDataset: Object.fromEntries(
+      LAST48_DATASETS.map((id) => [id, false])
+    ) as Record<DatasetId, boolean>,
   })
 
   // ── useSyncExternalStore wiring ──────────────────────────────────────────
@@ -181,6 +200,7 @@ export function useLast48Window(opts: {
     isPollingByDataset: stateRef.current.isPollingByDataset,
     initialLoadComplete: stateRef.current.initialLoadComplete,
     initialLoadedByDataset: stateRef.current.initialLoadedByDataset,
+    fullyLoadedByDataset: stateRef.current.fullyLoadedByDataset,
   })
 
   const listenersRef = useRef<Set<() => void>>(new Set())
@@ -193,6 +213,7 @@ export function useLast48Window(opts: {
       isPollingByDataset: { ...s.isPollingByDataset },
       initialLoadComplete: s.initialLoadComplete,
       initialLoadedByDataset: { ...s.initialLoadedByDataset },
+      fullyLoadedByDataset: { ...s.fullyLoadedByDataset },
     }
     listenersRef.current.forEach((l) => l())
   }, [])
@@ -241,21 +262,18 @@ export function useLast48Window(opts: {
       const dateField = DATE_FIELD[datasetId]
       const registryKey = DATASET_REGISTRY_KEY[datasetId]
 
-      // Head: $order DESC + $limit alone, no $where (indexed access path —
-      // reliably fast across Socrata cache states).
-      // Full: $where filtered to last 48h (the actual content window).
-      // Socrata SoQL date comparison rejects the trailing `.000Z` produced
-      // by `toISOString()` — use trimmed `YYYY-MM-DDTHH:MM:SS`.
-      const queryParams: Parameters<typeof fetchDataset>[1] = isHead
-        ? {
-            $order: `${dateField} DESC`,
-            $limit: limit,
-          }
-        : {
-            $where: `${dateField} >= '${new Date(Date.now() - WINDOW_MS).toISOString().slice(0, 19)}'`,
-            $order: `${dateField} DESC`,
-            $limit: limit,
-          }
+      // Both phases are $where-bounded — head to 6h, full to 48h. The $where
+      // bound is what keeps the query fast on large datasets (it scopes the
+      // sort to a recent slice). Socrata SoQL date comparison rejects the
+      // trailing `.000Z` produced by `toISOString()` — use trimmed
+      // `YYYY-MM-DDTHH:MM:SS`.
+      const windowMs = isHead ? HEAD_WINDOW_MS : WINDOW_MS
+      const cutoff = new Date(Date.now() - windowMs).toISOString().slice(0, 19)
+      const queryParams: Parameters<typeof fetchDataset>[1] = {
+        $where: `${dateField} >= '${cutoff}'`,
+        $order: `${dateField} DESC`,
+        $limit: limit,
+      }
 
       try {
         const rows = await fetchDataset<Record<string, unknown>>(
@@ -330,6 +348,14 @@ export function useLast48Window(opts: {
         if (isHead) {
           phaseRef.current[datasetId] = 'full'
           setTimeout(() => { void fetcherFn() }, 0)
+        } else {
+          // Full (backfill or poll) fetch succeeded — this dataset now has
+          // its complete 48h data. The Stream Curtain sweep gates on this
+          // flag so each stream sweeps its FULL data in one chronological
+          // pass (see FlowMapLayer enabled gates).
+          if (!state.fullyLoadedByDataset[datasetId]) {
+            state.fullyLoadedByDataset = { ...state.fullyLoadedByDataset, [datasetId]: true }
+          }
         }
       } catch (err) {
         // Keep prior freshness values; update only the error field
@@ -404,6 +430,7 @@ export function useLast48Window(opts: {
     isLoading,
     isPolling,
     initialLoadedByDataset: snapshot.initialLoadedByDataset,
+    fullyLoadedByDataset: snapshot.fullyLoadedByDataset,
     refetch,
   }
 }
