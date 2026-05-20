@@ -160,6 +160,19 @@ export default function Last48EventCard({ event, onClose }: Props) {
       isLoading={false}
       widthClass="w-[clamp(260px,22vw,320px)]"
       glowColor={meta?.color ?? '#b85a33'}
+      // Copy-link → ?event=<id>. Lets a reader share "look at this event":
+      // the recipient lands on the same card (Last48UnifiedView's DeepLinkLander
+      // selects + flies to it). Only offered when an event is open.
+      buildShareUrl={
+        event
+          ? () => {
+              const url = new URL(window.location.href)
+              url.searchParams.set('event', event.id)
+              return url.toString()
+            }
+          : undefined
+      }
+      shareAccentClass="text-ochre-500"
       // The FLOW rail is a selection-driving listbox — clicks on its rows
       // shouldn't dismiss this card. Treat any element inside a [role="listbox"]
       // as "inside" the panel for outside-click-dismiss purposes.

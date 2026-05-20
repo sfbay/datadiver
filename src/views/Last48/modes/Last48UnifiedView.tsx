@@ -15,7 +15,8 @@
 // Last48NeighborhoodPeek — the anomaly neighborhood click-target — mounts
 // in the rail slot alongside AnomalyRail when a neighborhood is selected.
 
-import { useState, useCallback, useEffect, useMemo } from 'react'
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
+import type mapboxgl from 'mapbox-gl'
 import { useAnomalyBaseline } from '@/hooks/useAnomalyBaseline'
 import type { Last48WindowResult } from '@/hooks/useLast48Window'
 import { LAST48_DATASETS, type DatasetId, type NormalizedEvent } from '@/types/last48'
@@ -43,6 +44,11 @@ interface Props {
   pointsOn: boolean
   fill: BaseFill
   underlayVariable: CensusVariable | null
+  /** Selected-event id from the URL (?event=). Source of truth for "which
+   *  event card is open" so a shared link reopens the same event. */
+  selectedEventId: string | null
+  /** Push the open event's id back to the URL (or null to clear it). */
+  onSelectedEventIdChange: (id: string | null) => void
 }
 
 export default function Last48UnifiedView({
@@ -51,6 +57,8 @@ export default function Last48UnifiedView({
   pointsOn,
   fill,
   underlayVariable,
+  selectedEventId,
+  onSelectedEventIdChange,
 }: Props) {
   // ── FLOW state ─────────────────────────────────────────────────────────────
   const [selectedEvent, setSelectedEvent] = useState<NormalizedEvent | null>(null)
@@ -79,6 +87,17 @@ export default function Last48UnifiedView({
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [selectedEvent])
+
+  // ── URL sync (write) ───────────────────────────────────────────────────────
+  // Mirror the local selection into ?event= so the open card is sharable.
+  // Write-only here; the READ side (deep-link landing + fly-to) lives in
+  // <DeepLinkLander> below, which needs the map instance. The id guard means
+  // a user click (selection leads, URL follows) and a deep-link (URL leads,
+  // selection follows) never ping-pong: once they agree, neither side fires.
+  useEffect(() => {
+    const id = selectedEvent?.id ?? null
+    if (id !== selectedEventId) onSelectedEventIdChange(id)
+  }, [selectedEvent, selectedEventId, onSelectedEventIdChange])
 
   // Clear ripples when FLOW is toggled off. Without this, in-flight ripple
   // ring components unmount mid-animation (their setTimeout for onDone gets
@@ -237,6 +256,20 @@ export default function Last48UnifiedView({
             </>
           )}
 
+          {/* ── Deep-link lander ──────────────────────────────────────────
+              Consumes ?event=<id> on load: once the target event has arrived
+              in the 48h window (it may not exist yet mid-cold-load), selects
+              it and flies the map there — exactly once. Distinguishes a
+              deep-link (URL id ≠ current selection) from a map-click (selection
+              already matches), so map-clicks never trigger an auto-fly. */}
+          <DeepLinkLander
+            map={map}
+            eventId={selectedEventId}
+            selectedId={selectedEvent?.id ?? null}
+            events={visibleEvents}
+            onLand={setSelectedEvent}
+          />
+
           {/* ── FLOW dots (mount LAST — must render on top of fill layers) ── */}
           {pointsOn && (
             <FlowMapLayer
@@ -274,4 +307,48 @@ export default function Last48UnifiedView({
       )}
     />
   )
+}
+
+// ── Deep-link lander ───────────────────────────────────────────────────────
+// Renders nothing; its job is the side effect. When ?event=<id> points at an
+// event we don't yet have selected, wait for that event to arrive in the 48h
+// window (it may be absent for the first 30-60s of a cold-load), then select
+// it and fly the map there — once. The `eventId !== selectedId` guard is what
+// keeps this from re-firing on ordinary map-clicks (where selection already
+// matches the URL): only a genuine deep-link has the URL leading the selection.
+function DeepLinkLander({
+  map,
+  eventId,
+  selectedId,
+  events,
+  onLand,
+}: {
+  map: mapboxgl.Map | null
+  eventId: string | null
+  selectedId: string | null
+  events: NormalizedEvent[]
+  onLand: (ev: NormalizedEvent) => void
+}) {
+  // Tracks the id we've already landed, so a transient events-array identity
+  // change between onLand and the selection state commit can't double-fire.
+  const landedRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!eventId) {
+      landedRef.current = null // link cleared — allow a future deep-link to land
+      return
+    }
+    if (eventId === selectedId) return // already selected (user click or post-land)
+    if (landedRef.current === eventId) return // already consumed this id
+    const found = events.find((e) => e.id === eventId)
+    if (!found) return // not in the window yet (still loading, or aged out)
+
+    landedRef.current = eventId
+    onLand(found)
+    if (map && found.longitude != null && found.latitude != null) {
+      map.flyTo({ center: [found.longitude, found.latitude], zoom: 14, duration: 600 })
+    }
+  }, [map, eventId, selectedId, events, onLand])
+
+  return null
 }

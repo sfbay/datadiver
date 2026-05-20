@@ -7,7 +7,7 @@
 //   - Layout chrome (freshness chips, dataset filter chips, layer controls, scanner strip)
 //   - Last48UnifiedView — single persistent MapView with composable layers
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useLast48Window } from '@/hooks/useLast48Window'
 import { useSummaryStore } from '@/stores/summaryStore'
@@ -54,6 +54,11 @@ export default function Last48() {
   const pointsOn = parsePoints(searchParams.get('points'))
   const datasets = useMemo(() => parseDatasets(searchParams.get('datasets')), [searchParams])
 
+  // Sharable selected-event deep link. The URL is the source of truth for
+  // "which event is open" so a copied link reopens the same event card on
+  // another machine. `event` holds a NormalizedEvent.id (`datasetId:nativeId`).
+  const selectedEventId = searchParams.get('event')
+
   // Underlay variable is transient UI state — no reason to URL-persist it.
   const [underlayVariable, setUnderlayVariable] = useState<CensusVariable | null>(null)
 
@@ -75,6 +80,19 @@ export default function Last48() {
     }
     contributeLast48(counts)
   }, [window48.fullyLoadedByDataset, window48.byDataset, contributeLast48])
+
+  // Reflect the open event into ?event= (replace, not push — selection isn't
+  // a back-button waypoint). Guarded against redundant writes so the
+  // UnifiedView's write-effect can fire freely without churning history.
+  const setSelectedEventId = useCallback((id: string | null) => {
+    setSearchParams((prev) => {
+      if ((prev.get('event') ?? null) === id) return prev
+      const np = new URLSearchParams(prev)
+      if (id) np.set('event', id)
+      else np.delete('event')
+      return np
+    }, { replace: true })
+  }, [setSearchParams])
 
   const setFill = (next: BaseFill) => {
     const np = new URLSearchParams(searchParams)
@@ -181,6 +199,8 @@ export default function Last48() {
           pointsOn={pointsOn}
           fill={fill}
           underlayVariable={underlayVariable}
+          selectedEventId={selectedEventId}
+          onSelectedEventIdChange={setSelectedEventId}
         />
       </div>
 
