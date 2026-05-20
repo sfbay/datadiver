@@ -9,35 +9,67 @@
 // The site is dense — many Last 48 interactions (click-to-skip, priority-A
 // solid dots, FlowRail click-to-fly, HOTSPOTS mode, demographic underlays)
 // are easy to miss. A captive loading moment is the natural place to teach
-// them. See memory: seeded-summary-architecture (this is the hardcoded MVP
-// that precedes the cross-view summaryStore plumbing).
+// them. See memory: seeded-summary-architecture.
+//
+// DATA tips with a volume figure read from the seeded summaryStore (the real
+// per-stream 48h counts from your LAST visit, since this load's numbers don't
+// exist yet — that's what we're waiting for). First-time visitors, or streams
+// that never finished a full load, fall back to approximate "roughly N"
+// phrasing. The provenance shows in the phrasing: real → specific + past
+// tense ("logged 2,847 calls in the last 48 hours"); fallback → approximate +
+// habitual ("dispatches roughly 2,800 ... every 48 hours").
 //
 // Register: "civic observatory" calm — one tip at a time, slow 400ms cross-
 // fade, ~5s dwell. No glow (Tier 3: prose). Eyebrow in mono, body in serif.
 
 import { useEffect, useState } from 'react'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
+import { useSummaryStore, type Last48Counts } from '@/stores/summaryStore'
 
 type TipKind = 'data' | 'usage'
 
 interface LoadingTip {
   kind: TipKind
-  /** The tip text. One non-obvious idea per tip; pair numbers with context. */
-  text: string
+  /** Tip text — a static string, or a builder that templates the seeded 48h
+   *  counts (real last-visit volumes) with a graceful approximate fallback. */
+  text: string | ((counts: Last48Counts) => string)
+}
+
+/**
+ * Volume-tip helper: render the SPECIFIC last-visit figure when we have a real
+ * seeded count, else the approximate habitual `fallback`. Keeps the two voices
+ * (precise/past vs approximate/habitual) consistent across the count tips.
+ */
+function volumeTip(
+  n: number | undefined,
+  real: (formatted: string) => string,
+  fallback: string,
+): string {
+  return typeof n === 'number' ? real(n.toLocaleString()) : fallback
 }
 
 // Mixed deck — data factoids interleaved with usability tips so the rotation
 // alternates "here's what's in the data" with "here's how to read it."
-// DATA figures are approximate typical-window volumes; phrased as "roughly"
-// so they read as orientation, not precise claims.
 const TIPS: LoadingTip[] = [
   { kind: 'usage', text: 'Click anywhere on the map to skip ahead and jump straight to the loaded view.' },
-  { kind: 'data',  text: 'San Francisco dispatches roughly 2,800 emergency 911 calls every 48 hours.' },
+  { kind: 'data',  text: (c) => volumeTip(
+    c['911-realtime'],
+    (n) => `In the last 48 hours, San Francisco logged ${n} emergency 911 calls.`,
+    'San Francisco dispatches roughly 2,800 emergency 911 calls every 48 hours.',
+  ) },
   { kind: 'usage', text: 'Solid dots are priority-A emergencies — the calls that matter most. Everything else is a hollow ring.' },
-  { kind: 'data',  text: 'Fire & EMS responds to about 600 incidents in a typical two-day window.' },
+  { kind: 'data',  text: (c) => volumeTip(
+    c['fire-ems-dispatch'],
+    (n) => `Fire & EMS responded to ${n} incidents in the last 48 hours.`,
+    'Fire & EMS responds to about 600 incidents in a typical two-day window.',
+  ) },
   { kind: 'usage', text: 'A dot’s color fades as the event ages — fresh events glow in full pigment, older ones drift toward paper.' },
   { kind: 'usage', text: 'Click any dot to open full incident details in the side panel.' },
-  { kind: 'data',  text: '311 logs around 2,400 service requests every 48 hours — encampments, graffiti, street cleaning, noise.' },
+  { kind: 'data',  text: (c) => volumeTip(
+    c['311-cases'],
+    (n) => `311 logged ${n} service requests in the last 48 hours — encampments, graffiti, street cleaning, noise.`,
+    '311 logs around 2,400 service requests every 48 hours — encampments, graffiti, street cleaning, noise.',
+  ) },
   { kind: 'usage', text: 'Click an event in the side rail to fly the map straight to its location.' },
   { kind: 'usage', text: 'Switch to HOTSPOTS mode to see which neighborhoods are running statistically hot.' },
   { kind: 'data',  text: '911 activity clusters densest in the Tenderloin, SoMa, and the Mission.' },
@@ -55,6 +87,8 @@ export default function Last48LoadingTips() {
   const [idx, setIdx] = useState(() => Math.floor(Math.random() * TIPS.length))
   const [visible, setVisible] = useState(true)
   const reducedMotion = usePrefersReducedMotion()
+  // Seeded 48h counts from the user's last visit (empty {} for first-timers).
+  const counts = useSummaryStore((s) => s.last48.counts)
 
   useEffect(() => {
     // fadeTimer is tracked at effect scope so the cleanup actually clears it.
@@ -81,6 +115,7 @@ export default function Last48LoadingTips() {
   }, [reducedMotion])
 
   const tip = TIPS[idx]
+  const text = typeof tip.text === 'function' ? tip.text(counts) : tip.text
   const isData = tip.kind === 'data'
   const eyebrow = isData ? 'In the data' : 'Tip'
   // Accent encodes kind (data = dusty-teal/info, usage = moss/do-this) AND
@@ -126,7 +161,7 @@ export default function Last48LoadingTips() {
         {/* Body — display serif, inverted text: light on dark pill, dark on
             light pill. */}
         <p className="font-display text-[15px] leading-snug text-paper-50 dark:text-espresso-900">
-          {tip.text}
+          {text}
         </p>
       </div>
     </div>

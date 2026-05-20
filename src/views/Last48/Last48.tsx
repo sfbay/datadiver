@@ -7,9 +7,10 @@
 //   - Layout chrome (freshness chips, dataset filter chips, layer controls, scanner strip)
 //   - Last48UnifiedView — single persistent MapView with composable layers
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useLast48Window } from '@/hooks/useLast48Window'
+import { useSummaryStore } from '@/stores/summaryStore'
 import { LAST48_DATASETS, type DatasetId } from '@/types/last48'
 import type { CensusVariable } from '@/types/census'
 import Last48UnifiedView from './modes/Last48UnifiedView'
@@ -58,6 +59,22 @@ export default function Last48() {
 
   const window48 = useLast48Window({ datasets })
   const civicIndicators = useCivicIndicators()
+
+  // Seed the cross-view summary store: when a stream finishes its FULL 48h
+  // load, record its complete event count. The loading tips read these back on
+  // the NEXT cold-load to show real per-stream volumes (a time-shifted cache —
+  // see summaryStore). Only fully-loaded streams contribute; the store no-ops
+  // when nothing changed, so this firing on every poll is cheap.
+  const contributeLast48 = useSummaryStore((s) => s.contributeLast48)
+  useEffect(() => {
+    const counts: Partial<Record<DatasetId, number>> = {}
+    for (const id of LAST48_DATASETS) {
+      if (window48.fullyLoadedByDataset[id]) {
+        counts[id] = window48.byDataset[id].length
+      }
+    }
+    contributeLast48(counts)
+  }, [window48.fullyLoadedByDataset, window48.byDataset, contributeLast48])
 
   const setFill = (next: BaseFill) => {
     const np = new URLSearchParams(searchParams)
