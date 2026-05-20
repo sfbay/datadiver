@@ -83,10 +83,20 @@ export default function BootEmanation({ looping }: Props) {
       </div>
       {/* Rotating data + usability tips fill the cold-load wait. These are text,
           not motion, so they stay visible under reduced-motion (the tip
-          component itself drops the cross-fade in that case). Gated on:
-          - !fading      → don't linger as the map takes over
-          - tipsReady    → a few seconds of radar-only prime the eye first */}
-      {!fading && tipsReady && <Last48LoadingTips />}
+          component itself drops the cross-fade in that case).
+          - tipsReady → a few seconds of radar-only prime the eye first.
+          - wrapper `animate-in fade-in` → the pill fades IN noticeably when it
+            arrives (one-shot keyframe on mount). For the fade-OUT we no longer
+            gate on !fading: keeping the tips mounted lets them ride this
+            overlay's opacity→0 transition out together with the radar, rather
+            than popping out abruptly.
+          - motion-reduce:animate-none → instant appear when motion is reduced
+            (consistent with the tip component's instant swaps). */}
+      {tipsReady && (
+        <div className="animate-in fade-in duration-700 ease-out motion-reduce:animate-none">
+          <Last48LoadingTips />
+        </div>
+      )}
     </div>
   )
 }
