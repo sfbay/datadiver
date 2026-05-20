@@ -15,6 +15,7 @@
 import { useState, useCallback, type ReactNode } from 'react'
 import mapboxgl from 'mapbox-gl'
 import MapView from '@/components/maps/MapView'
+import { LAST48_CAMERA } from '@/utils/geo'
 
 interface Props {
   /** Render-prop for map layers + overlay components (loading pill,
@@ -39,7 +40,9 @@ export default function Last48Map({ mapOverlay, rail }: Props) {
   return (
     <div className="absolute inset-0 flex">
       <div className="flex-1 relative">
-        <MapView onMapReady={handleReady}>
+        {/* Last48-only camera framing (steeper pitch, tighter zoom) — every
+            other view omits `camera` and keeps the global SF_DEFAULT_*. */}
+        <MapView onMapReady={handleReady} camera={LAST48_CAMERA}>
           {mapOverlay(map)}
         </MapView>
       </div>

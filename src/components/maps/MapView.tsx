@@ -69,13 +69,24 @@ export interface MapHandle {
   getMap: () => mapboxgl.Map | null
 }
 
+/** Optional per-view camera override. Any omitted field falls back to the
+ *  global SF_DEFAULT_* / SF_CENTER, so views that don't pass `camera` render
+ *  exactly as before. Read once at map construction — not reactive. */
+export interface MapCamera {
+  center?: { lat: number; lng: number }
+  zoom?: number
+  pitch?: number
+  bearing?: number
+}
+
 interface MapViewProps {
   onMapReady?: (map: mapboxgl.Map) => void
   children?: React.ReactNode
   className?: string
+  camera?: MapCamera
 }
 
-const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, className = '' }, ref) => {
+const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, className = '', camera }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
   const [isReady, setIsReady] = useState(false)
@@ -101,10 +112,15 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
       style: isDarkMode
         ? 'mapbox://styles/mapbox/dark-v11'
         : 'mapbox://styles/mapbox/light-v11',
-      center: [SF_CENTER.lng, SF_CENTER.lat],
-      zoom: SF_DEFAULT_ZOOM,
-      pitch: SF_DEFAULT_PITCH,
-      bearing: SF_DEFAULT_BEARING,
+      // Per-field fallback to the global defaults — a view passing a partial
+      // `camera` overrides only what it specifies. Captured at mount (the
+      // camera is initial-only; users can pan/tilt freely afterward).
+      center: camera?.center
+        ? [camera.center.lng, camera.center.lat]
+        : [SF_CENTER.lng, SF_CENTER.lat],
+      zoom: camera?.zoom ?? SF_DEFAULT_ZOOM,
+      pitch: camera?.pitch ?? SF_DEFAULT_PITCH,
+      bearing: camera?.bearing ?? SF_DEFAULT_BEARING,
       antialias: true,
       preserveDrawingBuffer: true,
       attributionControl: false,
