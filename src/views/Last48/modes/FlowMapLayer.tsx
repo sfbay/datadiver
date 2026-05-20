@@ -61,9 +61,7 @@ const COLORS: Record<DatasetId, string> = {
 // (continuous interpolation smears the gradient illegibly on a dark basemap).
 // ─────────────────────────────────────────────────────────────────────────────
 
-const PAPER_ANCHOR        = '#d4c8a8'  // paper-300 — the "drying-out" fill target
-const STROKE_FRESH_OPEN   = '#f5ecd9'  // cream — open-event stroke at age 0
-const STROKE_AGED_OPEN    = '#a8926a'  // paper-500 — open-event stroke at full age
+const PAPER_ANCHOR        = '#d4c8a8'  // paper-300 — the "drying-out" pigment target
 
 // Effective-age bucket boundaries (hours since each dataset's natural
 // freshness floor) and the corresponding mix coefficient. Both the fill
@@ -137,17 +135,6 @@ function ageColor(datasetId: DatasetId, rawAgeMs: number): string {
   return mixHex(base, PAPER_ANCHOR, bucket.mix)
 }
 
-/**
- * Open-event stroke color, aged toward paper. Fresh = bright cream; aged =
- * paper-tone. Closed events render a dark espresso stroke regardless of age
- * (their stroke recedes by virtue of low contrast against the basemap).
- */
-function ageStrokeOpen(datasetId: DatasetId, rawAgeMs: number): string {
-  const bucket = ageBucket(datasetId, rawAgeMs)
-  if (bucket.mix === 0) return STROKE_FRESH_OPEN
-  return mixHex(STROKE_FRESH_OPEN, STROKE_AGED_OPEN, bucket.mix)
-}
-
 interface Ripple { id: string; lng: number; lat: number; bornAt: number }
 
 interface Props {
@@ -170,28 +157,51 @@ const SOURCE_ID        = 'last48-flow-events'
 const LAYER_ID         = 'last48-flow-events-circles'
 const SELECTED_RING_ID = 'last48-flow-events-selected-ring'
 
-// Baseline opacity expression — pigment-aged paint when a feature IS revealed.
-const BASELINE_OPACITY: mapboxgl.ExpressionSpecification = [
-  'case',
-  ['get', 'isPriorityA'],
-  // Priority-A: full opacity at age 0, slower decay
-  ['interpolate', ['linear'], ['get', 'age'], 0, 1.0, 172800000, 0.8],
-  ['case',
-    ['get', 'isOpen'],
-    ['interpolate', ['linear'], ['get', 'age'], 0, 1.0, 172800000, 0.55],
-    ['interpolate', ['linear'], ['get', 'age'], 0, 0.7, 172800000, 0.25],
-  ],
-]
+// ── Hollow-point paint model ────────────────────────────────────────────────
+// Routine events render as HOLLOW RINGS — a pigment-colored stroke with NO
+// fill. This is a deliberately light footprint that sits cleanly over
+// choropleth fills (the old faint-fill + bright-stroke model read as ghost
+// halos at high density and competed visually with underlays).
+//
+// Priority-A "key events" are the exception: they render SOLID (filled), so
+// the genuinely urgent calls are the ONLY filled marks on a map of rings —
+// instant focal points. (Editorial decision, May 2026.)
+//
+// All opacity is gated by feature-state.revealed so the Stream Curtain
+// chronological reveal still works — unrevealed features are fully invisible
+// (both fill AND stroke at 0), and the 400ms transitions give each event a
+// soft fade-in when its revealed flag flips.
 
-// Wrapped opacity — features default to invisible until their per-event
-// `feature-state.revealed` flag is flipped to true by useChronologicalReveal.
-// The 400ms circle-opacity-transition (paint config below) gives each event
-// a soft per-dot fade-in when its flag flips.
-const OPACITY_EXPRESSION: mapboxgl.ExpressionSpecification = [
+// FILL opacity — priority-A ONLY. Routine events have zero fill (hollow).
+const FILL_OPACITY: mapboxgl.ExpressionSpecification = [
   'case',
   ['boolean', ['feature-state', 'revealed'], false],
-  BASELINE_OPACITY,
-  0,
+  ['case',
+    ['get', 'isPriorityA'],
+    // Priority-A solid fill: full at age 0, slow decay across 48h
+    ['interpolate', ['linear'], ['get', 'age'], 0, 1.0, 172800000, 0.85],
+    0,  // routine: no fill
+  ],
+  0,  // unrevealed: invisible
+]
+
+// STROKE opacity — the ring. Routine events: pigment ring, age-faded.
+// Priority-A: full-opacity ring (indigo-300) wrapping the solid fill.
+const STROKE_OPACITY: mapboxgl.ExpressionSpecification = [
+  'case',
+  ['boolean', ['feature-state', 'revealed'], false],
+  ['case',
+    ['get', 'isPriorityA'],
+    1,
+    ['case',
+      ['get', 'isOpen'],
+      // Open routine ring: bright, fades to 0.6 by 48h
+      ['interpolate', ['linear'], ['get', 'age'], 0, 1.0, 172800000, 0.6],
+      // Closed routine ring: slightly dimmer, fades to 0.45 by 48h
+      ['interpolate', ['linear'], ['get', 'age'], 0, 0.85, 172800000, 0.45],
+    ],
+  ],
+  0,  // unrevealed: invisible
 ]
 
 export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewRipples, initialLoadedByDataset }: Props) {
@@ -365,15 +375,6 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewR
             // rate as routine, erasing visual hierarchy at the back of the
             // 48h window. Routine events still fade with age.
             color: isPriorityA ? COLORS[e.datasetId] : ageColor(e.datasetId, age),
-            // Priority-A gets a bright indigo-300 halo via circle-stroke
-            // (extends OUTSIDE the radius in Mapbox), regardless of state
-            // or age. Routine: open events age cream → paper; closed
-            // events get the dark espresso stroke that recedes naturally.
-            strokeColor: isPriorityA
-              ? '#aab3d4'
-              : isOpen
-                ? ageStrokeOpen(e.datasetId, age)
-                : '#1e140d',
             age,
             isOpen,
             isPriorityA,
@@ -439,6 +440,8 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewR
       type: 'circle',
       source: SOURCE_ID,
       paint: {
+        // Fill color — used only by priority-A (the solid marks). Routine
+        // events have FILL_OPACITY 0, so this is effectively inert for them.
         'circle-color': ['get', 'color'],
         'circle-radius': [
           'interpolate', ['linear'], ['zoom'],
@@ -451,27 +454,28 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewR
             ['case', ['get', 'isOpen'], 7, 6],
           ],
         ],
-        'circle-opacity': OPACITY_EXPRESSION,
+        // Fill: priority-A only (see FILL_OPACITY). Routine = hollow.
+        'circle-opacity': FILL_OPACITY,
         'circle-opacity-transition': { duration: 400, delay: 0 },
-        'circle-stroke-color': ['get', 'strokeColor'],
+        // Stroke carries the dataset pigment for routine events (the ring IS
+        // the dot). Priority-A uses indigo-300 as a key-event accent ring
+        // around its solid fill.
+        'circle-stroke-color': [
+          'case',
+          ['get', 'isPriorityA'],
+          '#aab3d4',          // indigo-300 — key-event accent
+          ['get', 'color'],   // dataset pigment (age-shifted)
+        ],
         'circle-stroke-width': [
           'case',
-          // Priority-A: 2.5px halo extending outside the dot.
-          ['get', 'isPriorityA'], 2.5,
-          // Routine: thin open-event stroke, thinner closed-event stroke.
-          ['case', ['get', 'isOpen'], 1, 0.5],
+          // Priority-A: definition ring around the solid fill.
+          ['get', 'isPriorityA'], 1.5,
+          // Routine hollow rings: open slightly heavier than closed.
+          ['case', ['get', 'isOpen'], 1.5, 1],
         ],
-        // Stroke must also gate on feature-state.revealed — otherwise
-        // unrevealed features render as stroke-only rings (Mapbox treats
-        // circle-opacity and circle-stroke-opacity as independent paint
-        // properties). Pre-sweep features need both fill AND stroke
-        // invisible; the chronological sweep flips them together.
-        'circle-stroke-opacity': [
-          'case',
-          ['boolean', ['feature-state', 'revealed'], false],
-          1,
-          0,
-        ],
+        // Stroke gated by revealed (Stream Curtain). For routine events this
+        // is the PRIMARY visual; for priority-A it wraps the fill.
+        'circle-stroke-opacity': STROKE_OPACITY,
         'circle-stroke-opacity-transition': { duration: 400, delay: 0 },
       },
     } as mapboxgl.AnyLayer,
