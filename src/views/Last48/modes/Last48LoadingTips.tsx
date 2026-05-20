@@ -82,19 +82,21 @@ export default function Last48LoadingTips() {
 
   return (
     <div
-      className="pointer-events-none absolute inset-x-0 flex justify-center px-6"
+      className="pointer-events-none absolute inset-x-0 z-20 flex justify-center px-6"
       style={{ top: '68%' }}
     >
       {/* Inverted-contrast pill — dark espresso in light mode, light paper in
-          dark mode. Makes the tip read as a deliberate card floating over the
-          map rather than loose text. 80% opacity lets the map + radar shine
-          through as soft color; backdrop-blur (8px, up from sm/4px) keeps text
-          legible at that lower opacity — the blur is what BUYS the see-through.
-          Warm kraft shadow for depth. Opacity↔blur is a paired control: if
-          readability suffers over the bright radar center, bump opacity to 85
-          OR blur to -md; if it feels too opaque, drop opacity to 75. */}
+          dark mode. Makes the tip read as a deliberate card over the map.
+          Sits ABOVE the radar (z-20 vs the scanner's z-10) so backdrop-blur
+          blurs the radar+map BEHIND it (frosted glass over the live scene)
+          and the bright sweep line never crosses the text.
+          65% opacity + light backdrop-blur-sm (4px): the map detail genuinely
+          shows through (a stronger blur smears it into a solid-looking tone).
+          Opacity↔blur is a paired control: if text gets hard to read over the
+          radar center, bump opacity to 72 OR blur to default; for MORE map,
+          drop to 58. */}
       <div
-        className="max-w-md rounded-2xl px-7 py-5 text-center bg-espresso-900/80 dark:bg-paper-100/80 shadow-xl shadow-espresso-950/20 backdrop-blur ring-1 ring-paper-100/10 dark:ring-espresso-900/10"
+        className="max-w-md rounded-2xl px-7 py-5 text-center bg-espresso-900/65 dark:bg-paper-100/65 shadow-xl shadow-espresso-950/20 backdrop-blur-sm ring-1 ring-paper-100/10 dark:ring-espresso-900/10"
         style={{ opacity: visible ? 1 : 0, transition: `opacity ${FADE_MS}ms ease-out` }}
       >
         {/* Rule-leading eyebrow (── LABEL) — mono, uppercase, tracked. */}
