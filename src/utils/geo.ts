@@ -23,6 +23,19 @@ export const SF_DEFAULT_ZOOM = 12.11
 export const SF_DEFAULT_PITCH = 48
 export const SF_DEFAULT_BEARING = 20.1
 
+/** Per-view camera override for The Last 48 only. A steeper pitch + tighter
+ *  zoom frames the event stream more cinematically than the site default,
+ *  with a center nudged slightly west/south to sit the densest activity
+ *  (Tenderloin/SoMa/Mission) in the upper canvas. Passed to <MapView camera>
+ *  by Last48Map; every other view omits the prop and keeps the SF_DEFAULT_*
+ *  values above. Tuned visually via the ?debug=map overlay. */
+export const LAST48_CAMERA = {
+  center: { lat: 37.7322, lng: -122.4603 },
+  zoom: 12.55,
+  pitch: 63,
+  bearing: 27.3,
+}
+
 /** Extract lat/lng from a Socrata point field */
 export function extractCoordinates(
   point: { type: string; coordinates: [number, number] } | null | undefined
