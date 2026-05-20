@@ -16,6 +16,7 @@
 // fade, ~5s dwell. No glow (Tier 3: prose). Eyebrow in mono, body in serif.
 
 import { useEffect, useState } from 'react'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 
 type TipKind = 'data' | 'usage'
 
@@ -53,18 +54,31 @@ export default function Last48LoadingTips() {
   // Random start so repeat cold-loads don't always open on the same tip.
   const [idx, setIdx] = useState(() => Math.floor(Math.random() * TIPS.length))
   const [visible, setVisible] = useState(true)
+  const reducedMotion = usePrefersReducedMotion()
 
   useEffect(() => {
+    // fadeTimer is tracked at effect scope so the cleanup actually clears it.
+    // (The inner `return () => clearTimeout(t)` it replaces lived inside the
+    // setInterval callback, where its return value was silently discarded.)
+    let fadeTimer: ReturnType<typeof setTimeout> | undefined
     const interval = setInterval(() => {
+      if (reducedMotion) {
+        // Instant swap — reduced-motion users still get the rotating tips,
+        // just without the opacity cross-fade.
+        setIdx((i) => (i + 1) % TIPS.length)
+        return
+      }
       setVisible(false)
-      const t = setTimeout(() => {
+      fadeTimer = setTimeout(() => {
         setIdx((i) => (i + 1) % TIPS.length)
         setVisible(true)
       }, FADE_MS)
-      return () => clearTimeout(t)
     }, DWELL_MS)
-    return () => clearInterval(interval)
-  }, [])
+    return () => {
+      clearInterval(interval)
+      if (fadeTimer) clearTimeout(fadeTimer)
+    }
+  }, [reducedMotion])
 
   const tip = TIPS[idx]
   const isData = tip.kind === 'data'
@@ -97,7 +111,10 @@ export default function Last48LoadingTips() {
           drop to 58. */}
       <div
         className="max-w-md rounded-2xl px-7 py-5 text-center bg-espresso-900/65 dark:bg-paper-100/65 shadow-xl shadow-espresso-950/20 backdrop-blur-sm ring-1 ring-paper-100/10 dark:ring-espresso-900/10"
-        style={{ opacity: visible ? 1 : 0, transition: `opacity ${FADE_MS}ms ease-out` }}
+        style={{
+          opacity: visible ? 1 : 0,
+          transition: reducedMotion ? 'none' : `opacity ${FADE_MS}ms ease-out`,
+        }}
       >
         {/* Rule-leading eyebrow (── LABEL) — mono, uppercase, tracked. */}
         <div className="mb-2 flex items-center justify-center gap-2">

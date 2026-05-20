@@ -49,16 +49,22 @@ export default function BootEmanation({ looping }: Props) {
 
   return (
     <div
-      className="pointer-events-none absolute inset-0 z-20 motion-reduce:hidden"
+      className="pointer-events-none absolute inset-0 z-20"
       style={{
         opacity: fading ? 0 : 1,
         transition: `opacity ${FADE_OUT_MS}ms ease-out`,
       }}
     >
-      <MapScanOverlay color="#a8926a" label="Scanning the last 48 hours" />
-      {/* Rotating data + usability tips fill the cold-load wait. Only show
-          them while actively loading (not during the 800ms fade-out) so they
-          don't linger as the map takes over. */}
+      {/* The radar sweep IS the motion — hide it under prefers-reduced-motion.
+          (Was on the wrapper, which also took the tips down with it.) */}
+      <div className="motion-reduce:hidden">
+        <MapScanOverlay color="#a8926a" label="Scanning the last 48 hours" />
+      </div>
+      {/* Rotating data + usability tips fill the cold-load wait. These are text,
+          not motion, so they stay visible under reduced-motion (the tip
+          component itself drops the cross-fade in that case). Only show them
+          while actively loading (not during the 800ms fade-out) so they don't
+          linger as the map takes over. */}
       {!fading && <Last48LoadingTips />}
     </div>
   )
