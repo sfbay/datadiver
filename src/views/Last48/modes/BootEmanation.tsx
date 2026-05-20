@@ -17,6 +17,7 @@
 
 import { useEffect, useState } from 'react'
 import { MapScanOverlay } from '@/components/ui/Skeleton'
+import Last48LoadingTips from './Last48LoadingTips'
 
 const FADE_OUT_MS = 800
 
@@ -55,6 +56,10 @@ export default function BootEmanation({ looping }: Props) {
       }}
     >
       <MapScanOverlay color="#a8926a" label="Scanning the last 48 hours" />
+      {/* Rotating data + usability tips fill the cold-load wait. Only show
+          them while actively loading (not during the 800ms fade-out) so they
+          don't linger as the map takes over. */}
+      {!fading && <Last48LoadingTips />}
     </div>
   )
 }
