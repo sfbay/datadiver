@@ -17,9 +17,16 @@
 
 import { useEffect, useState } from 'react'
 import { MapScanOverlay } from '@/components/ui/Skeleton'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import Last48LoadingTips from './Last48LoadingTips'
 
 const FADE_OUT_MS = 800
+
+// Hold the tip cards back for a beat so a few seconds of bare radar sweep
+// prime the eye before the cards' "distraction" arrives — calmer than having
+// everything appear at once. Skipped under reduced-motion (no radar to prime
+// with, so don't make those users wait on a blank screen).
+const TIP_DELAY_MS = 3000
 
 interface Props {
   /** While true, the scanner renders. False → fade out + unmount. */
@@ -29,6 +36,10 @@ interface Props {
 export default function BootEmanation({ looping }: Props) {
   const [mounted, setMounted] = useState(looping)
   const [fading, setFading] = useState(false)
+  const reducedMotion = usePrefersReducedMotion()
+  // Tips appear after TIP_DELAY_MS of radar-only — unless reduced-motion, where
+  // there's no radar, so show them right away.
+  const [tipsReady, setTipsReady] = useState(reducedMotion)
 
   useEffect(() => {
     if (looping) {
@@ -44,6 +55,16 @@ export default function BootEmanation({ looping }: Props) {
     }, FADE_OUT_MS)
     return () => clearTimeout(t)
   }, [looping, mounted])
+
+  // Arm the tip cards a few seconds after the scanner mounts (radar primes the
+  // eye first). Reset whenever the overlay unmounts so a later cold-load
+  // re-primes from scratch.
+  useEffect(() => {
+    if (!mounted) { setTipsReady(false); return }
+    if (reducedMotion) { setTipsReady(true); return }
+    const t = setTimeout(() => setTipsReady(true), TIP_DELAY_MS)
+    return () => clearTimeout(t)
+  }, [mounted, reducedMotion])
 
   if (!mounted) return null
 
@@ -62,10 +83,10 @@ export default function BootEmanation({ looping }: Props) {
       </div>
       {/* Rotating data + usability tips fill the cold-load wait. These are text,
           not motion, so they stay visible under reduced-motion (the tip
-          component itself drops the cross-fade in that case). Only show them
-          while actively loading (not during the 800ms fade-out) so they don't
-          linger as the map takes over. */}
-      {!fading && <Last48LoadingTips />}
+          component itself drops the cross-fade in that case). Gated on:
+          - !fading      → don't linger as the map takes over
+          - tipsReady    → a few seconds of radar-only prime the eye first */}
+      {!fading && tipsReady && <Last48LoadingTips />}
     </div>
   )
 }
