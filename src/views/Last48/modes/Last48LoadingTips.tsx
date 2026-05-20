@@ -66,32 +66,42 @@ export default function Last48LoadingTips() {
     return () => clearInterval(interval)
   }, [])
 
-  const tip = TIPS[idx]
-  const eyebrow = tip.kind === 'data' ? 'In the data' : 'Tip'
-  // Data tips lean dusty-teal (info); usage tips lean moss (do-this).
-  const accent = tip.kind === 'data' ? '#5c9693' : '#7a9954'
+  const isData = tip.kind === 'data'
+  const eyebrow = isData ? 'In the data' : 'Tip'
+  // Accent encodes kind (data = dusty-teal/info, usage = moss/do-this) AND
+  // inverts with the pill: the pill is DARK in light mode, LIGHT in dark mode,
+  // so the accent flips too — light accent shade on the dark pill, dark accent
+  // shade on the light pill.
+  const accentClass = isData
+    ? 'text-teal-400 dark:text-teal-600'
+    : 'text-moss-400 dark:text-moss-600'
+  const ruleClass = isData
+    ? 'bg-teal-400 dark:bg-teal-600'
+    : 'bg-moss-400 dark:bg-moss-600'
 
   return (
     <div
       className="pointer-events-none absolute inset-x-0 flex justify-center px-6"
       style={{ top: '68%' }}
     >
+      {/* Inverted-contrast pill — dark espresso in light mode, light paper in
+          dark mode. Makes the tip read as a deliberate card floating over the
+          map rather than loose text. Warm kraft shadow + slight blur for
+          legibility over the radar sweep. */}
       <div
-        className="max-w-md text-center"
+        className="max-w-md rounded-2xl px-7 py-5 text-center bg-espresso-900/90 dark:bg-paper-100/90 shadow-xl shadow-espresso-950/20 backdrop-blur-sm ring-1 ring-paper-100/10 dark:ring-espresso-900/10"
         style={{ opacity: visible ? 1 : 0, transition: `opacity ${FADE_MS}ms ease-out` }}
       >
         {/* Rule-leading eyebrow (── LABEL) — mono, uppercase, tracked. */}
         <div className="mb-2 flex items-center justify-center gap-2">
-          <span className="h-px w-5" style={{ backgroundColor: accent }} />
-          <span
-            className="font-mono text-[10px] uppercase tracking-[0.25em]"
-            style={{ color: accent }}
-          >
+          <span className={`h-px w-5 ${ruleClass}`} />
+          <span className={`font-mono text-[10px] uppercase tracking-[0.25em] ${accentClass}`}>
             {eyebrow}
           </span>
         </div>
-        {/* Body — display serif, calm size, paper-toned. */}
-        <p className="font-display text-[15px] leading-snug text-paper-700 dark:text-paper-200">
+        {/* Body — display serif, inverted text: light on dark pill, dark on
+            light pill. */}
+        <p className="font-display text-[15px] leading-snug text-paper-50 dark:text-espresso-900">
           {tip.text}
         </p>
       </div>
