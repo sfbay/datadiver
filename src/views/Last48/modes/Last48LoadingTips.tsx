@@ -66,6 +66,7 @@ export default function Last48LoadingTips() {
     return () => clearInterval(interval)
   }, [])
 
+  const tip = TIPS[idx]
   const isData = tip.kind === 'data'
   const eyebrow = isData ? 'In the data' : 'Tip'
   // Accent encodes kind (data = dusty-teal/info, usage = moss/do-this) AND
