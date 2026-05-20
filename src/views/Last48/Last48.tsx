@@ -27,7 +27,11 @@ function parseFill(s: string | null, legacyMode: string | null): BaseFill {
   // Legacy ?mode=hotspots → anomaly. Otherwise read ?fill=.
   if (s === 'anomaly' || s === 'demographic' || s === 'none') return s
   if (legacyMode === 'hotspots') return 'anomaly'
-  return 'none'
+  // Default: demographic underlay ON (home values — see underlayVariable
+  // default below). The hollow-ring dots sit cleanly over the choropleth,
+  // and leading with neighborhood context is the editorial intent. Opt out
+  // via ?fill=none.
+  return 'demographic'
 }
 
 function parsePoints(s: string | null): boolean {
@@ -60,7 +64,9 @@ export default function Last48() {
   const selectedEventId = searchParams.get('event')
 
   // Underlay variable is transient UI state — no reason to URL-persist it.
-  const [underlayVariable, setUnderlayVariable] = useState<CensusVariable | null>(null)
+  // Defaults to median home value so the demographic underlay (on by default,
+  // see parseFill) leads with home-value context.
+  const [underlayVariable, setUnderlayVariable] = useState<CensusVariable | null>('medianHomeValue')
 
   const window48 = useLast48Window({ datasets })
   const civicIndicators = useCivicIndicators()
@@ -96,7 +102,11 @@ export default function Last48() {
 
   const setFill = (next: BaseFill) => {
     const np = new URLSearchParams(searchParams)
-    if (next === 'none') np.delete('fill')
+    // 'demographic' is now the default (no param), so it's the value we omit
+    // from the URL; every other choice (none / anomaly) is explicit. If we
+    // omitted 'none' instead, turning the underlay off would delete the param
+    // and snap right back to the demographic default.
+    if (next === 'demographic') np.delete('fill')
     else np.set('fill', next)
     np.delete('mode')   // retire legacy param
     setSearchParams(np, { replace: true })
