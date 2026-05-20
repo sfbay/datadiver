@@ -87,10 +87,14 @@ export default function Last48LoadingTips() {
     >
       {/* Inverted-contrast pill — dark espresso in light mode, light paper in
           dark mode. Makes the tip read as a deliberate card floating over the
-          map rather than loose text. Warm kraft shadow + slight blur for
-          legibility over the radar sweep. */}
+          map rather than loose text. 80% opacity lets the map + radar shine
+          through as soft color; backdrop-blur (8px, up from sm/4px) keeps text
+          legible at that lower opacity — the blur is what BUYS the see-through.
+          Warm kraft shadow for depth. Opacity↔blur is a paired control: if
+          readability suffers over the bright radar center, bump opacity to 85
+          OR blur to -md; if it feels too opaque, drop opacity to 75. */}
       <div
-        className="max-w-md rounded-2xl px-7 py-5 text-center bg-espresso-900/90 dark:bg-paper-100/90 shadow-xl shadow-espresso-950/20 backdrop-blur-sm ring-1 ring-paper-100/10 dark:ring-espresso-900/10"
+        className="max-w-md rounded-2xl px-7 py-5 text-center bg-espresso-900/80 dark:bg-paper-100/80 shadow-xl shadow-espresso-950/20 backdrop-blur ring-1 ring-paper-100/10 dark:ring-espresso-900/10"
         style={{ opacity: visible ? 1 : 0, transition: `opacity ${FADE_MS}ms ease-out` }}
       >
         {/* Rule-leading eyebrow (── LABEL) — mono, uppercase, tracked. */}
