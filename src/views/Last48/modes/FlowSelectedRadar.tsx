@@ -49,44 +49,49 @@ export default function FlowSelectedRadar({ map, event }: Props) {
 
   const center = RING_SIZE / 2
 
+  // Clip to the map bounds (see FlowArrivalRipples for the rationale): a
+  // selected dot near an edge would otherwise emanate its ring ~60px past the
+  // map and over the rail. This inset-0 overflow-hidden layer masks it.
   return (
-    <svg
-      className="pointer-events-none absolute z-20 motion-reduce:hidden"
-      width={RING_SIZE}
-      height={RING_SIZE}
-      viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}
-      style={{ left: pos.x - center, top: pos.y - center }}
-      aria-hidden
-    >
-      {/* First emanation — leading ping */}
-      <circle
-        cx={center}
-        cy={center}
-        r="18"
-        fill="none"
-        stroke="rgba(245,236,217,0.75)"
-        strokeWidth="1.5"
-        style={{
-          transformBox: 'view-box',
-          transformOrigin: `${center}px ${center}px`,
-          animation: 'emanate 1.9s ease-out infinite',
-        }}
-      />
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      <svg
+        className="pointer-events-none absolute z-20 motion-reduce:hidden"
+        width={RING_SIZE}
+        height={RING_SIZE}
+        viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}
+        style={{ left: pos.x - center, top: pos.y - center }}
+        aria-hidden
+      >
+        {/* First emanation — leading ping */}
+        <circle
+          cx={center}
+          cy={center}
+          r="18"
+          fill="none"
+          stroke="rgba(245,236,217,0.75)"
+          strokeWidth="1.5"
+          style={{
+            transformBox: 'view-box',
+            transformOrigin: `${center}px ${center}px`,
+            animation: 'emanate 1.9s ease-out infinite',
+          }}
+        />
 
-      {/* Second emanation — staggered, slightly fainter */}
-      <circle
-        cx={center}
-        cy={center}
-        r="18"
-        fill="none"
-        stroke="rgba(245,236,217,0.55)"
-        strokeWidth="1"
-        style={{
-          transformBox: 'view-box',
-          transformOrigin: `${center}px ${center}px`,
-          animation: 'emanate 1.9s ease-out 0.95s infinite',
-        }}
-      />
-    </svg>
+        {/* Second emanation — staggered, slightly fainter */}
+        <circle
+          cx={center}
+          cy={center}
+          r="18"
+          fill="none"
+          stroke="rgba(245,236,217,0.55)"
+          strokeWidth="1"
+          style={{
+            transformBox: 'view-box',
+            transformOrigin: `${center}px ${center}px`,
+            animation: 'emanate 1.9s ease-out 0.95s infinite',
+          }}
+        />
+      </svg>
+    </div>
   )
 }

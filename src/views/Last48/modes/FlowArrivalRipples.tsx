@@ -77,8 +77,15 @@ export default function FlowArrivalRipples({ map, ripples, onDone }: Props) {
 
   const center = RING_SIZE / 2
 
+  // Clip the rings to the map bounds. Each ring is a 120px SVG centered on the
+  // dot's screen pixel, so a dot near an edge expands ~60px past the map —
+  // visibly spilling over the rail on narrow screens. This `inset-0`
+  // overflow-hidden layer covers exactly the map area (its containing block is
+  // MapView's inset-0 overlay), so rings get masked at the map's edges. The
+  // SVGs' left/top still resolve against this layer's 0,0, which coincides with
+  // the map canvas origin — positioning is unchanged.
   return (
-    <>
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
       {projected.map((r) => (
         <RippleRing
           key={r.id}
@@ -87,7 +94,7 @@ export default function FlowArrivalRipples({ map, ripples, onDone }: Props) {
           onDone={() => onDoneRef.current(r.id)}
         />
       ))}
-    </>
+    </div>
   )
 }
 
