@@ -3,6 +3,7 @@ import { useAppStore } from '@/stores/appStore'
 import { fetchDataset } from '@/api/client'
 import type { Cases311Record } from '@/types/datasets'
 import { parseDateTime, formatDate, formatResolution, diffHours } from '@/utils/time'
+import { classifyCaseMedia } from '@/utils/caseMedia'
 import DetailPanelShell from '@/components/ui/DetailPanelShell'
 
 interface CaseDetail {
@@ -234,33 +235,58 @@ export default function CaseDetailPanel() {
               <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Agency</p>
               <p className="text-[10px] text-slate-700 dark:text-slate-300">{detail.agency}</p>
             </div>
-            {detail.mediaUrl && (
-              <div className="mt-2">
-                <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Attached Image</p>
-                <a
-                  href={detail.mediaUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block rounded-lg overflow-hidden ring-1 ring-slate-200/50 dark:ring-white/10 hover:ring-moss-500/40 transition-all"
-                >
-                  <img
-                    src={detail.mediaUrl}
-                    alt="311 case attachment"
-                    className="w-full h-auto max-h-48 object-cover bg-slate-100 dark:bg-white/5"
-                    onError={(e) => {
-                      // If image fails to load (non-image media), fall back to link
-                      const target = e.currentTarget
-                      target.style.display = 'none'
-                      const fallback = target.nextElementSibling as HTMLElement | null
-                      if (fallback) fallback.style.display = ''
-                    }}
-                  />
-                  <span className="text-[10px] font-mono text-moss-500 px-2 py-1.5 block" style={{ display: 'none' }}>
-                    View attached media →
-                  </span>
-                </a>
-              </div>
-            )}
+            {(() => {
+              // Classify up front: Cloudinary/direct images embed inline;
+              // Verint form-download endpoints (HTML, not images) link out
+              // instead of flashing a broken image. See classifyCaseMedia.
+              const media = classifyCaseMedia(detail.mediaUrl)
+              if (!media) return null
+
+              if (media.kind === 'link') {
+                return (
+                  <div className="mt-2">
+                    <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Attached Media</p>
+                    <a
+                      href={media.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 rounded-lg px-3 py-2.5 ring-1 ring-slate-200/50 dark:ring-white/10 hover:ring-moss-500/40 transition-all text-[11px] font-mono text-moss-500"
+                    >
+                      <span aria-hidden>📎</span>
+                      View photo on SF’s 311 portal →
+                    </a>
+                  </div>
+                )
+              }
+
+              return (
+                <div className="mt-2">
+                  <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Attached Image</p>
+                  <a
+                    href={media.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block rounded-lg overflow-hidden ring-1 ring-slate-200/50 dark:ring-white/10 hover:ring-moss-500/40 transition-all"
+                  >
+                    <img
+                      src={media.url}
+                      alt="311 case attachment"
+                      className="w-full h-auto max-h-48 object-cover bg-slate-100 dark:bg-white/5"
+                      onError={(e) => {
+                        // Safety net for dead Cloudinary URLs (404) → link fallback.
+                        const target = e.currentTarget
+                        target.style.display = 'none'
+                        const fallback = target.nextElementSibling as HTMLElement | null
+                        if (fallback) fallback.style.display = ''
+                      }}
+                    />
+                    <span className="text-[10px] font-mono text-moss-500 px-2 py-1.5 block" style={{ display: 'none' }}>
+                      View attached media →
+                    </span>
+                  </a>
+                </div>
+              )
+            })()}
           </div>
         </>
       )}
