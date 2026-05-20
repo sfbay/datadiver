@@ -43,20 +43,27 @@ const WINDOW_MS = 48 * 60 * 60 * 1000 // 48 hours
 // backfill fetch fires immediately (without waiting for the next poll
 // interval). Subsequent polls at the regular cadence use the full window.
 //
-// Head query strategy: NO $where filter, just $order DESC + $limit. Socrata
-// indexes the `$order` field, so "give me the most recent N rows" hits a
-// fast indexed access path; a `$where date >= cutoff` filter sometimes
-// falls back to a full table scan depending on the dataset's index
-// configuration. The previous head strategy (2h window via $where) had
-// inconsistent latency — fast on hot caches, ~60s on cold caches. Dropping
-// $where pins the head query to the indexed path reliably.
+// Head query strategy: $where-bounded to a SMALL window (HEAD_WINDOW_MS) +
+// $order DESC + $limit.
 //
-// HEAD_LIMIT = 200: small enough that the chronological reveal is
-// visibly trackable (~33 events/sec over 6s for 911 — eye can follow),
-// large enough to feel populated rather than empty. For 911 with ~58
-// events/hr, 200 events ≈ 3.4 hours of data; for 311 with ~48/hr,
-// ~4.2 hours; for Fire/EMS with ~11/hr, ~18 hours. All within 48h
-// window. The useLast48Window eviction loop drops anything older.
+// History (PR #53): we briefly tried dropping $where entirely (just $order
+// + $limit) on the theory that "most recent N rows" would hit Socrata's
+// indexed path uniformly. That HUNG Fire/EMS and 311 in production —
+// without a $where bound, those large multi-year datasets had to materialize
+// a full sort before applying the limit, and the query stalled. 911 (smaller,
+// better-indexed) survived, which is why only it loaded. Restoring the
+// $where bound fixes the hang: the date filter lets Socrata's planner scope
+// the work to a small recent slice regardless of total table size.
+//
+// HEAD_WINDOW_MS = 6h: wider than the original 2h for safety against quiet
+// periods (a stream that's published nothing in 2h would return an empty
+// head), small enough that the bounded query stays fast.
+//
+// HEAD_LIMIT = 200: small enough that the chronological reveal is visibly
+// trackable (~33 events/sec over 6s for 911 — eye can follow), large enough
+// to feel populated. The useLast48Window eviction loop drops anything older
+// than 48h.
+const HEAD_WINDOW_MS = 6 * 60 * 60 * 1000 // 6 hours
 const HEAD_LIMIT = 200
 const FULL_LIMIT = 5000
 
@@ -241,21 +248,18 @@ export function useLast48Window(opts: {
       const dateField = DATE_FIELD[datasetId]
       const registryKey = DATASET_REGISTRY_KEY[datasetId]
 
-      // Head: $order DESC + $limit alone, no $where (indexed access path —
-      // reliably fast across Socrata cache states).
-      // Full: $where filtered to last 48h (the actual content window).
-      // Socrata SoQL date comparison rejects the trailing `.000Z` produced
-      // by `toISOString()` — use trimmed `YYYY-MM-DDTHH:MM:SS`.
-      const queryParams: Parameters<typeof fetchDataset>[1] = isHead
-        ? {
-            $order: `${dateField} DESC`,
-            $limit: limit,
-          }
-        : {
-            $where: `${dateField} >= '${new Date(Date.now() - WINDOW_MS).toISOString().slice(0, 19)}'`,
-            $order: `${dateField} DESC`,
-            $limit: limit,
-          }
+      // Both phases are $where-bounded — head to 6h, full to 48h. The $where
+      // bound is what keeps the query fast on large datasets (it scopes the
+      // sort to a recent slice). Socrata SoQL date comparison rejects the
+      // trailing `.000Z` produced by `toISOString()` — use trimmed
+      // `YYYY-MM-DDTHH:MM:SS`.
+      const windowMs = isHead ? HEAD_WINDOW_MS : WINDOW_MS
+      const cutoff = new Date(Date.now() - windowMs).toISOString().slice(0, 19)
+      const queryParams: Parameters<typeof fetchDataset>[1] = {
+        $where: `${dateField} >= '${cutoff}'`,
+        $order: `${dateField} DESC`,
+        $limit: limit,
+      }
 
       try {
         const rows = await fetchDataset<Record<string, unknown>>(
