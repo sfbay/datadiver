@@ -147,10 +147,14 @@ interface Props {
   /** Called when significant new events arrive (priority-A 911 or newly-open 911).
    *  Receives an array of ripple descriptors to forward to FlowArrivalRipples. */
   onNewRipples?: (ripples: Ripple[]) => void
-  /** Per-dataset initial-load flags from useLast48Window. When a flag flips
-   *  false → true, the layer runs a brief fade-in (circle-opacity 0 → expression)
-   *  via Mapbox's circle-opacity-transition. */
-  initialLoadedByDataset?: Record<DatasetId, boolean>
+  /** Per-dataset FULL-load flags from useLast48Window. The serialized Stream
+   *  Curtain sweep gates on these — each stream sweeps only once its complete
+   *  48h data has loaded, so the chronological reveal runs over the full data
+   *  in one pass. Gating on full (not head) also makes the sweep order
+   *  deterministic regardless of which Socrata query returns first: stream0
+   *  (911) always leads because the gate is keyed to the fixed stream order,
+   *  not data-arrival order. */
+  fullyLoadedByDataset?: Record<DatasetId, boolean>
 }
 
 const SOURCE_ID        = 'last48-flow-events'
@@ -204,7 +208,7 @@ const STROKE_OPACITY: mapboxgl.ExpressionSpecification = [
   0,  // unrevealed: invisible
 ]
 
-export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewRipples, initialLoadedByDataset }: Props) {
+export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewRipples, fullyLoadedByDataset }: Props) {
   // Stable refs so event handlers don't need to re-attach when props change.
   const eventsRef      = useRef(events)
   const onSelectRef    = useRef(onSelect)
@@ -257,15 +261,22 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewR
   }, [])
 
   // Stream N is enabled when:
-  //   1. its own initial fetch has completed (data present),
-  //   2. all earlier streams in the order have had their sweep released.
+  //   1. its own FULL (head + backfill) fetch has completed — so the sweep
+  //      runs over complete data in one chronological pass,
+  //   2. all earlier streams in the fixed order have had their sweep released.
+  //
+  // Gating on FULL load (not head) is what makes the order deterministic:
+  // stream0 (911) always leads even though it's the largest dataset and its
+  // Socrata query returns LAST. Previously the sweep gated on head-load, so
+  // whichever stream's data arrived first (Fire/EMS, smallest) effectively
+  // led and the serialized stagger collapsed.
   const stream0 = LAST48_DATASETS[0]
   const stream1 = LAST48_DATASETS[1]
   const stream2 = LAST48_DATASETS[2]
 
-  const enabled0 = !!initialLoadedByDataset?.[stream0]
-  const enabled1 = !!initialLoadedByDataset?.[stream1] && sweepReleased.has(stream0)
-  const enabled2 = !!initialLoadedByDataset?.[stream2] && sweepReleased.has(stream1)
+  const enabled0 = !!fullyLoadedByDataset?.[stream0]
+  const enabled1 = !!fullyLoadedByDataset?.[stream1] && sweepReleased.has(stream0)
+  const enabled2 = !!fullyLoadedByDataset?.[stream2] && sweepReleased.has(stream1)
 
   // Memoized onComplete handlers — stable identity to keep the hook's deps
   // clean. Each release advances the chain after the buffer delay.

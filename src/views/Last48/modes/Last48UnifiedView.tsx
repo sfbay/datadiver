@@ -144,11 +144,15 @@ export default function Last48UnifiedView({
 
   // ── Loading state for BootEmanation ─────────────────────────────────────
   // True while any of the three Last 48 streams has not yet completed its
-  // initial fetch. Once all three flip to true, BootEmanation receives
-  // looping=false and runs its 800ms fade-out before unmounting.
+  // FULL (head + backfill) fetch. The radar scanner stays up until all data
+  // is in, because the Stream Curtain sweep gates on full-load and won't
+  // start until then — fading the radar earlier (on head-load) would leave
+  // a gap of empty map between radar-gone and curtain-start. Once all three
+  // are fully loaded, BootEmanation receives looping=false and fades out as
+  // the curtain begins.
   const isLoadingAny = useMemo(
-    () => LAST48_DATASETS.some((id) => !window48.initialLoadedByDataset[id]),
-    [window48.initialLoadedByDataset],
+    () => LAST48_DATASETS.some((id) => !window48.fullyLoadedByDataset[id]),
+    [window48.fullyLoadedByDataset],
   )
 
   return (
@@ -241,7 +245,7 @@ export default function Last48UnifiedView({
               selectedId={selectedEvent?.id}
               onSelect={handleMapSelect}
               onNewRipples={handleNewRipples}
-              initialLoadedByDataset={window48.initialLoadedByDataset}
+              fullyLoadedByDataset={window48.fullyLoadedByDataset}
             />
           )}
 
