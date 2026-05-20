@@ -12,6 +12,7 @@ import { Link } from 'react-router-dom'
 import type { NormalizedEvent, DatasetId } from '@/types/last48'
 import DetailPanelShell from '@/components/ui/DetailPanelShell'
 import { formatApTime, formatHeadline } from '@/utils/format'
+import { classifyCaseMedia } from '@/utils/caseMedia'
 
 // ---------------------------------------------------------------------------
 // Dataset metadata — label, pigment accent, explore link + caption
@@ -220,25 +221,44 @@ export default function Last48EventCard({ event, onClose }: Props) {
             </h3>
 
             {/* ── 311 attached image (if available) ────────────────────
-                311 cases carry an optional `media_url` field — usually a
-                photo of the reported issue. When present we render it
-                prominently, before the metadata rows; clicking opens the
-                full-size image. Same http→https + onError fallback as
-                CaseDetailPanel uses elsewhere in the app. */}
+                311 cases carry an optional `media_url`. We classify it up
+                front (see classifyCaseMedia): Cloudinary/direct-image URLs
+                embed inline; Verint form-download endpoints (which return
+                HTML, not an image) get an intentional link-out instead of a
+                broken-image flash. */}
             {event.datasetId === '311-cases' && (() => {
               const raw = event.raw as { media_url?: { url?: string } | null }
-              const mediaUrl = raw.media_url?.url?.replace(/^http:\/\//, 'https://')
-              if (!mediaUrl) return null
+              const media = classifyCaseMedia(raw.media_url?.url)
+              if (!media) return null
+
+              if (media.kind === 'link') {
+                // Verint / non-image: deliberate link-out, no failed embed.
+                return (
+                  <a
+                    href={media.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="mt-2 mb-3 flex items-center gap-2 rounded-md px-3 py-2.5 ring-1 ring-paper-300/20 dark:ring-espresso-700/60 hover:ring-moss-500/40 transition-all font-mono text-[11px] tracking-wider text-moss-500"
+                  >
+                    <span aria-hidden>📎</span>
+                    View photo on SF’s 311 portal →
+                  </a>
+                )
+              }
+
+              // Direct image: embed inline. Keep an onError safety net for
+              // dead Cloudinary URLs (404) — falls back to the same link-out.
               return (
                 <a
-                  href={mediaUrl}
+                  href={media.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block mt-2 mb-3 rounded-md overflow-hidden ring-1 ring-paper-300/20 dark:ring-espresso-700/60 hover:ring-moss-500/40 transition-all"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <img
-                    src={mediaUrl}
+                    src={media.url}
                     alt="311 case attachment"
                     className="w-full h-auto max-h-44 object-cover bg-paper-200/30 dark:bg-espresso-800/40"
                     onError={(e) => {
