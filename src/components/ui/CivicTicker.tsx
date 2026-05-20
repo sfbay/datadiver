@@ -13,6 +13,7 @@ import { useRef, useEffect, useCallback, useState, useSyncExternalStore } from '
 import { useNavigate } from 'react-router-dom'
 import type { TickerItem, TickerSize } from '@/types/ticker'
 import TickerCard from '@/components/ui/TickerCard'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 
 // ─── Responsive Size Helper ─────────────────────────────
 
@@ -39,19 +40,6 @@ export function useResponsiveTickerSize(
     return 'standard'
   }
   return 'compact'
-}
-
-/** Detect prefers-reduced-motion */
-function usePrefersReducedMotion(): boolean {
-  return useSyncExternalStore(
-    (cb) => {
-      const mql = window.matchMedia('(prefers-reduced-motion: reduce)')
-      mql.addEventListener('change', cb)
-      return () => mql.removeEventListener('change', cb)
-    },
-    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-    () => false,
-  )
 }
 
 // ─── Helpers ────────────────────────────────────────────

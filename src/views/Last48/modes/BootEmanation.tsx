@@ -17,9 +17,16 @@
 
 import { useEffect, useState } from 'react'
 import { MapScanOverlay } from '@/components/ui/Skeleton'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import Last48LoadingTips from './Last48LoadingTips'
 
 const FADE_OUT_MS = 800
+
+// Hold the tip cards back for a beat so a few seconds of bare radar sweep
+// prime the eye before the cards' "distraction" arrives — calmer than having
+// everything appear at once. Skipped under reduced-motion (no radar to prime
+// with, so don't make those users wait on a blank screen).
+const TIP_DELAY_MS = 3000
 
 interface Props {
   /** While true, the scanner renders. False → fade out + unmount. */
@@ -29,6 +36,10 @@ interface Props {
 export default function BootEmanation({ looping }: Props) {
   const [mounted, setMounted] = useState(looping)
   const [fading, setFading] = useState(false)
+  const reducedMotion = usePrefersReducedMotion()
+  // Tips appear after TIP_DELAY_MS of radar-only — unless reduced-motion, where
+  // there's no radar, so show them right away.
+  const [tipsReady, setTipsReady] = useState(reducedMotion)
 
   useEffect(() => {
     if (looping) {
@@ -45,21 +56,47 @@ export default function BootEmanation({ looping }: Props) {
     return () => clearTimeout(t)
   }, [looping, mounted])
 
+  // Arm the tip cards a few seconds after the scanner mounts (radar primes the
+  // eye first). Reset whenever the overlay unmounts so a later cold-load
+  // re-primes from scratch.
+  useEffect(() => {
+    if (!mounted) { setTipsReady(false); return }
+    if (reducedMotion) { setTipsReady(true); return }
+    const t = setTimeout(() => setTipsReady(true), TIP_DELAY_MS)
+    return () => clearTimeout(t)
+  }, [mounted, reducedMotion])
+
   if (!mounted) return null
 
   return (
     <div
-      className="pointer-events-none absolute inset-0 z-20 motion-reduce:hidden"
+      className="pointer-events-none absolute inset-0 z-20"
       style={{
         opacity: fading ? 0 : 1,
         transition: `opacity ${FADE_OUT_MS}ms ease-out`,
       }}
     >
-      <MapScanOverlay color="#a8926a" label="Scanning the last 48 hours" />
-      {/* Rotating data + usability tips fill the cold-load wait. Only show
-          them while actively loading (not during the 800ms fade-out) so they
-          don't linger as the map takes over. */}
-      {!fading && <Last48LoadingTips />}
+      {/* The radar sweep IS the motion — hide it under prefers-reduced-motion.
+          (Was on the wrapper, which also took the tips down with it.) */}
+      <div className="motion-reduce:hidden">
+        <MapScanOverlay color="#a8926a" label="Scanning the last 48 hours" />
+      </div>
+      {/* Rotating data + usability tips fill the cold-load wait. These are text,
+          not motion, so they stay visible under reduced-motion (the tip
+          component itself drops the cross-fade in that case).
+          - tipsReady → a few seconds of radar-only prime the eye first.
+          - wrapper `animate-in fade-in` → the pill fades IN noticeably when it
+            arrives (one-shot keyframe on mount). For the fade-OUT we no longer
+            gate on !fading: keeping the tips mounted lets them ride this
+            overlay's opacity→0 transition out together with the radar, rather
+            than popping out abruptly.
+          - motion-reduce:animate-none → instant appear when motion is reduced
+            (consistent with the tip component's instant swaps). */}
+      {tipsReady && (
+        <div className="animate-in fade-in duration-700 ease-out motion-reduce:animate-none">
+          <Last48LoadingTips />
+        </div>
+      )}
     </div>
   )
 }
