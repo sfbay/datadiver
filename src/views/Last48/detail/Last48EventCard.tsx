@@ -15,40 +15,16 @@ import { formatApTime, formatHeadline } from '@/utils/format'
 import { classifyCaseMedia } from '@/utils/caseMedia'
 
 // ---------------------------------------------------------------------------
-// Dataset metadata — label, pigment accent, explore link + caption
+// Dataset display metadata — label + pigment accent. Routing is computed
+// separately by resolveExplore() (below) because the destination is
+// conditional: 911 has no map view of its own, so it routes by call type and
+// geocoding rather than to a fixed sibling.
 // ---------------------------------------------------------------------------
 
-const DATASET_META: Record<
-  DatasetId,
-  {
-    label: string
-    color: string
-    exploreLabel: string
-    exploreCaption: string
-    exploreRoute: (id: string) => string
-  }
-> = {
-  '911-realtime': {
-    label: '911 DISPATCH',
-    color: '#616a96',
-    exploreLabel: 'Explore in 911 Dispatch',
-    exploreCaption: 'Filter by this incident in the Dispatch view',
-    exploreRoute: (id) => `/dispatch-911?incident=${encodeURIComponent(id)}`,
-  },
-  'fire-ems-dispatch': {
-    label: 'FIRE/EMS',
-    color: '#b85a33',
-    exploreLabel: 'Explore in Fire/EMS',
-    exploreCaption: 'See full response timeline in Emergency Response',
-    exploreRoute: (id) => `/emergency-response?incident=${encodeURIComponent(id)}`,
-  },
-  '311-cases': {
-    label: '311 CASE',
-    color: '#7a9954',
-    exploreLabel: 'Explore in 311',
-    exploreCaption: 'Browse related cases in the 311 view',
-    exploreRoute: (id) => `/cases-311?case=${encodeURIComponent(id)}`,
-  },
+const DATASET_META: Record<DatasetId, { label: string; color: string }> = {
+  '911-realtime':      { label: '911 DISPATCH', color: '#616a96' },
+  'fire-ems-dispatch': { label: 'FIRE/EMS',     color: '#b85a33' },
+  '311-cases':         { label: '311 CASE',     color: '#7a9954' },
 }
 
 // ---------------------------------------------------------------------------
@@ -141,6 +117,75 @@ function extractId(event: NormalizedEvent): string {
   )
 }
 
+// Violent-911 keywords matched against `call_type_final_desc`. SF 911 CAD
+// values include "Shooting", "Person w/Gun", "Stabbing", "Robbery",
+// "Aggravated Assault", "Strongarm Robbery", "Shots Fired", etc.
+const VIOLENT_911 =
+  /\b(shoot|shots?|gun|firearm|armed|weapon|stab|knife|assault|batter|robber|homicide|fight|strongarm)\b/i
+
+interface ExploreLink {
+  to: string
+  label: string
+  caption: string
+}
+
+/**
+ * Resolve where the card's "explore" link should go — the "understand more"
+ * leg of the editorial link path.
+ *
+ *   • Fire/EMS, 311  → their sibling MAP view, deep-linked to THIS record
+ *     (those views read ?incident= / ?case= and select + fly to it).
+ *   • 911            → has no map view of its own, so route by CALL TYPE to a
+ *     related map (violent → Crime Incidents, else → Emergency Response),
+ *     landing on the event's NEIGHBORHOOD. We deliberately do NOT pin a
+ *     record there: a 911 cad_number doesn't share an id with crime/Fire-EMS
+ *     rows, and recent 911 calls predate any crime report (police publish
+ *     lag), so a record pin would resolve to nothing. Land on place instead.
+ *   • Suppressed 911 (no neighborhood) → fall back to the only 911-native
+ *     surface, the chart-centric Dispatch view. This is the design note's
+ *     "non-geocoded → keep the stats-view link" rule, falling out naturally.
+ */
+function resolveExplore(event: NormalizedEvent): ExploreLink | null {
+  const enc = encodeURIComponent
+  switch (event.datasetId) {
+    case 'fire-ems-dispatch':
+      return {
+        to: `/emergency-response?incident=${enc(extractId(event))}`,
+        label: 'Open on the Emergency Response map',
+        caption: 'See this incident and its full response timeline.',
+      }
+    case '311-cases':
+      return {
+        to: `/cases-311?case=${enc(extractId(event))}`,
+        label: 'Open on the 311 map',
+        caption: 'See this case in the 311 map view.',
+      }
+    case '911-realtime': {
+      const nh = event.neighborhood
+      if (!nh) {
+        return {
+          to: `/dispatch-911?incident=${enc(extractId(event))}`,
+          label: 'Open in 911 Dispatch',
+          caption: 'Sensitive call — explore patterns in the Dispatch view.',
+        }
+      }
+      if (VIOLENT_911.test(event.callType ?? event.headline ?? '')) {
+        return {
+          to: `/crime-incidents?neighborhood=${enc(nh)}`,
+          label: 'See crime context',
+          caption: `Violent-crime map for ${nh}.`,
+        }
+      }
+      return {
+        to: `/emergency-response?neighborhood=${enc(nh)}`,
+        label: 'See response context',
+        caption: `Fire/EMS response map for ${nh}.`,
+      }
+    }
+  }
+  return null // unreachable (switch is exhaustive over DatasetId)
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -181,7 +226,7 @@ export default function Last48EventCard({ event, onClose }: Props) {
       {event && meta && (() => {
         const { magnitude, unit } = formatAge(event.receivedAt)
         const fields = compactFields(event)
-        const exploreId = extractId(event)
+        const explore = resolveExplore(event)
 
         return (
           <>
@@ -349,17 +394,23 @@ export default function Last48EventCard({ event, onClose }: Props) {
             <div className="border-t border-paper-200/20 dark:border-espresso-700/60 mb-px" />
             <div className="border-t border-paper-200/10 dark:border-espresso-700/30 mb-2" />
 
-            {/* ── Footer explore link ───────────────────────────────── */}
-            <Link
-              to={meta.exploreRoute(exploreId)}
-              className="block font-mono text-[11px] tracking-wider text-ochre-500 hover:text-ochre-400 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ochre-500"
-              onClick={onClose}
-            >
-              {meta.exploreLabel} →
-            </Link>
-            <p className="font-display italic text-[10px] text-paper-500 dark:text-paper-600 mt-0.5">
-              {meta.exploreCaption}
-            </p>
+            {/* ── Footer explore link — the "understand more" leg. Route is
+                conditional (see resolveExplore): geocoded events go to their
+                sibling MAP view; 911 routes by call type to a related map. ── */}
+            {explore && (
+              <>
+                <Link
+                  to={explore.to}
+                  className="block font-mono text-[11px] tracking-wider text-ochre-500 hover:text-ochre-400 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ochre-500"
+                  onClick={onClose}
+                >
+                  {explore.label} →
+                </Link>
+                <p className="font-display italic text-[10px] text-paper-500 dark:text-paper-600 mt-0.5">
+                  {explore.caption}
+                </p>
+              </>
+            )}
           </>
         )
       })()}
