@@ -67,6 +67,17 @@ const HEAD_WINDOW_MS = 6 * 60 * 60 * 1000 // 6 hours
 const HEAD_LIMIT = 200
 const FULL_LIMIT = 5000
 
+// ── Resilience parameters ──────────────────────────────────────────────────
+// FETCH_TIMEOUT_MS aborts a stalled request (bare fetch never times out).
+// FETCH_RETRIES re-attempts on timeout/error — a cold-load retry, fired after
+// the connection burst drains, usually succeeds. FULL_STAGGER_MS spreads the
+// three heavy 48h backfills (each ~3-5MB) so they don't fire simultaneously
+// and starve each other at the browser's per-host connection limit (measured
+// ~7x slower under that burst). 911=0ms, Fire/EMS=700ms, 311=1400ms.
+const FETCH_TIMEOUT_MS = 18_000
+const FETCH_RETRIES = 2
+const FULL_STAGGER_MS = 700
+
 const POLL_INTERVALS: Record<DatasetId, number> = {
   '911-realtime':      2 * 60 * 1000,
   'fire-ems-dispatch': 30 * 60 * 1000,
@@ -113,6 +124,12 @@ export interface Last48WindowResult {
    *  sweep gates on THIS (not initialLoadedByDataset) so each stream sweeps
    *  its complete data in one chronological pass — see FlowMapLayer. */
   fullyLoadedByDataset: Record<DatasetId, boolean>
+  /** Per-dataset terminal error (retries exhausted), or null. Drives the
+   *  failure banner + retry affordance, and lets the loading state SETTLE so
+   *  the radar stops spinning instead of hanging on a failed stream. */
+  errorByDataset: Record<DatasetId, string | null>
+  /** Clear a dataset's error and re-attempt it from the (fast) head phase. */
+  retryDataset: (id: DatasetId) => void
   /** Immediately re-fetch all enabled datasets, bypassing the cadence. */
   refetch: () => void
 }
@@ -135,6 +152,8 @@ interface InternalState {
   /** Per-dataset full-load flag — flips true after the backfill (full 48h)
    *  fetch completes; never resets. */
   fullyLoadedByDataset: Record<DatasetId, boolean>
+  /** Per-dataset terminal error (retries exhausted), or null. */
+  errorByDataset: Record<DatasetId, string | null>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -148,6 +167,7 @@ interface Snapshot {
   initialLoadComplete: boolean
   initialLoadedByDataset: Record<DatasetId, boolean>
   fullyLoadedByDataset: Record<DatasetId, boolean>
+  errorByDataset: Record<DatasetId, string | null>
 }
 
 function buildEmptyFreshness(): FreshnessMap {
@@ -188,6 +208,9 @@ export function useLast48Window(opts: {
     fullyLoadedByDataset: Object.fromEntries(
       LAST48_DATASETS.map((id) => [id, false])
     ) as Record<DatasetId, boolean>,
+    errorByDataset: Object.fromEntries(
+      LAST48_DATASETS.map((id) => [id, null])
+    ) as Record<DatasetId, string | null>,
   })
 
   // ── useSyncExternalStore wiring ──────────────────────────────────────────
@@ -201,6 +224,7 @@ export function useLast48Window(opts: {
     initialLoadComplete: stateRef.current.initialLoadComplete,
     initialLoadedByDataset: stateRef.current.initialLoadedByDataset,
     fullyLoadedByDataset: stateRef.current.fullyLoadedByDataset,
+    errorByDataset: stateRef.current.errorByDataset,
   })
 
   const listenersRef = useRef<Set<() => void>>(new Set())
@@ -214,6 +238,7 @@ export function useLast48Window(opts: {
       initialLoadComplete: s.initialLoadComplete,
       initialLoadedByDataset: { ...s.initialLoadedByDataset },
       fullyLoadedByDataset: { ...s.fullyLoadedByDataset },
+      errorByDataset: { ...s.errorByDataset },
     }
     listenersRef.current.forEach((l) => l())
   }, [])
@@ -251,6 +276,10 @@ export function useLast48Window(opts: {
 
       const state = stateRef.current
 
+      // Position in LAST48_DATASETS — drives the backfill stagger so the heavy
+      // 48h queries don't all fire at once (911=0, Fire/EMS=1, 311=2).
+      const datasetIndex = LAST48_DATASETS.indexOf(datasetId)
+
       // Determine phase + parameters for this call.
       const isHead = phaseRef.current[datasetId] === 'head'
       const limit = isHead ? HEAD_LIMIT : FULL_LIMIT
@@ -281,7 +310,7 @@ export function useLast48Window(opts: {
           // DATASET_REGISTRY_KEY values are verified against datasets.ts
           registryKey as Parameters<typeof fetchDataset>[0],
           queryParams,
-          { skipCache: true }
+          { skipCache: true, timeoutMs: FETCH_TIMEOUT_MS, retries: FETCH_RETRIES }
         )
 
         const now = Date.now()
@@ -340,14 +369,18 @@ export function useLast48Window(opts: {
           state.initialLoadedByDataset = { ...state.initialLoadedByDataset, [datasetId]: true }
         }
 
+        // A successful fetch clears any prior terminal error.
+        if (state.errorByDataset[datasetId]) {
+          state.errorByDataset = { ...state.errorByDataset, [datasetId]: null }
+        }
+
         // Two-phase transition: after a successful head fetch, advance to
-        // 'full' phase and immediately schedule a backfill fetch. The
-        // setTimeout(0) defers to the next macrotask so React renders the
-        // head data first; the backfill query then fires without waiting
-        // for the next poll interval (which would be 2-30 minutes away).
+        // 'full' phase and schedule the backfill. The stagger (per dataset
+        // index) keeps the three heavy 48h queries from firing at once and
+        // starving each other at the browser's per-host connection limit.
         if (isHead) {
           phaseRef.current[datasetId] = 'full'
-          setTimeout(() => { void fetcherFn() }, 0)
+          setTimeout(() => { void fetcherFn() }, FULL_STAGGER_MS * datasetIndex)
         } else {
           // Full (backfill or poll) fetch succeeded — this dataset now has
           // its complete 48h data. The Stream Curtain sweep gates on this
@@ -358,21 +391,25 @@ export function useLast48Window(opts: {
           }
         }
       } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
         // Keep prior freshness values; update only the error field
         const prior = state.freshness[datasetId]
         state.freshness = {
           ...state.freshness,
-          [datasetId]: {
-            ...prior,
-            error: err instanceof Error ? err.message : String(err),
-          },
+          [datasetId]: { ...prior, error: message },
         }
-        // If the head fetch failed, advance the phase anyway so the next
-        // poll uses the full window — don't get stuck retrying head queries.
-        // We don't schedule an immediate backfill in this case; let
-        // usePollCadence retry at its normal cadence.
         if (isHead) {
+          // Head failed — advance to 'full' and fire the backfill NOW
+          // (staggered), rather than stranding the dataset until the next
+          // poll (up to 30 min away for Fire/EMS and 311). fetchDataset has
+          // already exhausted its own retries, so this is the fallback window.
           phaseRef.current[datasetId] = 'full'
+          setTimeout(() => { void fetcherFn() }, FULL_STAGGER_MS * datasetIndex)
+        } else {
+          // Full fetch failed after retries → terminal. Record the error so
+          // the loading state SETTLES (the radar stops instead of hanging on
+          // this stream) and the UI can offer a retry.
+          state.errorByDataset = { ...state.errorByDataset, [datasetId]: message }
         }
       } finally {
         state.isPollingByDataset = { ...state.isPollingByDataset, [datasetId]: false }
@@ -404,6 +441,19 @@ export function useLast48Window(opts: {
     }
   }, [buildFetcher])
 
+  // Clear a dataset's terminal error and re-attempt from the fast head phase.
+  // A single-dataset retry has no cold-load burst to compete with, so it
+  // typically lands quickly even if the original starved.
+  const retryDataset = useCallback((id: DatasetId) => {
+    const s = stateRef.current
+    if (s.errorByDataset[id]) {
+      s.errorByDataset = { ...s.errorByDataset, [id]: null }
+    }
+    phaseRef.current[id] = 'head'
+    notify()
+    void buildFetcher(id)()
+  }, [buildFetcher, notify])
+
   // ── Derive result from snapshot ──────────────────────────────────────────
   const allEvents = Array.from(snapshot.byId.values()).sort(
     (a, b) => b.receivedAt - a.receivedAt
@@ -431,6 +481,8 @@ export function useLast48Window(opts: {
     isPolling,
     initialLoadedByDataset: snapshot.initialLoadedByDataset,
     fullyLoadedByDataset: snapshot.fullyLoadedByDataset,
+    errorByDataset: snapshot.errorByDataset,
+    retryDataset,
     refetch,
   }
 }
