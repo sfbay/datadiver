@@ -162,16 +162,25 @@ export default function Last48UnifiedView({
   const railIsAnomaly = fill === 'anomaly' && !pointsOn
 
   // ── Loading state for BootEmanation ─────────────────────────────────────
-  // True while any of the three Last 48 streams has not yet completed its
-  // FULL (head + backfill) fetch. The radar scanner stays up until all data
-  // is in, because the Stream Curtain sweep gates on full-load and won't
-  // start until then — fading the radar earlier (on head-load) would leave
-  // a gap of empty map between radar-gone and curtain-start. Once all three
-  // are fully loaded, BootEmanation receives looping=false and fades out as
-  // the curtain begins.
+  // True while any enabled stream has not yet SETTLED — settled = fully loaded
+  // OR terminally errored. Counting errored streams as settled is what stops
+  // the radar from spinning forever when a stream fails to load (the failure
+  // banner below surfaces the error + a retry). Disabled streams don't gate.
   const isLoadingAny = useMemo(
-    () => LAST48_DATASETS.some((id) => !window48.fullyLoadedByDataset[id]),
-    [window48.fullyLoadedByDataset],
+    () =>
+      LAST48_DATASETS.some(
+        (id) =>
+          datasets.includes(id) &&
+          !window48.fullyLoadedByDataset[id] &&
+          !window48.errorByDataset[id],
+      ),
+    [datasets, window48.fullyLoadedByDataset, window48.errorByDataset],
+  )
+
+  // Streams that failed to load (terminal error) — drives the failure banner.
+  const failedDatasets = useMemo(
+    () => datasets.filter((id) => window48.errorByDataset[id]),
+    [datasets, window48.errorByDataset],
   )
 
   return (
@@ -229,6 +238,16 @@ export default function Last48UnifiedView({
             initialLoadedByDataset={window48.initialLoadedByDataset}
             enabled={datasets}
           />
+
+          {/* ── Failure banner — appears only when a stream terminally errors
+              (radar has already settled). Names the failed streams and offers
+              a retry, instead of an indefinite spin with no explanation. ── */}
+          {failedDatasets.length > 0 && (
+            <Last48FailureBanner
+              datasetIds={failedDatasets}
+              onRetry={() => failedDatasets.forEach((id) => window48.retryDataset(id))}
+            />
+          )}
 
           {/* ── Base fill layers (mount FIRST so FLOW dots render on top) ── */}
           {fill === 'anomaly' && (
@@ -351,4 +370,43 @@ function DeepLinkLander({
   }, [map, eventId, selectedId, events, onLand])
 
   return null
+}
+
+// ── Failure banner ──────────────────────────────────────────────────────────
+// Bottom-center glass card naming the stream(s) that failed to load, with a
+// single Retry. Shown only after a terminal error (radar already settled), so
+// a failed cold-load reads as an explained, recoverable state — not a frozen
+// scanner. pointer-events-auto so the Retry button is clickable through the
+// otherwise pass-through overlay plane.
+const DATASET_LABELS: Record<DatasetId, string> = {
+  '911-realtime': '911',
+  'fire-ems-dispatch': 'Fire/EMS',
+  '311-cases': '311',
+}
+
+function Last48FailureBanner({
+  datasetIds,
+  onRetry,
+}: {
+  datasetIds: DatasetId[]
+  onRetry: () => void
+}) {
+  const names = datasetIds.map((id) => DATASET_LABELS[id]).join(' and ')
+  return (
+    <div className="pointer-events-none absolute inset-x-0 bottom-6 z-30 flex justify-center px-6">
+      <div className="pointer-events-auto flex items-center gap-3 rounded-xl bg-espresso-900/90 dark:bg-espresso-900/90 px-4 py-2.5 ring-1 ring-brick-500/40 shadow-xl shadow-espresso-950/30 backdrop-blur-sm">
+        <span className="inline-block w-1.5 h-1.5 rounded-full bg-brick-500" aria-hidden />
+        <span className="font-mono text-[11px] text-paper-200">
+          Couldn’t load {names}
+        </span>
+        <button
+          type="button"
+          onClick={onRetry}
+          className="font-mono text-[11px] tracking-wider text-ochre-400 hover:text-ochre-300 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ochre-500 rounded px-1"
+        >
+          Retry →
+        </button>
+      </div>
+    </div>
+  )
 }

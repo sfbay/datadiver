@@ -55,11 +55,17 @@ function buildQueryString(params: SoQLParams): string {
   return searchParams.toString()
 }
 
-/** Fetch data from a Socrata dataset */
+/** Fetch data from a Socrata dataset.
+ *
+ *  `timeoutMs` aborts a stalled request so it can't hang forever (bare fetch
+ *  has no timeout). `retries` re-attempts on timeout / network / non-OK with a
+ *  small backoff — important on cold-load, where the per-host connection burst
+ *  makes the first attempt of a heavy query slow or stall; a retry after the
+ *  burst clears usually succeeds. */
 export async function fetchDataset<T>(
   datasetKey: DatasetKey,
   params: SoQLParams = {},
-  options: { skipCache?: boolean } = {}
+  options: { skipCache?: boolean; timeoutMs?: number; retries?: number } = {}
 ): Promise<T[]> {
   const config = DATASETS[datasetKey]
   if (!config) throw new Error(`Unknown dataset: ${datasetKey}`)
@@ -77,7 +83,7 @@ export async function fetchDataset<T>(
   const url = `${config.endpoint}?${queryString}`
   const cacheKey = getCacheKey(url)
 
-  // Check cache
+  // Check cache once, before the retry loop
   if (!options.skipCache) {
     const cached = getFromCache<T[]>(cacheKey)
     if (cached) return cached
@@ -91,23 +97,44 @@ export async function fetchDataset<T>(
     headers['X-App-Token'] = APP_TOKEN
   }
 
-  const response = await fetch(url, { headers })
+  const { timeoutMs, retries = 0 } = options
+  let lastErr: unknown
 
-  if (!response.ok) {
-    if (response.status === 429) {
-      throw new Error('Rate limited by Socrata API. Please wait and try again.')
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = timeoutMs ? new AbortController() : undefined
+    const timer = timeoutMs ? setTimeout(() => controller!.abort(), timeoutMs) : undefined
+    try {
+      const response = await fetch(url, { headers, signal: controller?.signal })
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          throw new Error('Rate limited by Socrata API. Please wait and try again.')
+        }
+        const errorBody = await response.text()
+        throw new Error(`Socrata API error (${response.status}): ${errorBody}`)
+      }
+
+      const data = (await response.json()) as T[]
+      const ttl = config.cacheTTL ?? DEFAULT_CACHE_TTL
+      setCache(cacheKey, data, ttl)
+      return data
+    } catch (err) {
+      // Normalize an abort into a clearer timeout error for surfacing.
+      lastErr = err instanceof DOMException && err.name === 'AbortError'
+        ? new Error(`Request timed out after ${timeoutMs}ms`)
+        : err
+      if (attempt < retries) {
+        // Linear backoff: 400ms, 800ms, … — long enough for the cold-load
+        // connection burst to drain before we re-attempt.
+        await new Promise((r) => setTimeout(r, 400 * (attempt + 1)))
+        continue
+      }
+    } finally {
+      if (timer) clearTimeout(timer)
     }
-    const errorBody = await response.text()
-    throw new Error(`Socrata API error (${response.status}): ${errorBody}`)
   }
 
-  const data = (await response.json()) as T[]
-
-  // Cache the result
-  const ttl = config.cacheTTL ?? DEFAULT_CACHE_TTL
-  setCache(cacheKey, data, ttl)
-
-  return data
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr))
 }
 
 /** Fetch all pages of a dataset (auto-paginate) */
