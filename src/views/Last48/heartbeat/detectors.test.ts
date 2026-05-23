@@ -60,7 +60,7 @@ describe('detectNeighborhoodSurge', () => {
   })
 })
 
-import { detectStreamRateSpike } from './detectors'
+import { detectStreamRateSpike, detectRepeatedType, DETECTORS } from './detectors'
 
 describe('detectStreamRateSpike', () => {
   it('fires when the recent (lag-anchored) rate exceeds the 48h average', () => {
@@ -78,5 +78,25 @@ describe('detectStreamRateSpike', () => {
     const events: NormalizedEvent[] = []
     for (let i = 0; i < 48; i++) events.push(ev({ id: `s${i}`, receivedAt: NOW - i * 3600_000 })) // ~1/hr flat
     expect(detectStreamRateSpike({ events, anomalies: [], now: NOW })).toHaveLength(0)
+  })
+})
+
+describe('detectRepeatedType', () => {
+  it('clusters 3+ of a significant category into one plain-language item', () => {
+    const events = [0, 1, 2].map((i) => ev({ id: `s${i}`, callType: 'Shooting', neighborhood: 'Bayview' }))
+    const items = detectRepeatedType({ events, anomalies: [], now: NOW })
+    expect(items).toHaveLength(1)
+    expect(items[0].headline).toBe('Three shootings reported across the city in the last 48 hours.')
+    expect(items[0].intent).toEqual({ type: 'none' })
+  })
+  it('does not fire below the threshold', () => {
+    const events = [0, 1].map((i) => ev({ id: `s${i}`, callType: 'Shooting' }))
+    expect(detectRepeatedType({ events, anomalies: [], now: NOW })).toHaveLength(0)
+  })
+})
+
+describe('DETECTORS registry', () => {
+  it('contains all four detectors', () => {
+    expect(DETECTORS).toHaveLength(4)
   })
 })

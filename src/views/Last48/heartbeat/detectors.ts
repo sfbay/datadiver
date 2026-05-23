@@ -6,7 +6,7 @@
 import type { Detector, DetectorContext, HeartbeatItem } from '@/types/heartbeat'
 import type { NormalizedEvent } from '@/types/last48'
 import { humanizeCallType, humanizeStreamName } from '@/utils/humanizeCivic'
-import { BREAKING_WINDOW_MS, classifySignificant, recencyBoost, timeAgo } from './significance'
+import { BREAKING_WINDOW_MS, classifySignificant, recencyBoost, spellNumber, timeAgo } from './significance'
 
 function base(now: number): Pick<HeartbeatItem, 'freshness' | 'computedAt' | 'detail'> {
   return { freshness: 'live', computedAt: new Date(now), detail: undefined }
@@ -71,9 +71,6 @@ export const detectNeighborhoodSurge: Detector = (ctx) => {
     })
 }
 
-// Tasks 6-7 append more detectors + the DETECTORS registry below.
-// (The NormalizedEvent import is consumed by the rate-spike detector in Task 6.)
-
 // ── 3. Citywide stream rate spike ──────────────────────────────────────────
 // "Recent" is anchored to each stream's NEWEST event, not wall-clock now —
 // SF data publishes hours late, so a "last 3h of now" window is always empty.
@@ -117,3 +114,43 @@ export const detectStreamRateSpike: Detector = (ctx) => {
   }
   return out
 }
+
+// ── 4. Repeated significant type ───────────────────────────────────────────
+const REPEAT_THRESHOLD = 3
+
+export const detectRepeatedType: Detector = (ctx) => {
+  const counts = new Map<string, { plural: string; n: number }>()
+  for (const e of ctx.events) {
+    const cat = classifySignificant(e)
+    if (!cat) continue
+    const cur = counts.get(cat.key) ?? { plural: cat.plural, n: 0 }
+    cur.n += 1
+    counts.set(cat.key, cur)
+  }
+
+  const out: HeartbeatItem[] = []
+  for (const { plural, n } of counts.values()) {
+    if (n < REPEAT_THRESHOLD) continue
+    const score = 75 + Math.min(20, (n - REPEAT_THRESHOLD) * 3)
+    out.push({
+      id: `hb-repeat:${plural}`,
+      headline: `${spellNumber(n)} ${plural} reported across the city in the last 48 hours.`,
+      category: 'anomaly',
+      severity: 'alert',
+      source: { view: '/live-feeds', label: `${n} ${plural}` },
+      priority: Math.round(score),
+      score,
+      intent: { type: 'none' },
+      ...base(ctx.now),
+    })
+  }
+  return out
+}
+
+// ── Registry ───────────────────────────────────────────────────────────────
+export const DETECTORS: Detector[] = [
+  detectSignificantEvents,
+  detectNeighborhoodSurge,
+  detectStreamRateSpike,
+  detectRepeatedType,
+]
