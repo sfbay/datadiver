@@ -19,6 +19,14 @@ export interface TickerSource {
   datasetId?: string
 }
 
+/** In-page click intent for heartbeat items (vs the default cross-view
+ *  navigation). 'event' selects a map event; 'neighborhood' selects a
+ *  neighborhood; 'none' is display-only. */
+export type TickerIntent =
+  | { type: 'event'; eventId: string }
+  | { type: 'neighborhood'; neighborhood: string }
+  | { type: 'none' }
+
 export interface TickerItem {
   id: string
 
@@ -46,4 +54,9 @@ export interface TickerItem {
 
   // Priority (higher = more important)
   priority: number
+  /** True for a just-arrived high-significance item → renders a pulse. */
+  breaking?: boolean
+  /** In-page click intent; when set, CivicTicker's onItemClick uses it
+   *  instead of navigating to source.view. */
+  intent?: TickerIntent
 }
