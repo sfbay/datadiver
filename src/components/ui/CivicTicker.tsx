@@ -126,6 +126,9 @@ interface CivicTickerProps {
   isLoading?: boolean
   lastUpdated?: Date
   className?: string
+  /** When set, item clicks call this instead of navigating to source.view.
+   *  Used by the Last 48 heartbeat for in-page selection. */
+  onItemClick?: (item: TickerItem) => void
 }
 
 // ─── Hero Mode ──────────────────────────────────────────
@@ -184,7 +187,7 @@ function HeroTicker({ items, lastUpdated, className = '' }: Omit<CivicTickerProp
 
 // ─── Standard Mode ──────────────────────────────────────
 
-function StandardTicker({ items, className = '' }: Omit<CivicTickerProps, 'size'>) {
+function StandardTicker({ items, className = '', onItemClick }: Omit<CivicTickerProps, 'size'>) {
   const navigate = useNavigate()
   const [hovered, setHovered] = useState(false)
   const reducedMotion = usePrefersReducedMotion()
@@ -217,7 +220,7 @@ function StandardTicker({ items, className = '' }: Omit<CivicTickerProps, 'size'
           return (
             <button
               key={`${item.id}-${i}`}
-              onClick={() => navigate(item.source.view)}
+              onClick={() => (onItemClick ? onItemClick(item) : navigate(item.source.view))}
               className="flex items-center gap-1.5 px-4 hover:bg-white/10 dark:hover:bg-white/5 h-full transition-colors cursor-pointer"
             >
               <span
@@ -247,7 +250,7 @@ function StandardTicker({ items, className = '' }: Omit<CivicTickerProps, 'size'
 
 // ─── Compact Mode ───────────────────────────────────────
 
-function CompactTicker({ items, className = '' }: Omit<CivicTickerProps, 'size'>) {
+function CompactTicker({ items, className = '', onItemClick }: Omit<CivicTickerProps, 'size'>) {
   const navigate = useNavigate()
   const [hovered, setHovered] = useState(false)
   const reducedMotion = usePrefersReducedMotion()
@@ -285,7 +288,7 @@ function CompactTicker({ items, className = '' }: Omit<CivicTickerProps, 'size'>
           return (
             <button
               key={`${item.id}-${i}`}
-              onClick={() => navigate(item.source.view)}
+              onClick={() => (onItemClick ? onItemClick(item) : navigate(item.source.view))}
               className="
                 inline-flex items-center gap-1 px-2 py-0.5
                 rounded-full
@@ -294,10 +297,18 @@ function CompactTicker({ items, className = '' }: Omit<CivicTickerProps, 'size'>
                 transition-colors cursor-pointer
               "
             >
-              <span
-                className="w-1 h-1 rounded-full flex-shrink-0"
-                style={{ backgroundColor: dot }}
-              />
+              <span className="relative flex w-1 h-1 flex-shrink-0">
+                {item.breaking && (
+                  <span
+                    className="absolute inline-flex h-full w-full rounded-full animate-ping"
+                    style={{ backgroundColor: dot, opacity: 0.75 }}
+                  />
+                )}
+                <span
+                  className="relative inline-flex w-1 h-1 rounded-full"
+                  style={{ backgroundColor: dot }}
+                />
+              </span>
               <span className="text-[10px] text-slate-600 dark:text-slate-400">
                 {shortLabel}
               </span>
@@ -343,7 +354,7 @@ function TickerSkeleton({ size }: { size: TickerSize }) {
 
 // ─── Main Export ─────────────────────────────────────────
 
-export default function CivicTicker({ items, size, isLoading, lastUpdated, className }: CivicTickerProps) {
+export default function CivicTicker({ items, size, isLoading, lastUpdated, className, onItemClick }: CivicTickerProps) {
   if (isLoading || items.length === 0) {
     return <TickerSkeleton size={size} />
   }
@@ -352,8 +363,8 @@ export default function CivicTicker({ items, size, isLoading, lastUpdated, class
     case 'hero':
       return <HeroTicker items={items} lastUpdated={lastUpdated} className={className} />
     case 'standard':
-      return <StandardTicker items={items} className={className} />
+      return <StandardTicker items={items} className={className} onItemClick={onItemClick} />
     case 'compact':
-      return <CompactTicker items={items} className={className} />
+      return <CompactTicker items={items} className={className} onItemClick={onItemClick} />
   }
 }
