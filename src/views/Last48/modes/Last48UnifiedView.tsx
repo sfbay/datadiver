@@ -49,6 +49,10 @@ interface Props {
   selectedEventId: string | null
   /** Push the open event's id back to the URL (or null to clear it). */
   onSelectedEventIdChange: (id: string | null) => void
+  /** Selected neighborhood from ?nh= (heartbeat surge deep-link). */
+  selectedNeighborhoodId: string | null
+  /** Push the selected neighborhood back to ?nh= (or null to clear). */
+  onSelectedNeighborhoodChange: (nh: string | null) => void
 }
 
 export default function Last48UnifiedView({
@@ -59,6 +63,8 @@ export default function Last48UnifiedView({
   underlayVariable,
   selectedEventId,
   onSelectedEventIdChange,
+  selectedNeighborhoodId,
+  onSelectedNeighborhoodChange,
 }: Props) {
   // ── FLOW state ─────────────────────────────────────────────────────────────
   const [selectedEvent, setSelectedEvent] = useState<NormalizedEvent | null>(null)
@@ -109,7 +115,8 @@ export default function Last48UnifiedView({
   }, [pointsOn])
 
   // ── ANOMALY state ───────────────────────────────────────────────────────────
-  const [selectedNh, setSelectedNh] = useState<string | null>(null)
+  const selectedNh = selectedNeighborhoodId
+  const setSelectedNh = onSelectedNeighborhoodChange
 
   // Always compute anomalies — so the choropleth is ready immediately when the
   // user toggles fill=anomaly, without a cold-start wait.
