@@ -86,11 +86,15 @@ function LiveSparkline({
 
   return (
     <svg
-      width={SPARK_WIDTH}
-      height={SPARK_HEIGHT + 3}
+      // Scales to its container (viewBox preserves the drawing) and caps at
+      // SPARK_WIDTH, so the chip can shrink to fit 3-across on a narrow
+      // foldable without clipping. Desktop chips are wide enough that it
+      // renders at full SPARK_WIDTH, unchanged.
+      className="block h-auto w-full"
       viewBox={`0 -1 ${SPARK_WIDTH} ${SPARK_HEIGHT + 3}`}
+      preserveAspectRatio="xMaxYMid meet"
       aria-hidden
-      style={{ overflow: 'visible' }}
+      style={{ maxWidth: SPARK_WIDTH, overflow: 'visible' }}
     >
       <defs>
         <pattern
@@ -231,7 +235,7 @@ function SuperChip({
       aria-pressed={isActive}
       aria-label={`${label}, ${isActive ? 'active' : 'inactive'}. ${count} events. Click to toggle.`}
       className={`
-        relative flex-1 min-w-[260px] max-w-[420px] text-left
+        relative w-full min-w-0 text-left
         rounded-xl border transition-all duration-200
         px-4 py-3 overflow-hidden
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1
@@ -279,7 +283,7 @@ function SuperChip({
 
       {/* ── Row 2: count + per-hour + sparkline ────────────────────────── */}
       <div className="flex items-end gap-3 mt-1.5 relative">
-        <div className="flex items-baseline gap-2 min-w-0">
+        <div className="flex items-baseline gap-2 shrink-0">
           {isLoaded ? (
             <>
               <span
@@ -299,7 +303,7 @@ function SuperChip({
           )}
         </div>
 
-        <div className="ml-auto flex-shrink-0" aria-hidden>
+        <div className="ml-auto min-w-0 shrink basis-[120px]" aria-hidden>
           <LiveSparkline
             values={sparkData}
             pigment={pigment}
@@ -360,7 +364,12 @@ export default function DatasetSuperChips({
   initialLoadedByDataset,
 }: Props) {
   return (
-    <div className="flex flex-wrap gap-2 items-stretch">
+    // Liquid grid (auto-fit + minmax, no breakpoints — house convention):
+    // 3 chips fit across once the row clears ~700px (e.g. a Pixel Fold
+    // unfolded), collapsing to 1 on a phone. Chips are min-w-0 + the
+    // sparkline scales, so they shrink to share a narrower 3-across row
+    // instead of dropping 311 to its own line.
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(228px,1fr))] gap-2 items-stretch">
       {LAST48_DATASETS.map((id) => (
         <SuperChip
           key={id}
