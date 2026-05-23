@@ -280,10 +280,9 @@ function CompactTicker({ items, className = '', onItemClick }: Omit<CivicTickerP
             : null
           const deltaColor = DELTA_COLORS[item.severity] ?? '#94a3b8'
 
-          // Compact: short label from headline (first ~25 chars)
-          const shortLabel = item.headline.length > 28
-            ? item.headline.slice(0, 25) + '…'
-            : item.headline
+          // Full headline — the compact row is a scrolling marquee, so the
+          // text scrolls rather than truncates. (A 25-char clip here would gut
+          // the Last 48 heartbeat's plain-language copy, which renders compact.)
 
           return (
             <button
@@ -309,8 +308,8 @@ function CompactTicker({ items, className = '', onItemClick }: Omit<CivicTickerP
                   style={{ backgroundColor: dot }}
                 />
               </span>
-              <span className="text-[10px] text-slate-600 dark:text-slate-400">
-                {shortLabel}
+              <span className="text-[10px] text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                {item.headline}
               </span>
               {delta && (
                 <span

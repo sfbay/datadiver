@@ -17,6 +17,14 @@ export function useLast48Heartbeat(opts: {
   datasets: DatasetId[]
 }): HeartbeatItem[] {
   const { events, anomalies, datasets } = opts
+  // NOTE: `events` (window48.events) and `anomalies` are fresh array refs on
+  // every render, so this memo recomputes each render rather than caching —
+  // by design. `now = Date.now()` lives INSIDE, which is what keeps the
+  // "X minutes ago" copy and the `breaking` flag current as the clock moves.
+  // Detector cost is O(events) (~a few ms over the 48h window). Do NOT
+  // "stabilize" these deps to make the memo cache: that would freeze the
+  // relative-time copy between window updates. If you ever need to, drive
+  // freshness from a periodic tick (e.g. a 30-60s interval) instead.
   return useMemo(() => {
     const enabled = events.filter((e) => datasets.includes(e.datasetId))
     const now = Date.now()

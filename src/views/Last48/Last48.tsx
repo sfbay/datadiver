@@ -126,14 +126,16 @@ export default function Last48() {
     if (intent.type === 'event') {
       setSelectedEventId(intent.eventId)
     } else if (intent.type === 'neighborhood') {
-      // Select the neighborhood AND switch to the anomaly choropleth so the
-      // surge is actually visible (in default FLOW the anomaly fill isn't
-      // mounted). Both params set in ONE update to avoid a setSearchParams
-      // race between separate setters.
+      // Drill into the surge: enter HOTSPOTS (anomaly choropleth + points off)
+      // and select the neighborhood, so BOTH the anomaly fill and the
+      // neighborhood peek surface. The peek only mounts when fill=anomaly AND
+      // points are off (Last48UnifiedView's railIsAnomaly), so set points=off
+      // too. All in ONE update to avoid a setSearchParams race.
       setSearchParams((prev) => {
         const np = new URLSearchParams(prev)
         np.set('nh', intent.neighborhood)
         np.set('fill', 'anomaly')
+        np.set('points', 'off')
         np.delete('mode') // retire legacy param
         return np
       }, { replace: true })
