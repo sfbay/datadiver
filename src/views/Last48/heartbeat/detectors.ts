@@ -4,7 +4,7 @@
 // Composed by useLast48Heartbeat. Each is independently testable.
 
 import type { Detector, DetectorContext, HeartbeatItem } from '@/types/heartbeat'
-import type { NormalizedEvent } from '@/types/last48'
+import type { DatasetId, NormalizedEvent } from '@/types/last48'
 import { humanizeCallType, humanizeStreamName } from '@/utils/humanizeCivic'
 import { BREAKING_WINDOW_MS, classifySignificant, recencyBoost, spellNumber, timeAgo } from './significance'
 
@@ -50,12 +50,12 @@ const MAX_SURGES = 3
 
 export const detectNeighborhoodSurge: Detector = (ctx) => {
   return ctx.anomalies
-    .filter((a) => a.zScore >= Z_THRESHOLD && a.count48h >= MIN_SURGE_VOLUME && a.neighborhood)
+    .filter((a) => a.zScore >= Z_THRESHOLD && a.count48h >= MIN_SURGE_VOLUME && a.neighborhood && a.datasetId !== 'combined')
     .sort((a, b) => b.zScore - a.zScore)
     .slice(0, MAX_SURGES)
     .map((a) => {
       const intensity = a.zScore >= 3 ? 'dramatically' : 'well'
-      const stream = humanizeStreamName(a.datasetId)
+      const stream = humanizeStreamName(a.datasetId as DatasetId)
       const score = 70 + Math.min(25, (a.zScore - 2) * 10)
       return {
         id: `hb-surge:${a.datasetId}:${a.neighborhood}`,
