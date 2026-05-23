@@ -59,3 +59,24 @@ describe('detectNeighborhoodSurge', () => {
     expect(items[0].headline).toContain('N0')
   })
 })
+
+import { detectStreamRateSpike } from './detectors'
+
+describe('detectStreamRateSpike', () => {
+  it('fires when the recent (lag-anchored) rate exceeds the 48h average', () => {
+    // 48h avg ~ low; cluster of recent events near the newest event time.
+    const newest = NOW - 7 * 3600_000 // 911 publish floor ~7h
+    const events: NormalizedEvent[] = []
+    for (let i = 0; i < 20; i++) events.push(ev({ id: `r${i}`, receivedAt: newest - i * 6 * 60_000 })) // 20 in ~2h
+    for (let i = 0; i < 10; i++) events.push(ev({ id: `o${i}`, receivedAt: newest - (10 + i) * 3600_000 })) // sparse older
+    const items = detectStreamRateSpike({ events, anomalies: [], now: NOW })
+    expect(items).toHaveLength(1)
+    expect(items[0].headline).toBe('911 calls have been coming in faster than usual lately.')
+    expect(items[0].intent).toEqual({ type: 'none' })
+  })
+  it('does not fire for a steady stream', () => {
+    const events: NormalizedEvent[] = []
+    for (let i = 0; i < 48; i++) events.push(ev({ id: `s${i}`, receivedAt: NOW - i * 3600_000 })) // ~1/hr flat
+    expect(detectStreamRateSpike({ events, anomalies: [], now: NOW })).toHaveLength(0)
+  })
+})

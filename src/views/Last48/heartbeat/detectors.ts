@@ -73,3 +73,47 @@ export const detectNeighborhoodSurge: Detector = (ctx) => {
 
 // Tasks 6-7 append more detectors + the DETECTORS registry below.
 // (The NormalizedEvent import is consumed by the rate-spike detector in Task 6.)
+
+// ── 3. Citywide stream rate spike ──────────────────────────────────────────
+// "Recent" is anchored to each stream's NEWEST event, not wall-clock now —
+// SF data publishes hours late, so a "last 3h of now" window is always empty.
+const RECENT_HOURS = 3
+const SPIKE_PCT = 0.30
+const MIN_RECENT = 5
+
+export const detectStreamRateSpike: Detector = (ctx) => {
+  const byDataset = new Map<NormalizedEvent['datasetId'], NormalizedEvent[]>()
+  for (const e of ctx.events) {
+    const arr = byDataset.get(e.datasetId) ?? []
+    arr.push(e)
+    byDataset.set(e.datasetId, arr)
+  }
+
+  const out: HeartbeatItem[] = []
+  for (const [datasetId, evs] of byDataset) {
+    if (evs.length < MIN_RECENT) continue
+    const maxT = Math.max(...evs.map((e) => e.receivedAt))
+    const recentCutoff = maxT - RECENT_HOURS * 3600_000
+    const recent = evs.filter((e) => e.receivedAt >= recentCutoff)
+    if (recent.length < MIN_RECENT) continue
+
+    const recentPerHour = recent.length / RECENT_HOURS
+    const avgPerHour = evs.length / 48
+    if (avgPerHour <= 0 || recentPerHour < avgPerHour * (1 + SPIKE_PCT)) continue
+
+    const pct = recentPerHour / avgPerHour - 1
+    const score = 68 + Math.min(20, (pct - SPIKE_PCT) * 40)
+    out.push({
+      id: `hb-rate:${datasetId}`,
+      headline: `${humanizeStreamName(datasetId)} have been coming in faster than usual lately.`,
+      category: 'trend',
+      severity: 'negative',
+      source: { view: '/live-feeds', label: humanizeStreamName(datasetId) },
+      priority: Math.round(score),
+      score,
+      intent: { type: 'none' },
+      ...base(ctx.now),
+    })
+  }
+  return out
+}
