@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { detectSignificantEvents } from './detectors'
+import { detectSignificantEvents, detectNeighborhoodSurge } from './detectors'
 import type { DetectorContext } from '@/types/heartbeat'
-import type { NormalizedEvent } from '@/types/last48'
+import type { AnomalyResult, NormalizedEvent } from '@/types/last48'
 
 const NOW = 100 * 3600_000
 
@@ -34,5 +34,28 @@ describe('detectSignificantEvents', () => {
   it('flags a brand-new significant event as breaking', () => {
     const items = detectSignificantEvents(ctx([ev({ priority: 'A', callType: 'Shooting', receivedAt: NOW - 30_000 })]))
     expect(items[0].breaking).toBe(true)
+  })
+})
+
+function anom(p: Partial<AnomalyResult>): AnomalyResult {
+  return { neighborhood: 'Mission', datasetId: '311-cases', count48h: 40, baselineMean: 20, baselineSd: 5, zScore: 4, ...p }
+}
+
+describe('detectNeighborhoodSurge', () => {
+  it('surfaces a high-z, high-volume surge with plain-language copy', () => {
+    const items = detectNeighborhoodSurge({ events: [], anomalies: [anom({})], now: NOW })
+    expect(items).toHaveLength(1)
+    expect(items[0].headline).toBe('311 reports in the Mission are running dramatically above normal today.')
+    expect(items[0].intent).toEqual({ type: 'neighborhood', neighborhood: 'Mission' })
+  })
+  it('ignores below-threshold z and tiny-sample surges', () => {
+    expect(detectNeighborhoodSurge({ events: [], anomalies: [anom({ zScore: 1.5 })], now: NOW })).toHaveLength(0)
+    expect(detectNeighborhoodSurge({ events: [], anomalies: [anom({ count48h: 3 })], now: NOW })).toHaveLength(0)
+  })
+  it('caps at 3 surges, highest z first', () => {
+    const many = [5, 4.5, 4, 3.5, 3].map((z, i) => anom({ neighborhood: `N${i}`, zScore: z }))
+    const items = detectNeighborhoodSurge({ events: [], anomalies: many, now: NOW })
+    expect(items).toHaveLength(3)
+    expect(items[0].headline).toContain('N0')
   })
 })

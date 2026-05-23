@@ -5,7 +5,7 @@
 
 import type { Detector, DetectorContext, HeartbeatItem } from '@/types/heartbeat'
 import type { NormalizedEvent } from '@/types/last48'
-import { humanizeCallType } from '@/utils/humanizeCivic'
+import { humanizeCallType, humanizeStreamName } from '@/utils/humanizeCivic'
 import { BREAKING_WINDOW_MS, classifySignificant, recencyBoost, timeAgo } from './significance'
 
 function base(now: number): Pick<HeartbeatItem, 'freshness' | 'computedAt' | 'detail'> {
@@ -43,5 +43,33 @@ export const detectSignificantEvents: Detector = (ctx: DetectorContext) => {
   return out
 }
 
-// Tasks 5-7 append more detectors + the DETECTORS registry below.
+// ── 2. Neighborhood anomaly surge ──────────────────────────────────────────
+const Z_THRESHOLD = 2.0
+const MIN_SURGE_VOLUME = 8
+const MAX_SURGES = 3
+
+export const detectNeighborhoodSurge: Detector = (ctx) => {
+  return ctx.anomalies
+    .filter((a) => a.zScore >= Z_THRESHOLD && a.count48h >= MIN_SURGE_VOLUME && a.neighborhood)
+    .sort((a, b) => b.zScore - a.zScore)
+    .slice(0, MAX_SURGES)
+    .map((a) => {
+      const intensity = a.zScore >= 3 ? 'dramatically' : 'well'
+      const stream = humanizeStreamName(a.datasetId)
+      const score = 70 + Math.min(25, (a.zScore - 2) * 10)
+      return {
+        id: `hb-surge:${a.datasetId}:${a.neighborhood}`,
+        headline: `${stream} in the ${a.neighborhood} are running ${intensity} above normal today.`,
+        category: 'anomaly',
+        severity: a.zScore >= 3 ? 'alert' : 'negative',
+        source: { view: '/live-feeds', label: `${a.neighborhood} · ${stream}` },
+        priority: Math.round(score),
+        score,
+        intent: { type: 'neighborhood', neighborhood: a.neighborhood },
+        ...base(ctx.now),
+      } as HeartbeatItem
+    })
+}
+
+// Tasks 6-7 append more detectors + the DETECTORS registry below.
 // (The NormalizedEvent import is consumed by the rate-spike detector in Task 6.)
