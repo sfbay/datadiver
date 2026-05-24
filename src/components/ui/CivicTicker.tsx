@@ -126,6 +126,9 @@ interface CivicTickerProps {
   isLoading?: boolean
   lastUpdated?: Date
   className?: string
+  /** When set, item clicks call this instead of navigating to source.view.
+   *  Used by the Last 48 heartbeat for in-page selection. */
+  onItemClick?: (item: TickerItem) => void
 }
 
 // ─── Hero Mode ──────────────────────────────────────────
@@ -184,7 +187,7 @@ function HeroTicker({ items, lastUpdated, className = '' }: Omit<CivicTickerProp
 
 // ─── Standard Mode ──────────────────────────────────────
 
-function StandardTicker({ items, className = '' }: Omit<CivicTickerProps, 'size'>) {
+function StandardTicker({ items, className = '', onItemClick }: Omit<CivicTickerProps, 'size'>) {
   const navigate = useNavigate()
   const [hovered, setHovered] = useState(false)
   const reducedMotion = usePrefersReducedMotion()
@@ -217,7 +220,7 @@ function StandardTicker({ items, className = '' }: Omit<CivicTickerProps, 'size'
           return (
             <button
               key={`${item.id}-${i}`}
-              onClick={() => navigate(item.source.view)}
+              onClick={() => (onItemClick ? onItemClick(item) : navigate(item.source.view))}
               className="flex items-center gap-1.5 px-4 hover:bg-white/10 dark:hover:bg-white/5 h-full transition-colors cursor-pointer"
             >
               <span
@@ -247,11 +250,13 @@ function StandardTicker({ items, className = '' }: Omit<CivicTickerProps, 'size'
 
 // ─── Compact Mode ───────────────────────────────────────
 
-function CompactTicker({ items, className = '' }: Omit<CivicTickerProps, 'size'>) {
+function CompactTicker({ items, className = '', onItemClick }: Omit<CivicTickerProps, 'size'>) {
   const navigate = useNavigate()
-  const [hovered, setHovered] = useState(false)
   const reducedMotion = usePrefersReducedMotion()
-  const trackRef = useTickerScroll(hovered, SCROLL_SPEED * 0.8, reducedMotion)
+  // No hover-pause: at the compact marquee's slow velocity it isn't needed, and
+  // pausing made the (now clickable) heartbeat items harder to track. Passing
+  // `false` keeps it always scrolling; reducedMotion still halts it for a11y.
+  const trackRef = useTickerScroll(false, SCROLL_SPEED * 0.8, reducedMotion)
 
   const doubled = [...items, ...items]
 
@@ -262,8 +267,6 @@ function CompactTicker({ items, className = '' }: Omit<CivicTickerProps, 'size'>
         maskImage: 'linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent)',
         WebkitMaskImage: 'linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent)',
       }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
     >
       <div
         ref={trackRef}
@@ -277,15 +280,14 @@ function CompactTicker({ items, className = '' }: Omit<CivicTickerProps, 'size'>
             : null
           const deltaColor = DELTA_COLORS[item.severity] ?? '#94a3b8'
 
-          // Compact: short label from headline (first ~25 chars)
-          const shortLabel = item.headline.length > 28
-            ? item.headline.slice(0, 25) + '…'
-            : item.headline
+          // Full headline — the compact row is a scrolling marquee, so the
+          // text scrolls rather than truncates. (A 25-char clip here would gut
+          // the Last 48 heartbeat's plain-language copy, which renders compact.)
 
           return (
             <button
               key={`${item.id}-${i}`}
-              onClick={() => navigate(item.source.view)}
+              onClick={() => (onItemClick ? onItemClick(item) : navigate(item.source.view))}
               className="
                 inline-flex items-center gap-1 px-2 py-0.5
                 rounded-full
@@ -294,13 +296,30 @@ function CompactTicker({ items, className = '' }: Omit<CivicTickerProps, 'size'>
                 transition-colors cursor-pointer
               "
             >
-              <span
-                className="w-1 h-1 rounded-full flex-shrink-0"
-                style={{ backgroundColor: dot }}
-              />
-              <span className="text-[10px] text-slate-600 dark:text-slate-400">
-                {shortLabel}
+              <span className="relative flex w-1 h-1 flex-shrink-0">
+                {item.breaking && (
+                  <span
+                    className="absolute inline-flex h-full w-full rounded-full animate-ping"
+                    style={{ backgroundColor: dot, opacity: 0.75 }}
+                  />
+                )}
+                <span
+                  className="relative inline-flex w-1 h-1 rounded-full"
+                  style={{ backgroundColor: dot }}
+                />
               </span>
+              {/* Same hierarchy as the FlowRail sidebar: prominent "what"
+                  (body, medium, ink/paper) + subdued context (mono italic).
+                  Heartbeat events put the call type in `headline` and the
+                  "neighborhood · time ago" in `detail`. */}
+              <span className="text-[11px] font-medium text-ink dark:text-paper-200 whitespace-nowrap">
+                {item.headline}
+              </span>
+              {item.detail && (
+                <span className="text-[10px] font-mono italic text-paper-500 dark:text-paper-600 whitespace-nowrap">
+                  {item.detail}
+                </span>
+              )}
               {delta && (
                 <span
                   className="text-[10px] font-mono font-bold"
@@ -343,7 +362,7 @@ function TickerSkeleton({ size }: { size: TickerSize }) {
 
 // ─── Main Export ─────────────────────────────────────────
 
-export default function CivicTicker({ items, size, isLoading, lastUpdated, className }: CivicTickerProps) {
+export default function CivicTicker({ items, size, isLoading, lastUpdated, className, onItemClick }: CivicTickerProps) {
   if (isLoading || items.length === 0) {
     return <TickerSkeleton size={size} />
   }
@@ -352,8 +371,8 @@ export default function CivicTicker({ items, size, isLoading, lastUpdated, class
     case 'hero':
       return <HeroTicker items={items} lastUpdated={lastUpdated} className={className} />
     case 'standard':
-      return <StandardTicker items={items} className={className} />
+      return <StandardTicker items={items} className={className} onItemClick={onItemClick} />
     case 'compact':
-      return <CompactTicker items={items} className={className} />
+      return <CompactTicker items={items} className={className} onItemClick={onItemClick} />
   }
 }

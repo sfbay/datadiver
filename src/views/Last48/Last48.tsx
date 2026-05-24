@@ -19,7 +19,9 @@ import DatasetSuperChips from './chrome/DatasetSuperChips'
 import ScannerStrip from './chrome/ScannerStrip'
 import ExportButton from '@/components/export/ExportButton'
 import CivicTicker from '@/components/ui/CivicTicker'
-import { useCivicIndicators } from '@/hooks/useCivicIndicators'
+import { useAnomalyBaseline } from '@/hooks/useAnomalyBaseline'
+import { useLast48Heartbeat } from '@/hooks/useLast48Heartbeat'
+import type { TickerItem } from '@/types/ticker'
 
 // ── URL param parsers ──────────────────────────────────────────────────────
 
@@ -69,7 +71,6 @@ export default function Last48() {
   const [underlayVariable, setUnderlayVariable] = useState<CensusVariable | null>('medianHomeValue')
 
   const window48 = useLast48Window({ datasets })
-  const civicIndicators = useCivicIndicators()
 
   // Seed the cross-view summary store: when a stream finishes its FULL 48h
   // load, record its complete event count. The loading tips read these back on
@@ -87,6 +88,20 @@ export default function Last48() {
     contributeLast48(counts)
   }, [window48.fullyLoadedByDataset, window48.byDataset, contributeLast48])
 
+  // Sharable selected-neighborhood deep link (heartbeat surge items + the
+  // anomaly rail both drive it). Mirrors the ?event= pattern.
+  const selectedNeighborhoodId = searchParams.get('nh')
+
+  const setSelectedNeighborhoodId = useCallback((nh: string | null) => {
+    setSearchParams((prev) => {
+      if ((prev.get('nh') ?? null) === nh) return prev
+      const np = new URLSearchParams(prev)
+      if (nh) np.set('nh', nh)
+      else np.delete('nh')
+      return np
+    }, { replace: true })
+  }, [setSearchParams])
+
   // Reflect the open event into ?event= (replace, not push — selection isn't
   // a back-button waypoint). Guarded against redundant writes so the
   // UnifiedView's write-effect can fire freely without churning history.
@@ -99,6 +114,33 @@ export default function Last48() {
       return np
     }, { replace: true })
   }, [setSearchParams])
+
+  // Heartbeat: anomalies (module-cached fetch, shared with the map view) +
+  // the in-memory event window feed the detector registry.
+  const { anomalies } = useAnomalyBaseline({ datasets, currentEvents: window48.events })
+  const heartbeat = useLast48Heartbeat({ events: window48.events, anomalies, datasets })
+
+  const handleHeartbeatClick = useCallback((item: TickerItem) => {
+    const intent = item.intent
+    if (!intent) return
+    if (intent.type === 'event') {
+      setSelectedEventId(intent.eventId)
+    } else if (intent.type === 'neighborhood') {
+      // Drill into the surge: enter HOTSPOTS (anomaly choropleth + points off)
+      // and select the neighborhood, so BOTH the anomaly fill and the
+      // neighborhood peek surface. The peek only mounts when fill=anomaly AND
+      // points are off (Last48UnifiedView's railIsAnomaly), so set points=off
+      // too. All in ONE update to avoid a setSearchParams race.
+      setSearchParams((prev) => {
+        const np = new URLSearchParams(prev)
+        np.set('nh', intent.neighborhood)
+        np.set('fill', 'anomaly')
+        np.set('points', 'off')
+        np.delete('mode') // retire legacy param
+        return np
+      }, { replace: true })
+    }
+  }, [setSelectedEventId, setSearchParams])
 
   const setFill = (next: BaseFill) => {
     const np = new URLSearchParams(searchParams)
@@ -184,8 +226,9 @@ export default function Last48() {
       {/* Cross-view ticker — signals from other datasets */}
       <div className="flex-shrink-0 border-b border-paper-200/40 dark:border-espresso-800 px-[clamp(16px,3vw,64px)] py-1 bg-paper-50/30 dark:bg-espresso-950/30 backdrop-blur-xl z-10">
         <CivicTicker
-          items={civicIndicators.items.filter(i => i.source.view !== '/live-feeds')}
+          items={heartbeat}
           size="compact"
+          onItemClick={handleHeartbeatClick}
         />
       </div>
 
@@ -211,6 +254,8 @@ export default function Last48() {
           underlayVariable={underlayVariable}
           selectedEventId={selectedEventId}
           onSelectedEventIdChange={setSelectedEventId}
+          selectedNeighborhoodId={selectedNeighborhoodId}
+          onSelectedNeighborhoodChange={setSelectedNeighborhoodId}
         />
       </div>
 
