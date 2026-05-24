@@ -8,8 +8,8 @@ import type { DatasetId, NormalizedEvent } from '@/types/last48'
 import { humanizeCallType, humanizeStreamName } from '@/utils/humanizeCivic'
 import { BREAKING_WINDOW_MS, classifySignificant, recencyBoost, spellNumber, timeAgo } from './significance'
 
-function base(now: number): Pick<HeartbeatItem, 'freshness' | 'computedAt' | 'detail'> {
-  return { freshness: 'live', computedAt: new Date(now), detail: undefined }
+function base(now: number): Pick<HeartbeatItem, 'freshness' | 'computedAt'> {
+  return { freshness: 'live', computedAt: new Date(now) }
 }
 
 // ── 1. Significant events ──────────────────────────────────────────────────
@@ -28,8 +28,11 @@ export const detectSignificantEvents: Detector = (ctx: DetectorContext) => {
     const what = humanizeCallType(e.callType ?? e.headline) || 'Significant incident'
 
     out.push({
+      // headline = the prominent "what"; detail = subdued "where · when".
+      // Same split the FlowRail sidebar uses, so the ticker reads alike.
       id: `hb-event:${e.id}`,
-      headline: `${what} — ${where} · ${timeAgo(e.receivedAt, ctx.now)}`,
+      headline: what,
+      detail: `${where} · ${timeAgo(e.receivedAt, ctx.now)}`,
       category: 'live',
       severity: cat?.key === 'fire' ? 'negative' : 'alert',
       source: { view: '/live-feeds', label: `${what} · ${where}` },

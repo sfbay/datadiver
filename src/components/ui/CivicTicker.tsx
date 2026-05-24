@@ -252,9 +252,11 @@ function StandardTicker({ items, className = '', onItemClick }: Omit<CivicTicker
 
 function CompactTicker({ items, className = '', onItemClick }: Omit<CivicTickerProps, 'size'>) {
   const navigate = useNavigate()
-  const [hovered, setHovered] = useState(false)
   const reducedMotion = usePrefersReducedMotion()
-  const trackRef = useTickerScroll(hovered, SCROLL_SPEED * 0.8, reducedMotion)
+  // No hover-pause: at the compact marquee's slow velocity it isn't needed, and
+  // pausing made the (now clickable) heartbeat items harder to track. Passing
+  // `false` keeps it always scrolling; reducedMotion still halts it for a11y.
+  const trackRef = useTickerScroll(false, SCROLL_SPEED * 0.8, reducedMotion)
 
   const doubled = [...items, ...items]
 
@@ -265,8 +267,6 @@ function CompactTicker({ items, className = '', onItemClick }: Omit<CivicTickerP
         maskImage: 'linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent)',
         WebkitMaskImage: 'linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent)',
       }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
     >
       <div
         ref={trackRef}
@@ -308,9 +308,18 @@ function CompactTicker({ items, className = '', onItemClick }: Omit<CivicTickerP
                   style={{ backgroundColor: dot }}
                 />
               </span>
-              <span className="text-[10px] text-slate-600 dark:text-slate-400 whitespace-nowrap">
+              {/* Same hierarchy as the FlowRail sidebar: prominent "what"
+                  (body, medium, ink/paper) + subdued context (mono italic).
+                  Heartbeat events put the call type in `headline` and the
+                  "neighborhood · time ago" in `detail`. */}
+              <span className="text-[11px] font-medium text-ink dark:text-paper-200 whitespace-nowrap">
                 {item.headline}
               </span>
+              {item.detail && (
+                <span className="text-[10px] font-mono italic text-paper-500 dark:text-paper-600 whitespace-nowrap">
+                  {item.detail}
+                </span>
+              )}
               {delta && (
                 <span
                   className="text-[10px] font-mono font-bold"

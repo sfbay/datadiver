@@ -17,7 +17,8 @@ describe('detectSignificantEvents', () => {
     const items = detectSignificantEvents(ctx([ev({ priority: 'A', callType: 'Suicide Attempt', neighborhood: 'Mission' })]))
     expect(items).toHaveLength(1)
     expect(items[0].intent).toEqual({ type: 'event', eventId: 'e1' })
-    expect(items[0].headline).toContain('Mission')
+    expect(items[0].headline).toBe('Suicide attempt')  // prominent "what"
+    expect(items[0].detail).toContain('Mission')         // subdued context
   })
   it('surfaces a keyword hit even when not priority-A', () => {
     const items = detectSignificantEvents(ctx([ev({ priority: 'B', callType: 'Shooting', neighborhood: 'Outer Sunset' })]))

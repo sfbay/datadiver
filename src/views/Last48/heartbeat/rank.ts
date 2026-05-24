@@ -2,13 +2,18 @@
 import type { HeartbeatItem } from '@/types/heartbeat'
 
 export const MAX_ITEMS = 12
+// The heartbeat should read as individual events first, patterns second — so
+// patterns get a few guaranteed slots but are capped, never crowding out the
+// events. (Without a cap, several surges + rate-spikes + clusters made the
+// ticker feel "all trending.")
+export const MAX_PATTERNS = 3
 
-/** Patterns (non-event intents) are guaranteed slots first — they're the
- *  "story"; then the highest-scoring events fill the rest. Final order is by
- *  score so a breaking event can still lead. */
+/** Top patterns (non-event intents) are guaranteed up to MAX_PATTERNS slots —
+ *  they're the "story" — then the highest-scoring individual events fill the
+ *  rest. Final order is by score so a breaking event can still lead. */
 export function rankHeartbeatItems(items: HeartbeatItem[], maxItems = MAX_ITEMS): HeartbeatItem[] {
   const byScore = (a: HeartbeatItem, b: HeartbeatItem) => b.score - a.score
-  const patterns = items.filter((i) => i.intent?.type !== 'event').sort(byScore)
+  const patterns = items.filter((i) => i.intent?.type !== 'event').sort(byScore).slice(0, MAX_PATTERNS)
   const events = items.filter((i) => i.intent?.type === 'event').sort(byScore)
 
   const chosen = [...patterns]

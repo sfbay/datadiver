@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { rankHeartbeatItems, MAX_ITEMS, quietFallback } from './rank'
+import { rankHeartbeatItems, MAX_ITEMS, MAX_PATTERNS, quietFallback } from './rank'
 import type { HeartbeatItem } from '@/types/heartbeat'
 
 function hb(p: Partial<HeartbeatItem> & { score: number; id: string }): HeartbeatItem {
@@ -25,6 +25,16 @@ describe('rankHeartbeatItems', () => {
     const pattern = hb({ id: 'surge', score: 1, intent: { type: 'neighborhood', neighborhood: 'Mission' } })
     const ranked = rankHeartbeatItems([...events, pattern])
     expect(ranked.some((i) => i.id === 'surge')).toBe(true)
+  })
+  it('caps patterns at MAX_PATTERNS so events stay the majority', () => {
+    const patterns = Array.from({ length: 6 }, (_, i) =>
+      hb({ id: `p${i}`, score: 90 - i, intent: { type: 'neighborhood', neighborhood: `N${i}` } }))
+    const events = Array.from({ length: 6 }, (_, i) =>
+      hb({ id: `ev${i}`, score: 50, intent: { type: 'event', eventId: `ev${i}` } }))
+    const ranked = rankHeartbeatItems([...patterns, ...events])
+    const patternCount = ranked.filter((i) => i.intent?.type !== 'event').length
+    expect(patternCount).toBe(MAX_PATTERNS)
+    expect(ranked.filter((i) => i.intent?.type === 'event').length).toBeGreaterThan(MAX_PATTERNS)
   })
 })
 
