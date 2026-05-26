@@ -1,9 +1,27 @@
 // api/_lib/email.ts — Resend wrapper + plain, CAN-SPAM-compliant templates.
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY!)
-const FROM = process.env.ALERTS_FROM_EMAIL! // e.g. "DataDiver Alerts <alerts@jlab-sf.org>"
-const BASE = process.env.PUBLIC_BASE_URL!.replace(/\/$/, '') // e.g. https://datadiver.jlab-sf.org
+let _resend: Resend | null = null
+function resend(): Resend {
+  if (!_resend) {
+    const key = process.env.RESEND_API_KEY
+    if (!key) throw new Error('RESEND_API_KEY is not set')
+    _resend = new Resend(key)
+  }
+  return _resend
+}
+
+function fromAddress(): string {
+  const from = process.env.ALERTS_FROM_EMAIL
+  if (!from) throw new Error('ALERTS_FROM_EMAIL is not set')
+  return from
+}
+
+function baseUrl(): string {
+  const url = process.env.PUBLIC_BASE_URL
+  if (!url) throw new Error('PUBLIC_BASE_URL is not set')
+  return url.replace(/\/$/, '')
+}
 
 const SENDER_IDENTITY =
   'DataDiver — civic data for San Francisco · jlab-sf.org'
@@ -24,13 +42,13 @@ function shell(title: string, bodyHtml: string, footerHtml: string): string {
 }
 
 export async function sendConfirmEmail(to: string, confirmToken: string): Promise<void> {
-  const url = `${BASE}/api/alerts/confirm?token=${encodeURIComponent(confirmToken)}`
+  const url = `${baseUrl()}/api/alerts/confirm?token=${encodeURIComponent(confirmToken)}`
   const body = `
     <p style="font-size:15px;line-height:1.6">You asked DataDiver to email you when civic events happen near places you care about. Confirm to start receiving your daily digest.</p>
     <p style="margin:22px 0"><a href="${escapeHtml(url)}" style="background:#b85a33;color:#f5ecd9;text-decoration:none;padding:11px 20px;border-radius:6px;font-family:Arial,sans-serif;font-size:14px">Confirm my alerts</a></p>
     <p style="font-size:13px;color:#7a6a52">If you didn't request this, ignore this email — nothing was activated.</p>`
-  await resend.emails.send({
-    from: FROM,
+  await resend().emails.send({
+    from: fromAddress(),
     to,
     subject: 'Confirm your DataDiver alerts',
     html: shell('Confirm your alerts', body, SENDER_IDENTITY),
@@ -53,7 +71,7 @@ export async function sendDigestEmail(
   sections: DigestSection[],
   unsubscribeToken: string,
 ): Promise<void> {
-  const unsubUrl = `${BASE}/api/alerts/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`
+  const unsubUrl = `${baseUrl()}/api/alerts/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`
   const total = sections.reduce((n, s) => n + s.items.length, 0)
 
   const sectionsHtml = sections
@@ -77,8 +95,8 @@ export async function sendDigestEmail(
     You're receiving this because you subscribed to DataDiver alerts.<br>
     <a href="${escapeHtml(unsubUrl)}" style="color:#7a6a52">Unsubscribe</a> (one click — removes your data).`
 
-  await resend.emails.send({
-    from: FROM,
+  await resend().emails.send({
+    from: fromAddress(),
     to,
     subject: `DataDiver: ${total} new event${total === 1 ? '' : 's'} near you`,
     html: shell(`${total} new event${total === 1 ? '' : 's'} near you`, sectionsHtml, footer),
