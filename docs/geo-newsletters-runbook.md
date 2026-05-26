@@ -3,9 +3,13 @@
 The geo-newsletters feature is DataDiver's first backend (Vercel Functions + Vercel Cron + Neon Postgres + Resend). Phase 1 = the working loop: subscribe → confirm (double opt-in) → daily digest → unsubscribe.
 
 ## One-time setup (maintainer performs in dashboards)
-1. **Neon Postgres** (Vercel Marketplace) → create a database → copy the pooled connection string.
-2. **Resend** → add domain `jlab-sf.org`, add the SPF/DKIM DNS records it shows, wait for "Verified". (Until the domain is verified, no email will send.)
-3. **Apply the schema:** paste `db/schema.sql` into the Neon SQL editor and run it once.
+1. **Neon Postgres** — easiest path: Vercel project → **Storage** tab → Create Database → Neon. This auto-wires `DATABASE_URL` into Production with the *pooled* connection string. **Leave the Custom Prefix blank** (otherwise vars land as `STORAGE_DATABASE_URL` and our code won't find them). **Uncheck Preview** in the Environments selector to keep previews from writing to the production DB.
+2. **Resend** → add domain `jlab-sf.org`, add the SPF/DKIM DNS records it shows, wait for "Verified". Until the domain is verified, no email will send. ⚠️ If `jlab-sf.org` mail is hosted at Migadu and the Resend signup email is set to forward elsewhere, the signup confirmation may silently disappear (SPF breaks on forward). Log into the Migadu webmail mailbox directly to receive Resend signup mail.
+3. **Apply the schema:** paste the *entire* contents of `db/schema.sql` into Neon's SQL editor. **CRITICAL** — press **Ctrl/Cmd+A to select ALL the SQL** before clicking Run. Neon's default is to run only the statement under the cursor, which silently applies only one statement of a multi-statement script. After Run, **verify with this query:**
+   ```sql
+   SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename;
+   ```
+   You should see exactly four tables: `subscribe_attempts`, `subscribers`, `subscription_locations`, `subscriptions`. If any are missing, re-paste and re-run (every CREATE is `IF NOT EXISTS`, so re-running is idempotent and safe). See `memory/feedback_neon_partial_paste.md`.
 
 ## Environment variables (Vercel dashboard → Project → Settings → Environment Variables)
 | Var | Example / note |
@@ -43,10 +47,11 @@ The geo-newsletters feature is DataDiver's first backend (Vercel Functions + Ver
 - Hourly/weekly cadences + switch the cron to hourly (the pure `isSubscriptionDue` already handles all three cadences and correctly gives hourly no slack).
 - Live "you'd be notified about this" preview in the builder (imports the same pure `match.ts`).
 - Per-email confirm cooldown (anti-abuse beyond the per-IP limit + double opt-in).
-- Env-var fail-fast guards in `api/_lib/db.ts` and `api/_lib/email.ts` (the endpoints already guard their secrets).
 - `humanizeStreamName` exhaustiveness `default` branch (only matters if `DatasetId` gains a 4th member).
 - Geocode results keyboard navigation (`role="listbox"` + arrow keys).
 - Cron `failedStreams` field in the response for observability when a Socrata stream is down.
+- `tsconfig` for api: switch `moduleResolution` to `"NodeNext"` so `tsc` itself catches missing `.js` suffixes on relative imports (see `memory/feedback_vercel_node_esm_js_suffix.md`).
+- AP-style `a.m.`/`p.m.` in digest timestamps (currently emits `AM`/`PM` via `toLocaleString`; user-flagged May 26 2026).
 
 ## Separate launch punchlist (NOT this feature)
 `.ics` calendar export + the upper-left UI icon/logo.
