@@ -86,6 +86,28 @@ export default function AlertsView() {
       </section>
 
       <section className="mt-6">
+        <h2 className="font-mono text-xs uppercase tracking-[0.14em] text-ink/60 dark:text-slate-400">Locations</h2>
+        <LocationPicker
+          locations={locations}
+          radiusMiles={radiusMiles}
+          onAdd={(loc) => setLocations((a) => [...a, loc])}
+          onRemove={(i) => setLocations((a) => a.filter((_, j) => j !== i))}
+        />
+      </section>
+
+      <section className="mt-6">
+        <h2 className="font-mono text-xs uppercase tracking-[0.14em] text-ink/60 dark:text-slate-400">Radius</h2>
+        <div className="mt-2 flex gap-2">
+          {RADII.map((r) => (
+            <button key={r} type="button" onClick={() => setRadiusMiles(r)}
+              className={`rounded-md border px-3 py-1.5 text-sm ${radiusMiles === r ? 'border-teal-500 bg-teal-500/15 text-ink dark:text-paper-100' : 'border-ink/20 dark:border-white/[0.15] text-ink/70 dark:text-slate-300'}`}>
+              {r === 0.25 ? '¼' : r === 0.5 ? '½' : r} mi
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-6">
         <h2 className="font-mono text-xs uppercase tracking-[0.14em] text-ink/60 dark:text-slate-400">Streams</h2>
         <div className="mt-2 flex flex-wrap gap-2">
           {STREAM_OPTIONS.map((s) => (
@@ -108,28 +130,6 @@ export default function AlertsView() {
           ))}
         </div>
         <p className="mt-1 text-xs text-ink/50 dark:text-slate-500">Leave empty to get every event on the chosen streams. (Significance filters apply to 911 and Fire & EMS, not 311.)</p>
-      </section>
-
-      <section className="mt-6">
-        <h2 className="font-mono text-xs uppercase tracking-[0.14em] text-ink/60 dark:text-slate-400">Radius</h2>
-        <div className="mt-2 flex gap-2">
-          {RADII.map((r) => (
-            <button key={r} type="button" onClick={() => setRadiusMiles(r)}
-              className={`rounded-md border px-3 py-1.5 text-sm ${radiusMiles === r ? 'border-teal-500 bg-teal-500/15 text-ink dark:text-paper-100' : 'border-ink/20 dark:border-white/[0.15] text-ink/70 dark:text-slate-300'}`}>
-              {r === 0.25 ? '¼' : r === 0.5 ? '½' : r} mi
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="mt-6">
-        <h2 className="font-mono text-xs uppercase tracking-[0.14em] text-ink/60 dark:text-slate-400">Locations</h2>
-        <LocationPicker
-          locations={locations}
-          radiusMiles={radiusMiles}
-          onAdd={(loc) => setLocations((a) => [...a, loc])}
-          onRemove={(i) => setLocations((a) => a.filter((_, j) => j !== i))}
-        />
       </section>
 
       {errorMsg && <p className="mt-4 text-sm text-brick-500">{errorMsg}</p>}
