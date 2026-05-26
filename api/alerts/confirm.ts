@@ -1,7 +1,7 @@
 // api/alerts/confirm.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { verifyToken } from '../../src/lib/alerts/tokens'
-import { confirmSubscriber } from '../_lib/db'
+import { verifyToken } from '../../src/lib/alerts/tokens.js'
+import { confirmSubscriber } from '../_lib/db.js'
 
 function page(title: string, body: string): string {
   const base = (process.env.PUBLIC_BASE_URL || '').replace(/\/$/, '')

@@ -2,12 +2,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import type { NormalizedEvent } from '../../src/types/last48'
 import type { DueSubscription } from '../../src/lib/alerts/types'
-import { eventMatchesSubscription, isSubscriptionDue, haversineMiles } from '../../src/lib/alerts/match'
-import { signToken } from '../../src/lib/alerts/tokens'
-import { humanizeCallType, humanizeStreamName } from '../../src/utils/humanizeCivic'
-import { getActiveConfirmedSubscriptions, markDispatched, markChecked, pruneSubscribeAttempts } from '../_lib/db'
-import { fetchRecentEvents } from '../_lib/socrata'
-import { sendDigestEmail, type DigestSection, type DigestItem } from '../_lib/email'
+import { eventMatchesSubscription, isSubscriptionDue, haversineMiles } from '../../src/lib/alerts/match.js'
+import { signToken } from '../../src/lib/alerts/tokens.js'
+import { humanizeCallType, humanizeStreamName } from '../../src/utils/humanizeCivic.js'
+import { getActiveConfirmedSubscriptions, markDispatched, markChecked, pruneSubscribeAttempts } from '../_lib/db.js'
+import { fetchRecentEvents } from '../_lib/socrata.js'
+import { sendDigestEmail, type DigestSection, type DigestItem } from '../_lib/email.js'
 
 const WINDOW_MS = 48 * 60 * 60_000
 

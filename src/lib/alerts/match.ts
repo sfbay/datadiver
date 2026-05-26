@@ -5,7 +5,7 @@
 // can never drift. classifySignificant is reused as-is.
 import type { NormalizedEvent } from '@/types/last48'
 import type { Cadence, MatchableSubscription } from './types'
-import { classifySignificant } from './significance'
+import { classifySignificant } from './significance.js'
 
 const MILES_PER_RADIAN = 3958.7613 // mean Earth radius, miles
 

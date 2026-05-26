@@ -1,9 +1,9 @@
 // api/alerts/subscribe.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import type { SubscriptionDraft } from '../../src/lib/alerts/types'
-import { signToken } from '../../src/lib/alerts/tokens'
-import { createPendingSubscription, recordSubscribeAttempt } from '../_lib/db'
-import { sendConfirmEmail } from '../_lib/email'
+import { signToken } from '../../src/lib/alerts/tokens.js'
+import { createPendingSubscription, recordSubscribeAttempt } from '../_lib/db.js'
+import { sendConfirmEmail } from '../_lib/email.js'
 
 const STREAMS = ['911-realtime', 'fire-ems-dispatch', '311-cases']
 const CATEGORIES = ['shooting', 'stabbing', 'homicide', 'robbery', 'weapon', 'assault', 'fire']

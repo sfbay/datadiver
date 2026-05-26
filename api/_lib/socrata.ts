@@ -1,6 +1,6 @@
 // api/_lib/socrata.ts — server-side event fetch for the cron.
 // Reuses the app's normalizeEvent so cron events match the UI exactly.
-import { normalizeEvent } from '../../src/utils/eventNormalization'
+import { normalizeEvent } from '../../src/utils/eventNormalization.js'
 import type { DatasetId, NormalizedEvent } from '../../src/types/last48'
 
 const SOCRATA: Record<DatasetId, { id: string; dateField: string }> = {

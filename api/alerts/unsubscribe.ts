@@ -1,7 +1,7 @@
 // api/alerts/unsubscribe.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { verifyToken } from '../../src/lib/alerts/tokens'
-import { deleteSubscriber } from '../_lib/db'
+import { verifyToken } from '../../src/lib/alerts/tokens.js'
+import { deleteSubscriber } from '../_lib/db.js'
 
 function page(title: string, body: string): string {
   const base = (process.env.PUBLIC_BASE_URL || '').replace(/\/$/, '')
