@@ -79,6 +79,13 @@ export default function AlertsView() {
       <p className="mt-2 text-ink/70 dark:text-slate-300">A daily email when matching events happen near places you choose. Quiet days send nothing.</p>
 
       <section className="mt-8">
+        <h2 className="font-mono text-xs uppercase tracking-[0.14em] text-ink/60 dark:text-slate-400">Your email</h2>
+        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com"
+          aria-label="Your email address"
+          className="mt-2 w-full rounded-md border border-ink/20 dark:border-white/[0.15] bg-paper dark:bg-espresso-800 px-3 py-2 text-ink dark:text-paper-100" />
+      </section>
+
+      <section className="mt-6">
         <h2 className="font-mono text-xs uppercase tracking-[0.14em] text-ink/60 dark:text-slate-400">Streams</h2>
         <div className="mt-2 flex flex-wrap gap-2">
           {STREAM_OPTIONS.map((s) => (
@@ -123,13 +130,6 @@ export default function AlertsView() {
           onAdd={(loc) => setLocations((a) => [...a, loc])}
           onRemove={(i) => setLocations((a) => a.filter((_, j) => j !== i))}
         />
-      </section>
-
-      <section className="mt-8">
-        <h2 className="font-mono text-xs uppercase tracking-[0.14em] text-ink/60 dark:text-slate-400">Your email</h2>
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com"
-          aria-label="Your email address"
-          className="mt-2 w-full rounded-md border border-ink/20 dark:border-white/[0.15] bg-paper dark:bg-espresso-800 px-3 py-2 text-ink dark:text-paper-100" />
       </section>
 
       {errorMsg && <p className="mt-4 text-sm text-brick-500">{errorMsg}</p>}

@@ -1,14 +1,22 @@
 // api/_lib/db.ts — Neon serverless client + typed queries (server-only).
-import { neon } from '@neondatabase/serverless'
+import { neon, type NeonQueryFunction } from '@neondatabase/serverless'
 import type { DueSubscription, SubscriptionDraft } from '../../src/lib/alerts/types'
 import type { DatasetId } from '../../src/types/last48'
 
-const sql = neon(process.env.DATABASE_URL!)
+let _sql: NeonQueryFunction<false, false> | null = null
+function sql(): NeonQueryFunction<false, false> {
+  if (!_sql) {
+    const url = process.env.DATABASE_URL
+    if (!url) throw new Error('DATABASE_URL is not set')
+    _sql = neon(url)
+  }
+  return _sql
+}
 
 /** Insert one attempt and return how many this IP has made in the last hour. */
 export async function recordSubscribeAttempt(ip: string): Promise<number> {
-  await sql`INSERT INTO subscribe_attempts (ip) VALUES (${ip})`
-  const rows = await sql`
+  await sql()`INSERT INTO subscribe_attempts (ip) VALUES (${ip})`
+  const rows = await sql()`
     SELECT count(*)::int AS n FROM subscribe_attempts
     WHERE ip = ${ip} AND created_at > now() - interval '1 hour'`
   return rows[0].n as number
@@ -19,13 +27,13 @@ export async function recordSubscribeAttempt(ip: string): Promise<number> {
 export async function createPendingSubscription(
   draft: SubscriptionDraft,
 ): Promise<{ subscriberId: string; subscriptionId: string }> {
-  const subRows = await sql`
+  const subRows = await sql()`
     INSERT INTO subscribers (email) VALUES (${draft.email})
     ON CONFLICT (email) DO UPDATE SET email = EXCLUDED.email, unsubscribed_at = NULL
     RETURNING id`
   const subscriberId = subRows[0].id as string
 
-  const insRows = await sql`
+  const insRows = await sql()`
     INSERT INTO subscriptions (subscriber_id, name, cadence, filters, radius_miles)
     VALUES (${subscriberId}, ${draft.name ?? 'My alert'}, ${draft.cadence},
             ${JSON.stringify(draft.filters)}::jsonb, ${draft.radiusMiles})
@@ -33,7 +41,7 @@ export async function createPendingSubscription(
   const subscriptionId = insRows[0].id as string
 
   for (const loc of draft.locations) {
-    await sql`
+    await sql()`
       INSERT INTO subscription_locations (subscription_id, label, lat, lng)
       VALUES (${subscriptionId}, ${loc.label ?? null}, ${loc.lat}, ${loc.lng})`
   }
@@ -41,14 +49,14 @@ export async function createPendingSubscription(
 }
 
 export async function confirmSubscriber(subscriberId: string): Promise<boolean> {
-  const rows = await sql`
+  const rows = await sql()`
     UPDATE subscribers SET confirmed_at = COALESCE(confirmed_at, now())
     WHERE id = ${subscriberId} AND unsubscribed_at IS NULL
     RETURNING id`
   if (rows.length === 0) return false
   // Seed the event watermark to "now" so the first digest contains only events
   // from after sign-up — not a backlog of the whole 48h window.
-  await sql`
+  await sql()`
     UPDATE subscriptions
     SET last_event_ts = (EXTRACT(EPOCH FROM now()) * 1000)::bigint
     WHERE subscriber_id = ${subscriberId} AND last_event_ts = 0`
@@ -57,19 +65,19 @@ export async function confirmSubscriber(subscriberId: string): Promise<boolean> 
 
 /** Prune rate-limit rows older than a day. Called from the daily cron. */
 export async function pruneSubscribeAttempts(): Promise<void> {
-  await sql`DELETE FROM subscribe_attempts WHERE created_at < now() - interval '1 day'`
+  await sql()`DELETE FROM subscribe_attempts WHERE created_at < now() - interval '1 day'`
 }
 
 /** Hard-delete the subscriber; cascade removes subscriptions + locations. */
 export async function deleteSubscriber(subscriberId: string): Promise<void> {
-  await sql`DELETE FROM subscribers WHERE id = ${subscriberId}`
+  await sql()`DELETE FROM subscribers WHERE id = ${subscriberId}`
 }
 
 /** All active subscriptions belonging to confirmed, non-unsubscribed people,
  *  with email + locations joined. Cadence-due filtering happens in JS via the
  *  pure isSubscriptionDue. */
 export async function getActiveConfirmedSubscriptions(): Promise<DueSubscription[]> {
-  const rows = await sql`
+  const rows = await sql()`
     SELECT s.id, s.subscriber_id, s.name, s.cadence, s.filters, s.radius_miles,
            EXTRACT(EPOCH FROM s.last_sent_at) * 1000 AS last_sent_ms,
            s.last_event_ts, s.active, sub.email,
@@ -111,7 +119,7 @@ export async function markDispatched(
   newWatermark: number,
   sentAt: number,
 ): Promise<void> {
-  await sql`
+  await sql()`
     UPDATE subscriptions
     SET last_sent_at = to_timestamp(${sentAt} / 1000.0),
         last_event_ts = GREATEST(last_event_ts, ${newWatermark})
@@ -121,7 +129,7 @@ export async function markDispatched(
 /** Nothing matched this period: advance the cadence clock only (watermark
  *  stays, so a later event in the same window is still caught). */
 export async function markChecked(subscriptionId: string, sentAt: number): Promise<void> {
-  await sql`
+  await sql()`
     UPDATE subscriptions SET last_sent_at = to_timestamp(${sentAt} / 1000.0)
     WHERE id = ${subscriptionId}`
 }
