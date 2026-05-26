@@ -72,6 +72,7 @@ export default function AlertsView() {
   }
 
   return (
+    <div className="h-full overflow-y-auto">
     <div className="mx-auto max-w-2xl px-6 py-10">
       <div className="font-mono text-xs uppercase tracking-[0.18em] text-terracotta-500">The Last 48</div>
       <h1 className="font-display mt-2 text-3xl">Get alerts near you</h1>
@@ -134,10 +135,11 @@ export default function AlertsView() {
       {errorMsg && <p className="mt-4 text-sm text-brick-500">{errorMsg}</p>}
 
       <button type="button" onClick={submit} disabled={status === 'sending'}
-        className="btn-primary mt-6 rounded-md px-5 py-2.5 disabled:opacity-50">
+        className="btn-primary mt-6 rounded-md px-5 py-2.5 text-sm font-medium text-white bg-terracotta-500 hover:bg-terracotta-600 disabled:opacity-50 transition-colors">
         {status === 'sending' ? 'Sending…' : 'Subscribe'}
       </button>
       <p className="mt-3 text-xs text-ink/50 dark:text-slate-500">Double opt-in: we email you a confirmation link first. Unsubscribe anytime in one click.</p>
+    </div>
     </div>
   )
 }

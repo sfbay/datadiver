@@ -3,7 +3,10 @@ import { useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
 import type { AlertLocation } from '@/lib/alerts/types'
-import { SF_CENTER } from '@/utils/geo'
+
+// Slightly north of SF_CENTER so the picker frames the full peninsula —
+// Twin Peaks roughly center, Golden Gate Bridge visible, down to Daly City.
+const PICKER_CAMERA = { center: { lat: 37.7600, lng: -122.4400 }, zoom: 11.5 }
 
 /** 64-point polygon approximating a circle of `radiusMiles` around center. */
 function circlePolygon(center: { lat: number; lng: number }, radiusMiles: number): GeoJSON.Feature {
@@ -67,7 +70,7 @@ export function LocationPicker({
     const url = new URL('https://api.mapbox.com/search/geocode/v6/forward')
     url.searchParams.set('q', query)
     url.searchParams.set('access_token', token)
-    url.searchParams.set('proximity', `${SF_CENTER.lng},${SF_CENTER.lat}`)
+    url.searchParams.set('proximity', `${PICKER_CAMERA.center.lng},${PICKER_CAMERA.center.lat}`)
     url.searchParams.set('bbox', '-123.0,37.6,-122.3,37.85')
     url.searchParams.set('limit', '5')
     const res = await fetch(url)
@@ -97,7 +100,7 @@ export function LocationPicker({
         </ul>
       )}
       <div className="mt-2 h-72 overflow-hidden rounded-lg">
-        <MapView ref={mapRef} onMapReady={handleReady} className="w-full h-full" camera={{ center: SF_CENTER, zoom: 11.5 }} />
+        <MapView ref={mapRef} onMapReady={handleReady} className="w-full h-full" camera={PICKER_CAMERA} />
       </div>
       <p className="mt-1 text-xs text-ink/50 dark:text-slate-500">Click the map to drop a pin, or search an address.</p>
       {locations.length > 0 && (
