@@ -45,7 +45,19 @@ export async function confirmSubscriber(subscriberId: string): Promise<boolean> 
     UPDATE subscribers SET confirmed_at = COALESCE(confirmed_at, now())
     WHERE id = ${subscriberId} AND unsubscribed_at IS NULL
     RETURNING id`
-  return rows.length > 0
+  if (rows.length === 0) return false
+  // Seed the event watermark to "now" so the first digest contains only events
+  // from after sign-up — not a backlog of the whole 48h window.
+  await sql`
+    UPDATE subscriptions
+    SET last_event_ts = (EXTRACT(EPOCH FROM now()) * 1000)::bigint
+    WHERE subscriber_id = ${subscriberId} AND last_event_ts = 0`
+  return true
+}
+
+/** Prune rate-limit rows older than a day. Called from the daily cron. */
+export async function pruneSubscribeAttempts(): Promise<void> {
+  await sql`DELETE FROM subscribe_attempts WHERE created_at < now() - interval '1 day'`
 }
 
 /** Hard-delete the subscriber; cascade removes subscriptions + locations. */

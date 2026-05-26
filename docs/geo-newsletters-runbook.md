@@ -35,6 +35,8 @@ The geo-newsletters feature is DataDiver's first backend (Vercel Functions + Ver
 - Empty periods send **no email** (the cadence clock still advances; the event watermark does not, so a late-publishing event is still caught next run).
 - Unsubscribe **hard-deletes** the subscriber and cascades subscriptions + locations (minimal-PII).
 - The matcher reuses the app's exact `normalizeEvent` + `classifySignificant`, so emailed events match what the app shows.
+- The **first digest** after confirmation contains only events from after sign-up (the event watermark is seeded to confirm time), not a 48-hour backlog.
+- The daily cron prunes `subscribe_attempts` rows older than 24h, so the rate-limit table stays small.
 
 ## Deferred to Phase 2 (backlog captured during code review)
 - Magic-link management page (edit/add/remove multiple subscriptions); the `magic` token purpose + the `unsubscribed_at`-clearing re-subscribe path already exist for it.

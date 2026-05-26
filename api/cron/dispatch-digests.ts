@@ -5,7 +5,7 @@ import type { DueSubscription } from '../../src/lib/alerts/types'
 import { eventMatchesSubscription, isSubscriptionDue, haversineMiles } from '../../src/lib/alerts/match'
 import { signToken } from '../../src/lib/alerts/tokens'
 import { humanizeCallType, humanizeStreamName } from '../../src/utils/humanizeCivic'
-import { getActiveConfirmedSubscriptions, markDispatched, markChecked } from '../_lib/db'
+import { getActiveConfirmedSubscriptions, markDispatched, markChecked, pruneSubscribeAttempts } from '../_lib/db'
 import { fetchRecentEvents } from '../_lib/socrata'
 import { sendDigestEmail, type DigestSection, type DigestItem } from '../_lib/email'
 
@@ -65,6 +65,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!tokenSecret) {
     console.error('[cron] ALERTS_TOKEN_SECRET is not set')
     return res.status(500).json({ error: 'server misconfigured' })
+  }
+
+  try {
+    await pruneSubscribeAttempts()
+  } catch (err) {
+    console.error('[cron] prune failed', err)
   }
 
   const now = Date.now()
