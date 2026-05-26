@@ -50,19 +50,31 @@ function validate(b: unknown): SubscriptionDraft | string {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method not allowed' })
 
+  const secret = process.env.ALERTS_TOKEN_SECRET
+  if (!secret) {
+    console.error('[subscribe] ALERTS_TOKEN_SECRET is not set')
+    return res.status(500).json({ error: 'server misconfigured' })
+  }
+
   const draft = validate(req.body)
   if (typeof draft === 'string') return res.status(400).json({ error: draft })
 
   const ip = ((req.headers['x-forwarded-for'] as string) || '').split(',')[0].trim() || 'unknown'
-  const attempts = await recordSubscribeAttempt(ip)
-  if (attempts > MAX_PER_IP_PER_HOUR) return res.status(429).json({ error: 'too many requests, try later' })
 
-  const { subscriberId } = await createPendingSubscription(draft)
-  const token = signToken(
-    { purpose: 'confirm', subjectId: subscriberId, exp: Date.now() + 7 * 24 * 3600_000 },
-    process.env.ALERTS_TOKEN_SECRET!,
-  )
-  await sendConfirmEmail(draft.email, token)
+  try {
+    const attempts = await recordSubscribeAttempt(ip)
+    if (attempts > MAX_PER_IP_PER_HOUR) return res.status(429).json({ error: 'too many requests, try later' })
+
+    const { subscriberId } = await createPendingSubscription(draft)
+    const token = signToken(
+      { purpose: 'confirm', subjectId: subscriberId, exp: Date.now() + 7 * 24 * 3600_000 },
+      secret,
+    )
+    await sendConfirmEmail(draft.email, token)
+  } catch (err) {
+    console.error('[subscribe] downstream error', err)
+    return res.status(503).json({ error: 'service unavailable, try again shortly' })
+  }
 
   // Same response regardless of whether the email was new — no account enumeration.
   return res.status(200).json({ ok: true })
