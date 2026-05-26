@@ -21,7 +21,7 @@ export async function createPendingSubscription(
 ): Promise<{ subscriberId: string; subscriptionId: string }> {
   const subRows = await sql`
     INSERT INTO subscribers (email) VALUES (${draft.email})
-    ON CONFLICT (email) DO UPDATE SET email = EXCLUDED.email
+    ON CONFLICT (email) DO UPDATE SET email = EXCLUDED.email, unsubscribed_at = NULL
     RETURNING id`
   const subscriberId = subRows[0].id as string
 
