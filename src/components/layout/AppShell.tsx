@@ -123,6 +123,13 @@ const NAV_ITEMS = [
     description: 'Cross-dataset civic profiles',
     accentColor: '#5c9693', // teal-500 — Dana's color, civic-place
   },
+  {
+    path: '/alerts',
+    label: 'Alerts',
+    shortLabel: 'ALRT',
+    description: 'Email me events near my places',
+    accentColor: '#b85a33', // terracotta-600 — the "alert" pigment
+  },
 ] as const
 
 export default function AppShell({ children }: { children: ReactNode }) {
