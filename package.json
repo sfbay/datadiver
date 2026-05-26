@@ -5,20 +5,23 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && tsc --noEmit -p api/tsconfig.json && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "build:elections": "tsx scripts/build-election-archive.ts && tsx scripts/build-precinct-geojson.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck:api": "tsc --noEmit -p api/tsconfig.json"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "d3": "^7.9.0",
     "html2canvas": "^1.4.1",
     "mapbox-gl": "^3.19.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.13.1",
+    "resend": "^6.12.4",
     "zustand": "^5.0.11"
   },
   "pnpm": {
@@ -33,6 +36,7 @@
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "@vercel/node": "^5.8.4",
     "@vitejs/plugin-react": "^5.1.1",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",

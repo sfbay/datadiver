@@ -1,4 +1,4 @@
-// src/views/Last48/heartbeat/significance.ts
+// src/lib/alerts/significance.ts
 //
 // Shared significance helpers for the heartbeat detectors. Pure + tested.
 

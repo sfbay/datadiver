@@ -6,7 +6,7 @@
 import type { Detector, DetectorContext, HeartbeatItem } from '@/types/heartbeat'
 import type { DatasetId, NormalizedEvent } from '@/types/last48'
 import { humanizeCallType, humanizeStreamName } from '@/utils/humanizeCivic'
-import { BREAKING_WINDOW_MS, classifySignificant, recencyBoost, spellNumber, timeAgo } from './significance'
+import { BREAKING_WINDOW_MS, classifySignificant, recencyBoost, spellNumber, timeAgo } from '@/lib/alerts/significance'
 
 function base(now: number): Pick<HeartbeatItem, 'freshness' | 'computedAt'> {
   return { freshness: 'live', computedAt: new Date(now) }
