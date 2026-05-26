@@ -33,7 +33,7 @@ describe('haversineMiles', () => {
   it('is ~0 for identical points', () => {
     expect(haversineMiles(SF_CITY_HALL, SF_CITY_HALL)).toBeCloseTo(0, 5)
   })
-  it('measures City Hall → Ferry Building at ~1.5 mi', () => {
+  it('measures City Hall → Ferry Building at ~1.8 mi', () => {
     const d = haversineMiles(SF_CITY_HALL, FERRY_BLDG)
     expect(d).toBeGreaterThan(1.3)
     expect(d).toBeLessThan(2.0)
@@ -83,6 +83,9 @@ describe('eventMatchesSubscription', () => {
       eventMatchesSubscription(ev({ latitude: undefined, longitude: undefined, receivedAt: 9 }), sub({}), 0),
     ).toBe(false)
   })
+  it('rejects all events when no locations are configured', () => {
+    expect(eventMatchesSubscription(ev({ receivedAt: 9 }), sub({ locations: [] }), 0)).toBe(false)
+  })
 })
 
 describe('isSubscriptionDue', () => {
@@ -100,5 +103,22 @@ describe('isSubscriptionDue', () => {
   })
   it('is never due when inactive', () => {
     expect(isSubscriptionDue({ cadence: 'daily', lastSentAt: null, active: false }, 1_000)).toBe(false)
+  })
+  it('is due at exactly interval - slack, not one ms before', () => {
+    const now = 10 * DAY
+    const SLACK = 60 * 60_000
+    const threshold = 24 * 60 * 60_000 - SLACK
+    expect(isSubscriptionDue({ cadence: 'daily', lastSentAt: now - threshold, active: true }, now)).toBe(true)
+    expect(isSubscriptionDue({ cadence: 'daily', lastSentAt: now - threshold + 1, active: true }, now)).toBe(false)
+  })
+  it('hourly fires after ~60 min, not on the next tick', () => {
+    const now = 5 * 60 * 60_000
+    expect(isSubscriptionDue({ cadence: 'hourly', lastSentAt: now - 55 * 60_000, active: true }, now)).toBe(false)
+    expect(isSubscriptionDue({ cadence: 'hourly', lastSentAt: now - 65 * 60_000, active: true }, now)).toBe(true)
+  })
+  it('weekly fires after ~7 days', () => {
+    const now = 30 * DAY
+    expect(isSubscriptionDue({ cadence: 'weekly', lastSentAt: now - 6 * DAY, active: true }, now)).toBe(false)
+    expect(isSubscriptionDue({ cadence: 'weekly', lastSentAt: now - 7 * DAY, active: true }, now)).toBe(true)
   })
 })

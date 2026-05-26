@@ -39,7 +39,10 @@ export function isSubscriptionDue(
 ): boolean {
   if (!sub.active) return false
   if (sub.lastSentAt == null) return true
-  return now - sub.lastSentAt >= CADENCE_INTERVAL_MS[sub.cadence] - DUE_SLACK_MS
+  // 1h slack absorbs cron jitter for daily/weekly. Hourly gets none — a 1h
+  // slack would collapse its threshold to zero and fire on every tick.
+  const slack = sub.cadence === 'hourly' ? 0 : DUE_SLACK_MS
+  return now - sub.lastSentAt >= CADENCE_INTERVAL_MS[sub.cadence] - slack
 }
 
 export function eventMatchesSubscription(
@@ -49,11 +52,11 @@ export function eventMatchesSubscription(
 ): boolean {
   if (event.receivedAt <= watermarkMs) return false
   if (!sub.filters.streams.includes(event.datasetId)) return false
+  if (event.latitude == null || event.longitude == null) return false
   if (sub.filters.categories.length > 0) {
     const cat = classifySignificant(event)
     if (!cat || !sub.filters.categories.includes(cat.key)) return false
   }
-  if (event.latitude == null || event.longitude == null) return false
   const pt = { lat: event.latitude, lng: event.longitude }
   return sub.locations.some(
     (loc) => haversineMiles(pt, { lat: loc.lat, lng: loc.lng }) <= sub.radiusMiles,
