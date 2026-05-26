@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import type { DatasetId } from '@/types/last48'
 import type { AlertLocation, SubscriptionDraft } from '@/lib/alerts/types'
+import { LocationPicker } from './LocationPicker'
 
 const STREAM_OPTIONS: { id: DatasetId; label: string }[] = [
   { id: '911-realtime', label: '911 calls' },
@@ -115,21 +116,18 @@ export default function AlertsView() {
 
       <section className="mt-6">
         <h2 className="font-mono text-xs uppercase tracking-[0.14em] text-ink/60">Locations</h2>
-        {locations.length === 0 && <p className="mt-1 text-sm text-ink/50">Add a location below. (Map picker added next.)</p>}
-        <ul className="mt-2 space-y-1">
-          {locations.map((l, i) => (
-            <li key={i} className="flex items-center justify-between rounded-md bg-paper-100 dark:bg-espresso-800 px-3 py-2 text-sm">
-              <span>{l.label || `${l.lat.toFixed(4)}, ${l.lng.toFixed(4)}`}</span>
-              <button type="button" onClick={() => setLocations((a) => a.filter((_, j) => j !== i))} className="text-ink/50 hover:text-brick-500">Remove</button>
-            </li>
-          ))}
-        </ul>
-        <ManualLocationAdd onAdd={(loc) => setLocations((a) => [...a, loc])} />
+        <LocationPicker
+          locations={locations}
+          radiusMiles={radiusMiles}
+          onAdd={(loc) => setLocations((a) => [...a, loc])}
+          onRemove={(i) => setLocations((a) => a.filter((_, j) => j !== i))}
+        />
       </section>
 
       <section className="mt-8">
         <h2 className="font-mono text-xs uppercase tracking-[0.14em] text-ink/60">Your email</h2>
         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com"
+          aria-label="Your email address"
           className="mt-2 w-full rounded-md border border-ink/20 bg-paper px-3 py-2 text-ink" />
       </section>
 
@@ -144,19 +142,3 @@ export default function AlertsView() {
   )
 }
 
-function ManualLocationAdd({ onAdd }: { onAdd: (l: AlertLocation) => void }) {
-  const [lat, setLat] = useState('')
-  const [lng, setLng] = useState('')
-  const [label, setLabel] = useState('')
-  return (
-    <div className="mt-3 flex flex-wrap items-end gap-2">
-      <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Label (e.g. Home)" className="rounded-md border border-ink/20 bg-paper px-2 py-1.5 text-sm" />
-      <input value={lat} onChange={(e) => setLat(e.target.value)} placeholder="lat" className="w-24 rounded-md border border-ink/20 bg-paper px-2 py-1.5 text-sm" />
-      <input value={lng} onChange={(e) => setLng(e.target.value)} placeholder="lng" className="w-24 rounded-md border border-ink/20 bg-paper px-2 py-1.5 text-sm" />
-      <button type="button" onClick={() => {
-        const la = Number(lat), ln = Number(lng)
-        if (Number.isFinite(la) && Number.isFinite(ln)) { onAdd({ label: label || undefined, lat: la, lng: ln }); setLat(''); setLng(''); setLabel('') }
-      }} className="rounded-md border border-ink/20 px-3 py-1.5 text-sm">Add</button>
-    </div>
-  )
-}
