@@ -66,7 +66,7 @@ export default function AlertsView() {
       <div className="mx-auto max-w-xl px-6 py-16 text-center">
         <div className="font-mono text-xs uppercase tracking-[0.18em] text-terracotta-500">The Last 48</div>
         <h1 className="font-display mt-2 text-3xl">Check your email</h1>
-        <p className="mt-3 text-ink/70">We sent a confirmation link to <strong>{email}</strong>. Click it to activate your daily alerts.</p>
+        <p className="mt-3 text-ink/70 dark:text-slate-300">We sent a confirmation link to <strong>{email}</strong>. Click it to activate your daily alerts.</p>
       </div>
     )
   }
@@ -75,14 +75,14 @@ export default function AlertsView() {
     <div className="mx-auto max-w-2xl px-6 py-10">
       <div className="font-mono text-xs uppercase tracking-[0.18em] text-terracotta-500">The Last 48</div>
       <h1 className="font-display mt-2 text-3xl">Get alerts near you</h1>
-      <p className="mt-2 text-ink/70">A daily email when matching events happen near places you choose. Quiet days send nothing.</p>
+      <p className="mt-2 text-ink/70 dark:text-slate-300">A daily email when matching events happen near places you choose. Quiet days send nothing.</p>
 
       <section className="mt-8">
-        <h2 className="font-mono text-xs uppercase tracking-[0.14em] text-ink/60">Streams</h2>
+        <h2 className="font-mono text-xs uppercase tracking-[0.14em] text-ink/60 dark:text-slate-400">Streams</h2>
         <div className="mt-2 flex flex-wrap gap-2">
           {STREAM_OPTIONS.map((s) => (
             <button key={s.id} type="button" onClick={() => setStreams((a) => toggle(a, s.id))}
-              className={`rounded-full border px-3 py-1.5 text-sm ${streams.includes(s.id) ? 'border-terracotta-500 bg-terracotta-500/15 text-ink' : 'border-ink/20 text-ink/70'}`}>
+              className={`rounded-full border px-3 py-1.5 text-sm ${streams.includes(s.id) ? 'border-terracotta-500 bg-terracotta-500/15 text-ink dark:text-paper-100' : 'border-ink/20 dark:border-white/[0.15] text-ink/70 dark:text-slate-300'}`}>
               {s.label}
             </button>
           ))}
@@ -90,24 +90,24 @@ export default function AlertsView() {
       </section>
 
       <section className="mt-6">
-        <h2 className="font-mono text-xs uppercase tracking-[0.14em] text-ink/60">Only these kinds (optional)</h2>
+        <h2 className="font-mono text-xs uppercase tracking-[0.14em] text-ink/60 dark:text-slate-400">Only these kinds (optional)</h2>
         <div className="mt-2 flex flex-wrap gap-2">
           {CATEGORY_OPTIONS.map((c) => (
             <button key={c.key} type="button" onClick={() => setCategories((a) => toggle(a, c.key))}
-              className={`rounded-full border px-3 py-1.5 text-sm ${categories.includes(c.key) ? 'border-brick-500 bg-brick-500/15 text-ink' : 'border-ink/20 text-ink/70'}`}>
+              className={`rounded-full border px-3 py-1.5 text-sm ${categories.includes(c.key) ? 'border-brick-500 bg-brick-500/15 text-ink dark:text-paper-100' : 'border-ink/20 dark:border-white/[0.15] text-ink/70 dark:text-slate-300'}`}>
               {c.label}
             </button>
           ))}
         </div>
-        <p className="mt-1 text-xs text-ink/50">Leave empty to get every event on the chosen streams. (Significance filters apply to 911 and Fire & EMS, not 311.)</p>
+        <p className="mt-1 text-xs text-ink/50 dark:text-slate-500">Leave empty to get every event on the chosen streams. (Significance filters apply to 911 and Fire & EMS, not 311.)</p>
       </section>
 
       <section className="mt-6">
-        <h2 className="font-mono text-xs uppercase tracking-[0.14em] text-ink/60">Radius</h2>
+        <h2 className="font-mono text-xs uppercase tracking-[0.14em] text-ink/60 dark:text-slate-400">Radius</h2>
         <div className="mt-2 flex gap-2">
           {RADII.map((r) => (
             <button key={r} type="button" onClick={() => setRadiusMiles(r)}
-              className={`rounded-md border px-3 py-1.5 text-sm ${radiusMiles === r ? 'border-teal-500 bg-teal-500/15 text-ink' : 'border-ink/20 text-ink/70'}`}>
+              className={`rounded-md border px-3 py-1.5 text-sm ${radiusMiles === r ? 'border-teal-500 bg-teal-500/15 text-ink dark:text-paper-100' : 'border-ink/20 dark:border-white/[0.15] text-ink/70 dark:text-slate-300'}`}>
               {r === 0.25 ? '¼' : r === 0.5 ? '½' : r} mi
             </button>
           ))}
@@ -115,7 +115,7 @@ export default function AlertsView() {
       </section>
 
       <section className="mt-6">
-        <h2 className="font-mono text-xs uppercase tracking-[0.14em] text-ink/60">Locations</h2>
+        <h2 className="font-mono text-xs uppercase tracking-[0.14em] text-ink/60 dark:text-slate-400">Locations</h2>
         <LocationPicker
           locations={locations}
           radiusMiles={radiusMiles}
@@ -125,10 +125,10 @@ export default function AlertsView() {
       </section>
 
       <section className="mt-8">
-        <h2 className="font-mono text-xs uppercase tracking-[0.14em] text-ink/60">Your email</h2>
+        <h2 className="font-mono text-xs uppercase tracking-[0.14em] text-ink/60 dark:text-slate-400">Your email</h2>
         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com"
           aria-label="Your email address"
-          className="mt-2 w-full rounded-md border border-ink/20 bg-paper px-3 py-2 text-ink" />
+          className="mt-2 w-full rounded-md border border-ink/20 dark:border-white/[0.15] bg-paper dark:bg-espresso-800 px-3 py-2 text-ink dark:text-paper-100" />
       </section>
 
       {errorMsg && <p className="mt-4 text-sm text-brick-500">{errorMsg}</p>}
@@ -137,7 +137,7 @@ export default function AlertsView() {
         className="btn-primary mt-6 rounded-md px-5 py-2.5 disabled:opacity-50">
         {status === 'sending' ? 'Sending…' : 'Subscribe'}
       </button>
-      <p className="mt-3 text-xs text-ink/50">Double opt-in: we email you a confirmation link first. Unsubscribe anytime in one click.</p>
+      <p className="mt-3 text-xs text-ink/50 dark:text-slate-500">Double opt-in: we email you a confirmation link first. Unsubscribe anytime in one click.</p>
     </div>
   )
 }

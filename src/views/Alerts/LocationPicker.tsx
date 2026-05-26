@@ -83,15 +83,15 @@ export function LocationPicker({
     <div className="mt-3">
       <div className="flex gap-2">
         <input value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), search())}
-          placeholder="Search an address…" aria-label="Search an address" className="flex-1 rounded-md border border-ink/20 bg-paper px-3 py-2 text-sm" />
-        <button type="button" onClick={search} className="rounded-md border border-ink/20 px-3 py-2 text-sm">Search</button>
+          placeholder="Search an address…" aria-label="Search an address" className="flex-1 rounded-md border border-ink/20 dark:border-white/[0.15] bg-paper dark:bg-espresso-800 px-3 py-2 text-sm text-ink dark:text-paper-100" />
+        <button type="button" onClick={search} className="rounded-md border border-ink/20 dark:border-white/[0.15] px-3 py-2 text-sm text-ink/70 dark:text-slate-300">Search</button>
       </div>
       {results.length > 0 && (
-        <ul className="mt-1 rounded-md border border-ink/15 bg-paper-100 dark:bg-espresso-800 text-sm">
+        <ul className="mt-1 rounded-md border border-ink/15 dark:border-white/[0.10] bg-paper-100 dark:bg-espresso-800 text-sm text-ink dark:text-paper-100">
           {results.map((r, i) => (
             <li key={i}>
               <button type="button" onClick={() => { onAdd({ label: r.name, lat: r.lat, lng: r.lng }); setResults([]); setQuery('') }}
-                className="block w-full px-3 py-2 text-left hover:bg-ink/5">{r.name}</button>
+                className="block w-full px-3 py-2 text-left hover:bg-ink/5 dark:hover:bg-white/[0.06]">{r.name}</button>
             </li>
           ))}
         </ul>
@@ -99,13 +99,13 @@ export function LocationPicker({
       <div className="mt-2 h-72 overflow-hidden rounded-lg">
         <MapView ref={mapRef} onMapReady={handleReady} className="w-full h-full" camera={{ center: SF_CENTER, zoom: 11.5 }} />
       </div>
-      <p className="mt-1 text-xs text-ink/50">Click the map to drop a pin, or search an address.</p>
+      <p className="mt-1 text-xs text-ink/50 dark:text-slate-500">Click the map to drop a pin, or search an address.</p>
       {locations.length > 0 && (
         <ul className="mt-2 space-y-1">
           {locations.map((l, i) => (
-            <li key={i} className="flex items-center justify-between rounded-md bg-paper-100 dark:bg-espresso-800 px-3 py-2 text-sm">
+            <li key={i} className="flex items-center justify-between rounded-md bg-paper-100 dark:bg-espresso-800 px-3 py-2 text-sm text-ink dark:text-paper-100">
               <span>{l.label || `${l.lat.toFixed(4)}, ${l.lng.toFixed(4)}`}</span>
-              <button type="button" onClick={() => onRemove(i)} className="text-ink/50 hover:text-brick-500">Remove</button>
+              <button type="button" onClick={() => onRemove(i)} className="text-ink/50 dark:text-slate-500 hover:text-brick-500">Remove</button>
             </li>
           ))}
         </ul>
