@@ -35,4 +35,23 @@ describe('signToken / verifyToken', () => {
     expect(verifyToken('garbage', 'confirm', SECRET)).toBeNull()
     expect(verifyToken('a.b.c', 'confirm', SECRET)).toBeNull()
   })
+  it('rejects a token at its exact expiry moment', () => {
+    const exp = Date.now() + 60_000
+    const t = signToken({ purpose: 'confirm', subjectId: 'abc', exp }, SECRET)
+    expect(verifyToken(t, 'confirm', SECRET, exp)).toBeNull()
+  })
+  it('rejects a non-finite exp (JSON.stringify turns Infinity into null)', () => {
+    const t = signToken({ purpose: 'confirm', subjectId: 'abc', exp: Infinity }, SECRET)
+    expect(verifyToken(t, 'confirm', SECRET)).toBeNull()
+  })
+  it('rejects an empty subjectId', () => {
+    const t = signToken({ purpose: 'confirm', subjectId: '', exp: Date.now() + 60_000 }, SECRET)
+    expect(verifyToken(t, 'confirm', SECRET)).toBeNull()
+  })
+  it('rejects a structurally valid token with a corrupted signature byte', () => {
+    const t = signToken({ purpose: 'confirm', subjectId: 'abc', exp: Date.now() + 60_000 }, SECRET)
+    const [body, sig] = t.split('.')
+    const corrupted = sig.slice(0, -1) + (sig.endsWith('A') ? 'B' : 'A')
+    expect(verifyToken(`${body}.${corrupted}`, 'confirm', SECRET)).toBeNull()
+  })
 })
