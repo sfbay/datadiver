@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && tsc --noEmit -p api/tsconfig.json && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "build:elections": "tsx scripts/build-election-archive.ts && tsx scripts/build-precinct-geojson.ts",
