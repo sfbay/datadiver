@@ -3,8 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
 import type { AlertLocation } from '@/lib/alerts/types'
-
-const SF_CENTER = { lat: 37.7749, lng: -122.4194 }
+import { SF_CENTER } from '@/utils/geo'
 
 /** 64-point polygon approximating a circle of `radiusMiles` around center. */
 function circlePolygon(center: { lat: number; lng: number }, radiusMiles: number): GeoJSON.Feature {
@@ -55,6 +54,10 @@ export function LocationPicker({
       map.addSource('alert-radii', { type: 'geojson', data: fc })
       map.addLayer({ id: 'alert-radii-fill', type: 'fill', source: 'alert-radii', paint: { 'fill-color': '#5c9693', 'fill-opacity': 0.15 } })
       map.addLayer({ id: 'alert-radii-line', type: 'line', source: 'alert-radii', paint: { 'line-color': '#5c9693', 'line-width': 1.5 } })
+    }
+    return () => {
+      markers.current.forEach((m) => m.remove())
+      markers.current = []
     }
   }, [locations, radiusMiles])
 
