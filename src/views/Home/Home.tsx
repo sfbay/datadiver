@@ -12,6 +12,7 @@ import ResponseEquity from '@/components/investigations/ResponseEquity'
 import DispatchUnanswered from '@/components/investigations/DispatchUnanswered'
 import ComplianceTracker from '@/components/investigations/ComplianceTracker'
 import VizCard from '@/components/ui/VizCard'
+import AlertsRibbon from '@/components/home/AlertsRibbon'
 
 const VISUALIZATIONS = [
   {
@@ -340,6 +341,12 @@ export default function Home() {
             </div>
           </div>
         </header>
+
+        {/* Alerts Ribbon — daily newsletter CTA, inserted right below the hero
+            (between the hero band and the Dana comic ribbon) so the most
+            recently shipped feature gets first-after-hero placement. Same
+            ribbon family as Dana's but in terracotta / alert pigment. */}
+        <AlertsRibbon mounted={mounted} />
 
         {/* Dana Comic Strip Ribbon */}
         <section
