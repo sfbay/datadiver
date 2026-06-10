@@ -1,4 +1,6 @@
 import { useState, useMemo, useRef, useCallback, useEffect, type ReactNode } from 'react'
+import CivicTicker from '@/components/ui/CivicTicker'
+import { useCivicIndicators } from '@/hooks/useCivicIndicators'
 import type { CensusVariable } from '@/types/census'
 import { useCensusData } from '@/hooks/useCensusData'
 import { useDemographicUnderlay } from '@/components/maps/DemographicUnderlay'
@@ -49,6 +51,7 @@ const SELECT_FIELDS = 'citation_number,citation_issued_datetime,violation,violat
 
 export default function ParkingCitations() {
   const { dateRange, timeOfDayFilter, comparisonPeriod, selectedCitation, setSelectedCitation } = useAppStore()
+  const civicIndicators = useCivicIndicators()
   const [searchParams, setSearchParams] = useSearchParams()
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('violations')
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
@@ -375,6 +378,7 @@ export default function ParkingCitations() {
           <TrendChart
             current={comparison.currentTrend}
             comparison={comparison.comparisonTrend.length > 0 ? comparison.comparisonTrend : undefined}
+            accentColor="#d4a435"
             width={320}
             height={110}
           />
@@ -756,6 +760,14 @@ export default function ParkingCitations() {
           </div>
         </div>
       </header>
+
+      {/* Cross-view ticker — signals from other datasets */}
+      <div className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-1 bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl z-10">
+        <CivicTicker
+          items={civicIndicators.items.filter(i => i.source.view !== '/parking-citations')}
+          size="compact"
+        />
+      </div>
 
       {/* Time-of-day filter sub-header */}
       {!hourlyPattern.isLoading && hourlyPattern.hourTotals.some((t) => t > 0) && (

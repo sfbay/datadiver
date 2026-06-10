@@ -49,6 +49,18 @@ type SidebarTab = 'categories' | 'neighborhoods'
 
 const SELECT_FIELDS = 'service_request_id,requested_datetime,closed_date,status_description,service_name,service_subtype,address,lat,long,analysis_neighborhood,supervisor_district,source,point'
 
+// Socrata's SoQL on the 311 dataset exposes date_diff_d but not date_diff_ss,
+// and date_diff_d truncates to whole 24h periods (NOT calendar days — verified
+// live: 20:20 → next-day 09:43 returns 0). Mirror the client-side ms-diff math
+// exactly: whole 24h periods + the time-of-day remainder recovered mod 86400,
+// converted to fractional hours.
+const RESOLUTION_HOURS = (
+  '(date_diff_d(closed_date, requested_datetime) * 86400 + ' +
+  '((date_extract_hh(closed_date) - date_extract_hh(requested_datetime)) * 3600 + ' +
+  '(date_extract_mm(closed_date) - date_extract_mm(requested_datetime)) * 60 + ' +
+  '(date_extract_ss(closed_date) - date_extract_ss(requested_datetime)) + 86400) % 86400) / 3600'
+)
+
 export default function Cases311() {
   const { dateRange, timeOfDayFilter, comparisonPeriod, selected311Case, setSelected311Case } = useAppStore()
   const civicIndicators = useCivicIndicators()
@@ -183,6 +195,35 @@ export default function Cases311() {
   )
   const totalCount = countRows[0] ? parseInt(countRows[0].count, 10) : null
 
+  // Citywide-true resolution stats — bypasses the 5K row cap on rawData.
+  // Mirrors the client-side validity filter (closed cases, 0–720h window).
+  const resolutionWhere = useMemo(
+    () => `${whereClause} AND closed_date IS NOT NULL AND closed_date >= requested_datetime AND ${RESOLUTION_HOURS} <= 720`,
+    [whereClause]
+  )
+
+  const { data: resolutionStatsRows } = useDataset<{ avg_hours: string; case_count: string }>(
+    'cases311',
+    {
+      $select: `AVG(${RESOLUTION_HOURS}) as avg_hours, COUNT(*) as case_count`,
+      $where: resolutionWhere,
+      $limit: 1,
+    },
+    [resolutionWhere]
+  )
+
+  const { data: resolutionHistogramRows } = useDataset<{ hour_bucket: string; case_count: string }>(
+    'cases311',
+    {
+      $select: `floor(${RESOLUTION_HOURS}) as hour_bucket, COUNT(*) as case_count`,
+      $where: resolutionWhere,
+      $group: 'hour_bucket',
+      $order: 'hour_bucket',
+      $limit: 1000,
+    },
+    [resolutionWhere]
+  )
+
   const { data: categoryRows } = useDataset<ServiceCategoryAggRow>(
     'cases311',
     {
@@ -282,16 +323,33 @@ export default function Cases311() {
 
   const stats = useMemo(() => {
     if (caseData.length === 0) return { totalCases: 0, avgResolution: 0, openCases: 0, peakHour: 0 }
+    // Citywide-true avg from the server aggregate; the 5K-sample value is
+    // only an immediate-render fallback while the aggregate loads.
     const closedTimes = caseData.filter((c) => c.resolutionHours !== null).map((c) => c.resolutionHours!)
-    const avgResolution = closedTimes.length > 0 ? closedTimes.reduce((a, b) => a + b, 0) / closedTimes.length : 0
+    const sampleAvg = closedTimes.length > 0 ? closedTimes.reduce((a, b) => a + b, 0) / closedTimes.length : 0
+    const serverAvg = resolutionStatsRows[0] ? parseFloat(resolutionStatsRows[0].avg_hours) : NaN
+    const avgResolution = Number.isFinite(serverAvg) ? serverAvg : sampleAvg
     const openCases = caseData.filter((c) => c.status === 'Open').length
     return { totalCases: caseData.length, avgResolution, openCases, peakHour: hourlyPattern.peakHour }
-  }, [caseData, hourlyPattern.peakHour])
+  }, [caseData, resolutionStatsRows, hourlyPattern.peakHour])
 
-  const histogramData = useMemo(
-    () => caseData.filter((c) => c.resolutionHours !== null).map((c) => c.resolutionHours!),
-    [caseData]
-  )
+  // Citywide histogram: expand server bucket counts back to a flat number[]
+  // of hour values so the existing ResolutionHistogram (D3-bin-based) renders
+  // citywide-true counts without component changes. The 5K sample is the
+  // immediate-render fallback while the aggregate loads.
+  const histogramData = useMemo(() => {
+    if (resolutionHistogramRows.length > 0) {
+      const arr: number[] = []
+      for (const r of resolutionHistogramRows) {
+        const hour = parseInt(r.hour_bucket, 10)
+        const count = parseInt(r.case_count, 10)
+        if (!Number.isFinite(hour) || !Number.isFinite(count) || count <= 0) continue
+        for (let i = 0; i < count; i++) arr.push(hour)
+      }
+      return arr
+    }
+    return caseData.filter((c) => c.resolutionHours !== null).map((c) => c.resolutionHours!)
+  }, [resolutionHistogramRows, caseData])
 
   const chartTiles = useMemo((): ChartTileDef[] => {
     const tiles: ChartTileDef[] = []
@@ -318,6 +376,7 @@ export default function Cases311() {
           <TrendChart
             current={comparison.currentTrend}
             comparison={comparison.comparisonTrend.length > 0 ? comparison.comparisonTrend : undefined}
+            accentColor="#7a9954"
             width={320}
             height={110}
           />

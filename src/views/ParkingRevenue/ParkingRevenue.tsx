@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import CivicTicker from '@/components/ui/CivicTicker'
+import { useCivicIndicators } from '@/hooks/useCivicIndicators'
 import type { CensusVariable } from '@/types/census'
 import { useCensusData } from '@/hooks/useCensusData'
 import { useDemographicUnderlay } from '@/components/maps/DemographicUnderlay'
@@ -36,6 +38,7 @@ type TimeGranularity = 'hour' | 'day' | 'week'
 
 export default function ParkingRevenue() {
   const { dateRange, selectedMeter, setSelectedMeter, selectedNeighborhood, setSelectedNeighborhood } = useAppStore()
+  const civicIndicators = useCivicIndicators()
   const [searchParams, setSearchParams] = useSearchParams()
   const [granularity, setGranularity] = useState<TimeGranularity>('day')
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
@@ -511,6 +514,14 @@ export default function ParkingRevenue() {
           </div>
         </div>
       </header>
+
+      {/* Cross-view ticker — signals from other datasets */}
+      <div className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-1 bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl z-10">
+        <CivicTicker
+          items={civicIndicators.items.filter(i => i.source.view !== '/parking-revenue')}
+          size="compact"
+        />
+      </div>
 
       <div id="pr-capture" className="flex-1 overflow-hidden flex">
         <div className="flex-1 relative">

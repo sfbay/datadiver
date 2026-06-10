@@ -410,6 +410,7 @@ export default function TrafficSafety() {
             comparison={comparison.comparisonTrend.length > 0 ? comparison.comparisonTrend : undefined}
             width={320}
             height={110}
+            accentColor="#963e30"
           />
         ),
       })

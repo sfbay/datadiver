@@ -457,6 +457,7 @@ export default function Dispatch911() {
                     comparison={comparison.comparisonTrend.length > 0 ? comparison.comparisonTrend : undefined}
                     width={640}
                     height={160}
+                    accentColor="#616a96"
                   />
                 </div>
               )}
