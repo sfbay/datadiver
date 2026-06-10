@@ -1,25 +1,30 @@
 // src/views/Alerts/AlertsView.tsx
 //
 // The Alerts builder — DataDiver's first user-facing backend surface.
-// Reimagined as an editorial "newsroom desk" composition:
+// An editorial "newsroom desk" composition, map-first:
 //
 //   ┌─ HERO BAND ──────────────────────────────────────────────────┐
 //   │ DAILY NEWSLETTER eyebrow · Fraunces italic display ·          │
-//   │ pull-quote margin note (Editor's voice)                       │
+//   │ pull-quote margin note (future home of Dana art)              │
 //   └───────────────────────────────────────────────────────────────┘
-//   ┌─ COMPOSE (left) ──────────┐  ┌─ MAP HERO (right top) ────────┐
-//   │ 01 · Your email           │  │  hero-scale Mapbox            │
-//   │ 02 · Places you watch     │  │  ───────────────────────────  │
-//   │ 03 · Radius               │  │  LIVE PREVIEW (right bottom)  │
-//   │ 04 · Streams              │  │  real recent matched events   │
-//   │ 05 · Only these kinds     │  │                               │
+//   ┌─ 01 · PLACES YOU WATCH — full-width map station ─────────────┐
+//   │ chapter mark + bridge copy · address search · radius pills   │
+//   │ hero-scale Mapbox (click to pin, circles render live)        │
+//   │ footer: dropped-pin chips with remove                         │
+//   └───────────────────────────────────────────────────────────────┘
+//   ┌─ ENTRY (left) ────────────┐  ┌─ SAMPLE (right) ──────────────┐
+//   │ 02 · Streams              │  │ LIVE PREVIEW                  │
+//   │ 03 · Only these kinds     │  │ real recent matched events —  │
+//   │ 04 · Your email           │  │ reacts as chips toggle        │
 //   │ [ Subscribe ▸ notch ]     │  │                               │
 //   └───────────────────────────┘  └───────────────────────────────┘
 //   ┌─ COLOPHON ────────────────────────────────────────────────────┐
 //
-// On narrow viewports the two columns stack: HERO → map → form →
-// preview → colophon. The preview always lives close to the form so
-// the user sees the matcher react in real time as they toggle chips.
+// On narrow viewports everything stacks in reading order:
+// hero → map → entry → sample → colophon. The funnel is deliberate —
+// pinning the map is play (zero commitment), streams/categories are
+// configuration, email is commitment, and by then the preview has
+// already shown the reader what they'll get.
 //
 // Layout grammar: `clamp()` everywhere instead of breakpoint jumps,
 // echoing the Liquid layout pattern established on Home.
@@ -84,6 +89,9 @@ const CATEGORY_OPTIONS: { key: string; label: string }[] = [
 ]
 const RADII = [0.25, 0.5, 1, 2]
 
+/** "¼", "½", "1", "2" — the radius vocabulary used everywhere on this page. */
+const radiusLabel = (r: number) => (r === 0.25 ? '¼' : r === 0.5 ? '½' : String(r))
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function AlertsView() {
@@ -125,9 +133,10 @@ export default function AlertsView() {
 
   async function submit() {
     setErrorMsg('')
-    if (!email.trim()) return setErrorMsg('Enter your email.')
+    // Validation order mirrors the page's reading order: places → streams → email.
+    if (locations.length === 0) return setErrorMsg('Drop at least one pin on the map.')
     if (streams.length === 0) return setErrorMsg('Pick at least one stream.')
-    if (locations.length === 0) return setErrorMsg('Add at least one location.')
+    if (!email.trim()) return setErrorMsg('Enter your email.')
     setStatus('sending')
     const draft: SubscriptionDraft = {
       email: email.trim(),
@@ -160,126 +169,170 @@ export default function AlertsView() {
       <div className="mx-auto max-w-[1400px] px-[clamp(16px,3vw,48px)] pt-[clamp(20px,3vw,40px)] pb-16">
         <HeroBand />
 
-        {/* Two-column liquid grid — collapses to single column under ~1024px.
-            Right column is intentionally slightly wider so the map + preview
-            stack reads with the same visual weight as the form on its left. */}
-        <div className="mt-8 grid gap-[clamp(20px,2.5vw,32px)] lg:grid-cols-[minmax(0,1fr),minmax(0,1.08fr)]">
-          {/* ─── LEFT: COMPOSE FORM ──────────────────────────────────── */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              submit()
-            }}
-            className="glass-card relative rounded-[28px] rounded-bl-none overflow-hidden glow-host"
-            style={{ '--glow': '#5c9693' } as CSSProperties}
-          >
-            <div className="glow-corner is-lg" style={{ opacity: 0.3 }} />
+        {/* ─── 01 · PLACES YOU WATCH — full-width map station ──────────
+            The map is the first question the page asks. Search + radius
+            live here too: both are direct-manipulation controls whose
+            feedback (pins, circles) renders on this very map. */}
+        <section
+          className="mt-8 glass-card relative rounded-[28px] rounded-bl-none overflow-hidden glow-host"
+          style={{ '--glow': '#5c9693' } as CSSProperties}
+        >
+          <div className="glow-corner is-lg" style={{ opacity: 0.32 }} />
 
-            {/* 01 — Email */}
-            <FormSection n={1} label="Your email" isFirst>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                aria-label="Your email address"
-                className="w-full rounded-md border border-ink/15 dark:border-white/[0.12] bg-paper-100/60 dark:bg-espresso-900/60 px-3.5 py-2.5 text-[15px] text-ink dark:text-paper-100 placeholder:text-ink/35 dark:placeholder:text-slate-500 focus:border-teal-500 focus:outline-none transition-colors"
-              />
-            </FormSection>
-
-            {/* 02 — Places */}
-            <FormSection n={2} label="Places you watch">
-              <div className="flex gap-2">
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), searchAddress())}
-                  placeholder="Search an address…"
-                  aria-label="Search an address"
-                  className="flex-1 rounded-md border border-ink/15 dark:border-white/[0.12] bg-paper-100/60 dark:bg-espresso-900/60 px-3.5 py-2 text-[14px] text-ink dark:text-paper-100 placeholder:text-ink/35 dark:placeholder:text-slate-500 focus:border-teal-500 focus:outline-none transition-colors"
-                />
-                <button
-                  type="button"
-                  onClick={searchAddress}
-                  className="rounded-md border border-ink/15 dark:border-white/[0.12] bg-paper-100/40 dark:bg-espresso-900/40 px-4 py-2 text-[12px] font-mono uppercase tracking-wider text-ink/70 dark:text-slate-300 hover:bg-ink/[0.04] dark:hover:bg-white/[0.04] transition-colors"
-                >
-                  Search
-                </button>
+          {/* Header: chapter mark + bridge copy + search + radius */}
+          <div className="relative px-[clamp(20px,3vw,32px)] pt-5 pb-4">
+            <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-4">
+              <div className="min-w-[260px] flex-1 max-w-[36rem]">
+                <div className="flex items-baseline gap-3">
+                  <span
+                    className="font-mono text-[11px] tabular-nums text-terracotta-500/85 font-bold tracking-wider"
+                    aria-hidden
+                  >
+                    01
+                  </span>
+                  <h2 className="font-display italic text-[19px] text-ink dark:text-paper-100">
+                    Places you watch
+                  </h2>
+                </div>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-ink/60 dark:text-slate-400">
+                  Click anywhere on the map to drop a pin — home, work, school, the
+                  corner you worry about. Each pin watches its own circle; your
+                  digest covers all of them.
+                </p>
               </div>
 
-              {results.length > 0 && (
-                <ul className="mt-2 rounded-md border border-ink/10 dark:border-white/[0.08] bg-paper-100 dark:bg-espresso-800 text-[13px] text-ink dark:text-paper-100 overflow-hidden">
-                  {results.map((r, i) => (
-                    <li key={i} className={i > 0 ? 'border-t border-ink/[0.06] dark:border-white/[0.04]' : ''}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setLocations((a) => [...a, { label: r.name, lat: r.lat, lng: r.lng }])
-                          setResults([])
-                          setQuery('')
-                        }}
-                        className="block w-full px-3.5 py-2 text-left hover:bg-teal-500/10 transition-colors"
-                      >
-                        {r.name}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Address search — anchors its results dropdown */}
+                <div className="relative w-[min(320px,72vw)]">
+                  <div className="flex gap-2">
+                    <input
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), searchAddress())}
+                      placeholder="Search an address…"
+                      aria-label="Search an address"
+                      className="flex-1 min-w-0 rounded-md border border-ink/15 dark:border-white/[0.12] bg-paper-100/60 dark:bg-espresso-900/60 px-3.5 py-2 text-[14px] text-ink dark:text-paper-100 placeholder:text-ink/35 dark:placeholder:text-slate-500 focus:border-teal-500 focus:outline-none transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={searchAddress}
+                      className="rounded-md border border-ink/15 dark:border-white/[0.12] bg-paper-100/40 dark:bg-espresso-900/40 px-3.5 py-2 text-[12px] font-mono uppercase tracking-wider text-ink/70 dark:text-slate-300 hover:bg-ink/[0.04] dark:hover:bg-white/[0.04] transition-colors"
+                    >
+                      Search
+                    </button>
+                  </div>
 
+                  {results.length > 0 && (
+                    <ul className="absolute left-0 right-0 top-full z-20 mt-1.5 rounded-md border border-ink/10 dark:border-white/[0.08] bg-paper-100 dark:bg-espresso-800 text-[13px] text-ink dark:text-paper-100 overflow-hidden shadow-lg">
+                      {results.map((r, i) => (
+                        <li key={i} className={i > 0 ? 'border-t border-ink/[0.06] dark:border-white/[0.04]' : ''}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setLocations((a) => [...a, { label: r.name, lat: r.lat, lng: r.lng }])
+                              setResults([])
+                              setQuery('')
+                            }}
+                            className="block w-full px-3.5 py-2 text-left hover:bg-teal-500/10 transition-colors"
+                          >
+                            {r.name}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                {/* Radius — lives with the map because its feedback (the
+                    circles) renders here. */}
+                <div className="flex items-center gap-2.5">
+                  <span className="text-[9px] font-mono uppercase tracking-[0.18em] text-ink/45 dark:text-slate-500">
+                    Radius
+                  </span>
+                  <div className="inline-flex rounded-md border border-ink/15 dark:border-white/[0.12] overflow-hidden">
+                    {RADII.map((r, i) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => setRadiusMiles(r)}
+                        className={`
+                          px-3.5 py-2 text-[13px] font-mono tabular-nums transition-colors
+                          ${i > 0 ? 'border-l border-ink/15 dark:border-white/[0.12]' : ''}
+                          ${radiusMiles === r
+                            ? 'bg-terracotta-500 text-white'
+                            : 'bg-paper-100/40 dark:bg-espresso-900/40 text-ink/70 dark:text-slate-300 hover:bg-ink/[0.04] dark:hover:bg-white/[0.04]'}
+                        `}
+                      >
+                        {radiusLabel(r)} <span className="opacity-60">mi</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <LocationPicker
+            locations={locations}
+            radiusMiles={radiusMiles}
+            onAdd={(loc) => setLocations((a) => [...a, loc])}
+            className="w-full h-[clamp(380px,46vh,560px)]"
+          />
+
+          {/* Footer: dropped-pin chips */}
+          <div className="relative px-[clamp(20px,3vw,32px)] py-3 border-t border-ink/[0.06] dark:border-white/[0.04]">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               {locations.length === 0 ? (
-                <p className="mt-3 text-[11px] font-mono text-ink/45 dark:text-slate-500 italic">
-                  No pins yet — drop one on the map, or search above.
+                <p className="text-[11px] font-mono text-ink/45 dark:text-slate-500 italic">
+                  No pins yet — click the map, or search an address above.
                 </p>
               ) : (
-                <ul className="mt-3 space-y-1.5">
+                <ul className="flex flex-wrap gap-2">
                   {locations.map((l, i) => (
                     <li
                       key={i}
-                      className="flex items-center gap-2.5 rounded-md border border-ink/[0.08] dark:border-white/[0.05] bg-paper-100/50 dark:bg-espresso-900/40 pl-3 pr-2 py-2"
+                      className="flex items-center gap-2 rounded-full border border-ink/[0.10] dark:border-white/[0.08] bg-paper-100/50 dark:bg-espresso-900/40 pl-3 pr-1.5 py-1.5"
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-terracotta-500 flex-shrink-0" aria-hidden />
-                      <span className="flex-1 text-[13px] text-ink dark:text-paper-100 truncate">
+                      <span className="max-w-[240px] truncate text-[12px] text-ink dark:text-paper-100">
                         {l.label || `${l.lat.toFixed(4)}, ${l.lng.toFixed(4)}`}
                       </span>
                       <button
                         type="button"
                         onClick={() => setLocations((a) => a.filter((_, j) => j !== i))}
-                        className="text-[10px] font-mono uppercase tracking-wider text-ink/40 dark:text-slate-500 hover:text-brick-500 px-2 py-1 transition-colors"
+                        className="grid place-items-center w-5 h-5 rounded-full text-[11px] leading-none text-ink/40 dark:text-slate-500 hover:text-brick-500 hover:bg-brick-500/[0.08] transition-colors"
                         aria-label={`Remove ${l.label || 'pin'}`}
                       >
-                        Remove
+                        ×
                       </button>
                     </li>
                   ))}
                 </ul>
               )}
-            </FormSection>
+              <span className="ml-auto text-[9px] font-mono uppercase tracking-wider text-ink/45 dark:text-slate-500 tabular-nums whitespace-nowrap">
+                {locations.length} {locations.length === 1 ? 'pin' : 'pins'} · {radiusLabel(radiusMiles)} mi each
+              </span>
+            </div>
+          </div>
+        </section>
 
-            {/* 03 — Radius */}
-            <FormSection n={3} label="Radius">
-              <div className="inline-flex rounded-md border border-ink/15 dark:border-white/[0.12] overflow-hidden">
-                {RADII.map((r, i) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setRadiusMiles(r)}
-                    className={`
-                      px-4 py-2 text-[13px] font-mono tabular-nums transition-colors
-                      ${i > 0 ? 'border-l border-ink/15 dark:border-white/[0.12]' : ''}
-                      ${radiusMiles === r
-                        ? 'bg-terracotta-500 text-white'
-                        : 'bg-paper-100/40 dark:bg-espresso-900/40 text-ink/70 dark:text-slate-300 hover:bg-ink/[0.04] dark:hover:bg-white/[0.04]'}
-                    `}
-                  >
-                    {r === 0.25 ? '¼' : r === 0.5 ? '½' : r} <span className="opacity-60">mi</span>
-                  </button>
-                ))}
-              </div>
-            </FormSection>
+        {/* ─── ENTRY + SAMPLE — side by side at desktop width so the
+            preview visibly reacts as chips toggle; stacks entry-then-
+            sample on narrow viewports. ─────────────────────────────── */}
+        <div className="mt-[clamp(20px,2.5vw,32px)] grid gap-[clamp(20px,2.5vw,32px)] lg:grid-cols-[minmax(0,1fr),minmax(0,1.08fr)]">
+          {/* ENTRY — what counts, and where to send it */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              submit()
+            }}
+            className="glass-card relative rounded-[28px] rounded-bl-none overflow-hidden glow-host self-start"
+            style={{ '--glow': '#5c9693' } as CSSProperties}
+          >
+            <div className="glow-corner is-lg" style={{ opacity: 0.3 }} />
 
-            {/* 04 — Streams (identity chips) */}
-            <FormSection n={4} label="Streams">
+            {/* 02 — Streams (identity chips) */}
+            <FormSection n={2} label="Streams" isFirst>
               <div className="grid gap-2 sm:grid-cols-3">
                 {STREAM_OPTIONS.map((s) => {
                   const selected = streams.includes(s.id)
@@ -324,8 +377,8 @@ export default function AlertsView() {
               </div>
             </FormSection>
 
-            {/* 05 — Categories (only when relevant streams selected) */}
-            <FormSection n={5} label="Only these kinds" optional>
+            {/* 03 — Categories (only when relevant streams selected) */}
+            <FormSection n={3} label="Only these kinds" optional>
               <div className="flex flex-wrap gap-1.5">
                 {CATEGORY_OPTIONS.map((c) => {
                   const selected = categories.includes(c.key)
@@ -353,6 +406,18 @@ export default function AlertsView() {
               </p>
             </FormSection>
 
+            {/* 04 — Email — the commitment, asked for last */}
+            <FormSection n={4} label="Your email">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                aria-label="Your email address"
+                className="w-full rounded-md border border-ink/15 dark:border-white/[0.12] bg-paper-100/60 dark:bg-espresso-900/60 px-3.5 py-2.5 text-[15px] text-ink dark:text-paper-100 placeholder:text-ink/35 dark:placeholder:text-slate-500 focus:border-teal-500 focus:outline-none transition-colors"
+              />
+            </FormSection>
+
             {/* Error rail */}
             {errorMsg && (
               <div className="mx-6 mb-4 rounded-md border border-brick-500/30 bg-brick-500/[0.06] px-3.5 py-2.5">
@@ -373,47 +438,8 @@ export default function AlertsView() {
             </div>
           </form>
 
-          {/* ─── RIGHT: MAP HERO + LIVE PREVIEW ──────────────────────── */}
-          <aside className="flex flex-col gap-[clamp(20px,2.5vw,32px)]">
-            {/* Hero-scale map card */}
-            <div
-              className="glass-card relative rounded-[28px] rounded-bl-none overflow-hidden glow-host"
-              style={{ '--glow': '#5c9693' } as CSSProperties}
-            >
-              <div className="glow-corner is-lg" style={{ opacity: 0.32 }} />
-
-              <div className="relative px-5 pt-4 pb-2 flex items-center gap-2">
-                <span
-                  className="w-[5px] h-[5px] rounded-full"
-                  style={{
-                    backgroundColor: '#5c9693',
-                    animation: 'pulse 2.5s ease-in-out infinite',
-                  }}
-                />
-                <span className="text-[9px] font-mono uppercase tracking-[0.22em] text-teal-500">
-                  Locations
-                </span>
-                <div className="flex-1 h-px bg-ink/[0.08] dark:bg-white/[0.06]" />
-                <span className="text-[9px] font-mono uppercase tracking-wider text-ink/45 dark:text-slate-500 tabular-nums">
-                  {locations.length} {locations.length === 1 ? 'pin' : 'pins'} · {radiusMiles === 0.25 ? '¼' : radiusMiles === 0.5 ? '½' : radiusMiles} mi
-                </span>
-              </div>
-
-              <LocationPicker
-                locations={locations}
-                radiusMiles={radiusMiles}
-                onAdd={(loc) => setLocations((a) => [...a, loc])}
-                className="w-full h-[clamp(360px,42vh,520px)]"
-              />
-
-              <div className="relative px-5 py-2.5 border-t border-ink/[0.06] dark:border-white/[0.04]">
-                <p className="text-[10px] font-mono text-ink/45 dark:text-slate-500">
-                  Click the map to drop a pin. Each pin watches a {radiusMiles === 0.25 ? '¼' : radiusMiles === 0.5 ? '½' : radiusMiles}-mile circle.
-                </p>
-              </div>
-            </div>
-
-            {/* Live preview — the editorial proof */}
+          {/* SAMPLE — the editorial proof, reacting live to the entry card */}
+          <aside className="min-w-0">
             <LivePreview
               email={email}
               streams={streams}
@@ -466,7 +492,9 @@ function HeroBand() {
         </div>
 
         {/* Pull-quote margin note — editorial sidebar. Hidden on narrow viewports
-            where the hero card needs vertical room rather than horizontal split. */}
+            where the hero card needs vertical room rather than horizontal split.
+            FUTURE: this slot is reserved for Dana art (harbor seal chasing
+            anchovies down Valencia St) — swap the quote into a caption then. */}
         <aside className="hidden lg:block max-w-[18rem] border-l-2 border-terracotta-500/30 pl-5">
           <p className="font-display italic text-[15px] leading-snug text-ink/75 dark:text-paper-100/85">
             “Most blocks have quiet days. We never fill an inbox just to prove we’re
