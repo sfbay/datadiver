@@ -11,6 +11,11 @@ The geo-newsletters feature is DataDiver's first backend (Vercel Functions + Ver
    ```
    You should see exactly four tables: `subscribe_attempts`, `subscribers`, `subscription_locations`, `subscriptions`. If any are missing, re-paste and re-run (every CREATE is `IF NOT EXISTS`, so re-running is idempotent and safe). See `memory/feedback_neon_partial_paste.md`.
 
+   **Migration (June 2026, already-provisioned DBs):** the hardening pass added `idx_attempts_created_at` to `db/schema.sql` (the daily prune deletes by age alone; the composite `(ip, created_at)` index can't serve that). Re-run the full schema (idempotent) or just:
+   ```sql
+   CREATE INDEX IF NOT EXISTS idx_attempts_created_at ON subscribe_attempts (created_at);
+   ```
+
 ## Environment variables (Vercel dashboard → Project → Settings → Environment Variables)
 | Var | Example / note |
 |-----|----------------|
@@ -51,7 +56,8 @@ The geo-newsletters feature is DataDiver's first backend (Vercel Functions + Ver
 - Geocode results keyboard navigation (`role="listbox"` + arrow keys).
 - Cron `failedStreams` field in the response for observability when a Socrata stream is down.
 - `tsconfig` for api: switch `moduleResolution` to `"NodeNext"` so `tsc` itself catches missing `.js` suffixes on relative imports (see `memory/feedback_vercel_node_esm_js_suffix.md`).
-- AP-style `a.m.`/`p.m.` in digest timestamps (currently emits `AM`/`PM` via `toLocaleString`; user-flagged May 26 2026).
+- ~~AP-style `a.m.`/`p.m.` in digest timestamps~~ ✓ shipped in the June 2026 hardening pass (along with: timing-safe `CRON_SECRET` compare, 90-day unsubscribe tokens, radius-correct digest bucketing, atomic rate-limit insert+count, `escapeHtml` in the confirm/unsubscribe pages, prune index).
+- Consider a `token_version` column on `subscribers` for true unsubscribe-token revocation on re-subscribe (the 90-day expiry bounds the window; a version bump would close it).
 
 ## Separate launch punchlist (NOT this feature)
 `.ics` calendar export + the upper-left UI icon/logo.

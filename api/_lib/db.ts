@@ -13,11 +13,15 @@ function sql(): NeonQueryFunction<false, false> {
   return _sql
 }
 
-/** Insert one attempt and return how many this IP has made in the last hour. */
+/** Insert one attempt and return how many this IP has made in the last hour,
+ *  including this one. Single statement (data-modifying CTE) so concurrent
+ *  requests can't interleave between insert and count the way two separate
+ *  queries could. The outer SELECT's snapshot predates the CTE's own insert
+ *  — hence the +1. */
 export async function recordSubscribeAttempt(ip: string): Promise<number> {
-  await sql()`INSERT INTO subscribe_attempts (ip) VALUES (${ip})`
   const rows = await sql()`
-    SELECT count(*)::int AS n FROM subscribe_attempts
+    WITH ins AS (INSERT INTO subscribe_attempts (ip) VALUES (${ip}))
+    SELECT count(*)::int + 1 AS n FROM subscribe_attempts
     WHERE ip = ${ip} AND created_at > now() - interval '1 hour'`
   return rows[0].n as number
 }

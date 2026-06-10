@@ -2,15 +2,18 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { verifyToken } from '../../src/lib/alerts/tokens.js'
 import { confirmSubscriber } from '../_lib/db.js'
+import { escapeHtml } from '../_lib/email.js'
 
+// All current callers pass static strings, but escape anyway — the day
+// someone interpolates an email or label here, it must not become XSS.
 function page(title: string, body: string): string {
   const base = (process.env.PUBLIC_BASE_URL || '').replace(/\/$/, '')
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title></head>
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title></head>
   <body style="margin:0;background:#f5ecd9;font-family:Georgia,serif;color:#1e140d">
     <div style="max-width:480px;margin:12vh auto;padding:0 24px;text-align:center">
       <div style="font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#b85a33">The Last 48</div>
-      <h1 style="font-size:24px;margin:10px 0 14px">${title}</h1>
-      <p style="font-size:16px;line-height:1.6">${body}</p>
+      <h1 style="font-size:24px;margin:10px 0 14px">${escapeHtml(title)}</h1>
+      <p style="font-size:16px;line-height:1.6">${escapeHtml(body)}</p>
       <p style="margin-top:24px"><a href="${base}/live-feeds" style="color:#b85a33">Open DataDiver →</a></p>
     </div></body></html>`
 }

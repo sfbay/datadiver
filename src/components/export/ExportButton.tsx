@@ -46,7 +46,7 @@ export default function ExportButton({ targetSelector, filename = 'datadiver-exp
         scale,
         logging: false,
         // Skip the Mapbox canvas — we already captured it above
-        ignoreElements: (el) => el.classList?.contains('mapboxgl-canvas'),
+        ignoreElements: (el: Element) => el.classList?.contains('mapboxgl-canvas'),
         onclone: (clonedDoc: Document) => {
           if (document.documentElement.classList.contains('dark')) {
             clonedDoc.documentElement.classList.add('dark')
