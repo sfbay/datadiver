@@ -30,7 +30,7 @@ export function useDataset<T>(
 
   useEffect(() => {
     let cancelled = false
-    registerQuery()
+    const progressToken = registerQuery()
 
     async function load() {
       setIsLoading(true)
@@ -46,7 +46,10 @@ export function useDataset<T>(
           setError(err instanceof Error ? err.message : 'Failed to fetch data')
         }
       } finally {
-        completeQuery()
+        // Unconditional (even when cancelled) — the registration was real and
+        // must be matched within the same epoch, or total > completed forever.
+        // Cross-view strays are filtered by the epoch token instead.
+        completeQuery(progressToken)
         if (!cancelled) {
           setIsLoading(false)
         }

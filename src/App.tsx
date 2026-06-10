@@ -1,29 +1,49 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { useEffect } from 'react'
+import { Suspense, lazy, useEffect } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import AppShell from '@/components/layout/AppShell'
 import { RouteErrorBoundary } from '@/components/ui/ErrorBoundary'
+// Eager: the landing page and the flagship view (nav position 1). Everything
+// else is route-split — each view chunk (and its D3/view-specific code) loads
+// on first navigation. Mapbox GL stays in the main bundle since most views
+// need it immediately.
 import Home from '@/views/Home/Home'
-import EmergencyResponse from '@/views/EmergencyResponse/EmergencyResponse'
-import ParkingRevenue from '@/views/ParkingRevenue/ParkingRevenue'
-import Dispatch911 from '@/views/Dispatch911/Dispatch911'
-import Cases311 from '@/views/Cases311/Cases311'
-import CrimeIncidents from '@/views/CrimeIncidents/CrimeIncidents'
-import ParkingCitations from '@/views/ParkingCitations/ParkingCitations'
-import TrafficSafety from '@/views/TrafficSafety/TrafficSafety'
-import BusinessActivity from '@/views/BusinessActivity/BusinessActivity'
-import BusinessSearch from '@/views/BusinessSearch/BusinessSearch'
-import BusinessProfile from '@/views/BusinessSearch/BusinessProfile'
-import ChainProfile from '@/views/BusinessSearch/ChainProfile'
-import OwnerProfile from '@/views/BusinessSearch/OwnerProfile'
-import CampaignFinance from '@/views/CampaignFinance/CampaignFinance'
-import Demographics from '@/views/Demographics/Demographics'
-import CityBudget from '@/views/CityBudget/CityBudget'
-import LiveFeeds from '@/views/LiveFeeds/LiveFeeds'
 import Last48 from '@/views/Last48/Last48'
-import Alerts from '@/views/Alerts/AlertsView'
-import Elections from '@/views/Elections/Elections'
-import Neighborhood from '@/views/Neighborhood/Neighborhood'
+
+const EmergencyResponse = lazy(() => import('@/views/EmergencyResponse/EmergencyResponse'))
+const ParkingRevenue = lazy(() => import('@/views/ParkingRevenue/ParkingRevenue'))
+const Dispatch911 = lazy(() => import('@/views/Dispatch911/Dispatch911'))
+const Cases311 = lazy(() => import('@/views/Cases311/Cases311'))
+const CrimeIncidents = lazy(() => import('@/views/CrimeIncidents/CrimeIncidents'))
+const ParkingCitations = lazy(() => import('@/views/ParkingCitations/ParkingCitations'))
+const TrafficSafety = lazy(() => import('@/views/TrafficSafety/TrafficSafety'))
+const BusinessActivity = lazy(() => import('@/views/BusinessActivity/BusinessActivity'))
+const BusinessSearch = lazy(() => import('@/views/BusinessSearch/BusinessSearch'))
+const BusinessProfile = lazy(() => import('@/views/BusinessSearch/BusinessProfile'))
+const ChainProfile = lazy(() => import('@/views/BusinessSearch/ChainProfile'))
+const OwnerProfile = lazy(() => import('@/views/BusinessSearch/OwnerProfile'))
+const CampaignFinance = lazy(() => import('@/views/CampaignFinance/CampaignFinance'))
+const Demographics = lazy(() => import('@/views/Demographics/Demographics'))
+const CityBudget = lazy(() => import('@/views/CityBudget/CityBudget'))
+const Elections = lazy(() => import('@/views/Elections/Elections'))
+const Neighborhood = lazy(() => import('@/views/Neighborhood/Neighborhood'))
+const Alerts = lazy(() => import('@/views/Alerts/AlertsView'))
+
+/** Chunk-loading fallback — same calm register as the skeleton kit: a corner
+ *  pill, not a takeover. The view's own progressive skeletons handle the rest
+ *  once the chunk arrives. */
+function RouteFallback() {
+  return (
+    <div className="h-full grid place-items-center">
+      <div className="flex items-center gap-2.5 rounded-full border border-ink/[0.08] dark:border-white/[0.08] bg-paper-100/70 dark:bg-espresso-800/70 px-4 py-2">
+        <span className="w-2 h-2 rounded-full bg-terracotta-500 animate-pulse" aria-hidden />
+        <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-ink/55 dark:text-slate-400">
+          Loading view
+        </span>
+      </div>
+    </div>
+  )
+}
 
 export default function App() {
   const isDarkMode = useAppStore((s) => s.isDarkMode)
@@ -36,6 +56,7 @@ export default function App() {
     <BrowserRouter>
       <AppShell>
         <RouteErrorBoundary>
+        <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/emergency-response" element={<EmergencyResponse />} />
@@ -59,6 +80,7 @@ export default function App() {
           <Route path="/alerts" element={<Alerts />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
         </RouteErrorBoundary>
       </AppShell>
     </BrowserRouter>

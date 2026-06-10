@@ -19,7 +19,7 @@
 //    useSyncExternalStore snapshot comparisons work correctly (reference
 //    inequality ↔ "something changed").
 
-import { useCallback, useMemo, useRef, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
 import { fetchDataset } from '@/api/client'
 import { usePollCadence } from '@/hooks/usePollCadence'
 import {
@@ -269,6 +269,16 @@ export function useLast48Window(opts: {
     ) as Record<DatasetId, FetchPhase>
   )
 
+  // Backfill stagger timers — tracked so unmount cancels any not-yet-fired
+  // backfill (indices 1–2 fire 700/1400ms after their head fetch; the user
+  // can navigate away inside that window, and an orphaned fetcher would then
+  // run against this hook's stale refs for nothing).
+  const staggerTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
+  useEffect(() => {
+    const timers = staggerTimersRef.current
+    return () => { timers.forEach(clearTimeout) }
+  }, [])
+
   const buildFetcher = useCallback((datasetId: DatasetId) => {
     const fetcherFn = async (): Promise<void> => {
       // Early-return when this dataset is not currently enabled.
@@ -380,7 +390,9 @@ export function useLast48Window(opts: {
         // starving each other at the browser's per-host connection limit.
         if (isHead) {
           phaseRef.current[datasetId] = 'full'
-          setTimeout(() => { void fetcherFn() }, FULL_STAGGER_MS * datasetIndex)
+          staggerTimersRef.current.push(
+            setTimeout(() => { void fetcherFn() }, FULL_STAGGER_MS * datasetIndex),
+          )
         } else {
           // Full (backfill or poll) fetch succeeded — this dataset now has
           // its complete 48h data. The Stream Curtain sweep gates on this
@@ -404,7 +416,9 @@ export function useLast48Window(opts: {
           // poll (up to 30 min away for Fire/EMS and 311). fetchDataset has
           // already exhausted its own retries, so this is the fallback window.
           phaseRef.current[datasetId] = 'full'
-          setTimeout(() => { void fetcherFn() }, FULL_STAGGER_MS * datasetIndex)
+          staggerTimersRef.current.push(
+            setTimeout(() => { void fetcherFn() }, FULL_STAGGER_MS * datasetIndex),
+          )
         } else {
           // Full fetch failed after retries → terminal. Record the error so
           // the loading state SETTLES (the radar stops instead of hanging on
@@ -455,8 +469,18 @@ export function useLast48Window(opts: {
   }, [buildFetcher, notify])
 
   // ── Derive result from snapshot ──────────────────────────────────────────
-  const allEvents = Array.from(snapshot.byId.values()).sort(
-    (a, b) => b.receivedAt - a.receivedAt
+  // Memoized on the byId Map REFERENCE (replaced on every real mutation, per
+  // architecture note 3). Without this, every render produced a fresh sorted
+  // array, which cascaded new identities into visibleEvents → three
+  // useChronologicalReveal effects → FlowMapLayer — a steady re-render storm
+  // (and up to ~6000 redundant setFeatureState calls per render in the
+  // reveal's defensive re-reveal path).
+  const allEvents = useMemo(
+    () =>
+      Array.from(snapshot.byId.values()).sort(
+        (a, b) => b.receivedAt - a.receivedAt
+      ),
+    [snapshot.byId]
   )
 
   const byDataset = useMemo<Record<DatasetId, NormalizedEvent[]>>(() => {
