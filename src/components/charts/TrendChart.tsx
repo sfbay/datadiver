@@ -8,11 +8,15 @@ interface TrendChartProps {
   comparison?: DailyTrendPoint[]
   width?: number
   height?: number
+  /** Dataset pigment for the current-period line + area (hex, e.g. '#b85a33').
+   *  Defaults to dusty teal. Same-pigment-everywhere rule: pass the view's
+   *  accent so the trend matches its sidebar/stat cards. */
+  accentColor?: string
 }
 
 type Metric = 'calls' | 'avgResponse'
 
-export default function TrendChart({ current, comparison, width = 260, height = 120 }: TrendChartProps) {
+export default function TrendChart({ current, comparison, width = 260, height = 120, accentColor = '#5c9693' }: TrendChartProps) {
   const svgRef = useRef<SVGSVGElement>(null)
   const [metric, setMetric] = useState<Metric>('calls')
   const isDarkMode = useAppStore((s) => s.isDarkMode)
@@ -58,7 +62,10 @@ export default function TrendChart({ current, comparison, width = 260, height = 
 
     g.append('path')
       .datum(current)
-      .attr('fill', 'rgba(59,130,246,0.12)')
+      // Alpha-only tint of the accent ('1f' ≈ 12%) — works on cream and
+      // espresso alike; the old hardcoded signal-blue was the last survivor
+      // of the replaced Bloomberg palette.
+      .attr('fill', `${accentColor}1f`)
       .attr('d', area)
 
     // Line for current period
@@ -70,7 +77,7 @@ export default function TrendChart({ current, comparison, width = 260, height = 
     g.append('path')
       .datum(current)
       .attr('fill', 'none')
-      .attr('stroke', '#3f7573')
+      .attr('stroke', accentColor)
       .attr('stroke-width', 1.5)
       .attr('d', line)
 
@@ -130,7 +137,7 @@ export default function TrendChart({ current, comparison, width = 260, height = 
       .attr('font-size', '8px')
       .attr('font-family', '"JetBrains Mono", monospace')
 
-  }, [current, comparison, metric, width, height, isDarkMode])
+  }, [current, comparison, metric, width, height, isDarkMode, accentColor])
 
   return (
     <div>

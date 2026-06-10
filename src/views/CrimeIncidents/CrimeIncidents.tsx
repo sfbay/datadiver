@@ -183,6 +183,19 @@ export default function CrimeIncidents() {
   )
   const totalCount = countRows[0] ? parseInt(countRows[0].count, 10) : null
 
+  // Citywide-true 911-link counts — COUNT(field) counts non-null rows, so one
+  // aggregate query yields both the denominator and the cad_number-linked
+  // numerator without the 5K sample cap.
+  const { data: linkedRows } = useDataset<{ total_count: string; linked_count: string }>(
+    'policeIncidents',
+    {
+      $select: 'count(*) as total_count, count(cad_number) as linked_count',
+      $where: whereClause,
+      $limit: 1,
+    },
+    [whereClause]
+  )
+
   const { data: categoryRows } = useDataset<IncidentCategoryAggRow>(
     'policeIncidents',
     {
@@ -297,9 +310,13 @@ export default function CrimeIncidents() {
     // Top category from aggregation
     const topCategory = categoryRows.length > 0 ? categoryRows[0].incident_category : 'N/A'
 
-    // 911 linked percentage
-    const linkedCount = incidentData.filter((i) => i.cadNumber).length
-    const linkedPct = (linkedCount / incidentData.length) * 100
+    // 911 linked percentage — server-side counts; the 5K-sample ratio is
+    // only an immediate-render fallback while the aggregate loads.
+    const serverTotal = linkedRows[0] ? parseInt(linkedRows[0].total_count, 10) : 0
+    const serverLinked = linkedRows[0] ? parseInt(linkedRows[0].linked_count, 10) : 0
+    const linkedPct = serverTotal > 0
+      ? (serverLinked / serverTotal) * 100
+      : (incidentData.filter((i) => i.cadNumber).length / incidentData.length) * 100
 
     return {
       total: incidentData.length,
@@ -307,7 +324,7 @@ export default function CrimeIncidents() {
       linkedPct,
       peakHour: hourlyPattern.peakHour,
     }
-  }, [incidentData, categoryRows, hourlyPattern.peakHour])
+  }, [incidentData, categoryRows, linkedRows, hourlyPattern.peakHour])
 
   // Resolution bar data
   const resolutionBarData = useMemo((): BarDatum[] => {
@@ -400,6 +417,7 @@ export default function CrimeIncidents() {
           <TrendChart
             current={comparison.currentTrend}
             comparison={comparison.comparisonTrend.length > 0 ? comparison.comparisonTrend : undefined}
+            accentColor="#b85545"
             width={320}
             height={110}
           />

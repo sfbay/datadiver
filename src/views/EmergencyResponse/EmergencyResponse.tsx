@@ -571,6 +571,7 @@ export default function EmergencyResponse() {
             comparison={comparison.comparisonTrend.length > 0 ? comparison.comparisonTrend : undefined}
             width={320}
             height={110}
+            accentColor="#b85a33"
           />
         ),
       })
