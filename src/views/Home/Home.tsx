@@ -342,64 +342,72 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Alerts Ribbon — daily newsletter CTA, inserted right below the hero
-            (between the hero band and the Dana comic ribbon) so the most
-            recently shipped feature gets first-after-hero placement. Same
-            ribbon family as Dana's but in terracotta / alert pigment. */}
-        <AlertsRibbon mounted={mounted} />
+        {/* Newsletter + Dana row — liquid 2:1. Flex-wrap with proportional
+            grow factors instead of a viewport breakpoint: side-by-side when
+            the row fits (≥ ~790px container), Dana wraps to her own
+            full-width line when it doesn't. The newsletter ribbon carries
+            real content (headline, pitch, chips, CTA) so it earns the wide
+            column; the comic tile is a thumbnail + two lines and reads
+            better as a compact feature panel beside it. */}
+        <div className="relative z-10 mb-6 flex flex-wrap items-stretch gap-6">
+          <div className="flex-[2_1_460px] min-w-0">
+            <AlertsRibbon mounted={mounted} />
+          </div>
 
-        {/* Dana Comic Strip Ribbon */}
-        <section
-          className={`relative z-10 mb-6 transition-all duration-1000 delay-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
-        >
-          <button
-            onClick={() => setComicOpen(true)}
-            className="dd-ribbon-hover w-full group flex items-center gap-[clamp(20px,2vw,40px)] glass-card rounded-2xl px-[clamp(20px,2vw,40px)] py-[clamp(12px,1.2vw,24px)] hover:bg-white/[0.06] transition-all duration-300 overflow-hidden text-left relative isolate"
-            style={{ '--glow': '#5c9693' } as CSSProperties}
+          {/* Dana Comic Tile — container-queried, not viewport-queried.
+              When the tile itself is narrower than ~672px (@2xl) — i.e. when
+              it's sitting in the 1fr column — it stacks vertically: comic
+              art fills the top (object-cover, matching the ribbon's height),
+              caption below. When it wraps to a full-width line (mobile,
+              mid-width), it reverts to the original horizontal ribbon. */}
+          <section
+            className={`@container flex-[1_1_300px] min-w-0 relative z-10 transition-all duration-1000 delay-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
           >
-            {/* Comic thumbnail — fluid sizing so the ribbon feels proportional
-                at any width. ~112px on narrow viewports, ~200px on ultrawide.
-                Aspect ratio kept ~7:4 (matches the comic strip's natural crop). */}
-            <img
-              src="/dana-comic-1-thumb.jpg"
-              alt="Dana the DataDiver comic strip"
-              className="object-cover rounded-lg flex-shrink-0 ring-1 ring-white/10 group-hover:ring-white/20 transition-all relative z-10"
-              style={{
-                width: 'clamp(112px, 11vw, 200px)',
-                height: 'clamp(64px, 6.3vw, 114px)',
-              }}
-            />
-            {/* Text — typography also scales fluidly with the thumbnail so the
-                ribbon reads as a single proportional composition rather than
-                a small image with under-served copy beside it. */}
-            <div className="flex-1 min-w-0 relative z-10">
-              <p
-                className="font-display italic text-ink dark:text-white leading-tight"
-                style={{ fontSize: 'clamp(0.95rem, 1.1vw + 0.5rem, 1.6rem)' }}
-              >
-                Meet Dana, the data-diving Harbor Seal!
-              </p>
-              <p
-                className="text-slate-500 dark:text-slate-400 mt-1 leading-snug"
-                style={{ fontSize: 'clamp(0.72rem, 0.55vw + 0.4rem, 1rem)' }}
-              >
-                Follow Dana's adventures diving for civic data — and fish! New comic strips &amp; data tidbits on Instagram.
-              </p>
-            </div>
-            {/* Arrow — also scales with the rest so it stays visually weighted
-                with the new thumbnail and type at wide widths. */}
-            <div className="flex-shrink-0 text-slate-400 dark:text-slate-600 group-hover:text-ink dark:group-hover:text-white transition-colors relative z-10">
-              <svg
-                viewBox="0 0 16 16" fill="none" stroke="currentColor"
-                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                className="group-hover:translate-x-0.5 transition-transform"
-                style={{ width: 'clamp(16px, 1.4vw, 28px)', height: 'clamp(16px, 1.4vw, 28px)' }}
-              >
-                <path d="M3 8h10M10 4.5L13.5 8 10 11.5" />
-              </svg>
-            </div>
-          </button>
-        </section>
+            <button
+              onClick={() => setComicOpen(true)}
+              className="dd-ribbon-hover w-full h-full group flex items-center @max-2xl:flex-col @max-2xl:items-stretch gap-[clamp(20px,2vw,40px)] @max-2xl:gap-3 glass-card rounded-2xl px-[clamp(20px,2vw,40px)] @max-2xl:px-4 py-[clamp(12px,1.2vw,24px)] @max-2xl:py-4 hover:bg-white/[0.06] transition-all duration-300 overflow-hidden text-left relative isolate"
+              style={{ '--glow': '#5c9693' } as CSSProperties}
+            >
+              {/* Comic thumbnail — horizontal mode: fluid inline-ish sizing
+                  (~112px narrow → ~200px ultrawide, ~7:4 crop). Vertical
+                  mode: fills the tile's remaining height, object-cover. */}
+              <img
+                src="/dana-comic-1-thumb.jpg"
+                alt="Dana the DataDiver comic strip"
+                className="object-cover rounded-lg flex-shrink-0 ring-1 ring-white/10 group-hover:ring-white/20 transition-all relative z-10 w-[clamp(112px,11vw,200px)] h-[clamp(64px,6.3vw,114px)] @max-2xl:w-full @max-2xl:h-auto @max-2xl:flex-1 @max-2xl:min-h-[120px]"
+              />
+              {/* Text — typography scales fluidly with the thumbnail so the
+                  ribbon reads as a single proportional composition rather
+                  than a small image with under-served copy beside it. */}
+              <div className="flex-1 min-w-0 @max-2xl:flex-none relative z-10">
+                <p
+                  className="font-display italic text-ink dark:text-white leading-tight"
+                  style={{ fontSize: 'clamp(0.95rem, 1.1vw + 0.5rem, 1.6rem)' }}
+                >
+                  Meet Dana, the data-diving Harbor Seal!
+                </p>
+                <p
+                  className="text-slate-500 dark:text-slate-400 mt-1 leading-snug"
+                  style={{ fontSize: 'clamp(0.72rem, 0.55vw + 0.4rem, 1rem)' }}
+                >
+                  Follow Dana's adventures diving for civic data — and fish! New comic strips &amp; data tidbits on Instagram.
+                </p>
+              </div>
+              {/* Arrow — horizontal mode only; the vertical tile's whole
+                  surface already reads as one tap target. */}
+              <div className="@max-2xl:hidden flex-shrink-0 text-slate-400 dark:text-slate-600 group-hover:text-ink dark:group-hover:text-white transition-colors relative z-10">
+                <svg
+                  viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  className="group-hover:translate-x-0.5 transition-transform"
+                  style={{ width: 'clamp(16px, 1.4vw, 28px)', height: 'clamp(16px, 1.4vw, 28px)' }}
+                >
+                  <path d="M3 8h10M10 4.5L13.5 8 10 11.5" />
+                </svg>
+              </div>
+            </button>
+          </section>
+        </div>
 
         {/* Dana Comic Modal */}
         {comicOpen && (
