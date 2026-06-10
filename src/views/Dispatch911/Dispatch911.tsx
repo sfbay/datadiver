@@ -16,6 +16,7 @@ import ExportButton from '@/components/export/ExportButton'
 import HorizontalBarChart, { type BarDatum } from '@/components/charts/HorizontalBarChart'
 import CallTypeFilter, { type CallTypeEntry } from '@/components/filters/CallTypeFilter'
 import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { Skeleton, SkeletonChart, SkeletonSidebarRows } from '@/components/ui/Skeleton'
 import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
 import { useDataFreshness } from '@/hooks/useDataFreshness'
@@ -99,7 +100,7 @@ export default function Dispatch911() {
   const trend = useTrendBaseline(trendConfig, dateRange)
 
   // Main records fetch
-  const { data: rawData, isLoading, error, hitLimit } = useDataset<DispatchCall>(
+  const { data: rawData, isLoading, error, hitLimit, refetch } = useDataset<DispatchCall>(
     'dispatch911Historical',
     {
       $where: filterClause,
@@ -330,12 +331,7 @@ export default function Dispatch911() {
 
           {/* Error state */}
           {error && (
-            <div className="flex items-center justify-center py-16">
-              <div className="glass-card rounded-xl p-6 max-w-sm">
-                <p className="text-sm font-medium text-signal-red mb-1">Data Error</p>
-                <p className="text-xs text-slate-400">{error}</p>
-              </div>
-            </div>
+            <ErrorState message={error} onRetry={refetch} what="dispatch calls" className="max-w-md" />
           )}
 
           {!isLoading && !freshness.isLoading && !freshness.hasDataInRange && (

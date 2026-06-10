@@ -23,6 +23,7 @@ import CardTray, { type CardDef } from '@/components/ui/CardTray'
 import ExportButton from '@/components/export/ExportButton'
 import MeterDetailPanel from '@/components/ui/MeterDetailPanel'
 import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { SkeletonChart, SkeletonSidebarRows, SkeletonBreakdownList, MapScanOverlay, MapProgressBar } from '@/components/ui/Skeleton'
 import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
 import { useDataFreshness } from '@/hooks/useDataFreshness'
@@ -152,7 +153,7 @@ export default function ParkingRevenue() {
   }, [dateRange])
 
   // Server-side per-meter aggregation — accurate totals for map + tooltips
-  const { data: meterAgg, isLoading, error } = useDataset<MeterAggRow>(
+  const { data: meterAgg, isLoading, error, refetch } = useDataset<MeterAggRow>(
     'parkingRevenue',
     {
       $select: 'post_id, SUM(gross_paid_amt) as total_revenue, COUNT(*) as tx_count',
@@ -518,11 +519,8 @@ export default function ParkingRevenue() {
             <MapProgressBar color="#5c9693" />
             <UnderlayLegend variable={underlayVariable} data={censusNeighborhoods} />
             {error && (
-              <div className="absolute inset-0 flex items-center justify-center z-20">
-                <div className="glass-card rounded-xl p-6 max-w-sm">
-                  <p className="text-sm font-medium text-signal-red mb-1">Data Error</p>
-                  <p className="text-xs text-slate-400">{error}</p>
-                </div>
+              <div className="absolute top-5 left-1/2 -translate-x-1/2 z-20 w-full max-w-md rounded-[14px] backdrop-blur-xl bg-white/60 dark:bg-slate-900/60">
+                <ErrorState message={error} onRetry={refetch} what="meter revenue" />
               </div>
             )}
 

@@ -33,6 +33,7 @@ import TrendChart from '@/components/charts/TrendChart'
 import ServiceCategoryFilter from '@/components/filters/ServiceCategoryFilter'
 import CaseDetailPanel from '@/components/ui/CaseDetailPanel'
 import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { SkeletonSidebarRows, MapScanOverlay, MapProgressBar } from '@/components/ui/Skeleton'
 import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
 import ChartTray, { type ChartTileDef } from '@/components/ui/ChartTray'
@@ -168,7 +169,7 @@ export default function Cases311() {
   const trend = useTrendBaseline(trendConfig, dateRange, trendExtraWhere)
 
   // --- Data queries ---
-  const { data: rawData, isLoading, error, hitLimit } = useDataset<Cases311Record>(
+  const { data: rawData, isLoading, error, hitLimit, refetch } = useDataset<Cases311Record>(
     'cases311',
     { $where: whereClause, $limit: 5000, $select: SELECT_FIELDS },
     [whereClause]
@@ -729,11 +730,8 @@ export default function Cases311() {
             <UnderlayLegend variable={underlayVariable} data={censusNeighborhoods} />
 
             {error && (
-              <div className="absolute inset-0 flex items-center justify-center z-20">
-                <div className="glass-card rounded-xl p-6 max-w-sm">
-                  <p className="text-sm font-medium text-signal-red mb-1">Data Error</p>
-                  <p className="text-xs text-slate-400">{error}</p>
-                </div>
+              <div className="absolute top-5 left-1/2 -translate-x-1/2 z-20 w-full max-w-md rounded-[14px] backdrop-blur-xl bg-white/60 dark:bg-slate-900/60">
+                <ErrorState message={error} onRetry={refetch} what="311 cases" />
               </div>
             )}
 
