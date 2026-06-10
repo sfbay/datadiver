@@ -29,7 +29,31 @@ interface CacheValue {
 }
 
 const CACHE_TTL = 4 * 60 * 60 * 1000  // 4h — baseline shifts slowly
-let cache: CacheValue | null = null
+
+// Keyed by the sorted dataset list — two consumers with different `datasets`
+// args must not overwrite each other's cache entry. `inflight` single-flights
+// concurrent cold-loads of the same key (Last48.tsx and Last48UnifiedView.tsx
+// both call this hook; without it, every cold entry double-fetched the same
+// three Socrata baseline queries).
+const cache = new Map<string, CacheValue>()
+const inflight = new Map<string, Promise<Record<DatasetId, BaselineEntry>>>()
+
+function loadBaseline(key: string, datasets: DatasetId[]): Promise<Record<DatasetId, BaselineEntry>> {
+  const existing = inflight.get(key)
+  if (existing) return existing
+  const p = Promise.all(
+    datasets.map((id) => fetchBaselineForDataset(id).then((b) => [id, b] as const))
+  )
+    .then((entries) => {
+      const b = {} as Record<DatasetId, BaselineEntry>
+      for (const [id, entry] of entries) b[id] = entry
+      cache.set(key, { baseline: b, fetchedAt: Date.now() })
+      return b
+    })
+    .finally(() => { inflight.delete(key) })
+  inflight.set(key, p)
+  return p
+}
 
 // Same mappings as useLast48Window (verified against src/api/datasets.ts).
 const DATASET_REGISTRY_KEY: Record<DatasetId, string> = {
@@ -125,9 +149,12 @@ export function useAnomalyBaseline(opts: {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const cacheKey = [...opts.datasets].sort().join(',')
+
   useEffect(() => {
-    if (cache && Date.now() - cache.fetchedAt < CACHE_TTL) {
-      setBaseline(cache.baseline)
+    const cached = cache.get(cacheKey)
+    if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) {
+      setBaseline(cached.baseline)
       setIsLoading(false)
       return
     }
@@ -135,14 +162,9 @@ export function useAnomalyBaseline(opts: {
     let cancelled = false
     setIsLoading(true)
 
-    Promise.all(
-      opts.datasets.map((id) => fetchBaselineForDataset(id).then((b) => [id, b] as const))
-    )
-      .then((entries) => {
+    loadBaseline(cacheKey, opts.datasets)
+      .then((b) => {
         if (cancelled) return
-        const b: Record<DatasetId, BaselineEntry> = {} as Record<DatasetId, BaselineEntry>
-        for (const [id, entry] of entries) b[id] = entry
-        cache = { baseline: b, fetchedAt: Date.now() }
         setBaseline(b)
         setIsLoading(false)
       })
@@ -154,7 +176,7 @@ export function useAnomalyBaseline(opts: {
 
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opts.datasets.join(',')])
+  }, [cacheKey])
 
   // Compute current 48h counts per (neighborhood × dataset)
   const anomalies: AnomalyResult[] = []

@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react'
-import html2canvas from 'html2canvas'
 
 interface ExportButtonProps {
   /** CSS selector for the element to capture */
@@ -17,6 +16,10 @@ export default function ExportButton({ targetSelector, filename = 'datadiver-exp
 
     setIsExporting(true)
     try {
+      // html2canvas is ~165KB and only needed here — load it on first click,
+      // not in the main bundle. Vite caches the chunk after the first import.
+      const { default: html2canvas } = await import('html2canvas')
+
       // Get the Mapbox canvas if present — html2canvas can't render WebGL
       const mapCanvas = target.querySelector('.mapboxgl-canvas') as HTMLCanvasElement | null
       const rect = (target as HTMLElement).getBoundingClientRect()
@@ -66,6 +69,7 @@ export default function ExportButton({ targetSelector, filename = 'datadiver-exp
       console.error('Export failed:', err)
       // Fallback: try basic html2canvas without compositing
       try {
+        const { default: html2canvas } = await import('html2canvas')
         const canvas = await html2canvas(target as HTMLElement, {
           useCORS: true,
           allowTaint: true,

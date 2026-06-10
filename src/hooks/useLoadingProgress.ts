@@ -15,6 +15,12 @@ interface ProgressState {
 }
 
 let state: ProgressState = { total: 0, completed: 0, active: false }
+// Epoch token: bumped on every reset (i.e., on view navigation). Completions
+// carry the epoch they registered under; a completion from a previous epoch
+// (a fetch cancelled by navigating away) is discarded instead of corrupting
+// the new view's tally — without this, fast navigation produced a false
+// "100% loaded" flash on the destination view.
+let epoch = 0
 const listeners = new Set<() => void>()
 
 function notify() {
@@ -30,20 +36,25 @@ function subscribe(cb: () => void): () => void {
   return () => listeners.delete(cb)
 }
 
-/** Reset progress for a new loading cycle */
+/** Reset progress for a new loading cycle (new epoch — see above). */
 function reset() {
+  epoch += 1
   state = { total: 0, completed: 0, active: true }
   notify()
 }
 
-/** Register a query (increment total). Called by useDataset. */
-export function registerQuery() {
+/** Register a query (increment total). Called by useDataset.
+ *  Returns the epoch token to pass back to completeQuery. */
+export function registerQuery(): number {
   state = { ...state, total: state.total + 1, active: true }
   notify()
+  return epoch
 }
 
-/** Mark a query as complete. Called by useDataset. */
-export function completeQuery() {
+/** Mark a query as complete. Called by useDataset. Pass the token from
+ *  registerQuery — completions from a stale epoch are ignored. */
+export function completeQuery(token: number) {
+  if (token !== epoch) return
   const completed = state.completed + 1
   const done = completed >= state.total
   state = { ...state, completed, active: !done }
