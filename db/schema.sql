@@ -38,3 +38,6 @@ CREATE TABLE IF NOT EXISTS subscribe_attempts (
 );
 
 CREATE INDEX IF NOT EXISTS idx_attempts_ip_time ON subscribe_attempts (ip, created_at);
+-- The daily prune deletes by age alone; a composite (ip, created_at) B-tree
+-- can't serve a created_at-only predicate, so it needs its own index.
+CREATE INDEX IF NOT EXISTS idx_attempts_created_at ON subscribe_attempts (created_at);

@@ -60,6 +60,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (typeof draft === 'string') return res.status(400).json({ error: draft })
 
   const ip = ((req.headers['x-forwarded-for'] as string) || '').split(',')[0].trim() || 'unknown'
+  // Vercel always sets x-forwarded-for; if that ever changes, every caller
+  // shares the 'unknown' bucket and the per-IP limit silently becomes a
+  // global one. Log loudly so the failure mode is visible.
+  if (ip === 'unknown') console.warn('[subscribe] no x-forwarded-for header — rate-limit bucket is global')
 
   try {
     const attempts = await recordSubscribeAttempt(ip)
