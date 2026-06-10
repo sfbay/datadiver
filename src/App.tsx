@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import AppShell from '@/components/layout/AppShell'
+import { RouteErrorBoundary } from '@/components/ui/ErrorBoundary'
 import Home from '@/views/Home/Home'
 import EmergencyResponse from '@/views/EmergencyResponse/EmergencyResponse'
 import ParkingRevenue from '@/views/ParkingRevenue/ParkingRevenue'
@@ -34,6 +35,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AppShell>
+        <RouteErrorBoundary>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/emergency-response" element={<EmergencyResponse />} />
@@ -57,6 +59,7 @@ export default function App() {
           <Route path="/alerts" element={<Alerts />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </RouteErrorBoundary>
       </AppShell>
     </BrowserRouter>
   )

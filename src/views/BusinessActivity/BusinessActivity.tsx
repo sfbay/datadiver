@@ -27,6 +27,7 @@ import ExportButton from '@/components/export/ExportButton'
 import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
 import { SkeletonStatCards, SkeletonSidebarRows, MapScanOverlay, MapProgressBar } from '@/components/ui/Skeleton'
 import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { useDataFreshness } from '@/hooks/useDataFreshness'
 import { useTrendBaseline } from '@/hooks/useTrendBaseline'
 import type { TrendConfig } from '@/types/trends'
@@ -205,12 +206,12 @@ export default function BusinessActivity() {
   // --- Primary data: split into openings + closures to avoid sort bias ---
   // A single query with (start_date OR end_date) + ORDER BY start_date would
   // cut off closures at the row limit. Two queries with correct sort per field.
-  const { data: openingsRaw, isLoading: openingsLoading, error: openingsError, hitLimit: openingsHitLimit } = useDataset<BusinessLocationRecord>(
+  const { data: openingsRaw, isLoading: openingsLoading, error: openingsError, hitLimit: openingsHitLimit, refetch: refetchOpenings } = useDataset<BusinessLocationRecord>(
     'businessLocations',
     { $where: openingsClause, $limit: 3000, $select: SELECT_FIELDS, $order: 'dba_start_date DESC' },
     [openingsClause]
   )
-  const { data: closuresRaw, isLoading: closuresLoading, error: closuresError } = useDataset<BusinessLocationRecord>(
+  const { data: closuresRaw, isLoading: closuresLoading, error: closuresError, refetch: refetchClosures } = useDataset<BusinessLocationRecord>(
     'businessLocations',
     { $where: closuresClause, $limit: 3000, $select: SELECT_FIELDS, $order: 'dba_end_date DESC' },
     [closuresClause]
@@ -762,11 +763,15 @@ export default function BusinessActivity() {
             <UnderlayLegend variable={underlayVariable} data={censusNeighborhoods} />
 
             {error && (
-              <div className="absolute inset-0 flex items-center justify-center z-20">
-                <div className="glass-card rounded-xl p-6 max-w-sm">
-                  <p className="text-sm font-medium text-signal-red mb-1">Data Error</p>
-                  <p className="text-xs text-slate-400">{error}</p>
-                </div>
+              <div className="absolute top-5 left-1/2 -translate-x-1/2 z-20 w-full max-w-md rounded-[14px] backdrop-blur-xl bg-white/60 dark:bg-slate-900/60">
+                <ErrorState
+                  message={error}
+                  onRetry={() => {
+                    refetchOpenings()
+                    refetchClosures()
+                  }}
+                  what="business activity"
+                />
               </div>
             )}
 
