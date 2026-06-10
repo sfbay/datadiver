@@ -60,4 +60,4 @@ The geo-newsletters feature is DataDiver's first backend (Vercel Functions + Ver
 - Consider a `token_version` column on `subscribers` for true unsubscribe-token revocation on re-subscribe (the 90-day expiry bounds the window; a version bump would close it).
 
 ## Separate launch punchlist (NOT this feature)
-`.ics` calendar export + the upper-left UI icon/logo.
+~~The DataDiver icon — favicon (`.ico`/SVG; previously mis-noted here as "`.ics` calendar export", a typo — there is no calendar feature) + the upper-left UI mark~~ ✓ shipped June 2026: theme-aware `favicon.svg` + `favicon.ico` + `apple-touch-icon.png`; the upper-left Dana badge already existed in `AppShell`.
