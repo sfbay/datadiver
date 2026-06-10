@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <style>
+    .bg { fill: #f5ecd9 }
+    @media (prefers-color-scheme: dark) { .bg { fill: #1e140d } }
+  </style>
+  <defs>
+    <clipPath id="badge"><circle cx="32" cy="32" r="30"/></clipPath>
+  </defs>
+  <circle class="bg" cx="32" cy="32" r="30"/>
+  <g clip-path="url(#badge)">
+    <!-- bubbles -->
+    <circle cx="11" cy="13" r="2" fill="#5c9693" opacity="0.55"/>
+    <circle cx="17" cy="8" r="1.4" fill="#5c9693" opacity="0.4"/>
+    <!-- seal head + shoulders, bleeding off the badge bottom -->
+    <path d="M30 15 C 18 15 9 24 9 38 C 9 54 13 64 30 64 C 47 64 51 54 51 38 C 51 24 42 15 30 15 Z" fill="#5c9693"/>
+    <!-- muzzle -->
+    <ellipse cx="30" cy="43.5" rx="12" ry="6.5" fill="#f0e6d2"/>
+    <!-- nose -->
+    <path d="M27.6 41 Q 30 39.8 32.4 41 Q 31.2 43.8 30 43.8 Q 28.8 43.8 27.6 41 Z" fill="#3a2a1e"/>
+    <!-- whisker dots -->
+    <circle cx="23" cy="43" r="0.9" fill="#8a7a5c"/>
+    <circle cx="21" cy="45.5" r="0.9" fill="#8a7a5c"/>
+    <circle cx="37" cy="43" r="0.9" fill="#8a7a5c"/>
+    <circle cx="39" cy="45.5" r="0.9" fill="#8a7a5c"/>
+    <!-- goggle strap -->
+    <rect x="6" y="26.5" width="48" height="4.5" rx="2.25" fill="#b85a33"/>
+    <!-- goggle lenses -->
+    <circle cx="21" cy="29" r="7.5" fill="#dceae8" stroke="#b85a33" stroke-width="2.8"/>
+    <circle cx="39" cy="29" r="7.5" fill="#dceae8" stroke="#b85a33" stroke-width="2.8"/>
+    <!-- eyes -->
+    <circle cx="21" cy="29.5" r="2.4" fill="#3a2a1e"/>
+    <circle cx="39" cy="29.5" r="2.4" fill="#3a2a1e"/>
+    <!-- snorkel: tube up past the badge edge, J-curve to mouth -->
+    <path d="M54 8 L 54 38 Q 54 46 46 47" fill="none" stroke="#b85a33" stroke-width="4.2" stroke-linecap="round"/>
+  </g>
+</svg>
