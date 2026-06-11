@@ -355,7 +355,7 @@ export default function Home() {
                   dataset (each feed publishes on its own lag; see /about).
                   Errors turn the pill ochre rather than pretending. */}
               <span
-                className={`inline-flex items-center gap-2 pl-2.5 pr-3.5 py-1.5 rounded-full
+                className={`inline-flex items-center gap-2 ml-5 pl-2.5 pr-3.5 py-1.5 rounded-full
                   text-[10px] font-mono uppercase tracking-wider whitespace-nowrap text-[#f5ecd9]
                   shadow-sm ${indicators.error ? 'bg-[#b58620]' : 'bg-[#5c7a3d]'}`}
                 title="When DataDiver last refreshed from datasf.sfgov.org — each dataset publishes on its own schedule"
