@@ -605,3 +605,70 @@ html:not(.dark) .glow-corner {
   transition: opacity var(--dur-slow, 480ms) var(--ease-settle, ease);
 }
 .dd-ribbon-hover:hover::before { opacity: 0.85; }
+
+/* ================================================================
+   Chip sheen — "data arriving" sweep for Last 48 super-chips.
+   A pigment-tinted band travels left → right (the sparkline's time
+   direction). TWO registers, two distinct states:
+
+   · loading (default) — quiet, slow, synchronized across chips:
+     "data is on its way." Same vocabulary as the skeleton shimmer.
+   · .is-streaming — the beacon: THIS stream's dots are actively
+     landing on the map. Brighter band, faster cadence, pigment ring.
+     A separate keyframe name forces the band to restart from the
+     left edge at ignition — a visible handoff beat as the curtain
+     passes the baton between streams.
+
+   SuperChip mounts this only while its stream is arriving (+700ms
+   fade-out linger); colors come from the chip's pigment via --sheen /
+   --sheen-hot / --sheen-ring. transform-only animation (no layout).
+   ================================================================ */
+.chip-sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  transition: opacity 600ms ease, box-shadow 400ms ease;
+}
+.chip-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 32%,
+    var(--sheen, rgba(168, 146, 106, 0.14)) 50%,
+    transparent 68%
+  );
+  transform: translateX(-100%);
+  animation: chip-sheen-sweep 2.6s linear infinite;
+}
+.chip-sheen.is-streaming {
+  /* Bold pigment ring + interior bloom — the unmistakable "this stream
+     is rendering now" marker. 2.5px inset line at full pigment, with a
+     soft glow washing inward from the edge (outer glows would be clipped
+     by the chip's overflow-hidden, so all the light lives inside). */
+  box-shadow:
+    inset 0 0 0 2.5px var(--sheen-ring, #a8926a),
+    inset 0 0 18px var(--sheen-bloom, rgba(168, 146, 106, 0.28));
+}
+.chip-sheen.is-streaming::after {
+  background: linear-gradient(
+    100deg,
+    transparent 38%,
+    var(--sheen-hot, rgba(168, 146, 106, 0.35)) 50%,
+    transparent 62%
+  );
+  animation: chip-sheen-sweep-hot 1.5s linear infinite;
+}
+@keyframes chip-sheen-sweep {
+  to { transform: translateX(100%); }
+}
+@keyframes chip-sheen-sweep-hot {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chip-sheen::after { animation: none; }
+}
