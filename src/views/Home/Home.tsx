@@ -346,7 +346,9 @@ export default function Home() {
                   hover:text-slate-600 dark:hover:text-slate-300 underline decoration-slate-400/30 underline-offset-2
                   decoration-dotted transition-colors"
               >
-                Development and Design by Assoc. Prof. Jesse Garnier, SF State Journalism
+                Development and Design By
+                <br />
+                Assoc. Prof. Jesse Garnier, SF State Journalism
               </button>
             </div>
           </div>
