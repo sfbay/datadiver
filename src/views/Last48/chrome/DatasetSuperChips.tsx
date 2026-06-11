@@ -200,16 +200,20 @@ function lagColor(ms: number | null): string {
 // Single chip
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Chip arrival states (see Last48.tsx arrivalByDataset):
+ *  'loading'   — fetching or queued; quiet synchronized shimmer.
+ *  'streaming' — this stream's dots are actively landing on the map;
+ *                the pronounced beacon (brighter, faster, pigment ring).
+ *  'idle'      — settled (or disabled/errored); no sheen. */
+export type ChipArrival = 'idle' | 'loading' | 'streaming'
+
 interface SuperChipProps {
   datasetId: DatasetId
   events: NormalizedEvent[]
   freshness: { refreshLagMs: number | null; eventLagMs: number | null } | undefined
   isLoaded: boolean
   isActive: boolean
-  /** True while this stream's data is still arriving on the canvas — from
-   *  cold-load until its chronological sweep completes (see Last48.tsx
-   *  arrivingByDataset). Drives the sheen sweep across the chip. */
-  isArriving: boolean
+  arrival: ChipArrival
   onToggle: () => void
 }
 
@@ -219,7 +223,7 @@ function SuperChip({
   freshness,
   isLoaded,
   isActive,
-  isArriving,
+  arrival,
   onToggle,
 }: SuperChipProps) {
   const pigment = PIGMENTS[datasetId]
@@ -227,6 +231,7 @@ function SuperChip({
 
   // Sheen lingers 700ms past arrival-complete so the fade-out (600ms CSS
   // opacity transition) plays instead of the band popping off mid-sweep.
+  const isArriving = arrival !== 'idle'
   const [sheenMounted, setSheenMounted] = useState(isArriving)
   useEffect(() => {
     if (isArriving) {
@@ -271,14 +276,18 @@ function SuperChip({
       {isActive && <span className="glow-corner is-sm" aria-hidden />}
 
       {/* Arrival sheen — pigment band sweeping left → right (the sparkline's
-          time direction) while this stream's dots are still cascading onto
-          the map. Fades out over 600ms when the sweep settles. */}
+          time direction). Two registers: quiet 'loading' shimmer while the
+          stream fetches/queues, and the 'streaming' beacon (brighter band,
+          faster cadence, pigment ring) while its dots are actively landing
+          on the map. Fades out over 600ms when the sweep settles. */}
       {sheenMounted && (
         <span
-          className="chip-sheen"
+          className={`chip-sheen ${arrival === 'streaming' ? 'is-streaming' : ''}`}
           style={{
             opacity: isArriving ? 1 : 0,
             '--sheen': `${pigment}29`,
+            '--sheen-hot': `${pigment}59`,
+            '--sheen-ring': `${pigment}4d`,
           } as CSSProperties}
           aria-hidden
         />
@@ -385,9 +394,10 @@ interface Props {
   byDataset: Record<DatasetId, NormalizedEvent[]>
   freshness: FreshnessMap
   initialLoadedByDataset: Record<DatasetId, boolean>
-  /** Per-dataset "still arriving on the canvas" flags — true from cold-load
-   *  until that stream's chronological sweep completes. See Last48.tsx. */
-  arrivingByDataset: Record<DatasetId, boolean>
+  /** Per-dataset arrival state — 'loading' (fetching/queued), 'streaming'
+   *  (dots actively landing on the canvas), 'idle' (settled). See
+   *  Last48.tsx arrivalByDataset. */
+  arrivalByDataset: Record<DatasetId, ChipArrival>
 }
 
 export default function DatasetSuperChips({
@@ -396,7 +406,7 @@ export default function DatasetSuperChips({
   byDataset,
   freshness,
   initialLoadedByDataset,
-  arrivingByDataset,
+  arrivalByDataset,
 }: Props) {
   return (
     // Liquid grid (auto-fit + minmax, no breakpoints — house convention):
@@ -413,7 +423,7 @@ export default function DatasetSuperChips({
           freshness={freshness[id]}
           isLoaded={initialLoadedByDataset[id] ?? false}
           isActive={enabled.includes(id)}
-          isArriving={arrivingByDataset[id] ?? false}
+          arrival={arrivalByDataset[id] ?? 'idle'}
           onToggle={() => onToggle(id)}
         />
       ))}

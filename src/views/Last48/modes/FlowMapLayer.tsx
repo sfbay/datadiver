@@ -155,12 +155,14 @@ interface Props {
    *  (911) always leads because the gate is keyed to the fixed stream order,
    *  not data-arrival order. */
   fullyLoadedByDataset?: Record<DatasetId, boolean>
-  /** Called when a stream's chronological sweep COMPLETES (its last dot has
-   *  landed on the canvas) — including the fast-forward click and
-   *  reduced-motion short-circuits. Drives the DatasetSuperChips arrival
-   *  sheen: the chip shimmers until this fires for its stream, so the
-   *  chrome settles in sync with the map, not with the network. */
-  onSweepSettled?: (id: DatasetId) => void
+  /** Called on each stream's sweep phase transition: 'sweeping' the moment
+   *  its chronological reveal is enabled (dots actively landing on the
+   *  canvas), 'settled' when the sweep completes — including the
+   *  fast-forward click and reduced-motion short-circuits. Drives the
+   *  DatasetSuperChips arrival sheen: the streaming beacon lights exactly
+   *  one chip at a time (the curtain serializes sweeps), so the chrome
+   *  performs the same baton pass as the map. */
+  onSweepPhase?: (id: DatasetId, phase: 'sweeping' | 'settled') => void
 }
 
 const SOURCE_ID        = 'last48-flow-events'
@@ -214,7 +216,7 @@ const STROKE_OPACITY: mapboxgl.ExpressionSpecification = [
   0,  // unrevealed: invisible
 ]
 
-export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewRipples, fullyLoadedByDataset, onSweepSettled }: Props) {
+export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewRipples, fullyLoadedByDataset, onSweepPhase }: Props) {
   // Stable refs so event handlers don't need to re-attach when props change.
   const eventsRef      = useRef(events)
   const onSelectRef    = useRef(onSelect)
@@ -284,13 +286,21 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewR
   const enabled1 = !!fullyLoadedByDataset?.[stream1] && sweepReleased.has(stream0)
   const enabled2 = !!fullyLoadedByDataset?.[stream2] && sweepReleased.has(stream1)
 
+  // Sweep-START notifications — the moment each stream's reveal becomes
+  // enabled its dots start landing, so its chip flips to the streaming
+  // beacon. Effects (not inline calls) so each fires exactly once on the
+  // false → true transition.
+  useEffect(() => { if (enabled0) onSweepPhase?.(stream0, 'sweeping') }, [enabled0, stream0, onSweepPhase])
+  useEffect(() => { if (enabled1) onSweepPhase?.(stream1, 'sweeping') }, [enabled1, stream1, onSweepPhase])
+  useEffect(() => { if (enabled2) onSweepPhase?.(stream2, 'sweeping') }, [enabled2, stream2, onSweepPhase])
+
   // Memoized onComplete handlers — stable identity to keep the hook's deps
   // clean. Each release advances the chain after the buffer delay; the
   // settle notification fires immediately (the chip sheen should fade the
   // moment the stream's last dot lands, not after the inter-sweep buffer).
-  const onComplete0 = useCallback(() => { releaseSweep(stream0); onSweepSettled?.(stream0) }, [releaseSweep, stream0, onSweepSettled])
-  const onComplete1 = useCallback(() => { releaseSweep(stream1); onSweepSettled?.(stream1) }, [releaseSweep, stream1, onSweepSettled])
-  const onComplete2 = useCallback(() => { releaseSweep(stream2); onSweepSettled?.(stream2) }, [releaseSweep, stream2, onSweepSettled])
+  const onComplete0 = useCallback(() => { releaseSweep(stream0); onSweepPhase?.(stream0, 'settled') }, [releaseSweep, stream0, onSweepPhase])
+  const onComplete1 = useCallback(() => { releaseSweep(stream1); onSweepPhase?.(stream1, 'settled') }, [releaseSweep, stream1, onSweepPhase])
+  const onComplete2 = useCallback(() => { releaseSweep(stream2); onSweepPhase?.(stream2, 'settled') }, [releaseSweep, stream2, onSweepPhase])
 
   useChronologicalReveal({
     map,

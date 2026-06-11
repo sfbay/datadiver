@@ -181,48 +181,65 @@ export default function Last48() {
     )
   }
 
-  // ── Chip arrival sheen ────────────────────────────────────────────────────
-  // Streams whose chronological sweep has COMPLETED (FlowMapLayer reports
-  // each via onSweepSettled — including the click-to-skip fast-forward).
-  // Reset whenever FLOW points toggle back on: the layer remounts and
-  // replays the full cascade, so the chips should shimmer through the
-  // replay too — chrome and canvas settle together.
-  const [sweepSettled, setSweepSettled] = useState<Set<DatasetId>>(new Set())
-  const handleSweepSettled = useCallback((id: DatasetId) => {
-    setSweepSettled((prev) => {
-      if (prev.has(id)) return prev
-      const next = new Set(prev)
-      next.add(id)
-      return next
+  // ── Chip arrival sheen — two distinct states ──────────────────────────────
+  // 'loading'   = fetching / queued behind earlier streams; quiet synchronized
+  //               shimmer ("data on its way").
+  // 'streaming' = THIS stream's chronological sweep is actively landing dots
+  //               on the canvas; the pronounced beacon. The curtain
+  //               serializes sweeps, so exactly one chip is streaming at a
+  //               time — the chips perform the same 911 → Fire/EMS → 311
+  //               baton pass as the map.
+  // FlowMapLayer reports both transitions via onSweepPhase (including the
+  // click-to-skip fast-forward). Reset whenever FLOW points toggle back on:
+  // the layer remounts and replays the cascade, so the chips replay too.
+  type SweepPhase = 'pending' | 'sweeping' | 'settled'
+  const [sweepPhase, setSweepPhase] = useState<Record<DatasetId, SweepPhase>>(
+    () => Object.fromEntries(LAST48_DATASETS.map((id) => [id, 'pending'])) as Record<DatasetId, SweepPhase>,
+  )
+  const handleSweepPhase = useCallback((id: DatasetId, phase: 'sweeping' | 'settled') => {
+    setSweepPhase((prev) => {
+      if (prev[id] === phase || prev[id] === 'settled') return prev
+      return { ...prev, [id]: phase }
     })
   }, [])
   useEffect(() => {
-    if (pointsOn) setSweepSettled(new Set())
+    if (pointsOn) {
+      setSweepPhase(
+        Object.fromEntries(LAST48_DATASETS.map((id) => [id, 'pending'])) as Record<DatasetId, SweepPhase>,
+      )
+    }
   }, [pointsOn])
 
-  // Per-chip "data arriving" flag. While FLOW is performing the cascade the
-  // chip settles when ITS stream's sweep completes (the moment its last dot
-  // lands) — not when the fetch returns, which is 10-15s earlier. With
-  // points off there is no sweep, so settle on the data itself. A terminal
-  // error anywhere stalls the serialized sweep chain (later streams never
-  // get enabled), so any error also drops the healthy streams back to
-  // data-settled rather than shimmering forever; the errored stream itself
-  // never shimmers (the failure banner owns that story).
-  const arrivingByDataset = useMemo(() => {
+  // Per-chip arrival state. While FLOW is performing the cascade the chip
+  // follows ITS stream's sweep phase — settling the moment its last dot
+  // lands, not when the fetch returns (10-15s earlier). With points off
+  // there is no sweep, so 'loading' until the data itself lands (never
+  // 'streaming' — nothing is rendering). A terminal error anywhere stalls
+  // the serialized sweep chain (later streams never get enabled), so any
+  // error drops the healthy streams back to data-settled rather than
+  // shimmering forever; the errored stream itself goes quiet (the failure
+  // banner owns that story).
+  const arrivalByDataset = useMemo(() => {
     const anyStreamError = LAST48_DATASETS.some(
       (id) => datasets.includes(id) && !!window48.errorByDataset[id],
     )
-    const out = {} as Record<DatasetId, boolean>
+    const out = {} as Record<DatasetId, 'idle' | 'loading' | 'streaming'>
     for (const id of LAST48_DATASETS) {
       const enabled = datasets.includes(id)
       const errored = !!window48.errorByDataset[id]
-      const settled = pointsOn && !anyStreamError
-        ? sweepSettled.has(id)
-        : !!window48.fullyLoadedByDataset[id]
-      out[id] = enabled && !errored && !settled
+      if (!enabled || errored) {
+        out[id] = 'idle'
+        continue
+      }
+      if (pointsOn && !anyStreamError) {
+        const ph = sweepPhase[id]
+        out[id] = ph === 'settled' ? 'idle' : ph === 'sweeping' ? 'streaming' : 'loading'
+      } else {
+        out[id] = window48.fullyLoadedByDataset[id] ? 'idle' : 'loading'
+      }
     }
     return out
-  }, [datasets, pointsOn, sweepSettled, window48.fullyLoadedByDataset, window48.errorByDataset])
+  }, [datasets, pointsOn, sweepPhase, window48.fullyLoadedByDataset, window48.errorByDataset])
 
   return (
     <div className="flex flex-col h-full">
@@ -284,7 +301,7 @@ export default function Last48() {
           byDataset={window48.byDataset}
           freshness={window48.freshness}
           initialLoadedByDataset={window48.initialLoadedByDataset}
-          arrivingByDataset={arrivingByDataset}
+          arrivalByDataset={arrivalByDataset}
         />
       </div>
 
@@ -300,7 +317,7 @@ export default function Last48() {
           onSelectedEventIdChange={setSelectedEventId}
           selectedNeighborhoodId={selectedNeighborhoodId}
           onSelectedNeighborhoodChange={setSelectedNeighborhoodId}
-          onSweepSettled={handleSweepSettled}
+          onSweepPhase={handleSweepPhase}
         />
       </div>
 
