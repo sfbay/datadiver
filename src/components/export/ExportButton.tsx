@@ -9,6 +9,7 @@ interface ExportButtonProps {
 
 export default function ExportButton({ targetSelector, filename = 'datadiver-export' }: ExportButtonProps) {
   const [isExporting, setIsExporting] = useState(false)
+  const [failed, setFailed] = useState(false)
 
   const handleExport = useCallback(async () => {
     const target = document.querySelector(targetSelector)
@@ -16,13 +17,20 @@ export default function ExportButton({ targetSelector, filename = 'datadiver-exp
 
     setIsExporting(true)
     try {
-      // html2canvas is ~165KB and only needed here — load it on first click,
+      // html2canvas-pro is ~200KB and only needed here — load it on first click,
       // not in the main bundle. Vite caches the chunk after the first import.
-      const { default: html2canvas } = await import('html2canvas')
+      // (The -pro fork parses CSS Color 4 — oklab/oklch/color-mix — which
+      // Tailwind v4 emits for every opacity modifier; html2canvas 1.x throws.)
+      const { default: html2canvas } = await import('html2canvas-pro')
 
       // Get the Mapbox canvas if present — html2canvas can't render WebGL
       const mapCanvas = target.querySelector('.mapboxgl-canvas') as HTMLCanvasElement | null
       const rect = (target as HTMLElement).getBoundingClientRect()
+
+      // The espresso/cream page background lives on <body>, outside every
+      // capture div — without this, exports are transparent and glass cards
+      // float over nothing.
+      const pageBg = getComputedStyle(document.body).backgroundColor
 
       // Create a compositing canvas at 2x resolution
       const outCanvas = document.createElement('canvas')
@@ -32,6 +40,11 @@ export default function ExportButton({ targetSelector, filename = 'datadiver-exp
       const ctx = outCanvas.getContext('2d')
       if (!ctx) throw new Error('Canvas context failed')
       ctx.scale(scale, scale)
+
+      // Layer 0: page background — painted under the map; the html2canvas
+      // pass stays transparent so it doesn't occlude the map layer
+      ctx.fillStyle = pageBg
+      ctx.fillRect(0, 0, rect.width, rect.height)
 
       // Layer 1: Mapbox canvas (if present)
       if (mapCanvas) {
@@ -69,11 +82,11 @@ export default function ExportButton({ targetSelector, filename = 'datadiver-exp
       console.error('Export failed:', err)
       // Fallback: try basic html2canvas without compositing
       try {
-        const { default: html2canvas } = await import('html2canvas')
+        const { default: html2canvas } = await import('html2canvas-pro')
         const canvas = await html2canvas(target as HTMLElement, {
           useCORS: true,
           allowTaint: true,
-          backgroundColor: null,
+          backgroundColor: getComputedStyle(document.body).backgroundColor,
           scale: 2,
           logging: false,
           onclone: (clonedDoc: Document) => {
@@ -88,6 +101,8 @@ export default function ExportButton({ targetSelector, filename = 'datadiver-exp
         link.click()
       } catch (fallbackErr) {
         console.error('Fallback export also failed:', fallbackErr)
+        setFailed(true)
+        setTimeout(() => setFailed(false), 3000)
       }
     } finally {
       setIsExporting(false)
@@ -117,6 +132,8 @@ export default function ExportButton({ targetSelector, filename = 'datadiver-exp
           <span className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
           Exporting
         </>
+      ) : failed ? (
+        <span className="text-brick-500">Export failed</span>
       ) : (
         <>
           <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
