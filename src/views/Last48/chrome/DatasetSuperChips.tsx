@@ -287,7 +287,8 @@ function SuperChip({
             opacity: isArriving ? 1 : 0,
             '--sheen': `${pigment}29`,
             '--sheen-hot': `${pigment}59`,
-            '--sheen-ring': `${pigment}d9`,
+            '--sheen-ring': pigment,
+            '--sheen-bloom': `${pigment}47`,
           } as CSSProperties}
           aria-hidden
         />

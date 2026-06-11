@@ -645,10 +645,13 @@ html:not(.dark) .glow-corner {
   animation: chip-sheen-sweep 2.6s linear infinite;
 }
 .chip-sheen.is-streaming {
-  /* Bold pigment ring — the unmistakable "this stream is rendering now"
-     marker. 2px inset at near-full pigment (outer glows would be clipped
-     by the chip's overflow-hidden, so the ring carries the weight). */
-  box-shadow: inset 0 0 0 2px var(--sheen-ring, rgba(168, 146, 106, 0.85));
+  /* Bold pigment ring + interior bloom — the unmistakable "this stream
+     is rendering now" marker. 2.5px inset line at full pigment, with a
+     soft glow washing inward from the edge (outer glows would be clipped
+     by the chip's overflow-hidden, so all the light lives inside). */
+  box-shadow:
+    inset 0 0 0 2.5px var(--sheen-ring, #a8926a),
+    inset 0 0 18px var(--sheen-bloom, rgba(168, 146, 106, 0.28));
 }
 .chip-sheen.is-streaming::after {
   background: linear-gradient(
