@@ -348,7 +348,9 @@ export default function Home() {
               >
                 Development and Design By
                 <br />
-                Assoc. Prof. Jesse Garnier, SF State Journalism
+                Assoc. Prof. Jesse Garnier,
+                <br />
+                SF State Journalism
               </button>
             </div>
           </div>
