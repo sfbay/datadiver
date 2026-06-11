@@ -547,6 +547,7 @@ html:not(.dark) .glow-corner {
 /* Anchor variants — top-left is the default; use these sparingly */
 .glow-corner.is-tr { left: auto; right: -40px; }
 .glow-corner.is-bl { top: auto; bottom: -40px; }
+.glow-corner.is-lg.is-tr { right: -60px; }  /* match is-lg's offset scale */
 
 /* ================================================================
    PRIMARY BUTTON HOVER SHEEN

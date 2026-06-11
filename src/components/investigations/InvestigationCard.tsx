@@ -20,7 +20,7 @@ function InvestigationSkeleton({ accentColor }: { accentColor: string }) {
     >
       {/* Pigment arrives before the data does — the skeleton glows too,
           so the grid is colorful from first paint, not after queries land. */}
-      <span className="glow-corner is-lg" style={{ opacity: 0.45 }} aria-hidden />
+      <span className="glow-corner is-lg is-tr" style={{ opacity: 0.45 }} aria-hidden />
       {/* Header skeleton */}
       <div className="relative px-4 pt-4 pb-3">
         {/* Eyebrow */}
@@ -78,7 +78,7 @@ export function InvestigationCard({
           view's pigment (teal=Last48, ochre=budget, terracotta=ER, brick=
           traffic, moss=compliance), breaking up the wall of espresso.
           Bolder than the default (0.65) per editorial direction. */}
-      <span className="glow-corner is-lg" style={{ opacity: 0.8 }} aria-hidden />
+      <span className="glow-corner is-lg is-tr" style={{ opacity: 0.8 }} aria-hidden />
 
       {/* Header */}
       <div className="relative px-4 pt-4 pb-3">
