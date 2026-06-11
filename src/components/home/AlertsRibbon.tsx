@@ -29,7 +29,7 @@ export default function AlertsRibbon({ mounted }: AlertsRibbonProps) {
 
   return (
     <section
-      className={`relative z-10 mb-6 transition-all duration-1000 delay-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+      className={`relative z-10 h-full transition-all duration-1000 delay-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
         mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
       }`}
     >
@@ -38,7 +38,7 @@ export default function AlertsRibbon({ mounted }: AlertsRibbonProps) {
         onClick={() => navigate('/alerts')}
         className="
           group glow-host glass-card
-          w-full text-left
+          w-full h-full text-left
           rounded-[28px] rounded-bl-none
           relative overflow-hidden
           pl-[clamp(20px,2vw,40px)] pr-[clamp(52px,4vw,72px)] py-[clamp(18px,1.8vw,28px)]
