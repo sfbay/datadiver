@@ -328,7 +328,7 @@ export default function Home() {
             <p
               className={`text-lg text-slate-500 dark:text-slate-400 max-w-md leading-relaxed transition-all duration-1000 delay-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
             >
-              Bring civic data to life, instantly: Visualize trends, patterns and 24/7
+              Bring civic data to life, instantly. Visualize trends, patterns and 24/7
               flow to connect with your community.
             </p>
 
