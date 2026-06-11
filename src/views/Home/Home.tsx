@@ -377,11 +377,21 @@ export default function Home() {
               {/* Comic thumbnail — horizontal mode: fluid inline-ish sizing
                   (~112px narrow → ~200px ultrawide, ~7:4 crop). Vertical
                   mode: fills the tile's remaining height, object-cover. */}
-              <img
-                src="/dana-comic-1-thumb.jpg"
-                alt="Dana the DataDiver comic strip"
-                className="object-cover rounded-lg flex-shrink-0 ring-1 ring-white/10 group-hover:ring-white/20 transition-all relative z-10 w-[clamp(112px,11vw,200px)] h-[clamp(64px,6.3vw,114px)] @max-2xl:w-full @max-2xl:h-auto @max-2xl:flex-1 @max-2xl:min-h-[120px]"
-              />
+              <div className="relative rounded-lg overflow-hidden flex-shrink-0 ring-1 ring-white/10 group-hover:ring-white/20 transition-all z-10 w-[clamp(112px,11vw,200px)] h-[clamp(64px,6.3vw,114px)] @max-2xl:w-full @max-2xl:h-auto @max-2xl:flex-1 @max-2xl:min-h-[120px]">
+                <img
+                  src="/dana-comic-1-thumb.jpg"
+                  alt="Dana the DataDiver comic strip"
+                  className="w-full h-full object-cover"
+                />
+                {/* Espresso veil — the full-brightness cream comic dominates
+                    the dark page; this pulls it into the room's light. Hover
+                    lifts it, same register as the tile's glow. Light mode
+                    needs no veil (cream art on a cream page). */}
+                <div
+                  aria-hidden
+                  className="absolute inset-0 pointer-events-none transition-colors duration-300 dark:bg-[#1e140d]/35 dark:group-hover:bg-[#1e140d]/15"
+                />
+              </div>
               {/* Text — typography scales fluidly with the thumbnail so the
                   ribbon reads as a single proportional composition rather
                   than a small image with under-served copy beside it. */}
