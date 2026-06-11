@@ -16,7 +16,7 @@ export default function ResponseEquity() {
   return (
     <InvestigationCard
       eyebrow="911 Response · The Equity Gap"
-      accentColor="#d4a435"
+      accentColor="#b85a33"
       headline={headline}
       subtitle="Fire/EMS Dispatch · Average response time by neighborhood"
       explorePath="/emergency-response"

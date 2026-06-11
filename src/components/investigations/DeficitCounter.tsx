@@ -112,7 +112,7 @@ export default function DeficitCounter() {
   return (
     <InvestigationCard
       eyebrow="Budget Gap · This Fiscal Year"
-      accentColor="#963e30"
+      accentColor="#d4a435"
       headline="The deficit is growing faster than revenue"
       subtitle="SF Controller · Spending & Revenue"
       explorePath="/city-budget"

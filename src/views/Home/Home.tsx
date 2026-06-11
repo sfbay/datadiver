@@ -11,6 +11,8 @@ import DeficitCounter from '@/components/investigations/DeficitCounter'
 import ResponseEquity from '@/components/investigations/ResponseEquity'
 import DispatchUnanswered from '@/components/investigations/DispatchUnanswered'
 import ComplianceTracker from '@/components/investigations/ComplianceTracker'
+import Last48Pulse from '@/components/investigations/Last48Pulse'
+import VisionZeroCounter from '@/components/investigations/VisionZeroCounter'
 import VizCard from '@/components/ui/VizCard'
 import AlertsRibbon from '@/components/home/AlertsRibbon'
 
@@ -473,9 +475,11 @@ export default function Home() {
               No breakpoint jumps — the grid reflows continuously as the
               viewport widens. Each card stays in the [460px, 1fr] band. */}
           <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(460px,1fr))]">
+            <Last48Pulse />
             <DeficitCounter />
             <ResponseEquity />
             <DispatchUnanswered />
+            <VisionZeroCounter />
             <ComplianceTracker />
           </div>
         </section>

@@ -14,9 +14,29 @@ export interface InvestigationCardProps {
 
 function InvestigationSkeleton({ accentColor }: { accentColor: string }) {
   return (
-    <div className="glass-card rounded-2xl overflow-hidden flex flex-col h-full">
+    <div
+      className="glow-host glass-card rounded-2xl overflow-hidden flex flex-col h-full relative isolate"
+      style={{ '--glow': accentColor } as React.CSSProperties}
+    >
+      {/* Pigment arrives before the data does — the skeleton glows too,
+          so the grid is colorful from first paint, not after queries land.
+          Same for the corner notch: it's structural chrome, so it renders
+          from first paint instead of popping in when data arrives. */}
+      <span className="glow-corner is-lg" style={{ opacity: 0.45 }} aria-hidden />
+      <div
+        className="absolute top-0 right-0 grid place-items-center z-10 w-[34px] h-[34px] rounded-tr-2xl rounded-bl-[18px]"
+        style={{ backgroundColor: accentColor, opacity: 0.7 }}
+        aria-hidden
+      >
+        <svg
+          width="12" height="12" viewBox="0 0 16 16" fill="none"
+          stroke="#fbf6ea" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"
+        >
+          <path d="M5 3 L11 8 L5 13" />
+        </svg>
+      </div>
       {/* Header skeleton */}
-      <div className="px-4 pt-4 pb-3">
+      <div className="relative px-4 pt-4 pb-3">
         {/* Eyebrow */}
         <div className="flex items-center gap-2 mb-3">
           <div
@@ -65,10 +85,46 @@ export function InvestigationCard({
   return (
     <button
       onClick={() => navigate(explorePath)}
-      className="glass-card rounded-2xl hover:bg-white/[0.04] transition-all duration-300 text-left w-full overflow-hidden flex flex-col h-full"
+      className="glow-host glass-card rounded-2xl hover:bg-white/[0.04] transition-all duration-300 text-left w-full overflow-hidden flex flex-col h-full relative isolate group"
+      style={{ '--glow': accentColor } as React.CSSProperties}
     >
+      {/* Corner-glow signature, Tier 1 — each card wears its destination
+          view's pigment (teal=Last48, ochre=budget, terracotta=ER, brick=
+          traffic, moss=compliance), breaking up the wall of espresso.
+          Top-left (the house anchor, matching the explorations tiles) —
+          the notch tab owns the top-right. Bolder than the default
+          (0.65) per editorial direction. */}
+      <span className="glow-corner is-lg" style={{ opacity: 0.8 }} aria-hidden />
+
+      {/* Top-right accent notch with chevron — same idiom as VizCard /
+          AlertsRibbon, sized to this card's 16px radius. The notch sits on
+          the glow's anchor corner: the light draws the eye, the tab gives
+          it somewhere to go. Replaces the footer's "Explore →" text. */}
+      <div
+        className="absolute top-0 right-0 grid place-items-center z-10
+                   w-[34px] h-[34px] rounded-tr-2xl rounded-bl-[18px]
+                   transition-[width,height] duration-300 ease-[cubic-bezier(0.22,0.8,0.3,1)]
+                   group-hover:w-[40px] group-hover:h-[40px]"
+        style={{ backgroundColor: accentColor }}
+        aria-hidden
+      >
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="#fbf6ea"
+          strokeWidth="2.25"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="transition-transform duration-300 group-hover:translate-x-0.5"
+        >
+          <path d="M5 3 L11 8 L5 13" />
+        </svg>
+      </div>
+
       {/* Header */}
-      <div className="px-4 pt-4 pb-3">
+      <div className="relative px-4 pt-4 pb-3">
         {/* Eyebrow */}
         <div className="flex items-center gap-2 mb-2.5">
           <span
@@ -98,7 +154,7 @@ export function InvestigationCard({
       </div>
 
       {/* Card body — hero viz injected by parent */}
-      <div className="px-4 pb-3">
+      <div className="relative px-4 pb-3">
         {children}
       </div>
 
@@ -107,12 +163,9 @@ export function InvestigationCard({
           has a small error state while siblings have rich viz), the empty
           space settles BELOW the body content rather than centering or
           floating awkwardly. Content top-aligns; void anchors bottom. */}
-      <div className="mt-auto px-4 py-2.5 border-t border-slate-200/50 dark:border-white/[0.04] flex items-center justify-between">
+      <div className="relative mt-auto px-4 py-2.5 border-t border-slate-200/50 dark:border-white/[0.04] flex items-center">
         <span className="text-[8px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-500">
           {sourceName}
-        </span>
-        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors">
-          Explore →
         </span>
       </div>
     </button>

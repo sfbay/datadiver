@@ -67,6 +67,36 @@ While per-sector opening counts are contaminated by NAICS lag, the **total openi
 
 ---
 
+## Traffic Crashes (TransBASE)
+
+### The Double Lag: Fatality Coding Trails the Publish Lag
+
+**Dataset:** `ubvf-ztfx` — Traffic Crashes Resulting in Injury
+**Key fields:** `collision_severity`, `number_killed`, `collision_datetime`
+
+**Finding (June 2026, verified against Walk SF's June 3 press release):** the dataset has TWO distinct lags, and the second is invisible if you only check `MAX(collision_datetime)`:
+
+1. **Publish lag (~4–6 weeks):** on June 10, the newest record was April 30.
+2. **Fatality-coding lag (longer, unbounded):** the newest *fatal* record was March 27 — a full month inside the published window with zero fatal records, even though a pedestrian death occurred April 13.
+
+**The April 13 case:** Walk SF reported Dannielle Spillman, 74, killed at Mission & South Van Ness on April 13. The dataset contains a record at exactly that intersection and date (1:53 a.m.) — coded `Injury (Complaint of Pain)`, `number_killed: 0`. Either it is her crash awaiting reclassification, or her crash hasn't entered the dataset at all. Both readings mean the same thing: **deaths inside the nominal data window are not yet countable**. Under the federal died-within-30-days rule, records initially filed as injuries are upgraded after death certification — so recent months systematically revise upward.
+
+**Reconciliation, Walk SF (11 pedestrian deaths through June 3) vs. dataset (through April 30):**
+- 7 of Walk SF's pedestrian deaths match dataset records one-for-one.
+- 1 (April 13) is in the window but not coded fatal (above).
+- 3 (May 25, two on June 3) fall past the data window.
+- The dataset additionally holds 2 non-pedestrian deaths (Jan 26 non-collision at 500 Amador — likely excluded by the City's Vision Zero counting protocol; Feb 21 vehicle-vs-vehicle broadside at Cesar Chavez & S. Van Ness — plausibly the City tracker's "one non-pedestrian").
+- Numeric coincidence to beware: through April 30 the City protocol count and the dataset both total 9 deaths — but they are not the same 9 people.
+
+**Cross-referencing gotchas (matching advocacy/news reports to records):**
+- Overnight crashes shift calendar days (Walk SF's "March 5" at Mission & Naglee is recorded March 6, 2:26 a.m.).
+- Police code locations to the nearest major cross street (Walk SF's "Jackson & Beckett" — Beckett is an alley — is recorded as Jackson & Grant).
+- The exact severity string is `Injury (Severe)`. A plausible-looking `'Severe Injury'` matches **nothing** and silently undercounts by ~90%.
+
+**Mitigation in UI:** the Home `VisionZeroCounter` card derives BOTH YoY windows from `MAX(collision_datetime)` (matched windows, or the comparison lies) and carries the caveat line naming both lags.
+
+---
+
 ## General Patterns
 
 ### Server-Side Aggregation vs Client-Side Sampling
