@@ -7,6 +7,28 @@ interface ExportButtonProps {
   filename?: string
 }
 
+// Download via blob + object URL — NOT canvas.toDataURL(). Chromium silently
+// drops anchor downloads whose URL exceeds ~2MB, and map exports run 3-4MB;
+// toDataURL "succeeds" but no file ever lands. Object URLs have no size cap.
+function downloadCanvas(canvas: HTMLCanvasElement, filename: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error('Canvas toBlob produced no data (tainted canvas?)'))
+        return
+      }
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.download = `${filename}-${new Date().toISOString().split('T')[0]}.png`
+      link.href = url
+      link.click()
+      // Revoking immediately can abort an in-flight download — defer it
+      setTimeout(() => URL.revokeObjectURL(url), 10_000)
+      resolve()
+    }, 'image/png')
+  })
+}
+
 export default function ExportButton({ targetSelector, filename = 'datadiver-export' }: ExportButtonProps) {
   const [isExporting, setIsExporting] = useState(false)
   const [failed, setFailed] = useState(false)
@@ -73,11 +95,7 @@ export default function ExportButton({ targetSelector, filename = 'datadiver-exp
       // Composite HTML on top of the map
       ctx.drawImage(htmlCanvas, 0, 0, rect.width, rect.height)
 
-      // Download
-      const link = document.createElement('a')
-      link.download = `${filename}-${new Date().toISOString().split('T')[0]}.png`
-      link.href = outCanvas.toDataURL('image/png')
-      link.click()
+      await downloadCanvas(outCanvas, filename)
     } catch (err) {
       console.error('Export failed:', err)
       // Fallback: try basic html2canvas without compositing
@@ -95,10 +113,7 @@ export default function ExportButton({ targetSelector, filename = 'datadiver-exp
             }
           },
         })
-        const link = document.createElement('a')
-        link.download = `${filename}-${new Date().toISOString().split('T')[0]}.png`
-        link.href = canvas.toDataURL('image/png')
-        link.click()
+        await downloadCanvas(canvas, filename)
       } catch (fallbackErr) {
         console.error('Fallback export also failed:', fallbackErr)
         setFailed(true)
