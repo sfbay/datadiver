@@ -145,7 +145,8 @@ src/
 - **CrimeIncidents**: Red heatmap, category filter (violent/property/QoL), 911 cross-ref via cad_number
 - **ParkingCitations**: Orange heatmap, dual WHERE (mapWhere with geo, statsWhere without)
 - **TrafficSafety**: Crash heatmap/anomaly, severity breakdown, speed camera overlay
-- **Home**: Hero + newsletter/Dana 2:1 liquid row (`@container`-queried comic tile) + six investigation preview cards (InvestigationCard shell: destination-pigment corner glow top-left + VizCard notch tab top-right; incl. Last48Pulse seeded from summaryStore and VisionZeroCounter with matched-window YoY) + exploration cards
+- **Home**: Hero (masthead-style credit linking to /about + moss health pill w/ real fetch timestamp) + newsletter/Dana 2:1 liquid row (`@container`-queried comic tile w/ espresso veil, dark mode only) + six investigation preview cards (InvestigationCard shell: destination-pigment corner glow top-left + VizCard notch tab top-right; incl. Last48Pulse seeded from summaryStore and VisionZeroCounter with matched-window YoY) + exploration cards
+- **About** (`/about`, nav bottom, paper pigment): authorship + AI disclosure (top-line credit is Jesse's alone, academic convention; Claude's role disclosed specifically), detailed stack table, all-20-dataset sources table w/ DataSF-linked IDs + known limitations, public distillation of docs/data-insights.md findings, Resolution 240210 methodology case study. Static editorial page — keep in sync with datasets.ts and data-insights.md when those change.
 
 ### Views Pattern
 Each view follows the same structure:
