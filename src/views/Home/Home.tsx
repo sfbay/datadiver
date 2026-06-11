@@ -337,9 +337,17 @@ export default function Home() {
                 <span className="w-1.5 h-1.5 rounded-full bg-signal-emerald pulse-live" />
                 Live data from datasf.sfgov.org
               </span>
-              <span className="text-[11px] font-mono text-slate-400/80 dark:text-slate-400/60 whitespace-nowrap">
-                Jesse Garnier with Claude · SF State Journalism
-              </span>
+              {/* Credit links to /about — top-line authorship is the author's
+                  alone (academic convention); Claude's role is disclosed in
+                  full on the About page. */}
+              <button
+                onClick={() => navigate('/about')}
+                className="text-[11px] font-mono text-slate-400/80 dark:text-slate-400/60 whitespace-nowrap text-left
+                  hover:text-slate-600 dark:hover:text-slate-300 underline decoration-slate-400/30 underline-offset-2
+                  decoration-dotted transition-colors"
+              >
+                Development and Design by Assoc. Prof. Jesse Garnier, SF State Journalism
+              </button>
             </div>
           </div>
         </header>
