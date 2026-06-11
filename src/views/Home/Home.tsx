@@ -3,6 +3,7 @@ import { useEffect, useState, type CSSProperties } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import CivicTicker, { useResponsiveTickerSize } from '@/components/ui/CivicTicker'
 import { useCivicIndicators } from '@/hooks/useCivicIndicators'
+import { formatApTime } from '@/utils/format'
 import { usePreloadCache } from '@/hooks/usePreloadCache'
 import { useNeighborhoodProfiles } from '@/views/Neighborhood/useNeighborhoodProfiles'
 import CivicFingerprint from '@/views/Neighborhood/CivicFingerprint'
@@ -333,10 +334,6 @@ export default function Home() {
             </p>
 
             <div className={`flex items-center gap-4 mt-6 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-signal-emerald/80">
-                <span className="w-1.5 h-1.5 rounded-full bg-signal-emerald pulse-live" />
-                Live data from datasf.sfgov.org
-              </span>
               {/* Credit links to /about — top-line authorship is the author's
                   alone (academic convention); Claude's role is disclosed in
                   full on the About page. */}
@@ -352,6 +349,24 @@ export default function Home() {
                 <br />
                 SF State Journalism
               </button>
+              {/* Health pill — inverse text on a solid moss fill. The
+                  timestamp is when DataDiver last successfully pulled from
+                  DataSF — NOT the data's own vintage, which varies per
+                  dataset (each feed publishes on its own lag; see /about).
+                  Errors turn the pill ochre rather than pretending. */}
+              <span
+                className={`inline-flex items-center gap-2 pl-2.5 pr-3.5 py-1.5 rounded-full
+                  text-[10px] font-mono uppercase tracking-wider whitespace-nowrap text-[#f5ecd9]
+                  shadow-sm ${indicators.error ? 'bg-[#b58620]' : 'bg-[#5c7a3d]'}`}
+                title="When DataDiver last refreshed from datasf.sfgov.org — each dataset publishes on its own schedule"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-current pulse-live flex-shrink-0" />
+                {indicators.error
+                  ? 'DataSF · retrying'
+                  : indicators.lastUpdated
+                    ? `Live · updated ${formatApTime(indicators.lastUpdated.getTime())}`
+                    : 'Live · datasf.sfgov.org'}
+              </span>
             </div>
           </div>
         </header>
