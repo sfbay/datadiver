@@ -130,6 +130,13 @@ const NAV_ITEMS = [
     description: 'Email me events near my places',
     accentColor: '#b85a33', // terracotta-600 — the "alert" pigment
   },
+  {
+    path: '/about',
+    label: 'About',
+    shortLabel: 'AB',
+    description: 'Methods, sources & disclosure',
+    accentColor: '#a8926a', // paper-500 — the colophon/meta pigment
+  },
 ] as const
 
 export default function AppShell({ children }: { children: ReactNode }) {

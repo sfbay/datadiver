@@ -3,6 +3,7 @@ import { useEffect, useState, type CSSProperties } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import CivicTicker, { useResponsiveTickerSize } from '@/components/ui/CivicTicker'
 import { useCivicIndicators } from '@/hooks/useCivicIndicators'
+import { formatApTime } from '@/utils/format'
 import { usePreloadCache } from '@/hooks/usePreloadCache'
 import { useNeighborhoodProfiles } from '@/views/Neighborhood/useNeighborhoodProfiles'
 import CivicFingerprint from '@/views/Neighborhood/CivicFingerprint'
@@ -328,17 +329,43 @@ export default function Home() {
             <p
               className={`text-lg text-slate-500 dark:text-slate-400 max-w-md leading-relaxed transition-all duration-1000 delay-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
             >
-              Civic data brought to life. Explore trends, patterns and flow to reveal
-              stories with impact hidden in public datasets.
+              Bring civic data to life, instantly. Visualize trends, patterns and 24/7
+              flow to turn public data into public insight.
             </p>
 
             <div className={`flex items-center gap-4 mt-6 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-signal-emerald/80">
-                <span className="w-1.5 h-1.5 rounded-full bg-signal-emerald pulse-live" />
-                Live data from datasf.sfgov.org
-              </span>
-              <span className="text-[11px] font-mono text-slate-400/80 dark:text-slate-400/60 whitespace-nowrap">
-                Jesse Garnier with Claude · SF State Journalism
+              {/* Credit links to /about — top-line authorship is the author's
+                  alone (academic convention); Claude's role is disclosed in
+                  full on the About page. */}
+              <button
+                onClick={() => navigate('/about')}
+                className="text-[11px] font-mono text-slate-400/80 dark:text-slate-400/60 whitespace-nowrap text-left
+                  hover:text-slate-600 dark:hover:text-slate-300 underline decoration-slate-400/30 underline-offset-2
+                  decoration-dotted transition-colors"
+              >
+                Development and Design By
+                <br />
+                Assoc. Prof. Jesse Garnier,
+                <br />
+                SF State Journalism
+              </button>
+              {/* Health pill — inverse text on a solid moss fill. The
+                  timestamp is when DataDiver last successfully pulled from
+                  DataSF — NOT the data's own vintage, which varies per
+                  dataset (each feed publishes on its own lag; see /about).
+                  Errors turn the pill ochre rather than pretending. */}
+              <span
+                className={`inline-flex items-center gap-2 ml-5 pl-2.5 pr-3.5 py-1.5 rounded-full
+                  text-[10px] font-mono uppercase tracking-wider whitespace-nowrap text-[#f5ecd9]
+                  shadow-sm ${indicators.error ? 'bg-[#b58620]' : 'bg-[#5c7a3d]'}`}
+                title="When DataDiver last refreshed from datasf.sfgov.org — each dataset publishes on its own schedule"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-current pulse-live flex-shrink-0" />
+                {indicators.error
+                  ? 'DataSF · retrying'
+                  : indicators.lastUpdated
+                    ? `Live · updated ${formatApTime(indicators.lastUpdated.getTime())}`
+                    : 'Live · datasf.sfgov.org'}
               </span>
             </div>
           </div>
@@ -377,11 +404,21 @@ export default function Home() {
               {/* Comic thumbnail — horizontal mode: fluid inline-ish sizing
                   (~112px narrow → ~200px ultrawide, ~7:4 crop). Vertical
                   mode: fills the tile's remaining height, object-cover. */}
-              <img
-                src="/dana-comic-1-thumb.jpg"
-                alt="Dana the DataDiver comic strip"
-                className="object-cover rounded-lg flex-shrink-0 ring-1 ring-white/10 group-hover:ring-white/20 transition-all relative z-10 w-[clamp(112px,11vw,200px)] h-[clamp(64px,6.3vw,114px)] @max-2xl:w-full @max-2xl:h-auto @max-2xl:flex-1 @max-2xl:min-h-[120px]"
-              />
+              <div className="relative rounded-lg overflow-hidden flex-shrink-0 ring-1 ring-white/10 group-hover:ring-white/20 transition-all z-10 w-[clamp(112px,11vw,200px)] h-[clamp(64px,6.3vw,114px)] @max-2xl:w-full @max-2xl:h-auto @max-2xl:flex-1 @max-2xl:min-h-[120px]">
+                <img
+                  src="/dana-comic-1-thumb.jpg"
+                  alt="Dana the DataDiver comic strip"
+                  className="w-full h-full object-cover"
+                />
+                {/* Espresso veil — the full-brightness cream comic dominates
+                    the dark page; this pulls it into the room's light. Hover
+                    lifts it, same register as the tile's glow. Light mode
+                    needs no veil (cream art on a cream page). */}
+                <div
+                  aria-hidden
+                  className="absolute inset-0 pointer-events-none transition-colors duration-300 dark:bg-[#1e140d]/35 dark:group-hover:bg-[#1e140d]/15"
+                />
+              </div>
               {/* Text — typography scales fluidly with the thumbnail so the
                   ribbon reads as a single proportional composition rather
                   than a small image with under-served copy beside it. */}
