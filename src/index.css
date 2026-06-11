@@ -605,3 +605,40 @@ html:not(.dark) .glow-corner {
   transition: opacity var(--dur-slow, 480ms) var(--ease-settle, ease);
 }
 .dd-ribbon-hover:hover::before { opacity: 0.85; }
+
+/* ================================================================
+   Chip sheen — "data arriving" sweep for Last 48 super-chips.
+   A soft pigment-tinted band travels left → right (the sparkline's
+   time direction) while that stream's dots are still cascading onto
+   the FLOW map. Same vocabulary as the skeleton shimmer: shimmer =
+   data arriving. SuperChip mounts this only while its stream is
+   arriving (+700ms fade-out linger); the band color comes from the
+   chip's pigment via --sheen. transform-only animation (no layout).
+   ================================================================ */
+.chip-sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  transition: opacity 600ms ease;
+}
+.chip-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 32%,
+    var(--sheen, rgba(168, 146, 106, 0.14)) 50%,
+    transparent 68%
+  );
+  transform: translateX(-100%);
+  animation: chip-sheen-sweep 2.6s linear infinite;
+}
+@keyframes chip-sheen-sweep {
+  to { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chip-sheen::after { animation: none; }
+}

@@ -17,7 +17,7 @@
 // CLAUDE.md — subtle on interaction only). Inactive state is outline-
 // only with dimmed pigment.
 
-import type { CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import {
   LAST48_DATASETS,
   type DatasetId,
@@ -206,6 +206,10 @@ interface SuperChipProps {
   freshness: { refreshLagMs: number | null; eventLagMs: number | null } | undefined
   isLoaded: boolean
   isActive: boolean
+  /** True while this stream's data is still arriving on the canvas — from
+   *  cold-load until its chronological sweep completes (see Last48.tsx
+   *  arrivingByDataset). Drives the sheen sweep across the chip. */
+  isArriving: boolean
   onToggle: () => void
 }
 
@@ -215,10 +219,23 @@ function SuperChip({
   freshness,
   isLoaded,
   isActive,
+  isArriving,
   onToggle,
 }: SuperChipProps) {
   const pigment = PIGMENTS[datasetId]
   const label = LABELS[datasetId]
+
+  // Sheen lingers 700ms past arrival-complete so the fade-out (600ms CSS
+  // opacity transition) plays instead of the band popping off mid-sweep.
+  const [sheenMounted, setSheenMounted] = useState(isArriving)
+  useEffect(() => {
+    if (isArriving) {
+      setSheenMounted(true)
+      return
+    }
+    const t = setTimeout(() => setSheenMounted(false), 700)
+    return () => clearTimeout(t)
+  }, [isArriving])
   const count = events.length
   const perHour = (count / 48).toFixed(count >= 100 ? 0 : 1)
   const sparkData = isLoaded
@@ -252,6 +269,20 @@ function SuperChip({
       }
     >
       {isActive && <span className="glow-corner is-sm" aria-hidden />}
+
+      {/* Arrival sheen — pigment band sweeping left → right (the sparkline's
+          time direction) while this stream's dots are still cascading onto
+          the map. Fades out over 600ms when the sweep settles. */}
+      {sheenMounted && (
+        <span
+          className="chip-sheen"
+          style={{
+            opacity: isArriving ? 1 : 0,
+            '--sheen': `${pigment}29`,
+          } as CSSProperties}
+          aria-hidden
+        />
+      )}
 
       {/* ── Row 1: pigment dot + name + active marker ─────────────────── */}
       <div className="flex items-center gap-2 relative">
@@ -354,6 +385,9 @@ interface Props {
   byDataset: Record<DatasetId, NormalizedEvent[]>
   freshness: FreshnessMap
   initialLoadedByDataset: Record<DatasetId, boolean>
+  /** Per-dataset "still arriving on the canvas" flags — true from cold-load
+   *  until that stream's chronological sweep completes. See Last48.tsx. */
+  arrivingByDataset: Record<DatasetId, boolean>
 }
 
 export default function DatasetSuperChips({
@@ -362,6 +396,7 @@ export default function DatasetSuperChips({
   byDataset,
   freshness,
   initialLoadedByDataset,
+  arrivingByDataset,
 }: Props) {
   return (
     // Liquid grid (auto-fit + minmax, no breakpoints — house convention):
@@ -378,6 +413,7 @@ export default function DatasetSuperChips({
           freshness={freshness[id]}
           isLoaded={initialLoadedByDataset[id] ?? false}
           isActive={enabled.includes(id)}
+          isArriving={arrivingByDataset[id] ?? false}
           onToggle={() => onToggle(id)}
         />
       ))}

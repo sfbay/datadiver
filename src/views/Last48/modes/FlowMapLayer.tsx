@@ -155,6 +155,12 @@ interface Props {
    *  (911) always leads because the gate is keyed to the fixed stream order,
    *  not data-arrival order. */
   fullyLoadedByDataset?: Record<DatasetId, boolean>
+  /** Called when a stream's chronological sweep COMPLETES (its last dot has
+   *  landed on the canvas) — including the fast-forward click and
+   *  reduced-motion short-circuits. Drives the DatasetSuperChips arrival
+   *  sheen: the chip shimmers until this fires for its stream, so the
+   *  chrome settles in sync with the map, not with the network. */
+  onSweepSettled?: (id: DatasetId) => void
 }
 
 const SOURCE_ID        = 'last48-flow-events'
@@ -208,7 +214,7 @@ const STROKE_OPACITY: mapboxgl.ExpressionSpecification = [
   0,  // unrevealed: invisible
 ]
 
-export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewRipples, fullyLoadedByDataset }: Props) {
+export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewRipples, fullyLoadedByDataset, onSweepSettled }: Props) {
   // Stable refs so event handlers don't need to re-attach when props change.
   const eventsRef      = useRef(events)
   const onSelectRef    = useRef(onSelect)
@@ -279,10 +285,12 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewR
   const enabled2 = !!fullyLoadedByDataset?.[stream2] && sweepReleased.has(stream1)
 
   // Memoized onComplete handlers — stable identity to keep the hook's deps
-  // clean. Each release advances the chain after the buffer delay.
-  const onComplete0 = useCallback(() => releaseSweep(stream0), [releaseSweep, stream0])
-  const onComplete1 = useCallback(() => releaseSweep(stream1), [releaseSweep, stream1])
-  const onComplete2 = useCallback(() => releaseSweep(stream2), [releaseSweep, stream2])
+  // clean. Each release advances the chain after the buffer delay; the
+  // settle notification fires immediately (the chip sheen should fade the
+  // moment the stream's last dot lands, not after the inter-sweep buffer).
+  const onComplete0 = useCallback(() => { releaseSweep(stream0); onSweepSettled?.(stream0) }, [releaseSweep, stream0, onSweepSettled])
+  const onComplete1 = useCallback(() => { releaseSweep(stream1); onSweepSettled?.(stream1) }, [releaseSweep, stream1, onSweepSettled])
+  const onComplete2 = useCallback(() => { releaseSweep(stream2); onSweepSettled?.(stream2) }, [releaseSweep, stream2, onSweepSettled])
 
   useChronologicalReveal({
     map,

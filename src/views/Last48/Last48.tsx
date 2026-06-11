@@ -181,6 +181,49 @@ export default function Last48() {
     )
   }
 
+  // ── Chip arrival sheen ────────────────────────────────────────────────────
+  // Streams whose chronological sweep has COMPLETED (FlowMapLayer reports
+  // each via onSweepSettled — including the click-to-skip fast-forward).
+  // Reset whenever FLOW points toggle back on: the layer remounts and
+  // replays the full cascade, so the chips should shimmer through the
+  // replay too — chrome and canvas settle together.
+  const [sweepSettled, setSweepSettled] = useState<Set<DatasetId>>(new Set())
+  const handleSweepSettled = useCallback((id: DatasetId) => {
+    setSweepSettled((prev) => {
+      if (prev.has(id)) return prev
+      const next = new Set(prev)
+      next.add(id)
+      return next
+    })
+  }, [])
+  useEffect(() => {
+    if (pointsOn) setSweepSettled(new Set())
+  }, [pointsOn])
+
+  // Per-chip "data arriving" flag. While FLOW is performing the cascade the
+  // chip settles when ITS stream's sweep completes (the moment its last dot
+  // lands) — not when the fetch returns, which is 10-15s earlier. With
+  // points off there is no sweep, so settle on the data itself. A terminal
+  // error anywhere stalls the serialized sweep chain (later streams never
+  // get enabled), so any error also drops the healthy streams back to
+  // data-settled rather than shimmering forever; the errored stream itself
+  // never shimmers (the failure banner owns that story).
+  const arrivingByDataset = useMemo(() => {
+    const anyStreamError = LAST48_DATASETS.some(
+      (id) => datasets.includes(id) && !!window48.errorByDataset[id],
+    )
+    const out = {} as Record<DatasetId, boolean>
+    for (const id of LAST48_DATASETS) {
+      const enabled = datasets.includes(id)
+      const errored = !!window48.errorByDataset[id]
+      const settled = pointsOn && !anyStreamError
+        ? sweepSettled.has(id)
+        : !!window48.fullyLoadedByDataset[id]
+      out[id] = enabled && !errored && !settled
+    }
+    return out
+  }, [datasets, pointsOn, sweepSettled, window48.fullyLoadedByDataset, window48.errorByDataset])
+
   return (
     <div className="flex flex-col h-full">
       {/* Header — Phase 1's compact-blur chrome with the rule-leading LIVE
@@ -241,6 +284,7 @@ export default function Last48() {
           byDataset={window48.byDataset}
           freshness={window48.freshness}
           initialLoadedByDataset={window48.initialLoadedByDataset}
+          arrivingByDataset={arrivingByDataset}
         />
       </div>
 
@@ -256,6 +300,7 @@ export default function Last48() {
           onSelectedEventIdChange={setSelectedEventId}
           selectedNeighborhoodId={selectedNeighborhoodId}
           onSelectedNeighborhoodChange={setSelectedNeighborhoodId}
+          onSweepSettled={handleSweepSettled}
         />
       </div>
 

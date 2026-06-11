@@ -53,6 +53,9 @@ interface Props {
   selectedNeighborhoodId: string | null
   /** Push the selected neighborhood back to ?nh= (or null to clear). */
   onSelectedNeighborhoodChange: (nh: string | null) => void
+  /** Forwarded to FlowMapLayer — fires when a stream's chronological sweep
+   *  completes. Last48 uses it to settle that chip's arrival sheen. */
+  onSweepSettled?: (id: DatasetId) => void
 }
 
 export default function Last48UnifiedView({
@@ -65,6 +68,7 @@ export default function Last48UnifiedView({
   onSelectedEventIdChange,
   selectedNeighborhoodId,
   onSelectedNeighborhoodChange,
+  onSweepSettled,
 }: Props) {
   // ── FLOW state ─────────────────────────────────────────────────────────────
   const [selectedEvent, setSelectedEvent] = useState<NormalizedEvent | null>(null)
@@ -305,6 +309,7 @@ export default function Last48UnifiedView({
               onSelect={handleMapSelect}
               onNewRipples={handleNewRipples}
               fullyLoadedByDataset={window48.fullyLoadedByDataset}
+              onSweepSettled={onSweepSettled}
             />
           )}
 
