@@ -95,9 +95,13 @@ export default function VisionZeroCounter() {
             )}
           </div>
 
-          {/* ── The honesty line — lag is part of the story ──────── */}
+          {/* ── The honesty line — lag is part of the story. Two lags:
+              publish (~4-6 wks) AND fatality coding (longer — deaths are
+              upgraded from injury records after certification, so recent
+              months revise upward). See docs/data-insights.md. ─────── */}
           <p className="text-[9px] font-mono text-slate-500 dark:text-slate-500">
-            Crash reports lag 4–6 weeks · data through {formatApDate(data.dataThrough)}
+            Reports lag 4–6 weeks; fatality coding longer — recent months revise
+            upward · data through {formatApDate(data.dataThrough)}
           </p>
         </div>
       ) : null}
