@@ -22,7 +22,7 @@ function InvestigationSkeleton({ accentColor }: { accentColor: string }) {
           so the grid is colorful from first paint, not after queries land.
           Same for the corner notch: it's structural chrome, so it renders
           from first paint instead of popping in when data arrives. */}
-      <span className="glow-corner is-lg is-tr" style={{ opacity: 0.45 }} aria-hidden />
+      <span className="glow-corner is-lg" style={{ opacity: 0.45 }} aria-hidden />
       <div
         className="absolute top-0 right-0 grid place-items-center z-10 w-[34px] h-[34px] rounded-tr-2xl rounded-bl-[18px]"
         style={{ backgroundColor: accentColor, opacity: 0.7 }}
@@ -91,8 +91,10 @@ export function InvestigationCard({
       {/* Corner-glow signature, Tier 1 — each card wears its destination
           view's pigment (teal=Last48, ochre=budget, terracotta=ER, brick=
           traffic, moss=compliance), breaking up the wall of espresso.
-          Bolder than the default (0.65) per editorial direction. */}
-      <span className="glow-corner is-lg is-tr" style={{ opacity: 0.8 }} aria-hidden />
+          Top-left (the house anchor, matching the explorations tiles) —
+          the notch tab owns the top-right. Bolder than the default
+          (0.65) per editorial direction. */}
+      <span className="glow-corner is-lg" style={{ opacity: 0.8 }} aria-hidden />
 
       {/* Top-right accent notch with chevron — same idiom as VizCard /
           AlertsRibbon, sized to this card's 16px radius. The notch sits on
