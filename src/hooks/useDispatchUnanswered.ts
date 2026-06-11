@@ -47,15 +47,22 @@ let unansweredCache: CacheEntry | null = null
 
 interface CountRow { cnt: string }
 interface HourRow { hour: string; cnt: string }
-interface DispositionRow { final_disposition: string; cnt: string }
+interface DispositionRow { call_final_disposition: string; cnt: string }
 
 // ── Outcome bucket mapping ──────────────────────────────────────
 
+// Live values on nuek-vuh3 (verified June 2026): Code 2/3 Transport, Other,
+// Fire, Unable to Locate, Cancelled, Medical Examiner, Duplicate.
 function mapDispositionLabel(disposition: string | null | undefined): string {
   if (!disposition) return 'Late arrival'
   const upper = disposition.toUpperCase()
-  if (upper.includes('CANCEL') || upper.includes('CAN')) return 'Cancelled'
-  if (upper.includes('NO MERIT') || upper.includes('GOA') || upper.includes('GONE ON ARRIVAL')) {
+  if (upper.includes('CANCEL')) return 'Cancelled'
+  if (
+    upper.includes('UNABLE TO LOCATE') ||
+    upper.includes('NO MERIT') ||
+    upper.includes('GOA') ||
+    upper.includes('GONE ON ARRIVAL')
+  ) {
     return 'No one there'
   }
   return 'Late arrival'
@@ -119,11 +126,13 @@ async function loadUnansweredData(dateRange: {
       $order: 'hour ASC',
       $limit: 24,
     }),
-    // 4. Disposition breakdown of slow calls (top 10)
+    // 4. Disposition breakdown of slow calls (top 10). NOTE: the column is
+    // `call_final_disposition` — a bare `final_disposition` 400s with
+    // no-such-column and took the whole card down via Promise.all.
     fetchDataset<DispositionRow>('fireEMSDispatch', {
-      $select: 'final_disposition, COUNT(*) as cnt',
+      $select: 'call_final_disposition, COUNT(*) as cnt',
       $where: curWhere,
-      $group: 'final_disposition',
+      $group: 'call_final_disposition',
       $order: 'cnt DESC',
       $limit: 10,
     }),
@@ -151,7 +160,7 @@ async function loadUnansweredData(dateRange: {
   // ── Outcome bucketing ────────────────────────────────────────
   const bucketMap = new Map<string, number>()
   for (const row of dispositionRows) {
-    const label = mapDispositionLabel(row.final_disposition)
+    const label = mapDispositionLabel(row.call_final_disposition)
     bucketMap.set(label, (bucketMap.get(label) ?? 0) + (parseInt(row.cnt, 10) || 0))
   }
 
