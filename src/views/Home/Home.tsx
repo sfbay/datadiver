@@ -342,15 +342,19 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Newsletter + Dana row — liquid 2:1. Flex-wrap with proportional
-            grow factors instead of a viewport breakpoint: side-by-side when
-            the row fits (≥ ~790px container), Dana wraps to her own
-            full-width line when it doesn't. The newsletter ribbon carries
-            real content (headline, pitch, chips, CTA) so it earns the wide
-            column; the comic tile is a thumbnail + two lines and reads
-            better as a compact feature panel beside it. */}
-        <div className="relative z-10 mb-6 flex flex-wrap items-stretch gap-6">
-          <div className="flex-[2_1_460px] min-w-0">
+        {/* Newsletter + Dana row — liquid 2:1 (Dana 1fr left, newsletter
+            2fr right). Flex-wrap with proportional grow factors instead of
+            a viewport breakpoint: side-by-side when the row fits, items
+            wrap to their own full-width lines when it doesn't. DOM order
+            keeps the newsletter FIRST (it earned first-after-hero placement
+            + keyboard-tab priority), so the visual left/right swap is done
+            with order utilities that only apply once the row container is
+            wide enough to be side-by-side (wrap point = 460+300+24px of
+            flex-basis). The newsletter carries real content (headline,
+            pitch, chips, CTA) so it earns the wide column; the comic tile
+            reads as a compact feature panel beside it. */}
+        <div className="@container relative z-10 mb-6 flex flex-wrap items-stretch gap-6">
+          <div className="flex-[2_1_460px] min-w-0 @min-[784px]:order-2">
             <AlertsRibbon mounted={mounted} />
           </div>
 
