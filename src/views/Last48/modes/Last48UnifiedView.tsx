@@ -321,6 +321,7 @@ export default function Last48UnifiedView({
             ready={ambientReady}
             onExit={onAmbientExit}
             events={visibleEvents}
+            pointsOn={pointsOn}
             onVisit={(ev) => setSelectedEvent(ev)}
             onClearSelection={() => setSelectedEvent(null)}
           />

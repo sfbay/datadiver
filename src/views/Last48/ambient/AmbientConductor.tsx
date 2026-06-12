@@ -2,9 +2,9 @@
 //
 // Null-rendering orchestrator for ambient mode — the same "side-effect
 // component inside mapOverlay" pattern as Last48UnifiedView's
-// DeepLinkLander. Owns the phase state machine and the exit-on-input
-// listener. PR A: orbits citywide only. PR B adds the tour (per-event
-// visits) on top.
+// DeepLinkLander. Owns the phase state machine, the exit-on-input
+// listener, and the tour↔director wiring (shipped in two stages: the
+// citywide orbit first, the per-event tour on top).
 //
 // Exit semantics: ANY user input (pointerdown / wheel / keydown /
 // touchstart) ramps out — EXCEPT input inside [data-ambient-toggle], which
@@ -32,13 +32,18 @@ interface Props {
   onExit: () => void
   /** Geo-bearing visible events (the tour's source). */
   events: NormalizedEvent[]
+  /** FLOW dots visible. With points off (e.g. HOTSPOTS via a heartbeat
+   *  surge link sets ?points=off) the dots, radar, and event card are all
+   *  unmounted — touring would select invisible events and lurch the
+   *  camera to empty streets. Gate the tour; keep the citywide orbit. */
+  pointsOn: boolean
   /** Select an event exactly as a rail click would. */
   onVisit: (ev: NormalizedEvent) => void
   /** Clear the selection (breath — card closes for the citywide shot). */
   onClearSelection: () => void
 }
 
-export default function AmbientConductor({ map, ambientOn, ready, onExit, events, onVisit, onClearSelection }: Props) {
+export default function AmbientConductor({ map, ambientOn, ready, onExit, events, pointsOn, onVisit, onClearSelection }: Props) {
   const [phase, setPhase] = useState<AmbientPhase>('off')
   const [target, setTarget] = useState<CameraTarget>(CITYWIDE_TARGET)
 
@@ -79,7 +84,7 @@ export default function AmbientConductor({ map, ambientOn, ready, onExit, events
   }, [phase])
 
   useAmbientTour({
-    active: phase === 'on',
+    active: phase === 'on' && pointsOn,
     events,
     onVisit: (ev) => {
       onVisit(ev)
@@ -99,9 +104,10 @@ export default function AmbientConductor({ map, ambientOn, ready, onExit, events
     onRampOutDone: () => {
       setPhase('off')
       // Unconditional onExit is what prevents restart oscillation through
-      // 'off'. Known trade: re-toggling DRIFT on during the 1s ramp-out is
-      // swallowed (the param the user just set gets cleared) — acceptable
-      // for the narrow window; revisit if re-arm-during-ramp-out matters.
+      // 'off'. Known trade: re-toggling DRIFT on during the ~1s ramp-out is
+      // swallowed (the param the user just set gets cleared) — and the
+      // window stretches under hidden-tab timer throttling. Acceptable;
+      // revisit if re-arm-during-ramp-out matters.
       onExitRef.current() // clears ?ambient=1; toggle reads as off
     },
   })

@@ -81,7 +81,13 @@ export function useAmbientTour(opts: {
         if (timer) clearTimeout(timer)
       } else if (hiddenAt !== null) {
         hiddenAt = null
-        timer = setTimeout(step, 1000) // gentle resume beat
+        timer = setTimeout(() => {
+          // If the tab hid during the breath (pass exhausted, cursor reset),
+          // re-snapshot so the resumed tour starts from the now-newest
+          // events instead of replaying the stale pre-breath pass.
+          if (currentId === null) pass = buildPass(eventsRef.current)
+          step()
+        }, 1000) // gentle resume beat
       }
     }
     document.addEventListener('visibilitychange', onVisibility)
