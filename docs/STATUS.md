@@ -1,7 +1,7 @@
 # DataDiver — Project Status
 
-**Last updated:** 2026-03-28
-**Live site:** datadiver.vercel.app
+**Last updated:** 2026-06-12
+**Live site:** datadiver.jlabsf.org
 **Repo:** github.com/sfbay/datadiver
 
 ---

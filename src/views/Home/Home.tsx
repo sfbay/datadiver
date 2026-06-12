@@ -483,7 +483,7 @@ export default function Home() {
               {/* Caption */}
               <div className="mt-3 flex items-center justify-between">
                 <p className="text-[11px] font-mono text-slate-400">
-                  Dana the DataDiver · Comic #1 · datadiver.vercel.app
+                  Dana the DataDiver · Comic #1 · datadiver.jlabsf.org
                 </p>
                 <p className="text-[10px] font-mono text-slate-500">
                   Press Esc or click outside to close
