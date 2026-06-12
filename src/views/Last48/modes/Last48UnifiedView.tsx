@@ -320,6 +320,9 @@ export default function Last48UnifiedView({
             ambientOn={ambientOn}
             ready={ambientReady}
             onExit={onAmbientExit}
+            events={visibleEvents}
+            onVisit={(ev) => setSelectedEvent(ev)}
+            onClearSelection={() => setSelectedEvent(null)}
           />
 
           {/* ── FLOW dots (mount LAST — must render on top of fill layers) ── */}

@@ -19,6 +19,8 @@ import {
   type AmbientPhase,
   type CameraTarget,
 } from './useAmbientDirector'
+import { useAmbientTour } from './useAmbientTour'
+import type { NormalizedEvent } from '@/types/last48'
 
 interface Props {
   map: mapboxgl.Map | null
@@ -28,18 +30,27 @@ interface Props {
   ready: boolean
   /** Flip ?ambient= off (called when ramp-out completes). */
   onExit: () => void
+  /** Geo-bearing visible events (the tour's source). */
+  events: NormalizedEvent[]
+  /** Select an event exactly as a rail click would. */
+  onVisit: (ev: NormalizedEvent) => void
+  /** Clear the selection (breath — card closes for the citywide shot). */
+  onClearSelection: () => void
 }
 
-export default function AmbientConductor({ map, ambientOn, ready, onExit }: Props) {
+export default function AmbientConductor({ map, ambientOn, ready, onExit, events, onVisit, onClearSelection }: Props) {
   const [phase, setPhase] = useState<AmbientPhase>('off')
-  const [target] = useState<CameraTarget>(CITYWIDE_TARGET) // PR B: setTarget from the tour
+  const [target, setTarget] = useState<CameraTarget>(CITYWIDE_TARGET)
 
   // Arm / disarm. Reduced-motion users never see the toggle, but guard
   // anyway in case ?ambient=1 arrives by URL.
   useEffect(() => {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (ambientOn && ready && !reduced && phase === 'off') setPhase('ramp-in')
-    if (!ambientOn && (phase === 'ramp-in' || phase === 'on')) setPhase('ramp-out')
+    if (!ambientOn && (phase === 'ramp-in' || phase === 'on')) {
+      setPhase('ramp-out')
+      setTarget(CITYWIDE_TARGET)
+    }
   }, [ambientOn, ready, phase])
 
   const onExitRef = useRef(onExit)
@@ -66,6 +77,19 @@ export default function AmbientConductor({ map, ambientOn, ready, onExit }: Prop
       window.removeEventListener('touchstart', exit, opts)
     }
   }, [phase])
+
+  useAmbientTour({
+    active: phase === 'on',
+    events,
+    onVisit: (ev) => {
+      onVisit(ev)
+      setTarget({ lng: ev.longitude!, lat: ev.latitude!, zoom: 14, avoidCard: true })
+    },
+    onBreath: () => {
+      onClearSelection()
+      setTarget(CITYWIDE_TARGET)
+    },
+  })
 
   useAmbientDirector({
     map,
