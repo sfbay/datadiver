@@ -111,7 +111,7 @@ export function LivePreview({ email, streams, categories, radiusMiles, locations
         <div className="space-y-0.5 font-mono text-[10px] text-ink/55 dark:text-slate-400 tabular-nums">
           <p>
             <span className="inline-block w-12 opacity-60">FROM</span>
-            <span>DataDiver Alerts &lt;alerts@jlab-sf.org&gt;</span>
+            <span>DataDiver Alerts &lt;alerts@jlabsf.org&gt;</span>
           </p>
           <p>
             <span className="inline-block w-12 opacity-60">TO</span>
@@ -158,7 +158,7 @@ export function LivePreview({ email, streams, categories, radiusMiles, locations
       {/* Footer rule — keeps the kraft-paper edge */}
       <div className="relative px-5 py-2.5 border-t border-ink/[0.06] dark:border-white/[0.04] flex items-center justify-between text-[9px] font-mono uppercase tracking-wider text-ink/45 dark:text-slate-500">
         <span>{matched.length > 0 ? `${matched.length} match${matched.length === 1 ? '' : 'es'} · last 24h` : 'Showing what arrived in the last 24h'}</span>
-        <span>The Last 48 · jlab-sf.org</span>
+        <span>The Last 48 · jlabsf.org</span>
       </div>
     </div>
   )
