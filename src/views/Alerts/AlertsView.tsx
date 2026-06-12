@@ -630,7 +630,7 @@ function Colophon() {
           via the Socrata SODA API.
         </p>
         <p className="text-[9px] font-mono uppercase tracking-[0.22em] text-ink/40 dark:text-slate-500">
-          DataDiver · jlab-sf.org
+          DataDiver · jlabsf.org
         </p>
       </div>
     </footer>
@@ -672,7 +672,7 @@ function ConfirmationScreen({ email }: { email: string }) {
 
             <p className="text-[12px] font-mono text-ink/50 dark:text-slate-400 leading-relaxed">
               Didn’t arrive in a few minutes? Check spam, or your filters. The sender is{' '}
-              <span className="text-ink/70 dark:text-paper-100/80">alerts@jlab-sf.org</span>.
+              <span className="text-ink/70 dark:text-paper-100/80">alerts@jlabsf.org</span>.
             </p>
           </div>
         </div>

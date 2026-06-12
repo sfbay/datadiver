@@ -4,7 +4,7 @@ The geo-newsletters feature is DataDiver's first backend (Vercel Functions + Ver
 
 ## One-time setup (maintainer performs in dashboards)
 1. **Neon Postgres** — easiest path: Vercel project → **Storage** tab → Create Database → Neon. This auto-wires `DATABASE_URL` into Production with the *pooled* connection string. **Leave the Custom Prefix blank** (otherwise vars land as `STORAGE_DATABASE_URL` and our code won't find them). **Uncheck Preview** in the Environments selector to keep previews from writing to the production DB.
-2. **Resend** → add domain `jlab-sf.org`, add the SPF/DKIM DNS records it shows, wait for "Verified". Until the domain is verified, no email will send. ⚠️ If `jlab-sf.org` mail is hosted at Migadu and the Resend signup email is set to forward elsewhere, the signup confirmation may silently disappear (SPF breaks on forward). Log into the Migadu webmail mailbox directly to receive Resend signup mail.
+2. **Resend** → add domain `jlabsf.org`, add the SPF/DKIM DNS records it shows (fresh per-domain records — never copy `resend._domainkey` from another domain), wait for "Verified". Until the domain is verified, no email will send. ⚠️ If mail is hosted at Migadu (jlabsf.org is a Migadu *alias domain* of jlab-sf.org) and the Resend signup email is set to forward elsewhere, the signup confirmation may silently disappear (SPF breaks on forward). Log into the Migadu webmail mailbox directly to receive Resend signup mail. *(June 2026: domain flipped from `jlab-sf.org`, which stays attached in Resend + Vercel so old unsubscribe links keep working.)*
 3. **Apply the schema:** paste the *entire* contents of `db/schema.sql` into Neon's SQL editor. **CRITICAL** — press **Ctrl/Cmd+A to select ALL the SQL** before clicking Run. Neon's default is to run only the statement under the cursor, which silently applies only one statement of a multi-statement script. After Run, **verify with this query:**
    ```sql
    SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename;
@@ -23,8 +23,8 @@ The geo-newsletters feature is DataDiver's first backend (Vercel Functions + Ver
 | `ALERTS_TOKEN_SECRET` | long random string (`openssl rand -base64 32`) |
 | `CRON_SECRET` | long random string; Vercel sends it as `Authorization: Bearer …` to the cron |
 | `RESEND_API_KEY` | from Resend |
-| `ALERTS_FROM_EMAIL` | `DataDiver Alerts <alerts@jlab-sf.org>` |
-| `PUBLIC_BASE_URL` | `https://datadiver.jlab-sf.org` (no trailing slash) |
+| `ALERTS_FROM_EMAIL` | `DataDiver Alerts <alerts@jlabsf.org>` |
+| `PUBLIC_BASE_URL` | `https://datadiver.jlabsf.org` (no trailing slash) |
 | `SOCRATA_APP_TOKEN` | optional; raises Socrata rate limits |
 | `VITE_MAPBOX_TOKEN` | already set (used client-side for the picker + geocoding) |
 
@@ -35,7 +35,7 @@ The geo-newsletters feature is DataDiver's first backend (Vercel Functions + Ver
 2. **Visual QA** of `/alerts` in a browser: streams/categories/radius chips toggle; the mini-map drops a pin on click; address search returns SF results; a radius circle renders; submit shows the "check your email" screen. (The dev server is owned by tarmac; use a Vercel preview deploy or ask the owner to run it — do not run `pnpm dev` directly.)
 3. Subscribe with a real test address → receive the confirm email → click it → "You're subscribed".
 4. Trigger the cron manually:
-   `curl -H "Authorization: Bearer $CRON_SECRET" https://datadiver.jlab-sf.org/api/cron/dispatch-digests`
+   `curl -H "Authorization: Bearer $CRON_SECRET" https://datadiver.jlabsf.org/api/cron/dispatch-digests`
    → expect JSON `{ ok, due, sent }`; if events matched, a digest arrives grouped by location.
 5. Click **Unsubscribe** in the digest footer → "You're unsubscribed"; confirm the subscriber row is gone in Neon.
 

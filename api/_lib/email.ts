@@ -24,7 +24,7 @@ function baseUrl(): string {
 }
 
 const SENDER_IDENTITY =
-  'DataDiver — civic data for San Francisco · jlab-sf.org'
+  'DataDiver — civic data for San Francisco · jlabsf.org'
 
 export function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
