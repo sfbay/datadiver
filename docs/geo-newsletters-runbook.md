@@ -30,6 +30,8 @@ The geo-newsletters feature is DataDiver's first backend (Vercel Functions + Ver
 
 > NOTE (project history): the Vercel CLI `env add` has silently dropped values before — set these in the **dashboard** and confirm they're present. Missing `ALERTS_TOKEN_SECRET` / `CRON_SECRET` now fail fast with a clear 500 + logged error rather than misbehaving.
 
+> ⚠️ Dashboard gotchas for **Sensitive**-type vars (June 2026 outage): the edit box shows **EMPTY** when re-opened — that's write-only by design, not data loss, but **never re-save while the box is empty** (that wipes the value). The box renders spaces as underscore-like marks (whitespace visualization). `ALERTS_FROM_EMAIL` must be exactly `Name <email@domain>` — Resend validates strictly, and values pasted from rendered markdown can carry backticks or non-breaking spaces that fail the check while looking perfect. **Hand-type it.** Since PR #80, a rejected send returns 503 and logs the exact Resend error (`vercel logs <prod-url>` while re-submitting `/api/alerts/subscribe`), so env-value mistakes are diagnosable in one test request.
+
 ## Pre-launch checklist
 1. `GET /api/health` → `{ ok: true }` (confirms functions deploy + `/api/*` escapes the SPA rewrite).
 2. **Visual QA** of `/alerts` in a browser: streams/categories/radius chips toggle; the mini-map drops a pin on click; address search returns SF results; a radius circle renders; submit shows the "check your email" screen. (The dev server is owned by tarmac; use a Vercel preview deploy or ask the owner to run it — do not run `pnpm dev` directly.)

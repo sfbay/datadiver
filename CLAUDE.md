@@ -261,7 +261,8 @@ Wrap dataset-specific body content inside DetailPanelShell. See `Last48EventCard
 
 ## Deployment
 - **Vercel** auto-deploys from `main` branch
-- Env vars: `VITE_MAPBOX_TOKEN`, `VITE_SOCRATA_APP_TOKEN` (set via Vercel dashboard or `vercel env add --value`)
+- Production domain: **https://datadiver.jlabsf.org** (since June 2026; `datadiver.jlab-sf.org` 308-redirects to it — never delete the old domain from Vercel, old email links depend on it)
+- Env vars: set via the **Vercel dashboard only** — `vercel env add` has silently dropped values. Sensitive-type vars (the alerts backend secrets) are write-only: the edit box shows EMPTY on re-open (normal, not data loss — but never re-save while empty), `vercel env pull` returns `""` for them, and the only ground truth for a value is deployed behavior. Client-side: `VITE_MAPBOX_TOKEN`, `VITE_SOCRATA_APP_TOKEN`; alerts backend vars are tabled in `docs/geo-newsletters-runbook.md`
 - SPA routing: `vercel.json` has `rewrites` for `/(.*) → /index.html`
 - Build: `pnpm build` → `tsc -b && vite build`
 - Dev: `pnpm dev` (port 5174)
