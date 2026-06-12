@@ -7,18 +7,27 @@
 // eases toward the published target THROUGH the rotation instead of via a
 // rival animation.
 //
-// Centering is a screen-space feedback controller: each frame, project the
-// target, measure its pixel error from the desired on-screen landing point
-// (the visible-map center, left of the detail card's band — see
-// cameraPadding.ts), and move the camera center by a smoothed fraction of
-// that error. project/unproject account for bearing/pitch/zoom implicitly,
-// so the dot homes to its landing point no matter how the orbit has the
-// map rotated.
+// Motion model (two layers, both needed for smoothness):
+//   1. TARGET TWEEN — when the published CameraTarget changes, the
+//      effective target S-curves (easeInOutCubic) from the previous leg's
+//      endpoint to the new one over TARGET_TWEEN_MS. Velocity starts at
+//      zero, peaks mid-flight, lands at zero — no hunting tail. (A bare
+//      exponential controller starts fast and ends in an asymptotic crawl,
+//      which under a rotating bearing reads as the camera "figuring out"
+//      the last few pixels — feel-test finding, June 12 2026.)
+//   2. SCREEN-SPACE TRACKER — each frame, project the effective target,
+//      measure its pixel error from the desired landing point (the
+//      visible-map center, left of the detail card's band — see
+//      cameraPadding.ts), and close a smoothed fraction of that error.
+//      project/unproject fold in bearing/pitch/zoom implicitly, so the dot
+//      homes correctly no matter how the orbit has the map rotated. The
+//      band is part of the tween, so visit↔breath transitions slide the
+//      landing point rather than jumping it.
 //
-// Ramp-in seeds EVERY register (bearing, zoom, pitch) from the live camera
-// — Last 48 rests at pitch 63 (LAST48_CAMERA in src/utils/geo.ts), not
-// flat — and lerps pitch from there to AMBIENT_PITCH while orbit speed
-// scales 0 → 1.
+// Pitch: ambient pitch = max(pitch at arm time, AMBIENT_PITCH_MIN). The
+// Last 48 rests at pitch 63 (LAST48_CAMERA in src/utils/geo.ts) — DRIFT
+// must never REDUCE drama (feel-test: the original fixed 50° read as
+// "un-pitching" on deploy). The floor only lifts a map a user flattened.
 //
 // Ramp-out is NOT the RAF loop: jumpTo's internal stop() resets gesture
 // handlers every frame, which would kill the very drag that interrupted
@@ -56,16 +65,26 @@ export const CITYWIDE_TARGET: CameraTarget = {
 
 // Tuning constants — adjust by feel on the dev server; these are the
 // spec's starting points, not contracts.
-const ORBIT_DEG_PER_S = 1.2     // full rotation ≈ 5 min
-const AMBIENT_PITCH = 50        // degrees
+const ORBIT_DEG_PER_S = 1.2      // full rotation ≈ 5 min
+const AMBIENT_PITCH_MIN = 50     // floor only — never reduces the live pitch
 const RAMP_IN_MS = 2000
 const RAMP_OUT_MS = 1000
-const CENTER_TAU_MS = 900       // center smoothing time-constant
-const ZOOM_TAU_MS = 1200        // zoom smoothing time-constant
-const MAX_FRAME_DT_MS = 64      // clamp dt across tab-hidden gaps
+const TARGET_TWEEN_MS = 2600     // S-curve leg duration between targets
+const TRACK_TAU_MS = 300         // tracker smoothing (tight — the tween carries the shape)
+const MAX_FRAME_DT_MS = 64       // clamp dt across tab-hidden gaps
 
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3)
+const easeInOutCubic = (t: number) =>
+  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 const clamp01 = (t: number) => Math.min(1, Math.max(0, t))
+
+/** A tween leg endpoint: geographic position + zoom + landing-band px. */
+interface EffectiveTarget {
+  lng: number
+  lat: number
+  zoom: number
+  band: number
+}
 
 export function useAmbientDirector(opts: {
   map: mapboxgl.Map | null
@@ -93,8 +112,10 @@ export function useAmbientDirector(opts: {
   const zoomRef = useRef(CITYWIDE_TARGET.zoom)
   /** The pitch DRIFT was armed at — what ramp-out returns the map to. */
   const restingPitchRef = useRef(0)
-  /** Pitch at ramp-in entry — the lerp origin toward AMBIENT_PITCH. */
+  /** Pitch at ramp-in entry — the lerp origin toward the ambient pitch. */
   const pitchFromRef = useRef(0)
+  /** Ambient cruising pitch: max(armed pitch, AMBIENT_PITCH_MIN). */
+  const ambientPitchRef = useRef(AMBIENT_PITCH_MIN)
   /** Last applied orbit speed scale — scales the ramp-out bearing carry. */
   const speedScaleRef = useRef(0)
   /** dt-accumulated phase clock — immune to tab-hidden wall-clock gaps. */
@@ -103,6 +124,14 @@ export function useAmbientDirector(opts: {
   const prevPhaseRef = useRef<AmbientPhase>('off')
   const rafRef = useRef<number | undefined>(undefined)
   const lastTsRef = useRef(0)
+
+  // Tween bookkeeping: the leg eases from `tweenFrom` to the published
+  // target; `effective` is where the tween currently is (and becomes the
+  // next leg's origin when the target changes).
+  const tweenFromRef = useRef<EffectiveTarget | null>(null)
+  const tweenElapsedRef = useRef(0)
+  const lastTargetRef = useRef<CameraTarget | null>(null)
+  const effectiveRef = useRef<EffectiveTarget | null>(null)
 
   useEffect(() => {
     if (!map || phase === 'off') {
@@ -147,9 +176,16 @@ export function useAmbientDirector(opts: {
       zoomRef.current = map.getZoom()
       restingPitchRef.current = map.getPitch()
       pitchFromRef.current = map.getPitch()
+      ambientPitchRef.current = Math.max(map.getPitch(), AMBIENT_PITCH_MIN)
       speedScaleRef.current = 0
       phaseElapsedRef.current = 0
       rampInFiredRef.current = false
+      // First tween leg starts from the live camera, no band.
+      const c = map.getCenter()
+      tweenFromRef.current = { lng: c.lng, lat: c.lat, zoom: map.getZoom(), band: 0 }
+      effectiveRef.current = tweenFromRef.current
+      tweenElapsedRef.current = 0
+      lastTargetRef.current = null
     }
 
     lastTsRef.current = 0
@@ -161,13 +197,14 @@ export function useAmbientDirector(opts: {
       phaseElapsedRef.current += dt
 
       let speedScale = 1
-      let pitch = AMBIENT_PITCH
+      let pitch = ambientPitchRef.current
 
       if (phase === 'ramp-in') {
         const p = clamp01(phaseElapsedRef.current / RAMP_IN_MS)
         speedScale = p
         pitch =
-          pitchFromRef.current + (AMBIENT_PITCH - pitchFromRef.current) * easeOutCubic(p)
+          pitchFromRef.current +
+          (ambientPitchRef.current - pitchFromRef.current) * easeOutCubic(p)
         if (p >= 1 && !rampInFiredRef.current) {
           rampInFiredRef.current = true
           onRampInDoneRef.current()
@@ -178,23 +215,49 @@ export function useAmbientDirector(opts: {
       bearingRef.current =
         (bearingRef.current + (ORBIT_DEG_PER_S * speedScale * dt) / 1000) % 360
 
+      // ── Target tween: start a new S-curve leg when the target changes ──
       const target = targetRef.current
-      const kz = 1 - Math.exp(-dt / ZOOM_TAU_MS)
-      zoomRef.current += (target.zoom - zoomRef.current) * kz
+      const targetFinite = Number.isFinite(target.lng) && Number.isFinite(target.lat)
+      if (lastTargetRef.current !== target && targetFinite) {
+        lastTargetRef.current = target
+        tweenFromRef.current = effectiveRef.current ?? {
+          lng: map.getCenter().lng,
+          lat: map.getCenter().lat,
+          zoom: map.getZoom(),
+          band: 0,
+        }
+        tweenElapsedRef.current = 0
+      }
+      tweenElapsedRef.current += dt
 
-      if (Number.isFinite(target.lng) && Number.isFinite(target.lat)) {
-        // Screen-space feedback: nudge the camera center so the target's
-        // projection homes toward the desired landing point.
+      const from = tweenFromRef.current
+      let eff = effectiveRef.current
+      if (from && targetFinite) {
+        const bandTarget = target.avoidCard ? obstructedRightBand(map) : 0
+        const s = easeInOutCubic(clamp01(tweenElapsedRef.current / TARGET_TWEEN_MS))
+        eff = {
+          lng: from.lng + (target.lng - from.lng) * s,
+          lat: from.lat + (target.lat - from.lat) * s,
+          zoom: from.zoom + (target.zoom - from.zoom) * s,
+          band: from.band + (bandTarget - from.band) * s,
+        }
+        effectiveRef.current = eff
+      }
+      // A malformed target never advances the tween — `eff` stays at the
+      // last good position and the orbit continues over it.
+
+      if (eff) {
+        const k = 1 - Math.exp(-dt / TRACK_TAU_MS)
+        zoomRef.current += (eff.zoom - zoomRef.current) * k
+
         const container = map.getContainer()
-        const band = target.avoidCard ? obstructedRightBand(map) : 0
-        const desiredX = (container.clientWidth - band) / 2
+        const desiredX = (container.clientWidth - eff.band) / 2
         const desiredY = container.clientHeight / 2
-        const projected = map.project([target.lng, target.lat])
-        const kc = 1 - Math.exp(-dt / CENTER_TAU_MS)
+        const projected = map.project([eff.lng, eff.lat])
         const centerPx = map.project(map.getCenter())
         const nextCenter = map.unproject([
-          centerPx.x + (projected.x - desiredX) * kc,
-          centerPx.y + (projected.y - desiredY) * kc,
+          centerPx.x + (projected.x - desiredX) * k,
+          centerPx.y + (projected.y - desiredY) * k,
         ])
         // unproject can yield NaN on a degenerate transform (zero-size
         // container, mid-resize frame). One NaN center write poisons the
@@ -210,7 +273,6 @@ export function useAmbientDirector(opts: {
           map.jumpTo({ zoom: zoomRef.current, bearing: bearingRef.current, pitch })
         }
       } else {
-        // Defensive: a malformed target must not poison the transform.
         map.jumpTo({ zoom: zoomRef.current, bearing: bearingRef.current, pitch })
       }
 
