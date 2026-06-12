@@ -353,12 +353,15 @@ export default function Home() {
                   timestamp is when DataDiver last successfully pulled from
                   DataSF — NOT the data's own vintage, which varies per
                   dataset (each feed publishes on its own lag; see /about).
-                  Errors turn the pill ochre rather than pretending. */}
-              <span
+                  Errors turn the pill ochre rather than pretending.
+                  Clicking it opens The Last 48 — "Live" IS that view. */}
+              <button
+                onClick={() => navigate('/live-feeds')}
                 className={`inline-flex items-center gap-2 ml-5 pl-2.5 pr-3.5 py-1.5 rounded-full
                   text-[10px] font-mono uppercase tracking-wider whitespace-nowrap text-[#f5ecd9]
-                  shadow-sm ${indicators.error ? 'bg-[#b58620]' : 'bg-[#5c7a3d]'}`}
-                title="When DataDiver last refreshed from datasf.sfgov.org — each dataset publishes on its own schedule"
+                  shadow-sm cursor-pointer transition-[filter] hover:brightness-110
+                  ${indicators.error ? 'bg-[#b58620]' : 'bg-[#5c7a3d]'}`}
+                title="When DataDiver last refreshed from datasf.sfgov.org — each dataset publishes on its own schedule. Open The Last 48 →"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-current pulse-live flex-shrink-0" />
                 {indicators.error
@@ -366,7 +369,7 @@ export default function Home() {
                   : indicators.lastUpdated
                     ? `Live · updated ${formatApTime(indicators.lastUpdated.getTime())}`
                     : 'Live · datasf.sfgov.org'}
-              </span>
+              </button>
             </div>
           </div>
         </header>
