@@ -1,23 +1,28 @@
 // src/views/Last48/ambient/AmbientToggle.tsx
 //
-// DRIFT pill — arms/disarms ambient mode — plus a fullscreen button.
-// Sits in the Last 48 header cluster next to LayerControls. Visual idiom
-// matches LayerControls' FLOW toggle (mono uppercase pill, filled when
-// active). Hidden entirely under prefers-reduced-motion: the feature is
-// motion, so it must not exist for users who opted out of motion.
+// DRIFT pill — arms/disarms ambient mode — plus a pace-preset chevron menu
+// and a fullscreen button. Sits in the Last 48 header cluster next to
+// LayerControls; the menu reuses LayerControls' dropdown idiom (one menu,
+// one question: "how fast should the city drift?"). Hidden entirely under
+// prefers-reduced-motion: the feature is motion, so it must not exist for
+// users who opted out of motion.
 //
 // data-ambient-toggle marks the subtree so AmbientConductor's exit-on-input
-// listener can ignore clicks on the control itself (otherwise pressing the
-// pill to turn DRIFT off would first trigger the "any input exits" path and
-// the toggle would read stale state).
+// listener ignores clicks on the control itself — including the open menu,
+// which is how a pace can be switched live mid-drift without stopping it.
 
-import { useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { PACE_PRESETS, type PaceId } from './pace'
 
 interface Props {
   on: boolean
   /** Disabled while streams are still booting or no events have geo. */
   disabled: boolean
+  /** The pace that is (or would be) driving the drift. */
+  activePaceId: PaceId
   onToggle: (next: boolean) => void
+  /** Choose a pace: switches live when on, arms at that pace when off. */
+  onPaceSelect: (id: PaceId) => void
 }
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)'
@@ -32,12 +37,31 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia(REDUCED_MOTION_QUERY).matches
 }
 
-export default function AmbientToggle({ on, disabled, onToggle }: Props) {
+export default function AmbientToggle({ on, disabled, activePaceId, onToggle, onPaceSelect }: Props) {
   const reducedMotion = useSyncExternalStore(subscribeReducedMotion, prefersReducedMotion)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  // Click-outside dismiss for the dropdown (LayerControls pattern — the
+  // tiny delay keeps the opening click from immediately closing it).
+  useEffect(() => {
+    if (!menuOpen) return
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    const t = setTimeout(() => document.addEventListener('mousedown', handler), 50)
+    return () => {
+      clearTimeout(t)
+      document.removeEventListener('mousedown', handler)
+    }
+  }, [menuOpen])
+
   if (reducedMotion) return null
 
   return (
-    <div className="flex items-center gap-1" data-ambient-toggle>
+    <div ref={menuRef} className="relative flex items-center gap-1" data-ambient-toggle>
       <button
         onClick={() => onToggle(!on)}
         disabled={disabled}
@@ -50,7 +74,7 @@ export default function AmbientToggle({ on, disabled, onToggle }: Props) {
         className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-mono uppercase tracking-wider transition-all duration-200 ${
           on
             ? disabled
-              ? 'bg-teal-500/10 text-teal-600/50 dark:text-teal-400/50 cursor-not-allowed' // armed via ?ambient=1, waiting for boot
+              ? 'bg-teal-500/10 text-teal-600/50 dark:text-teal-400/50 cursor-not-allowed' // armed via ?ambient=, waiting for boot
               : 'bg-teal-500/20 text-teal-600 dark:text-teal-400 ring-1 ring-teal-500/40'
             : disabled
               ? 'text-paper-400 dark:text-paper-700 cursor-not-allowed'
@@ -65,6 +89,26 @@ export default function AmbientToggle({ on, disabled, onToggle }: Props) {
         )}
         {on ? '◉ drift' : '○ drift'}
       </button>
+
+      {/* Pace chevron — opens the preset menu */}
+      <button
+        onClick={() => setMenuOpen((v) => !v)}
+        disabled={disabled}
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        aria-label="Drift pace"
+        title={`Pace: ${PACE_PRESETS[activePaceId].label}`}
+        className={`px-1 py-1.5 rounded-md transition-colors ${
+          disabled
+            ? 'text-paper-400 dark:text-paper-700 cursor-not-allowed'
+            : 'text-paper-500 dark:text-paper-600 hover:text-paper-300'
+        }`}
+      >
+        <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
+          <path d="M2 4l3 3 3-3" />
+        </svg>
+      </button>
+
       <button
         onClick={() => {
           // Both calls are best-effort: requestFullscreen rejects under
@@ -79,6 +123,45 @@ export default function AmbientToggle({ on, disabled, onToggle }: Props) {
       >
         ⛶
       </button>
+
+      {menuOpen && (
+        <div
+          role="menu"
+          className="absolute right-0 top-full mt-1.5 z-50 min-w-[180px] rounded-lg bg-paper-50/95 dark:bg-espresso-900/95 backdrop-blur-lg border border-paper-200/50 dark:border-espresso-800 shadow-xl shadow-black/20 p-2"
+        >
+          <div className="px-2 pb-1 text-[9px] font-mono uppercase tracking-[0.2em] text-paper-500/70 dark:text-paper-600">
+            Drift pace
+          </div>
+          {Object.values(PACE_PRESETS).map((preset) => {
+            const active = preset.id === activePaceId
+            return (
+              <button
+                key={preset.id}
+                role="menuitem"
+                onClick={() => {
+                  onPaceSelect(preset.id)
+                  setMenuOpen(false)
+                }}
+                className={`flex items-center gap-2 w-full text-left px-2 py-1.5 rounded-md text-[12px] transition-colors ${
+                  active
+                    ? 'bg-ochre-500/15 text-ink dark:text-paper-100'
+                    : 'text-paper-800 dark:text-paper-300 hover:bg-paper-100/60 dark:hover:bg-espresso-800/60'
+                }`}
+              >
+                <span className="flex-1 leading-tight">{preset.label}</span>
+                <span className="ml-auto text-[8px] font-mono uppercase tracking-widest text-paper-500/70 dark:text-paper-600">
+                  {preset.hint}
+                </span>
+                {active && (
+                  <svg className="w-3 h-3 flex-shrink-0 text-ochre-600 dark:text-ochre-500" fill="none" viewBox="0 0 12 12" aria-hidden>
+                    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

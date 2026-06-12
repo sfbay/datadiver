@@ -6,26 +6,36 @@
 // publish citywide target). Timer-driven; reads live events via a ref so
 // poll-driven re-renders never reset the dwell clock.
 //
-// Rhythm: visit … (DWELL_MS) … visit … pass exhausted → breath
-// (BREATH_MS, card closed, citywide) → fresh snapshot → next pass.
+// Rhythm: visit … (dwellMs) … visit … pass exhausted → breath
+// (breathMs, card closed, citywide) → fresh snapshot → next pass.
+// Dwell/breath come from the active pace preset (see pace.ts), read at
+// schedule time via refs so a pace switch or ?tune=1 change applies on
+// the next beat without resetting the in-flight one.
 // Tab hidden → timers pause (visibilitychange); resumes where it stopped.
 
 import { useEffect, useRef } from 'react'
 import type { NormalizedEvent } from '@/types/last48'
 import { buildPass, nextTourId } from './tour'
 
-export const DWELL_MS = 12000
-export const BREATH_MS = 10000
-
 export function useAmbientTour(opts: {
   /** True only while the conductor's phase is 'on'. */
   active: boolean
   events: NormalizedEvent[]
+  /** Per-event dwell, ms — from the active pace preset. */
+  dwellMs: number
+  /** Citywide breath between passes, ms — from the active pace preset. */
+  breathMs: number
   onVisit: (ev: NormalizedEvent) => void
   onBreath: () => void
 }): void {
   const { active } = opts
 
+  const dwellMsRef = useRef(opts.dwellMs)
+  // eslint-disable-next-line react-hooks/refs
+  dwellMsRef.current = opts.dwellMs
+  const breathMsRef = useRef(opts.breathMs)
+  // eslint-disable-next-line react-hooks/refs
+  breathMsRef.current = opts.breathMs
   const eventsRef = useRef(opts.events)
   // eslint-disable-next-line react-hooks/refs
   eventsRef.current = opts.events
@@ -56,7 +66,7 @@ export function useAmbientTour(opts: {
         timer = setTimeout(() => {
           pass = buildPass(eventsRef.current)
           step()
-        }, BREATH_MS)
+        }, breathMsRef.current)
         return
       }
       const ev = eventsRef.current.find((e) => e.id === nextId)
@@ -68,7 +78,7 @@ export function useAmbientTour(opts: {
       }
       currentId = nextId
       onVisitRef.current(ev)
-      timer = setTimeout(step, DWELL_MS)
+      timer = setTimeout(step, dwellMsRef.current)
     }
 
     // Pause the rhythm while the tab is hidden (RAF already stops; without

@@ -24,7 +24,7 @@
 //      band is part of the tween, so visit↔breath transitions slide the
 //      landing point rather than jumping it.
 //
-// Pitch: ambient pitch = max(pitch at arm time, AMBIENT_PITCH_MIN). The
+// Pitch: cruise pitch = max(pitch at arm time, pace.pitchMin). The
 // Last 48 rests at pitch 63 (LAST48_CAMERA in src/utils/geo.ts) — DRIFT
 // must never REDUCE drama (feel-test: the original fixed 50° read as
 // "un-pitching" on deploy). The floor only lifts a map a user flattened.
@@ -44,6 +44,7 @@
 import { useEffect, useRef } from 'react'
 import type mapboxgl from 'mapbox-gl'
 import { obstructedRightBand } from '../cameraPadding'
+import type { PaceValues } from './pace'
 
 export type AmbientPhase = 'off' | 'ramp-in' | 'on' | 'ramp-out'
 
@@ -63,13 +64,11 @@ export const CITYWIDE_TARGET: CameraTarget = {
   avoidCard: false,
 }
 
-// Tuning constants — adjust by feel on the dev server; these are the
-// spec's starting points, not contracts.
-const ORBIT_DEG_PER_S = 1.2      // full rotation ≈ 5 min
-const AMBIENT_PITCH_MIN = 50     // floor only — never reduces the live pitch
+// Pace-independent constants. The paced values (orbit speed, tween
+// duration, pitch floor) arrive via the `pace` prop — see pace.ts — and
+// are read live through a ref, so the ?tune=1 panel adjusts them mid-orbit.
 const RAMP_IN_MS = 2000
 const RAMP_OUT_MS = 1000
-const TARGET_TWEEN_MS = 2600     // S-curve leg duration between targets
 const TRACK_TAU_MS = 300         // tracker smoothing (tight — the tween carries the shape)
 const MAX_FRAME_DT_MS = 64       // clamp dt across tab-hidden gaps
 
@@ -90,6 +89,8 @@ export function useAmbientDirector(opts: {
   map: mapboxgl.Map | null
   phase: AmbientPhase
   target: CameraTarget
+  /** Paced motion values (orbit speed, tween duration, pitch floor). */
+  pace: PaceValues
   onRampInDone: () => void
   onRampOutDone: () => void
 }): void {
@@ -97,6 +98,9 @@ export function useAmbientDirector(opts: {
 
   // Latest-value refs — the RAF closure reads these so prop identity
   // changes never restart the loop.
+  const paceRef = useRef(opts.pace)
+  // eslint-disable-next-line react-hooks/refs
+  paceRef.current = opts.pace
   const targetRef = useRef(opts.target)
   // eslint-disable-next-line react-hooks/refs
   targetRef.current = opts.target
@@ -112,10 +116,8 @@ export function useAmbientDirector(opts: {
   const zoomRef = useRef(CITYWIDE_TARGET.zoom)
   /** The pitch DRIFT was armed at — what ramp-out returns the map to. */
   const restingPitchRef = useRef(0)
-  /** Pitch at ramp-in entry — the lerp origin toward the ambient pitch. */
+  /** Pitch at ramp-in entry — the lerp origin toward the cruise pitch. */
   const pitchFromRef = useRef(0)
-  /** Ambient cruising pitch: max(armed pitch, AMBIENT_PITCH_MIN). */
-  const ambientPitchRef = useRef(AMBIENT_PITCH_MIN)
   /** Last applied orbit speed scale — scales the ramp-out bearing carry. */
   const speedScaleRef = useRef(0)
   /** dt-accumulated phase clock — immune to tab-hidden wall-clock gaps. */
@@ -150,7 +152,8 @@ export function useAmbientDirector(opts: {
         // 3·D/T, so a carry of ω·T/3 (scaled by the live speed) matches the
         // orbit's angular velocity at the handoff instant.
         const carry =
-          ((ORBIT_DEG_PER_S * (RAMP_OUT_MS / 1000)) / 3) * speedScaleRef.current
+          ((paceRef.current.orbitDegPerS * (RAMP_OUT_MS / 1000)) / 3) *
+          speedScaleRef.current
         try {
           map.easeTo({
             bearing: bearingRef.current + carry,
@@ -176,7 +179,6 @@ export function useAmbientDirector(opts: {
       zoomRef.current = map.getZoom()
       restingPitchRef.current = map.getPitch()
       pitchFromRef.current = map.getPitch()
-      ambientPitchRef.current = Math.max(map.getPitch(), AMBIENT_PITCH_MIN)
       speedScaleRef.current = 0
       phaseElapsedRef.current = 0
       rampInFiredRef.current = false
@@ -196,15 +198,19 @@ export function useAmbientDirector(opts: {
       lastTsRef.current = now
       phaseElapsedRef.current += dt
 
+      const pace = paceRef.current
+      // Cruise pitch never reduces drama: max(armed pitch, pace floor).
+      // Computed per frame so the tune panel's pitch slider applies live.
+      const cruisePitch = Math.max(restingPitchRef.current, pace.pitchMin)
+
       let speedScale = 1
-      let pitch = ambientPitchRef.current
+      let pitch = cruisePitch
 
       if (phase === 'ramp-in') {
         const p = clamp01(phaseElapsedRef.current / RAMP_IN_MS)
         speedScale = p
         pitch =
-          pitchFromRef.current +
-          (ambientPitchRef.current - pitchFromRef.current) * easeOutCubic(p)
+          pitchFromRef.current + (cruisePitch - pitchFromRef.current) * easeOutCubic(p)
         if (p >= 1 && !rampInFiredRef.current) {
           rampInFiredRef.current = true
           onRampInDoneRef.current()
@@ -213,7 +219,7 @@ export function useAmbientDirector(opts: {
       speedScaleRef.current = speedScale
 
       bearingRef.current =
-        (bearingRef.current + (ORBIT_DEG_PER_S * speedScale * dt) / 1000) % 360
+        (bearingRef.current + (pace.orbitDegPerS * speedScale * dt) / 1000) % 360
 
       // ── Target tween: start a new S-curve leg when the target changes ──
       const target = targetRef.current
@@ -234,7 +240,7 @@ export function useAmbientDirector(opts: {
       let eff = effectiveRef.current
       if (from && targetFinite) {
         const bandTarget = target.avoidCard ? obstructedRightBand(map) : 0
-        const s = easeInOutCubic(clamp01(tweenElapsedRef.current / TARGET_TWEEN_MS))
+        const s = easeInOutCubic(clamp01(tweenElapsedRef.current / pace.tweenMs))
         eff = {
           lng: from.lng + (target.lng - from.lng) * s,
           lat: from.lat + (target.lat - from.lat) * s,
