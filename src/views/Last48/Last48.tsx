@@ -89,18 +89,24 @@ export default function Last48() {
   const window48 = useLast48Window({ datasets })
 
   // DRIFT is armed only once every enabled stream has fully loaded or
-  // terminally errored, and at least one event exists — ?ambient=1 must not
-  // fight the boot choreography (spec: arms AFTER the stream curtain).
+  // terminally errored, and at least one ENABLED geo-bearing event exists —
+  // ?ambient=1 must not fight the boot choreography (spec: arms AFTER the
+  // stream curtain). The per-event check matters: window48.events keeps
+  // already-fetched events for datasets whose chips were toggled off, so a
+  // bare length check would leave the toggle armed over a tour with nothing
+  // visible to visit.
   const ambientReady = useMemo(
     () =>
-      window48.events.length > 0 &&
+      window48.events.some(
+        (e) => datasets.includes(e.datasetId) && e.longitude != null && e.latitude != null,
+      ) &&
       LAST48_DATASETS.every(
         (id) =>
           !datasets.includes(id) ||
           window48.fullyLoadedByDataset[id] ||
           !!window48.errorByDataset[id],
       ),
-    [datasets, window48.events.length, window48.fullyLoadedByDataset, window48.errorByDataset],
+    [datasets, window48.events, window48.fullyLoadedByDataset, window48.errorByDataset],
   )
 
   // Seed the cross-view summary store: when a stream finishes its FULL 48h
