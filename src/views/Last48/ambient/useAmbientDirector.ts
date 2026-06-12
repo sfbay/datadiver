@@ -15,14 +15,17 @@
 //      exponential controller starts fast and ends in an asymptotic crawl,
 //      which under a rotating bearing reads as the camera "figuring out"
 //      the last few pixels — feel-test finding, June 12 2026.)
-//   2. SCREEN-SPACE TRACKER — each frame, project the effective target,
-//      measure its pixel error from the desired landing point (the
-//      visible-map center, left of the detail card's band — see
-//      cameraPadding.ts), and close a smoothed fraction of that error.
-//      project/unproject fold in bearing/pitch/zoom implicitly, so the dot
-//      homes correctly no matter how the orbit has the map rotated. The
-//      band is part of the tween, so visit↔breath transitions slide the
-//      landing point rather than jumping it.
+//   2. EXACT SCREEN-SPACE SOLVE — each frame, project the effective
+//      target, measure its pixel offset from the desired landing point
+//      (the visible-map center, left of the detail card's band — see
+//      cameraPadding.ts), and apply the FULL correction. No filter:
+//      tweens and filters are competing smoothing strategies, and a
+//      fractional tracker's gain depends on dt, which converts frame-time
+//      jitter into position jitter (the "fighting something" feel-test
+//      regression). project/unproject fold in bearing/pitch/zoom
+//      implicitly, so the dot stays pinned no matter how the orbit has
+//      the map rotated. The band is part of the tween, so visit↔breath
+//      transitions slide the landing point rather than jumping it.
 //
 // Pitch: cruise pitch = max(pitch at arm time, pace.pitchMin). The
 // Last 48 rests at pitch 63 (LAST48_CAMERA in src/utils/geo.ts) — DRIFT
@@ -69,7 +72,6 @@ export const CITYWIDE_TARGET: CameraTarget = {
 // are read live through a ref, so the ?tune=1 panel adjusts them mid-orbit.
 const RAMP_IN_MS = 2000
 const RAMP_OUT_MS = 1000
-const TRACK_TAU_MS = 300         // tracker smoothing (tight — the tween carries the shape)
 const MAX_FRAME_DT_MS = 64       // clamp dt across tab-hidden gaps
 
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3)
@@ -253,8 +255,14 @@ export function useAmbientDirector(opts: {
       // last good position and the orbit continues over it.
 
       if (eff) {
-        const k = 1 - Math.exp(-dt / TRACK_TAU_MS)
-        zoomRef.current += (eff.zoom - zoomRef.current) * k
+        // EXACT solve — no filter. The tween is the only motion dynamics;
+        // each frame the camera pose is computed to put the tweened target
+        // exactly at its landing point. A fractional tracker here (the
+        // previous design) converts frame-time jitter into position jitter:
+        // its per-frame gain depends on dt, so GPU-bound frame pacing at
+        // pitch 63 read as the camera "fighting something" (feel-test,
+        // June 12 2026). Position must be a pure function of time.
+        zoomRef.current = eff.zoom
 
         const container = map.getContainer()
         const desiredX = (container.clientWidth - eff.band) / 2
@@ -262,8 +270,8 @@ export function useAmbientDirector(opts: {
         const projected = map.project([eff.lng, eff.lat])
         const centerPx = map.project(map.getCenter())
         const nextCenter = map.unproject([
-          centerPx.x + (projected.x - desiredX) * k,
-          centerPx.y + (projected.y - desiredY) * k,
+          centerPx.x + (projected.x - desiredX),
+          centerPx.y + (projected.y - desiredY),
         ])
         // unproject can yield NaN on a degenerate transform (zero-size
         // container, mid-resize frame). One NaN center write poisons the
