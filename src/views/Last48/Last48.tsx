@@ -14,6 +14,7 @@ import { useSummaryStore } from '@/stores/summaryStore'
 import { LAST48_DATASETS, type DatasetId } from '@/types/last48'
 import type { CensusVariable } from '@/types/census'
 import Last48UnifiedView from './modes/Last48UnifiedView'
+import AmbientToggle from './ambient/AmbientToggle'
 import LayerControls, { type BaseFill } from './chrome/LayerControls'
 import DatasetSuperChips from './chrome/DatasetSuperChips'
 import ScannerStrip from './chrome/ScannerStrip'
@@ -51,6 +52,10 @@ function parseDatasets(s: string | null): DatasetId[] {
   return parts.filter((p) => known.has(p))
 }
 
+function parseAmbient(s: string | null): boolean {
+  return s === '1'
+}
+
 // ── Component ───────────────────────────────────────────────────────────────
 
 export default function Last48() {
@@ -65,12 +70,38 @@ export default function Last48() {
   // another machine. `event` holds a NormalizedEvent.id (`datasetId:nativeId`).
   const selectedEventId = searchParams.get('event')
 
+  const ambientOn = parseAmbient(searchParams.get('ambient'))
+
+  const setAmbientOn = useCallback((next: boolean) => {
+    setSearchParams((prev) => {
+      const np = new URLSearchParams(prev)
+      if (next) np.set('ambient', '1')
+      else np.delete('ambient')
+      return np
+    }, { replace: true })
+  }, [setSearchParams])
+
   // Underlay variable is transient UI state — no reason to URL-persist it.
   // Defaults to median home value so the demographic underlay (on by default,
   // see parseFill) leads with home-value context.
   const [underlayVariable, setUnderlayVariable] = useState<CensusVariable | null>('medianHomeValue')
 
   const window48 = useLast48Window({ datasets })
+
+  // DRIFT is armed only once every enabled stream has fully loaded or
+  // terminally errored, and at least one event exists — ?ambient=1 must not
+  // fight the boot choreography (spec: arms AFTER the stream curtain).
+  const ambientReady = useMemo(
+    () =>
+      window48.events.length > 0 &&
+      LAST48_DATASETS.every(
+        (id) =>
+          !datasets.includes(id) ||
+          window48.fullyLoadedByDataset[id] ||
+          !!window48.errorByDataset[id],
+      ),
+    [datasets, window48.events.length, window48.fullyLoadedByDataset, window48.errorByDataset],
+  )
 
   // Seed the cross-view summary store: when a stream finishes its FULL 48h
   // load, record its complete event count. The loading tips read these back on
@@ -278,6 +309,7 @@ export default function Last48() {
               underlayVariable={underlayVariable}
               onUnderlayChange={setUnderlayVariable}
             />
+            <AmbientToggle on={ambientOn} disabled={!ambientReady} onToggle={setAmbientOn} />
             <ExportButton targetSelector="#last48-capture" filename="last-48" />
           </div>
         </div>
@@ -318,6 +350,9 @@ export default function Last48() {
           selectedNeighborhoodId={selectedNeighborhoodId}
           onSelectedNeighborhoodChange={setSelectedNeighborhoodId}
           onSweepPhase={handleSweepPhase}
+          ambientOn={ambientOn}
+          ambientReady={ambientReady}
+          onAmbientExit={() => setAmbientOn(false)}
         />
       </div>
 
