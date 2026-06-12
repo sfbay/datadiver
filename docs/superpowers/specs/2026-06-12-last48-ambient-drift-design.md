@@ -48,6 +48,7 @@ The fix for the orbit-vs-recenter animation fight: while ambient is on, **one RA
   - **Resting / citywide:** ≈ z11.5, pitch ~50°, centered on the city.
   - **Visiting an event:** ease to ≈ z14 over ~2.5s, dwell, move on.
   - **Inter-pass breath:** ease back out to citywide for ~10s, still orbiting, detail card closed — the rhythm reads *tour… breathe… tour…*
+- **Unobstructed centering (shared fix):** "center on the event" means the center of the *visible* map, not the viewport. The detail card (top-right, `max-h-[80vh]`) and chrome can cover a viewport-centered dot on squarish viewports (observed on an unfolded Pixel in the interactive view — today's `flyTo` at `Last48UnifiedView.tsx` centers exactly). Fix: a shared `safeCameraPadding(map)` helper measures live overlay geometry (detail card, chips row) and returns Mapbox camera `padding`; both the interactive `flyTo` calls and the ambient visit register use it. Ships ahead of ambient as a standalone interactive bugfix.
 - Tuning values (angular velocity, zooms, pitch, dwell, ramp durations) are constants in `useAmbientDirector.ts` — expected to be tuned by feel during build; the numbers above are starting points, not contracts.
 
 ## Tour mechanics
