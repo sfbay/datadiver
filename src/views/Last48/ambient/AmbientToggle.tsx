@@ -49,7 +49,9 @@ export default function AmbientToggle({ on, disabled, onToggle }: Props) {
         }
         className={`px-3 py-1.5 rounded-md text-[11px] font-mono uppercase tracking-wider transition-all duration-200 ${
           on
-            ? 'bg-teal-500/15 text-teal-600 dark:text-teal-400'
+            ? disabled
+              ? 'bg-teal-500/10 text-teal-600/50 dark:text-teal-400/50 cursor-not-allowed' // armed via ?ambient=1, waiting for boot
+              : 'bg-teal-500/15 text-teal-600 dark:text-teal-400'
             : disabled
               ? 'text-paper-400 dark:text-paper-700 cursor-not-allowed'
               : 'text-paper-500 dark:text-paper-600 hover:text-paper-300'
