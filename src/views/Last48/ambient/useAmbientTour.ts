@@ -14,7 +14,7 @@ import { useEffect, useRef } from 'react'
 import type { NormalizedEvent } from '@/types/last48'
 import { buildPass, nextTourId } from './tour'
 
-export const DWELL_MS = 8000
+export const DWELL_MS = 12000
 export const BREATH_MS = 10000
 
 export function useAmbientTour(opts: {
