@@ -94,7 +94,7 @@ src/
   api/           # Socrata client + dataset registry
   components/
     charts/      # D3 chart components (ResponseHistogram, HourlyHeatgrid, PeriodBreakdownChart, etc.)
-    export/      # ExportButton (html2canvas PNG)
+    export/      # ExportButton (html2canvas-pro PNG — NOT html2canvas 1.x, which chokes on Tailwind v4 oklab; downloads via toBlob, never toDataURL)
     filters/     # DateRangePicker, CallTypeFilter, CategoryFilter, etc.
     layout/      # AppShell (sidebar nav + header)
     maps/        # MapView (Mapbox GL wrapper)
