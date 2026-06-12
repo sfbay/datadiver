@@ -37,6 +37,24 @@ export const FEED_SOURCES: Record<FeedSource, { label: string; aboutUrl: string;
 
 export const SCANNER_FEEDS: ScannerFeed[] = [
   {
+    id: 'broadcastify-sf-fire',
+    name: 'SF Fire & EMS',
+    source: 'broadcastify',
+    service: 'fire',
+    url: 'https://www.broadcastify.com/listen/feed/6336',
+    coverage: { type: 'citywide' },
+    description: 'San Francisco City Fire and EMS — live dispatch audio',
+  },
+  {
+    id: 'broadcastify-sf-police',
+    name: 'SF Police',
+    source: 'broadcastify',
+    service: 'police',
+    url: 'https://www.broadcastify.com/listen/feed/46180',
+    coverage: { type: 'citywide' },
+    description: 'San Francisco City Police dispatch — base/mobile traffic (portables are encrypted)',
+  },
+  {
     id: 'openmhz-sfpd',
     name: 'SFPD Trunked Radio',
     source: 'openmhz',
