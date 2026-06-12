@@ -47,16 +47,22 @@ export default function AmbientToggle({ on, disabled, onToggle }: Props) {
             ? 'Drift starts once events finish loading'
             : 'Ambient drift — slow orbit touring the freshest events. Any input stops it.'
         }
-        className={`px-3 py-1.5 rounded-md text-[11px] font-mono uppercase tracking-wider transition-all duration-200 ${
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-mono uppercase tracking-wider transition-all duration-200 ${
           on
             ? disabled
               ? 'bg-teal-500/10 text-teal-600/50 dark:text-teal-400/50 cursor-not-allowed' // armed via ?ambient=1, waiting for boot
-              : 'bg-teal-500/15 text-teal-600 dark:text-teal-400'
+              : 'bg-teal-500/20 text-teal-600 dark:text-teal-400 ring-1 ring-teal-500/40'
             : disabled
               ? 'text-paper-400 dark:text-paper-700 cursor-not-allowed'
               : 'text-paper-500 dark:text-paper-600 hover:text-paper-300'
         }`}
       >
+        {/* Running state gets the site's live-pulse dot — the same idiom as
+            the header's event counter — so "drifting" is unmistakable from
+            across a room. */}
+        {on && !disabled && (
+          <span className="w-1.5 h-1.5 rounded-full bg-current pulse-live flex-shrink-0" aria-hidden />
+        )}
         {on ? '◉ drift' : '○ drift'}
       </button>
       <button
