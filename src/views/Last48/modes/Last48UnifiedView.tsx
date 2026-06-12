@@ -24,6 +24,7 @@ import type { CensusVariable } from '@/types/census'
 import type { BaseFill } from '../chrome/LayerControls'
 
 import Last48Map from './Last48Map'
+import { eventFlyToOffset } from '../cameraPadding'
 import FlowMapLayer from './FlowMapLayer'
 import FlowRail from './FlowRail'
 import FlowSelectedRadar from './FlowSelectedRadar'
@@ -233,7 +234,9 @@ export default function Last48UnifiedView({
               }
               setSelectedEvent(ev)
               if (map && ev.longitude != null && ev.latitude != null) {
-                map.flyTo({ center: [ev.longitude, ev.latitude], zoom: 14, duration: 600 })
+                // offset: land the dot in the visible-map center, clear of
+                // the detail card's right-side band (see cameraPadding.ts).
+                map.flyTo({ center: [ev.longitude, ev.latitude], zoom: 14, duration: 600, offset: eventFlyToOffset(map) })
               }
             }}
           />
@@ -378,7 +381,7 @@ function DeepLinkLander({
     landedRef.current = eventId
     onLand(found)
     if (map && found.longitude != null && found.latitude != null) {
-      map.flyTo({ center: [found.longitude, found.latitude], zoom: 14, duration: 600 })
+      map.flyTo({ center: [found.longitude, found.latitude], zoom: 14, duration: 600, offset: eventFlyToOffset(map) })
     }
   }, [map, eventId, selectedId, events, onLand])
 
