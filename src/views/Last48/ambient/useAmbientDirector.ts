@@ -122,12 +122,19 @@ export function useAmbientDirector(opts: {
         // orbit's angular velocity at the handoff instant.
         const carry =
           ((ORBIT_DEG_PER_S * (RAMP_OUT_MS / 1000)) / 3) * speedScaleRef.current
-        map.easeTo({
-          bearing: bearingRef.current + carry,
-          pitch: restingPitchRef.current,
-          duration: RAMP_OUT_MS,
-          easing: easeOutCubic,
-        })
+        try {
+          map.easeTo({
+            bearing: bearingRef.current + carry,
+            pitch: restingPitchRef.current,
+            duration: RAMP_OUT_MS,
+            easing: easeOutCubic,
+          })
+        } catch {
+          // easeTo throws inside a React effect flush if the camera was ever
+          // poisoned (Invalid LngLat) — on an unattended display that would
+          // tear down the whole view via the error boundary. Skipping the
+          // deceleration animation is strictly better than crashing.
+        }
       }
       const t = setTimeout(() => onRampOutDoneRef.current(), RAMP_OUT_MS)
       return () => clearTimeout(t)
@@ -189,12 +196,19 @@ export function useAmbientDirector(opts: {
           centerPx.x + (projected.x - desiredX) * kc,
           centerPx.y + (projected.y - desiredY) * kc,
         ])
-        map.jumpTo({
-          center: nextCenter,
-          zoom: zoomRef.current,
-          bearing: bearingRef.current,
-          pitch,
-        })
+        // unproject can yield NaN on a degenerate transform (zero-size
+        // container, mid-resize frame). One NaN center write poisons the
+        // camera permanently and later crashes easeTo — never write it.
+        if (Number.isFinite(nextCenter.lng) && Number.isFinite(nextCenter.lat)) {
+          map.jumpTo({
+            center: nextCenter,
+            zoom: zoomRef.current,
+            bearing: bearingRef.current,
+            pitch,
+          })
+        } else {
+          map.jumpTo({ zoom: zoomRef.current, bearing: bearingRef.current, pitch })
+        }
       } else {
         // Defensive: a malformed target must not poison the transform.
         map.jumpTo({ zoom: zoomRef.current, bearing: bearingRef.current, pitch })
