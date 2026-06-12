@@ -1,15 +1,24 @@
 // Compact scanner-radio launcher. Single row, h-12. The "Tune In"
-// button opens the audio stream URL in a new browser tab — by design,
-// scanner audio is not embedded (see spec: scanner-as-soundtrack).
+// buttons open the Broadcastify feed page in a new browser tab — by
+// design, scanner audio is not embedded (see spec: scanner-as-soundtrack;
+// Broadcastify's TOS restricts embedded players to feed owners).
 
-import { SCANNER_FEEDS } from '@/data/scannerFeeds'
+import { FEED_SOURCES, SCANNER_FEEDS } from '@/data/scannerFeeds'
 
-// Citywide default: the first feed labeled 'mixed' service if available;
-// else the first feed in the list.
-const DEFAULT_FEED = SCANNER_FEEDS.find((f) => f.service === 'mixed') ?? SCANNER_FEEDS[0]
+// The two live SF dispatch streams. Pigments follow the dataset vocabulary:
+// Fire/EMS = terracotta (emergency), Police = indigo (sensitive calls).
+const STRIP_FEEDS = [
+  { id: 'broadcastify-sf-fire', label: 'FIRE/EMS', classes: 'border-terracotta-500/60 text-terracotta-600 dark:text-terracotta-400 hover:bg-terracotta-500/10 hover:border-terracotta-500' },
+  { id: 'broadcastify-sf-police', label: 'POLICE', classes: 'border-indigo-500/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/10 hover:border-indigo-500' },
+]
+  .map(({ id, label, classes }) => {
+    const feed = SCANNER_FEEDS.find((f) => f.id === id)
+    return feed ? { feed, label, classes } : null
+  })
+  .filter((entry): entry is NonNullable<typeof entry> => entry !== null)
 
 export default function ScannerStrip() {
-  if (!DEFAULT_FEED) return null
+  if (STRIP_FEEDS.length === 0) return null
 
   return (
     <>
@@ -23,15 +32,32 @@ export default function ScannerStrip() {
         </span>
         <span className="tracking-wider">SCANNER</span>
         <span className="text-paper-500">·</span>
-        <span className="truncate">{DEFAULT_FEED.name}</span>
-        <a
-          href={DEFAULT_FEED.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="ml-auto px-3 py-1 rounded border border-moss-500/60 text-moss-600 dark:text-moss-400 hover:bg-moss-500/10 hover:border-moss-500 text-[10px] tracking-wider transition-colors"
-        >
-          ▶ TUNE IN →
-        </a>
+        <span className="hidden sm:inline truncate">Live dispatch audio</span>
+        <span className="hidden sm:inline text-[9px] text-paper-500">
+          via{' '}
+          <a
+            href={FEED_SOURCES.broadcastify.aboutUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-paper-400 underline-offset-2 hover:underline"
+          >
+            {FEED_SOURCES.broadcastify.label}
+          </a>
+        </span>
+        <div className="ml-auto flex items-center gap-2">
+          {STRIP_FEEDS.map(({ feed, label, classes }) => (
+            <a
+              key={feed.id}
+              href={feed.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={feed.description}
+              className={`px-3 py-1 rounded border text-[10px] tracking-wider transition-colors ${classes}`}
+            >
+              ▶ {label} →
+            </a>
+          ))}
+        </div>
       </div>
     </>
   )
