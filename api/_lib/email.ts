@@ -47,13 +47,16 @@ export async function sendConfirmEmail(to: string, confirmToken: string): Promis
     <p style="font-size:15px;line-height:1.6">You asked DataDiver to email you when civic events happen near places you care about. Confirm to start receiving your daily digest.</p>
     <p style="margin:22px 0"><a href="${escapeHtml(url)}" style="background:#b85a33;color:#f5ecd9;text-decoration:none;padding:11px 20px;border-radius:6px;font-family:Arial,sans-serif;font-size:14px">Confirm my alerts</a></p>
     <p style="font-size:13px;color:#7a6a52">If you didn't request this, ignore this email — nothing was activated.</p>`
-  await resend().emails.send({
+  const { data, error } = await resend().emails.send({
     from: fromAddress(),
     to,
     subject: 'Confirm your DataDiver alerts',
     html: shell('Confirm your alerts', body, SENDER_IDENTITY),
     text: `Confirm your DataDiver alerts:\n${url}\n\nIf you didn't request this, ignore this email.\n\n${SENDER_IDENTITY}`,
   })
+  // The Resend SDK does NOT throw on API errors — it returns { data, error }.
+  if (error) throw new Error(`[resend] confirm send rejected: ${error.name}: ${error.message}`)
+  console.log('[email] confirm sent', data?.id)
 }
 
 export interface DigestItem {
@@ -95,7 +98,7 @@ export async function sendDigestEmail(
     You're receiving this because you subscribed to DataDiver alerts.<br>
     <a href="${escapeHtml(unsubUrl)}" style="color:#7a6a52">Unsubscribe</a> (one click — removes your data).`
 
-  await resend().emails.send({
+  const { data, error } = await resend().emails.send({
     from: fromAddress(),
     to,
     subject: `DataDiver: ${total} new event${total === 1 ? '' : 's'} near you`,
@@ -106,4 +109,6 @@ export async function sendDigestEmail(
         .join('\n\n') + `\n\nUnsubscribe: ${unsubUrl}\n${SENDER_IDENTITY}`,
     headers: { 'List-Unsubscribe': `<${unsubUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
   })
+  if (error) throw new Error(`[resend] digest send rejected: ${error.name}: ${error.message}`)
+  console.log('[email] digest sent', data?.id)
 }
