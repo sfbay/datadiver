@@ -25,6 +25,7 @@ import type { BaseFill } from '../chrome/LayerControls'
 
 import Last48Map from './Last48Map'
 import AmbientConductor from '../ambient/AmbientConductor'
+import type { PaceValues } from '../ambient/pace'
 import { eventFlyToOffset } from '../cameraPadding'
 import FlowMapLayer from './FlowMapLayer'
 import FlowRail from './FlowRail'
@@ -59,10 +60,12 @@ interface Props {
    *  transition ('sweeping' when its dots start landing, 'settled' when
    *  done). Last48 uses it to drive the chip arrival sheen states. */
   onSweepPhase?: (id: DatasetId, phase: 'sweeping' | 'settled') => void
-  /** ?ambient=1 — DRIFT armed (URL is the source of truth). */
+  /** ?ambient= — DRIFT armed (URL is the source of truth). */
   ambientOn: boolean
   /** Streams booted + events present — ramp-in gate. */
   ambientReady: boolean
+  /** Resolved pace values (preset + any ?tune=1 overrides). */
+  ambientPace: PaceValues
   /** Disarm (clears ?ambient=) — called when ramp-out completes or input exits. */
   onAmbientExit: () => void
 }
@@ -80,6 +83,7 @@ export default function Last48UnifiedView({
   onSweepPhase,
   ambientOn,
   ambientReady,
+  ambientPace,
   onAmbientExit,
 }: Props) {
   // ── FLOW state ─────────────────────────────────────────────────────────────
@@ -318,6 +322,7 @@ export default function Last48UnifiedView({
           <AmbientConductor
             map={map}
             ambientOn={ambientOn}
+            pace={ambientPace}
             ready={ambientReady}
             onExit={onAmbientExit}
             events={visibleEvents}

@@ -20,12 +20,15 @@ import {
   type CameraTarget,
 } from './useAmbientDirector'
 import { useAmbientTour } from './useAmbientTour'
+import type { PaceValues } from './pace'
 import type { NormalizedEvent } from '@/types/last48'
 
 interface Props {
   map: mapboxgl.Map | null
   /** Armed state from ?ambient=1 (URL is the source of truth). */
   ambientOn: boolean
+  /** Resolved pace values (preset + any ?tune=1 overrides). */
+  pace: PaceValues
   /** Streams booted and at least one event available — gate for ramp-in. */
   ready: boolean
   /** Flip ?ambient= off (called when ramp-out completes). */
@@ -43,7 +46,7 @@ interface Props {
   onClearSelection: () => void
 }
 
-export default function AmbientConductor({ map, ambientOn, ready, onExit, events, pointsOn, onVisit, onClearSelection }: Props) {
+export default function AmbientConductor({ map, ambientOn, pace, ready, onExit, events, pointsOn, onVisit, onClearSelection }: Props) {
   const [phase, setPhase] = useState<AmbientPhase>('off')
   const [target, setTarget] = useState<CameraTarget>(CITYWIDE_TARGET)
 
@@ -86,6 +89,8 @@ export default function AmbientConductor({ map, ambientOn, ready, onExit, events
   useAmbientTour({
     active: phase === 'on' && pointsOn,
     events,
+    dwellMs: pace.dwellMs,
+    breathMs: pace.breathMs,
     onVisit: (ev) => {
       onVisit(ev)
       setTarget({ lng: ev.longitude!, lat: ev.latitude!, zoom: 14, avoidCard: true })
@@ -100,6 +105,7 @@ export default function AmbientConductor({ map, ambientOn, ready, onExit, events
     map,
     phase,
     target,
+    pace,
     onRampInDone: () => setPhase('on'),
     onRampOutDone: () => {
       setPhase('off')

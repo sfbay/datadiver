@@ -7,7 +7,7 @@
 //   - Layout chrome (freshness chips, dataset filter chips, layer controls, scanner strip)
 //   - Last48UnifiedView — single persistent MapView with composable layers
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useLast48Window } from '@/hooks/useLast48Window'
 import { useSummaryStore } from '@/stores/summaryStore'
@@ -15,6 +15,8 @@ import { LAST48_DATASETS, type DatasetId } from '@/types/last48'
 import type { CensusVariable } from '@/types/census'
 import Last48UnifiedView from './modes/Last48UnifiedView'
 import AmbientToggle from './ambient/AmbientToggle'
+import AmbientTunePanel from './ambient/AmbientTunePanel'
+import { parsePaceId, PACE_PRESETS, DEFAULT_PACE_ID, type PaceId, type PaceValues } from './ambient/pace'
 import LayerControls, { type BaseFill } from './chrome/LayerControls'
 import DatasetSuperChips from './chrome/DatasetSuperChips'
 import ScannerStrip from './chrome/ScannerStrip'
@@ -52,9 +54,8 @@ function parseDatasets(s: string | null): DatasetId[] {
   return parts.filter((p) => known.has(p))
 }
 
-function parseAmbient(s: string | null): boolean {
-  return s === '1'
-}
+// ?ambient= parsing lives in ambient/pace.ts (parsePaceId): '1' arms at the
+// default pace; 'stroll'|'drift'|'sweep' arms at that pace; null = off.
 
 // ── Component ───────────────────────────────────────────────────────────────
 
@@ -70,16 +71,53 @@ export default function Last48() {
   // another machine. `event` holds a NormalizedEvent.id (`datasetId:nativeId`).
   const selectedEventId = searchParams.get('event')
 
-  const ambientOn = parseAmbient(searchParams.get('ambient'))
+  const ambientPaceId = parsePaceId(searchParams.get('ambient'))
+  const ambientOn = ambientPaceId !== null
 
-  const setAmbientOn = useCallback((next: boolean) => {
+  const setAmbientPace = useCallback((id: PaceId | null) => {
     setSearchParams((prev) => {
       const np = new URLSearchParams(prev)
-      if (next) np.set('ambient', '1')
+      if (id) np.set('ambient', id)
       else np.delete('ambient')
       return np
     }, { replace: true })
   }, [setSearchParams])
+
+  // The pace the pill re-arms with after an off/on cycle — survives the
+  // URL param being cleared on exit so a chosen pace isn't forgotten.
+  // A render-synced ref (not state): it only ever changes when
+  // ambientPaceId changes, which is already a re-render.
+  const preferredPaceRef = useRef<PaceId>(DEFAULT_PACE_ID)
+  if (ambientPaceId) {
+    // eslint-disable-next-line react-hooks/refs
+    preferredPaceRef.current = ambientPaceId
+  }
+  // Render-time read is safe: the ref only changes when ambientPaceId
+  // changes, which is itself a re-render (searchParams state).
+  // eslint-disable-next-line react-hooks/refs
+  const activePaceId = ambientPaceId ?? preferredPaceRef.current
+
+  const setAmbientOn = useCallback(
+    (next: boolean) => setAmbientPace(next ? preferredPaceRef.current : null),
+    [setAmbientPace],
+  )
+
+  // Selecting a pace arms at that pace (when off) or switches live (when
+  // on) — choosing from the menu IS intent to drift. The ref syncs on the
+  // re-render the URL write triggers.
+  const handlePaceSelect = useCallback(
+    (id: PaceId) => setAmbientPace(id),
+    [setAmbientPace],
+  )
+
+  // Dev-only live tuning (?tune=1): slider overrides merge over the active
+  // preset; COPY in the panel exports the result for pace.ts.
+  const tuneOn = searchParams.get('tune') === '1'
+  const [tuneOverrides, setTuneOverrides] = useState<Partial<PaceValues>>({})
+  const ambientPace = useMemo<PaceValues>(
+    () => ({ ...PACE_PRESETS[activePaceId], ...tuneOverrides }),
+    [activePaceId, tuneOverrides],
+  )
 
   // Underlay variable is transient UI state — no reason to URL-persist it.
   // Defaults to median home value so the demographic underlay (on by default,
@@ -315,7 +353,13 @@ export default function Last48() {
               underlayVariable={underlayVariable}
               onUnderlayChange={setUnderlayVariable}
             />
-            <AmbientToggle on={ambientOn} disabled={!ambientReady} onToggle={setAmbientOn} />
+            <AmbientToggle
+              on={ambientOn}
+              disabled={!ambientReady}
+              activePaceId={activePaceId}
+              onToggle={setAmbientOn}
+              onPaceSelect={handlePaceSelect}
+            />
             <ExportButton targetSelector="#last48-capture" filename="last-48" />
           </div>
         </div>
@@ -358,8 +402,18 @@ export default function Last48() {
           onSweepPhase={handleSweepPhase}
           ambientOn={ambientOn}
           ambientReady={ambientReady}
+          ambientPace={ambientPace}
           onAmbientExit={() => setAmbientOn(false)}
         />
+        {/* Dev-only pace tuning (?tune=1) — finds preset values live;
+            never discoverable in the UI. */}
+        {tuneOn && (
+          <AmbientTunePanel
+            values={ambientPace}
+            onChange={(patch) => setTuneOverrides((prev) => ({ ...prev, ...patch }))}
+            onReset={() => setTuneOverrides({})}
+          />
+        )}
       </div>
 
       {/* Scanner launcher strip */}
