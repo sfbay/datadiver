@@ -104,6 +104,14 @@
 - [x] Dual heatmap (green openings + red closures) — split query fix
 - [x] Sector filter with openings/closures/net per sector
 
+### The Last 48 (Live Feeds)
+- [x] FLOW mode (animated 48h event map) + HOTSPOTS (z-score anomaly choropleth)
+- [x] DatasetSuperChips row (toggle + headline + per-hour rate + publish-lag sparkline)
+- [x] Civic heartbeat ticker (significance-ranked plain-language readout)
+- [x] Ambient DRIFT mode — idle slow-orbit auto-tour of freshest events; Stroll/Drift/Sweep pace presets; `?ambient=` URL contract; `?tune=1` dev panel; reduced-motion aware (PRs #85–87)
+- [x] Scanner strip linking Broadcastify SF Fire/EMS (6336) + Police (46180) — new-tab only per TOS (PR #81)
+- [x] Event fly-to offset to clear the top-right detail card (PR #83)
+
 ### Data Quality
 - [x] Sort bias fix for dual-field queries (business openings/closures)
 - [x] Data freshness gates on ticker (suppress high-latency datasets)
