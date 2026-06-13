@@ -1,47 +1,42 @@
 // src/views/Last48/ambient/useAmbientDirector.ts
 //
-// Single-writer camera for ambient mode. While phase is 'ramp-in' or 'on',
-// ONE RAF loop owns the camera — nothing else (including Mapbox's own
-// flyTo/easeTo animations) may write to it. This is the fix for the
-// orbit-vs-recenter fight: bearing increments every frame, and the center
-// eases toward the published target THROUGH the rotation instead of via a
-// rival animation.
+// Hybrid camera for ambient mode: native Mapbox animation for the
+// expensive parts, a cheap manual orbit for the rest, never both at once.
 //
-// Motion model (two layers, both needed for smoothness):
-//   1. FLIGHT LEG — when the published CameraTarget changes, the
-//      effective target flies a van Wijk & Nuij optimal zoom-pan path
-//      (see flightPath.ts — the math inside Mapbox's flyTo) from the
-//      previous leg's endpoint to the new one over pace.tweenMs, time-
-//      shaped by easeInOutCubic. Velocity starts at zero, peaks mid-
-//      flight, lands at zero — no hunting tail — and the path's zoom-out
-//      arc keeps peak SCREEN velocity low, which is what makes flights
-//      survive irregular frame pacing without reading as wiggle
-//      (feel-test findings #1 and #3, June 12 2026).
-//   2. EXACT SCREEN-SPACE SOLVE — each frame, project the effective
-//      target, measure its pixel offset from the desired landing point
-//      (the visible-map center, left of the detail card's band — see
-//      cameraPadding.ts), and apply the FULL correction. No filter:
-//      tweens and filters are competing smoothing strategies, and a
-//      fractional tracker's gain depends on dt, which converts frame-time
-//      jitter into position jitter (the "fighting something" feel-test
-//      regression). project/unproject fold in bearing/pitch/zoom
-//      implicitly, so the dot stays pinned no matter how the orbit has
-//      the map rotated. The band is part of the tween, so visit↔breath
-//      transitions slide the landing point rather than jumping it.
+// WHY HYBRID (feel-test #4, June 12 2026 — phase-correlation of a 240fps
+// screen recording): driving flights with a per-frame map.jumpTo that
+// changes zoom every frame forced Mapbox into ~15-20fps irregular paint
+// at pitch 63 over a heavy scene (thousands of dots + a demographic
+// choropleth). The camera position was geometrically correct (<0.5px
+// lateral error) but advanced in discrete 8-30px hops — measured 84% of
+// frames frozen, motion in bursts. That judder, not a path wiggle, is
+// what read as "jittery." Root causes of the hop: (a) two RAF loops —
+// ours calling jumpTo, Mapbox's painting — beating out of phase; (b) a
+// zoom change every frame forcing tile/work that blew the frame budget.
 //
-// Pitch: cruise pitch = max(pitch at arm time, pace.pitchMin). The
-// Last 48 rests at pitch 63 (LAST48_CAMERA in src/utils/geo.ts) — DRIFT
-// must never REDUCE drama (feel-test: the original fixed 50° read as
-// "un-pitching" on deploy). The floor only lifts a map a user flattened.
+//   FLIGHT (a real pan/zoom between targets) → map.flyTo. One coherent
+//   animation inside Mapbox's own render loop; flyTo IS the van Wijk
+//   optimal zoom-pan path, GPU-tuned, with symbol/placement work deferred
+//   during the move. The bearing target carries the orbit forward through
+//   the flight so rotation never stops. Single writer for the duration.
 //
-// Ramp-out is NOT the RAF loop: jumpTo's internal stop() resets gesture
-// handlers every frame, which would kill the very drag that interrupted
-// the tour. Instead, ramp-out entry issues a single cancellable easeTo
-// back to the seeded resting pitch (with a small bearing carry for
-// velocity continuity); a user gesture interrupts it natively, which is
-// exactly the attract-mode semantic. easeTo also starts from the live
-// camera, so an interrupt mid-ramp-in decelerates from wherever the ramp
-// actually was — no snap.
+//   HOLD (dwell on an event, or the citywide rest) → manual RAF, bearing
+//   only, center+zoom+pitch constant. No zoom change = no re-tile, so the
+//   per-frame cost stays well inside budget and it paints smoothly. The
+//   event is pinned via Mapbox `padding` (the card-avoidance band): the
+//   target sits at the padded center and bearing rotates about that point,
+//   so a hold needs zero per-frame center math — which also removes the
+//   project/unproject roundtrip whose cross-frame staleness caused the
+//   earlier sub-pixel wobble (feel-test #3).
+//
+// Pitch: cruise pitch = max(pitch at arm time, pace.pitchMin). The Last 48
+// rests at pitch 63 (LAST48_CAMERA in src/utils/geo.ts) — DRIFT must never
+// REDUCE drama (feel-test #2: a fixed 50° read as "un-pitching"). The floor
+// only lifts a map a user flattened.
+//
+// Ramp-out is a single cancellable easeTo back to the seeded resting pitch
+// (with a small bearing carry for velocity continuity) and clears the
+// padding; a user gesture interrupts it natively — the attract-mode exit.
 //
 // Caller contract: gate on prefers-reduced-motion BEFORE arming (the
 // conductor owns that check); this hook animates unconditionally.
@@ -49,7 +44,6 @@
 import { useEffect, useRef } from 'react'
 import type mapboxgl from 'mapbox-gl'
 import { obstructedRightBand } from '../cameraPadding'
-import { buildFlightPath, mercatorPx, mercatorPxToLngLat, type FlightPose } from './flightPath'
 import type { PaceValues } from './pace'
 
 export type AmbientPhase = 'off' | 'ramp-in' | 'on' | 'ramp-out'
@@ -70,31 +64,37 @@ export const CITYWIDE_TARGET: CameraTarget = {
   avoidCard: false,
 }
 
-// Pace-independent constants. The paced values (orbit speed, tween
+// Pace-independent constants. The paced values (orbit speed, flight
 // duration, pitch floor) arrive via the `pace` prop — see pace.ts — and
 // are read live through a ref, so the ?tune=1 panel adjusts them mid-orbit.
 const RAMP_IN_MS = 2000
 const RAMP_OUT_MS = 1000
 const MAX_FRAME_DT_MS = 64       // clamp dt across tab-hidden gaps
+const FLIGHT_CURVE = 1.42        // mapbox flyTo van Wijk curvature default
+// Below these, a target change is too small to be worth a flight — adopt
+// it as a hold pose directly (avoids micro-flights between adjacent events).
+const MOVE_PX_EPS = 6
+const MOVE_ZOOM_EPS = 0.05
 
-const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3)
-const easeInOutCubic = (t: number) =>
-  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
-const clamp01 = (t: number) => Math.min(1, Math.max(0, t))
-
-/** A tween leg endpoint: geographic position + zoom + landing-band px. */
-interface EffectiveTarget {
+/** Where a hold orbits: geographic position + zoom + card-avoidance band. */
+interface HoldPose {
   lng: number
   lat: number
   zoom: number
   band: number
 }
 
+const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3)
+const easeInOutCubic = (t: number) =>
+  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+const clamp01 = (t: number) => Math.min(1, Math.max(0, t))
+const wrap360 = (d: number) => ((d % 360) + 360) % 360
+
 export function useAmbientDirector(opts: {
   map: mapboxgl.Map | null
   phase: AmbientPhase
   target: CameraTarget
-  /** Paced motion values (orbit speed, tween duration, pitch floor). */
+  /** Paced motion values (orbit speed, flight duration, pitch floor). */
   pace: PaceValues
   onRampInDone: () => void
   onRampOutDone: () => void
@@ -118,7 +118,6 @@ export function useAmbientDirector(opts: {
 
   // Camera scalars owned by the loop, seeded at ramp-in.
   const bearingRef = useRef(0)
-  const zoomRef = useRef(CITYWIDE_TARGET.zoom)
   /** The pitch DRIFT was armed at — what ramp-out returns the map to. */
   const restingPitchRef = useRef(0)
   /** Pitch at ramp-in entry — the lerp origin toward the cruise pitch. */
@@ -132,15 +131,11 @@ export function useAmbientDirector(opts: {
   const rafRef = useRef<number | undefined>(undefined)
   const lastTsRef = useRef(0)
 
-  // Tween bookkeeping: the leg flies from `tweenFrom` to the published
-  // target along a van Wijk path (built once per leg); `effective` is
-  // where the flight currently is (and becomes the next leg's origin
-  // when the target changes).
-  const tweenFromRef = useRef<EffectiveTarget | null>(null)
-  const tweenElapsedRef = useRef(0)
+  // Hold + flight bookkeeping.
+  const holdRef = useRef<HoldPose | null>(null)
   const lastTargetRef = useRef<CameraTarget | null>(null)
-  const effectiveRef = useRef<EffectiveTarget | null>(null)
-  const flightRef = useRef<((t: number) => FlightPose) | null>(null)
+  const flyingRef = useRef(false)
+  const flightTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   useEffect(() => {
     if (!map || phase === 'off') {
@@ -157,7 +152,8 @@ export function useAmbientDirector(opts: {
       if (entering) {
         // Velocity-continuous deceleration: easeOutCubic's initial slope is
         // 3·D/T, so a carry of ω·T/3 (scaled by the live speed) matches the
-        // orbit's angular velocity at the handoff instant.
+        // orbit's angular velocity at the handoff instant. Also clears the
+        // card-avoidance padding so the user's post-drift map isn't offset.
         const carry =
           ((paceRef.current.orbitDegPerS * (RAMP_OUT_MS / 1000)) / 3) *
           speedScaleRef.current
@@ -165,6 +161,7 @@ export function useAmbientDirector(opts: {
           map.easeTo({
             bearing: bearingRef.current + carry,
             pitch: restingPitchRef.current,
+            padding: { top: 0, right: 0, bottom: 0, left: 0 },
             duration: RAMP_OUT_MS,
             easing: easeOutCubic,
           })
@@ -183,21 +180,55 @@ export function useAmbientDirector(opts: {
       // Seed every register from the live camera so the orbit picks up
       // exactly where the user left the map.
       bearingRef.current = map.getBearing()
-      zoomRef.current = map.getZoom()
       restingPitchRef.current = map.getPitch()
       pitchFromRef.current = map.getPitch()
       speedScaleRef.current = 0
       phaseElapsedRef.current = 0
       rampInFiredRef.current = false
-      // First tween leg starts from the live camera, no band.
+      flyingRef.current = false
+      if (flightTimerRef.current !== undefined) {
+        clearTimeout(flightTimerRef.current)
+        flightTimerRef.current = undefined
+      }
       const c = map.getCenter()
-      tweenFromRef.current = { lng: c.lng, lat: c.lat, zoom: map.getZoom(), band: 0 }
-      effectiveRef.current = tweenFromRef.current
-      tweenElapsedRef.current = 0
-      lastTargetRef.current = null
+      holdRef.current = { lng: c.lng, lat: c.lat, zoom: map.getZoom(), band: 0 }
+      lastTargetRef.current = null // first 'on' target triggers a flight
     }
 
     lastTsRef.current = 0
+
+    /** Launch a native flyTo leg; resume the manual orbit when it lands. */
+    const launchFlight = (target: CameraTarget, band: number, cruisePitch: number) => {
+      const pace = paceRef.current
+      const durationMs = pace.tweenMs
+      // Carry the orbit forward so rotation never stops across the flight.
+      const endBearing = bearingRef.current + pace.orbitDegPerS * (durationMs / 1000)
+      flyingRef.current = true
+      try {
+        map.flyTo({
+          center: [target.lng, target.lat],
+          zoom: target.zoom,
+          bearing: endBearing,
+          pitch: cruisePitch,
+          padding: { top: 0, right: band, bottom: 0, left: 0 },
+          duration: durationMs,
+          curve: FLIGHT_CURVE,
+          easing: easeInOutCubic,
+          essential: true,
+        })
+      } catch {
+        flyingRef.current = false
+        return
+      }
+      // Deterministic resume (not moveend — gestures/ramp-out also fire it).
+      flightTimerRef.current = setTimeout(() => {
+        flightTimerRef.current = undefined
+        flyingRef.current = false
+        bearingRef.current = wrap360(map.getBearing())
+        holdRef.current = { lng: target.lng, lat: target.lat, zoom: target.zoom, band }
+        lastTsRef.current = 0 // avoid a giant dt on the resume frame
+      }, durationMs + 50)
+    }
 
     const tick = (now: number) => {
       const dt =
@@ -207,12 +238,10 @@ export function useAmbientDirector(opts: {
 
       const pace = paceRef.current
       // Cruise pitch never reduces drama: max(armed pitch, pace floor).
-      // Computed per frame so the tune panel's pitch slider applies live.
       const cruisePitch = Math.max(restingPitchRef.current, pace.pitchMin)
 
       let speedScale = 1
       let pitch = cruisePitch
-
       if (phase === 'ramp-in') {
         const p = clamp01(phaseElapsedRef.current / RAMP_IN_MS)
         speedScale = p
@@ -225,86 +254,55 @@ export function useAmbientDirector(opts: {
       }
       speedScaleRef.current = speedScale
 
-      bearingRef.current =
-        (bearingRef.current + (pace.orbitDegPerS * speedScale * dt) / 1000) % 360
-
-      // ── Flight legs: build a van Wijk path when the target changes ────
-      // The path (not a lerp) is what keeps peak screen velocity low —
-      // see flightPath.ts for the measurement that motivated it.
-      const target = targetRef.current
-      const targetFinite = Number.isFinite(target.lng) && Number.isFinite(target.lat)
-      if (lastTargetRef.current !== target && targetFinite) {
-        lastTargetRef.current = target
-        const from = effectiveRef.current ?? {
-          lng: map.getCenter().lng,
-          lat: map.getCenter().lat,
-          zoom: map.getZoom(),
-          band: 0,
+      // ── Native flight on a new target (phase 'on' only) ────────────────
+      if (phase === 'on' && !flyingRef.current) {
+        const target = targetRef.current
+        const finite = Number.isFinite(target.lng) && Number.isFinite(target.lat)
+        if (finite && lastTargetRef.current !== target) {
+          lastTargetRef.current = target
+          const band = target.avoidCard ? obstructedRightBand(map) : 0
+          const hold = holdRef.current
+          let meaningful = true
+          if (hold && Math.abs(target.zoom - hold.zoom) <= MOVE_ZOOM_EPS) {
+            const a = map.project([hold.lng, hold.lat])
+            const b = map.project([target.lng, target.lat])
+            meaningful = Math.hypot(a.x - b.x, a.y - b.y) > MOVE_PX_EPS
+          }
+          if (meaningful) {
+            launchFlight(target, band, cruisePitch)
+            rafRef.current = requestAnimationFrame(tick)
+            return
+          }
+          // Negligible move — adopt as a hold pose without a flight.
+          holdRef.current = { lng: target.lng, lat: target.lat, zoom: target.zoom, band }
         }
-        tweenFromRef.current = from
-        const container = map.getContainer()
-        flightRef.current = buildFlightPath(
-          { ...mercatorPx(from.lng, from.lat), zoom: from.zoom },
-          { ...mercatorPx(target.lng, target.lat), zoom: target.zoom },
-          Math.max(container.clientWidth, container.clientHeight),
-        )
-        tweenElapsedRef.current = 0
       }
-      tweenElapsedRef.current += dt
 
-      const from = tweenFromRef.current
-      const flight = flightRef.current
-      let eff = effectiveRef.current
-      if (from && flight && targetFinite) {
-        const bandTarget = target.avoidCard ? obstructedRightBand(map) : 0
-        const s = easeInOutCubic(clamp01(tweenElapsedRef.current / pace.tweenMs))
-        const pose = flight(s)
-        const lngLat = mercatorPxToLngLat(pose.x, pose.y)
-        eff = {
-          lng: lngLat.lng,
-          lat: lngLat.lat,
-          zoom: pose.zoom,
-          band: from.band + (bandTarget - from.band) * s,
-        }
-        effectiveRef.current = eff
+      // While a flyTo owns the camera, keep the loop alive but write nothing.
+      if (flyingRef.current) {
+        rafRef.current = requestAnimationFrame(tick)
+        return
       }
-      // A malformed target never advances the flight — `eff` stays at the
-      // last good position and the orbit continues over it.
 
-      if (eff) {
-        // EXACT solve — no filter. The tween is the only motion dynamics;
-        // each frame the camera pose is computed to put the tweened target
-        // exactly at its landing point. A fractional tracker here (the
-        // previous design) converts frame-time jitter into position jitter:
-        // its per-frame gain depends on dt, so GPU-bound frame pacing at
-        // pitch 63 read as the camera "fighting something" (feel-test,
-        // June 12 2026). Position must be a pure function of time.
-        zoomRef.current = eff.zoom
-
-        const container = map.getContainer()
-        const desiredX = (container.clientWidth - eff.band) / 2
-        const desiredY = container.clientHeight / 2
-        const projected = map.project([eff.lng, eff.lat])
-        const centerPx = map.project(map.getCenter())
-        const nextCenter = map.unproject([
-          centerPx.x + (projected.x - desiredX),
-          centerPx.y + (projected.y - desiredY),
-        ])
-        // unproject can yield NaN on a degenerate transform (zero-size
-        // container, mid-resize frame). One NaN center write poisons the
-        // camera permanently and later crashes easeTo — never write it.
-        if (Number.isFinite(nextCenter.lng) && Number.isFinite(nextCenter.lat)) {
+      // ── Hold orbit: bearing only, center+zoom constant → cheap & smooth ─
+      bearingRef.current = wrap360(
+        bearingRef.current + (pace.orbitDegPerS * speedScale * dt) / 1000,
+      )
+      const hold = holdRef.current
+      try {
+        if (hold) {
           map.jumpTo({
-            center: nextCenter,
-            zoom: zoomRef.current,
+            center: [hold.lng, hold.lat],
+            zoom: hold.zoom,
             bearing: bearingRef.current,
             pitch,
+            padding: { top: 0, right: hold.band, bottom: 0, left: 0 },
           })
         } else {
-          map.jumpTo({ zoom: zoomRef.current, bearing: bearingRef.current, pitch })
+          map.jumpTo({ bearing: bearingRef.current, pitch })
         }
-      } else {
-        map.jumpTo({ zoom: zoomRef.current, bearing: bearingRef.current, pitch })
+      } catch {
+        // Defensive: never let a transient bad transform tear down the view.
       }
 
       rafRef.current = requestAnimationFrame(tick)
@@ -316,6 +314,11 @@ export function useAmbientDirector(opts: {
         cancelAnimationFrame(rafRef.current)
         rafRef.current = undefined
       }
+      if (flightTimerRef.current !== undefined) {
+        clearTimeout(flightTimerRef.current)
+        flightTimerRef.current = undefined
+      }
+      flyingRef.current = false
     }
   }, [map, phase])
 }
