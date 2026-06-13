@@ -8,13 +8,15 @@
 // rival animation.
 //
 // Motion model (two layers, both needed for smoothness):
-//   1. TARGET TWEEN — when the published CameraTarget changes, the
-//      effective target S-curves (easeInOutCubic) from the previous leg's
-//      endpoint to the new one over TARGET_TWEEN_MS. Velocity starts at
-//      zero, peaks mid-flight, lands at zero — no hunting tail. (A bare
-//      exponential controller starts fast and ends in an asymptotic crawl,
-//      which under a rotating bearing reads as the camera "figuring out"
-//      the last few pixels — feel-test finding, June 12 2026.)
+//   1. FLIGHT LEG — when the published CameraTarget changes, the
+//      effective target flies a van Wijk & Nuij optimal zoom-pan path
+//      (see flightPath.ts — the math inside Mapbox's flyTo) from the
+//      previous leg's endpoint to the new one over pace.tweenMs, time-
+//      shaped by easeInOutCubic. Velocity starts at zero, peaks mid-
+//      flight, lands at zero — no hunting tail — and the path's zoom-out
+//      arc keeps peak SCREEN velocity low, which is what makes flights
+//      survive irregular frame pacing without reading as wiggle
+//      (feel-test findings #1 and #3, June 12 2026).
 //   2. EXACT SCREEN-SPACE SOLVE — each frame, project the effective
 //      target, measure its pixel offset from the desired landing point
 //      (the visible-map center, left of the detail card's band — see
@@ -47,6 +49,7 @@
 import { useEffect, useRef } from 'react'
 import type mapboxgl from 'mapbox-gl'
 import { obstructedRightBand } from '../cameraPadding'
+import { buildFlightPath, mercatorPx, mercatorPxToLngLat, type FlightPose } from './flightPath'
 import type { PaceValues } from './pace'
 
 export type AmbientPhase = 'off' | 'ramp-in' | 'on' | 'ramp-out'
@@ -129,13 +132,15 @@ export function useAmbientDirector(opts: {
   const rafRef = useRef<number | undefined>(undefined)
   const lastTsRef = useRef(0)
 
-  // Tween bookkeeping: the leg eases from `tweenFrom` to the published
-  // target; `effective` is where the tween currently is (and becomes the
-  // next leg's origin when the target changes).
+  // Tween bookkeeping: the leg flies from `tweenFrom` to the published
+  // target along a van Wijk path (built once per leg); `effective` is
+  // where the flight currently is (and becomes the next leg's origin
+  // when the target changes).
   const tweenFromRef = useRef<EffectiveTarget | null>(null)
   const tweenElapsedRef = useRef(0)
   const lastTargetRef = useRef<CameraTarget | null>(null)
   const effectiveRef = useRef<EffectiveTarget | null>(null)
+  const flightRef = useRef<((t: number) => FlightPose) | null>(null)
 
   useEffect(() => {
     if (!map || phase === 'off') {
@@ -223,35 +228,47 @@ export function useAmbientDirector(opts: {
       bearingRef.current =
         (bearingRef.current + (pace.orbitDegPerS * speedScale * dt) / 1000) % 360
 
-      // ── Target tween: start a new S-curve leg when the target changes ──
+      // ── Flight legs: build a van Wijk path when the target changes ────
+      // The path (not a lerp) is what keeps peak screen velocity low —
+      // see flightPath.ts for the measurement that motivated it.
       const target = targetRef.current
       const targetFinite = Number.isFinite(target.lng) && Number.isFinite(target.lat)
       if (lastTargetRef.current !== target && targetFinite) {
         lastTargetRef.current = target
-        tweenFromRef.current = effectiveRef.current ?? {
+        const from = effectiveRef.current ?? {
           lng: map.getCenter().lng,
           lat: map.getCenter().lat,
           zoom: map.getZoom(),
           band: 0,
         }
+        tweenFromRef.current = from
+        const container = map.getContainer()
+        flightRef.current = buildFlightPath(
+          { ...mercatorPx(from.lng, from.lat), zoom: from.zoom },
+          { ...mercatorPx(target.lng, target.lat), zoom: target.zoom },
+          Math.max(container.clientWidth, container.clientHeight),
+        )
         tweenElapsedRef.current = 0
       }
       tweenElapsedRef.current += dt
 
       const from = tweenFromRef.current
+      const flight = flightRef.current
       let eff = effectiveRef.current
-      if (from && targetFinite) {
+      if (from && flight && targetFinite) {
         const bandTarget = target.avoidCard ? obstructedRightBand(map) : 0
         const s = easeInOutCubic(clamp01(tweenElapsedRef.current / pace.tweenMs))
+        const pose = flight(s)
+        const lngLat = mercatorPxToLngLat(pose.x, pose.y)
         eff = {
-          lng: from.lng + (target.lng - from.lng) * s,
-          lat: from.lat + (target.lat - from.lat) * s,
-          zoom: from.zoom + (target.zoom - from.zoom) * s,
+          lng: lngLat.lng,
+          lat: lngLat.lat,
+          zoom: pose.zoom,
           band: from.band + (bandTarget - from.band) * s,
         }
         effectiveRef.current = eff
       }
-      // A malformed target never advances the tween — `eff` stays at the
+      // A malformed target never advances the flight — `eff` stays at the
       // last good position and the orbit continues over it.
 
       if (eff) {
