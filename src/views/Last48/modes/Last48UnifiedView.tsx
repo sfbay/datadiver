@@ -24,6 +24,7 @@ import type { CensusVariable } from '@/types/census'
 import type { BaseFill } from '../chrome/LayerControls'
 
 import Last48Map from './Last48Map'
+import AmbientConductor from '../ambient/AmbientConductor'
 import { eventFlyToOffset } from '../cameraPadding'
 import FlowMapLayer from './FlowMapLayer'
 import FlowRail from './FlowRail'
@@ -58,6 +59,12 @@ interface Props {
    *  transition ('sweeping' when its dots start landing, 'settled' when
    *  done). Last48 uses it to drive the chip arrival sheen states. */
   onSweepPhase?: (id: DatasetId, phase: 'sweeping' | 'settled') => void
+  /** ?ambient=1 — DRIFT armed (URL is the source of truth). */
+  ambientOn: boolean
+  /** Streams booted + events present — ramp-in gate. */
+  ambientReady: boolean
+  /** Disarm (clears ?ambient=) — called when ramp-out completes or input exits. */
+  onAmbientExit: () => void
 }
 
 export default function Last48UnifiedView({
@@ -71,6 +78,9 @@ export default function Last48UnifiedView({
   selectedNeighborhoodId,
   onSelectedNeighborhoodChange,
   onSweepPhase,
+  ambientOn,
+  ambientReady,
+  onAmbientExit,
 }: Props) {
   // ── FLOW state ─────────────────────────────────────────────────────────────
   const [selectedEvent, setSelectedEvent] = useState<NormalizedEvent | null>(null)
@@ -302,6 +312,14 @@ export default function Last48UnifiedView({
             selectedId={selectedEvent?.id ?? null}
             events={visibleEvents}
             onLand={setSelectedEvent}
+          />
+
+          {/* ── Ambient conductor — DRIFT phase machine + camera (renders null) ── */}
+          <AmbientConductor
+            map={map}
+            ambientOn={ambientOn}
+            ready={ambientReady}
+            onExit={onAmbientExit}
           />
 
           {/* ── FLOW dots (mount LAST — must render on top of fill layers) ── */}
