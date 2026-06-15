@@ -18,9 +18,11 @@
 // w-80 = 320px). Callers pass their card's pixel width.
 
 import type mapboxgl from 'mapbox-gl'
+import { isMobileViewport } from '@/hooks/useIsMobile'
 
 const CARD_RIGHT_ANCHOR_PX = 20 // DetailPanelShell `right-5`
 const GUTTER_PX = 24
+const SHEET_VH = 0.7 // detail bottom-sheet height on mobile (DetailPanelShell max-h-[70vh])
 
 /** Pure core (no DOM): the width of the right-side map band a top-right card
  *  of `cardWidthPx` occludes, clamped to half the map so narrow viewports keep
@@ -28,6 +30,13 @@ const GUTTER_PX = 24
  *  Mapbox map. */
 export function rightBandWidth(cardWidthPx: number, mapWidthPx: number): number {
   return Math.min(cardWidthPx + CARD_RIGHT_ANCHOR_PX + GUTTER_PX, Math.floor(mapWidthPx * 0.5))
+}
+
+/** Pure core (no DOM): the height of the bottom band a bottom-sheet of
+ *  `sheetHeightPx` occludes, clamped to 60% of the map so the band above it
+ *  stays usable. The mobile counterpart of {@link rightBandWidth}. */
+export function bottomBandHeight(sheetHeightPx: number, mapHeightPx: number): number {
+  return Math.min(sheetHeightPx, Math.floor(mapHeightPx * 0.6))
 }
 
 /** Map adapter for {@link rightBandWidth}. */
@@ -40,5 +49,13 @@ export function obstructedRightBand(map: mapboxgl.Map, cardWidthPx: number): num
  *  offset applies to this animation only, so nothing needs resetting when the
  *  card closes. */
 export function eventFlyToOffset(map: mapboxgl.Map, cardWidthPx: number): [number, number] {
+  // Mobile: the detail panel is a BOTTOM sheet, not a right-side card. Shift the
+  // target UP so it lands in the visible band above the sheet (a vertical offset
+  // instead of the desktop horizontal one).
+  if (isMobileViewport()) {
+    const mapH = map.getContainer().clientHeight
+    const band = bottomBandHeight(mapH * SHEET_VH, mapH)
+    return [0, -band / 2]
+  }
   return [-obstructedRightBand(map, cardWidthPx) / 2, 0]
 }
