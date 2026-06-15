@@ -7,6 +7,7 @@ import CivicFingerprint, { MiniFingerprint } from './CivicFingerprint'
 import ComparisonView from './ComparisonView'
 import type { NeighborhoodProfile, MetricDomain, SortKey, DatasetMetric } from './types'
 import { DOMAINS, SLOT_COLORS, DOMAIN_ROUTES } from './types'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 interface Props {
   profiles: NeighborhoodProfile[]
@@ -231,6 +232,8 @@ export default function NeighborhoodSidebar({
   onToggleDomain,
 }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>('totalEvents')
+  const isMobile = useIsMobile()
+  const [sheetOpen, setSheetOpen] = useState(false)
 
   const sorted = useMemo(() => {
     const copy = [...profiles]
@@ -260,7 +263,32 @@ export default function NeighborhoodSidebar({
   ]
 
   return (
-    <aside className="w-[300px] flex-shrink-0 border-l border-white/[0.06] flex flex-col h-full overflow-hidden bg-black/20">
+    <>
+      {/* Mobile: dim backdrop behind the bottom sheet */}
+      {isMobile && sheetOpen && (
+        <div className="fixed inset-0 z-[29] bg-black/40" onClick={() => setSheetOpen(false)} aria-hidden="true" />
+      )}
+      {/* Inline w-[300px] aside at md+, bottom sheet on phones. Kept inline (not
+          swapped to <MapSidebar>) so the sticky header + scroll list survive —
+          MapSidebar's single-scroll-container model would flatten them. */}
+      <aside
+        className={`flex flex-col overflow-hidden bg-slate-900
+          fixed inset-x-0 bottom-0 z-30 h-[70vh] rounded-t-2xl border-t border-white/10 shadow-[0_-8px_30px_rgba(0,0,0,0.18)]
+          transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]
+          ${sheetOpen ? 'translate-y-0' : 'translate-y-[calc(100%-2.25rem)]'}
+          md:static md:h-full md:w-[300px] md:flex-shrink-0 md:translate-y-0
+          md:bg-black/20 md:rounded-none md:border-t-0 md:border-l md:border-white/[0.06] md:shadow-none`}
+      >
+        {/* Mobile grab handle */}
+        {isMobile && (
+          <button
+            onClick={() => setSheetOpen((v) => !v)}
+            className="h-9 flex-shrink-0 flex items-center justify-center w-full"
+            aria-label={sheetOpen ? 'Collapse panel' : 'Expand panel'}
+          >
+            <span className="w-9 h-1 rounded-full bg-white/20" />
+          </button>
+        )}
       {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-white/[0.04]">
         <div className="flex items-center justify-between mb-1">
@@ -459,5 +487,6 @@ export default function NeighborhoodSidebar({
         )}
       </div>
     </aside>
+    </>
   )
 }
