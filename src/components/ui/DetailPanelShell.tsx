@@ -1,7 +1,5 @@
 import { useRef, useEffect, type ReactNode, type CSSProperties } from 'react'
 import ShareLinkButton from '@/components/ui/ShareLinkButton'
-import { useIsMobile } from '@/hooks/useIsMobile'
-import { useDraggableSheet } from '@/hooks/useDraggableSheet'
 
 interface DetailPanelShellProps {
   /** Controls visibility — panel renders null when false */
@@ -56,14 +54,12 @@ export default function DetailPanelShell({
   children,
 }: DetailPanelShellProps) {
   const panelRef = useRef<HTMLDivElement>(null)
-  const isMobile = useIsMobile()
-  const sheet = useDraggableSheet({ initial: 'half', onDismiss: onClose })
 
   // Close on outside click. `additionalInsideSelectors` extends the
   // "inside" boundary beyond the panel itself — useful when the panel is
   // driven by another interactive surface (e.g., a sidebar listbox).
   useEffect(() => {
-    if (!open || isMobile) return // mobile uses the draggable sheet (drag-down / ✕ to close), not outside-click
+    if (!open) return
     const handler = (e: MouseEvent) => {
       const target = e.target as Node | null
       if (!target) return
@@ -81,7 +77,7 @@ export default function DetailPanelShell({
       clearTimeout(timer)
       document.removeEventListener('mousedown', handler)
     }
-  }, [open, onClose, additionalInsideSelectors, isMobile])
+  }, [open, onClose, additionalInsideSelectors])
 
   if (!open) return null
 
@@ -110,29 +106,9 @@ export default function DetailPanelShell({
     <div className="relative">{children}</div>
   )
 
-  // Mobile: draggable bottom sheet — opens at half (map stays visible), drag the
-  // handle ↕ to resize (peek / half / full), drag below peek or tap ✕ to close.
-  // No backdrop, and no glow-host wrapper (its position:relative would fight the
-  // fixed positioning) — a leaner popover, as the mobile spec calls for.
-  if (isMobile) {
-    return (
-      <div
-        ref={panelRef}
-        style={sheet.sheetStyle}
-        className={`fixed left-3 bottom-0 z-40 ${widthClass} max-w-[calc(100vw-1.5rem)] flex flex-col rounded-t-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/[0.08] shadow-[0_-8px_30px_rgba(0,0,0,0.25)]`}
-      >
-        {/* Drag handle row — full-width grab area, center pill, right actions */}
-        <div className="relative flex-shrink-0 h-10 flex items-center justify-center">
-          <div {...sheet.handleProps} className="absolute inset-0 cursor-grab touch-none" aria-label="Resize panel" />
-          <span className="w-9 h-1 rounded-full bg-slate-300 dark:bg-white/20 pointer-events-none" />
-          <div className="absolute right-2 flex items-center gap-0.5 z-10">{actions}</div>
-        </div>
-        <div className="flex-1 overflow-y-auto px-4 pb-4 relative">{content}</div>
-      </div>
-    )
-  }
-
-  // Desktop: top-right glass card.
+  // Top-right glass card — identical on mobile and desktop. The widthClass +
+  // viewport cap keep it narrow on phones, where it sits above the bottom map
+  // legend and leaves the left of the map clear (matching desktop).
   return (
     <div
       ref={panelRef}
