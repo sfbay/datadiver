@@ -187,10 +187,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
           alt=""
           className="w-7 h-7 shrink-0 rounded-full object-cover ring-1 ring-slate-200/50 dark:ring-white/10"
         />
-        <div className="flex flex-col min-w-0 leading-none">
-          <span className="font-display italic text-base text-ink dark:text-white leading-none tracking-tight">DataDiver</span>
-          <span className="text-[9px] font-mono text-slate-500 dark:text-slate-400 leading-none mt-0.5 truncate">
-            Visualize civic data, instantly
+        <div className="flex items-baseline gap-2 min-w-0">
+          <span className="font-display italic text-base text-ink dark:text-white leading-none tracking-tight shrink-0">DataDiver</span>
+          <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 truncate">
+            Bring civic data to life, instantly
           </span>
         </div>
       </div>
