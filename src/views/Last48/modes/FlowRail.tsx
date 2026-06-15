@@ -21,19 +21,20 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
   const lastFirstId = useRef<string | null>(null)
   const selectedRowRef = useRef<HTMLDivElement | null>(null)
 
+  // Id of the freshest event — changes whenever a new event arrives at the top.
+  const headId = events[0]?.id ?? null
+
   // When a new event appears at the top, scroll the rail to the top — BUT NOT
   // while an event is selected (a click, or the AUTO tour dwelling on one).
   // Last 48 streams 911 + Fire + 311, so fresh events arrive often; yanking to
-  // the top would scroll the selected row out of view, and the scroll-to-
-  // selected effect below doesn't depend on `events` so it wouldn't restore it.
-  // With a selection active, that effect owns the scroll.
+  // the top would scroll the selected row out of view. With a selection active,
+  // the scroll-to-selected effect below owns the scroll.
   useEffect(() => {
-    const firstId = events[0]?.id ?? null
-    if (firstId && firstId !== lastFirstId.current && scrollRef.current && !selectedId) {
+    if (headId && headId !== lastFirstId.current && scrollRef.current && !selectedId) {
       scrollRef.current.scrollTop = 0
     }
-    lastFirstId.current = firstId
-  }, [events, selectedId])
+    lastFirstId.current = headId
+  }, [headId, selectedId])
 
   // Spec cap: 50 most-recent rows. BUT — if the user clicks a map dot for
   // an event older than the 50 most recent (the map shows thousands of
@@ -66,12 +67,17 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
   // focus({ preventScroll: true }) avoids the browser's default focus-
   // induced scroll, which would compete with the explicit scrollIntoView
   // we just called on the row.
+  // Also re-runs when headId changes: a fresh event inserted at the top shoves
+  // the selected row down, so re-center it to keep it visible during the AUTO
+  // tour. block:'center' (not 'nearest') guarantees the row is brought fully
+  // into the scrollport even when it's only partially below the fold or hidden
+  // behind the rail's sticky header.
   useEffect(() => {
     if (selectedRowRef.current) {
-      selectedRowRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      selectedRowRef.current.scrollIntoView({ block: 'center', behavior: 'smooth' })
       scrollRef.current?.focus({ preventScroll: true })
     }
-  }, [selectedId, pinnedOlder])
+  }, [selectedId, pinnedOlder, headId])
 
   useEffect(() => {
     // Panel closed (no selection) → clear pin.
