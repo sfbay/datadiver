@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import CivicTicker from '@/components/ui/CivicTicker'
 import { useCivicIndicators } from '@/hooks/useCivicIndicators'
 import type { CensusVariable } from '@/types/census'
+import { eventFlyToOffset } from '@/utils/cameraPadding'
 import { useCensusData } from '@/hooks/useCensusData'
 import { useDemographicUnderlay } from '@/components/maps/DemographicUnderlay'
 import UnderlayPicker from '@/components/maps/UnderlayPicker'
@@ -103,7 +104,8 @@ export default function ParkingRevenue() {
     const lat = parseFloat(meter.latitude) || 0
     const lng = parseFloat(meter.longitude) || 0
     if (lat === 0 || lng === 0) return
-    mapInstance.flyTo({ center: [lng, lat], zoom: 16, duration: 1500 })
+    // Offset so the deep-linked meter lands clear of the top-right detail card (w-72 = 288px).
+    mapInstance.flyTo({ center: [lng, lat], zoom: 16, duration: 1500, offset: eventFlyToOffset(mapInstance, 288) })
   }, [mapInstance, selectedMeter, meterMap])
 
   // Visual callout marker on the map for the selected meter. Shows a cyan
@@ -377,7 +379,8 @@ export default function ParkingRevenue() {
       if (!postId) return
       setSelectedMeter(postId)
       const coords = (feature.geometry as GeoJSON.Point).coordinates
-      mapInstance.flyTo({ center: [coords[0], coords[1]], zoom: 17, duration: 800 })
+      // Offset so the meter lands clear of its own top-right detail card (w-72 = 288px).
+      mapInstance.flyTo({ center: [coords[0], coords[1]], zoom: 17, duration: 800, offset: eventFlyToOffset(mapInstance, 288) })
     }
 
     const onCursorEnter = () => { mapInstance.getCanvas().style.cursor = 'pointer' }

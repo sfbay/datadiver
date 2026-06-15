@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import CivicTicker from '@/components/ui/CivicTicker'
 import { useCivicIndicators } from '@/hooks/useCivicIndicators'
 import type { CensusVariable } from '@/types/census'
+import { eventFlyToOffset } from '@/utils/cameraPadding'
 import { useCensusData } from '@/hooks/useCensusData'
 import { useDemographicUnderlay } from '@/components/maps/DemographicUnderlay'
 import UnderlayPicker from '@/components/maps/UnderlayPicker'
@@ -651,7 +652,8 @@ export default function CrimeIncidents() {
       if (!incidentId) return
       setSelectedCrimeIncident(String(incidentId))
       const coords = (feature.geometry as GeoJSON.Point).coordinates
-      mapInstance.flyTo({ center: [coords[0], coords[1]], zoom: 17, duration: 800 })
+      // Offset so the incident lands clear of its own top-right detail card (w-80 = 320px).
+      mapInstance.flyTo({ center: [coords[0], coords[1]], zoom: 17, duration: 800, offset: eventFlyToOffset(mapInstance, 320) })
     }
 
     const tryAttach = () => {

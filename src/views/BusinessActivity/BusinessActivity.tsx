@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import type { CensusVariable } from '@/types/census'
+import { eventFlyToOffset } from '@/utils/cameraPadding'
 import { useCensusData } from '@/hooks/useCensusData'
 import { useDemographicUnderlay } from '@/components/maps/DemographicUnderlay'
 import UnderlayPicker from '@/components/maps/UnderlayPicker'
@@ -634,7 +635,8 @@ export default function BusinessActivity() {
       if (!uniqueId) return
       setSelectedBusiness(String(uniqueId))
       const coords = (e.features[0].geometry as GeoJSON.Point).coordinates
-      mapInstance.flyTo({ center: [coords[0], coords[1]], zoom: 17, duration: 800 })
+      // Offset so the business lands clear of its own top-right detail card (w-72 = 288px).
+      mapInstance.flyTo({ center: [coords[0], coords[1]], zoom: 17, duration: 800, offset: eventFlyToOffset(mapInstance, 288) })
     }
 
     const tryAttach = () => {
