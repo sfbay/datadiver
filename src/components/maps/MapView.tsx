@@ -126,7 +126,9 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
       attributionControl: false,
     })
 
-    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'bottom-right')
+    // Zoom on the LEFT (bottom-right is occupied by the underlay/anomaly legend,
+    // which was hiding it); stacks above the compact attribution.
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'bottom-left')
     map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-left')
 
     // Apply terrain + fog every time the style loads. style.load fires once
