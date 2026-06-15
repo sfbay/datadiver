@@ -16,6 +16,9 @@ export function useMapTooltip(
 
   useEffect(() => {
     if (!map) return
+    // No hover tooltip on touch / no-hover devices: a tap fires mousemove too,
+    // which would stack the popup on top of the click-driven detail panel.
+    if (typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches) return
 
     const popup = new mapboxgl.Popup({
       closeButton: false,
