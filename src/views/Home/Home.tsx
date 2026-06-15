@@ -519,7 +519,7 @@ export default function Home() {
               from there to ~960px, 3 columns at ~1380px, 4 columns at ~1840px+.
               No breakpoint jumps — the grid reflows continuously as the
               viewport widens. Each card stays in the [460px, 1fr] band. */}
-          <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(460px,1fr))]">
+          <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(min(100%,460px),1fr))]">
             <Last48Pulse />
             <DeficitCounter />
             <ResponseEquity />
