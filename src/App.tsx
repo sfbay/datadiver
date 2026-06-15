@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Suspense, lazy, useEffect } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import AppShell from '@/components/layout/AppShell'
@@ -46,6 +46,14 @@ function RouteFallback() {
   )
 }
 
+/** Permanent redirect from the old /live-feeds path to the canonical /live,
+ *  preserving the query string and hash so deep-links (?event=…, ?ambient=…)
+ *  survive. */
+function LiveFeedsRedirect() {
+  const { search, hash } = useLocation()
+  return <Navigate to={{ pathname: '/live', search, hash }} replace />
+}
+
 export default function App() {
   const isDarkMode = useAppStore((s) => s.isDarkMode)
 
@@ -77,7 +85,10 @@ export default function App() {
           <Route path="/city-budget" element={<CityBudget />} />
           <Route path="/elections" element={<Elections />} />
           <Route path="/neighborhood" element={<Neighborhood />} />
-          <Route path="/live-feeds" element={<Last48 />} />
+          <Route path="/live" element={<Last48 />} />
+          {/* /live-feeds → /live: keep the old path as a permanent redirect so
+              shared event links (?event=…) and bookmarks don't 404. */}
+          <Route path="/live-feeds" element={<LiveFeedsRedirect />} />
           <Route path="/alerts" element={<Alerts />} />
           <Route path="/about" element={<About />} />
           <Route path="*" element={<Navigate to="/" replace />} />

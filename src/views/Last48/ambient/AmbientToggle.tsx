@@ -1,6 +1,7 @@
 // src/views/Last48/ambient/AmbientToggle.tsx
 //
-// DRIFT pill — arms/disarms ambient mode — plus a pace-preset chevron menu
+// AUTO pill — arms/disarms ambient mode (internally still "drift"/ambient) —
+// plus a pace-preset chevron menu
 // and a fullscreen button. Sits in the Last 48 header cluster next to
 // LayerControls; the menu reuses LayerControls' dropdown idiom (one menu,
 // one question: "how fast should the city drift?"). Hidden entirely under
@@ -68,26 +69,29 @@ export default function AmbientToggle({ on, disabled, activePaceId, onToggle, on
         aria-pressed={on}
         title={
           disabled
-            ? 'Drift starts once events finish loading'
-            : 'Ambient drift — slow orbit touring the freshest events. Any input stops it.'
+            ? 'Auto-tour starts once events finish loading'
+            : 'Auto — a slow orbit touring the freshest events. Any input stops it.'
         }
         className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-mono uppercase tracking-wider transition-all duration-200 ${
-          on
-            ? disabled
-              ? 'bg-teal-500/10 text-teal-600/50 dark:text-teal-400/50 cursor-not-allowed' // armed via ?ambient=, waiting for boot
-              : 'bg-teal-500/20 text-teal-600 dark:text-teal-400 ring-1 ring-teal-500/40'
+          on && !disabled
+            ? 'bg-moss-500/20 text-moss-600 dark:text-moss-400 ring-1 ring-moss-500/40' // actively touring → green/live
             : disabled
-              ? 'text-paper-400 dark:text-paper-700 cursor-not-allowed'
+              ? 'text-paper-400 dark:text-paper-700 cursor-not-allowed' // armed via ?ambient=, waiting for boot
               : 'text-paper-500 dark:text-paper-600 hover:text-paper-300'
         }`}
       >
-        {/* Running state gets the site's live-pulse dot — the same idiom as
-            the header's event counter — so "drifting" is unmistakable from
-            across a room. */}
-        {on && !disabled && (
-          <span className="w-1.5 h-1.5 rounded-full bg-current pulse-live flex-shrink-0" aria-hidden />
-        )}
-        {on ? '◉ drift' : '○ drift'}
+        {/* Traffic-light idiom (one dot in every state → constant pill width):
+            actively touring = green + pulseGlow halo (currentColor = moss,
+            the site's live-pulse), stopped/booting = a solid red dot. Green =
+            motion, red = stopped — clearer than the DOTS toggle's neutral
+            on/off, since auto implies action. */}
+        <span
+          aria-hidden
+          className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+            on && !disabled ? 'bg-current pulse-live' : 'bg-terracotta-500'
+          }`}
+        />
+        auto
       </button>
 
       {/* Pace chevron — opens the preset menu */}
@@ -96,7 +100,7 @@ export default function AmbientToggle({ on, disabled, activePaceId, onToggle, on
         disabled={disabled}
         aria-haspopup="menu"
         aria-expanded={menuOpen}
-        aria-label="Drift pace"
+        aria-label="Auto-tour pace"
         title={`Pace: ${PACE_PRESETS[activePaceId].label}`}
         className={`px-1 py-1.5 rounded-md transition-colors ${
           disabled
@@ -117,7 +121,7 @@ export default function AmbientToggle({ on, disabled, activePaceId, onToggle, on
           if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
           else document.documentElement.requestFullscreen().catch(() => {})
         }}
-        title="Fullscreen — pairs with drift for an unattended display"
+        title="Fullscreen — pairs with auto for an unattended display"
         className="px-2 py-1.5 rounded-md text-[12px] font-mono text-paper-500 dark:text-paper-600 hover:text-paper-300 transition-colors"
         aria-label="Toggle fullscreen"
       >
@@ -130,7 +134,7 @@ export default function AmbientToggle({ on, disabled, activePaceId, onToggle, on
           className="absolute right-0 top-full mt-1.5 z-50 min-w-[180px] rounded-lg bg-paper-50/95 dark:bg-espresso-900/95 backdrop-blur-lg border border-paper-200/50 dark:border-espresso-800 shadow-xl shadow-black/20 p-2"
         >
           <div className="px-2 pb-1 text-[9px] font-mono uppercase tracking-[0.2em] text-paper-500/70 dark:text-paper-600">
-            Drift pace
+            Auto-tour pace
           </div>
           {Object.values(PACE_PRESETS).map((preset) => {
             const active = preset.id === activePaceId

@@ -316,6 +316,7 @@ export default function Last48UnifiedView({
             selectedId={selectedEvent?.id ?? null}
             events={visibleEvents}
             onLand={setSelectedEvent}
+            ambientOn={ambientOn}
           />
 
           {/* ── Ambient conductor — DRIFT phase machine + camera (renders null) ── */}
@@ -384,18 +385,28 @@ function DeepLinkLander({
   selectedId,
   events,
   onLand,
+  ambientOn,
 }: {
   map: mapboxgl.Map | null
   eventId: string | null
   selectedId: string | null
   events: NormalizedEvent[]
   onLand: (ev: NormalizedEvent) => void
+  /** Drift owns selection + camera while armed; its per-visit ?event= writes
+   *  are output, NOT deep-links to chase. Suppress the lander then — otherwise
+   *  the URL lags one render behind drift's state, the eventId≠selectedId guard
+   *  momentarily passes, and the lander fires a second flyTo that fights the
+   *  director (the "lands offset → drifts to center → jumps" bug). */
+  ambientOn: boolean
 }) {
   // Tracks the id we've already landed, so a transient events-array identity
   // change between onLand and the selection state commit can't double-fire.
   const landedRef = useRef<string | null>(null)
 
   useEffect(() => {
+    // While drift is armed it is the sole camera + selection driver; ignore the
+    // ?event= it writes each visit (see prop doc above).
+    if (ambientOn) return
     if (!eventId) {
       landedRef.current = null // link cleared — allow a future deep-link to land
       return
@@ -410,7 +421,7 @@ function DeepLinkLander({
     if (map && found.longitude != null && found.latitude != null) {
       map.flyTo({ center: [found.longitude, found.latitude], zoom: 14, duration: 600, offset: eventFlyToOffset(map) })
     }
-  }, [map, eventId, selectedId, events, onLand])
+  }, [map, eventId, selectedId, events, onLand, ambientOn])
 
   return null
 }

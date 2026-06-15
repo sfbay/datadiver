@@ -21,6 +21,26 @@ export function buildPass(events: NormalizedEvent[], limit: number = PASS_SIZE):
 }
 
 /**
+ * Wall-clock gate for the tour's self-scheduling timer. Given the intended
+ * fire time `dueAt` and the current time `now`, returns how many ms to wait
+ * before actually firing — `0` means "fire now".
+ *
+ * Why this exists: a background tab's `setTimeout`s are throttled and can be
+ * released as a coalesced *burst* when the tab regains focus (switching apps,
+ * or starting a screen recording, which backgrounds the window without firing
+ * `visibilitychange`). A naive chain would then advance several events in one
+ * frame — the detail card's "X minutes ago" number flickering through a dozen
+ * values. By re-checking the wall clock on every wake, an early/extra timer is
+ * told to wait the remainder instead of advancing, so transitions can never
+ * land closer than one interval apart. `slop` absorbs sub-threshold jitter so
+ * we don't re-arm for a few stray milliseconds.
+ */
+export function dueWaitMs(dueAt: number, now: number, slop = 200): number {
+  const remaining = dueAt - now
+  return remaining > slop ? remaining : 0
+}
+
+/**
  * Advance the cursor: the first id after `currentId` that still exists in
  * the window. null currentId starts the pass; null return = exhausted.
  * Unknown currentId (shouldn't happen, but defensive) = exhausted.
