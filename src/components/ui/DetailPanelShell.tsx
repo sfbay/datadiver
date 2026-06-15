@@ -119,7 +119,7 @@ export default function DetailPanelShell({
       <div
         ref={panelRef}
         style={sheet.sheetStyle}
-        className="fixed inset-x-0 bottom-0 z-40 flex flex-col rounded-t-2xl bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-white/[0.08] shadow-[0_-8px_30px_rgba(0,0,0,0.2)]"
+        className={`fixed left-3 bottom-0 z-40 ${widthClass} max-w-[calc(100vw-1.5rem)] flex flex-col rounded-t-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/[0.08] shadow-[0_-8px_30px_rgba(0,0,0,0.25)]`}
       >
         {/* Drag handle row — full-width grab area, center pill, right actions */}
         <div className="relative flex-shrink-0 h-10 flex items-center justify-center">
