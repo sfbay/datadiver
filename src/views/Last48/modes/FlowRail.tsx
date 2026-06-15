@@ -67,15 +67,26 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
   // focus({ preventScroll: true }) avoids the browser's default focus-
   // induced scroll, which would compete with the explicit scrollIntoView
   // we just called on the row.
-  // Also re-runs when headId changes: a fresh event inserted at the top shoves
-  // the selected row down, so re-center it to keep it visible during the AUTO
-  // tour. block:'center' (not 'nearest') guarantees the row is brought fully
-  // into the scrollport even when it's only partially below the fold or hidden
-  // behind the rail's sticky header.
+  // Keep the selected row visible. We CANNOT use scrollIntoView: the mobile
+  // sheet is rendered at full height and translated DOWN to reveal only the
+  // active snap (see useDraggableSheet), so the browser's scrollport is the
+  // whole ~90vh sheet — most of it off-screen below the viewport. scrollIntoView
+  // ('center'/'nearest') targets that full sheet and lands the row below the
+  // fold (or decides it's already "visible" and no-ops). Instead, measure
+  // ON-SCREEN positions and scroll the row to just below the sticky header at
+  // the top of the VISIBLE area. Re-runs on headId so a fresh event pushing the
+  // row down re-pins it.
   useEffect(() => {
-    if (selectedRowRef.current) {
-      selectedRowRef.current.scrollIntoView({ block: 'center', behavior: 'smooth' })
-      scrollRef.current?.focus({ preventScroll: true })
+    const container = scrollRef.current
+    const row = selectedRowRef.current
+    if (!container || !row) return
+    container.focus({ preventScroll: true })
+    const cTop = container.getBoundingClientRect().top
+    const rTop = row.getBoundingClientRect().top
+    const headerH = (container.firstElementChild as HTMLElement | null)?.offsetHeight ?? 0
+    const delta = rTop - cTop - headerH - 8
+    if (Math.abs(delta) > 1) {
+      container.scrollTo({ top: container.scrollTop + delta, behavior: 'smooth' })
     }
   }, [selectedId, pinnedOlder, headId])
 
