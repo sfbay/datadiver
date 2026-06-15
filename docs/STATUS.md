@@ -56,6 +56,13 @@
 - [x] Tooltip z-index fixes (InfoTip, StatCard, MethodologyTip)
 - [x] Date range indicator on collapsed sidebar
 
+### Mobile / Responsive shell (PR #89 — June 2026)
+- [x] `useIsMobile` breakpoint (`md`=768px) + AppShell off-canvas nav drawer + mobile top bar (Dana badge + tagline)
+- [x] `useDraggableSheet` bottom sheets (peek/glimpse/half/full) — MapSidebar + Neighborhood; detail panels stay top-right cards (`mobileCompact` half-width)
+- [x] Last 48 mobile: lean super-chips, inline rail header, scanner footer; manual scroll-to-selected (translateY-sheet safe)
+- [x] Home: Explorations relocated to a swipeable rail; per-view responsive headers; map-centering offset propagated to all views
+- [x] Hover tooltip off on touch; zoom → bottom-left; earth-tone sheet bg; "parks excluded" label removed
+
 ### City Budget & Spending
 - [x] Budget Overview tab (department bars, spending trends, FY picker)
 - [x] Vendor Explorer v2 (scale-break bars, ghost bars, FY scrubber, anomaly flags)

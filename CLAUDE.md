@@ -121,6 +121,11 @@ src/
 - Container sizing: use `w-full h-full` NOT `absolute inset-0` — Mapbox overrides position to relative
 - Heatmap colors must be bright (cyan/red) on dark-v11 basemap — dark blues are invisible
 
+### Mobile / responsive (PR #89, June 2026)
+- Breakpoint is `md` (768px). JS source of truth: `useIsMobile()` / `isMobileViewport()` (`src/hooks/useIsMobile.ts`, matchMedia `(max-width:767px)`); CSS uses `md:` — keep them in sync. Below md: AppShell nav → off-canvas drawer; `MapSidebar`/`NeighborhoodSidebar` → draggable bottom **sheets** (`useDraggableSheet`, snaps peek/glimpse/half/full); detail panels (`DetailPanelShell`) stay **top-right cards** (NOT sheets) — narrow them via the `mobileCompact` prop.
+- **`useDraggableSheet` sheets render at FULL height + `translateY` (cheap GPU resize)**, so the browser's scrollport is the whole, mostly-off-screen sheet. `scrollIntoView` and `position:sticky bottom-0` MISBEHAVE — scroll a selected row into view with manual `getBoundingClientRect` math (see `FlowRail`), and know sticky footers only show when the sheet is expanded. The mobile sheet bg must match the content register (`paper-50 dark:bg-espresso-900`), not slate, or it seams against earth-tone content.
+- Touch: suppress Mapbox hover tooltips via `matchMedia('(hover:none)')` (NOT a width check — a tablet+mouse keeps hover). `eventFlyToOffset` is horizontal on all viewports — a panel's render and its camera offset are coupled; change both together. Full system: the `mobile-shell` memory + `docs/superpowers/specs/2026-06-15-targeted-mobile-shell-design.md`.
+
 ### Loading States
 - **Progressive skeleton loading** — no full-screen blockers
 - Each component shows its own skeleton via `src/components/ui/Skeleton.tsx`
