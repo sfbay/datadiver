@@ -1,6 +1,6 @@
 # DataDiver — Project Status
 
-**Last updated:** 2026-06-12
+**Last updated:** 2026-06-15
 **Live site:** datadiver.jlabsf.org
 **Repo:** github.com/sfbay/datadiver
 
@@ -24,7 +24,7 @@
 | City Budget | `/city-budget` | ✅ Live | #0ea5e9 |
 | Elections | `/elections` | ✅ Live (Chunk 1 data + Chunks 2-5 UI) | #6366f1 |
 | Neighborhoods | `/neighborhood` | ✅ Live | #8b5cf6 |
-| Live Feeds | `/live-feeds` | ✅ Live | #f59e0b |
+| The Last 48 | `/live` | ✅ Live | #f59e0b |
 
 ## Major Features
 
@@ -104,13 +104,14 @@
 - [x] Dual heatmap (green openings + red closures) — split query fix
 - [x] Sector filter with openings/closures/net per sector
 
-### The Last 48 (Live Feeds)
-- [x] FLOW mode (animated 48h event map) + HOTSPOTS (z-score anomaly choropleth)
+### The Last 48 (`/live` — legacy `/live-feeds` redirects)
+- [x] FLOW dots (header toggle "DOTS") + anomaly choropleth (ex-"HOTSPOTS" — flat single color, flagged for rethink)
 - [x] DatasetSuperChips row (toggle + headline + per-hour rate + publish-lag sparkline)
 - [x] Civic heartbeat ticker (significance-ranked plain-language readout)
-- [x] Ambient DRIFT mode — idle slow-orbit auto-tour of freshest events; Stroll/Drift/Sweep pace presets; `?ambient=` URL contract; `?tune=1` dev panel; reduced-motion aware (PRs #85–87)
+- [x] Ambient AUTO mode (pill labelled "AUTO") — idle auto-tour of freshest events; orbit is a sine pendulum across the north axis (±90°, never south-up); green/red pill; Stroll/Drift/Sweep pace presets; `?ambient=` URL; `?tune=1` dev panel; reduced-motion aware (PRs #85–88)
 - [x] Scanner strip linking Broadcastify SF Fire/EMS (6336) + Police (46180) — new-tab only per TOS (PR #81)
-- [x] Event fly-to offset to clear the top-right detail card (PR #83)
+- [x] Control row reorder + relabel: underlay · DOTS · AUTO (PR #88)
+- [x] Canonical `/live` URL with clean params; correctness fixes — single-flight tour (no card "blip"), lander suppressed in AUTO (no "recenter then jump") (PR #88)
 
 ### Data Quality
 - [x] Sort bias fix for dual-field queries (business openings/closures)
