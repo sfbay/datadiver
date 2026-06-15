@@ -1,6 +1,7 @@
 import { useRef, useEffect, type ReactNode, type CSSProperties } from 'react'
 import ShareLinkButton from '@/components/ui/ShareLinkButton'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useDraggableSheet } from '@/hooks/useDraggableSheet'
 
 interface DetailPanelShellProps {
   /** Controls visibility — panel renders null when false */
@@ -56,12 +57,13 @@ export default function DetailPanelShell({
 }: DetailPanelShellProps) {
   const panelRef = useRef<HTMLDivElement>(null)
   const isMobile = useIsMobile()
+  const sheet = useDraggableSheet({ initial: 'half', onDismiss: onClose })
 
   // Close on outside click. `additionalInsideSelectors` extends the
   // "inside" boundary beyond the panel itself — useful when the panel is
   // driven by another interactive surface (e.g., a sidebar listbox).
   useEffect(() => {
-    if (!open) return
+    if (!open || isMobile) return // mobile uses the draggable sheet (drag-down / ✕ to close), not outside-click
     const handler = (e: MouseEvent) => {
       const target = e.target as Node | null
       if (!target) return
@@ -79,56 +81,75 @@ export default function DetailPanelShell({
       clearTimeout(timer)
       document.removeEventListener('mousedown', handler)
     }
-  }, [open, onClose, additionalInsideSelectors])
+  }, [open, onClose, additionalInsideSelectors, isMobile])
 
   if (!open) return null
 
-  // Below md the panel is a full-width bottom sheet (z-40, above the list
-  // sheet's z-30) with a backdrop; at md+ it's the top-right card — now
-  // viewport-width-capped so a w-80 card can't overrun a narrow map column.
-  const outerClass = isMobile
-    ? 'fixed inset-x-0 bottom-0 z-40 max-h-[70vh] animate-in fade-in slide-in-from-bottom-4'
-    : `absolute top-5 right-5 z-30 ${widthClass} max-w-[calc(100vw-2.5rem)] max-h-[80vh] animate-in fade-in slide-in-from-right-4`
-
-  return (
+  const actions = (
     <>
-      {isMobile && (
-        <div className="fixed inset-0 z-[39] bg-black/40" onClick={onClose} aria-hidden="true" />
+      {buildShareUrl && (
+        <ShareLinkButton buildUrl={buildShareUrl} accentClass={shareAccentClass} />
       )}
-      <div ref={panelRef} className={outerClass}>
-        {/* Inner glow-host wrapper — keeps the corner-glow clip + isolation on a
-            separate element so it doesn't fight the outer div's positioning (the
-            .glow-host CSS rule sets position: relative, which used to silently
-            override the outer positioning class and move the panel). */}
-        <div
-          className={`glow-host overflow-y-auto ${isMobile ? 'rounded-t-2xl' : 'rounded-xl'} p-4 max-h-[80vh] bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/[0.08] shadow-xl shadow-black/20`}
-          style={{ '--glow': glowColor } as CSSProperties}
-        >
-          <div className="glow-corner" />
-          {/* Top-right actions */}
-          <div className="absolute top-2 right-2 flex items-center gap-0.5 z-10">
-            {buildShareUrl && (
-              <ShareLinkButton buildUrl={buildShareUrl} accentClass={shareAccentClass} />
-            )}
-            <button
-              onClick={onClose}
-              className="w-6 h-6 flex items-center justify-center rounded-full text-slate-500 dark:text-slate-400 hover:text-ink dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-all"
-            >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M2 2l8 8M10 2l-8 8" />
-              </svg>
-            </button>
-          </div>
-
-          {isLoading && (
-            <div className="relative flex items-center justify-center py-8">
-              <div className={`w-5 h-5 border-2 ${spinnerClass} border-t-transparent rounded-full animate-spin`} />
-            </div>
-          )}
-
-          {!isLoading && <div className="relative">{children}</div>}
-        </div>
-      </div>
+      <button
+        onClick={onClose}
+        aria-label="Close"
+        className="w-6 h-6 flex items-center justify-center rounded-full text-slate-500 dark:text-slate-400 hover:text-ink dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-all"
+      >
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M2 2l8 8M10 2l-8 8" />
+        </svg>
+      </button>
     </>
+  )
+
+  const content = isLoading ? (
+    <div className="relative flex items-center justify-center py-8">
+      <div className={`w-5 h-5 border-2 ${spinnerClass} border-t-transparent rounded-full animate-spin`} />
+    </div>
+  ) : (
+    <div className="relative">{children}</div>
+  )
+
+  // Mobile: draggable bottom sheet — opens at half (map stays visible), drag the
+  // handle ↕ to resize (peek / half / full), drag below peek or tap ✕ to close.
+  // No backdrop, and no glow-host wrapper (its position:relative would fight the
+  // fixed positioning) — a leaner popover, as the mobile spec calls for.
+  if (isMobile) {
+    return (
+      <div
+        ref={panelRef}
+        style={sheet.sheetStyle}
+        className="fixed inset-x-0 bottom-0 z-40 flex flex-col rounded-t-2xl bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-white/[0.08] shadow-[0_-8px_30px_rgba(0,0,0,0.2)]"
+      >
+        {/* Drag handle row — full-width grab area, center pill, right actions */}
+        <div className="relative flex-shrink-0 h-10 flex items-center justify-center">
+          <div {...sheet.handleProps} className="absolute inset-0 cursor-grab touch-none" aria-label="Resize panel" />
+          <span className="w-9 h-1 rounded-full bg-slate-300 dark:bg-white/20 pointer-events-none" />
+          <div className="absolute right-2 flex items-center gap-0.5 z-10">{actions}</div>
+        </div>
+        <div className="flex-1 overflow-y-auto px-4 pb-4 relative">{content}</div>
+      </div>
+    )
+  }
+
+  // Desktop: top-right glass card.
+  return (
+    <div
+      ref={panelRef}
+      className={`absolute top-5 right-5 z-30 ${widthClass} max-w-[calc(100vw-2.5rem)] max-h-[80vh] animate-in fade-in slide-in-from-right-4`}
+    >
+      {/* Inner glow-host wrapper — keeps the corner-glow clip + isolation on a
+          separate element so it doesn't fight the outer div's positioning (the
+          .glow-host CSS rule sets position: relative, which would otherwise
+          override the outer .absolute class and move the panel). */}
+      <div
+        className="glow-host overflow-y-auto rounded-xl p-4 max-h-[80vh] bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/[0.08] shadow-xl shadow-black/20"
+        style={{ '--glow': glowColor } as CSSProperties}
+      >
+        <div className="glow-corner" />
+        <div className="absolute top-2 right-2 flex items-center gap-0.5 z-10">{actions}</div>
+        {content}
+      </div>
+    </div>
   )
 }

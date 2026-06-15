@@ -19,6 +19,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode, type ComponentPropsWithRef } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useDraggableSheet } from '@/hooks/useDraggableSheet'
 
 interface MapSidebarContextValue {
   isCompressed: boolean
@@ -53,7 +54,9 @@ export default function MapSidebar({ children, width = 'default', scrollContaine
   const isOpen = useAppStore((s) => s.isContextSidebarOpen)
   const toggle = useAppStore((s) => s.toggleContextSidebar)
   const isMobile = useIsMobile()
-  const [sheetOpen, setSheetOpen] = useState(false)
+  // Persistent list sheet — opens at 'peek' so the map is fully visible; drag
+  // the handle up to browse, down to peek. No backdrop (the map stays usable).
+  const sheet = useDraggableSheet({ initial: 'peek' })
 
   // Track viewport width so compressed mode kicks in below the breakpoint.
   // SSR-safe via initializer; updated on resize via listener.
@@ -81,24 +84,20 @@ export default function MapSidebar({ children, width = 'default', scrollContaine
   if (isMobile) {
     return (
       <MapSidebarContext.Provider value={{ isCompressed: false }}>
-        {sheetOpen && (
-          <div className="fixed inset-0 z-[29] bg-black/40" onClick={() => setSheetOpen(false)} aria-hidden="true" />
-        )}
         <aside
-          className={`fixed inset-x-0 bottom-0 z-30 h-[70vh] rounded-t-2xl
+          style={sheet.sheetStyle}
+          className="fixed inset-x-0 bottom-0 z-30 rounded-t-2xl
             bg-white dark:bg-slate-900 border-t border-slate-200/60 dark:border-white/10
-            shadow-[0_-8px_30px_rgba(0,0,0,0.18)]
-            flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]
-            ${sheetOpen ? 'translate-y-0' : 'translate-y-[calc(100%-2.25rem)]'}`}
+            shadow-[0_-8px_30px_rgba(0,0,0,0.18)] flex flex-col"
         >
-          {/* Grab handle — whole bar toggles the sheet */}
-          <button
-            onClick={() => setSheetOpen((v) => !v)}
-            className="h-9 flex-shrink-0 flex items-center justify-center w-full"
-            aria-label={sheetOpen ? 'Collapse panel' : 'Expand panel'}
+          {/* Drag handle — ↕ resize between peek / half / full; tap to cycle */}
+          <div
+            {...sheet.handleProps}
+            className="h-9 flex-shrink-0 flex items-center justify-center w-full cursor-grab touch-none"
+            aria-label="Resize panel"
           >
-            <span className="w-9 h-1 rounded-full bg-slate-300 dark:bg-white/20" />
-          </button>
+            <span className="w-9 h-1 rounded-full bg-slate-300 dark:bg-white/20 pointer-events-none" />
+          </div>
           <div
             {...scrollContainerProps}
             className={`flex-1 overflow-y-auto flex flex-col min-h-0 ${scrollContainerProps?.className ?? ''}`}
