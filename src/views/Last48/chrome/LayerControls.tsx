@@ -1,10 +1,12 @@
 // src/views/Last48/chrome/LayerControls.tsx
 //
-// Composable layer controls for The Last 48:
-//   • FLOW points on/off toggle
+// Composable layer controls for The Last 48. Row order: underlay dropdown,
+// then the DOTS toggle (AmbientToggle's AUTO pill sits to the right of both).
 //   • Underlay dropdown — single menu containing None / Anomaly + the
 //     Census variable presets. Internally this maps to (fill, variable);
 //     the user just picks one option.
+//   • DOTS toggle — shows/hides the FLOW event dots (label is "dots"; the
+//     internal mode is still FLOW).
 //
 // The dropdown unifies what used to be a pill picker + a separate
 // UnderlayPicker. Mental model: "what's painting the neighborhoods?"
@@ -91,20 +93,8 @@ export default function LayerControls({
 
   return (
     <div className="flex items-center gap-2">
-      {/* FLOW points toggle */}
-      <button
-        onClick={() => onPointsToggle(!pointsOn)}
-        className={`px-3 py-1.5 rounded-md text-[11px] font-mono uppercase tracking-wider transition-all duration-200 ${
-          pointsOn
-            ? 'bg-paper-200 dark:bg-espresso-800 text-ink dark:text-paper-100'
-            : 'text-paper-500 dark:text-paper-600 hover:text-paper-300'
-        }`}
-        aria-pressed={pointsOn}
-      >
-        {pointsOn ? '● flow' : '○ flow'}
-      </button>
-
-      {/* Unified underlay dropdown */}
+      {/* Unified underlay dropdown — leads the control row (what's painting
+          the neighborhoods?), with the DOTS toggle to its right. */}
       <div ref={menuRef} className="relative">
         <button
           onClick={() => setMenuOpen(v => !v)}
@@ -159,6 +149,20 @@ export default function LayerControls({
           </div>
         )}
       </div>
+
+      {/* DOTS toggle — shows/hides the FLOW event dots (renamed from "flow";
+          the control toggles the dots, so "dots" reads clearer). */}
+      <button
+        onClick={() => onPointsToggle(!pointsOn)}
+        className={`px-3 py-1.5 rounded-md text-[11px] font-mono uppercase tracking-wider transition-all duration-200 ${
+          pointsOn
+            ? 'bg-paper-200 dark:bg-espresso-800 text-ink dark:text-paper-100'
+            : 'text-paper-500 dark:text-paper-600 hover:text-paper-300'
+        }`}
+        aria-pressed={pointsOn}
+      >
+        {pointsOn ? '● dots' : '○ dots'}
+      </button>
     </div>
   )
 }
