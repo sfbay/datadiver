@@ -7,9 +7,9 @@
 // rotating card that mixes DATA factoids with USABILITY tips.
 //
 // The site is dense — many Last 48 interactions (click-to-skip, priority-A
-// solid dots, FlowRail click-to-fly, HOTSPOTS mode, demographic underlays)
-// are easy to miss. A captive loading moment is the natural place to teach
-// them. See memory: seeded-summary-architecture.
+// solid dots, FlowRail click-to-fly, the AUTO ambient tour, demographic
+// underlays) are easy to miss. A captive loading moment is the natural place
+// to teach them. See memory: seeded-summary-architecture.
 //
 // DATA tips with a volume figure read from the seeded summaryStore (the real
 // per-stream 48h counts from your LAST visit, since this load's numbers don't
@@ -71,7 +71,8 @@ const TIPS: LoadingTip[] = [
     '311 logs around 2,400 service requests every 48 hours — encampments, graffiti, street cleaning, noise.',
   ) },
   { kind: 'usage', text: 'Click an event in the side rail to fly the map straight to its location.' },
-  { kind: 'usage', text: 'Switch to HOTSPOTS mode to see which neighborhoods are running statistically hot.' },
+  { kind: 'usage', text: 'Switch on AUTO and the map tours itself — a slow orbit gliding through the freshest events, hands-free. Made for a wall display.' },
+  { kind: 'usage', text: 'In AUTO, each new event is selected, its details open, and the camera drifts to the next — any click hands control back to you.' },
   { kind: 'data',  text: '911 activity clusters densest in the Tenderloin, SoMa, and the Mission.' },
   { kind: 'usage', text: 'Layer a demographic underlay — home value, income, density — to read events against neighborhood context.' },
   { kind: 'usage', text: 'Toggle individual streams with the chips up top; each shows its live rate and a 48-hour sparkline.' },
