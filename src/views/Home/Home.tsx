@@ -329,11 +329,10 @@ export default function Home() {
             <p
               className={`text-lg text-slate-500 dark:text-slate-400 max-w-md leading-relaxed transition-all duration-1000 delay-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
             >
-              Bring civic data to life, instantly. Visualize trends, patterns and 24/7
-              flow to turn public data into public insight.
+              Bring civic data to life, instantly.
             </p>
 
-            <div className={`flex items-center gap-4 mt-6 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+            <div className={`flex flex-col items-start gap-4 mt-6 md:flex-row md:items-center transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
               {/* Credit links to /about — top-line authorship is the author's
                   alone (academic convention); Claude's role is disclosed in
                   full on the About page. */}
@@ -357,7 +356,7 @@ export default function Home() {
                   Clicking it opens The Last 48 — "Live" IS that view. */}
               <button
                 onClick={() => navigate('/live')}
-                className={`inline-flex items-center gap-2 ml-5 pl-2.5 pr-3.5 py-1.5 rounded-full
+                className={`inline-flex items-center gap-2 md:ml-5 pl-2.5 pr-3.5 py-1.5 rounded-full
                   text-[10px] font-mono uppercase tracking-wider whitespace-nowrap text-[#f5ecd9]
                   shadow-sm cursor-pointer transition-[filter] hover:brightness-110
                   ${indicators.error ? 'bg-[#b58620]' : 'bg-[#5c7a3d]'}`}
