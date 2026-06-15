@@ -114,3 +114,19 @@ A small SSR-safe `useIsMobile()` returning `matchMedia('(max-width: 767px)').mat
 - **Ephemeral-state placement:** the nav drawer (`AppShell`) and the sidebar `sheetOpen` (`MapSidebar`) each own local ephemeral state; the detail sheet rides the existing per-view selection. No cross-component coordination by design (pure z-stacking), which keeps this low-risk.
 - **Dispatch911 chart responsiveness** is the largest single sub-task (fixed 640px D3). If it balloons, ship the `overflow-x-auto` stopgap and track responsive-width D3 as a follow-up.
 - **Last 48 uses `MapSidebar` (lean variant)** for FlowRail, so it inherits the sheet automatically — verify the FlowRail listbox keyboard/scroll behavior survives the sheet remount.
+
+---
+
+## Shipped — how the implementation diverged from this spec
+
+This spec was the starting point; the shell was refined across ~15 review rounds with Jesse on the live Vercel preview. The key divergences (PR #89):
+
+- **Sheets are DRAGGABLE, not fixed-70vh.** The spec's "simple open/close, fixed ~70vh" was tried, then reversed at Jesse's request. Shipped: `src/hooks/useDraggableSheet.ts` — four snaps (peek ~28px / glimpse ~0.27vh / half ~0.40 / full ~0.9), pointer-drag with flick-to-snap + tap-to-cycle, snap heights recomputed on resize. List sheets (`MapSidebar`, Neighborhood) default to **glimpse** (map leads); peek is ~just the handle so sliding down exposes the bottom-corner map widgets.
+- **The detail panel is a TOP-RIGHT CARD on mobile, NOT a bottom sheet.** Tried as a sheet, reverted — the desktop-style card (top-right, above the legend, left-of-map clear) reads better. It just gains `mobileCompact` (~54vw cap) + per-card content compaction (inline label rows, dropped coords, weekday-only date for Last 48). The camera offset (`src/utils/cameraPadding.ts`) therefore stays **horizontal** on all viewports (the mobile vertical/bottom-sheet branch was added then removed).
+- **The FlowRail scroll-to-selected uses a manual `getBoundingClientRect` scroll, not `scrollIntoView`.** Because the sheet renders at full height and `translateY`s down, `scrollIntoView`'s scrollport is the whole (mostly off-screen) sheet — it mis-targets. Manual measurement lands the selected row in the visible area; also suppresses scroll-to-top while a row is selected (AUTO tour + new-event churn).
+- **Last 48 chrome:** super-chips became a lean responsive row (sparkline stacked under the count on mobile); the rail header tiles went inline (`Latest Events`, label-before-value); the **scanner links moved into a sticky rail footer** on mobile (desktop keeps the bottom strip).
+- **Home:** instead of a new nav-chip rail, the existing **Explorations `VizCard`s relocate** into a swipeable rail under the hero on mobile (desktop section hidden); plus the `minmax(min(100%,460px))` viz-grid clip fix and a Dana-badge + tagline mobile top bar.
+- **Per-view detail panels** were mostly already inline (only `BusinessDetailPanel` needed row-inlining); they kept their natural width (longer content than Last 48), so `mobileCompact` is Last-48-only.
+- **Cross-cutting:** hover tooltip suppressed on `(hover:none)` touch devices; zoom control moved to bottom-left; "parks excluded" legend label removed; the mobile sheet bg is earth-tone (`paper-50/espresso-900`) to match content; per-view header wrap treatment (this PR's final sweep).
+
+`useIsMobile()` (matchMedia `max-width:767`) is the shared JS breakpoint; `AppShell` off-canvas drawer, `MapView`'s existing `ResizeObserver`, and the ephemeral-default-closed overlay state all shipped as specced.
