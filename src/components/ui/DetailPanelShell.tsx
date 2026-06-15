@@ -1,5 +1,6 @@
 import { useRef, useEffect, type ReactNode, type CSSProperties } from 'react'
 import ShareLinkButton from '@/components/ui/ShareLinkButton'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 interface DetailPanelShellProps {
   /** Controls visibility — panel renders null when false */
@@ -54,6 +55,7 @@ export default function DetailPanelShell({
   children,
 }: DetailPanelShellProps) {
   const panelRef = useRef<HTMLDivElement>(null)
+  const isMobile = useIsMobile()
 
   // Close on outside click. `additionalInsideSelectors` extends the
   // "inside" boundary beyond the panel itself — useful when the panel is
@@ -81,44 +83,52 @@ export default function DetailPanelShell({
 
   if (!open) return null
 
+  // Below md the panel is a full-width bottom sheet (z-40, above the list
+  // sheet's z-30) with a backdrop; at md+ it's the top-right card — now
+  // viewport-width-capped so a w-80 card can't overrun a narrow map column.
+  const outerClass = isMobile
+    ? 'fixed inset-x-0 bottom-0 z-40 max-h-[70vh] animate-in fade-in slide-in-from-bottom-4'
+    : `absolute top-5 right-5 z-30 ${widthClass} max-w-[calc(100vw-2.5rem)] max-h-[80vh] animate-in fade-in slide-in-from-right-4`
+
   return (
-    <div
-      ref={panelRef}
-      className={`absolute top-5 right-5 z-30 ${widthClass} max-h-[80vh] animate-in fade-in slide-in-from-right-4`}
-    >
-      {/* Inner glow-host wrapper — keeps the corner-glow clip + isolation
-          on a separate element so it doesn't fight the outer div's
-          `position: absolute` (the .glow-host CSS rule sets
-          position: relative, which used to silently override the outer
-          .absolute class and reposition the panel away from top-right). */}
-      <div
-        className="glow-host overflow-y-auto rounded-xl p-4 max-h-[80vh] bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/[0.08] shadow-xl shadow-black/20"
-        style={{ '--glow': glowColor } as CSSProperties}
-      >
-        <div className="glow-corner" />
-        {/* Top-right actions */}
-        <div className="absolute top-2 right-2 flex items-center gap-0.5 z-10">
-          {buildShareUrl && (
-            <ShareLinkButton buildUrl={buildShareUrl} accentClass={shareAccentClass} />
-          )}
-          <button
-            onClick={onClose}
-            className="w-6 h-6 flex items-center justify-center rounded-full text-slate-500 dark:text-slate-400 hover:text-ink dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-all"
-          >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M2 2l8 8M10 2l-8 8" />
-            </svg>
-          </button>
-        </div>
-
-        {isLoading && (
-          <div className="relative flex items-center justify-center py-8">
-            <div className={`w-5 h-5 border-2 ${spinnerClass} border-t-transparent rounded-full animate-spin`} />
+    <>
+      {isMobile && (
+        <div className="fixed inset-0 z-[39] bg-black/40" onClick={onClose} aria-hidden="true" />
+      )}
+      <div ref={panelRef} className={outerClass}>
+        {/* Inner glow-host wrapper — keeps the corner-glow clip + isolation on a
+            separate element so it doesn't fight the outer div's positioning (the
+            .glow-host CSS rule sets position: relative, which used to silently
+            override the outer positioning class and move the panel). */}
+        <div
+          className={`glow-host overflow-y-auto ${isMobile ? 'rounded-t-2xl' : 'rounded-xl'} p-4 max-h-[80vh] bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/[0.08] shadow-xl shadow-black/20`}
+          style={{ '--glow': glowColor } as CSSProperties}
+        >
+          <div className="glow-corner" />
+          {/* Top-right actions */}
+          <div className="absolute top-2 right-2 flex items-center gap-0.5 z-10">
+            {buildShareUrl && (
+              <ShareLinkButton buildUrl={buildShareUrl} accentClass={shareAccentClass} />
+            )}
+            <button
+              onClick={onClose}
+              className="w-6 h-6 flex items-center justify-center rounded-full text-slate-500 dark:text-slate-400 hover:text-ink dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-all"
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M2 2l8 8M10 2l-8 8" />
+              </svg>
+            </button>
           </div>
-        )}
 
-        {!isLoading && <div className="relative">{children}</div>}
+          {isLoading && (
+            <div className="relative flex items-center justify-center py-8">
+              <div className={`w-5 h-5 border-2 ${spinnerClass} border-t-transparent rounded-full animate-spin`} />
+            </div>
+          )}
+
+          {!isLoading && <div className="relative">{children}</div>}
+        </div>
       </div>
-    </div>
+    </>
   )
 }
