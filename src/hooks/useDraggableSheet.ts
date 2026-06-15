@@ -22,9 +22,9 @@ const FULL_VH = 0.9      // tallest snap
 const TAP_PX = 6         // movement under this on release = a tap, not a drag
 const DISMISS_PX = 40    // drag this far past peek to dismiss
 
-function heights() {
+function heights(halfFrac: number) {
   const H = typeof window !== 'undefined' ? window.innerHeight : 800
-  return { full: H * FULL_VH, half: H * HALF_VH, peek: PEEK_PX }
+  return { full: H * FULL_VH, half: H * halfFrac, peek: PEEK_PX }
 }
 
 interface Options {
@@ -34,18 +34,21 @@ interface Options {
   /** If provided, dragging below peek dismisses (e.g. closes the detail card).
    *  Omit for persistent sheets (the list) — they bottom out at peek. */
   onDismiss?: () => void
+  /** Fraction of viewport height for the 'half' snap (default 0.45). Lists pass
+   *  a lower value so the first notch shows ~one fewer row. */
+  halfVh?: number
 }
 
-export function useDraggableSheet({ initial = 'half', onDismiss }: Options = {}) {
-  const [vh, setVh] = useState(heights)
+export function useDraggableSheet({ initial = 'half', onDismiss, halfVh = HALF_VH }: Options = {}) {
+  const [vh, setVh] = useState(() => heights(halfVh))
   const [snap, setSnap] = useState<SheetSnap>(initial)
   const [dragTy, setDragTy] = useState<number | null>(null)
 
   useEffect(() => {
-    const onResize = () => setVh(heights())
+    const onResize = () => setVh(heights(halfVh))
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
-  }, [])
+  }, [halfVh])
 
   const tyFor = useCallback(
     (s: SheetSnap) => (s === 'full' ? 0 : s === 'half' ? vh.full - vh.half : vh.full - vh.peek),
