@@ -373,7 +373,7 @@ export default function Last48EventCard({ event, onClose }: Props) {
                 </div>
               ) : (
                 <div className="font-mono text-[11px] italic text-paper-500 dark:text-paper-600 text-right md:text-left md:mt-0.5">
-                  Suppressed — sensitive call type. No map position available.
+                  Suppressed; sensitive call
                 </div>
               )}
             </div>
