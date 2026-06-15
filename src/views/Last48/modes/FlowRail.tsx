@@ -3,6 +3,7 @@ import type { NormalizedEvent, DatasetId } from '@/types/last48'
 import type { KeyboardEvent } from 'react'
 import MapSidebar from '@/components/layout/MapSidebar'
 import { formatHeadline, formatApTime } from '@/utils/format'
+import ScannerFeedLinks from '../chrome/ScannerFeedLinks'
 
 const DATASET_LABEL: Record<DatasetId, { label: string; color: string }> = {
   '911-realtime':      { label: '911',   color: '#616a96' },
@@ -21,14 +22,20 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
   const lastFirstId = useRef<string | null>(null)
   const selectedRowRef = useRef<HTMLDivElement | null>(null)
 
-  // When a new event appears at the top, scroll the rail to the top
+  // Id of the freshest event — changes whenever a new event arrives at the top.
+  const headId = events[0]?.id ?? null
+
+  // When a new event appears at the top, scroll the rail to the top — BUT NOT
+  // while an event is selected (a click, or the AUTO tour dwelling on one).
+  // Last 48 streams 911 + Fire + 311, so fresh events arrive often; yanking to
+  // the top would scroll the selected row out of view. With a selection active,
+  // the scroll-to-selected effect below owns the scroll.
   useEffect(() => {
-    const firstId = events[0]?.id ?? null
-    if (firstId && firstId !== lastFirstId.current && scrollRef.current) {
+    if (headId && headId !== lastFirstId.current && scrollRef.current && !selectedId) {
       scrollRef.current.scrollTop = 0
     }
-    lastFirstId.current = firstId
-  }, [events])
+    lastFirstId.current = headId
+  }, [headId, selectedId])
 
   // Spec cap: 50 most-recent rows. BUT — if the user clicks a map dot for
   // an event older than the 50 most recent (the map shows thousands of
@@ -61,12 +68,28 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
   // focus({ preventScroll: true }) avoids the browser's default focus-
   // induced scroll, which would compete with the explicit scrollIntoView
   // we just called on the row.
+  // Keep the selected row visible. We CANNOT use scrollIntoView: the mobile
+  // sheet is rendered at full height and translated DOWN to reveal only the
+  // active snap (see useDraggableSheet), so the browser's scrollport is the
+  // whole ~90vh sheet — most of it off-screen below the viewport. scrollIntoView
+  // ('center'/'nearest') targets that full sheet and lands the row below the
+  // fold (or decides it's already "visible" and no-ops). Instead, measure
+  // ON-SCREEN positions and scroll the row to just below the sticky header at
+  // the top of the VISIBLE area. Re-runs on headId so a fresh event pushing the
+  // row down re-pins it.
   useEffect(() => {
-    if (selectedRowRef.current) {
-      selectedRowRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-      scrollRef.current?.focus({ preventScroll: true })
+    const container = scrollRef.current
+    const row = selectedRowRef.current
+    if (!container || !row) return
+    container.focus({ preventScroll: true })
+    const cTop = container.getBoundingClientRect().top
+    const rTop = row.getBoundingClientRect().top
+    const headerH = (container.firstElementChild as HTMLElement | null)?.offsetHeight ?? 0
+    const delta = rTop - cTop - headerH - 8
+    if (Math.abs(delta) > 1) {
+      container.scrollTo({ top: container.scrollTop + delta, behavior: 'smooth' })
     }
-  }, [selectedId, pinnedOlder])
+  }, [selectedId, pinnedOlder, headId])
 
   useEffect(() => {
     // Panel closed (no selection) → clear pin.
@@ -147,33 +170,30 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
       <div className="sticky top-0 z-10 px-3 pt-3 pb-2.5 flex-shrink-0 bg-paper-50 dark:bg-espresso-900 border-b border-paper-200/50 dark:border-espresso-800">
         <div className="flex items-center gap-2 px-1">
           <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-paper-500/60 dark:text-paper-600">
-            Latest
+            Latest Events
           </p>
           <div className="flex-1 h-[1px] bg-paper-200/30 dark:bg-white/[0.04]" />
         </div>
-        <div className="grid grid-cols-3 gap-1.5 mt-2">
+        <div className="flex md:grid md:grid-cols-3 gap-1.5 mt-2">
           <div className="rounded-md bg-paper-100/50 dark:bg-espresso-800/40 px-2 py-1.5">
-            <p className="font-mono text-[12px] font-semibold text-paper-800 dark:text-paper-200 tabular-nums leading-none">
+            <p className="font-mono text-[24px] md:text-[12px] font-semibold text-paper-800 dark:text-paper-200 tabular-nums leading-none">
               {events.length.toLocaleString()}
             </p>
-            <p className="font-mono text-[8px] text-paper-500/70 dark:text-paper-600 uppercase tracking-[0.15em] mt-1">
-              events
-            </p>
           </div>
-          <div className="rounded-md bg-paper-100/50 dark:bg-espresso-800/40 px-2 py-1.5">
-            <p className="font-mono text-[12px] font-semibold text-paper-800 dark:text-paper-200 tabular-nums leading-none">
-              48h
-            </p>
-            <p className="font-mono text-[8px] text-paper-500/70 dark:text-paper-600 uppercase tracking-[0.15em] mt-1">
+          <div className="rounded-md bg-paper-100/50 dark:bg-espresso-800/40 px-2 py-1.5 flex items-baseline gap-1.5 md:block">
+            <p className="font-mono text-[8px] text-paper-500/70 dark:text-paper-600 uppercase tracking-[0.15em]">
               window
             </p>
-          </div>
-          <div className="rounded-md bg-paper-100/50 dark:bg-espresso-800/40 px-2 py-1.5">
-            <p className="font-mono text-[12px] font-semibold text-paper-800 dark:text-paper-200 tabular-nums leading-none">
-              {withheldCount.toLocaleString()}
+            <p className="font-mono text-[24px] md:text-[12px] font-semibold text-paper-800 dark:text-paper-200 tabular-nums leading-none md:mt-1">
+              48 hrs
             </p>
-            <p className="font-mono text-[8px] text-paper-500/70 dark:text-paper-600 uppercase tracking-[0.15em] mt-1">
+          </div>
+          <div className="rounded-md bg-paper-100/50 dark:bg-espresso-800/40 px-2 py-1.5 flex items-baseline gap-1.5 md:block">
+            <p className="font-mono text-[8px] text-paper-500/70 dark:text-paper-600 uppercase tracking-[0.15em]">
               no gps
+            </p>
+            <p className="font-mono text-[24px] md:text-[12px] font-semibold text-paper-800 dark:text-paper-200 tabular-nums leading-none md:mt-1">
+              {withheldCount.toLocaleString()}
             </p>
           </div>
         </div>
@@ -275,6 +295,17 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
             no events in window yet
           </div>
         )}
+      </div>
+
+      {/* Scanner footer — mobile only (the desktop bottom ScannerStrip is hidden
+          on phones, where the sheet would cover it). sticky bottom-0 pins it to
+          the bottom of the rail when the sheet is expanded. */}
+      <div className="md:hidden sticky bottom-0 z-10 flex items-center gap-3 px-3 py-2.5 bg-paper-50 dark:bg-espresso-900 border-t border-paper-200/50 dark:border-espresso-800 font-mono text-[11px] text-paper-700 dark:text-paper-400">
+        <span className="text-ochre-600 dark:text-ochre-500" aria-hidden>📡</span>
+        <span className="tracking-wider">SCANNER</span>
+        <div className="ml-auto flex items-center gap-2">
+          <ScannerFeedLinks />
+        </div>
       </div>
     </MapSidebar>
   )

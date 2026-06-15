@@ -227,6 +227,7 @@ export default function VendorDetailPanel({ vendor, onClose, inline }: VendorDet
       isLoading={isLoading}
       spinnerClass="border-teal-400"
       widthClass="w-80"
+      mobileCompact
     >
       {content}
     </DetailPanelShell>

@@ -7,6 +7,8 @@ import CivicFingerprint, { MiniFingerprint } from './CivicFingerprint'
 import ComparisonView from './ComparisonView'
 import type { NeighborhoodProfile, MetricDomain, SortKey, DatasetMetric } from './types'
 import { DOMAINS, SLOT_COLORS, DOMAIN_ROUTES } from './types'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { useDraggableSheet } from '@/hooks/useDraggableSheet'
 
 interface Props {
   profiles: NeighborhoodProfile[]
@@ -231,6 +233,8 @@ export default function NeighborhoodSidebar({
   onToggleDomain,
 }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>('totalEvents')
+  const isMobile = useIsMobile()
+  const sheet = useDraggableSheet({ initial: 'glimpse', halfVh: 0.4 })
 
   const sorted = useMemo(() => {
     const copy = [...profiles]
@@ -260,7 +264,29 @@ export default function NeighborhoodSidebar({
   ]
 
   return (
-    <aside className="w-[300px] flex-shrink-0 border-l border-white/[0.06] flex flex-col h-full overflow-hidden bg-black/20">
+    <>
+      {/* Inline w-[300px] aside at md+, draggable bottom sheet on phones. Kept
+          inline (not <MapSidebar>) so the sticky header + scroll list survive —
+          MapSidebar's single-scroll-container model would flatten them. The
+          sheetStyle (height + translateY) attaches only below md; the md:
+          classes own the inline-aside layout. */}
+      <aside
+        style={isMobile ? sheet.sheetStyle : undefined}
+        className={`flex flex-col overflow-hidden bg-slate-900
+          fixed inset-x-0 bottom-0 z-30 rounded-t-2xl border-t border-white/10 shadow-[0_-8px_30px_rgba(0,0,0,0.18)]
+          md:static md:h-full md:w-[300px] md:flex-shrink-0
+          md:bg-black/20 md:rounded-none md:border-t-0 md:border-l md:border-white/[0.06] md:shadow-none`}
+      >
+        {/* Mobile drag handle — ↕ resize (peek / half / full), tap to cycle */}
+        {isMobile && (
+          <div
+            {...sheet.handleProps}
+            className="h-6 flex-shrink-0 flex items-center justify-center w-full cursor-grab touch-none"
+            aria-label="Resize panel"
+          >
+            <span className="w-8 h-1 rounded-full bg-white/20 pointer-events-none" />
+          </div>
+        )}
       {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-white/[0.04]">
         <div className="flex items-center justify-between mb-1">
@@ -459,5 +485,6 @@ export default function NeighborhoodSidebar({
         )}
       </div>
     </aside>
+    </>
   )
 }

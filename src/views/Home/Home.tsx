@@ -329,11 +329,10 @@ export default function Home() {
             <p
               className={`text-lg text-slate-500 dark:text-slate-400 max-w-md leading-relaxed transition-all duration-1000 delay-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
             >
-              Bring civic data to life, instantly. Visualize trends, patterns and 24/7
-              flow to turn public data into public insight.
+              Bring civic data to life, instantly.
             </p>
 
-            <div className={`flex items-center gap-4 mt-6 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+            <div className={`flex flex-col items-start gap-4 mt-6 md:flex-row md:items-center transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
               {/* Credit links to /about — top-line authorship is the author's
                   alone (academic convention); Claude's role is disclosed in
                   full on the About page. */}
@@ -357,7 +356,7 @@ export default function Home() {
                   Clicking it opens The Last 48 — "Live" IS that view. */}
               <button
                 onClick={() => navigate('/live')}
-                className={`inline-flex items-center gap-2 ml-5 pl-2.5 pr-3.5 py-1.5 rounded-full
+                className={`inline-flex items-center gap-2 md:ml-5 pl-2.5 pr-3.5 py-1.5 rounded-full
                   text-[10px] font-mono uppercase tracking-wider whitespace-nowrap text-[#f5ecd9]
                   shadow-sm cursor-pointer transition-[filter] hover:brightness-110
                   ${indicators.error ? 'bg-[#b58620]' : 'bg-[#5c7a3d]'}`}
@@ -373,6 +372,34 @@ export default function Home() {
             </div>
           </div>
         </header>
+
+        {/* Mobile-only: the Explorations relocated under the hero as a swipeable
+            rail (the desktop Explorations section below is hidden on mobile), so
+            dataset discovery is immediate. Last 48 first. */}
+        <div className="md:hidden mb-12">
+          <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400 mb-3">
+            Explorations
+          </p>
+          <div className="-mx-[clamp(16px,3vw,64px)]">
+            <div className="flex gap-2.5 overflow-x-auto snap-x px-[clamp(16px,3vw,64px)] pb-1">
+              {[...VISUALIZATIONS]
+                .sort((a, b) => (a.path === '/live' ? -1 : b.path === '/live' ? 1 : 0))
+                .map((viz) => (
+                  <div key={viz.path} className="w-[215px] shrink-0 snap-start">
+                    <VizCard
+                      title={viz.title}
+                      subtitle={viz.subtitle}
+                      badge={viz.badge}
+                      accentColor={viz.accentColor}
+                      onClick={() => navigate(viz.path)}
+                      delay={0}
+                      mounted={mounted}
+                    />
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
 
         {/* Newsletter + Dana row — liquid 2:1 (Dana 1fr left, newsletter
             2fr right). Flex-wrap with proportional grow factors instead of
@@ -514,7 +541,7 @@ export default function Home() {
               from there to ~960px, 3 columns at ~1380px, 4 columns at ~1840px+.
               No breakpoint jumps — the grid reflows continuously as the
               viewport widens. Each card stays in the [460px, 1fr] band. */}
-          <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(460px,1fr))]">
+          <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(min(100%,460px),1fr))]">
             <Last48Pulse />
             <DeficitCounter />
             <ResponseEquity />
@@ -629,8 +656,9 @@ export default function Home() {
         </section>
         )}
 
-        {/* Visualization Cards */}
-        <section className="relative z-10">
+        {/* Explorations — desktop only; on mobile these cards are relocated to
+            the swipeable rail under the hero. */}
+        <section className="relative z-10 hidden md:block">
           <div
             className={`glow-host flex items-center gap-2.5 mb-6 py-1 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100' : 'opacity-0'}`}
             style={{ '--glow': '#5c9693' } as CSSProperties}

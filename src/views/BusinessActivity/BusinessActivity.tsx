@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import type { CensusVariable } from '@/types/census'
+import { eventFlyToOffset } from '@/utils/cameraPadding'
 import { useCensusData } from '@/hooks/useCensusData'
 import { useDemographicUnderlay } from '@/components/maps/DemographicUnderlay'
 import UnderlayPicker from '@/components/maps/UnderlayPicker'
@@ -634,7 +635,8 @@ export default function BusinessActivity() {
       if (!uniqueId) return
       setSelectedBusiness(String(uniqueId))
       const coords = (e.features[0].geometry as GeoJSON.Point).coordinates
-      mapInstance.flyTo({ center: [coords[0], coords[1]], zoom: 17, duration: 800 })
+      // Offset so the business lands clear of its own top-right detail card (w-72 = 288px).
+      mapInstance.flyTo({ center: [coords[0], coords[1]], zoom: 17, duration: 800, offset: eventFlyToOffset(mapInstance, 288) })
     }
 
     const tryAttach = () => {
@@ -702,18 +704,23 @@ export default function BusinessActivity() {
     <div className="h-full flex flex-col">
       {/* Header */}
       <header className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl z-20">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div>
+        {/* items-start on mobile so the title can wrap on the left while the
+            controls flow from the top-right (no empty well); md restores the
+            centered single row. */}
+        <div className="flex items-start justify-between gap-3 md:items-center">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="min-w-0">
               <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">
                 Business Activity
               </h1>
-              <p className="text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
+              <p className="hidden sm:block text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
                 Registered Businesses &middot; Openings & Closures
               </p>
             </div>
+            {/* Record count hidden on mobile — it's also surfaced in the map's
+                stat-card overlay, so the header doesn't need to carry it on a phone. */}
             {!isLoading && filteredData.length > 0 && (
-              <div className="flex items-center gap-1.5">
+              <div className="hidden sm:flex items-center gap-1.5">
                 <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-moss-500/80 bg-moss-500/10 px-2 py-1 rounded-full">
                   <span className="w-1 h-1 rounded-full bg-moss-500 pulse-live" />
                   {formatNumber(filteredData.length)} records
@@ -727,7 +734,7 @@ export default function BusinessActivity() {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2 flex-shrink-0">
             <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-lg p-0.5">
               {(['heatmap', 'anomaly'] as const).map((mode) => (
                 <button

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import CivicTicker from '@/components/ui/CivicTicker'
 import { useCivicIndicators } from '@/hooks/useCivicIndicators'
 import type { CensusVariable } from '@/types/census'
+import { eventFlyToOffset } from '@/utils/cameraPadding'
 import { useCensusData } from '@/hooks/useCensusData'
 import { useDemographicUnderlay } from '@/components/maps/DemographicUnderlay'
 import UnderlayPicker from '@/components/maps/UnderlayPicker'
@@ -103,7 +104,8 @@ export default function ParkingRevenue() {
     const lat = parseFloat(meter.latitude) || 0
     const lng = parseFloat(meter.longitude) || 0
     if (lat === 0 || lng === 0) return
-    mapInstance.flyTo({ center: [lng, lat], zoom: 16, duration: 1500 })
+    // Offset so the deep-linked meter lands clear of the top-right detail card (w-72 = 288px).
+    mapInstance.flyTo({ center: [lng, lat], zoom: 16, duration: 1500, offset: eventFlyToOffset(mapInstance, 288) })
   }, [mapInstance, selectedMeter, meterMap])
 
   // Visual callout marker on the map for the selected meter. Shows a cyan
@@ -377,7 +379,8 @@ export default function ParkingRevenue() {
       if (!postId) return
       setSelectedMeter(postId)
       const coords = (feature.geometry as GeoJSON.Point).coordinates
-      mapInstance.flyTo({ center: [coords[0], coords[1]], zoom: 17, duration: 800 })
+      // Offset so the meter lands clear of its own top-right detail card (w-72 = 288px).
+      mapInstance.flyTo({ center: [coords[0], coords[1]], zoom: 17, duration: 800, offset: eventFlyToOffset(mapInstance, 288) })
     }
 
     const onCursorEnter = () => { mapInstance.getCanvas().style.cursor = 'pointer' }
@@ -467,18 +470,23 @@ export default function ParkingRevenue() {
   return (
     <div className="h-full flex flex-col">
       <header className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl z-20">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div>
+        {/* items-start on mobile so the title can wrap on the left while the
+            controls flow from the top-right (no empty well); md restores the
+            centered single row. */}
+        <div className="flex items-start justify-between gap-3 md:items-center">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="min-w-0">
               <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">
                 Parking Revenue
               </h1>
-              <p className="text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
+              <p className="hidden sm:block text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
                 SFMTA &middot; Meter Revenue Patterns
               </p>
             </div>
+            {/* Transactions count hidden on mobile — it's also in the map's stat
+                overlay (Txns), so the header doesn't need to carry it on a phone. */}
             {!isLoading && serverStats && (
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-signal-blue/80 bg-signal-blue/10 px-2 py-1 rounded-full">
+              <span className="hidden sm:inline-flex flex-shrink-0 items-center gap-1.5 text-[10px] font-mono text-signal-blue/80 bg-signal-blue/10 px-2 py-1 rounded-full">
                 {formatNumber(serverStats.totalTransactions)} transactions
               </span>
             )}
@@ -489,7 +497,7 @@ export default function ParkingRevenue() {
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2 flex-shrink-0">
               <UnderlayPicker
                 presets={UNDERLAY_PRESETS['parking-revenue'] ?? []}
                 activeVariable={underlayVariable}

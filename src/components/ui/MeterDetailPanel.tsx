@@ -147,6 +147,7 @@ export default function MeterDetailPanel() {
       onClose={onClose}
       isLoading={isLoading}
       spinnerClass="border-teal-400"
+      mobileCompact
       buildShareUrl={buildShareUrl}
       shareAccentClass="text-teal-500"
     >

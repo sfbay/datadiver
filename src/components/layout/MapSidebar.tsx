@@ -18,6 +18,8 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode, type ComponentPropsWithRef } from 'react'
 import { useAppStore } from '@/stores/appStore'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { useDraggableSheet } from '@/hooks/useDraggableSheet'
 
 interface MapSidebarContextValue {
   isCompressed: boolean
@@ -51,6 +53,10 @@ interface MapSidebarProps {
 export default function MapSidebar({ children, width = 'default', scrollContainerProps }: MapSidebarProps) {
   const isOpen = useAppStore((s) => s.isContextSidebarOpen)
   const toggle = useAppStore((s) => s.toggleContextSidebar)
+  const isMobile = useIsMobile()
+  // Persistent list sheet — opens at 'peek' so the map is fully visible; drag
+  // the handle up to browse, down to peek. No backdrop (the map stays usable).
+  const sheet = useDraggableSheet({ initial: 'glimpse', halfVh: 0.4 })
 
   // Track viewport width so compressed mode kicks in below the breakpoint.
   // SSR-safe via initializer; updated on resize via listener.
@@ -71,6 +77,38 @@ export default function MapSidebar({ children, width = 'default', scrollContaine
   const widthClass = isOpen
     ? (isNarrow ? 'w-60' : (width === 'lean' ? 'w-[260px]' : 'w-80'))
     : 'w-9'
+
+  // Below md the sidebar is a bottom sheet: a slim handle peeks at the bottom
+  // when closed; tapping it slides the panel up over a backdrop. Ephemeral
+  // sheetOpen (default closed) — never reads the persisted desktop flag.
+  if (isMobile) {
+    return (
+      <MapSidebarContext.Provider value={{ isCompressed: false }}>
+        <aside
+          style={sheet.sheetStyle}
+          className="fixed inset-x-0 bottom-0 z-30 rounded-t-2xl
+            bg-paper-50 dark:bg-espresso-900 border-t border-paper-200/60 dark:border-espresso-800
+            shadow-[0_-8px_30px_rgba(0,0,0,0.28)] flex flex-col"
+        >
+          {/* Drag handle — ↕ resize between snaps; tap to cycle. Lean (h-6) so it
+              doesn't eat the small mobile sheet; the whole bar is the grab area. */}
+          <div
+            {...sheet.handleProps}
+            className="h-6 flex-shrink-0 flex items-center justify-center w-full cursor-grab touch-none"
+            aria-label="Resize panel"
+          >
+            <span className="w-8 h-1 rounded-full bg-paper-400/60 dark:bg-white/20 pointer-events-none" />
+          </div>
+          <div
+            {...scrollContainerProps}
+            className={`flex-1 overflow-y-auto flex flex-col min-h-0 ${scrollContainerProps?.className ?? ''}`}
+          >
+            {children}
+          </div>
+        </aside>
+      </MapSidebarContext.Provider>
+    )
+  }
 
   return (
     <MapSidebarContext.Provider value={{ isCompressed }}>

@@ -113,6 +113,7 @@ export default function CrimeDetailPanel() {
       isLoading={isLoading}
       spinnerClass="border-brick-400"
       widthClass="w-80"
+      mobileCompact
       buildShareUrl={buildShareUrl}
       shareAccentClass="text-brick-500"
     >

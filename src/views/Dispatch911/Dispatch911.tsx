@@ -15,6 +15,7 @@ import TimeOfDayFilter from '@/components/filters/TimeOfDayFilter'
 import ExportButton from '@/components/export/ExportButton'
 import HorizontalBarChart, { type BarDatum } from '@/components/charts/HorizontalBarChart'
 import CallTypeFilter, { type CallTypeEntry } from '@/components/filters/CallTypeFilter'
+import MapSidebar from '@/components/layout/MapSidebar'
 import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { Skeleton, SkeletonChart, SkeletonSidebarRows } from '@/components/ui/Skeleton'
@@ -247,18 +248,21 @@ export default function Dispatch911() {
     <div className="h-full flex flex-col">
       {/* Header */}
       <header className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl z-20">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div>
+        {/* items-start on mobile so the title can wrap on the left while the
+            controls flow from the top-right (no empty well); md restores the
+            centered single row. */}
+        <div className="flex items-start justify-between gap-3 md:items-center">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="min-w-0">
               <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">
                 911 Dispatch Analysis
               </h1>
-              <p className="text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
+              <p className="hidden sm:block text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
                 SFPD · Law Enforcement Dispatch
               </p>
             </div>
             {!isLoading && rawData.length > 0 && (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 flex-shrink-0">
                 <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-signal-emerald/80 bg-signal-emerald/10 px-2 py-1 rounded-full">
                   <span className="w-1 h-1 rounded-full bg-signal-emerald pulse-live" />
                   {formatNumber(rawData.length)} records
@@ -272,7 +276,7 @@ export default function Dispatch911() {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2 flex-shrink-0">
             <ExportButton targetSelector="#d911-capture" filename="dispatch-911" />
 
             {/* Sensitivity filter toggle */}
@@ -391,7 +395,7 @@ export default function Dispatch911() {
                   <SkeletonChart width={640} height={200} />
                 ) : (
                   <>
-                    <HourlyHeatgrid grid={hourlyPattern.grid} width={640} height={240} />
+                    <div className="overflow-x-auto"><HourlyHeatgrid grid={hourlyPattern.grid} width={640} height={240} /></div>
                     <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-3 font-mono">
                       Click a cell to filter by that hour. Peak:{' '}
                       <span className="text-signal-amber">{hourlyPattern.peakHour}:00</span>
@@ -408,14 +412,16 @@ export default function Dispatch911() {
                   <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                     Volume Trend<InfoTip term="period-trend" size={10} />
                   </p>
-                  <PeriodBreakdownChart
-                    current={trend.currentPeriods}
-                    priorYear={trend.priorYearPeriods}
-                    granularity={trend.granularity}
-                    accentColor="#8b6282"
-                    width={640}
-                    height={160}
-                  />
+                  <div className="overflow-x-auto">
+                    <PeriodBreakdownChart
+                      current={trend.currentPeriods}
+                      priorYear={trend.priorYearPeriods}
+                      granularity={trend.granularity}
+                      accentColor="#8b6282"
+                      width={640}
+                      height={160}
+                    />
+                  </div>
                 </div>
               )}
 
@@ -426,7 +432,7 @@ export default function Dispatch911() {
                     <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                       Response Time Distribution
                     </p>
-                    <ResponseHistogram data={histogramData} width={340} height={140} />
+                    <div className="overflow-x-auto"><ResponseHistogram data={histogramData} width={340} height={140} /></div>
                   </div>
                 )}
 
@@ -435,13 +441,15 @@ export default function Dispatch911() {
                     <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                       Disposition Breakdown
                     </p>
-                    <HorizontalBarChart
-                      data={dispositionData}
-                      width={340}
-                      height={180}
-                      maxBars={8}
-                      valueFormatter={(v) => formatNumber(v)}
-                    />
+                    <div className="overflow-x-auto">
+                      <HorizontalBarChart
+                        data={dispositionData}
+                        width={340}
+                        height={180}
+                        maxBars={8}
+                        valueFormatter={(v) => formatNumber(v)}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
@@ -452,13 +460,15 @@ export default function Dispatch911() {
                   <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                     Daily Trend {comparison.isLoading && '(loading\u2026)'}
                   </p>
-                  <TrendChart
-                    current={comparison.currentTrend}
-                    comparison={comparison.comparisonTrend.length > 0 ? comparison.comparisonTrend : undefined}
-                    width={640}
-                    height={160}
-                    accentColor="#616a96"
-                  />
+                  <div className="overflow-x-auto">
+                    <TrendChart
+                      current={comparison.currentTrend}
+                      comparison={comparison.comparisonTrend.length > 0 ? comparison.comparisonTrend : undefined}
+                      width={640}
+                      height={160}
+                      accentColor="#616a96"
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -477,8 +487,8 @@ export default function Dispatch911() {
           )}
         </div>
 
-        {/* Right sidebar — call type filter */}
-        <aside className="w-80 flex-shrink-0 border-l border-slate-200/50 dark:border-white/[0.04] overflow-y-auto bg-white/50 dark:bg-slate-900/30 backdrop-blur-xl flex flex-col">
+        {/* Right sidebar — call type filter. MapSidebar: inline w-80 at md+, bottom sheet on phones. */}
+        <MapSidebar>
           <div className="p-4">
             <div className="flex items-center gap-2 mb-4">
               <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
@@ -502,7 +512,7 @@ export default function Dispatch911() {
               <SkeletonSidebarRows count={10} />
             )}
           </div>
-        </aside>
+        </MapSidebar>
       </div>
     </div>
   )

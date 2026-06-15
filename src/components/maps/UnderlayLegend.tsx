@@ -73,7 +73,6 @@ export default function UnderlayLegend({
   values.sort((a, b) => a - b)
   const min = values[0]
   const max = values[values.length - 1]
-  const hasExclusions = excludedGeoIds.length > 0
 
   // Build CSS gradient that matches DemographicUnderlay's 0/33/66/100
   // percentile stops. If the colorRamp has fewer than 4 entries, fall back
@@ -100,11 +99,6 @@ export default function UnderlayLegend({
           <span>{formatValue(min, config.format)}</span>
           <span>{formatValue(max, config.format)}</span>
         </div>
-        {hasExclusions && (
-          <p className="text-[8px] font-mono italic text-slate-500 dark:text-slate-500 mt-1 leading-tight">
-            parks excluded
-          </p>
-        )}
       </div>
     </div>
   )

@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useAppStore } from '@/stores/appStore'
 import { useUrlSync } from '@/hooks/useUrlSync'
 import DateRangePicker from '@/components/filters/DateRangePicker'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 // Earth-tone refactor — each nav item carries a pigment from the design
 // system palette (terracotta / ochre / moss / teal / brick / indigo / plum).
@@ -142,10 +143,17 @@ const NAV_ITEMS = [
 export default function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
   const location = useLocation()
-  const { isDarkMode, toggleDarkMode, isSidebarOpen, toggleSidebar, dateRange } = useAppStore()
+  const { isDarkMode, toggleDarkMode, isSidebarOpen: deskRailOpen, toggleSidebar, dateRange } = useAppStore()
   useUrlSync()
 
   const [omniOpen, setOmniOpen] = useState(false)
+  const isMobile = useIsMobile()
+  const [navDrawerOpen, setNavDrawerOpen] = useState(false)
+  // "isSidebarOpen" below means "show the expanded nav": always true on mobile
+  // (the off-canvas drawer shows the full nav), otherwise the persisted desktop
+  // rail flag. The desktop rail WIDTH still keys off deskRailOpen (md:-gated).
+  const isSidebarOpen = isMobile || deskRailOpen
+  const go = (path: string) => { navigate(path); if (isMobile) setNavDrawerOpen(false) }
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -153,6 +161,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         e.preventDefault()
         setOmniOpen((v) => !v)
       }
+      if (e.key === 'Escape') setNavDrawerOpen(false)
     }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
@@ -160,16 +169,55 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex h-screen overflow-hidden bg-paper dark:bg-slate-950 noise-bg">
-      {/* Sidebar */}
+      {/* Mobile top bar — reclaims the permanent rail's footprint and hosts the
+          drawer trigger. Hidden at md+ where the in-flow rail returns. */}
+      <div className="md:hidden fixed top-0 inset-x-0 h-12 z-40 flex items-center gap-2.5 px-3
+        bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-white/[0.06]">
+        <button
+          onClick={() => setNavDrawerOpen(true)}
+          aria-label="Open navigation"
+          className="w-9 h-9 -ml-0.5 shrink-0 flex items-center justify-center rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10"
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+            <path d="M3 5h14M3 10h14M3 15h14" />
+          </svg>
+        </button>
+        <img
+          src={isDarkMode ? '/dana-badge-mono.png' : '/dana-badge.png'}
+          alt=""
+          className="w-7 h-7 shrink-0 rounded-full object-cover ring-1 ring-slate-200/50 dark:ring-white/10"
+        />
+        <div className="flex items-baseline gap-2 min-w-0">
+          <span className="font-display italic text-base text-ink dark:text-white leading-none tracking-tight shrink-0">DataDiver</span>
+          <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 truncate">
+            Bring civic data to life, instantly
+          </span>
+        </div>
+      </div>
+
+      {/* Drawer backdrop (mobile only) */}
+      {navDrawerOpen && (
+        <div
+          className="md:hidden fixed inset-0 z-[44] bg-black/50 backdrop-blur-sm"
+          onClick={() => setNavDrawerOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar — in-flow rail at md+, off-canvas drawer below md */}
       <aside
+        role={isMobile ? 'dialog' : undefined}
+        aria-modal={isMobile ? true : undefined}
         className={`
-          relative flex flex-col
-          bg-white/50 dark:bg-slate-900/50
+          flex flex-col
+          fixed md:relative inset-y-0 left-0
+          z-[45] md:z-20
+          w-64 ${deskRailOpen ? 'md:w-64' : 'md:w-[52px]'}
+          ${navDrawerOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0
+          bg-white/95 md:bg-white/50 dark:bg-slate-900/95 md:dark:bg-slate-900/50
           backdrop-blur-xl
           border-r border-slate-200/50 dark:border-white/[0.04]
-          transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]
-          z-20
-          ${isSidebarOpen ? 'w-64' : 'w-[52px]'}
+          transition-transform md:transition-all duration-300 md:duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]
         `}
       >
         {/* Drawer-pull collapse toggle — vertically centered on the right
@@ -179,8 +227,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
             in the direction the sidebar will move when clicked. */}
         <button
           onClick={toggleSidebar}
-          className="absolute top-1/2 -translate-y-1/2 z-30
-            -right-3.5 w-7 h-14 flex items-center justify-center
+          className="hidden md:flex absolute top-1/2 -translate-y-1/2 z-30
+            -right-3.5 w-7 h-14 items-center justify-center
             rounded-lg
             bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl
             border border-slate-300/80 dark:border-white/15
@@ -271,7 +319,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             return (
               <button
                 key={item.path}
-                onClick={() => navigate(item.path)}
+                onClick={() => go(item.path)}
                 className={`
                   group w-full flex items-center rounded-lg text-left
                   transition-all duration-200
@@ -362,7 +410,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
           <button
             onClick={toggleSidebar}
             className={`
-              w-full flex items-center rounded-lg
+              hidden md:flex w-full items-center rounded-lg
               text-slate-400 dark:text-slate-600
               hover:text-slate-600 dark:hover:text-slate-400
               hover:bg-slate-50 dark:hover:bg-white/[0.03]
@@ -392,7 +440,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-hidden relative">
+      <main className="flex-1 overflow-hidden relative pt-12 md:pt-0">
         {children}
       </main>
 

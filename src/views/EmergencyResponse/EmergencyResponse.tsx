@@ -762,18 +762,23 @@ export default function EmergencyResponse() {
           global z-index is what determines whether children-with-z-50
           sit above sibling rows or under them. */}
       <header className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl z-20">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div>
-              <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none whitespace-nowrap">
+        {/* items-start on mobile so the title can wrap on the left while the
+            controls flow from the top-right (no empty well); md restores the
+            centered single row. */}
+        <div className="flex items-start justify-between gap-3 md:items-center">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="min-w-0">
+              <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">
                 Emergency Response
               </h1>
-              <p className="text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
+              <p className="hidden sm:block text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
                 SFFD &middot; Fire &amp; EMS Dispatch
               </p>
             </div>
+            {/* Records count hidden on mobile — the running total also lives in
+                the map's stat overlay, so the header doesn't need it on a phone. */}
             {!isLoading && responseData.length > 0 && (
-              <div className="flex items-center gap-1.5">
+              <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
                 <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-signal-emerald/80 bg-signal-emerald/10 px-2 py-1 rounded-full">
                   <span className="w-1 h-1 rounded-full bg-signal-emerald pulse-live" />
                   {formatNumber(responseData.length)} records
@@ -787,7 +792,7 @@ export default function EmergencyResponse() {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2 flex-shrink-0">
               <UnderlayPicker
                 presets={UNDERLAY_PRESETS['emergency-response'] ?? []}
                 activeVariable={underlayVariable}
