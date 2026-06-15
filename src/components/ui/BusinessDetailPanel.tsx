@@ -127,6 +127,7 @@ export default function BusinessDetailPanel() {
       onClose={close}
       isLoading={loading}
       spinnerClass="border-slate-400"
+      mobileCompact
     >
       {detail && (
         <>
@@ -137,19 +138,19 @@ export default function BusinessDetailPanel() {
 
           <div className="space-y-2 mt-3">
             {detail.ban && (
-              <div>
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500">Business Account #</p>
-                <p className="text-[11px] font-mono text-slate-700 dark:text-slate-300 tabular-nums">{detail.ban}</p>
+              <div className="flex justify-between items-baseline gap-3 md:block">
+                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 shrink-0">Business Account #</p>
+                <p className="text-[11px] font-mono text-slate-700 dark:text-slate-300 tabular-nums text-right md:text-left">{detail.ban}</p>
               </div>
             )}
-            <div>
-              <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500">Sector</p>
-              <p className="text-[11px] text-slate-700 dark:text-slate-300">{detail.sector}</p>
+            <div className="flex justify-between items-baseline gap-3 md:block">
+              <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 shrink-0">Sector</p>
+              <p className="text-[11px] text-slate-700 dark:text-slate-300 text-right md:text-left">{detail.sector}</p>
             </div>
             {detail.licenseCode && (
-              <div>
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500">License</p>
-                <p className="text-[11px] text-slate-700 dark:text-slate-300">{detail.licenseCode}</p>
+              <div className="flex justify-between items-baseline gap-3 md:block">
+                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 shrink-0">License</p>
+                <p className="text-[11px] text-slate-700 dark:text-slate-300 text-right md:text-left">{detail.licenseCode}</p>
               </div>
             )}
             <div>
@@ -166,9 +167,9 @@ export default function BusinessDetailPanel() {
               )}
             </div>
             {detail.mailingAddress && (
-              <div>
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500">Mailing</p>
-                <p className="text-[11px] text-slate-700 dark:text-slate-300">{detail.mailingAddress}</p>
+              <div className="flex justify-between items-baseline gap-3 md:block">
+                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 shrink-0">Mailing</p>
+                <p className="text-[11px] text-slate-700 dark:text-slate-300 text-right md:text-left">{detail.mailingAddress}</p>
               </div>
             )}
             <div className="flex gap-4">

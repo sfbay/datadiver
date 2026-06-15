@@ -88,6 +88,7 @@ export default function IncidentDetailPanel() {
       onClose={onClose}
       isLoading={isLoading}
       spinnerClass="border-signal-amber"
+      mobileCompact
       buildShareUrl={buildShareUrl}
       shareAccentClass="text-signal-amber"
     >

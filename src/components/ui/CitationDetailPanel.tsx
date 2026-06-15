@@ -80,6 +80,7 @@ export default function CitationDetailPanel() {
       onClose={onClose}
       isLoading={isLoading}
       spinnerClass="border-terracotta-400"
+      mobileCompact
       buildShareUrl={buildShareUrl}
       shareAccentClass="text-terracotta-500"
     >

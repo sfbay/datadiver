@@ -98,6 +98,7 @@ export default function CrashDetailPanel() {
       onClose={onClose}
       isLoading={isLoading}
       spinnerClass="border-brick-400"
+      mobileCompact
       buildShareUrl={buildShareUrl}
       shareAccentClass="text-brick-500"
     >

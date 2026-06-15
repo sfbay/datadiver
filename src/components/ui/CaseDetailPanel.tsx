@@ -107,6 +107,7 @@ export default function CaseDetailPanel() {
       onClose={onClose}
       isLoading={isLoading}
       spinnerClass="border-moss-400"
+      mobileCompact
       buildShareUrl={buildShareUrl}
       shareAccentClass="text-moss-500"
     >
