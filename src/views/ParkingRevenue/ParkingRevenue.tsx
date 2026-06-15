@@ -470,9 +470,12 @@ export default function ParkingRevenue() {
   return (
     <div className="h-full flex flex-col">
       <header className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl z-20">
-        <div className="flex flex-wrap items-center justify-between gap-y-2">
-          <div className="flex items-center gap-4">
-            <div>
+        {/* items-start on mobile so the title can wrap on the left while the
+            controls flow from the top-right (no empty well); md restores the
+            centered single row. */}
+        <div className="flex items-start justify-between gap-3 md:items-center">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="min-w-0">
               <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">
                 Parking Revenue
               </h1>
@@ -480,8 +483,10 @@ export default function ParkingRevenue() {
                 SFMTA &middot; Meter Revenue Patterns
               </p>
             </div>
+            {/* Transactions count hidden on mobile — it's also in the map's stat
+                overlay (Txns), so the header doesn't need to carry it on a phone. */}
             {!isLoading && serverStats && (
-              <span className="inline-flex flex-shrink-0 items-center gap-1.5 text-[10px] font-mono text-signal-blue/80 bg-signal-blue/10 px-2 py-1 rounded-full">
+              <span className="hidden sm:inline-flex flex-shrink-0 items-center gap-1.5 text-[10px] font-mono text-signal-blue/80 bg-signal-blue/10 px-2 py-1 rounded-full">
                 {formatNumber(serverStats.totalTransactions)} transactions
               </span>
             )}
@@ -492,7 +497,7 @@ export default function ParkingRevenue() {
               </span>
             )}
           </div>
-          <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2 flex-shrink-0">
               <UnderlayPicker
                 presets={UNDERLAY_PRESETS['parking-revenue'] ?? []}
                 activeVariable={underlayVariable}
