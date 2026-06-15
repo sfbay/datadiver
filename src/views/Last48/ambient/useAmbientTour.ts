@@ -11,11 +11,16 @@
 // Dwell/breath come from the active pace preset (see pace.ts), read at
 // schedule time via refs so a pace switch or ?tune=1 change applies on
 // the next beat without resetting the in-flight one.
-// Tab hidden → timers pause (visibilitychange); resumes where it stopped.
+// Robust against backgrounding: a single wall-clock-gated timer (dueWaitMs)
+// caps advance to once per interval even when Chrome releases a coalesced
+// throttle burst on refocus, and a generation guard stops a stale loop (HMR
+// remount, overlap) from driving selection. Tab hide also pauses the timer;
+// OS focus-loss that throttles without firing visibilitychange is covered by
+// the gate alone.
 
 import { useEffect, useRef } from 'react'
 import type { NormalizedEvent } from '@/types/last48'
-import { buildPass, nextTourId } from './tour'
+import { buildPass, nextTourId, dueWaitMs } from './tour'
 
 export function useAmbientTour(opts: {
   /** True only while the conductor's phase is 'on'. */
@@ -46,27 +51,65 @@ export function useAmbientTour(opts: {
   // eslint-disable-next-line react-hooks/refs
   onBreathRef.current = opts.onBreath
 
+  // Single-flight generation counter. Lives in a ref so it persists ACROSS
+  // effect runs: each run captures its own generation, and any timer that
+  // fires after a newer run started (HMR remount mid-drift, an overlapping
+  // effect, or a setTimeout already queued before teardown) sees its gen is
+  // stale and bails. This is what kept two tour loops from running at once
+  // and flickering the card.
+  const genRef = useRef(0)
+
   useEffect(() => {
     if (!active) return
 
-    let timer: ReturnType<typeof setTimeout> | undefined
+    const myGen = ++genRef.current
+    const isCurrent = () => myGen === genRef.current
+
     let pass: string[] = []
     let currentId: string | null = null
-    let disposed = false
+    let timer: ReturnType<typeof setTimeout> | undefined
+    let dueAt = 0
+    let pending: (() => void) | null = null
 
     const liveIds = () => new Set(eventsRef.current.map((e) => e.id))
 
+    // One timer / dueAt / pending triplet — never more than one in flight. On
+    // every wake we re-check the wall clock (dueWaitMs): a timer released early
+    // as part of a coalesced background-throttle burst is told to wait the
+    // remainder instead of firing, so the tour advances at most once per
+    // interval no matter how many stray timers land at once.
+    const scheduleTick = (delay: number) => {
+      if (timer) clearTimeout(timer)
+      timer = setTimeout(onTick, delay)
+    }
+    const onTick = () => {
+      if (!isCurrent()) return
+      const wait = dueWaitMs(dueAt, Date.now())
+      if (wait > 0) {
+        scheduleTick(wait) // woke early → wait out the remainder, don't advance
+        return
+      }
+      const fn = pending
+      pending = null
+      fn?.()
+    }
+    const arm = (delay: number, fn: () => void) => {
+      dueAt = Date.now() + delay
+      pending = fn
+      scheduleTick(delay)
+    }
+
     const step = () => {
-      if (disposed) return
+      if (!isCurrent()) return
       const nextId = nextTourId(pass, currentId, liveIds())
       if (nextId === null) {
         // Pass exhausted → breath, then a fresh snapshot.
         currentId = null
         onBreathRef.current()
-        timer = setTimeout(() => {
+        arm(breathMsRef.current, () => {
           pass = buildPass(eventsRef.current)
           step()
-        }, breathMsRef.current)
+        })
         return
       }
       const ev = eventsRef.current.find((e) => e.id === nextId)
@@ -78,26 +121,21 @@ export function useAmbientTour(opts: {
       }
       currentId = nextId
       onVisitRef.current(ev)
-      timer = setTimeout(step, dwellMsRef.current)
+      arm(dwellMsRef.current, step)
     }
 
-    // Pause the rhythm while the tab is hidden (RAF already stops; without
-    // this the selection would advance invisibly and the camera would lag
-    // a whole pass behind on return).
-    let hiddenAt: number | null = null
+    // Pause the rhythm while the tab is hidden so selection doesn't walk
+    // invisibly and the camera doesn't lag a pass behind on return. Re-arm to
+    // the SAME dueAt on return — if it's already past, the wall-clock gate
+    // fires exactly one transition, never a backlog. (OS focus-loss that
+    // throttles timers WITHOUT firing visibilitychange — e.g. starting a
+    // screen recording — is caught by the gate alone.)
     const onVisibility = () => {
+      if (!isCurrent()) return
       if (document.hidden) {
-        hiddenAt = Date.now()
         if (timer) clearTimeout(timer)
-      } else if (hiddenAt !== null) {
-        hiddenAt = null
-        timer = setTimeout(() => {
-          // If the tab hid during the breath (pass exhausted, cursor reset),
-          // re-snapshot so the resumed tour starts from the now-newest
-          // events instead of replaying the stale pre-breath pass.
-          if (currentId === null) pass = buildPass(eventsRef.current)
-          step()
-        }, 1000) // gentle resume beat
+      } else if (pending) {
+        scheduleTick(Math.max(0, dueAt - Date.now()))
       }
     }
     document.addEventListener('visibilitychange', onVisibility)
@@ -106,7 +144,7 @@ export function useAmbientTour(opts: {
     step()
 
     return () => {
-      disposed = true
+      genRef.current++ // retire this run — any lingering timer now bails
       if (timer) clearTimeout(timer)
       document.removeEventListener('visibilitychange', onVisibility)
     }

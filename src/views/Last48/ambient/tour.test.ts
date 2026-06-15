@@ -1,6 +1,6 @@
 // src/views/Last48/ambient/tour.test.ts
 import { describe, it, expect } from 'vitest'
-import { buildPass, nextTourId, PASS_SIZE } from './tour'
+import { buildPass, nextTourId, dueWaitMs, PASS_SIZE } from './tour'
 import type { NormalizedEvent } from '@/types/last48'
 
 function ev(p: { id: string; receivedAt: number; geo?: boolean }): NormalizedEvent {
@@ -61,5 +61,31 @@ describe('nextTourId', () => {
 
   it('returns null when all ids after current are evicted', () => {
     expect(nextTourId(pass, 'a', new Set(['a']))).toBeNull()
+  })
+})
+
+describe('dueWaitMs (wall-clock gate)', () => {
+  it('fires (0) exactly at the due time', () => {
+    expect(dueWaitMs(1000, 1000)).toBe(0)
+  })
+
+  it('fires (0) when overdue — a late/throttled timer still advances once', () => {
+    expect(dueWaitMs(1000, 1200)).toBe(0)
+  })
+
+  it('waits the remainder when a timer wakes early (coalesced burst on refocus)', () => {
+    expect(dueWaitMs(1000, 700)).toBe(300)
+  })
+
+  it('absorbs sub-slop jitter — does not re-arm for a few stray ms', () => {
+    expect(dueWaitMs(1000, 900, 200)).toBe(0)
+  })
+
+  it('a burst of early ticks all defer to the same remaining wait, never stacking advances', () => {
+    // Five coalesced timers released at the same instant, all before due:
+    // every one is told to wait the remainder, so zero advances happen now.
+    const now = 600
+    const waits = [0, 1, 2, 3, 4].map(() => dueWaitMs(1000, now))
+    expect(waits.every((w) => w === 400)).toBe(true)
   })
 })
