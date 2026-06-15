@@ -170,33 +170,30 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
       <div className="sticky top-0 z-10 px-3 pt-3 pb-2.5 flex-shrink-0 bg-paper-50 dark:bg-espresso-900 border-b border-paper-200/50 dark:border-espresso-800">
         <div className="flex items-center gap-2 px-1">
           <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-paper-500/60 dark:text-paper-600">
-            Latest
+            Latest Events
           </p>
           <div className="flex-1 h-[1px] bg-paper-200/30 dark:bg-white/[0.04]" />
         </div>
         <div className="grid grid-cols-3 gap-1.5 mt-2">
-          <div className="rounded-md bg-paper-100/50 dark:bg-espresso-800/40 px-2 py-1.5 flex items-baseline gap-1 md:block">
+          <div className="rounded-md bg-paper-100/50 dark:bg-espresso-800/40 px-2 py-1.5">
             <p className="font-mono text-[20px] md:text-[12px] font-semibold text-paper-800 dark:text-paper-200 tabular-nums leading-none">
               {events.length.toLocaleString()}
             </p>
-            <p className="font-mono text-[8px] text-paper-500/70 dark:text-paper-600 uppercase tracking-[0.15em] md:mt-1">
-              events
-            </p>
           </div>
-          <div className="rounded-md bg-paper-100/50 dark:bg-espresso-800/40 px-2 py-1.5 flex items-baseline gap-1 md:block">
-            <p className="font-mono text-[20px] md:text-[12px] font-semibold text-paper-800 dark:text-paper-200 tabular-nums leading-none">
-              48h
-            </p>
-            <p className="font-mono text-[8px] text-paper-500/70 dark:text-paper-600 uppercase tracking-[0.15em] md:mt-1">
+          <div className="rounded-md bg-paper-100/50 dark:bg-espresso-800/40 px-2 py-1.5 flex items-baseline gap-1.5 md:block">
+            <p className="font-mono text-[8px] text-paper-500/70 dark:text-paper-600 uppercase tracking-[0.15em]">
               window
             </p>
-          </div>
-          <div className="rounded-md bg-paper-100/50 dark:bg-espresso-800/40 px-2 py-1.5 flex items-baseline gap-1 md:block">
-            <p className="font-mono text-[20px] md:text-[12px] font-semibold text-paper-800 dark:text-paper-200 tabular-nums leading-none">
-              {withheldCount.toLocaleString()}
+            <p className="font-mono text-[20px] md:text-[12px] font-semibold text-paper-800 dark:text-paper-200 tabular-nums leading-none md:mt-1">
+              48h
             </p>
-            <p className="font-mono text-[8px] text-paper-500/70 dark:text-paper-600 uppercase tracking-[0.15em] md:mt-1">
+          </div>
+          <div className="rounded-md bg-paper-100/50 dark:bg-espresso-800/40 px-2 py-1.5 flex items-baseline gap-1.5 md:block">
+            <p className="font-mono text-[8px] text-paper-500/70 dark:text-paper-600 uppercase tracking-[0.15em]">
               no gps
+            </p>
+            <p className="font-mono text-[20px] md:text-[12px] font-semibold text-paper-800 dark:text-paper-200 tabular-nums leading-none md:mt-1">
+              {withheldCount.toLocaleString()}
             </p>
           </div>
         </div>
