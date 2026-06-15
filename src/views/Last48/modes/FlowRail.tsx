@@ -174,9 +174,9 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
           </p>
           <div className="flex-1 h-[1px] bg-paper-200/30 dark:bg-white/[0.04]" />
         </div>
-        <div className="flex md:grid md:grid-cols-3 gap-1.5 mt-2">
-          <div className="rounded-md bg-paper-100/50 dark:bg-espresso-800/40 px-2 py-1.5">
-            <p className="font-mono text-[24px] md:text-[12px] font-semibold text-paper-800 dark:text-paper-200 tabular-nums leading-none">
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          <div className="rounded-md bg-paper-100/50 dark:bg-espresso-800/40 pl-2.5 pr-4 py-1.5 flex items-center">
+            <p className="font-display italic text-[24px] md:text-[30px] leading-none tabular-nums text-ink dark:text-paper-100">
               {events.length.toLocaleString()}
             </p>
           </div>
