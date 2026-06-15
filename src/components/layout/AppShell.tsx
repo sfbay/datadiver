@@ -11,7 +11,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 // Pigment drives: nav-tag fill, sidebar active-state corner glow, viz card
 // glow on the Overview grid, on-map detail glows. Same color = same dataset
 // across every surface; deliberately not interchangeable.
-const NAV_ITEMS = [
+export const NAV_ITEMS = [
   {
     path: '/',
     label: 'Overview',

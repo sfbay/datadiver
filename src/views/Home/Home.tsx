@@ -16,6 +16,7 @@ import Last48Pulse from '@/components/investigations/Last48Pulse'
 import VisionZeroCounter from '@/components/investigations/VisionZeroCounter'
 import VizCard from '@/components/ui/VizCard'
 import AlertsRibbon from '@/components/home/AlertsRibbon'
+import MobileDatasetRail from '@/components/home/MobileDatasetRail'
 
 const VISUALIZATIONS = [
   {
@@ -373,6 +374,10 @@ export default function Home() {
             </div>
           </div>
         </header>
+
+        {/* Mobile-only dataset rail — surfaces dataset nav under the hero since
+            the sidebar is behind the hamburger on phones. Hidden at md+. */}
+        <MobileDatasetRail />
 
         {/* Newsletter + Dana row — liquid 2:1 (Dana 1fr left, newsletter
             2fr right). Flex-wrap with proportional grow factors instead of
