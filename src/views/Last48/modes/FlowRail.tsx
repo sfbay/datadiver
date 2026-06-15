@@ -3,6 +3,7 @@ import type { NormalizedEvent, DatasetId } from '@/types/last48'
 import type { KeyboardEvent } from 'react'
 import MapSidebar from '@/components/layout/MapSidebar'
 import { formatHeadline, formatApTime } from '@/utils/format'
+import ScannerFeedLinks from '../chrome/ScannerFeedLinks'
 
 const DATASET_LABEL: Record<DatasetId, { label: string; color: string }> = {
   '911-realtime':      { label: '911',   color: '#616a96' },
@@ -297,6 +298,17 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
             no events in window yet
           </div>
         )}
+      </div>
+
+      {/* Scanner footer — mobile only (the desktop bottom ScannerStrip is hidden
+          on phones, where the sheet would cover it). sticky bottom-0 pins it to
+          the bottom of the rail when the sheet is expanded. */}
+      <div className="md:hidden sticky bottom-0 z-10 flex items-center gap-3 px-3 py-2.5 bg-paper-50 dark:bg-espresso-900 border-t border-paper-200/50 dark:border-espresso-800 font-mono text-[11px] text-paper-700 dark:text-paper-400">
+        <span className="text-ochre-600 dark:text-ochre-500" aria-hidden>📡</span>
+        <span className="tracking-wider">SCANNER</span>
+        <div className="ml-auto flex items-center gap-2">
+          <ScannerFeedLinks />
+        </div>
       </div>
     </MapSidebar>
   )
