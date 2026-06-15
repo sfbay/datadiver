@@ -18,7 +18,9 @@ import { useState, useEffect, useCallback, type CSSProperties, type PointerEvent
 
 export type SheetSnap = 'peek' | 'glimpse' | 'half' | 'full'
 
-const PEEK_PX = 72       // visible sliver when peeked — handle + a hint line
+const PEEK_PX = 28       // visible sliver when peeked — basically just the leaned
+                         // handle, so sliding down exposes the map's bottom-corner
+                         // zoom + legend
 const GLIMPSE_VH = 0.27  // small notch — handle + ~2 list rows; map mostly visible
 const HALF_VH = 0.45     // default open height
 const FULL_VH = 0.9      // tallest snap

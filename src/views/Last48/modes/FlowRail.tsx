@@ -174,9 +174,9 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
           </p>
           <div className="flex-1 h-[1px] bg-paper-200/30 dark:bg-white/[0.04]" />
         </div>
-        <div className="grid grid-cols-3 gap-1.5 mt-2">
+        <div className="flex md:grid md:grid-cols-3 gap-1.5 mt-2">
           <div className="rounded-md bg-paper-100/50 dark:bg-espresso-800/40 px-2 py-1.5">
-            <p className="font-mono text-[20px] md:text-[12px] font-semibold text-paper-800 dark:text-paper-200 tabular-nums leading-none">
+            <p className="font-mono text-[24px] md:text-[12px] font-semibold text-paper-800 dark:text-paper-200 tabular-nums leading-none">
               {events.length.toLocaleString()}
             </p>
           </div>
@@ -184,15 +184,15 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
             <p className="font-mono text-[8px] text-paper-500/70 dark:text-paper-600 uppercase tracking-[0.15em]">
               window
             </p>
-            <p className="font-mono text-[20px] md:text-[12px] font-semibold text-paper-800 dark:text-paper-200 tabular-nums leading-none md:mt-1">
-              48h
+            <p className="font-mono text-[24px] md:text-[12px] font-semibold text-paper-800 dark:text-paper-200 tabular-nums leading-none md:mt-1">
+              48 hrs
             </p>
           </div>
           <div className="rounded-md bg-paper-100/50 dark:bg-espresso-800/40 px-2 py-1.5 flex items-baseline gap-1.5 md:block">
             <p className="font-mono text-[8px] text-paper-500/70 dark:text-paper-600 uppercase tracking-[0.15em]">
               no gps
             </p>
-            <p className="font-mono text-[20px] md:text-[12px] font-semibold text-paper-800 dark:text-paper-200 tabular-nums leading-none md:mt-1">
+            <p className="font-mono text-[24px] md:text-[12px] font-semibold text-paper-800 dark:text-paper-200 tabular-nums leading-none md:mt-1">
               {withheldCount.toLocaleString()}
             </p>
           </div>
