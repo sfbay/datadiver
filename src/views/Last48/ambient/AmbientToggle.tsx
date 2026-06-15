@@ -73,24 +73,22 @@ export default function AmbientToggle({ on, disabled, activePaceId, onToggle, on
             : 'Auto — a slow orbit touring the freshest events. Any input stops it.'
         }
         className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-mono uppercase tracking-wider transition-all duration-200 ${
-          on
-            ? disabled
-              ? 'bg-terracotta-500/10 text-terracotta-600/50 dark:text-terracotta-400/50 cursor-not-allowed' // armed via ?ambient=, waiting for boot
-              : 'bg-terracotta-500/20 text-terracotta-600 dark:text-terracotta-400 ring-1 ring-terracotta-500/40'
+          on && !disabled
+            ? 'bg-moss-500/20 text-moss-600 dark:text-moss-400 ring-1 ring-moss-500/40' // actively touring → green/live
             : disabled
-              ? 'text-paper-400 dark:text-paper-700 cursor-not-allowed'
+              ? 'text-paper-400 dark:text-paper-700 cursor-not-allowed' // armed via ?ambient=, waiting for boot
               : 'text-paper-500 dark:text-paper-600 hover:text-paper-300'
         }`}
       >
-        {/* One dot, three states (width stays constant — no glyph↔span swap):
-            off = hollow ring; armed-but-booting = filled, static; running =
-            filled + pulseGlow halo (currentColor → terracotta red). Red, not
-            the neutral on/off of the DOTS toggle: auto implies motion/action,
-            so it borrows the live-pulse idiom and a signal color. */}
+        {/* Traffic-light idiom (one dot in every state → constant pill width):
+            actively touring = green + pulseGlow halo (currentColor = moss,
+            the site's live-pulse), stopped/booting = a solid red dot. Green =
+            motion, red = stopped — clearer than the DOTS toggle's neutral
+            on/off, since auto implies action. */}
         <span
           aria-hidden
           className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-            on ? `bg-current ${disabled ? '' : 'pulse-live'}` : 'border border-current'
+            on && !disabled ? 'bg-current pulse-live' : 'bg-terracotta-500'
           }`}
         />
         auto
