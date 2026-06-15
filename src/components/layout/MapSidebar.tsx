@@ -56,7 +56,7 @@ export default function MapSidebar({ children, width = 'default', scrollContaine
   const isMobile = useIsMobile()
   // Persistent list sheet — opens at 'peek' so the map is fully visible; drag
   // the handle up to browse, down to peek. No backdrop (the map stays usable).
-  const sheet = useDraggableSheet({ initial: 'peek', halfVh: 0.4 })
+  const sheet = useDraggableSheet({ initial: 'glimpse', halfVh: 0.4 })
 
   // Track viewport width so compressed mode kicks in below the breakpoint.
   // SSR-safe via initializer; updated on resize via listener.

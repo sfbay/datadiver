@@ -234,7 +234,7 @@ export default function NeighborhoodSidebar({
 }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>('totalEvents')
   const isMobile = useIsMobile()
-  const sheet = useDraggableSheet({ initial: 'peek', halfVh: 0.4 })
+  const sheet = useDraggableSheet({ initial: 'glimpse', halfVh: 0.4 })
 
   const sorted = useMemo(() => {
     const copy = [...profiles]

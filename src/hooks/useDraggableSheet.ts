@@ -1,6 +1,6 @@
 // src/hooks/useDraggableSheet.ts
 //
-// Drag-to-resize bottom sheet with three snap points — peek / half / full.
+// Drag-to-resize bottom sheet with four snap points — peek / glimpse / half / full.
 // Shared by every mobile sheet (FlowRail list, detail popover, Neighborhood
 // ranking) so they behave identically. The sheet element is rendered at FULL
 // height and translated DOWN to reveal only the active snap, so resizing is a
@@ -8,23 +8,26 @@
 //
 // Interaction:
 //  - Drag the handle ↕ → live resize; release snaps to the nearest of
-//    {peek, half, full}.
-//  - Tap the handle (no movement) → cycle peek → half → full → peek.
+//    {peek, glimpse, half, full}.
+//  - Tap the handle (no movement) → cycle peek → glimpse → half → full → peek.
+//  - 'glimpse' is a small notch (~2 rows) — ideal when the map should lead
+//    (e.g. AUTO mode) while still showing a sliver of the list.
 //  - Drag below peek (with onDismiss) → dismiss (e.g. close the detail card).
 
 import { useState, useEffect, useCallback, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 
-export type SheetSnap = 'peek' | 'half' | 'full'
+export type SheetSnap = 'peek' | 'glimpse' | 'half' | 'full'
 
 const PEEK_PX = 72       // visible sliver when peeked — handle + a hint line
+const GLIMPSE_VH = 0.27  // small notch — handle + ~2 list rows; map mostly visible
 const HALF_VH = 0.45     // default open height
 const FULL_VH = 0.9      // tallest snap
 const TAP_PX = 6         // movement under this on release = a tap, not a drag
 const DISMISS_PX = 40    // drag this far past peek to dismiss
 
-function heights(halfFrac: number) {
+function heights(halfFrac: number, glimpseFrac: number) {
   const H = typeof window !== 'undefined' ? window.innerHeight : 800
-  return { full: H * FULL_VH, half: H * halfFrac, peek: PEEK_PX }
+  return { full: H * FULL_VH, half: H * halfFrac, glimpse: H * glimpseFrac, peek: PEEK_PX }
 }
 
 interface Options {
@@ -37,21 +40,28 @@ interface Options {
   /** Fraction of viewport height for the 'half' snap (default 0.45). Lists pass
    *  a lower value so the first notch shows ~one fewer row. */
   halfVh?: number
+  /** Fraction of viewport height for the 'glimpse' snap (default 0.27) — a small
+   *  notch showing ~2 rows with the map mostly visible. */
+  glimpseVh?: number
 }
 
-export function useDraggableSheet({ initial = 'half', onDismiss, halfVh = HALF_VH }: Options = {}) {
-  const [vh, setVh] = useState(() => heights(halfVh))
+export function useDraggableSheet({ initial = 'half', onDismiss, halfVh = HALF_VH, glimpseVh = GLIMPSE_VH }: Options = {}) {
+  const [vh, setVh] = useState(() => heights(halfVh, glimpseVh))
   const [snap, setSnap] = useState<SheetSnap>(initial)
   const [dragTy, setDragTy] = useState<number | null>(null)
 
   useEffect(() => {
-    const onResize = () => setVh(heights(halfVh))
+    const onResize = () => setVh(heights(halfVh, glimpseVh))
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
-  }, [halfVh])
+  }, [halfVh, glimpseVh])
 
   const tyFor = useCallback(
-    (s: SheetSnap) => (s === 'full' ? 0 : s === 'half' ? vh.full - vh.half : vh.full - vh.peek),
+    (s: SheetSnap) =>
+      s === 'full' ? 0
+      : s === 'half' ? vh.full - vh.half
+      : s === 'glimpse' ? vh.full - vh.glimpse
+      : vh.full - vh.peek,
     [vh],
   )
 
@@ -79,7 +89,7 @@ export function useDraggableSheet({ initial = 'half', onDismiss, halfVh = HALF_V
         setDragTy(null)
 
         if (Math.abs(delta) < TAP_PX) {
-          const order: SheetSnap[] = ['peek', 'half', 'full']
+          const order: SheetSnap[] = ['peek', 'glimpse', 'half', 'full']
           setSnap(order[(order.indexOf(startSnap) + 1) % order.length])
           return
         }
@@ -90,6 +100,7 @@ export function useDraggableSheet({ initial = 'half', onDismiss, halfVh = HALF_V
         const cands: [SheetSnap, number][] = [
           ['full', 0],
           ['half', vh.full - vh.half],
+          ['glimpse', vh.full - vh.glimpse],
           ['peek', maxTy],
         ]
         setSnap(cands.reduce((a, b) => (Math.abs(b[1] - released) < Math.abs(a[1] - released) ? b : a))[0])
