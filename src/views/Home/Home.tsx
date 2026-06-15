@@ -16,7 +16,6 @@ import Last48Pulse from '@/components/investigations/Last48Pulse'
 import VisionZeroCounter from '@/components/investigations/VisionZeroCounter'
 import VizCard from '@/components/ui/VizCard'
 import AlertsRibbon from '@/components/home/AlertsRibbon'
-import MobileDatasetRail from '@/components/home/MobileDatasetRail'
 
 const VISUALIZATIONS = [
   {
@@ -375,9 +374,33 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Mobile-only dataset rail — surfaces dataset nav under the hero since
-            the sidebar is behind the hamburger on phones. Hidden at md+. */}
-        <MobileDatasetRail />
+        {/* Mobile-only: the Explorations relocated under the hero as a swipeable
+            rail (the desktop Explorations section below is hidden on mobile), so
+            dataset discovery is immediate. Last 48 first. */}
+        <div className="md:hidden mb-12">
+          <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400 mb-3">
+            Explorations
+          </p>
+          <div className="-mx-[clamp(16px,3vw,64px)]">
+            <div className="flex gap-2.5 overflow-x-auto snap-x px-[clamp(16px,3vw,64px)] pb-1">
+              {[...VISUALIZATIONS]
+                .sort((a, b) => (a.path === '/live' ? -1 : b.path === '/live' ? 1 : 0))
+                .map((viz) => (
+                  <div key={viz.path} className="w-[215px] shrink-0 snap-start">
+                    <VizCard
+                      title={viz.title}
+                      subtitle={viz.subtitle}
+                      badge={viz.badge}
+                      accentColor={viz.accentColor}
+                      onClick={() => navigate(viz.path)}
+                      delay={0}
+                      mounted={mounted}
+                    />
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
 
         {/* Newsletter + Dana row — liquid 2:1 (Dana 1fr left, newsletter
             2fr right). Flex-wrap with proportional grow factors instead of
@@ -634,8 +657,9 @@ export default function Home() {
         </section>
         )}
 
-        {/* Visualization Cards */}
-        <section className="relative z-10">
+        {/* Explorations — desktop only; on mobile these cards are relocated to
+            the swipeable rail under the hero. */}
+        <section className="relative z-10 hidden md:block">
           <div
             className={`glow-host flex items-center gap-2.5 mb-6 py-1 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100' : 'opacity-0'}`}
             style={{ '--glow': '#5c9693' } as CSSProperties}
