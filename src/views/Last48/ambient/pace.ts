@@ -15,7 +15,8 @@
 export type PaceId = 'stroll' | 'drift' | 'sweep'
 
 export interface PaceValues {
-  /** Orbit angular velocity, degrees per second. */
+  /** Orbit sweep speed, degrees per second — the TIME-AVERAGE of the sine
+   *  pendulum (see useAmbientDirector); peak at the north crossing is ×π/2. */
   orbitDegPerS: number
   /** Per-event dwell, ms (includes the flight). */
   dwellMs: number
@@ -38,7 +39,7 @@ export const PACE_PRESETS: Record<PaceId, PacePreset> = {
     id: 'stroll',
     label: 'Stroll',
     hint: 'gallery wall',
-    orbitDegPerS: 0.8,
+    orbitDegPerS: 0.95,
     dwellMs: 18000,
     breathMs: 14000,
     tweenMs: 3400,
@@ -48,7 +49,7 @@ export const PACE_PRESETS: Record<PaceId, PacePreset> = {
     id: 'drift',
     label: 'Drift',
     hint: 'default',
-    orbitDegPerS: 1.2,
+    orbitDegPerS: 1.4,
     dwellMs: 12000,
     breathMs: 10000,
     tweenMs: 2600,
@@ -58,7 +59,7 @@ export const PACE_PRESETS: Record<PaceId, PacePreset> = {
     id: 'sweep',
     label: 'Sweep',
     hint: 'wire desk',
-    orbitDegPerS: 1.8,
+    orbitDegPerS: 2.1,
     dwellMs: 7000,
     breathMs: 7000,
     tweenMs: 1800,

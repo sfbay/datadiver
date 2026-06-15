@@ -24,10 +24,15 @@
 //   only, center+zoom+pitch constant. No zoom change = no re-tile, so the
 //   per-frame cost stays well inside budget and it paints smoothly. The
 //   event is pinned via Mapbox `padding` (the card-avoidance band): the
-//   target sits at the padded center and bearing rotates about that point,
+//   target sits at the padded center and bearing swings about that point,
 //   so a hold needs zero per-frame center math — which also removes the
 //   project/unproject roundtrip whose cross-frame staleness caused the
 //   earlier sub-pixel wobble (feel-test #3).
+//
+// Bearing is a SINE PENDULUM across the north axis (see orbit.ts), not a full
+// 360° spin — a pitched full rotation puts south at the top for a third of the
+// cycle, which reads as disorienting. The swing eases to a stop and reverses
+// at ±90° (due W ↔ due E through north).
 //
 // Pitch: cruise pitch = max(pitch at arm time, pace.pitchMin). The Last 48
 // rests at pitch 63 (LAST48_CAMERA in src/utils/geo.ts) — DRIFT must never
@@ -44,6 +49,7 @@
 import { useEffect, useRef } from 'react'
 import type mapboxgl from 'mapbox-gl'
 import { obstructedRightBand } from '../cameraPadding'
+import { orbitBearing, seedOrbitPhase, orbitPhaseRate, ORBIT_AMPLITUDE_DEG } from './orbit'
 import type { PaceValues } from './pace'
 
 export type AmbientPhase = 'off' | 'ramp-in' | 'on' | 'ramp-out'
@@ -88,7 +94,6 @@ const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3)
 const easeInOutCubic = (t: number) =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 const clamp01 = (t: number) => Math.min(1, Math.max(0, t))
-const wrap360 = (d: number) => ((d % 360) + 360) % 360
 
 export function useAmbientDirector(opts: {
   map: mapboxgl.Map | null
@@ -118,6 +123,9 @@ export function useAmbientDirector(opts: {
 
   // Camera scalars owned by the loop, seeded at ramp-in.
   const bearingRef = useRef(0)
+  /** Sine-pendulum phase clock (radians). Source of truth for the swing;
+   *  applied bearing = orbitBearing(phase). Flights carry it; hold resumes it. */
+  const orbitPhaseRef = useRef(0)
   /** The pitch DRIFT was armed at — what ramp-out returns the map to. */
   const restingPitchRef = useRef(0)
   /** Pitch at ramp-in entry — the lerp origin toward the cruise pitch. */
@@ -151,12 +159,17 @@ export function useAmbientDirector(opts: {
     if (phase === 'ramp-out') {
       if (entering) {
         // Velocity-continuous deceleration: easeOutCubic's initial slope is
-        // 3·D/T, so a carry of ω·T/3 (scaled by the live speed) matches the
-        // orbit's angular velocity at the handoff instant. Also clears the
-        // card-avoidance padding so the user's post-drift map isn't offset.
-        const carry =
-          ((paceRef.current.orbitDegPerS * (RAMP_OUT_MS / 1000)) / 3) *
+        // 3·D/T, so a carry of v·T/3 matches the swing's angular velocity at
+        // the handoff instant. The pendulum's velocity is amplitude·cos(θ)·rate
+        // — cos(θ) shrinks the carry near the W/E extremes, where it's already
+        // slowing. Also clears the card-avoidance padding so the user's
+        // post-drift map isn't offset.
+        const v =
+          ORBIT_AMPLITUDE_DEG *
+          Math.cos(orbitPhaseRef.current) *
+          orbitPhaseRate(paceRef.current.orbitDegPerS) *
           speedScaleRef.current
+        const carry = (v * (RAMP_OUT_MS / 1000)) / 3
         try {
           map.easeTo({
             bearing: bearingRef.current + carry,
@@ -178,8 +191,10 @@ export function useAmbientDirector(opts: {
 
     if (entering && phase === 'ramp-in') {
       // Seed every register from the live camera so the orbit picks up
-      // exactly where the user left the map.
+      // exactly where the user left the map. The pendulum phase is seeded so
+      // its bearing matches the current heading (clamped into the swing).
       bearingRef.current = map.getBearing()
+      orbitPhaseRef.current = seedOrbitPhase(map.getBearing())
       restingPitchRef.current = map.getPitch()
       pitchFromRef.current = map.getPitch()
       speedScaleRef.current = 0
@@ -201,8 +216,9 @@ export function useAmbientDirector(opts: {
     const launchFlight = (target: CameraTarget, band: number, cruisePitch: number) => {
       const pace = paceRef.current
       const durationMs = pace.tweenMs
-      // Carry the orbit forward so rotation never stops across the flight.
-      const endBearing = bearingRef.current + pace.orbitDegPerS * (durationMs / 1000)
+      // Carry the pendulum forward so the swing never stops across the flight.
+      orbitPhaseRef.current += orbitPhaseRate(pace.orbitDegPerS) * (durationMs / 1000)
+      const endBearing = orbitBearing(orbitPhaseRef.current)
       flyingRef.current = true
       try {
         map.flyTo({
@@ -224,7 +240,9 @@ export function useAmbientDirector(opts: {
       flightTimerRef.current = setTimeout(() => {
         flightTimerRef.current = undefined
         flyingRef.current = false
-        bearingRef.current = wrap360(map.getBearing())
+        // Phase is the source of truth (already carried above); resume the
+        // hold from it rather than re-reading the map bearing.
+        bearingRef.current = endBearing
         holdRef.current = { lng: target.lng, lat: target.lat, zoom: target.zoom, band }
         lastTsRef.current = 0 // avoid a giant dt on the resume frame
       }, durationMs + 50)
@@ -285,9 +303,10 @@ export function useAmbientDirector(opts: {
       }
 
       // ── Hold orbit: bearing only, center+zoom constant → cheap & smooth ─
-      bearingRef.current = wrap360(
-        bearingRef.current + (pace.orbitDegPerS * speedScale * dt) / 1000,
-      )
+      // Sine pendulum across the north axis (see orbit.ts): advance the phase
+      // clock, apply amplitude·sin(θ). Swings W↔N↔E and back — never south-up.
+      orbitPhaseRef.current += orbitPhaseRate(pace.orbitDegPerS) * speedScale * (dt / 1000)
+      bearingRef.current = orbitBearing(orbitPhaseRef.current)
       const hold = holdRef.current
       try {
         if (hold) {
