@@ -470,18 +470,18 @@ export default function ParkingRevenue() {
   return (
     <div className="h-full flex flex-col">
       <header className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl z-20">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-y-2">
           <div className="flex items-center gap-4">
             <div>
               <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">
                 Parking Revenue
               </h1>
-              <p className="text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
+              <p className="hidden sm:block text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
                 SFMTA &middot; Meter Revenue Patterns
               </p>
             </div>
             {!isLoading && serverStats && (
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-signal-blue/80 bg-signal-blue/10 px-2 py-1 rounded-full">
+              <span className="inline-flex flex-shrink-0 items-center gap-1.5 text-[10px] font-mono text-signal-blue/80 bg-signal-blue/10 px-2 py-1 rounded-full">
                 {formatNumber(serverStats.totalTransactions)} transactions
               </span>
             )}
@@ -492,7 +492,7 @@ export default function ParkingRevenue() {
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
               <UnderlayPicker
                 presets={UNDERLAY_PRESETS['parking-revenue'] ?? []}
                 activeVariable={underlayVariable}
