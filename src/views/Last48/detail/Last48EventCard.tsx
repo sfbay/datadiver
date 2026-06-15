@@ -70,6 +70,13 @@ function formatApDate(ms: number): string {
   return `${weekday}. ${month} ${d.getDate()}, ${d.getFullYear()}`
 }
 
+/** Just the AP-style weekday abbreviation, e.g. "Mon." — disambiguates the day
+ *  within the 48h window without the full date's width (used on mobile). */
+function formatApWeekday(ms: number): string {
+  const weekday = new Date(ms).toLocaleDateString('en-US', { weekday: 'short' })
+  return `${weekday}.`
+}
+
 // ---------------------------------------------------------------------------
 // Field helpers — compact dataset-specific metadata rows
 // ---------------------------------------------------------------------------
@@ -204,6 +211,7 @@ export default function Last48EventCard({ event, onClose }: Props) {
       onClose={onClose}
       isLoading={false}
       widthClass="w-[clamp(260px,22vw,320px)]"
+      mobileCompact
       glowColor={meta?.color ?? '#b85a33'}
       // Copy-link → ?event=<id>. Lets a reader share "look at this event":
       // the recipient lands on the same card (Last48UnifiedView's DeepLinkLander
@@ -245,7 +253,11 @@ export default function Last48EventCard({ event, onClose }: Props) {
 
               {/* AP-style date + time on a single subdued line below the headline */}
               <p className="font-mono text-[11px] text-paper-400 dark:text-paper-500 mt-1.5 tabular-nums">
-                {formatApDate(event.receivedAt)} · {formatApTime(event.receivedAt)} PT
+                {/* Mobile: weekday abbr only (disambiguates the day within 48h) so
+                    the card can sit ~half-width; desktop keeps the full AP date. */}
+                <span className="md:hidden">{formatApWeekday(event.receivedAt)}</span>
+                <span className="hidden md:inline">{formatApDate(event.receivedAt)}</span>
+                {' · '}{formatApTime(event.receivedAt)} PT
               </p>
             </div>
 
