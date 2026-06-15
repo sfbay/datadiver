@@ -21,14 +21,19 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
   const lastFirstId = useRef<string | null>(null)
   const selectedRowRef = useRef<HTMLDivElement | null>(null)
 
-  // When a new event appears at the top, scroll the rail to the top
+  // When a new event appears at the top, scroll the rail to the top — BUT NOT
+  // while an event is selected (a click, or the AUTO tour dwelling on one).
+  // Last 48 streams 911 + Fire + 311, so fresh events arrive often; yanking to
+  // the top would scroll the selected row out of view, and the scroll-to-
+  // selected effect below doesn't depend on `events` so it wouldn't restore it.
+  // With a selection active, that effect owns the scroll.
   useEffect(() => {
     const firstId = events[0]?.id ?? null
-    if (firstId && firstId !== lastFirstId.current && scrollRef.current) {
+    if (firstId && firstId !== lastFirstId.current && scrollRef.current && !selectedId) {
       scrollRef.current.scrollTop = 0
     }
     lastFirstId.current = firstId
-  }, [events])
+  }, [events, selectedId])
 
   // Spec cap: 50 most-recent rows. BUT — if the user clicks a map dot for
   // an event older than the 50 most recent (the map shows thousands of
