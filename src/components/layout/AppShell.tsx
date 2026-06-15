@@ -19,7 +19,7 @@ const NAV_ITEMS = [
     accentColor: '#b85a33', // terracotta-600 — primary brand
   },
   {
-    path: '/live-feeds',
+    path: '/live',
     label: 'The Last 48',
     shortLabel: 'LIVE',
     description: '48 hours of live civic data',
@@ -303,7 +303,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
                 } : undefined}
                 >
                   {item.shortLabel}
-                  {item.path === '/live-feeds' && (
+                  {item.path === '/live' && (
                     <span className="pulse-live absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-brick-500" />
                   )}
                 </div>

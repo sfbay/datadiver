@@ -1,6 +1,15 @@
 import { useEffect, useRef } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useLocation } from 'react-router-dom'
 import { useAppStore } from '@/stores/appStore'
+
+// The Last 48 (/live) ignores the global date range + filters (fixed 48h
+// window), so its URL stays clean — no ?start/?end/&tod/&compare clutter.
+const DATELESS_ROUTES = new Set(['/live'])
+
+// /live-feeds is the legacy → /live redirect (see <LiveFeedsRedirect>). On it,
+// useUrlSync must NOT write params: setSearchParams preserves the current
+// pathname, which would clobber the redirect's pathname change to /live.
+const REDIRECT_ROUTES = new Set(['/live-feeds'])
 
 /**
  * Syncs appStore date range to/from URL search params.
@@ -9,6 +18,9 @@ import { useAppStore } from '@/stores/appStore'
  */
 export function useUrlSync() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const pathname = useLocation().pathname
+  const dateless = DATELESS_ROUTES.has(pathname)
+  const skipSync = REDIRECT_ROUTES.has(pathname)
   const {
     dateRange, setDateRange,
     timeOfDayFilter, setTimeOfDayFilter,
@@ -51,9 +63,23 @@ export function useUrlSync() {
 
   // On store change: store → URL
   useEffect(() => {
-    if (!initialized.current) return
+    // On a redirect-only route, don't sync — let <LiveFeedsRedirect> navigate.
+    if (!initialized.current || skipSync) return
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev)
+
+      // On date-less routes (The Last 48), strip these params so the URL is
+      // just /live. Other params (?event=, ?ambient=, ?nh=, …) are untouched.
+      // Navigating away flips `dateless` false and the dates are restored.
+      if (dateless) {
+        next.delete('start')
+        next.delete('end')
+        next.delete('tod_start')
+        next.delete('tod_end')
+        next.delete('compare')
+        return next
+      }
+
       next.set('start', dateRange.start)
       next.set('end', dateRange.end)
 
@@ -73,5 +99,5 @@ export function useUrlSync() {
 
       return next
     }, { replace: true })
-  }, [dateRange.start, dateRange.end, timeOfDayFilter, comparisonPeriod, setSearchParams])
+  }, [dateRange.start, dateRange.end, timeOfDayFilter, comparisonPeriod, setSearchParams, dateless, skipSync])
 }

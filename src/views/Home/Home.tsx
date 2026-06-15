@@ -187,7 +187,7 @@ const VISUALIZATIONS = [
     accentColor: '#b58620', // ochre-600
   },
   {
-    path: '/live-feeds',
+    path: '/live',
     title: 'Live Feeds',
     subtitle: 'Scanner Radio · SFPD, SFFD, EMS',
     badge: 'LIVE',
@@ -356,7 +356,7 @@ export default function Home() {
                   Errors turn the pill ochre rather than pretending.
                   Clicking it opens The Last 48 — "Live" IS that view. */}
               <button
-                onClick={() => navigate('/live-feeds')}
+                onClick={() => navigate('/live')}
                 className={`inline-flex items-center gap-2 ml-5 pl-2.5 pr-3.5 py-1.5 rounded-full
                   text-[10px] font-mono uppercase tracking-wider whitespace-nowrap text-[#f5ecd9]
                   shadow-sm cursor-pointer transition-[filter] hover:brightness-110

@@ -5,7 +5,7 @@ import type { HeartbeatItem } from '@/types/heartbeat'
 function hb(p: Partial<HeartbeatItem> & { score: number; id: string }): HeartbeatItem {
   return {
     headline: p.id, category: 'live', severity: 'neutral',
-    source: { view: '/live-feeds', label: p.id },
+    source: { view: '/live', label: p.id },
     freshness: 'live', computedAt: new Date(0), priority: p.score,
     intent: { type: 'none' }, ...p,
   } as HeartbeatItem

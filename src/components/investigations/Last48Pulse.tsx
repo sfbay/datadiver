@@ -28,7 +28,7 @@ export default function Last48Pulse() {
       accentColor="#5c9693"
       headline={headline}
       subtitle="911 · Fire & EMS · 311 — three live streams, one window"
-      explorePath="/live-feeds"
+      explorePath="/live"
       sourceName="DataSF · Live streams"
       isLoading={isLoading || (!data && !error)}
     >

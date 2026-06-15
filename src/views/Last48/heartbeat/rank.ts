@@ -32,7 +32,7 @@ export function quietFallback(now: number): HeartbeatItem {
     headline: 'All quiet — no significant incidents in the last 48 hours.',
     category: 'milestone',
     severity: 'neutral',
-    source: { view: '/live-feeds', label: 'The Last 48' },
+    source: { view: '/live', label: 'The Last 48' },
     freshness: 'live',
     computedAt: new Date(now),
     priority: 0,
