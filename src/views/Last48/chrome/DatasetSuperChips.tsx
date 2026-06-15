@@ -257,7 +257,7 @@ function SuperChip({
       aria-pressed={isActive}
       aria-label={`${label}, ${isActive ? 'active' : 'inactive'}. ${count} events. Click to toggle.`}
       className={`
-        relative w-[185px] shrink-0 snap-start md:w-full md:shrink md:min-w-0 text-left
+        relative flex-1 min-w-0 md:w-full text-left
         rounded-xl border transition-all duration-200
         px-3 py-2.5 md:px-4 md:py-3 overflow-hidden
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1
@@ -323,7 +323,7 @@ function SuperChip({
       </div>
 
       {/* ── Row 2: count + per-hour + sparkline ────────────────────────── */}
-      <div className="flex items-end gap-3 mt-1.5 relative">
+      <div className="flex flex-col items-start gap-1 mt-1.5 relative md:flex-row md:items-end md:gap-3">
         <div className="flex items-baseline gap-2 shrink-0">
           {isLoaded ? (
             <>
@@ -333,7 +333,7 @@ function SuperChip({
               >
                 {count.toLocaleString()}
               </span>
-              <span className="font-mono text-[10px] text-paper-500 dark:text-paper-500 tabular-nums whitespace-nowrap">
+              <span className="hidden md:inline font-mono text-[10px] text-paper-500 dark:text-paper-500 tabular-nums whitespace-nowrap">
                 {perHour}/hr
               </span>
             </>
@@ -344,7 +344,7 @@ function SuperChip({
           )}
         </div>
 
-        <div className="ml-auto min-w-0 shrink basis-[72px] md:basis-[120px]" aria-hidden>
+        <div className="w-full min-w-0 md:w-auto md:ml-auto md:shrink md:basis-[120px]" aria-hidden>
           <LiveSparkline
             values={sparkData}
             pigment={pigment}
@@ -417,7 +417,7 @@ export default function DatasetSuperChips({
     // unfolded), collapsing to 1 on a phone. Chips are min-w-0 + the
     // sparkline scales, so they shrink to share a narrower 3-across row
     // instead of dropping 311 to its own line.
-    <div className="flex gap-2 overflow-x-auto snap-x md:grid md:grid-cols-[repeat(auto-fit,minmax(228px,1fr))] md:overflow-x-visible items-stretch">
+    <div className="flex gap-2 md:grid md:grid-cols-[repeat(auto-fit,minmax(228px,1fr))] items-stretch">
       {LAST48_DATASETS.map((id) => (
         <SuperChip
           key={id}
