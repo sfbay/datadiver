@@ -281,10 +281,10 @@ export default function NeighborhoodSidebar({
         {isMobile && (
           <div
             {...sheet.handleProps}
-            className="h-9 flex-shrink-0 flex items-center justify-center w-full cursor-grab touch-none"
+            className="h-6 flex-shrink-0 flex items-center justify-center w-full cursor-grab touch-none"
             aria-label="Resize panel"
           >
-            <span className="w-9 h-1 rounded-full bg-white/20 pointer-events-none" />
+            <span className="w-8 h-1 rounded-full bg-white/20 pointer-events-none" />
           </div>
         )}
       {/* Header */}

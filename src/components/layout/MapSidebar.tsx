@@ -87,16 +87,17 @@ export default function MapSidebar({ children, width = 'default', scrollContaine
         <aside
           style={sheet.sheetStyle}
           className="fixed inset-x-0 bottom-0 z-30 rounded-t-2xl
-            bg-white dark:bg-slate-900 border-t border-slate-200/60 dark:border-white/10
-            shadow-[0_-8px_30px_rgba(0,0,0,0.18)] flex flex-col"
+            bg-paper-50 dark:bg-espresso-900 border-t border-paper-200/60 dark:border-espresso-800
+            shadow-[0_-8px_30px_rgba(0,0,0,0.28)] flex flex-col"
         >
-          {/* Drag handle — ↕ resize between peek / half / full; tap to cycle */}
+          {/* Drag handle — ↕ resize between snaps; tap to cycle. Lean (h-6) so it
+              doesn't eat the small mobile sheet; the whole bar is the grab area. */}
           <div
             {...sheet.handleProps}
-            className="h-9 flex-shrink-0 flex items-center justify-center w-full cursor-grab touch-none"
+            className="h-6 flex-shrink-0 flex items-center justify-center w-full cursor-grab touch-none"
             aria-label="Resize panel"
           >
-            <span className="w-9 h-1 rounded-full bg-slate-300 dark:bg-white/20 pointer-events-none" />
+            <span className="w-8 h-1 rounded-full bg-paper-400/60 dark:bg-white/20 pointer-events-none" />
           </div>
           <div
             {...scrollContainerProps}
