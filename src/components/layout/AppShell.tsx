@@ -11,7 +11,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 // Pigment drives: nav-tag fill, sidebar active-state corner glow, viz card
 // glow on the Overview grid, on-map detail glows. Same color = same dataset
 // across every surface; deliberately not interchangeable.
-export const NAV_ITEMS = [
+const NAV_ITEMS = [
   {
     path: '/',
     label: 'Overview',
@@ -171,18 +171,28 @@ export default function AppShell({ children }: { children: ReactNode }) {
     <div className="flex h-screen overflow-hidden bg-paper dark:bg-slate-950 noise-bg">
       {/* Mobile top bar — reclaims the permanent rail's footprint and hosts the
           drawer trigger. Hidden at md+ where the in-flow rail returns. */}
-      <div className="md:hidden fixed top-0 inset-x-0 h-12 z-40 flex items-center gap-3 px-4
+      <div className="md:hidden fixed top-0 inset-x-0 h-12 z-40 flex items-center gap-2.5 px-3
         bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-white/[0.06]">
         <button
           onClick={() => setNavDrawerOpen(true)}
           aria-label="Open navigation"
-          className="w-9 h-9 -ml-1 flex items-center justify-center rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10"
+          className="w-9 h-9 -ml-0.5 shrink-0 flex items-center justify-center rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10"
         >
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
             <path d="M3 5h14M3 10h14M3 15h14" />
           </svg>
         </button>
-        <span className="font-display italic text-lg text-ink dark:text-white leading-none tracking-tight">DataDiver</span>
+        <img
+          src={isDarkMode ? '/dana-badge-mono.png' : '/dana-badge.png'}
+          alt=""
+          className="w-7 h-7 shrink-0 rounded-full object-cover ring-1 ring-slate-200/50 dark:ring-white/10"
+        />
+        <div className="flex flex-col min-w-0 leading-none">
+          <span className="font-display italic text-base text-ink dark:text-white leading-none tracking-tight">DataDiver</span>
+          <span className="text-[9px] font-mono text-slate-500 dark:text-slate-400 leading-none mt-0.5 truncate">
+            Visualize civic data, instantly
+          </span>
+        </div>
       </div>
 
       {/* Drawer backdrop (mobile only) */}
