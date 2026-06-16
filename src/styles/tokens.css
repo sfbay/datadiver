@@ -121,10 +121,10 @@
 
   /* ============================================================
      TYPOGRAPHY — Fraunces / Roboto Serif / Space Mono
-     Loaded via index.html Google Fonts <link>
+     Self-hosted via Fontsource (imported in src/main.tsx)
      ============================================================ */
-  --font-display: "Fraunces", "Roboto Serif", Georgia, Cambria, serif;
-  --font-body:    "Roboto Serif", Georgia, Cambria, serif;
+  --font-display: "Fraunces Variable", "Roboto Serif Variable", Georgia, Cambria, serif;
+  --font-body:    "Roboto Serif Variable", Georgia, Cambria, serif;
   --font-mono:    "Space Mono", "IBM Plex Mono", "Courier New", monospace;
 
   /* Scale */
