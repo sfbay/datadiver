@@ -14,6 +14,9 @@
     "typecheck:api": "tsc --noEmit -p api/tsconfig.json"
   },
   "dependencies": {
+    "@fontsource-variable/fraunces": "^5.2.9",
+    "@fontsource-variable/roboto-serif": "^5.2.9",
+    "@fontsource/space-mono": "^5.2.9",
     "@neondatabase/serverless": "^1.1.0",
     "d3": "^7.9.0",
     "html2canvas-pro": "^2.0.4",
