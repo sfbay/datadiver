@@ -80,7 +80,7 @@ const SOURCES: SourceRow[] = [
 
 const STACK: { area: string; tools: string }[] = [
   { area: 'Framework', tools: 'React 18 · TypeScript · Vite' },
-  { area: 'Styling', tools: 'Tailwind CSS v4 — custom earth-tone token system (espresso/cream + seven pigment ramps), Fraunces / Roboto Serif / Space Mono via Google Fonts' },
+  { area: 'Styling', tools: 'Tailwind CSS v4 — custom earth-tone token system (espresso/cream + seven pigment ramps), Fraunces / Roboto Serif / Space Mono self-hosted via Fontsource' },
   { area: 'Maps', tools: 'Mapbox GL JS v3 (dark-v11 / light-v11 basemaps)' },
   { area: 'Charts', tools: 'D3.js — histograms, heatgrids, trend & breakdown charts' },
   { area: 'State', tools: 'Zustand, with URL-synchronized parameters so every view is shareable as a link' },

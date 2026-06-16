@@ -124,8 +124,8 @@
   --color-paper-900: #4b3827;   /* espresso-600 — near-espresso */
 
   /* Typography — Fraunces display, Roboto Serif body, Space Mono labels. */
-  --font-display: "Fraunces", "Roboto Serif", Georgia, serif;
-  --font-sans: "Roboto Serif", Georgia, serif;
+  --font-display: "Fraunces Variable", "Roboto Serif Variable", Georgia, serif;
+  --font-sans: "Roboto Serif Variable", Georgia, serif;
   --font-mono: "Space Mono", "Fira Code", monospace;
 }
 

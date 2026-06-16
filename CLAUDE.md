@@ -275,7 +275,7 @@ Wrap dataset-specific body content inside DetailPanelShell. See `Last48EventCard
 
 ## Fonts
 
-All three loaded from Google Fonts CDN via `<link>` in `index.html`. Type-stack tokens live in `src/styles/tokens.css` as `--font-display` / `--font-body` / `--font-mono`.
+All three self-hosted via Fontsource (npm), imported in `src/main.tsx`; Vite fingerprints + serves the woff2 same-origin (no Google Fonts CDN — removed June 2026 for privacy + to drop two render-blocking third-party origins). The two variable families register under their Fontsource names — `"Fraunces Variable"` / `"Roboto Serif Variable"` (Space Mono is static, keeps `"Space Mono"`); the `--font-*` tokens in `src/styles/tokens.css` + the `@theme` block in `src/index.css` reference those names. Use the `full.css` Fontsource entry for the variable families — it carries the `opsz` axis (single-axis files drop it and break optical sizing). A guard test (`src/styles/font-hosting.test.ts`) fails if a Google Fonts origin reappears.
 
 - **Fraunces** — display face, headlines, hero. Variable axis `opsz 9..144`, `SOFT 0..100`. Italic at hero scale; upright at card titles. Replaces the older Instrument Serif / Roboto Serif display role with a higher-stylistic-contrast italic. Class: `.font-display`.
 - **Roboto Serif** — body. Variable axis `opsz 8..144`, weights 300–700. Oldstyle figures (`font-feature-settings: "onum"`) in prose; lining tabular figures (`"tnum","lnum"`) in data values.
