@@ -29,7 +29,7 @@
 ## Major Features
 
 ### Home Page
-- [x] Dana hero with Instrument Serif headline + data vortex backgrounds (light/dark)
+- [x] Dana hero with Fraunces headline + data vortex backgrounds (light/dark)
 - [x] Dana comic strip ribbon with modal viewer
 - [x] Civic data ticker (hero mode, real Socrata indicators)
 - [x] Neighborhood Profiles featured section (5 fingerprints)
@@ -38,9 +38,10 @@
 - [x] Background cache preloader
 
 ### Typography
-- [x] Roboto Serif: universal (display + body), letter-spacing -0.02em
+- [x] Fraunces: display face (headlines, hero) — variable opsz + italic
+- [x] Roboto Serif: body — variable opsz, -0.02em tracking
 - [x] Space Mono: data values + italic for neighborhood detail lines
-- [x] Instrument Serif: Dana hero only
+- [x] All three self-hosted via Fontsource (no Google Fonts CDN) — June 2026
 
 ### Cross-Cutting Infrastructure
 - [x] Per-dataset cache TTLs (1 min → 24 hours based on update frequency)
@@ -178,10 +179,10 @@
 - `DetailPanelShell` → slide-in detail panel wrapper
 - Module-level caching with per-dataset TTLs (1 min → 24 hours)
 
-### Font Stack
-- Roboto Serif (display + body, -0.02em tracking)
+### Font Stack (self-hosted via Fontsource — no Google Fonts CDN)
+- Fraunces (display face — headlines, hero; variable opsz + italic)
+- Roboto Serif (body, -0.02em tracking; variable opsz)
 - Space Mono (data values, italic for detail lines)
-- Instrument Serif (Dana hero only)
 
 ### Deployment
 - Vercel auto-deploy from `main`
