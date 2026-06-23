@@ -4,7 +4,7 @@
 // blocks. Timezone-locked to SF (the cron runs UTC). Tested directly.
 import type { NormalizedEvent, DatasetId } from '@/types/last48'
 import { classifySignificant } from './significance.js'
-import { humanizeCallType, humanizeStreamName } from '../../utils/humanizeCivic.js'
+import { humanizeCallType, streamLabelShort } from '../../utils/humanizeCivic.js'
 
 const SF_TZ = 'America/Los_Angeles'
 
@@ -20,7 +20,9 @@ export interface DigestRow {
   clock: string
   streamLabel: string
   what: string
-  neighborhood: string
+  /** Where it happened — the street-level block/intersection/address when the
+   *  source publishes one, otherwise the neighborhood as a fallback. */
+  location: string
   significant: boolean
   receivedAt: number
 }
@@ -127,9 +129,10 @@ export function bucketByTimeOfDay(events: NormalizedEvent[]): TimeBlock[] {
     blocks[bi].rows.push({
       id: e.id,
       clock: clockText(e.receivedAt),
-      streamLabel: humanizeStreamName(e.datasetId),
+      streamLabel: streamLabelShort(e.datasetId),
       what: humanizeCallType(e.callType) || e.headline || 'Incident',
-      neighborhood: e.neighborhood ?? '',
+      // Block-level location when published; neighborhood is the fallback.
+      location: e.address ?? e.neighborhood ?? '',
       significant: classifySignificant(e) != null,
       receivedAt: e.receivedAt,
     })

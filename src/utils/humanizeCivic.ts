@@ -31,11 +31,24 @@ export function humanizeCallType(raw: string | undefined): string {
   return lower.charAt(0).toUpperCase() + lower.slice(1)
 }
 
-/** Plain-English stream name for headlines. */
+/** Plain-English stream name for headlines and full sentences (e.g. the Last
+ *  48 heartbeat: "911 calls have been coming in faster…"). Keep the trailing
+ *  noun — dropping it breaks the sentence grammar. */
 export function humanizeStreamName(datasetId: DatasetId): string {
   switch (datasetId) {
     case '911-realtime': return '911 calls'
     case 'fire-ems-dispatch': return 'Fire & EMS responses'
     case '311-cases': return '311 reports'
+  }
+}
+
+/** Compact stream label for dense surfaces where the row already reads as a
+ *  list of events (the digest email rows). No trailing noun — "911 / Fire/EMS
+ *  / 311" are unambiguous and shorter. NOT for use in full sentences. */
+export function streamLabelShort(datasetId: DatasetId): string {
+  switch (datasetId) {
+    case '911-realtime': return '911'
+    case 'fire-ems-dispatch': return 'Fire/EMS'
+    case '311-cases': return '311'
   }
 }

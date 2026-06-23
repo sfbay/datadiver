@@ -84,7 +84,7 @@ function blockHtml(block: TimeBlock): string {
       const sig = r.significant
         ? '<span style="color:#963e30;font-weight:bold">&#9656; </span>'
         : ''
-      const where = r.neighborhood ? ` <span style="color:#7a6a52">· ${escapeHtml(r.neighborhood)}</span>` : ''
+      const where = r.location ? ` <span style="color:#7a6a52">· ${escapeHtml(r.location)}</span>` : ''
       const href = `${PUBLIC_LINK_BASE}/live?event=${encodeURIComponent(r.id)}`
       return `<div style="margin:0 0 8px;line-height:1.4">
         <span style="display:inline-block;width:70px;color:#7a6a52;font-size:12px">${escapeHtml(r.clock)}</span>
@@ -153,7 +153,7 @@ function renderText(payload: DigestPayload, intro: string, unsubUrl: string): st
         (s.busiestLabel ? `  · busiest ${s.busiestLabel}` : '')
       const alt = loc.mapAlt
       const body = loc.blocks
-        .map((b) => `${b.label}\n` + b.rows.map((r) => `  ${r.clock}  ${r.streamLabel}: ${r.what}${r.neighborhood ? ` · ${r.neighborhood}` : ''}`).join('\n'))
+        .map((b) => `${b.label}\n` + b.rows.map((r) => `  ${r.clock}  ${r.streamLabel}: ${r.what}${r.location ? ` · ${r.location}` : ''}`).join('\n'))
         .join('\n')
       return `${head}${alt}\n${glance}\n\n${body}`
     })

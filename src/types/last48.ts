@@ -28,6 +28,15 @@ export interface NormalizedEvent {
   timestamp: string                   // ISO datetime — the dataset's "received" or "issued" time
   receivedAt: number                  // unix ms (for sorting)
   neighborhood?: string               // SF Analysis Boundary, if available
+  /**
+   * Street-level location as published — block / intersection / address,
+   * cleaned + title-cased (e.g. "19th St & Dolores St", "455 Minna St").
+   * More specific than `neighborhood`; surfaced in the digest rows. The city
+   * already redacts 911 to intersection level, so this never exposes more
+   * than the source dataset publishes. Undefined when the row has no usable
+   * location string (callers fall back to `neighborhood`).
+   */
+  address?: string
   longitude?: number
   latitude?: number
   callType?: string                   // dataset-specific category
