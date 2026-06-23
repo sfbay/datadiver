@@ -59,7 +59,7 @@ function barHtml(buckets: number[]): string {
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 0"><tr>${cells}</tr></table>`
 }
 
-function summaryBandHtml(s: Summary): string {
+function summaryBandHtml(s: Summary, buckets: number[]): string {
   const splits: string[] = []
   if (s.byStream['911-realtime']) splits.push(`911·${s.byStream['911-realtime']}`)
   if (s.byStream['fire-ems-dispatch']) splits.push(`Fire·${s.byStream['fire-ems-dispatch']}`)
@@ -75,7 +75,7 @@ function summaryBandHtml(s: Summary): string {
       <span style="color:#7a6a52">&nbsp;&nbsp;${escapeHtml(splits.join('  '))}</span>
     </div>
     ${sigBusiest ? `<div style="font-size:13px;color:#7a6a52;margin-top:2px">${escapeHtml(sigBusiest)}</div>` : ''}
-    ${barHtml(s.buckets ? s.buckets : [])}`
+    ${barHtml(buckets)}`
 }
 
 function blockHtml(block: TimeBlock): string {
@@ -107,7 +107,7 @@ function locationHtml(loc: LocationDigest, showLabel: boolean): string {
   return `
     ${label}
     ${mapBlock}
-    ${summaryBandHtml(loc.summary)}
+    ${summaryBandHtml(loc.summary, loc.buckets)}
     ${loc.blocks.map(blockHtml).join('')}`
 }
 

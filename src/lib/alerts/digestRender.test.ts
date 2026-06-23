@@ -74,4 +74,9 @@ describe('renderDigest', () => {
     expect(html).not.toContain('<script>')
     expect(html).toContain('&lt;script&gt;')
   })
+
+  it('renders the busiest-hours bar with the peak cell at full terracotta', () => {
+    const { html } = renderDigest(payload, 'https://x/unsub')
+    expect(html).toContain('bgcolor="#b85a33"')
+  })
 })
