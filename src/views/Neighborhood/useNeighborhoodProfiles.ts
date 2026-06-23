@@ -83,27 +83,48 @@ export interface NeighborhoodProfilesResult {
 }
 
 export function useNeighborhoodProfiles(
-  dateRange: { start: string; end: string }
+  dateRange: { start: string; end: string },
+  /**
+   * Defer the 5×3 = 15 underlying queries until the caller is ready. Home
+   * passes `showProfiles` so the profile section (far below the fold) doesn't
+   * compete with the hero cards for the browser's ~6 connections at mount.
+   * Defaults true so the /neighborhood view loads eagerly, unchanged.
+   */
+  enabled: boolean = true
 ): NeighborhoodProfilesResult {
+  // skipPeriods: this hook only reads `neighborhoodMap`, never the sub-period
+  // breakdowns, so the period queries (#4 & #5 per dataset) are pure waste
+  // here — dropping them takes each dataset from 5 queries to 3.
+  const opts = { enabled, skipPeriods: true }
   const trendER = useTrendBaseline(
     { datasetKey: 'fireEMSDispatch', dateField: 'received_dttm', neighborhoodField: 'neighborhoods_analysis_boundaries', baseWhere: 'on_scene_dttm IS NOT NULL' },
-    dateRange
+    dateRange,
+    undefined,
+    opts
   )
   const trendCrime = useTrendBaseline(
     { datasetKey: 'policeIncidents', dateField: 'incident_datetime', neighborhoodField: 'analysis_neighborhood' },
-    dateRange
+    dateRange,
+    undefined,
+    opts
   )
   const trend311 = useTrendBaseline(
     { datasetKey: 'cases311', dateField: 'requested_datetime', neighborhoodField: 'analysis_neighborhood' },
-    dateRange
+    dateRange,
+    undefined,
+    opts
   )
   const trendCrashes = useTrendBaseline(
     { datasetKey: 'trafficCrashes', dateField: 'collision_datetime', neighborhoodField: 'analysis_neighborhood' },
-    dateRange
+    dateRange,
+    undefined,
+    opts
   )
   const trendCitations = useTrendBaseline(
     { datasetKey: 'parkingCitations', dateField: 'citation_issued_datetime', neighborhoodField: 'analysis_neighborhood' },
-    dateRange
+    dateRange,
+    undefined,
+    opts
   )
 
   const isLoading =
