@@ -2,68 +2,64 @@
 import { timingSafeEqual } from 'node:crypto'
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import type { NormalizedEvent } from '../../src/types/last48'
-import type { DueSubscription } from '../../src/lib/alerts/types'
+import type { Cadence, DueSubscription } from '../../src/lib/alerts/types'
 import { eventMatchesSubscription, isSubscriptionDue, haversineMiles } from '../../src/lib/alerts/match.js'
+import { classifySignificant } from '../../src/lib/alerts/significance.js'
 import { signToken } from '../../src/lib/alerts/tokens.js'
-import { humanizeCallType, humanizeStreamName } from '../../src/utils/humanizeCivic.js'
+import { buildStaticMapUrl } from '../../src/lib/alerts/staticMap.js'
+import { summarize, busiestBuckets, bucketByTimeOfDay, radiusLabelText } from '../../src/lib/alerts/digestSummary.js'
+import { mapAltText, type DigestPayload, type LocationDigest } from '../../src/lib/alerts/digestRender.js'
 import { getActiveConfirmedSubscriptions, markDispatched, markChecked, pruneSubscribeAttempts } from '../_lib/db.js'
 import { fetchRecentEvents } from '../_lib/socrata.js'
-import { sendDigestEmail, type DigestSection, type DigestItem } from '../_lib/email.js'
+import { sendDigestEmail } from '../_lib/email.js'
 
 const WINDOW_MS = 48 * 60 * 60_000
 
-// AP-style date+time in SF local time: "June 9, 2:22 p.m." / "Sept. 3, 11:05 a.m."
-// Months of five letters or fewer are spelled out; longer months abbreviate with
-// a period; meridiem is lowercase with periods. (Can't reuse formatApTime from
-// src/utils — it reads the runtime's local clock, which on Vercel is UTC. The
-// explicit timeZone here is load-bearing.)
-const AP_MONTHS = ['Jan.', 'Feb.', 'March', 'April', 'May', 'June', 'July', 'Aug.', 'Sept.', 'Oct.', 'Nov.', 'Dec.']
-
-function whenText(ms: number): string {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Los_Angeles',
-    month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true,
-  }).formatToParts(new Date(ms))
-  const get = (t: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === t)?.value ?? ''
-  const month = AP_MONTHS[Number(get('month')) - 1] ?? get('month')
-  const period = get('dayPeriod').toLowerCase().startsWith('p') ? 'p.m.' : 'a.m.'
-  return `${month} ${get('day')}, ${get('hour')}:${get('minute')} ${period}`
+const WINDOW_LABEL: Record<Cadence, string> = {
+  hourly: 'past hour',
+  daily: 'past 24 hours',
+  weekly: 'past 7 days',
 }
 
-function labelFor(loc: { label?: string; lat: number; lng: number }): string {
+function locLabel(loc: { label?: string; lat: number; lng: number }): string {
   return loc.label || `${loc.lat.toFixed(3)}, ${loc.lng.toFixed(3)}`
 }
 
-function buildSections(sub: DueSubscription, events: NormalizedEvent[]): DigestSection[] {
-  const base = (process.env.PUBLIC_BASE_URL || '').replace(/\/$/, '')
-  const buckets = new Map<string, DigestItem[]>()
-  for (const loc of sub.locations) buckets.set(labelFor(loc), [])
+function buildPayload(sub: DueSubscription, events: NormalizedEvent[]): DigestPayload {
+  const token = process.env.MAPBOX_STATIC_TOKEN || ''
+  const radiusLabel = radiusLabelText(sub.radiusMiles)
+  const locations: LocationDigest[] = []
 
-  // newest first, so each bucket lists most-recent events first (sort on the
-  // numeric timestamp, NOT the formatted string, which wouldn't be chronological)
-  const ordered = [...events].sort((a, b) => b.receivedAt - a.receivedAt)
-  for (const e of ordered) {
-    if (e.latitude == null || e.longitude == null) continue
-    const what = humanizeCallType(e.callType) || e.headline || 'Incident'
-    const where = e.neighborhood ? ` — ${e.neighborhood}` : ''
-    const item: DigestItem = {
-      text: `${humanizeStreamName(e.datasetId)}: ${what}${where}`,
-      href: `${base}/live-feeds?event=${encodeURIComponent(e.id)}`,
-      when: whenText(e.receivedAt),
-    }
-    // The bucket label promises "within R miles of this place" — so an event
-    // lands in EVERY bucket whose radius actually contains it. Nearest-center
-    // assignment alone could file an event under a pin that didn't match
-    // (closer center, but outside that pin's circle).
-    for (const loc of sub.locations) {
-      const d = haversineMiles({ lat: e.latitude, lng: e.longitude }, { lat: loc.lat, lng: loc.lng })
-      if (d <= sub.radiusMiles) buckets.get(labelFor(loc))!.push(item)
-    }
+  for (const loc of sub.locations) {
+    // Per-location subset: every event inside THIS pin's radius (an event can
+    // land in more than one pin's circle — that's intended, each map is "within
+    // R of this place").
+    const inRadius = events.filter(
+      (e) =>
+        e.latitude != null &&
+        e.longitude != null &&
+        haversineMiles({ lat: e.latitude, lng: e.longitude }, { lat: loc.lat, lng: loc.lng }) <= sub.radiusMiles,
+    )
+    if (inRadius.length === 0) continue
+
+    // Map dots are SIGNIFICANT events only (the spec's "impressionistic
+    // orientation" — a dot means something serious happened). buildStaticMapUrl
+    // caps at 20 on top of this.
+    const dots = inRadius
+      .filter((e) => classifySignificant(e) && e.latitude != null && e.longitude != null)
+      .map((e) => ({ lat: e.latitude as number, lng: e.longitude as number }))
+    const summary = summarize(inRadius)
+    locations.push({
+      label: locLabel(loc),
+      mapUrl: buildStaticMapUrl({ center: { lat: loc.lat, lng: loc.lng }, radiusMiles: sub.radiusMiles, dots, token }),
+      mapAlt: mapAltText(locLabel(loc), radiusLabel, summary.significant),
+      summary,
+      buckets: busiestBuckets(inRadius),
+      blocks: bucketByTimeOfDay(inRadius),
+    })
   }
 
-  return [...buckets.entries()]
-    .filter(([, items]) => items.length > 0)
-    .map(([locationLabel, items]) => ({ locationLabel, items: items.slice(0, 25) }))
+  return { windowLabel: WINDOW_LABEL[sub.cadence], locations }
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -105,7 +101,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         continue
       }
 
-      const sections = buildSections(sub, matched)
+      const payload = buildPayload(sub, matched)
+      if (payload.locations.length === 0) {
+        await markChecked(sub.id, now)
+        continue
+      }
       // 90 days, not a year: a fresh token rides in every digest anyway, and
       // tokens are stateless (no revocation) — shorter life bounds how long a
       // leaked/forwarded digest can silently unsubscribe someone.
@@ -113,7 +113,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         { purpose: 'unsubscribe', subjectId: sub.subscriberId, exp: now + 90 * 24 * 3600_000 },
         tokenSecret,
       )
-      await sendDigestEmail(sub.email, sections, unsubToken)
+      await sendDigestEmail(sub.email, payload, unsubToken)
       // reduce, not Math.max(...spread) — spread puts every element on the
       // call stack and throws RangeError on large matched arrays.
       const newWatermark = matched.reduce((max, m) => Math.max(max, m.receivedAt), 0)

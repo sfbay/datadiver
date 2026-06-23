@@ -87,10 +87,10 @@ const CATEGORY_OPTIONS: { key: string; label: string }[] = [
   { key: 'assault', label: 'Assaults' },
   { key: 'fire', label: 'Fires' },
 ]
-const RADII = [0.25, 0.5, 1, 2]
+const RADII = [0.125, 0.25, 0.5, 1, 2]
 
 /** "¼", "½", "1", "2" — the radius vocabulary used everywhere on this page. */
-const radiusLabel = (r: number) => (r === 0.25 ? '¼' : r === 0.5 ? '½' : String(r))
+const radiusLabel = (r: number) => (r === 0.125 ? '⅛' : r === 0.25 ? '¼' : r === 0.5 ? '½' : String(r))
 
 // ─────────────────────────────────────────────────────────────────────────────
 
