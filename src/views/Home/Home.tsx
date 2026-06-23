@@ -210,9 +210,14 @@ export default function Home() {
   const [showTicker, setShowTicker] = useState(false)
   const [showProfiles, setShowProfiles] = useState(false)
   const tickerSize = useResponsiveTickerSize('hero')
-  const indicators = useCivicIndicators()
+  // Defer the ticker (~8 queries) + neighborhood profiles (15 queries) off the
+  // mount burst — both sections sit below the fold behind the show* timers, so
+  // gating their FETCHES on the same flags (not just their DOM) lets the six
+  // hero investigation cards own the browser's ~6 connections at first paint.
+  // The 500/1000ms timers below flip these on once the hero is underway.
+  const indicators = useCivicIndicators({ enabled: showTicker })
   const dateRange = useAppStore((s) => s.dateRange)
-  const { profiles, isLoading: profilesLoading } = useNeighborhoodProfiles(dateRange)
+  const { profiles, isLoading: profilesLoading } = useNeighborhoodProfiles(dateRange, showProfiles)
   usePreloadCache() // silently warm all view caches in background
 
   // Top 5 most anomalous neighborhoods for the featured section

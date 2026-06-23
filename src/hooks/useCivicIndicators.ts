@@ -31,6 +31,13 @@ interface UseCivicIndicatorsOptions {
   datasets?: string[]
   /** Max items to return */
   limit?: number
+  /**
+   * Defer the ~8 parallel indicator queries until true (default: true).
+   * Home passes `showTicker` so the ticker's queries don't compete with the
+   * hero investigation cards at mount; the cache means a later view loads
+   * instantly anyway.
+   */
+  enabled?: boolean
 }
 
 interface UseCivicIndicatorsResult {
@@ -52,8 +59,13 @@ export function useCivicIndicators(
 
   const limit = options?.limit ?? 15
   const datasetFilter = options?.datasets
+  const enabled = options?.enabled ?? true
 
   useEffect(() => {
+    // Deferred consumer: hold isLoading at its initial `true` and fire nothing
+    // until enabled flips (the ticker UI stays skeletoned in the meantime).
+    if (!enabled) return
+
     abortRef.current = false
     const dateKey = `${dateRange.start}|${dateRange.end}`
 
@@ -97,7 +109,7 @@ export function useCivicIndicators(
 
     return () => { abortRef.current = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateRange.start, dateRange.end, limit, datasetFilter?.join(',')])
+  }, [dateRange.start, dateRange.end, limit, datasetFilter?.join(','), enabled])
 
   return { items, isLoading, error, lastUpdated }
 }

@@ -16,8 +16,21 @@ interface RawBaselineRow { neighborhood: string; month: string; cnt: string }
 export function useTrendBaseline(
   config: TrendConfig,
   dateRange: { start: string; end: string },
-  extraWhere?: string
+  extraWhere?: string,
+  /**
+   * Opt-in load controls (default: eager + full).
+   * - `enabled: false` defers all queries until it flips true — lets a
+   *   consumer keep the fetch off the critical first-paint window without
+   *   violating the rules-of-hooks (the hook is still called every render;
+   *   only the effect's network work is gated).
+   * - `skipPeriods: true` drops the two sub-period breakdown queries when a
+   *   consumer only reads `neighborhoodMap` (e.g. useNeighborhoodProfiles),
+   *   cutting 5 queries → 3 with no change to the data it actually uses.
+   */
+  options?: { enabled?: boolean; skipPeriods?: boolean }
 ): TrendBaselineResult {
+  const enabled = options?.enabled ?? true
+  const skipPeriods = options?.skipPeriods ?? false
   const [isLoading, setIsLoading] = useState(true)
   const [nhCurrent, setNhCurrent] = useState<RawNhRow[]>([])
   const [nhPriorYear, setNhPriorYear] = useState<RawNhRow[]>([])
@@ -33,6 +46,10 @@ export function useTrendBaseline(
   const configKey = `${datasetKey}|${dateField}|${neighborhoodField ?? ''}|${baseWhere ?? ''}|${metrics?.map(m => m.alias).join(',') ?? ''}`
 
   useEffect(() => {
+    // Deferred consumer: leave isLoading at its initial `true` (the UI keeps
+    // showing its skeleton) and issue no queries until `enabled` flips true.
+    if (!enabled) return
+
     let cancelled = false
     setIsLoading(true)
 
@@ -86,27 +103,32 @@ export function useTrendBaseline(
       )
     }
 
-    // Query 4: Sub-period breakdown (current)
-    queries.push(
-      fetchDataset<RawPeriodRow>(datasetKey, {
-        $select: `${truncFn}(${dateField}) as period, count(*) as cnt${metricSelect}`,
-        $where: `${dateField} >= '${dateRange.start}T00:00:00' AND ${dateField} <= '${dateRange.end}T23:59:59'${base}${extra}`,
-        $group: 'period',
-        $order: 'period ASC',
-        $limit: 500,
-      }).then(rows => { if (!cancelled) setPeriodCurrent(rows) })
-    )
+    // Queries 4 & 5: Sub-period breakdown (current + prior year).
+    // Skipped when the consumer only needs neighborhood stats — these power
+    // the trend charts, not the per-neighborhood map/z-score.
+    if (!skipPeriods) {
+      // Query 4: Sub-period breakdown (current)
+      queries.push(
+        fetchDataset<RawPeriodRow>(datasetKey, {
+          $select: `${truncFn}(${dateField}) as period, count(*) as cnt${metricSelect}`,
+          $where: `${dateField} >= '${dateRange.start}T00:00:00' AND ${dateField} <= '${dateRange.end}T23:59:59'${base}${extra}`,
+          $group: 'period',
+          $order: 'period ASC',
+          $limit: 500,
+        }).then(rows => { if (!cancelled) setPeriodCurrent(rows) })
+      )
 
-    // Query 5: Sub-period breakdown (prior year)
-    queries.push(
-      fetchDataset<RawPeriodRow>(datasetKey, {
-        $select: `${truncFn}(${dateField}) as period, count(*) as cnt${metricSelect}`,
-        $where: `${dateField} >= '${priStart}T00:00:00' AND ${dateField} <= '${priEnd}T23:59:59'${base}${extra}`,
-        $group: 'period',
-        $order: 'period ASC',
-        $limit: 500,
-      }).then(rows => { if (!cancelled) setPeriodPriorYear(rows) })
-    )
+      // Query 5: Sub-period breakdown (prior year)
+      queries.push(
+        fetchDataset<RawPeriodRow>(datasetKey, {
+          $select: `${truncFn}(${dateField}) as period, count(*) as cnt${metricSelect}`,
+          $where: `${dateField} >= '${priStart}T00:00:00' AND ${dateField} <= '${priEnd}T23:59:59'${base}${extra}`,
+          $group: 'period',
+          $order: 'period ASC',
+          $limit: 500,
+        }).then(rows => { if (!cancelled) setPeriodPriorYear(rows) })
+      )
+    }
 
     Promise.all(queries)
       .catch(() => {})
@@ -114,7 +136,7 @@ export function useTrendBaseline(
 
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [configKey, dateRange.start, dateRange.end, extraWhere])
+  }, [configKey, dateRange.start, dateRange.end, extraWhere, enabled, skipPeriods])
 
   // Compute neighborhood stats
   const neighborhoods = useMemo((): NeighborhoodTrendStats[] => {
