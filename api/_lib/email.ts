@@ -1,5 +1,6 @@
 // api/_lib/email.ts — Resend wrapper + plain, CAN-SPAM-compliant templates.
 import { Resend } from 'resend'
+import { renderDigest, type DigestPayload } from '../../src/lib/alerts/digestRender.js'
 
 let _resend: Resend | null = null
 function resend(): Resend {
@@ -59,55 +60,24 @@ export async function sendConfirmEmail(to: string, confirmToken: string): Promis
   console.log('[email] confirm sent', data?.id)
 }
 
-export interface DigestItem {
-  text: string
-  href: string
-  when: string
-}
-export interface DigestSection {
-  locationLabel: string
-  items: DigestItem[]
-}
-
 export async function sendDigestEmail(
   to: string,
-  sections: DigestSection[],
+  payload: DigestPayload,
   unsubscribeToken: string,
 ): Promise<void> {
   const unsubUrl = `${baseUrl()}/api/alerts/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`
-  const total = sections.reduce((n, s) => n + s.items.length, 0)
-
-  const sectionsHtml = sections
-    .map(
-      (s) => `
-      <div style="margin:0 0 20px">
-        <div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5c9693;margin-bottom:6px">${escapeHtml(s.locationLabel)}</div>
-        ${s.items
-          .map(
-            (it) => `<div style="margin:0 0 10px;line-height:1.45">
-              <a href="${escapeHtml(it.href)}" style="color:#1e140d;text-decoration:none;font-size:15px">${escapeHtml(it.text)}</a>
-              <div style="font-size:12px;color:#7a6a52;font-style:italic">${escapeHtml(it.when)}</div>
-            </div>`,
-          )
-          .join('')}
-      </div>`,
-    )
-    .join('')
-
-  const footer = `${SENDER_IDENTITY}<br>
-    You're receiving this because you subscribed to DataDiver alerts.<br>
-    <a href="${escapeHtml(unsubUrl)}" style="color:#7a6a52">Unsubscribe</a> (one click — removes your data).`
+  const { subject, html, text } = renderDigest(payload, unsubUrl)
 
   const { data, error } = await resend().emails.send({
     from: fromAddress(),
     to,
-    subject: `DataDiver: ${total} new event${total === 1 ? '' : 's'} near you`,
-    html: shell(`${total} new event${total === 1 ? '' : 's'} near you`, sectionsHtml, footer),
-    text:
-      sections
-        .map((s) => `${s.locationLabel}\n` + s.items.map((it) => `- ${it.text} (${it.when})\n  ${it.href}`).join('\n'))
-        .join('\n\n') + `\n\nUnsubscribe: ${unsubUrl}\n${SENDER_IDENTITY}`,
-    headers: { 'List-Unsubscribe': `<${unsubUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
+    subject,
+    html,
+    text,
+    headers: {
+      'List-Unsubscribe': `<${unsubUrl}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    },
   })
   if (error) throw new Error(`[resend] digest send rejected: ${error.name}: ${error.message}`)
   console.log('[email] digest sent', data?.id)
