@@ -178,10 +178,21 @@ export function useNeighborhoodProfiles(
     }
 
     const sorted = Array.from(map.values()).sort((a, b) => b.totalEvents - a.totalEvents)
-    profileCache = { profiles: sorted, profileMap: map, timestamp: Date.now(), dateKey }
+    // Only persist a FULLY-LOADED result. This memo also runs on the initial
+    // render while every trend hook is still fetching — at which point every
+    // neighborhood computes totalEvents 0. Caching that empty snapshot (keyed
+    // by dateKey, 30-min TTL) and serving it back was the "neighborhood
+    // profiles never populate" bug: real data landed milliseconds later, but
+    // the cache-hit short-circuit at the top of this memo returned the
+    // poisoned zeros and never re-incorporated it. Gating the write on
+    // !isLoading means the cache only ever holds a real, loaded result.
+    if (!isLoading) {
+      profileCache = { profiles: sorted, profileMap: map, timestamp: Date.now(), dateKey }
+    }
     return { profiles: sorted, profileMap: map }
   }, [
     dateKey,
+    isLoading,
     trendER.neighborhoodMap, trendCrime.neighborhoodMap,
     trend311.neighborhoodMap, trendCrashes.neighborhoodMap,
     trendCitations.neighborhoodMap,
