@@ -27,7 +27,7 @@ The geo-newsletters feature is DataDiver's first backend (Vercel Functions + Ver
 | `PUBLIC_BASE_URL` | `https://datadiver.jlabsf.org` (no trailing slash) |
 | `SOCRATA_APP_TOKEN` | optional; raises Socrata rate limits |
 | `VITE_MAPBOX_TOKEN` | already set (used client-side for the picker + geocoding) |
-| `MAPBOX_STATIC_TOKEN` | Mapbox public token (`pk.*`) for the digest's static map hero. May reuse the same value as `VITE_MAPBOX_TOKEN`; kept separate so email map usage is attributable + rotatable without touching the app. If unset, digests simply omit the map image (text carries everything). |
+| `MAPBOX_STATIC_TOKEN` | Mapbox public token (`pk.*`) for the digest's static map hero. **Add as a PLAIN var, NOT Sensitive** — it's a public `pk.*` token (already shipped in the SPA bundle), so the Sensitive-type re-edit/empty-on-reopen footgun doesn't apply and you keep it readable. May reuse the same value as `VITE_MAPBOX_TOKEN`; kept separate so email map usage is attributable + rotatable without touching the app. If unset, digests simply omit the map image (text carries everything). |
 
 > NOTE (project history): the Vercel CLI `env add` has silently dropped values before — set these in the **dashboard** and confirm they're present. Missing `ALERTS_TOKEN_SECRET` / `CRON_SECRET` now fail fast with a clear 500 + logged error rather than misbehaving.
 
