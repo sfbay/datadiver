@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { classifySignificant, recencyBoost, timeAgo, spellNumber } from './significance'
+import { classifyCallType, classifySignificant, recencyBoost, timeAgo, spellNumber } from './significance'
 import type { NormalizedEvent } from '@/types/last48'
 
 function ev(partial: Partial<NormalizedEvent>): NormalizedEvent {
@@ -21,6 +21,17 @@ describe('classifySignificant', () => {
   })
   it('never classifies 311', () => {
     expect(classifySignificant(ev({ datasetId: '311-cases', callType: 'Encampment' }))).toBeNull()
+  })
+})
+
+describe('classifyCallType (string-level, for the ticker tally)', () => {
+  it('classifies a raw call-type label without an event', () => {
+    expect(classifyCallType('Robbery, Armed')?.plural).toBe('robberies')
+    expect(classifyCallType('Working Fire')?.plural).toBe('fires')
+  })
+  it('returns null for routine labels', () => {
+    expect(classifyCallType('Traffic Stop')).toBeNull()
+    expect(classifyCallType('')).toBeNull()
   })
 })
 

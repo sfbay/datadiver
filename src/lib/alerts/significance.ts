@@ -18,16 +18,25 @@ const CATEGORIES: Array<{ key: string; test: RegExp; plural: string }> = [
   { key: 'fire',     test: /\b(structure fire|working fire|vehicle fire|explos)/i, plural: 'fires' },
 ]
 
+/** Classify a raw call-type string into a significant category, or null. The
+ *  string-level core of classifySignificant — reusable by surfaces that only
+ *  hold a grouped call-type label (e.g. the Home ticker's 48h tally), not a
+ *  full NormalizedEvent. */
+export function classifyCallType(
+  text: string,
+): { key: string; plural: string } | null {
+  for (const c of CATEGORIES) {
+    if (c.test.test(text)) return { key: c.key, plural: c.plural }
+  }
+  return null
+}
+
 /** Classify an event into a significant category, or null. Excludes 311. */
 export function classifySignificant(
   event: NormalizedEvent,
 ): { key: string; plural: string } | null {
   if (event.datasetId === '311-cases') return null
-  const text = event.callType ?? event.headline ?? ''
-  for (const c of CATEGORIES) {
-    if (c.test.test(text)) return { key: c.key, plural: c.plural }
-  }
-  return null
+  return classifyCallType(event.callType ?? event.headline ?? '')
 }
 
 /** 0..30 boost favoring fresh events (linear from full at `now` to 0 at 48h). */

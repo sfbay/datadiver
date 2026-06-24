@@ -11,6 +11,7 @@ import { useState, useEffect, useRef } from 'react'
 import { fetchDataset } from '@/api/client'
 import { useAppStore } from '@/stores/appStore'
 import { yearAgo } from '@/utils/time'
+import { classifyCallType } from '@/lib/alerts/significance'
 import type { TickerItem, TickerCategory, TickerSeverity } from '@/types/ticker'
 
 // ── Module-level cache ──────────────────────────────────────────
@@ -146,14 +147,19 @@ async function computeAllIndicators(
   const ctx: QueryContext = { curStart, curEnd, priStart, priEnd, now }
 
   const results = await Promise.allSettled([
+    fetchSignificantTally(ctx),    // fresh Last-48 observation (48h significant incidents)
+    fetch311CategorySurge(ctx),    // fastest-rising 311 complaint type
     fetchEmergencyResponse(ctx),
     fetch311Cases(ctx),
     fetchCrimeIncidents(ctx),
-    fetchTrafficSafety(ctx),
-    fetchBusinessActivity(ctx),
     fetchParkingRevenue(ctx),
     fetchParkingCitations(ctx),
     fetchCampaignFinance(ctx),
+    // Dropped: Traffic Safety (current period reads -100% from the 4-6 week
+    // crash-reporting lag — the 60-day freshness gate is too coarse to catch
+    // an empty *current* window) and Net Business Formation (NAICS
+    // openings/closures coding bias makes "net" systematically misleading —
+    // see docs/data-insights.md).
   ])
 
   const items: TickerItem[] = []
@@ -445,102 +451,6 @@ async function fetchCrimeIncidents(ctx: QueryContext): Promise<TickerItem | null
   }
 }
 
-// 4. Traffic Safety — fatalities + crash trend
-async function fetchTrafficSafety(ctx: QueryContext): Promise<TickerItem | null> {
-  // Freshness gate: crash data has high reporting latency (weeks/months)
-  const isFresh = await checkFreshness('trafficCrashes', 'collision_datetime', 60)
-  if (!isFresh) return null  // suppress rather than show misleading -100%
-
-  interface CrashRow { crash_count: string; total_killed: string; total_injured: string }
-
-  const [curRows, priRows, spark] = await Promise.all([
-    fetchDataset<CrashRow>('trafficCrashes', {
-      $select: 'count(*) as crash_count, sum(number_killed) as total_killed, sum(number_injured) as total_injured',
-      $where: `collision_datetime >= '${ctx.curStart}' AND collision_datetime <= '${ctx.curEnd}'`,
-      $limit: 1,
-    }),
-    fetchDataset<CrashRow>('trafficCrashes', {
-      $select: 'count(*) as crash_count, sum(number_killed) as total_killed, sum(number_injured) as total_injured',
-      $where: `collision_datetime >= '${ctx.priStart}' AND collision_datetime <= '${ctx.priEnd}'`,
-      $limit: 1,
-    }),
-    fetchSparkline('trafficCrashes', 'collision_datetime', ctx.curStart, ctx.curEnd),
-  ])
-
-  const curCrashes = parseInt(curRows[0]?.crash_count, 10) || 0
-  const priCrashes = parseInt(priRows[0]?.crash_count, 10) || 0
-  const killed = parseInt(curRows[0]?.total_killed, 10) || 0
-  const injured = parseInt(curRows[0]?.total_injured, 10) || 0
-  if (curCrashes === 0 && priCrashes === 0) return null
-
-  const delta = pctDelta(curCrashes, priCrashes)
-  const category = killed > 0 ? 'anomaly' as TickerCategory : deltaCategory(delta)
-  const severity = killed > 0 ? 'alert' as TickerSeverity : deltaSeverity(delta, true)
-
-  return {
-    id: 'civic-traffic-safety',
-    headline: killed > 0
-      ? `Traffic: ${killed} fatalities, ${injured} injured · Crashes ${formatPct(delta)}`
-      : `Traffic crashes ${formatPct(delta)} vs last year · ${formatCount(curCrashes)} total`,
-    detail: `${formatCount(priCrashes)} crashes in prior year period`,
-    category,
-    severity,
-    source: {
-      view: '/traffic-safety',
-      label: 'Traffic Safety',
-      datasetId: 'ubvf-ztfx',
-    },
-    sparkData: spark,
-    delta,
-    value: formatCount(curCrashes),
-    priorValue: formatCount(priCrashes),
-    freshness: 'daily',
-    computedAt: ctx.now,
-    priority: priorityFromCategory(category),
-  }
-}
-
-// 5. Business Activity — net formation
-async function fetchBusinessActivity(ctx: QueryContext): Promise<TickerItem | null> {
-  const [openRows, closeRows] = await Promise.all([
-    fetchDataset<CountRow>('businessLocations', {
-      $select: 'count(*) as cnt',
-      $where: `dba_start_date >= '${ctx.curStart}' AND dba_start_date <= '${ctx.curEnd}'`,
-      $limit: 1,
-    }),
-    fetchDataset<CountRow>('businessLocations', {
-      $select: 'count(*) as cnt',
-      $where: `dba_end_date >= '${ctx.curStart}' AND dba_end_date <= '${ctx.curEnd}'`,
-      $limit: 1,
-    }),
-  ])
-
-  const openings = parseInt(openRows[0]?.cnt, 10) || 0
-  const closures = parseInt(closeRows[0]?.cnt, 10) || 0
-  const net = openings - closures
-  if (openings === 0 && closures === 0) return null
-
-  const sign = net >= 0 ? '+' : ''
-  const severity: TickerSeverity = net > 0 ? 'positive' : net < 0 ? 'negative' : 'neutral'
-
-  return {
-    id: 'civic-business-activity',
-    headline: `Net business formation: ${sign}${net} · ${formatCount(openings)} opened, ${formatCount(closures)} closed`,
-    category: 'trend',
-    severity,
-    source: {
-      view: '/business-activity',
-      label: 'Business Activity',
-      datasetId: 'g8m3-pdis',
-    },
-    delta: closures > 0 ? pctDelta(openings, closures) : undefined,
-    value: `${sign}${net}`,
-    freshness: 'daily',
-    computedAt: ctx.now,
-    priority: 70,
-  }
-}
-
 // 6. Parking Revenue — revenue trend
 async function fetchParkingRevenue(ctx: QueryContext): Promise<TickerItem | null> {
   interface RevRow { total: string }
@@ -656,5 +566,107 @@ async function fetchCampaignFinance(ctx: QueryContext): Promise<TickerItem | nul
     freshness: 'monthly',
     computedAt: ctx.now,
     priority: 60,
+  }
+}
+
+// 9. Significant-incident tally — the freshest, most editorial ticker item: a
+//    live count of serious 911 + Fire/EMS calls in the last 48h, classified
+//    with the SAME matcher the alert digests use (classifyCallType). Two cheap
+//    GROUP BYs (one per stream), no full event load, so it stays light on
+//    Home's critical path. Fixed 48h window, not the global date range.
+async function fetchSignificantTally(ctx: QueryContext): Promise<TickerItem | null> {
+  const cutoff = new Date(ctx.now.getTime() - 48 * 3600_000).toISOString().slice(0, 19)
+  interface TypeRow { t: string; cnt: string }
+
+  const [calls911, fireEms] = await Promise.all([
+    fetchDataset<TypeRow>('dispatch911Realtime', {
+      $select: 'call_type_final_desc as t, count(*) as cnt',
+      $where: `received_datetime >= '${cutoff}'`,
+      $group: 'call_type_final_desc',
+      $limit: 500,
+    }),
+    fetchDataset<TypeRow>('fireEMSDispatch', {
+      $select: 'call_type as t, count(*) as cnt',
+      $where: `received_dttm >= '${cutoff}'`,
+      $group: 'call_type',
+      $limit: 500,
+    }),
+  ])
+
+  // Sum grouped call-type counts into significant categories (robberies,
+  // shootings, fires, …); non-significant types classify to null and drop.
+  const tally = new Map<string, number>() // category plural -> count
+  for (const r of [...calls911, ...fireEms]) {
+    const cat = classifyCallType(r.t ?? '')
+    if (!cat) continue
+    tally.set(cat.plural, (tally.get(cat.plural) ?? 0) + (parseInt(r.cnt, 10) || 0))
+  }
+
+  const ranked = [...tally.entries()].filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1])
+  if (ranked.length === 0) return null
+
+  const total = ranked.reduce((s, [, n]) => s + n, 0)
+  const phrase = ranked.slice(0, 3).map(([plural, n]) => `${n} ${plural}`).join(' · ')
+
+  return {
+    id: 'civic-significant-tally',
+    headline: `${phrase} across SF`,
+    detail: 'Significant incidents reported in the last 48 hours',
+    category: 'anomaly',
+    severity: 'alert',
+    source: { view: '/live', label: 'The Last 48' },
+    value: formatCount(total),
+    freshness: 'live',
+    computedAt: ctx.now,
+    priority: 92, // fresh + serious -> near the top of the ticker
+  }
+}
+
+// 10. Surging 311 category — which complaint type is rising fastest YoY. A
+//     different lens than the neighborhood anomaly above; two cheap GROUP BYs
+//     (current vs prior-year period by service name).
+async function fetch311CategorySurge(ctx: QueryContext): Promise<TickerItem | null> {
+  interface CatRow { cat: string; cnt: string }
+
+  const [cur, pri] = await Promise.all([
+    fetchDataset<CatRow>('cases311', {
+      $select: 'service_name as cat, count(*) as cnt',
+      $where: `requested_datetime >= '${ctx.curStart}' AND requested_datetime <= '${ctx.curEnd}'`,
+      $group: 'service_name',
+      $order: 'cnt DESC',
+      $limit: 100,
+    }),
+    fetchDataset<CatRow>('cases311', {
+      $select: 'service_name as cat, count(*) as cnt',
+      $where: `requested_datetime >= '${ctx.priStart}' AND requested_datetime <= '${ctx.priEnd}'`,
+      $group: 'service_name',
+      $limit: 200,
+    }),
+  ])
+
+  const priorMap = new Map(pri.map((r) => [r.cat, parseInt(r.cnt, 10) || 0]))
+  let top: { cat: string; cur: number; pct: number } | null = null
+  for (const r of cur) {
+    if (!r.cat) continue
+    const c = parseInt(r.cnt, 10) || 0
+    const p = priorMap.get(r.cat) ?? 0
+    if (c < 50 || p < 20) continue // skip thin/noisy categories
+    const pct = pctDelta(c, p)
+    if (pct > 25 && (!top || pct > top.pct)) top = { cat: r.cat, cur: c, pct }
+  }
+  if (!top) return null
+
+  return {
+    id: 'civic-311-category-surge',
+    headline: `311: ${top.cat} up ${formatPct(top.pct)} vs last year`,
+    detail: `${formatCount(top.cur)} cases this period`,
+    category: 'anomaly',
+    severity: 'negative',
+    source: { view: '/311-cases', label: `311 Cases · ${top.cat}`, datasetId: 'vw6y-z8j6' },
+    delta: top.pct,
+    value: formatCount(top.cur),
+    freshness: 'daily',
+    computedAt: ctx.now,
+    priority: 82,
   }
 }
