@@ -528,6 +528,22 @@ export default function Home() {
           </div>
         )}
 
+        {/* Civic Data Ticker — leads the data sections. Rendered immediately so
+            it reserves its height (no layout shift when data lands); only the
+            FETCH is deferred via useCivicIndicators({ enabled: showTicker }), so
+            the hero cards still get query priority and the ticker fills in at
+            ~500ms. */}
+        <section
+          className={`relative z-10 mb-8 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+        >
+          <CivicTicker
+            items={indicators.items}
+            size={tickerSize}
+            isLoading={indicators.isLoading}
+            lastUpdated={indicators.lastUpdated ?? undefined}
+          />
+        </section>
+
         {/* Visualizations — hero data stories */}
         <section
           className={`relative z-10 mb-8 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
@@ -555,20 +571,6 @@ export default function Home() {
             <ComplianceTracker />
           </div>
         </section>
-
-        {/* Civic Data Ticker — delayed 500ms to let hero vizzes load first */}
-        {showTicker && (
-          <section
-            className={`relative z-10 mb-16 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
-          >
-            <CivicTicker
-              items={indicators.items}
-              size={tickerSize}
-              isLoading={indicators.isLoading}
-              lastUpdated={indicators.lastUpdated ?? undefined}
-            />
-          </section>
-        )}
 
         {/* Neighborhood Profiles — delayed 1000ms to let hero vizzes + ticker load first */}
         {showProfiles && (
