@@ -19,8 +19,8 @@ function loc(p: Partial<LocationDigest> = {}): LocationDigest {
         key: 'afternoon',
         label: 'AFTERNOON',
         rows: [
-          { id: '911-realtime:2', clock: '2:35 p.m.', streamLabel: '911 calls', what: 'Assault', neighborhood: 'Mission', significant: true, receivedAt: 2 },
-          { id: '311-cases:1', clock: '1:50 p.m.', streamLabel: '311 reports', what: 'Graffiti', neighborhood: 'Mission', significant: false, receivedAt: 1 },
+          { id: '911-realtime:2', clock: '2:35 p.m.', streamLabel: '911', what: 'Assault', location: '19th St & Dolores St', significant: true, receivedAt: 2 },
+          { id: '311-cases:1', clock: '1:50 p.m.', streamLabel: '311', what: 'Graffiti', location: 'Mission', significant: false, receivedAt: 1 },
         ],
       },
     ],
@@ -60,6 +60,7 @@ describe('renderDigest', () => {
     expect(html).toContain('AT A GLANCE')
     expect(html).toContain('AFTERNOON')
     expect(html).toContain('Assault')
+    expect(html).toContain('19th St &amp; Dolores St') // block location (escaped &)
     expect(html).toContain('2–3 p.m.')        // busiest window
     expect(html).toContain('/live?event=911-realtime%3A2') // event deep link
     // the text part carries the same facts for non-HTML clients

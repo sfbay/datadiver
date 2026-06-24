@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { humanizeCallType, humanizeStreamName } from './humanizeCivic'
+import { humanizeCallType, humanizeStreamName, streamLabelShort } from './humanizeCivic'
 
 describe('humanizeCallType', () => {
   it('expands SF call-type shorthand and sentence-cases', () => {
@@ -24,5 +24,13 @@ describe('humanizeStreamName', () => {
     expect(humanizeStreamName('911-realtime')).toBe('911 calls')
     expect(humanizeStreamName('fire-ems-dispatch')).toBe('Fire & EMS responses')
     expect(humanizeStreamName('311-cases')).toBe('311 reports')
+  })
+})
+
+describe('streamLabelShort', () => {
+  it('gives the compact, noun-less label for dense rows', () => {
+    expect(streamLabelShort('911-realtime')).toBe('911')
+    expect(streamLabelShort('fire-ems-dispatch')).toBe('Fire/EMS')
+    expect(streamLabelShort('311-cases')).toBe('311')
   })
 })

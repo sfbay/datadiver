@@ -89,8 +89,20 @@ describe('bucketByTimeOfDay', () => {
     const afternoon = blocks.find((b) => b.key === 'afternoon')!
     expect(afternoon.rows[0].clock).toBe('3:00 p.m.') // newest first
     expect(afternoon.rows[0].significant).toBe(true)
-    expect(afternoon.rows[0].streamLabel).toBe('911 calls')
+    expect(afternoon.rows[0].streamLabel).toBe('911') // compact label, not "911 calls"
     expect(afternoon.rows[0].what).toBe('Shooting')
+  })
+
+  it('uses the block address for row location, falling back to neighborhood', () => {
+    const events = [
+      ev({ receivedAt: Date.UTC(2026, 0, 15, 22), callType: 'Assault', address: '19th St & Dolores St', neighborhood: 'Mission' }),
+      ev({ receivedAt: Date.UTC(2026, 0, 15, 21), datasetId: '311-cases', callType: 'Graffiti', neighborhood: 'Mission' }), // no address
+    ]
+    const rows = bucketByTimeOfDay(events).flatMap((b) => b.rows)
+    expect(rows[0].location).toBe('19th St & Dolores St') // street wins over neighborhood
+    expect(rows[0].streamLabel).toBe('911')
+    expect(rows[1].location).toBe('Mission')              // neighborhood fallback
+    expect(rows[1].streamLabel).toBe('311')
   })
 })
 

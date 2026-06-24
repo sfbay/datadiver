@@ -66,6 +66,28 @@ function parseTimestamp(s: unknown): { iso: string; ms: number } | null {
   return { iso: s, ms }
 }
 
+/**
+ * Normalize a raw SF street-location string into a readable, title-cased
+ * label. Handles the three shapes the digest streams publish:
+ *   911 (intersection_name): "19TH ST \ DOLORES ST"
+ *   Fire/EMS (address):      "OFARRELL ST/SHANNON ST"
+ *   311 (address):           "455 MINNA ST, SAN FRANCISCO, CA 94103"
+ * Returns undefined when there's nothing usable (caller falls back to
+ * neighborhood). Title-casing the SCREAMING-CAPS source keeps the serif
+ * digest email readable; "\b[a-z]" only upcases word-initial letters so
+ * "19th" stays "19th" (not "19Th").
+ */
+function cleanStreetLabel(raw: unknown): string | undefined {
+  if (typeof raw !== 'string') return undefined
+  const s = raw
+    .split(',')[0] // drop ", SAN FRANCISCO, CA 94103" tail on 311 addresses
+    .replace(/\s*[\\/]\s*/g, ' & ') // intersection separators "\" / "/" -> "&"
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (!s) return undefined
+  return s.toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase())
+}
+
 function extractPriority(row: Record<string, unknown>): string | undefined {
   // SF 911 CAD rows expose priority on one of these columns depending on
   // dataset version. Prefer the final assignment over the original.
@@ -98,6 +120,7 @@ export function normalizeEvent(
         timestamp: t.iso,
         receivedAt: t.ms,
         neighborhood: row.analysis_neighborhood as string | undefined,
+        address: cleanStreetLabel(row.intersection_name),
         longitude: c.lon,
         latitude: c.lat,
         callType: row.call_type_final_desc as string | undefined,
@@ -120,6 +143,7 @@ export function normalizeEvent(
         timestamp: t.iso,
         receivedAt: t.ms,
         neighborhood: row.neighborhoods_analysis_boundaries as string | undefined,
+        address: cleanStreetLabel(row.address),
         longitude: c.lon,
         latitude: c.lat,
         callType: row.call_type as string | undefined,
@@ -138,6 +162,7 @@ export function normalizeEvent(
         timestamp: t.iso,
         receivedAt: t.ms,
         neighborhood: row.neighborhoods_sffind_boundaries as string | undefined,
+        address: cleanStreetLabel(row.address),
         longitude: c.lon,
         latitude: c.lat,
         callType: row.service_subtype as string | undefined,
