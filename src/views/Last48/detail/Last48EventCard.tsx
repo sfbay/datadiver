@@ -61,19 +61,26 @@ const AP_MONTH: Record<string, string> = {
   December: 'Dec.',
 }
 
+// Pinned to Pacific: the row renders "… PT", so the date/weekday must come
+// from the SF calendar, not the viewer's (a late-night SF event is "Tue."
+// even when the reader's clock in New York already says Wednesday).
+const SF_TZ = 'America/Los_Angeles'
+
 /** AP style: "Wed. May 13, 2026" — weekday abbreviated w/ period; month per AP_MONTH. */
 function formatApDate(ms: number): string {
   const d = new Date(ms)
-  const weekday = d.toLocaleDateString('en-US', { weekday: 'short' }) // "Wed"
-  const monthLong = d.toLocaleDateString('en-US', { month: 'long' })   // "September"
+  const weekday = d.toLocaleDateString('en-US', { weekday: 'short', timeZone: SF_TZ }) // "Wed"
+  const monthLong = d.toLocaleDateString('en-US', { month: 'long', timeZone: SF_TZ }) // "September"
   const month = AP_MONTH[monthLong] ?? monthLong
-  return `${weekday}. ${month} ${d.getDate()}, ${d.getFullYear()}`
+  const day = d.toLocaleDateString('en-US', { day: 'numeric', timeZone: SF_TZ })
+  const year = d.toLocaleDateString('en-US', { year: 'numeric', timeZone: SF_TZ })
+  return `${weekday}. ${month} ${day}, ${year}`
 }
 
 /** Just the AP-style weekday abbreviation, e.g. "Mon." — disambiguates the day
  *  within the 48h window without the full date's width (used on mobile). */
 function formatApWeekday(ms: number): string {
-  const weekday = new Date(ms).toLocaleDateString('en-US', { weekday: 'short' })
+  const weekday = new Date(ms).toLocaleDateString('en-US', { weekday: 'short', timeZone: SF_TZ })
   return `${weekday}.`
 }
 

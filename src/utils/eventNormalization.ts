@@ -7,6 +7,9 @@
 // for the detail panel.
 
 import type { DatasetId, NormalizedEvent } from '@/types/last48'
+// Relative + .js-suffixed (not the @ alias): this module is shared with the
+// alerts cron via api/_lib, which resolves runtime imports Node-ESM style.
+import { parseSfLocal } from './sfTime.js'
 
 interface RawCoord {
   longitude?: string | number
@@ -61,7 +64,10 @@ function coords(row: Record<string, unknown>, fields: RawCoord = {}): { lon?: nu
 
 function parseTimestamp(s: unknown): { iso: string; ms: number } | null {
   if (typeof s !== 'string') return null
-  const ms = Date.parse(s)
+  // DataSF datetimes are FLOATING SF-local strings — Date.parse would read
+  // them in the host timezone (UTC on the cron, the viewer's zone in the
+  // browser) and skew every epoch by hours. See src/utils/sfTime.ts.
+  const ms = parseSfLocal(s)
   if (isNaN(ms)) return null
   return { iso: s, ms }
 }

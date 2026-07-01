@@ -113,6 +113,7 @@ src/
 - `useDataset` hook wraps fetch with loading/error/refetch state
 - **Aggregation queries**: `fetchDataset` auto-skips `defaultSort` when `$group` or aggregate functions (`SUM`, `COUNT`, `AVG`, `MIN`, `MAX`) are detected in `$select` — ordering by a non-selected field causes Socrata 400 errors
 - Use **server-side aggregation** (`GROUP BY`, `SUM()`, `COUNT()`) over client-side aggregation of sampled rows — sampling produces inaccurate per-entity totals
+- **DataSF datetimes are FLOATING SF-LOCAL strings** (no offset, no Z — `'2026-07-01T16:10:21.000'` means SF wall time). NEVER `Date.parse` them (reads host TZ — correct only on a Pacific laptop; the cron runs TZ=UTC) and NEVER build a `$where` cutoff from `toISOString()` (UTC digits start the window 7–8h late). Use `parseSfLocal()` / `sfLocalCutoff()` from `src/utils/sfTime.ts` — the bug this prevents skewed digest-email clocks by 7–8h and shrank every "last 48h" to ~41h (PR #101). Display of event times is pinned to `America/Los_Angeles` (`formatApTime`) — SF facts read on the SF clock for every viewer.
 - Dataset config in `src/api/datasets.ts` — each has `id`, `endpoint`, `dateField`, `defaultSort`
 
 ### Maps
@@ -250,10 +251,10 @@ The editorial argument: a number alone is meaningless; a number's *position on a
 
 ### Tonal age ramp + per-dataset latency baseline
 
-For map dots encoding age in a multi-stream visualization (introduced in The Last 48 FLOW), each dataset's pigment fades toward a paper anchor (`#d4c8a8`) in 4 discrete buckets across its delivery window. The bucket boundaries are NOT measured from absolute age (which would never include the "fresh" tone — no SF dataset publishes events less than ~7h old). Instead, subtract a per-dataset `LATENCY_BASELINE_MS` from raw age before bucketing — the fresh tone is reserved for events at each dataset's natural floor.
+For map dots encoding age in a multi-stream visualization (introduced in The Last 48 FLOW), each dataset's pigment fades toward a paper anchor (`#d4c8a8`) in 4 discrete buckets across its delivery window. The bucket boundaries are NOT measured from absolute age (which rarely includes the "fresh" tone — most SF datasets publish events hours old). Instead, subtract a per-dataset `LATENCY_BASELINE_MS` from raw age before bucketing — the fresh tone is reserved for events at each dataset's natural floor.
 
 Helpers live in `src/views/Last48/modes/FlowMapLayer.tsx`:
-- `LATENCY_BASELINE_MS`: per-dataset offset (911 Realtime 7h, Fire/EMS 12h, 311 15h, etc.)
+- `LATENCY_BASELINE_MS`: per-dataset offset (911 Realtime 30min, Fire/EMS 12h, 311 15h). The original 7h figure for 911 was a measurement artifact of the SF-local-vs-UTC timestamp bug (below) — exactly the PDT offset.
 - `AGE_BUCKETS`: asymmetric curve `[0, 0.45, 0.60, 0.70]` over 4 buckets (heaviest tonal motion in the first 18h post-floor)
 - `mixHex(a, b, t)`, `ageColor(datasetId, rawAgeMs)`, `ageStrokeOpen(datasetId, rawAgeMs)`
 

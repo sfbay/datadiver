@@ -30,6 +30,7 @@ import {
   type NormalizedEvent,
 } from '@/types/last48'
 import { normalizeEvent } from '@/utils/eventNormalization'
+import { sfLocalCutoff } from '@/utils/sfTime'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -303,11 +304,11 @@ export function useLast48Window(opts: {
 
       // Both phases are $where-bounded — head to 6h, full to 48h. The $where
       // bound is what keeps the query fast on large datasets (it scopes the
-      // sort to a recent slice). Socrata SoQL date comparison rejects the
-      // trailing `.000Z` produced by `toISOString()` — use trimmed
-      // `YYYY-MM-DDTHH:MM:SS`.
+      // sort to a recent slice). The cutoff must be SF WALL-CLOCK digits —
+      // DataSF stores floating local times, so toISOString() (UTC digits)
+      // started the window 7–8h late (~41h of "48h"). See src/utils/sfTime.ts.
       const windowMs = isHead ? HEAD_WINDOW_MS : WINDOW_MS
-      const cutoff = new Date(Date.now() - windowMs).toISOString().slice(0, 19)
+      const cutoff = sfLocalCutoff(Date.now() - windowMs)
       const queryParams: Parameters<typeof fetchDataset>[1] = {
         $where: `${dateField} >= '${cutoff}'`,
         $order: `${dateField} DESC`,

@@ -11,6 +11,7 @@ import { useState, useEffect, useRef } from 'react'
 import { fetchDataset } from '@/api/client'
 import { useAppStore } from '@/stores/appStore'
 import { yearAgo } from '@/utils/time'
+import { sfLocalCutoff } from '@/utils/sfTime'
 import { classifyCallType } from '@/lib/alerts/significance'
 import type { TickerItem, TickerCategory, TickerSeverity } from '@/types/ticker'
 
@@ -575,7 +576,9 @@ async function fetchCampaignFinance(ctx: QueryContext): Promise<TickerItem | nul
 //    GROUP BYs (one per stream), no full event load, so it stays light on
 //    Home's critical path. Fixed 48h window, not the global date range.
 async function fetchSignificantTally(ctx: QueryContext): Promise<TickerItem | null> {
-  const cutoff = new Date(ctx.now.getTime() - 48 * 3600_000).toISOString().slice(0, 19)
+  // SF wall-clock digits — DataSF datetimes are floating local, so UTC digits
+  // (toISOString) undercount the 48h tally by 7–8h. See src/utils/sfTime.ts.
+  const cutoff = sfLocalCutoff(ctx.now.getTime() - 48 * 3600_000)
   interface TypeRow { t: string; cnt: string }
 
   const [calls911, fireEms] = await Promise.all([

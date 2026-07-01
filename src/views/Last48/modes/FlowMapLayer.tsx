@@ -87,8 +87,13 @@ const AGE_BUCKETS: Array<{ maxHours: number; mix: number }> = [
 //
 // Values are inferred from observed event-lag floors (see brief). These are
 // static; if a dataset's typical lag drifts substantially, recalibrate.
+//
+// The original 7h floor for 911 Realtime was a measurement artifact of the
+// SF-local-vs-UTC timestamp bug (exactly the PDT offset). With epochs parsed
+// correctly (sfTime.ts) the feed's true floor is ~15–30 min — re-measured
+// 2026-07-01: MAX(received_datetime) was 16 min behind the SF clock.
 const LATENCY_BASELINE_MS: Record<DatasetId, number> = {
-  '911-realtime':       7 * 60 * 60 * 1000,
+  '911-realtime':       30 * 60 * 1000,
   'fire-ems-dispatch': 12 * 60 * 60 * 1000,
   '311-cases':         15 * 60 * 60 * 1000,
 }
