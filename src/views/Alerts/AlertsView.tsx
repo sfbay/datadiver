@@ -32,6 +32,7 @@
 import { useState, type CSSProperties } from 'react'
 import type { DatasetId } from '@/types/last48'
 import type { AlertLocation, SubscriptionDraft } from '@/lib/alerts/types'
+import { ALERT_RADII } from '@/lib/alerts/radii'
 import { LocationPicker } from './LocationPicker'
 import { LivePreview } from './LivePreview'
 
@@ -87,7 +88,7 @@ const CATEGORY_OPTIONS: { key: string; label: string }[] = [
   { key: 'assault', label: 'Assaults' },
   { key: 'fire', label: 'Fires' },
 ]
-const RADII = [0.125, 0.25, 0.5, 1, 2]
+const RADII = ALERT_RADII // single source of truth shared with the server validator
 
 /** "¼", "½", "1", "2" — the radius vocabulary used everywhere on this page. */
 const radiusLabel = (r: number) => (r === 0.125 ? '⅛' : r === 0.25 ? '¼' : r === 0.5 ? '½' : String(r))

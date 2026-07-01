@@ -1,13 +1,13 @@
 // api/alerts/subscribe.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import type { SubscriptionDraft } from '../../src/lib/alerts/types'
+import { ALERT_RADII } from '../../src/lib/alerts/radii.js'
 import { signToken } from '../../src/lib/alerts/tokens.js'
 import { createPendingSubscription, recordSubscribeAttempt } from '../_lib/db.js'
 import { sendConfirmEmail } from '../_lib/email.js'
 
 const STREAMS = ['911-realtime', 'fire-ems-dispatch', '311-cases']
 const CATEGORIES = ['shooting', 'stabbing', 'homicide', 'robbery', 'weapon', 'assault', 'fire']
-const RADII = [0.25, 0.5, 1, 2]
 const MAX_PER_IP_PER_HOUR = 10
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 // SF bounding box (loose) — rejects obviously bogus coordinates.
@@ -30,7 +30,7 @@ function validate(b: unknown): SubscriptionDraft | string {
   if (!categories.every((c) => CATEGORIES.includes(c as string))) return 'invalid category'
 
   const radiusMiles = Number(o.radiusMiles)
-  if (!RADII.includes(radiusMiles)) return 'invalid radius'
+  if (!ALERT_RADII.includes(radiusMiles)) return 'invalid radius'
 
   const locs = Array.isArray(o.locations) ? (o.locations as unknown[]) : []
   if (locs.length < 1 || locs.length > 10) return 'pick 1–10 locations'
