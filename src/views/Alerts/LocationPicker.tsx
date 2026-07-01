@@ -17,12 +17,21 @@ import type { AlertLocation } from '@/lib/alerts/types'
 // Twin Peaks roughly center, Golden Gate Bridge visible, down to Daly City.
 export const PICKER_CAMERA = { center: { lat: 37.7600, lng: -122.4400 }, zoom: 11.5 }
 
+/** Miles → (Δlat, Δlng) degrees at a given latitude. Longitude degrees shrink
+ *  with latitude, so scale by 1/cos(lat). Shared by the radius ring AND the
+ *  zoom-to-fit bounds, so the drawn circle and the framing always agree. */
+function radiusDegrees(lat: number, radiusMiles: number): { dLat: number; dLng: number } {
+  const distKm = radiusMiles * 1.60934
+  return {
+    dLat: distKm / 110.574,
+    dLng: distKm / (111.32 * Math.cos((lat * Math.PI) / 180)),
+  }
+}
+
 /** 64-point polygon approximating a circle of `radiusMiles` around center. */
 function circlePolygon(center: { lat: number; lng: number }, radiusMiles: number): GeoJSON.Feature {
   const points: [number, number][] = []
-  const distKm = radiusMiles * 1.60934
-  const dLat = distKm / 110.574
-  const dLng = distKm / (111.32 * Math.cos((center.lat * Math.PI) / 180))
+  const { dLat, dLng } = radiusDegrees(center.lat, radiusMiles)
   for (let i = 0; i <= 64; i++) {
     const t = (i / 64) * 2 * Math.PI
     points.push([center.lng + dLng * Math.cos(t), center.lat + dLat * Math.sin(t)])
@@ -41,10 +50,43 @@ interface LocationMapProps {
 export function LocationPicker({ locations, radiusMiles, onAdd, className }: LocationMapProps) {
   const mapRef = useRef<MapHandle>(null)
   const markers = useRef<mapboxgl.Marker[]>([])
+  const prevCount = useRef(locations.length)
 
   function handleReady(map: mapboxgl.Map) {
     map.on('click', (e) => onAdd({ lat: e.lngLat.lat, lng: e.lngLat.lng }))
   }
+
+  // When a pin is ADDED (an address is picked, or the map is clicked), animate
+  // the camera to frame that point AND its radius ring. Guarded to fire only on
+  // a new pin — not on radius changes or removals — so nudging the radius or
+  // deleting a pin doesn't yank the camera. Reduced-motion users get an instant
+  // fit (Mapbox skips the animation when `essential` is not set).
+  //
+  // fitBounds resets pitch/bearing to 0 by default, which would flatten the
+  // map's signature SF tilt — so we hand it the CURRENT pitch + bearing to
+  // preserve the tilt through the framing.
+  useEffect(() => {
+    const map = mapRef.current?.getMap()
+    if (map && locations.length > prevCount.current) {
+      const l = locations[locations.length - 1]
+      const { dLat, dLng } = radiusDegrees(l.lat, radiusMiles)
+      map.fitBounds(
+        [
+          [l.lng - dLng, l.lat - dLat],
+          [l.lng + dLng, l.lat + dLat],
+        ],
+        {
+          padding: 40,
+          maxZoom: 16,
+          duration: 1200,
+          bearing: map.getBearing(),
+          // lean in a touch MORE than the resting camera for a dramatic settle
+          pitch: Math.min(map.getPitch() + 14, 60),
+        },
+      )
+    }
+    prevCount.current = locations.length
+  }, [locations, radiusMiles])
 
   // Render markers + radius circles whenever locations/radius change.
   // Returns a cleanup that removes markers on unmount so the next mount

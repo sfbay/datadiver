@@ -29,7 +29,7 @@
 // Layout grammar: `clamp()` everywhere instead of breakpoint jumps,
 // echoing the Liquid layout pattern established on Home.
 
-import { useState, type CSSProperties } from 'react'
+import { useState, useEffect, type CSSProperties } from 'react'
 import type { DatasetId } from '@/types/last48'
 import type { AlertLocation, SubscriptionDraft } from '@/lib/alerts/types'
 import { ALERT_RADII } from '@/lib/alerts/radii'
@@ -132,6 +132,28 @@ export default function AlertsView() {
     )
   }
 
+  // Auto-search: fire the geocoder ~400ms after typing stops, so results appear
+  // without an explicit Search click (Enter + the button still fire instantly).
+  // Gated at 3+ chars so we don't spam the geocoder on the first keystrokes.
+  useEffect(() => {
+    const q = query.trim()
+    if (q.length < 3) {
+      setResults([])
+      return
+    }
+    const t = setTimeout(() => searchAddress(), 400)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query])
+
+  // Add a geocoder result as a pin (and clear the search). Shared by the result
+  // list click AND Enter, so the top match can be picked without the mouse.
+  function selectResult(r: { name: string; lat: number; lng: number }) {
+    setLocations((a) => [...a, { label: r.name, lat: r.lat, lng: r.lng }])
+    setResults([])
+    setQuery('')
+  }
+
   async function submit() {
     setErrorMsg('')
     // Validation order mirrors the page's reading order: places → streams → email.
@@ -209,7 +231,14 @@ export default function AlertsView() {
                     <input
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), searchAddress())}
+                      onKeyDown={(e) => {
+                        if (e.key !== 'Enter') return
+                        e.preventDefault()
+                        // if results are already up (auto-search), Enter picks the
+                        // top match; otherwise it triggers a search.
+                        if (results.length > 0) selectResult(results[0])
+                        else searchAddress()
+                      }}
                       placeholder="Search an address…"
                       aria-label="Search an address"
                       className="flex-1 min-w-0 rounded-md border border-ink/15 dark:border-white/[0.12] bg-paper-100/60 dark:bg-espresso-900/60 px-3.5 py-2 text-[14px] text-ink dark:text-paper-100 placeholder:text-ink/35 dark:placeholder:text-slate-500 focus:border-teal-500 focus:outline-none transition-colors"
@@ -229,11 +258,7 @@ export default function AlertsView() {
                         <li key={i} className={i > 0 ? 'border-t border-ink/[0.06] dark:border-white/[0.04]' : ''}>
                           <button
                             type="button"
-                            onClick={() => {
-                              setLocations((a) => [...a, { label: r.name, lat: r.lat, lng: r.lng }])
-                              setResults([])
-                              setQuery('')
-                            }}
+                            onClick={() => selectResult(r)}
                             className="block w-full px-3.5 py-2 text-left hover:bg-teal-500/10 transition-colors"
                           >
                             {r.name}
