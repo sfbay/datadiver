@@ -1,6 +1,7 @@
 // api/_lib/socrata.ts — server-side event fetch for the cron.
 // Reuses the app's normalizeEvent so cron events match the UI exactly.
 import { normalizeEvent } from '../../src/utils/eventNormalization.js'
+import { sfLocalCutoff } from '../../src/utils/sfTime.js'
 import type { DatasetId, NormalizedEvent } from '../../src/types/last48'
 
 const SOCRATA: Record<DatasetId, { id: string; dateField: string }> = {
@@ -14,7 +15,10 @@ export async function fetchRecentEvents(
   streams: DatasetId[],
   sinceMs: number,
 ): Promise<NormalizedEvent[]> {
-  const cutoff = new Date(sinceMs).toISOString().slice(0, 19) // 'YYYY-MM-DDTHH:MM:SS'
+  // SF wall-clock digits — DataSF datetimes are floating local times. The
+  // cron host runs TZ=UTC, so toISOString() digits here shrank every digest
+  // window by 7–8h. See src/utils/sfTime.ts.
+  const cutoff = sfLocalCutoff(sinceMs)
   const token = process.env.SOCRATA_APP_TOKEN
   const out: NormalizedEvent[] = []
 

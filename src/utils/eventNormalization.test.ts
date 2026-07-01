@@ -51,3 +51,25 @@ describe('normalizeEvent — street-level address', () => {
     expect(ev?.address).toBeUndefined()
   })
 })
+
+describe('normalizeEvent — SF-local floating timestamps', () => {
+  // DataSF datetimes carry no offset and mean SF wall time. The exact-epoch
+  // assertions fail on any non-Pacific host if this ever regresses to
+  // Date.parse (which reads floating strings in the HOST timezone — the bug
+  // that skewed digest clocks and 48h windows by 7–8h; see sfTime.ts).
+  it('interprets a summer (PDT) timestamp as America/Los_Angeles', () => {
+    const ev = normalizeEvent('911-realtime', {
+      received_datetime: '2026-07-01T16:10:21.000',
+      cad_number: 'P260010004',
+    })
+    expect(ev?.receivedAt).toBe(Date.UTC(2026, 6, 1, 23, 10, 21))
+  })
+
+  it('interprets a winter (PST) timestamp as America/Los_Angeles', () => {
+    const ev = normalizeEvent('fire-ems-dispatch', {
+      received_dttm: '2026-01-15T12:00:00.000',
+      call_number: '262000002',
+    })
+    expect(ev?.receivedAt).toBe(Date.UTC(2026, 0, 15, 20, 0, 0))
+  })
+})

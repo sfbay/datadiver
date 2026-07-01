@@ -13,6 +13,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { fetchDataset } from '@/api/client'
 import { useSummaryStore } from '@/stores/summaryStore'
+import { sfLocalCutoff } from '@/utils/sfTime'
 import { LAST48_DATASETS, type DatasetId } from '@/types/last48'
 
 export interface PulseCounts {
@@ -41,10 +42,9 @@ const STREAM_QUERY: Record<DatasetId, { key: string; dateField: string }> = {
 }
 
 async function loadLiveCounts(): Promise<PulseCounts> {
-  // Socrata rejects toISOString()'s trailing .000Z — trim to seconds.
-  const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 19)
+  // SF wall-clock digits, not toISOString() — DataSF datetimes are floating
+  // local times, so UTC digits undercount the window by 7–8h (see sfTime.ts).
+  const cutoff = sfLocalCutoff(Date.now() - 48 * 60 * 60 * 1000)
 
   const rows = await Promise.all(
     LAST48_DATASETS.map((id) => {

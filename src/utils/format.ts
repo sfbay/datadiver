@@ -39,13 +39,26 @@ export function formatHeadline(s: string | undefined): string {
 /** AP-style time of day: "2:22 p.m.", "12:05 a.m.", "10:55 a.m." — lowercase
  *  meridiem with periods, single-digit hours unpadded, minutes always 2 digits.
  *  Use for absolute timestamps in calm reading contexts where 24-hour mono
- *  feels too clinical. */
+ *  feels too clinical.
+ *
+ *  Pinned to America/Los_Angeles: SF civic event times are SF facts, and the
+ *  UI labels them "PT" — a viewer in New York should read the same clock as a
+ *  viewer in the Mission. (Cached formatter; construction is the slow part.) */
+const SF_AP_TIME = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/Los_Angeles',
+  hour: 'numeric',
+  minute: '2-digit',
+  hour12: true,
+})
+
 export function formatApTime(ms: number): string {
-  const d = new Date(ms)
-  let h = d.getHours()
-  const m = d.getMinutes()
-  const period = h >= 12 ? 'p.m.' : 'a.m.'
-  h = h % 12
-  if (h === 0) h = 12
-  return `${h}:${String(m).padStart(2, '0')} ${period}`
+  let h = '12'
+  let m = '00'
+  let period = 'a.m.'
+  for (const p of SF_AP_TIME.formatToParts(ms)) {
+    if (p.type === 'hour') h = p.value
+    else if (p.type === 'minute') m = p.value
+    else if (p.type === 'dayPeriod') period = p.value === 'AM' ? 'a.m.' : 'p.m.'
+  }
+  return `${h}:${m} ${period}`
 }
