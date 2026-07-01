@@ -14,6 +14,7 @@ import DispatchUnanswered from '@/components/investigations/DispatchUnanswered'
 import ComplianceTracker from '@/components/investigations/ComplianceTracker'
 import Last48Pulse from '@/components/investigations/Last48Pulse'
 import VisionZeroCounter from '@/components/investigations/VisionZeroCounter'
+import PulseTeaser from './PulseTeaser'
 import VizCard from '@/components/ui/VizCard'
 import AlertsRibbon from '@/components/home/AlertsRibbon'
 
@@ -542,6 +543,15 @@ export default function Home() {
             isLoading={indicators.isLoading}
             lastUpdated={indicators.lastUpdated ?? undefined}
           />
+        </section>
+
+        {/* The Pulse teaser — findings-first preview that drives into the full
+            /pulse wire. Cheap: reuses the already-fetched indicators (same
+            `enabled` gate as the ticker), no 48h window load on Home. */}
+        <section
+          className={`relative z-10 mb-8 transition-all duration-1000 delay-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+        >
+          <PulseTeaser items={indicators.items} isLoading={indicators.isLoading} />
         </section>
 
         {/* Visualizations — hero data stories */}

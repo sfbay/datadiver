@@ -20,6 +20,13 @@ const NAV_ITEMS = [
     accentColor: '#b85a33', // terracotta-600 — primary brand
   },
   {
+    path: '/pulse',
+    label: 'The Pulse',
+    shortLabel: 'PULSE',
+    description: 'What stands out right now',
+    accentColor: '#b85a33', // terracotta-600 — signal / front-door surface
+  },
+  {
     path: '/live',
     label: 'The Last 48',
     shortLabel: 'LIVE',
