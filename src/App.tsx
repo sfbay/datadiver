@@ -29,6 +29,7 @@ const Elections = lazy(() => import('@/views/Elections/Elections'))
 const Neighborhood = lazy(() => import('@/views/Neighborhood/Neighborhood'))
 const Alerts = lazy(() => import('@/views/Alerts/AlertsView'))
 const About = lazy(() => import('@/views/About/About'))
+const Pulse = lazy(() => import('@/views/Pulse/Pulse'))
 
 /** Chunk-loading fallback — same calm register as the skeleton kit: a corner
  *  pill, not a takeover. The view's own progressive skeletons handle the rest
@@ -85,6 +86,7 @@ export default function App() {
           <Route path="/city-budget" element={<CityBudget />} />
           <Route path="/elections" element={<Elections />} />
           <Route path="/neighborhood" element={<Neighborhood />} />
+          <Route path="/pulse" element={<Pulse />} />
           <Route path="/live" element={<Last48 />} />
           {/* /live-feeds → /live: keep the old path as a permanent redirect so
               shared event links (?event=…) and bookmarks don't 404. */}
