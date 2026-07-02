@@ -117,6 +117,21 @@ stream (exactly the PDT offset — the floor had been measured through the bug).
 `src/utils/sfTime.ts` (`parseSfLocal` / `sfLocalCutoff`, DST-correct via Intl). The diagnostic
 tell for a regression: any lag, floor, or delta that is "suspiciously exactly" 7–8 hours.
 
+### Geo Fields Come in Three Shapes — 311's Is the Trap
+
+Socrata serves point geometry in three different encodings depending on the dataset:
+WKT strings (`"POINT (lon lat)"` — Fire/EMS `case_location`), GeoJSON objects
+(`{type:'Point', coordinates:[lon,lat]}` — 911's `intersection_point`), and — the trap —
+**Socrata location-objects**: 311's `point` is `{latitude:'…', longitude:'…', human_address:'…'}`,
+which is *neither* of the first two. Code that only handles WKT + GeoJSON silently drops every
+311 row and reports "no 311 activity here" (verified 2026-07-02: a validation script did exactly
+this — a false zero against ~4,500 citywide cases). The app's `eventNormalization.coords()`
+survives because it falls back to `row.lat`/`row.long` top-level columns; any direct query or
+external script must handle the location-object shape explicitly.
+
+**Rule:** when a geo query returns suspiciously few rows for one dataset among several, inspect
+one raw row's geo field *shape* before concluding the data is sparse.
+
 ### Server-Side Aggregation vs Client-Side Sampling
 
 Socrata queries are limited to a row count (default 1,000, max 50,000). If you fetch N rows sorted by recency and then aggregate client-side, per-entity totals will be wrong — the sample is biased toward recent records.

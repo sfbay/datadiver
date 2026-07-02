@@ -48,7 +48,8 @@ The geo-newsletters feature is DataDiver's first backend (Vercel Functions + Ver
 - Unsubscribe **hard-deletes** the subscriber and cascades subscriptions + locations (minimal-PII).
 - The matcher reuses the app's exact `normalizeEvent` + `classifySignificant`, so emailed events match what the app shows.
 - **DataSF timestamps are floating SF-local** — `normalizeEvent` parses them via `src/utils/sfTime.ts` (PR #101, July 2026). Before that fix the TZ=UTC cron read every event 7–8h early: digest clock times were wrong, time-of-day blocks misfiled events, the fetch window was ~41h, and a new subscriber's first ~7h of events fell before their confirm watermark. Any future cron-side date handling must go through `sfTime.ts`.
-- The **first digest** after confirmation contains only events from after sign-up (the event watermark is seeded to confirm time), not a 48-hour backlog.
+- The **first digest** after confirmation contains only events from after sign-up (the event watermark is seeded to confirm time), not a 48-hour backlog. Note the window label ("past 24 hours") is cosmetic — the fetch is a fixed 48h gated by the watermark, so a first digest's true window is confirm→now.
+- **Validated 2026-07-02** (first post-#101 cron run): a "only 1 event in 24h" report at a ⅛-mi pin was CORRECT — quiet residential circles genuinely hold ~1 Fire/EMS + a few 311 per 48h, and 911 can never location-match (no coordinates). Validation recipe + gotchas: `memory/feedback_digest_validation.md`. Radius, not a bug, is the lever for livelier digests.
 - The daily cron prunes `subscribe_attempts` rows older than 24h, so the rate-limit table stays small.
 
 ## Deferred to Phase 2 (backlog captured during code review)
@@ -71,6 +72,7 @@ Added by the July 2026 retrospective review (ranked; first two are the priority)
 - Cron scaling: fetch the stream union once per run (currently re-fetched per subscription), add `maxDuration` to `vercel.json`; 311 runs ~5K rows/48h, brushing the `$limit=5000` cap (DESC order silently drops oldest).
 - `digestRender.ts` hardcodes `PUBLIC_LINK_BASE` to prod (bypasses `PUBLIC_BASE_URL`); confirm/unsubscribe pages still link `/live-feeds` (works only via the legacy redirect); subject-line event count double-counts events inside overlapping pin radii.
 - Alerts view has no mobile treatment (built after the #89 mobile shell; it's the most phone-shaped feature in the app). Also: tell subscribers *when* the digest arrives (~6am PT) at the point of sign-up.
+- First-digest honesty: when the watermark equals confirm time, label the window "since you signed up" instead of "past 24 hours" (the current label overstates a first digest's coverage; found during the 2026-07-02 validation).
 
 ## Separate launch punchlist (NOT this feature)
 ~~The DataDiver icon — favicon (`.ico`/SVG; previously mis-noted here as "`.ics` calendar export", a typo — there is no calendar feature) + the upper-left UI mark~~ ✓ shipped June 2026: theme-aware `favicon.svg` + `favicon.ico` + `apple-touch-icon.png`; the upper-left Dana badge already existed in `AppShell`.
