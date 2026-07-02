@@ -60,7 +60,15 @@ export default function WireCard({ item }: { item: WireItem }) {
           </span>
         </div>
 
-        {item.ratio !== undefined && <DeviationBar ratio={item.ratio} color={color} />}
+        {item.ratio !== undefined && (
+          <DeviationBar
+            ratio={item.ratio}
+            color={color}
+            // Trend cards' ratio compares to A YEAR AGO, not the 12-week
+            // "usual" — the tick must say which reference it marks.
+            tickLabel={item.kind === 'trend' ? 'last yr' : 'usual'}
+          />
+        )}
 
         <p className="mt-1.5 font-mono text-[10px] leading-tight text-paper-600 dark:text-paper-500">
           <span className="text-paper-500 dark:text-paper-600">{item.context}</span>

@@ -12,7 +12,18 @@
 const USUAL_PCT = 40
 const MAX_RATIO = 2.5
 
-export default function DeviationBar({ ratio, color }: { ratio: number; color: string }) {
+// tickLabel names what the tick IS for this card's ratio: volume anomalies
+// compare to "usual" (the 12-week typical stretch); trend cards compare to
+// "last yr". One bar, two honest reference points — the label must match.
+export default function DeviationBar({
+  ratio,
+  color,
+  tickLabel = 'usual',
+}: {
+  ratio: number
+  color: string
+  tickLabel?: string
+}) {
   const cur = (Math.min(Math.max(ratio, 0), MAX_RATIO) / MAX_RATIO) * 100
   const left = Math.min(USUAL_PCT, cur)
   const width = Math.abs(cur - USUAL_PCT)
@@ -28,8 +39,8 @@ export default function DeviationBar({ ratio, color }: { ratio: number; color: s
         className="absolute top-[calc(50%-10px)] h-5 w-[2px] bg-paper-500 dark:bg-paper-400"
         style={{ left: `${USUAL_PCT}%` }}
       >
-        <span className="absolute left-1/2 -translate-x-1/2 -top-[11px] font-mono text-[8px] text-paper-500 dark:text-paper-600">
-          usual
+        <span className="absolute left-1/2 -translate-x-1/2 -top-[11px] font-mono text-[8px] whitespace-nowrap text-paper-500 dark:text-paper-600">
+          {tickLabel}
         </span>
       </div>
     </div>

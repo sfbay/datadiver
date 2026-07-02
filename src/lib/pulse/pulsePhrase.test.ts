@@ -68,6 +68,13 @@ describe('anomalyToWireItem — neighborhood volume', () => {
     assertNoJargon(w)
   })
 
+  it('never renders a trailing .0 on rounded thousands ("1K", not "1.0K")', () => {
+    const w = anomalyToWireItem(anomaly({ count48h: 1000 }), { freshnessOk: true, computedAt: AT })!
+    expect(w.bigValue).toBe('1K')
+    const w2 = anomalyToWireItem(anomaly({ count48h: 1234 }), { freshnessOk: true, computedAt: AT })!
+    expect(w2.bigValue).toBe('1.2K')
+  })
+
   it('rounds the typical count to a number a person would say', () => {
     const w = anomalyToWireItem(anomaly({ baselineMean: 87.3 }), { freshnessOk: true, computedAt: AT })!
     expect(w.factLine).toBe('usual ≈ 85') // nearest 5, not 87.3
