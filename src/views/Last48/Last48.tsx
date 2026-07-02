@@ -177,6 +177,30 @@ export default function Last48() {
     }, { replace: true })
   }, [setSearchParams])
 
+  // Normalize a BARE ?nh= arrival (hand-typed or pre-Pulse-fix links) into the
+  // full drill state. The param SET is the contract: the anomaly fill and the
+  // neighborhood peek only mount under fill=anomaly + points=off, so an nh
+  // arriving alone would be inert — the link promises evidence and delivers
+  // the lobby. One-shot at mount: after arrival the user may toggle points or
+  // fill away freely without this effect fighting them.
+  const nhArrivalNormalized = useRef(false)
+  useEffect(() => {
+    if (nhArrivalNormalized.current) return
+    nhArrivalNormalized.current = true
+    // Closure values are the arrival values (this runs once, at mount). Skip
+    // the setSearchParams call entirely when there's nothing to normalize —
+    // react-router navigates even when the updater returns prev.
+    if (!selectedNeighborhoodId || (fill === 'anomaly' && !pointsOn)) return
+    setSearchParams((prev) => {
+      if (!prev.get('nh')) return prev
+      const np = new URLSearchParams(prev)
+      np.set('fill', 'anomaly')
+      np.set('points', 'off')
+      np.delete('mode') // retire legacy param
+      return np
+    }, { replace: true })
+  }, [selectedNeighborhoodId, fill, pointsOn, setSearchParams])
+
   // Reflect the open event into ?event= (replace, not push — selection isn't
   // a back-button waypoint). Guarded against redundant writes so the
   // UnifiedView's write-effect can fire freely without churning history.
