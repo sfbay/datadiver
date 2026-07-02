@@ -133,7 +133,7 @@ export default function Pulse() {
           Watching 911, Fire&nbsp;/&nbsp;EMS, and 311 across San Francisco's 41 neighborhoods, plus
           citywide trends. "Stands out" compares the last two days to the same stretch in recent
           weeks and a year ago — never on data a department hasn't published yet.{' '}
-          <Link to="/about" className="underline hover:text-terracotta-600 dark:hover:text-terracotta-400">
+          <Link to="/about#whats-unusual" className="underline hover:text-terracotta-600 dark:hover:text-terracotta-400">
             How we decide what's unusual
           </Link>
           .
