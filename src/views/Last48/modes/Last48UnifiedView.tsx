@@ -16,7 +16,6 @@
 // in the rail slot alongside AnomalyRail when a neighborhood is selected.
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
-import { useSearchParams } from 'react-router-dom'
 import type mapboxgl from 'mapbox-gl'
 import { useAnomalyBaseline } from '@/hooks/useAnomalyBaseline'
 import type { Last48WindowResult } from '@/hooks/useLast48Window'
@@ -34,7 +33,6 @@ import FlowSelectedRadar from './FlowSelectedRadar'
 import FlowArrivalRipples from './FlowArrivalRipples'
 import AnomalyFillLayer from './AnomalyFillLayer'
 import AnomalyLegend from './AnomalyLegend'
-import AnomalyRampSwitcher from './AnomalyRampSwitcher'
 import { combineZ } from './anomalyRamp'
 import DemographicFillLayer from './DemographicFillLayer'
 import AnomalyRail from './AnomalyRail'
@@ -170,12 +168,6 @@ export default function Last48UnifiedView({
     return result
   }, [anomalies])
 
-  // DEV: ?ramp=<presetId> drives the in-map ramp study (AnomalyRampSwitcher).
-  // Read-only here; strip together with the switcher once the treatment is
-  // chosen — AnomalyFillLayer/AnomalyLegend then fall back to the default.
-  const [fillSearchParams] = useSearchParams()
-  const rampId = fillSearchParams.get('ramp')
-
   // ── Ripple handler — called by FlowMapLayer when significant events arrive ──
   const handleNewRipples = useCallback(
     (incoming: Array<{ id: string; lng: number; lat: number; bornAt: number }>) => {
@@ -297,14 +289,11 @@ export default function Last48UnifiedView({
                 combinedAnomalies={combinedAnomalies}
                 selectedNeighborhood={selectedNh ?? undefined}
                 onNeighborhoodClick={setSelectedNh}
-                rampId={rampId}
               />
               {/* Legend — same glass-card register as the demographic
                   UnderlayLegend below, dejargoned labels (quieter · typical
                   · busier). A choropleth without a key is a Rorschach test. */}
-              <AnomalyLegend rampId={rampId} />
-              {/* DEV ramp study picker — renders only when ?ramp= is present. */}
-              <AnomalyRampSwitcher />
+              <AnomalyLegend />
             </>
           )}
 

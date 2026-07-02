@@ -60,6 +60,14 @@ const TERRACOTTA = (a: number) => `rgba(212,113,73,${a})`
 const BRICK = (a: number) => `rgba(150,62,48,${a})`
 const BRICK_DEEP = (a: number) => `rgba(111,43,32,${a})`
 
+// The 2026-07-02 ramp study (in-map ?ramp= switcher, live data, dark + light)
+// settled on DIVERGING. What the losing candidates taught, so nobody
+// re-proposes them: "diverging-soft" (same stops @ 0.24) was too wispy for a
+// hero fill — the underlay's 0.22 register only works UNDER dots; and both
+// warm-only presets were functionally INVISIBLE, because on a typical
+// afternoon no neighborhood sits far enough above usual to paint — the quiet
+// side carries the map's texture much of the time. A busy-only anomaly map
+// reads as broken, not calm.
 export const RAMP_PRESETS: AnomalyRampPreset[] = [
   {
     id: 'diverging',
@@ -76,53 +84,11 @@ export const RAMP_PRESETS: AnomalyRampPreset[] = [
     fillOpacity: 0.35,
     quietSide: true,
   },
-  {
-    id: 'diverging-soft',
-    label: 'Diverging soft',
-    note: 'same shape at underlay-register opacity',
-    stops: [
-      { z: -2.6, color: TEAL(1) },
-      { z: -0.5, color: TEAL(0) },
-      { z: 0.5, color: OCHRE(0) },
-      { z: 1.5, color: OCHRE(1) },
-      { z: 1.9, color: TERRACOTTA(1) },
-      { z: 2.6, color: BRICK(1) },
-    ],
-    fillOpacity: 0.24,
-    quietSide: true,
-  },
-  {
-    id: 'warm-only',
-    label: 'Warm only',
-    note: 'busy side only — quiet stays bare basemap',
-    stops: [
-      { z: 0.5, color: OCHRE(0) },
-      { z: 1.5, color: OCHRE(1) },
-      { z: 1.9, color: TERRACOTTA(1) },
-      { z: 2.6, color: BRICK(1) },
-    ],
-    fillOpacity: 0.35,
-    quietSide: false,
-  },
-  {
-    id: 'warm-deep',
-    label: 'Warm deep',
-    note: 'earlier onset, deeper top end, stronger opacity',
-    stops: [
-      { z: 0.35, color: OCHRE(0) },
-      { z: 1.2, color: OCHRE(1) },
-      { z: 1.8, color: TERRACOTTA(1) },
-      { z: 2.4, color: BRICK(1) },
-      { z: 3.2, color: BRICK_DEEP(1) },
-    ],
-    fillOpacity: 0.45,
-    quietSide: false,
-  },
 ]
 
 export const DEFAULT_RAMP_ID = 'diverging'
 
-export function getRampPreset(id: string | null | undefined): AnomalyRampPreset {
+export function getRampPreset(id?: string | null): AnomalyRampPreset {
   return RAMP_PRESETS.find((p) => p.id === id) ?? RAMP_PRESETS.find((p) => p.id === DEFAULT_RAMP_ID)!
 }
 

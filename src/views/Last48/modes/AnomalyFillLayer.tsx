@@ -32,9 +32,6 @@ interface Props {
   combinedAnomalies: Record<string, number>
   selectedNeighborhood?: string
   onNeighborhoodClick?: (neighborhood: string) => void
-  /** Ramp preset id (anomalyRamp.ts). Omit for the default. DEV: the ?ramp=
-   *  switcher feeds this while the treatment is being chosen on live data. */
-  rampId?: string | null
 }
 
 export default function AnomalyFillLayer({
@@ -42,7 +39,6 @@ export default function AnomalyFillLayer({
   combinedAnomalies,
   selectedNeighborhood,
   onNeighborhoodClick,
-  rampId,
 }: Props) {
   const { boundaries } = useNeighborhoodBoundaries()
   const isDarkMode = useAppStore((s) => s.isDarkMode)
@@ -77,7 +73,7 @@ export default function AnomalyFillLayer({
   // with the same SOURCE_ID caused the outline layer to silently never render
   // because useMapLayer only calls addLayer on the first (source-creation) pass.
   const choroplethLayers: mapboxgl.AnyLayer[] = useMemo(() => {
-    const preset = getRampPreset(rampId)
+    const preset = getRampPreset()
     const selectedIsBoolean = ['boolean', ['get', 'selected'], false]
     return [
       // Fill layer — continuous ramp; the transparent band around "typical"
@@ -126,7 +122,7 @@ export default function AnomalyFillLayer({
         },
       } as unknown as mapboxgl.AnyLayer,
     ]
-  }, [rampId, isDarkMode])
+  }, [isDarkMode])
 
   useMapLayer(map, SOURCE_ID, geojson, choroplethLayers)
 
