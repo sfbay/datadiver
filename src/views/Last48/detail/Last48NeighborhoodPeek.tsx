@@ -4,6 +4,7 @@
 // it. Shows per-dataset z-score breakdown, top contributing events.
 
 import type { AnomalyResult, NormalizedEvent, DatasetId } from '@/types/last48'
+import { combineZ } from '../modes/anomalyRamp'
 
 const DATASET_LABELS: Record<DatasetId, string> = {
   '911-realtime':      '911',
@@ -27,9 +28,9 @@ interface Props {
 }
 
 export default function Last48NeighborhoodPeek({ neighborhood, anomalies, events, onClose }: Props) {
-  const overallZ = anomalies.length > 0
-    ? anomalies.reduce((s, a) => s + a.zScore, 0) / anomalies.length
-    : 0
+  // Stouffer-combined, matching the map fill + rail (anomalyRamp.combineZ) —
+  // the eyebrow must agree with the color the reader just clicked.
+  const overallZ = combineZ(anomalies.map((a) => a.zScore))
 
   const isAbove = overallZ >= 0
   const summaryLine = isAbove ? 'unusual activity in the last 48 hours' : 'below baseline activity in the last 48 hours'
