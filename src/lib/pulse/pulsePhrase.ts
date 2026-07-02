@@ -95,8 +95,10 @@ const TREND_MIN_PCT = 10
 
 // ── Number humanizers ───────────────────────────────────────────────────────
 
-/** Round to a number a person would say: <10 exact, <100 nearest 5, else 10. */
-function roundNice(n: number): number {
+/** Round to a number a person would say: <10 exact, <100 nearest 5, else 10.
+ *  Exported for surfaces that phrase a comparison outside the wire (the
+ *  Last 48 neighborhood peek's "usual ≈ 60" rows). */
+export function roundNice(n: number): number {
   if (n < 10) return Math.round(n)
   if (n < 100) return Math.round(n / 5) * 5
   return Math.round(n / 10) * 10
@@ -133,6 +135,56 @@ function fallWord(tier: 1 | 2 | 3): string {
 function trendWord(up: boolean, tier: 1 | 2 | 3): string {
   const amt = tier === 3 ? 'sharply' : tier === 2 ? 'notably' : 'slightly'
   return `${up ? 'up' : 'down'} ${amt} from last year`
+}
+
+// ── Combined-deviation phrasing (threshold-free) ────────────────────────────
+//
+// For surfaces that show EVERY neighborhood, not just wire-worthy ones — the
+// Last 48 AnomalyRail and neighborhood peek. anomalyToWireItem deliberately
+// returns null below the wire's inclusion thresholds and rejects combined
+// scores; this helper phrases any z, including "near usual". A combined
+// (Stouffer) z has no single count/baseline behind it, so the vocabulary is
+// direction + tier words only — never a ratio the data can't back.
+
+/** How far outside "usual" a combined score sits before it earns a
+ *  directional word (below this: "near usual"). The AnomalyRail's notable
+ *  divider imports this so the words and the threshold can't drift. */
+export const NEAR_USUAL_Z = 0.5
+
+export interface CombinedDeviation {
+  signalType: 'rise' | 'fall'
+  magnitude: 1 | 2 | 3
+  /** True when |z| < NEAR_USUAL_Z — reads "near usual", render dimmed. */
+  near: boolean
+  /** Compact on-screen label: "far above usual", "below usual", "near usual". */
+  short: string
+  /** Spoken (aria) sentence fragment — vivid, used once. */
+  spoken: string
+}
+
+export function combinedDeviation(z: number): CombinedDeviation {
+  const az = Math.abs(z)
+  const fall = z < 0
+  const tier = volumeTier(az)
+  if (az < NEAR_USUAL_Z) {
+    return {
+      signalType: fall ? 'fall' : 'rise',
+      magnitude: 1,
+      near: true,
+      short: 'near usual',
+      spoken: 'close to its usual level',
+    }
+  }
+  const shortWords: Record<1 | 2 | 3, string> = fall
+    ? { 1: 'below usual', 2: 'well below usual', 3: 'far below usual' }
+    : { 1: 'above usual', 2: 'well above usual', 3: 'far above usual' }
+  return {
+    signalType: fall ? 'fall' : 'rise',
+    magnitude: tier,
+    near: false,
+    short: shortWords[tier],
+    spoken: fall ? fallWord(tier) : riseWord(tier),
+  }
 }
 
 // ── Anomaly (neighborhood volume) → WireItem ────────────────────────────────
