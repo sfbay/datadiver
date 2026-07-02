@@ -99,6 +99,24 @@ While per-sector opening counts are contaminated by NAICS lag, the **total openi
 
 ## General Patterns
 
+### Floating SF-Local Timestamps (all DataSF datasets)
+
+DataSF datetime fields are **floating wall-clock strings in America/Los_Angeles** — no offset,
+no `Z`: `'2026-07-01T16:10:21.000'` means 4:10 p.m. *SF time*. Evidence (2026-07-01): the 911
+Realtime feed's `MAX(received_datetime)` read 16 minutes old against the SF clock and "7 hours
+old" against UTC; the feed's diurnal 1–5 a.m. trough confirms local time.
+
+`Date.parse` reads these strings in the **host** timezone, so code looks correct on a Pacific
+laptop and breaks everywhere else (Vercel functions run TZ=UTC). Building a `$where` cutoff
+from `toISOString()` has the mirror bug — UTC digits start every window 7–8h late. Before the
+PR #101 fix this skewed digest-email clocks by 7–8 hours, shrank every "last 48h" query to
+~41h (~15% undercount during PDT), and manufactured a phantom 7h "latency floor" on the 911
+stream (exactly the PDT offset — the floor had been measured through the bug).
+
+**Rule:** all timestamp parsing and `$where` cutoff construction goes through
+`src/utils/sfTime.ts` (`parseSfLocal` / `sfLocalCutoff`, DST-correct via Intl). The diagnostic
+tell for a regression: any lag, floor, or delta that is "suspiciously exactly" 7–8 hours.
+
 ### Server-Side Aggregation vs Client-Side Sampling
 
 Socrata queries are limited to a row count (default 1,000, max 50,000). If you fetch N rows sorted by recency and then aggregate client-side, per-entity totals will be wrong — the sample is biased toward recent records.

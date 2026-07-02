@@ -47,6 +47,7 @@ The geo-newsletters feature is DataDiver's first backend (Vercel Functions + Ver
 - Empty periods send **no email** (the cadence clock still advances; the event watermark does not, so a late-publishing event is still caught next run).
 - Unsubscribe **hard-deletes** the subscriber and cascades subscriptions + locations (minimal-PII).
 - The matcher reuses the app's exact `normalizeEvent` + `classifySignificant`, so emailed events match what the app shows.
+- **DataSF timestamps are floating SF-local** — `normalizeEvent` parses them via `src/utils/sfTime.ts` (PR #101, July 2026). Before that fix the TZ=UTC cron read every event 7–8h early: digest clock times were wrong, time-of-day blocks misfiled events, the fetch window was ~41h, and a new subscriber's first ~7h of events fell before their confirm watermark. Any future cron-side date handling must go through `sfTime.ts`.
 - The **first digest** after confirmation contains only events from after sign-up (the event watermark is seeded to confirm time), not a 48-hour backlog.
 - The daily cron prunes `subscribe_attempts` rows older than 24h, so the rate-limit table stays small.
 
@@ -61,6 +62,15 @@ The geo-newsletters feature is DataDiver's first backend (Vercel Functions + Ver
 - `tsconfig` for api: switch `moduleResolution` to `"NodeNext"` so `tsc` itself catches missing `.js` suffixes on relative imports (see `memory/feedback_vercel_node_esm_js_suffix.md`).
 - ~~AP-style `a.m.`/`p.m.` in digest timestamps~~ ✓ shipped in the June 2026 hardening pass (along with: timing-safe `CRON_SECRET` compare, 90-day unsubscribe tokens, radius-correct digest bucketing, atomic rate-limit insert+count, `escapeHtml` in the confirm/unsubscribe pages, prune index).
 - Consider a `token_version` column on `subscribers` for true unsubscribe-token revocation on re-subscribe (the 90-day expiry bounds the window; a version bump would close it).
+
+Added by the July 2026 retrospective review (ranked; first two are the priority):
+- **Unsubscribe is a destructive GET** — corporate link scanners (Outlook SafeLinks, Mimecast) prefetch email links and silently hard-delete the subscriber. Serve a confirm page with a POST button; keep the RFC 8058 one-click header path. `confirm.ts` has the mirror issue (scanner can complete opt-in).
+- **Consent gap**: once an email is confirmed, any subscribe POST attaches a live subscription to it without re-confirmation, with `last_event_ts=0` → full backlog in the first digest. Require per-subscription confirm (or re-confirm on new subscription) and seed the watermark at insert.
+- **No subscription dedupe** — double-click or post-503 retry creates permanent duplicate digests with no management UI to remove them.
+- **Streams + categories allow-lists still triplicated** (client `AlertsView`, server `subscribe.ts`, `significance.ts`) — same drift bomb `radii.ts` was created to defuse; lift into one shared constants module with a pinning test.
+- Cron scaling: fetch the stream union once per run (currently re-fetched per subscription), add `maxDuration` to `vercel.json`; 311 runs ~5K rows/48h, brushing the `$limit=5000` cap (DESC order silently drops oldest).
+- `digestRender.ts` hardcodes `PUBLIC_LINK_BASE` to prod (bypasses `PUBLIC_BASE_URL`); confirm/unsubscribe pages still link `/live-feeds` (works only via the legacy redirect); subject-line event count double-counts events inside overlapping pin radii.
+- Alerts view has no mobile treatment (built after the #89 mobile shell; it's the most phone-shaped feature in the app). Also: tell subscribers *when* the digest arrives (~6am PT) at the point of sign-up.
 
 ## Separate launch punchlist (NOT this feature)
 ~~The DataDiver icon — favicon (`.ico`/SVG; previously mis-noted here as "`.ics` calendar export", a typo — there is no calendar feature) + the upper-left UI mark~~ ✓ shipped June 2026: theme-aware `favicon.svg` + `favicon.ico` + `apple-touch-icon.png`; the upper-left Dana badge already existed in `AppShell`.
