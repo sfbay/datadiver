@@ -20,7 +20,7 @@ function zColor(z: number): string {
 const NOTABLE_THRESHOLD = 0.5
 
 interface Props {
-  /** Combined per-neighborhood z-score (averaged across selected datasets) */
+  /** Combined per-neighborhood z-score (Stouffer-combined across selected datasets) */
   combinedAnomalies: Record<string, number>
   selectedNeighborhood?: string
   onSelect: (neighborhood: string) => void
@@ -118,8 +118,8 @@ export default function AnomalyRail({ combinedAnomalies, selectedNeighborhood, o
       {/* Methodology footer — flex-shrink-0 so it stays pinned at the bottom */}
       <div className="sticky bottom-0 z-10 px-3 py-2 border-t border-paper-200/40 dark:border-espresso-800 flex-shrink-0 bg-paper-50/95 dark:bg-espresso-950/95 backdrop-blur-sm font-mono text-[8px] leading-snug text-paper-500 dark:text-paper-600">
         Compares this 48h to 42 typical 48h windows over the trailing 12 weeks
-        (per neighborhood per dataset, averaged). Threshold for "notable":
-        |σ| ≥ {NOTABLE_THRESHOLD}.
+        (per neighborhood per dataset, combined across streams). Threshold for
+        "notable": |σ| ≥ {NOTABLE_THRESHOLD}.
       </div>
     </MapSidebar>
   )

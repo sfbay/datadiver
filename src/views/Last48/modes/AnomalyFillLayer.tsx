@@ -5,25 +5,30 @@
 // FlowMapLayer in the single-MapView composable-layers architecture
 // (Phase 5). Accepts a click handler for neighborhood selection.
 //
-// Color ramp:
-//   |z| < 0.5              → transparent (no editorial story)
-//   z ∈ [0.5, 1.0)         → ochre (mild elevation)
-//   z ∈ [1.0, 2.0)         → terracotta (notable)
-//   z ≥ 2.0                → brick (standout)
-//   z < -0.5               → paper-300 (unusually quiet)
+// Paint (roadmap item 6 rework): a CONTINUOUS ['interpolate'] ramp over the
+// combined z-score, borrowing the demographic underlay's recipe — blended
+// color instead of the old 5-bucket case (which snapped nearly every
+// neighborhood into one flat patch), translucent enough for the basemap to
+// read through, hairline neighborhood outlines. Ramp presets + the combine
+// math live in anomalyRamp.ts (pure, tested). The selected neighborhood —
+// the one a Pulse card lands on — gets a visible frame: a stroke ring plus
+// a fill-opacity lift.
 
 import { useEffect, useMemo, useRef } from 'react'
 import mapboxgl from 'mapbox-gl'
 import { useMapLayer } from '@/hooks/useMapLayer'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
+import { useAppStore } from '@/stores/appStore'
+import { getRampPreset, rampFillColor } from './anomalyRamp'
 
 const SOURCE_ID      = 'last48-anomaly-fill'
 const FILL_LAYER_ID  = 'last48-anomaly-fill-poly'
 const LINE_LAYER_ID  = 'last48-anomaly-fill-outline'
+const SELECT_LAYER_ID = 'last48-anomaly-fill-selected'
 
 interface Props {
   map: mapboxgl.Map | null
-  /** Combined per-neighborhood z-score (averaged across selected datasets) */
+  /** Combined per-neighborhood z-score (Stouffer-combined across selected datasets) */
   combinedAnomalies: Record<string, number>
   selectedNeighborhood?: string
   onNeighborhoodClick?: (neighborhood: string) => void
@@ -36,6 +41,7 @@ export default function AnomalyFillLayer({
   onNeighborhoodClick,
 }: Props) {
   const { boundaries } = useNeighborhoodBoundaries()
+  const isDarkMode = useAppStore((s) => s.isDarkMode)
   const onClickRef = useRef(onNeighborhoodClick)
   // Pattern: stable ref updated each render; accessed only in effects/handlers, not during render.
   // eslint-disable-next-line react-hooks/refs
@@ -66,49 +72,57 @@ export default function AnomalyFillLayer({
   // layers are registered when the source is first added. Two separate calls
   // with the same SOURCE_ID caused the outline layer to silently never render
   // because useMapLayer only calls addLayer on the first (source-creation) pass.
-  const choroplethLayers: mapboxgl.AnyLayer[] = useMemo(() => [
-    // Fill layer — z-score → color expression.
-    {
-      id: FILL_LAYER_ID,
-      type: 'fill',
-      source: SOURCE_ID,
-      paint: {
-        'fill-color': [
-          'case',
-          ['<', ['get', 'zScore'], -0.5], '#c7b288',           // below baseline — paper-400 (earth-tone palette)
-          ['<', ['get', 'zScore'],  0.5], 'rgba(0,0,0,0)',     // within ±0.5σ — transparent
-          ['<', ['get', 'zScore'],  1.0], '#d4a435',           // ochre (0.5 to 1.0)
-          ['<', ['get', 'zScore'],  2.0], '#d47149',           // terracotta (1.0 to 2.0)
-          '#963e30',                                            // brick (>+2σ)
-        ],
-        'fill-opacity': [
-          'case',
-          ['<', ['abs', ['get', 'zScore']], 0.5], 0,
-          0.55,
-        ],
-        'fill-opacity-transition': { duration: 300 },
-      },
-    } as mapboxgl.AnyLayer,
-    // Outline layer — visible border on elevated/quiet neighborhoods.
-    {
-      id: LINE_LAYER_ID,
-      type: 'line',
-      source: SOURCE_ID,
-      paint: {
-        'line-color': [
-          'case',
-          ['<', ['get', 'zScore'], -0.5], '#a8926a',
-          ['>', ['get', 'zScore'],  0.5], '#1e140d',
-          'rgba(0,0,0,0)',
-        ],
-        'line-width': [
-          'case',
-          ['<', ['abs', ['get', 'zScore']], 0.5], 0,
-          1,
-        ],
-      },
-    } as mapboxgl.AnyLayer,
-  ], [])
+  const choroplethLayers: mapboxgl.AnyLayer[] = useMemo(() => {
+    const preset = getRampPreset()
+    const selectedIsBoolean = ['boolean', ['get', 'selected'], false]
+    return [
+      // Fill layer — continuous ramp; the transparent band around "typical"
+      // is baked into the preset's same-hue zero-alpha stops.
+      {
+        id: FILL_LAYER_ID,
+        type: 'fill',
+        source: SOURCE_ID,
+        paint: {
+          'fill-color': rampFillColor(preset),
+          'fill-opacity': [
+            'case',
+            selectedIsBoolean,
+            Math.min(preset.fillOpacity + 0.15, 1),
+            preset.fillOpacity,
+          ],
+          'fill-opacity-transition': { duration: 300 },
+        },
+        // Two-step cast: rampFillColor returns a plain unknown[] (the ramp
+        // module stays mapbox-free), which isn't directly comparable to
+        // ExpressionSpecification.
+      } as unknown as mapboxgl.AnyLayer,
+      // Hairline neighborhood outline — the underlay's engraving line, not a
+      // border. Theme-aware: white over dark-v11, espresso over light-v11.
+      {
+        id: LINE_LAYER_ID,
+        type: 'line',
+        source: SOURCE_ID,
+        paint: {
+          'line-color': isDarkMode ? 'rgba(255,255,255,0.12)' : 'rgba(30,20,13,0.18)',
+          'line-width': 0.5,
+        },
+      } as unknown as mapboxgl.AnyLayer,
+      // Selected-neighborhood frame — the map-side answer to a Pulse card's
+      // claim ("this neighborhood"). Paper ring on espresso, espresso ring
+      // on cream.
+      {
+        id: SELECT_LAYER_ID,
+        type: 'line',
+        source: SOURCE_ID,
+        filter: ['==', ['get', 'selected'], true],
+        paint: {
+          'line-color': isDarkMode ? '#f5ecd9' : '#1e140d',
+          'line-width': 2,
+          'line-opacity': 0.9,
+        },
+      } as unknown as mapboxgl.AnyLayer,
+    ]
+  }, [isDarkMode])
 
   useMapLayer(map, SOURCE_ID, geojson, choroplethLayers)
 
