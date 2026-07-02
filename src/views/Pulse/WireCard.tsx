@@ -77,8 +77,11 @@ export default function WireCard({ item }: { item: WireItem }) {
       </div>
 
       {/* ── stub (place) ──────────────────────────────────────── */}
+      {/* Liquid width, no breakpoint: 136px on desktop, easing to 104px on
+          narrow phones (26vw @ 390px ≈ 101px) so the body keeps ~200px+ for
+          the glyph + big number. Names wrap; that's the stub's design. */}
       <div
-        className={`relative flex-shrink-0 w-[136px] flex items-center justify-center px-3 py-2.5
+        className={`relative flex-shrink-0 w-[clamp(104px,26vw,136px)] flex items-center justify-center px-3 py-2.5
                     ${hasPlace ? '' : 'bg-paper-200/70 dark:bg-espresso-800'}`}
         style={hasPlace ? { backgroundColor: color } : undefined}
       >
