@@ -7,8 +7,8 @@
 // Detection is reused (useAnomalyBaseline + useCivicIndicators); prose +
 // visual encoding come from the tested pulsePhrase layer.
 
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useMemo } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { usePulseWire } from './usePulseWire'
 import WireCard from './WireCard'
 
@@ -16,7 +16,22 @@ const MAX_VISIBLE = 24
 
 export default function Pulse() {
   const { items, isLoading } = usePulseWire()
-  const [place, setPlace] = useState<string>('all') // 'all' | 'citywide' | <neighborhood>
+
+  // Place filter lives in the URL (?nh=) so a filtered wire is a sendable
+  // link — mirrors Last48's ?nh= pattern (replace, redundant-write guard).
+  // 'all' (no param) | 'citywide' (lowercase — can't collide with a real
+  // neighborhood name) | <neighborhood>.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const place = searchParams.get('nh') ?? 'all'
+  const setPlace = useCallback((next: string) => {
+    setSearchParams((prev) => {
+      if ((prev.get('nh') ?? 'all') === next) return prev
+      const np = new URLSearchParams(prev)
+      if (next === 'all') np.delete('nh')
+      else np.set('nh', next)
+      return np
+    }, { replace: true })
+  }, [setSearchParams])
 
   // Neighborhoods that actually have a signal right now (the filter only offers
   // real choices, ranked by their strongest card).
@@ -101,7 +116,10 @@ export default function Pulse() {
         {isLoading ? (
           <CardSkeletonGrid />
         ) : visible.length === 0 ? (
-          <EmptyWire />
+          <EmptyWire
+            place={place !== 'all' && items.length > 0 ? place : null}
+            onShowAll={() => setPlace('all')}
+          />
         ) : (
           <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-x-5 gap-y-4">
             {visible.map((item) => (
@@ -158,7 +176,32 @@ function CardSkeletonGrid() {
   )
 }
 
-function EmptyWire() {
+// `place` set = a filter (often an arriving ?nh= link) excluded everything —
+// say so honestly instead of implying the whole city is quiet. null = the
+// wire itself is empty.
+function EmptyWire({ place, onShowAll }: { place: string | null; onShowAll: () => void }) {
+  if (place) {
+    const label = place === 'citywide' ? 'citywide' : `in ${place}`
+    return (
+      <div className="py-16 text-center">
+        <p className="font-display text-[clamp(1.25rem,2vw,1.6rem)] text-espresso-900 dark:text-paper-100">
+          Nothing's standing out {label} right now.
+        </p>
+        <p className="mt-2 font-serif text-paper-600 dark:text-paper-500">
+          Running close to normal — but other parts of the city have signals.
+        </p>
+        <button
+          type="button"
+          onClick={onShowAll}
+          className="mt-5 rounded-full px-4 py-1.5 font-mono text-[11px] tracking-wide
+                     bg-terracotta-600 text-paper-50 dark:bg-terracotta-500 hover:bg-terracotta-700
+                     dark:hover:bg-terracotta-600 transition-colors"
+        >
+          Show the whole wire
+        </button>
+      </div>
+    )
+  }
   return (
     <div className="py-16 text-center">
       <p className="font-display text-[clamp(1.25rem,2vw,1.6rem)] text-espresso-900 dark:text-paper-100">
