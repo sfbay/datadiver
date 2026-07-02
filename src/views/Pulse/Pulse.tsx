@@ -115,9 +115,11 @@ export default function Pulse() {
           </div>
         </header>
 
-        {/* ── Neighborhood filter ────────────────────────────────── */}
+        {/* ── Neighborhood filter ──────────────────────────────────
+            overscroll-x-contain: keep the chip row's horizontal scroll from
+            bleeding into iOS back-swipe navigation at the row's edges */}
         {!isLoading && (neighborhoods.length > 0 || hasCitywide) && (
-          <div className="flex items-center gap-1.5 mb-5 overflow-x-auto pb-1 -mx-1 px-1">
+          <div className="flex items-center gap-1.5 mb-5 overflow-x-auto overscroll-x-contain pb-1 -mx-1 px-1">
             <FilterChip label="All" active={place === 'all'} onClick={() => setPlace('all')} />
             {hasCitywide && (
               <FilterChip label="Citywide" active={place === 'citywide'} onClick={() => setPlace('citywide')} />
@@ -138,7 +140,9 @@ export default function Pulse() {
           />
         ) : (
           <>
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-x-5 gap-y-4">
+            {/* min(320px,100%): a bare 320px minmax overflows horizontally on
+                <360px viewports once the page padding is subtracted */}
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(min(320px,100%),1fr))] gap-x-5 gap-y-4">
               {visible.map((item) => (
                 <WireCard key={item.id} item={item} />
               ))}
@@ -171,7 +175,7 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
     <button
       type="button"
       onClick={onClick}
-      className={`flex-shrink-0 rounded-full px-3 py-1 font-mono text-[11px] tracking-wide whitespace-nowrap transition-colors ${
+      className={`flex-shrink-0 rounded-full px-3 py-1 pointer-coarse:px-3.5 pointer-coarse:py-2 font-mono text-[11px] tracking-wide whitespace-nowrap transition-colors ${
         active
           ? 'bg-terracotta-600 text-paper-50 dark:bg-terracotta-500'
           : 'bg-paper-200/50 dark:bg-espresso-800/60 text-paper-700 dark:text-paper-400 hover:bg-paper-200 dark:hover:bg-espresso-800'
@@ -185,7 +189,7 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
 
 function CardSkeletonGrid() {
   return (
-    <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-x-5 gap-y-4 animate-pulse">
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(min(320px,100%),1fr))] gap-x-5 gap-y-4 animate-pulse">
       {Array.from({ length: 6 }).map((_, i) => (
         <div key={i} className="rounded-xl border border-paper-200/60 dark:border-espresso-800/70 pl-5 pr-4 py-4">
           <div className="h-4 w-2/3 rounded bg-paper-200 dark:bg-espresso-800 mb-3" />
