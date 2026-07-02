@@ -31,9 +31,14 @@ of it.
 > stale "7h 911 lag" copy corrected; card polish — tickLabel, masthead "updated" stamp,
 > 1.0K fix, truncation note; mobile pass — sub-360px grid overflow fix, liquid stub clamp,
 > pointer-coarse chip targets, overscroll containment). #107 also swapped the nav: The Last 48
-> is slot 2, The Pulse slot 3. Remaining: item 6 (choropleth rethink, design-first), item 7
-> (expansions), the preview verification below, and an on-device thumb-scroll of /pulse
-> (mobile pass shipped without visual QA — Chrome automation was down).
+> is slot 2, The Pulse slot 3. **Item 6 shipped later the same day as PRs #108/#110**:
+> continuous diverging ramp (design gate run on live data via an in-map `?ramp=` switcher,
+> since stripped — Jesse picked diverging; soft too wispy, warm-only invisible because the
+> quiet side carries the texture on a typical afternoon), Stouffer combine replacing the
+> flattening mean, selected-neighborhood ring, `AnomalyLegend`, and the rail/peek dejargon
+> via `pulsePhrase.combinedDeviation`. Remaining: item 7 (expansions), the preview
+> verification below, and an on-device thumb-scroll of /pulse (mobile pass shipped without
+> visual QA — Chrome automation was down).
 
 ## Phase 2 work items, in shipping order
 
