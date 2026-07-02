@@ -86,6 +86,9 @@ const TICKER_PIGMENT: Record<string, string> = {
 }
 
 // ── Inclusion thresholds ────────────────────────────────────────────────────
+// Documented publicly at /about#whats-unusual (About.tsx) — the one place the
+// statistical machinery is named, numbers included. Change a threshold here
+// (or the tier boundaries below) and that section must change with it.
 const VOLUME_MIN_Z = 1.5
 const QUIET_MIN_Z = 2.0
 const TREND_MIN_PCT = 10

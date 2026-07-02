@@ -1,4 +1,5 @@
-import { type ReactNode, type CSSProperties } from 'react'
+import { useEffect, type ReactNode, type CSSProperties } from 'react'
+import { useLocation } from 'react-router-dom'
 
 /**
  * About — authorship, AI disclosure, stack, data sources, and a public
@@ -58,7 +59,7 @@ interface SourceRow {
 const SOURCES: SourceRow[] = [
   { name: 'Fire/EMS Dispatched Calls', id: 'nuek-vuh3', dateField: 'received_dttm', note: 'Publishes with ~12h intrinsic lag' },
   { name: 'Fire Incidents', id: 'wr8u-xric', dateField: 'alarm_dttm' },
-  { name: '911 Dispatch (Real-Time)', id: 'gnap-fj3t', dateField: 'received_datetime', note: 'Rolling 48h window; ~7h lag; no coordinates' },
+  { name: '911 Dispatch (Real-Time)', id: 'gnap-fj3t', dateField: 'received_datetime', note: 'Rolling 48h window; ~30min lag; no coordinates' },
   { name: '911 Dispatch (Historical)', id: '2zdj-bwza', dateField: 'received_datetime', note: 'Closed law-enforcement calls; no coordinates' },
   { name: 'Police Incident Reports (2018+)', id: 'wg3w-h783', dateField: 'incident_datetime', note: '~39h publish lag' },
   { name: '311 Cases', id: 'vw6y-z8j6', dateField: 'requested_datetime', note: '~15h intrinsic lag' },
@@ -92,6 +93,16 @@ const STACK: { area: string; tools: string }[] = [
 ]
 
 export default function About() {
+  // React Router doesn't scroll to URL fragments, and this page scrolls inside
+  // a nested overflow container (not the window) — so /about#whats-unusual
+  // (The Pulse's methodology link) needs explicit delivery. Instant, not
+  // smooth: arrival positioning, not an animation (and reduced-motion safe).
+  const { hash } = useLocation()
+  useEffect(() => {
+    if (!hash) return
+    document.getElementById(hash.slice(1))?.scrollIntoView({ block: 'start' })
+  }, [hash])
+
   return (
     <div className="h-full overflow-y-auto">
       <div className="max-w-[1100px] mx-auto px-[clamp(16px,3vw,64px)] py-10">
@@ -273,8 +284,10 @@ export default function About() {
 
             <Finding title="No SF dataset is real-time — freshness is designed around each feed's floor">
               <p>
-                Every dataset publishes with intrinsic lag: roughly 7 hours for real-time 911
-                dispatch, 12 for Fire/EMS, 15 for 311, ~39 for police incidents. &ldquo;The
+                Every dataset publishes with intrinsic lag: roughly 30 minutes for real-time
+                911 dispatch, 12 hours for Fire/EMS, 15 for 311, ~39 for police incidents.
+                (An earlier ~7-hour figure for 911 turned out to be a timezone-handling
+                artifact in our own measurement — exactly the Pacific offset.) &ldquo;The
                 Last 48&rdquo; view names this honestly, and its recency color ramps are
                 calibrated to each feed&rsquo;s natural floor — an event shown as
                 &ldquo;fresh&rdquo; means <em>as fresh as this dataset gets</em>, with the
@@ -333,6 +346,64 @@ export default function About() {
               </p>
             </Finding>
           </div>
+        </section>
+
+        {/* ── The Pulse methodology (anchor target of the wire's footer link
+               and any card's "How we decide what's unusual") ─────────────── */}
+        <section id="whats-unusual" className="mb-12 scroll-mt-4">
+          <SectionHead label="How We Decide What's Unusual — The Pulse" glow="#b85a33" />
+          <Prose>
+            <p>
+              The Pulse — and the anomaly view on The Last 48 it links into — is a
+              translation layer: statistical detection under the hood, plain English on
+              the surface. A reader never sees a z-score on a card. This is the one page
+              where the machinery is documented in full, numbers included, so anyone can
+              check our thresholds against their own judgment.
+            </p>
+            <p>
+              <strong className="text-ink dark:text-white">What&rsquo;s watched.</strong>{' '}
+              Call and report volume per neighborhood for three live feeds — 911 dispatch,
+              Fire/EMS dispatch, and 311 cases — across all 41 of the city&rsquo;s analysis
+              neighborhoods, plus a set of citywide indicators (significant 911 and
+              Fire/EMS incidents, the fastest-rising 311 complaint type, and year-over-year
+              trends in crime, emergency volume, and parking).
+            </p>
+            <p>
+              <strong className="text-ink dark:text-white">The comparison.</strong>{' '}
+              A neighborhood&rsquo;s last 48 hours is compared against its own recent
+              history: the same feed&rsquo;s counts over 42 non-overlapping two-day windows
+              spanning the previous 12 weeks, summarized as a mean and standard deviation.
+              A card enters the wire when the current window runs at least{' '}
+              <span className="font-mono text-[13px]">1.5</span> standard deviations above
+              that history; the tile&rsquo;s chevrons step up around{' '}
+              <span className="font-mono text-[13px]">2</span> and{' '}
+              <span className="font-mono text-[13px]">2.6</span>. Citywide trend cards
+              appear when a period runs at least{' '}
+              <span className="font-mono text-[13px]">10%</span> above or below the same
+              period a year earlier. Ranking on the page follows the same signal strength.
+            </p>
+            <p>
+              <strong className="text-ink dark:text-white">The quiet rule.</strong>{' '}
+              &ldquo;Unusually quiet&rdquo; claims carry a stricter double test: at least{' '}
+              <span className="font-mono text-[13px]">2</span> standard deviations{' '}
+              <em>below</em> usual, and only on a feed confirmed to be publishing
+              current data. A stream that is merely behind on publishing looks identical
+              to a quiet one — so when freshness can&rsquo;t be confirmed, we say nothing
+              rather than mistake a data gap for calm.
+            </p>
+            <p>
+              <strong className="text-ink dark:text-white">Known limits.</strong>{' '}
+              Every feed publishes with intrinsic lag (see the data-sources table above),
+              so a spike in the last few hours may not be visible yet — the wire reflects
+              the freshest published data, not the absolute present. Neighborhoods with
+              very small typical volumes produce noisier statistics; the thresholds above
+              are what suppress those, which means a genuinely unusual two-or-three-event
+              cluster in a quiet neighborhood can be missed. And detection is volume-only
+              per feed: a shift in the <em>kind</em> of calls, at normal volume, won&rsquo;t
+              surface as a neighborhood card (significant-incident types are tracked
+              citywide instead).
+            </p>
+          </Prose>
         </section>
 
         {/* ── Case study: Resolution 240210 ──────────────── */}
