@@ -11,6 +11,7 @@ import { useCallback, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { usePulseWire } from './usePulseWire'
 import WireCard from './WireCard'
+import { formatApTime } from '@/utils/format'
 
 const MAX_VISIBLE = 24
 
@@ -49,15 +50,25 @@ export default function Pulse() {
 
   const hasCitywide = useMemo(() => items.some((i) => !i.place), [items])
 
-  const visible = useMemo(() => {
+  // Keep the pre-cap count: a silent MAX_VISIBLE cut would read as "this is
+  // everything" — the truncation note below the grid names what was trimmed.
+  const { visible, filteredTotal } = useMemo(() => {
     const filtered =
       place === 'all'
         ? items
         : place === 'citywide'
           ? items.filter((i) => !i.place)
           : items.filter((i) => i.place === place)
-    return filtered.slice(0, MAX_VISIBLE)
+    return { visible: filtered.slice(0, MAX_VISIBLE), filteredTotal: filtered.length }
   }, [items, place])
+
+  // One "updated" stamp for the wire (each card's compute time is ~identical —
+  // per-card timestamps would be uniform noise, rejected in the Phase-1 card
+  // studies). SF wall clock via formatApTime.
+  const updatedAt = useMemo(
+    () => (items.length ? Math.max(...items.map((i) => i.at)) : null),
+    [items],
+  )
 
   return (
     <div className="h-full overflow-y-auto bg-paper-50 dark:bg-espresso-950">
@@ -69,6 +80,11 @@ export default function Pulse() {
         <header className="mb-6">
           <p className="font-mono text-[11px] tracking-[0.25em] uppercase text-terracotta-600 dark:text-terracotta-400 mb-3">
             <span className="text-paper-400 dark:text-paper-600">──</span> The Pulse
+            {updatedAt !== null && (
+              <span className="normal-case tracking-normal text-paper-500 dark:text-paper-600">
+                {'  '}· updated {formatApTime(updatedAt)}
+              </span>
+            )}
           </p>
           <h1 className="font-display text-[clamp(2rem,4vw,3.25rem)] leading-[1.05] tracking-tight
                          text-espresso-900 dark:text-paper-50">
@@ -121,11 +137,18 @@ export default function Pulse() {
             onShowAll={() => setPlace('all')}
           />
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-x-5 gap-y-4">
-            {visible.map((item) => (
-              <WireCard key={item.id} item={item} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-x-5 gap-y-4">
+              {visible.map((item) => (
+                <WireCard key={item.id} item={item} />
+              ))}
+            </div>
+            {filteredTotal > MAX_VISIBLE && (
+              <p className="mt-4 font-mono text-[10px] text-paper-500 dark:text-paper-600">
+                Showing the {MAX_VISIBLE} strongest of {filteredTotal} signals.
+              </p>
+            )}
+          </>
         )}
 
         {/* ── Footer note ────────────────────────────────────────── */}
