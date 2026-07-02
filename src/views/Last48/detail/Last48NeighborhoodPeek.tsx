@@ -1,9 +1,15 @@
 // src/views/Last48/detail/Last48NeighborhoodPeek.tsx
 //
-// HOTSPOTS click target — diagnoses an anomaly rather than just naming
-// it. Shows per-dataset z-score breakdown, top contributing events.
+// Anomaly-choropleth click target — diagnoses a deviation rather than just
+// naming it. Speaks the wire's language (roadmap item 6, PR 2): the eyebrow
+// carries a tier phrase from pulsePhrase.combinedDeviation instead of a raw
+// σ, and the per-stream rows show the concrete comparison the data CAN back
+// — this window's count vs the rounded usual. Precise z values survive in
+// each row's title attribute for the reader who hovers for the machinery.
 
 import type { AnomalyResult, NormalizedEvent, DatasetId } from '@/types/last48'
+import { combinedDeviation, roundNice } from '@/lib/pulse/pulsePhrase'
+import { signalColor } from '@/views/Pulse/SignalGlyph'
 import { combineZ } from '../modes/anomalyRamp'
 
 const DATASET_LABELS: Record<DatasetId, string> = {
@@ -12,12 +18,10 @@ const DATASET_LABELS: Record<DatasetId, string> = {
   '311-cases':         '311',
 }
 
-function zColor(z: number): string {
-  if (z >= 1.5)  return '#963e30'
-  if (z >= 0.5)  return '#d47149'
-  if (z >= -0.5) return '#7a5f42'
-  if (z >= -1.5) return '#a8926a'
-  return '#a8926a'
+/** Deviation color via the Pulse signal palette; muted when near usual. */
+function devColor(z: number): string {
+  const d = combinedDeviation(z)
+  return d.near ? '#7a5f42' : signalColor(d.signalType, d.magnitude)
 }
 
 interface Props {
@@ -31,9 +35,8 @@ export default function Last48NeighborhoodPeek({ neighborhood, anomalies, events
   // Stouffer-combined, matching the map fill + rail (anomalyRamp.combineZ) —
   // the eyebrow must agree with the color the reader just clicked.
   const overallZ = combineZ(anomalies.map((a) => a.zScore))
-
-  const isAbove = overallZ >= 0
-  const summaryLine = isAbove ? 'unusual activity in the last 48 hours' : 'below baseline activity in the last 48 hours'
+  const overall = combinedDeviation(overallZ)
+  const summaryLine = `${overall.spoken} over the last 48 hours`
 
   // Compute max |z| for the bar width scaling
   const maxAbsZ = Math.max(2, ...anomalies.map((a) => Math.abs(a.zScore)))
@@ -53,9 +56,13 @@ export default function Last48NeighborhoodPeek({ neighborhood, anomalies, events
       </button>
 
       <div className="flex-1 overflow-y-auto px-5 pb-4 flex flex-col gap-4">
-        {/* Eyebrow */}
-        <div className="font-mono text-[10px] tracking-widest text-paper-600 dark:text-paper-500">
-          ── NEIGHBORHOOD ANOMALY <span style={{ color: zColor(overallZ) }}>{overallZ >= 0 ? '+' : ''}{overallZ.toFixed(1)}σ</span>
+        {/* Eyebrow — tier phrase, not a σ; the precise combined value rides
+            the title attribute for the hover-for-machinery reader. */}
+        <div
+          className="font-mono text-[10px] tracking-widest text-paper-600 dark:text-paper-500"
+          title={`combined score ${overallZ >= 0 ? '+' : ''}${overallZ.toFixed(1)}σ`}
+        >
+          ── NEIGHBORHOOD SIGNAL <span className="uppercase" style={{ color: devColor(overallZ) }}>{overall.short}</span>
         </div>
 
         {/* Headline */}
@@ -66,32 +73,39 @@ export default function Last48NeighborhoodPeek({ neighborhood, anomalies, events
           </p>
         </div>
 
-        {/* Per-dataset breakdown */}
+        {/* Per-stream breakdown — the concrete comparison each stream's data
+            can back: this window's count vs the rounded usual. */}
         <section>
           <h3 className="font-mono text-[10px] tracking-wider text-paper-600 dark:text-paper-500 mb-2">
-            PER-DATASET BREAKDOWN
+            BY STREAM · THIS 48H VS USUAL
           </h3>
           <ul className="flex flex-col gap-1.5 font-mono text-[10px]">
             {anomalies.map((a) => {
               const widthPct = Math.min(100, (Math.abs(a.zScore) / maxAbsZ) * 100)
               const label = a.datasetId === 'combined' ? 'combined' : DATASET_LABELS[a.datasetId as DatasetId] ?? a.datasetId
+              const color = devColor(a.zScore)
               return (
-                <li key={String(a.datasetId)} className="flex items-center gap-2">
+                <li
+                  key={String(a.datasetId)}
+                  className="flex items-center gap-2"
+                  title={`${a.zScore >= 0 ? '+' : ''}${a.zScore.toFixed(1)}σ vs its 12-week baseline`}
+                >
                   <span className="w-16 text-paper-700 dark:text-paper-400 truncate">{label}</span>
-                  <span className="w-12 text-right tabular-nums" style={{ color: zColor(a.zScore) }}>
-                    {a.zScore >= 0 ? '+' : ''}{a.zScore.toFixed(1)}σ
+                  <span className="w-24 text-right tabular-nums whitespace-nowrap">
+                    <span style={{ color }}>{a.count48h}</span>
+                    <span className="text-paper-500 dark:text-paper-600"> · usual ≈ {roundNice(a.baselineMean)}</span>
                   </span>
                   <span className="flex-1 h-2 bg-paper-200/60 dark:bg-espresso-800 rounded">
                     <span
                       className="block h-full rounded"
-                      style={{ width: `${widthPct}%`, backgroundColor: zColor(a.zScore) }}
+                      style={{ width: `${widthPct}%`, backgroundColor: color }}
                     />
                   </span>
                 </li>
               )
             })}
             {anomalies.length === 0 && (
-              <li className="text-paper-500 italic">no per-dataset anomalies</li>
+              <li className="text-paper-500 italic">no per-stream comparisons yet</li>
             )}
           </ul>
         </section>

@@ -7,7 +7,14 @@
 //      can render the arrow/pill/big-number without re-deriving anything.
 
 import { describe, it, expect } from 'vitest'
-import { anomalyToWireItem, tickerToWireItem, rankWire, type WireItem } from './pulsePhrase'
+import {
+  anomalyToWireItem,
+  tickerToWireItem,
+  rankWire,
+  combinedDeviation,
+  NEAR_USUAL_Z,
+  type WireItem,
+} from './pulsePhrase'
 import type { AnomalyResult } from '@/types/last48'
 import type { TickerItem } from '@/types/ticker'
 
@@ -193,5 +200,37 @@ describe('rankWire', () => {
       rankScore, freshnessOk: true, at: AT,
     })
     expect(rankWire([mk('a', 70), mk('b', 110), mk('c', 92)]).map((w) => w.id)).toEqual(['b', 'c', 'a'])
+  })
+})
+
+describe('combinedDeviation — threshold-free phrasing for the rail/peek', () => {
+  it('phrases every z, including near-usual (no null below the wire thresholds)', () => {
+    const d = combinedDeviation(0.2)
+    expect(d.near).toBe(true)
+    expect(d.short).toBe('near usual')
+  })
+
+  it('maps direction and the Pulse magnitude tiers onto tier words', () => {
+    expect(combinedDeviation(1.0)).toMatchObject({ signalType: 'rise', magnitude: 1, near: false, short: 'above usual' })
+    expect(combinedDeviation(2.0)).toMatchObject({ signalType: 'rise', magnitude: 2, short: 'well above usual' })
+    expect(combinedDeviation(3.0)).toMatchObject({ signalType: 'rise', magnitude: 3, short: 'far above usual' })
+    expect(combinedDeviation(-1.0)).toMatchObject({ signalType: 'fall', magnitude: 1, short: 'below usual' })
+    expect(combinedDeviation(-2.7)).toMatchObject({ signalType: 'fall', magnitude: 3, short: 'far below usual' })
+  })
+
+  it('keeps every short + spoken string jargon-free across the z range', () => {
+    for (const z of [-3.5, -2.1, -1.2, -0.4, 0, 0.3, 0.8, 1.7, 2.2, 4]) {
+      const d = combinedDeviation(z)
+      const text = `${d.short} ${d.spoken}`.toLowerCase()
+      for (const term of BANNED_TERMS) {
+        expect(text, `"${term}" leaked into combinedDeviation(${z}): ${text}`).not.toContain(term)
+      }
+    }
+  })
+
+  it('NEAR_USUAL_Z is the boundary between "near usual" and a directional word', () => {
+    expect(combinedDeviation(NEAR_USUAL_Z - 0.01).near).toBe(true)
+    expect(combinedDeviation(NEAR_USUAL_Z).near).toBe(false)
+    expect(combinedDeviation(-NEAR_USUAL_Z).near).toBe(false)
   })
 })
