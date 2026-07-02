@@ -16,6 +16,7 @@
 // in the rail slot alongside AnomalyRail when a neighborhood is selected.
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import type mapboxgl from 'mapbox-gl'
 import { useAnomalyBaseline } from '@/hooks/useAnomalyBaseline'
 import type { Last48WindowResult } from '@/hooks/useLast48Window'
@@ -32,6 +33,9 @@ import FlowRail from './FlowRail'
 import FlowSelectedRadar from './FlowSelectedRadar'
 import FlowArrivalRipples from './FlowArrivalRipples'
 import AnomalyFillLayer from './AnomalyFillLayer'
+import AnomalyLegend from './AnomalyLegend'
+import AnomalyRampSwitcher from './AnomalyRampSwitcher'
+import { combineZ } from './anomalyRamp'
 import DemographicFillLayer from './DemographicFillLayer'
 import AnomalyRail from './AnomalyRail'
 import Last48EventCard from '../detail/Last48EventCard'
@@ -151,19 +155,26 @@ export default function Last48UnifiedView({
   // this duplication is a known cost of keeping each component self-contained.
   const { neighborhoods: censusNeighborhoods } = useCensusData()
 
+  // Stouffer-combined per-neighborhood z (Σz/√k, anomalyRamp.combineZ). The
+  // old arithmetic mean shrank the spread by 1/√k — with 3 streams almost
+  // every neighborhood landed in one color bucket, the "near-flat" look.
   const combinedAnomalies = useMemo(() => {
-    const sums: Record<string, { total: number; n: number }> = {}
+    const byNh: Record<string, number[]> = {}
     for (const a of anomalies) {
-      if (!sums[a.neighborhood]) sums[a.neighborhood] = { total: 0, n: 0 }
-      sums[a.neighborhood].total += a.zScore
-      sums[a.neighborhood].n += 1
+      ;(byNh[a.neighborhood] ??= []).push(a.zScore)
     }
     const result: Record<string, number> = {}
-    for (const [nh, s] of Object.entries(sums)) {
-      result[nh] = s.n > 0 ? s.total / s.n : 0
+    for (const [nh, zs] of Object.entries(byNh)) {
+      result[nh] = combineZ(zs)
     }
     return result
   }, [anomalies])
+
+  // DEV: ?ramp=<presetId> drives the in-map ramp study (AnomalyRampSwitcher).
+  // Read-only here; strip together with the switcher once the treatment is
+  // chosen — AnomalyFillLayer/AnomalyLegend then fall back to the default.
+  const [fillSearchParams] = useSearchParams()
+  const rampId = fillSearchParams.get('ramp')
 
   // ── Ripple handler — called by FlowMapLayer when significant events arrive ──
   const handleNewRipples = useCallback(
@@ -280,12 +291,21 @@ export default function Last48UnifiedView({
 
           {/* ── Base fill layers (mount FIRST so FLOW dots render on top) ── */}
           {fill === 'anomaly' && (
-            <AnomalyFillLayer
-              map={map}
-              combinedAnomalies={combinedAnomalies}
-              selectedNeighborhood={selectedNh ?? undefined}
-              onNeighborhoodClick={setSelectedNh}
-            />
+            <>
+              <AnomalyFillLayer
+                map={map}
+                combinedAnomalies={combinedAnomalies}
+                selectedNeighborhood={selectedNh ?? undefined}
+                onNeighborhoodClick={setSelectedNh}
+                rampId={rampId}
+              />
+              {/* Legend — same glass-card register as the demographic
+                  UnderlayLegend below, dejargoned labels (quieter · typical
+                  · busier). A choropleth without a key is a Rorschach test. */}
+              <AnomalyLegend rampId={rampId} />
+              {/* DEV ramp study picker — renders only when ?ramp= is present. */}
+              <AnomalyRampSwitcher />
+            </>
           )}
 
           {fill === 'demographic' && (
