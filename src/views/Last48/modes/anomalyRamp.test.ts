@@ -60,8 +60,7 @@ describe('RAMP_PRESETS invariants', () => {
   it('getRampPreset falls back to the default on unknown/absent ids', () => {
     expect(getRampPreset('nope').id).toBe(DEFAULT_RAMP_ID)
     expect(getRampPreset(null).id).toBe(DEFAULT_RAMP_ID)
-    expect(getRampPreset(undefined).id).toBe(DEFAULT_RAMP_ID)
-    expect(getRampPreset('warm-only').id).toBe('warm-only')
+    expect(getRampPreset().id).toBe(DEFAULT_RAMP_ID)
   })
 
   for (const preset of RAMP_PRESETS) {
@@ -122,11 +121,20 @@ describe('expression + legend derivation (one stops array, two outputs)', () => 
     expect(css.split('rgba').length - 1).toBe(p.stops.length)
   })
 
-  it('rampTypicalPercent marks z=0 inside a diverging domain, null for warm-only', () => {
+  it('rampTypicalPercent marks z=0 inside a diverging domain, null when the domain excludes it', () => {
     const div = rampTypicalPercent(getRampPreset('diverging'))
     expect(div).not.toBeNull()
     expect(div!).toBeGreaterThan(0)
     expect(div!).toBeLessThan(100)
-    expect(rampTypicalPercent(getRampPreset('warm-only'))).toBeNull()
+    // A warm-only ramp (studied and rejected 2026-07-02 — invisible on a
+    // typical afternoon) would start above z 0; the tick logic must handle it.
+    const warmOnly = {
+      id: 'x', label: 'x', note: '', fillOpacity: 0.35, quietSide: false,
+      stops: [
+        { z: 0.5, color: 'rgba(212,164,53,0)' },
+        { z: 2.6, color: 'rgba(150,62,48,1)' },
+      ],
+    }
+    expect(rampTypicalPercent(warmOnly)).toBeNull()
   })
 })

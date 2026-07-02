@@ -18,13 +18,8 @@ import {
   rampTypicalPercent,
 } from './anomalyRamp'
 
-interface AnomalyLegendProps {
-  /** Active ramp preset id (anomalyRamp.ts); omit for the default. */
-  rampId?: string | null
-}
-
-export default function AnomalyLegend({ rampId }: AnomalyLegendProps) {
-  const preset = getRampPreset(rampId)
+export default function AnomalyLegend() {
+  const preset = getRampPreset()
   const gradient = rampCssGradient(preset)
   const typicalPct = rampTypicalPercent(preset)
 
