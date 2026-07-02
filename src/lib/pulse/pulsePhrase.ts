@@ -163,7 +163,11 @@ export function anomalyToWireItem(
     place: a.neighborhood,
     factLine: `usual ≈ ${roundNice(a.baselineMean)}`,
     signalLabel: `${meta.noun} in ${a.neighborhood}, ${fall ? fallWord(tier) : riseWord(tier)}`,
-    evidenceHref: `/live?nh=${encodeURIComponent(a.neighborhood)}`,
+    // The full drill param SET, matching Last48's heartbeat drill-in exactly:
+    // a bare ?nh= is inert there (the anomaly fill + neighborhood peek only
+    // mount when fill=anomaly AND points=off), so the link must carry all
+    // three or the card promises evidence and delivers the lobby.
+    evidenceHref: `/live?nh=${encodeURIComponent(a.neighborhood)}&fill=anomaly&points=off`,
     rankScore: 85 + (az - VOLUME_MIN_Z) * 15,
     freshnessOk: opts.freshnessOk,
     streamLabel: meta.label,

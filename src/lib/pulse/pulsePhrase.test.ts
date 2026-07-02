@@ -73,9 +73,11 @@ describe('anomalyToWireItem — neighborhood volume', () => {
     expect(w.factLine).toBe('usual ≈ 85') // nearest 5, not 87.3
   })
 
-  it('links "dig in" to the live events in that neighborhood (url-encoded)', () => {
+  it('links "dig in" with the FULL drill param set — bare ?nh= is inert on /live', () => {
     const w = anomalyToWireItem(anomaly({ neighborhood: 'Bayview Hunters Point' }), { freshnessOk: true, computedAt: AT })!
-    expect(w.evidenceHref).toBe('/live?nh=Bayview%20Hunters%20Point')
+    // The param SET is the contract with Last48, not just the nh param: the
+    // anomaly fill + neighborhood peek only mount under fill=anomaly + points=off.
+    expect(w.evidenceHref).toBe('/live?nh=Bayview%20Hunters%20Point&fill=anomaly&points=off')
   })
 
   it('drops a weak signal and the synthetic combined row', () => {
