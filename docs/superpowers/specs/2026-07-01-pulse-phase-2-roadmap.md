@@ -25,6 +25,13 @@ architecture held up well under review:
 ride on — every "in the last 48h" number was ~41h before it. Phase 2 work should land on top
 of it.
 
+> **Status (2026-07-02):** items 1–4 shipped as PRs #103–#106 (evidence links carry the full
+> drill set + Last48 normalizes bare `?nh=` arrivals; `/pulse?nh=` URL-synced with an honest
+> filtered-empty state; `/about#whats-unusual` methodology anchor with hash delivery + the
+> stale "7h 911 lag" copy corrected; card polish — tickLabel, masthead "updated" stamp,
+> 1.0K fix, truncation note). Remaining: item 5 (mobile pass), item 6 (choropleth rethink,
+> design-first), item 7 (expansions), and the preview verification below.
+
 ## Phase 2 work items, in shipping order
 
 ### 1. Evidence links must deliver the evidence (the one real Phase-1 defect)
