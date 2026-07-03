@@ -33,7 +33,7 @@ export default function PulseTeaser({ items, isLoading }: { items: TickerItem[];
   if (!isLoading && wire.length === 0) return null
 
   return (
-    <section aria-label="The Pulse — what is trending now">
+    <section aria-label="The Pulse — trending now in San Francisco">
       <div className="flex items-baseline justify-between gap-4 mb-3">
         <p className="font-mono text-[11px] tracking-[0.25em] uppercase text-terracotta-600 dark:text-terracotta-400">
           <span className="text-paper-400 dark:text-paper-600">──</span> The Pulse

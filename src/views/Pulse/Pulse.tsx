@@ -88,7 +88,7 @@ export default function Pulse() {
           </p>
           <h1 className="font-display text-[clamp(2rem,4vw,3.25rem)] leading-[1.05] tracking-tight
                          text-espresso-900 dark:text-paper-50">
-            What is trending now in San Francisco
+            Trending now in San Francisco
           </h1>
           <p className="mt-3 font-serif text-[clamp(0.95rem,1.3vw,1.1rem)] leading-relaxed
                         text-paper-700 dark:text-paper-400 max-w-[58ch]">
