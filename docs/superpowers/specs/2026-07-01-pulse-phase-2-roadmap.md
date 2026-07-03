@@ -36,9 +36,15 @@ of it.
 > since stripped — Jesse picked diverging; soft too wispy, warm-only invisible because the
 > quiet side carries the texture on a typical afternoon), Stouffer combine replacing the
 > flattening mean, selected-neighborhood ring, `AnomalyLegend`, and the rail/peek dejargon
-> via `pulsePhrase.combinedDeviation`. Remaining: item 7 (expansions), the preview
-> verification below, and an on-device thumb-scroll of /pulse (mobile pass shipped without
-> visual QA — Chrome automation was down).
+> via `pulsePhrase.combinedDeviation`. **Follow-on polish shipped July 2 evening (PR #111 +
+> `31e4da0`)** from Jesse's live review: DeviationBar datum marker (solid 14px circle w/ pale
+> core) against a now-DOTTED usual tick, finite ratio-staggered radar ping (`datumPing`),
+> feed-coloured big numbers, the Last 48 fill picker labelled "Pulse" (display only — the
+> `?fill=anomaly` param is the evidence-link contract), theme-aware map scrim (cream in light
+> mode), and the "Trending now in San Francisco" masthead / "Trending now in S.F." nav copy.
+> Jesse's light-mode pass is done (the scrim was its one finding). Remaining: item 7
+> (expansions), the preview verification below, and an on-device thumb-scroll of /pulse
+> (mobile pass shipped without visual QA — Chrome automation was down).
 
 ## Phase 2 work items, in shipping order
 
