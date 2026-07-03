@@ -30,7 +30,7 @@ const NAV_ITEMS = [
     path: '/pulse',
     label: 'The Pulse',
     shortLabel: 'PULSE',
-    description: 'What stands out right now',
+    description: 'What is trending now',
     accentColor: '#b85a33', // terracotta-600 — signal / front-door surface
   },
   {

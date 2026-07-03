@@ -33,7 +33,7 @@ export default function PulseTeaser({ items, isLoading }: { items: TickerItem[];
   if (!isLoading && wire.length === 0) return null
 
   return (
-    <section aria-label="The Pulse — what stands out right now">
+    <section aria-label="The Pulse — what is trending now">
       <div className="flex items-baseline justify-between gap-4 mb-3">
         <p className="font-mono text-[11px] tracking-[0.25em] uppercase text-terracotta-600 dark:text-terracotta-400">
           <span className="text-paper-400 dark:text-paper-600">──</span> The Pulse
@@ -43,7 +43,7 @@ export default function PulseTeaser({ items, isLoading }: { items: TickerItem[];
           className="font-mono text-[11px] tracking-wide text-paper-600 dark:text-paper-400
                      hover:text-terracotta-600 dark:hover:text-terracotta-400 transition-colors whitespace-nowrap"
         >
-          See everything that stands out →
+          See everything trending →
         </Link>
       </div>
 
@@ -85,7 +85,12 @@ function MiniCard({ item }: { item: WireItem }) {
       </div>
       <div className="flex items-center gap-2">
         <SignalGlyph type={item.signalType} magnitude={item.magnitude} size={18} color={color} />
-        <span className="font-display italic text-[26px] leading-[0.85] tabular-nums text-espresso-900 dark:text-paper-50">
+        {/* Feed-coloured big number — matches WireCard so Home and /pulse
+            read as one voice. */}
+        <span
+          className="font-display italic text-[26px] leading-[0.85] tabular-nums"
+          style={{ color }}
+        >
           {item.bigValue}
         </span>
       </div>

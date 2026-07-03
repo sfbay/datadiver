@@ -55,7 +55,12 @@ export default function WireCard({ item }: { item: WireItem }) {
 
         <div className="flex items-center gap-2.5">
           <SignalGlyph type={item.signalType} magnitude={item.magnitude} size={22} color={color} />
-          <span className="font-display italic text-[2.3rem] leading-[0.82] tabular-nums text-espresso-900 dark:text-paper-50">
+          {/* Big number in the feed colour — same ink as the bar below it, so
+              the reading and its scale register as one statement. */}
+          <span
+            className="font-display italic text-[2.3rem] leading-[0.82] tabular-nums"
+            style={{ color }}
+          >
             {item.bigValue}
           </span>
         </div>
