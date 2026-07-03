@@ -43,6 +43,16 @@ export default function DeviationBar({
           {tickLabel}
         </span>
       </div>
+      {/* The reading itself — a filled circle with a pale core, so the fill's
+          far end reads as a data point, not a mere cutoff. Rendered after the
+          usual tick so it paints on top when the reading IS typical (that
+          overlap is the message). */}
+      <div
+        className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{ left: `${cur}%`, backgroundColor: color }}
+      >
+        <div className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-paper-50" />
+      </div>
     </div>
   )
 }

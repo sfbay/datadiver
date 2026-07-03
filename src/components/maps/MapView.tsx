@@ -231,10 +231,13 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
   return (
     <div className={`relative w-full h-full ${className}`}>
       <div ref={containerRef} className="w-full h-full" />
-      {/* Overlay gradient at top for stat cards readability */}
-      <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-slate-950/60 via-slate-950/20 to-transparent pointer-events-none z-[1]" />
+      {/* Overlay gradient at top for stat cards readability. Matches the page
+          register per theme — cream melting into the light basemap, espresso
+          into dark-v11 — so the map's edge dissolves into the chrome instead
+          of banding against it. */}
+      <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-paper-100/70 via-paper-100/25 to-transparent dark:from-espresso-1000/60 dark:via-espresso-1000/20 pointer-events-none z-[1]" />
       {/* Overlay gradient at bottom */}
-      <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-slate-950/40 to-transparent pointer-events-none z-[1]" />
+      <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-paper-100/50 to-transparent dark:from-espresso-1000/40 pointer-events-none z-[1]" />
       {/* Children (stat overlays, etc.) */}
       <div className="absolute inset-0 z-[2] pointer-events-none">
         <div className="pointer-events-auto">
