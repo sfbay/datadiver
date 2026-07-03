@@ -55,7 +55,7 @@ export default function DeviationBar({
           usual tick so it paints on top when the reading IS typical (that
           overlap is the message). */}
       <div
-        className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full"
+        className="absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{ left: `${cur}%`, backgroundColor: color }}
       >
         {/* Radar emanation — a ring flares off the marker a handful of times
