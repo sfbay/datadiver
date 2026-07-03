@@ -328,6 +328,17 @@ body {
   100% { transform: scale(2.6);  opacity: 0;    }
 }
 
+/* DeviationBar datum ping — kin of `emanate`, but with the rest period baked
+   into the timeline: the ring flares over the first quarter, then the
+   24%→100% dead zone holds it invisible, so a 7s cycle pings ~1.7s and rests
+   ~5.3s. Consumers stagger cards via animation-delay and keep it finite via
+   iteration count (the wire should announce itself, then settle). */
+@keyframes datumPing {
+  0%   { transform: scale(1);   opacity: 0.55; }
+  24%  { transform: scale(2.9); opacity: 0;    }
+  100% { transform: scale(2.9); opacity: 0;    }
+}
+
 /* Radar scan overlay */
 @keyframes radarSweep {
   from { transform: rotate(0deg); }

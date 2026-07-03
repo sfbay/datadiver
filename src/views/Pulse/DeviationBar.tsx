@@ -28,6 +28,11 @@ export default function DeviationBar({
   const left = Math.min(USUAL_PCT, cur)
   const width = Math.abs(cur - USUAL_PCT)
 
+  // Radar-ping stagger, derived from the data itself: a prime multiple of the
+  // ratio folded into 0–4s, so neighbouring cards flare out of phase with no
+  // index plumbing. Deterministic — the same wire renders the same rhythm.
+  const pingDelay = ((Math.abs(ratio) * 997) % 4).toFixed(2)
+
   return (
     <div className="relative h-[22px] mt-2.5 mb-0.5" aria-hidden>
       <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-2 rounded-full bg-paper-200 dark:bg-espresso-800" />
@@ -35,8 +40,10 @@ export default function DeviationBar({
         className="absolute top-1/2 -translate-y-1/2 h-2 rounded-full"
         style={{ left: `${left}%`, width: `${width}%`, backgroundColor: color }}
       />
+      {/* Usual tick — dotted, so the REFERENCE reads as construction lines
+          while the solid marker below owns "this is the reading". */}
       <div
-        className="absolute top-[calc(50%-10px)] h-5 w-[2px] bg-paper-500 dark:bg-paper-400"
+        className="absolute top-[calc(50%-10px)] h-5 w-0 border-l-2 border-dotted border-paper-500 dark:border-paper-400"
         style={{ left: `${USUAL_PCT}%` }}
       >
         <span className="absolute left-1/2 -translate-x-1/2 -top-[11px] font-mono text-[8px] whitespace-nowrap text-paper-500 dark:text-paper-600">
@@ -51,6 +58,17 @@ export default function DeviationBar({
         className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{ left: `${cur}%`, backgroundColor: color }}
       >
+        {/* Radar emanation — a ring flares off the marker a handful of times
+            (staggered per card, then permanently at rest). Inline opacity 0
+            keeps it invisible before its delay and after the final cycle. */}
+        <div
+          className="absolute inset-0 rounded-full motion-reduce:hidden"
+          style={{
+            border: `1.5px solid ${color}`,
+            opacity: 0,
+            animation: `datumPing 7s ease-out ${pingDelay}s 5`,
+          }}
+        />
         <div className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-paper-50" />
       </div>
     </div>
