@@ -28,8 +28,12 @@ interface Props {
 }
 
 // Resolve the current selection's display label for the dropdown button.
+// The anomaly fill is LABELLED "Pulse" — it's the evidence view The Pulse's
+// cards land on, and the shared name makes that one system legible. The
+// internal fill id (and the ?fill=anomaly URL param Pulse links depend on)
+// stays 'anomaly'.
 function currentLabel(fill: BaseFill, variable: CensusVariable | null): string {
-  if (fill === 'anomaly') return 'Anomaly'
+  if (fill === 'anomaly') return 'Pulse'
   if (fill === 'demographic' && variable) {
     const config = CENSUS_VARIABLES.find(v => v.key === variable)
     return config?.shortLabel ?? config?.label ?? 'Demographic'
@@ -128,8 +132,8 @@ export default function LayerControls({
               active={isCurrent('anomaly')}
               onClick={() => handleSelect('anomaly')}
               swatch="#d4a435"
-              label="Anomaly"
-              hint="z-score"
+              label="Pulse"
+              hint="vs typical"
             />
 
             <div className="my-1.5 mx-1 h-px bg-paper-200/40 dark:bg-espresso-800" />

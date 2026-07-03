@@ -85,7 +85,12 @@ function MiniCard({ item }: { item: WireItem }) {
       </div>
       <div className="flex items-center gap-2">
         <SignalGlyph type={item.signalType} magnitude={item.magnitude} size={18} color={color} />
-        <span className="font-display italic text-[26px] leading-[0.85] tabular-nums text-espresso-900 dark:text-paper-50">
+        {/* Feed-coloured big number — matches WireCard so Home and /pulse
+            read as one voice. */}
+        <span
+          className="font-display italic text-[26px] leading-[0.85] tabular-nums"
+          style={{ color }}
+        >
           {item.bigValue}
         </span>
       </div>
