@@ -3,6 +3,8 @@ import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { SF_CENTER, SF_DEFAULT_ZOOM, SF_DEFAULT_PITCH, SF_DEFAULT_BEARING } from '@/utils/geo'
 import { useAppStore } from '@/stores/appStore'
+import MapLabelTuner from './MapLabelTuner'
+import { classifyLabelLayer, type LabelGroup } from './labelGroups'
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN || ''
 
@@ -63,6 +65,59 @@ function applyTerrainAndFog(map: mapboxgl.Map, dark: boolean) {
     'space-color': dark ? '#140c08' : '#fbf6ea',   // outer
     'star-intensity': 0,                            // no nighttime stars
   })
+}
+
+/** Baked basemap label paint, per group × theme — dialed in visually via the
+ *  ?labeltune=1 panel (MapLabelTuner). Replaces the stock dark-v11 / light-v11
+ *  label styling, which (a) ships a hard, zero-blur halo that muddies glyphs
+ *  over dense choropleths and (b) in light-v11 colors neighborhood labels
+ *  lighter than street labels, making them read inconsistently.
+ *
+ *  Light mode: warm all label text to espresso `#2a1d13` @ 0.7 (fixes the
+ *  neighborhood-vs-street mismatch) with thin crisp halos, keeping the stock
+ *  (light) halo color. Dark mode: warm text to cream and halo to espresso off
+ *  the stock white/black, @ 0.6, with a softer street halo. `haloColor`
+ *  omitted → leave the stock (theme) halo color untouched. */
+interface LabelStyle {
+  haloWidth: number
+  haloBlur: number
+  textOpacity: number
+  textColor: string
+  haloColor?: string
+}
+const LABEL_STYLES: Record<'light' | 'dark', Record<LabelGroup, LabelStyle>> = {
+  light: {
+    place: { haloWidth: 0.8, haloBlur: 0.3, textOpacity: 0.7, textColor: '#2a1d13' },
+    road:  { haloWidth: 1,   haloBlur: 0.4, textOpacity: 0.7, textColor: '#2a1d13' },
+    other: { haloWidth: 1,   haloBlur: 2,   textOpacity: 0.7, textColor: '#2a1d13' },
+  },
+  dark: {
+    place: { haloWidth: 1, haloBlur: 2,   textOpacity: 0.6, textColor: '#f5ecd9', haloColor: '#2a1d13' },
+    road:  { haloWidth: 1, haloBlur: 3.4, textOpacity: 0.6, textColor: '#f5ecd9', haloColor: '#2a1d13' },
+    other: { haloWidth: 1, haloBlur: 2,   textOpacity: 0.6, textColor: '#f5ecd9', haloColor: '#2a1d13' },
+  },
+}
+
+/** Apply the baked label styling for the current theme. Re-applied on every
+ *  style.load (a theme switch resets the stock label paint). */
+function softenBasemapLabels(map: mapboxgl.Map, dark: boolean) {
+  const styles = LABEL_STYLES[dark ? 'dark' : 'light']
+  const layers = map.getStyle().layers || []
+  for (const layer of layers) {
+    if (layer.type !== 'symbol') continue
+    const layout = (layer as mapboxgl.SymbolLayer).layout
+    if (!layout || layout['text-field'] === undefined) continue
+    const s = styles[classifyLabelLayer(layer.id)]
+    try {
+      map.setPaintProperty(layer.id, 'text-halo-width', s.haloWidth)
+      map.setPaintProperty(layer.id, 'text-halo-blur', s.haloBlur)
+      map.setPaintProperty(layer.id, 'text-opacity', s.textOpacity)
+      map.setPaintProperty(layer.id, 'text-color', s.textColor)
+      if (s.haloColor) map.setPaintProperty(layer.id, 'text-halo-color', s.haloColor)
+    } catch (_err) {
+      // Some composite basemap layers reject paint edits — skip them.
+    }
+  }
 }
 
 export interface MapHandle {
@@ -138,6 +193,7 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
     // current theme even mid-session.
     const handleStyleLoad = () => {
       applyTerrainAndFog(map, useAppStore.getState().isDarkMode)
+      softenBasemapLabels(map, useAppStore.getState().isDarkMode)
     }
     map.on('style.load', handleStyleLoad)
     if (map.isStyleLoaded()) handleStyleLoad()
@@ -213,6 +269,9 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
   }>(null)
   const debugEnabled = typeof window !== 'undefined'
     && new URLSearchParams(window.location.search).get('debug') === 'map'
+  // Dev-only basemap label tuner — opt-in via ?labeltune=1 (see MapLabelTuner).
+  const labelTunerEnabled = typeof window !== 'undefined'
+    && new URLSearchParams(window.location.search).has('labeltune')
 
   useEffect(() => {
     if (!isReady || !debugEnabled || !mapRef.current) return
@@ -271,6 +330,9 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
             <span className="text-ochre-400">{`SF_CENTER = { lat: ${debugCam.center[1].toFixed(4)}, lng: ${debugCam.center[0].toFixed(4)} }`}</span>
           </div>
         </div>
+      )}
+      {isReady && labelTunerEnabled && mapRef.current && (
+        <MapLabelTuner map={mapRef.current} />
       )}
     </div>
   )
