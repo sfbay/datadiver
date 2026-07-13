@@ -9,6 +9,7 @@ import { useCivicMetric } from '@/hooks/useCivicMetrics'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useMapLayer } from '@/hooks/useMapLayer'
+import { useAppStore } from '@/stores/appStore'
 import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { useDemographicsData } from './useDemographicsData'
 import MapView from '@/components/maps/MapView'
@@ -143,6 +144,8 @@ export default function Demographics() {
     return civic?.label ?? scatterYMetric
   }, [scatterYMetric, isCensusY])
 
+  const isDarkMode = useAppStore((s) => s.isDarkMode)
+
   // --- Choropleth map layers ---
   const choroplethLayers = useMemo((): mapboxgl.AnyLayer[] => {
     const ramp = activeConfig?.colorRamp ?? ['#1e293b', '#7c3aed']
@@ -170,7 +173,14 @@ export default function Demographics() {
             ['coalesce', ['get', activeVariable], 0],
             ...stops,
           ],
-          'fill-opacity': 0.7,
+          // Theme-aware opacity. Dark mode reads richly at 0.5 (the dark
+          // basemap lets the fill's color dominate); the cream light-mode
+          // basemap washes that same 0.5 to pastel, so light gets 0.8 to
+          // read with equal weight. Labels stay legible either way — they're
+          // rendered above the fill (belowLabels) with a soft halo. Both sit
+          // above Last 48's 0.22 underlay register (there dots are the
+          // subject; here the fill is).
+          'fill-opacity': isDarkMode ? 0.5 : 0.8,
         },
       } as mapboxgl.AnyLayer,
       {
@@ -184,11 +194,14 @@ export default function Demographics() {
         },
       } as mapboxgl.AnyLayer,
     ]
-  }, [activeConfig, activeVariable, rankedNeighborhoods])
+  }, [activeConfig, activeVariable, rankedNeighborhoods, isDarkMode])
 
   // Bind choropleth layer only when in choropleth mode
   const choroplethGeo = mapMode === 'choropleth' ? choroplethGeoJSON : null
-  useMapLayer(mapInstance, 'demographics-choropleth', choroplethGeo, choroplethLayers)
+  // Insert the choropleth BENEATH the basemap labels so neighborhood/street
+  // labels render crisply on top of the full-coverage fill. Added on top (the
+  // default), the 0.7-opacity fill muddies every label + halo into a hard border.
+  useMapLayer(mapInstance, 'demographics-choropleth', choroplethGeo, choroplethLayers, { belowLabels: true })
 
   // Camera presets — reactively glides to the matching neighborhood preset
   // (or fits the polygon when no preset). Cross-view consistent.
@@ -375,7 +388,7 @@ export default function Demographics() {
 
                 {/* Color legend */}
                 {legendStops.length > 0 && activeConfig && (
-                  <div className="absolute bottom-6 left-5 z-10 glass-card rounded-xl p-3">
+                  <div className="absolute bottom-6 right-5 z-10 glass-card rounded-xl p-3">
                     <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                       {activeConfig.shortLabel}
                     </p>
@@ -400,7 +413,7 @@ export default function Demographics() {
                   <div className="absolute top-4 left-5 z-10 glass-card rounded-xl px-4 py-3 max-w-xs">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-[12px] font-medium text-white">{selectedNeighborhood}</p>
+                        <p className="text-[12px] font-medium text-ink dark:text-white">{selectedNeighborhood}</p>
                         <p className="text-[10px] font-mono text-slate-400">
                           {(() => {
                             const n = neighborhoods.find(n => n.name === selectedNeighborhood)
@@ -457,7 +470,7 @@ export default function Demographics() {
 
                 {/* Legend (same as choropleth) */}
                 {legendStops.length > 0 && activeConfig && (
-                  <div className="absolute bottom-6 left-5 z-10 glass-card rounded-xl p-3">
+                  <div className="absolute bottom-6 right-5 z-10 glass-card rounded-xl p-3">
                     <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                       {activeConfig.shortLabel}
                     </p>
@@ -579,7 +592,7 @@ export default function Demographics() {
                               <span className="text-[10px] font-mono text-slate-500 w-4 shrink-0">
                                 {idx + 1}
                               </span>
-                              <span className="text-[12px] font-medium text-slate-200 truncate">
+                              <span className="text-[12px] font-medium text-slate-600 dark:text-slate-200 truncate">
                                 {n.name}
                               </span>
                             </div>

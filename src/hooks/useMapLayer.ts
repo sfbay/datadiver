@@ -22,12 +22,15 @@ export function useMapLayer(
   map: mapboxgl.Map | null,
   sourceId: string,
   geojson: GeoJSON.FeatureCollection | null,
-  layers: mapboxgl.AnyLayer[]
+  layers: mapboxgl.AnyLayer[],
+  opts?: { belowLabels?: boolean }
 ) {
   const layersRef = useRef(layers)
   layersRef.current = layers
   const geojsonRef = useRef(geojson)
   geojsonRef.current = geojson
+  const optsRef = useRef(opts)
+  optsRef.current = opts
 
   // ── Mount/unmount: add source + layers, clean up on unmount ──────────────
   useEffect(() => {
@@ -44,8 +47,17 @@ export function useMapLayer(
         if (!map.getSource(sourceId)) {
           map.addSource(sourceId, { type: 'geojson', data: initialData })
         }
+        // When belowLabels is set, insert data layers beneath the basemap's
+        // first symbol (label) layer, so labels stay crisp on top of dense
+        // fills. A full-coverage choropleth added on top (the default) would
+        // otherwise muddy every label and its halo into a hard border.
+        // Recomputed on each (re)add so it survives a style switch, which
+        // rebuilds the label layers.
+        const beforeId = optsRef.current?.belowLabels
+          ? map.getStyle().layers?.find((l) => l.type === 'symbol')?.id
+          : undefined
         for (const layer of layersRef.current) {
-          if (!map.getLayer(layer.id)) map.addLayer(layer)
+          if (!map.getLayer(layer.id)) map.addLayer(layer, beforeId)
         }
       } catch {
         // Style may not be ready yet — retry
@@ -110,6 +122,22 @@ export function useMapLayer(
         }
       } catch {
         // Layer not ready yet
+      }
+    }
+    // Enforce belowLabels z-order here too — the mount effect only sets it on
+    // a FRESH map, so a layer left on top by a prior mount (e.g., after an HMR
+    // update that didn't remount the map) would stay there. moveLayer is
+    // idempotent, so re-running it every layers-change is free.
+    if (optsRef.current?.belowLabels) {
+      try {
+        const beforeId = map.getStyle().layers?.find((l) => l.type === 'symbol')?.id
+        if (beforeId) {
+          for (const layer of layers) {
+            if (map.getLayer(layer.id)) map.moveLayer(layer.id, beforeId)
+          }
+        }
+      } catch {
+        // Style mid-mutation — re-enforced on the next layers change.
       }
     }
   }, [map, layers])
