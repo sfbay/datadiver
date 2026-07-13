@@ -357,7 +357,7 @@ export default function Last48() {
                 LIVE
               </div>
               {/* paper-100 (warm cream) vs sibling-standard text-white — intentional earth-tone purity */}
-              <h1 className="font-display italic text-2xl text-ink dark:text-paper-100 leading-none whitespace-nowrap">
+              <h1 className="font-display italic text-2xl text-paper-900 dark:text-paper-100 leading-none whitespace-nowrap">
                 The Last 48
               </h1>
               {/* Editorial subtitle — supplementary; the LIVE eyebrow + h1 carry

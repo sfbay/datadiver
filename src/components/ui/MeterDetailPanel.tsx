@@ -157,7 +157,7 @@ export default function MeterDetailPanel() {
           <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-1">
             Meter {detail.postId}
           </p>
-          <p className="text-sm font-semibold text-slate-900 dark:text-white mb-0.5">
+          <p className="text-sm font-semibold text-ink dark:text-white mb-0.5">
             {detail.streetAddress}
           </p>
           <p className="text-[10px] text-slate-500 dark:text-slate-400">

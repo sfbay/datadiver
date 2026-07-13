@@ -49,7 +49,7 @@ export default function Last48NeighborhoodPeek({ neighborhood, anomalies, events
       <button
         type="button"
         onClick={onClose}
-        className="self-end p-3 text-paper-500 hover:text-paper-300 text-lg leading-none"
+        className="self-end p-3 text-paper-500 hover:text-paper-700 dark:hover:text-paper-300 text-lg leading-none"
         aria-label="Close panel"
       >
         ✕
@@ -67,7 +67,7 @@ export default function Last48NeighborhoodPeek({ neighborhood, anomalies, events
 
         {/* Headline */}
         <div>
-          <h2 className="font-display text-xl text-ink dark:text-white leading-tight">{neighborhood}</h2>
+          <h2 className="font-display text-xl text-paper-900 dark:text-white leading-tight">{neighborhood}</h2>
           <p className="font-mono text-[11px] text-paper-700 dark:text-paper-400 mt-1 italic">
             {summaryLine}
           </p>

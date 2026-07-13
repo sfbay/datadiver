@@ -98,7 +98,7 @@ export default function IncidentDetailPanel() {
           <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-1">
             Incident #{detail.callNumber}
           </p>
-          <p className="text-sm font-semibold text-slate-900 dark:text-white mb-0.5">
+          <p className="text-sm font-semibold text-ink dark:text-white mb-0.5">
             {detail.callType}
           </p>
           <p className="text-[10px] text-slate-600 dark:text-slate-300 font-mono mb-3">

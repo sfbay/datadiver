@@ -600,7 +600,7 @@ export default function Home() {
                     <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md bg-plum-500/15 text-plum-500 tracking-wider">
                       NH
                     </span>
-                    <h2 className="text-[17px] font-display italic text-white leading-none">
+                    <h2 className="text-[17px] font-display italic text-ink dark:text-white leading-none">
                       Neighborhood Profiles
                     </h2>
                   </div>

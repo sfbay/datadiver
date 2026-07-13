@@ -125,7 +125,7 @@ export default function CrashDetailPanel() {
           </div>
 
           {/* Collision type */}
-          <p className="text-sm font-semibold text-slate-900 dark:text-white mb-1">
+          <p className="text-sm font-semibold text-ink dark:text-white mb-1">
             {detail.collisionType}
           </p>
 

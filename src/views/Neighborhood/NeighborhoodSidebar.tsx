@@ -169,11 +169,11 @@ function ProfileView({ profile, onDiveIn, isDiveInActive, isDiveInLoading, visib
       {/* Headline stats — 3 cards */}
       <div className="grid grid-cols-3 gap-2">
         <div className="glass-card rounded-xl px-3 py-2.5 text-center">
-          <p className="text-[16px] font-mono font-semibold text-white tabular-nums">{fmt(profile.totalEvents)}</p>
+          <p className="text-[16px] font-mono font-semibold text-ink dark:text-white tabular-nums">{fmt(profile.totalEvents)}</p>
           <p className="text-[8px] font-mono text-slate-500 uppercase tracking-wider mt-0.5">Events</p>
         </div>
         <div className="glass-card rounded-xl px-3 py-2.5 text-center">
-          <p className={`text-[16px] font-mono font-semibold tabular-nums ${profile.compositeZScore > 1 ? 'text-brick-400' : profile.compositeZScore < -1 ? 'text-teal-500' : 'text-slate-300'}`}>
+          <p className={`text-[16px] font-mono font-semibold tabular-nums ${profile.compositeZScore > 1 ? 'text-brick-400' : profile.compositeZScore < -1 ? 'text-teal-500' : 'text-slate-600 dark:text-slate-300'}`}>
             {profile.compositeZScore >= 0 ? '+' : ''}{profile.compositeZScore.toFixed(1)}
           </p>
           <p className="text-[8px] font-mono text-slate-500 uppercase tracking-wider mt-0.5">Z-Score</p>

@@ -386,7 +386,7 @@ export default function Neighborhood() {
                       {domainConfig?.label}
                     </span>
                   </div>
-                  <p className="text-[13px] font-medium text-white leading-tight">{selectedPoint.label}</p>
+                  <p className="text-[13px] font-medium text-ink dark:text-white leading-tight">{selectedPoint.label}</p>
                   {selectedPoint.detail && (
                     <p className="text-[10px] text-slate-400 font-mono italic mt-1">{selectedPoint.detail}</p>
                   )}

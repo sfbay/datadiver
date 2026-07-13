@@ -36,7 +36,7 @@ export default function PulseTeaser({ items, isLoading }: { items: TickerItem[];
     <section aria-label="The Pulse — trending now in San Francisco">
       <div className="flex items-baseline justify-between gap-4 mb-3">
         <p className="font-mono text-[11px] tracking-[0.25em] uppercase text-terracotta-600 dark:text-terracotta-400">
-          <span className="text-paper-400 dark:text-paper-600">──</span> The Pulse
+          <span className="text-paper-600">──</span> The Pulse
         </p>
         <Link
           to="/pulse"
@@ -76,7 +76,7 @@ function MiniCard({ item }: { item: WireItem }) {
                  hover:border-paper-300 dark:hover:border-espresso-700 transition-colors"
     >
       <div className="flex items-start justify-between gap-2 mb-1">
-        <h3 className="font-display text-[15px] leading-tight tracking-tight text-espresso-900 dark:text-paper-100">
+        <h3 className="font-display text-[15px] leading-tight tracking-tight text-ink dark:text-paper-100">
           {item.subject}
         </h3>
         <span className="flex-shrink-0 font-mono text-[8.5px] tracking-[0.18em] uppercase text-paper-500 dark:text-paper-600 pt-0.5">

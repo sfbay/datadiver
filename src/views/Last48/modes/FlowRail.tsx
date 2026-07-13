@@ -176,7 +176,7 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
         </div>
         <div className="flex flex-wrap gap-1.5 mt-2">
           <div className="rounded-md bg-paper-100/50 dark:bg-espresso-800/40 pl-2.5 pr-4 py-1.5 flex items-center">
-            <p className="font-display italic text-[24px] md:text-[30px] leading-none tabular-nums text-ink dark:text-paper-100">
+            <p className="font-display italic text-[24px] md:text-[30px] leading-none tabular-nums text-paper-900 dark:text-paper-100">
               {events.length.toLocaleString()}
             </p>
           </div>
@@ -255,7 +255,7 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
                       two lines instead of truncating mid-word. Row height
                       varies with content length — acceptable per editorial
                       register; ER does the same on long neighborhood names. */}
-                  <p className="text-[12px] font-medium text-ink dark:text-paper-200 leading-tight line-clamp-2">
+                  <p className="text-[12px] font-medium text-paper-900 dark:text-paper-200 leading-tight line-clamp-2">
                     {formatHeadline(ev.headline ?? meta.label)}
                   </p>
                   <p className="text-[10px] text-paper-500 dark:text-paper-600 font-mono italic mt-0.5 truncate">

@@ -328,7 +328,7 @@ function SuperChip({
           {isLoaded ? (
             <>
               <span
-                className="font-display italic text-[24px] md:text-[30px] leading-none tabular-nums text-ink dark:text-paper-100"
+                className="font-display italic text-[24px] md:text-[30px] leading-none tabular-nums text-paper-900 dark:text-paper-100"
                 style={{ opacity: isActive ? 1 : 0.55 }}
               >
                 {count.toLocaleString()}

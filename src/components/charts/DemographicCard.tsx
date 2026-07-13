@@ -107,7 +107,7 @@ export default function DemographicCard({
     return (
       <button
         onClick={() => onToggleExpand(variable)}
-        className="w-full text-left px-3 py-1.5 rounded-md bg-white/5 hover:bg-white/10 transition-colors text-xs text-slate-300 hover:text-white flex items-center gap-1.5"
+        className="w-full text-left px-3 py-1.5 rounded-md bg-white/5 hover:bg-white/10 transition-colors text-xs text-slate-600 hover:text-ink dark:text-slate-300 dark:hover:text-white flex items-center gap-1.5"
       >
         <span className="font-medium">{config.shortLabel}</span>
         <span className="text-slate-500 ml-auto">▸</span>
@@ -146,7 +146,7 @@ export default function DemographicCard({
       {/* Collapse toggle — chevron at top-right */}
       <div className="flex items-center justify-between px-3 pt-2.5 pb-1">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-xs font-medium text-slate-200 truncate">{config.shortLabel}</span>
+          <span className="text-xs font-medium text-slate-600 dark:text-slate-200 truncate">{config.shortLabel}</span>
           {isActive && (
             <span className="flex items-center gap-1 text-[10px] text-plum-500 font-mono shrink-0">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-plum-400" />
@@ -159,7 +159,7 @@ export default function DemographicCard({
             e.stopPropagation()
             onToggleExpand(variable)
           }}
-          className="shrink-0 ml-2 text-slate-500 hover:text-slate-300 transition-colors text-xs"
+          className="shrink-0 ml-2 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors text-xs"
           aria-label="Collapse"
         >
           ▾
@@ -169,7 +169,7 @@ export default function DemographicCard({
       {/* Citywide value */}
       <div className="px-3 pb-1">
         {citywideValue !== null ? (
-          <span className="font-mono text-lg font-semibold text-white leading-none">
+          <span className="font-mono text-lg font-semibold text-ink dark:text-white leading-none">
             {formatValue(citywideValue, config.format)}
           </span>
         ) : (

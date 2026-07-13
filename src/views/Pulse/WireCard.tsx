@@ -49,7 +49,7 @@ export default function WireCard({ item }: { item: WireItem }) {
         className="flex-1 min-w-0 px-4 py-3.5 flex flex-col"
         style={{ backgroundImage: `linear-gradient(90deg, transparent 30%, ${color}3d)` }}
       >
-        <h3 className="font-display text-[1.05rem] leading-tight tracking-tight text-espresso-900 dark:text-paper-100 mb-1.5">
+        <h3 className="font-display text-[1.05rem] leading-tight tracking-tight text-ink dark:text-paper-100 mb-1.5">
           {item.subject}
         </h3>
 

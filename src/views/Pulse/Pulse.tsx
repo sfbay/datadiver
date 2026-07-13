@@ -79,7 +79,7 @@ export default function Pulse() {
         {/* ── Masthead ───────────────────────────────────────────── */}
         <header className="mb-6">
           <p className="font-mono text-[11px] tracking-[0.25em] uppercase text-terracotta-600 dark:text-terracotta-400 mb-3">
-            <span className="text-paper-400 dark:text-paper-600">──</span> The Pulse
+            <span className="text-paper-600">──</span> The Pulse
             {updatedAt !== null && (
               <span className="normal-case tracking-normal text-paper-500 dark:text-paper-600">
                 {'  '}· updated {formatApTime(updatedAt)}
@@ -87,7 +87,7 @@ export default function Pulse() {
             )}
           </p>
           <h1 className="font-display text-[clamp(2rem,4vw,3.25rem)] leading-[1.05] tracking-tight
-                         text-espresso-900 dark:text-paper-50">
+                         text-ink dark:text-paper-50">
             Trending now in San Francisco
           </h1>
           <p className="mt-3 font-serif text-[clamp(0.95rem,1.3vw,1.1rem)] leading-relaxed
@@ -110,7 +110,7 @@ export default function Pulse() {
                 {label}
               </span>
             ))}
-            <span className="text-paper-400 dark:text-paper-700">·</span>
+            <span className="text-paper-600 dark:text-paper-700">·</span>
             <span>arrow + bar = direction &amp; how far from normal</span>
           </div>
         </header>
@@ -211,7 +211,7 @@ function EmptyWire({ place, onShowAll }: { place: string | null; onShowAll: () =
     const label = place === 'citywide' ? 'citywide' : `in ${place}`
     return (
       <div className="py-16 text-center">
-        <p className="font-display text-[clamp(1.25rem,2vw,1.6rem)] text-espresso-900 dark:text-paper-100">
+        <p className="font-display text-[clamp(1.25rem,2vw,1.6rem)] text-ink dark:text-paper-100">
           Nothing's standing out {label} right now.
         </p>
         <p className="mt-2 font-serif text-paper-600 dark:text-paper-500">
@@ -231,7 +231,7 @@ function EmptyWire({ place, onShowAll }: { place: string | null; onShowAll: () =
   }
   return (
     <div className="py-16 text-center">
-      <p className="font-display text-[clamp(1.25rem,2vw,1.6rem)] text-espresso-900 dark:text-paper-100">
+      <p className="font-display text-[clamp(1.25rem,2vw,1.6rem)] text-ink dark:text-paper-100">
         Nothing's standing out right now.
       </p>
       <p className="mt-2 font-serif text-paper-600 dark:text-paper-500">

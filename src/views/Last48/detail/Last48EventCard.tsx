@@ -250,16 +250,16 @@ export default function Last48EventCard({ event, onClose }: Props) {
                 same line. AP-style date + time of day on the next line.   */}
             <div className="mb-3 mt-1">
               <div className="flex items-baseline gap-2 flex-wrap">
-                <span className="font-display italic text-[48px] leading-none text-paper-100 dark:text-paper-100 tabular-nums">
+                <span className="font-display italic text-[48px] leading-none text-paper-900 dark:text-paper-100 tabular-nums">
                   {magnitude}
                 </span>
-                <span className="font-display italic text-[16px] text-paper-300 dark:text-paper-400 leading-tight">
+                <span className="font-display italic text-[16px] text-paper-700 dark:text-paper-400 leading-tight">
                   {unit}
                 </span>
               </div>
 
               {/* AP-style date + time on a single subdued line below the headline */}
-              <p className="font-mono text-[11px] text-paper-400 dark:text-paper-500 mt-1.5 tabular-nums">
+              <p className="font-mono text-[11px] text-paper-600 dark:text-paper-500 mt-1.5 tabular-nums">
                 {/* Mobile: weekday abbr only (disambiguates the day within 48h) so
                     the card can sit ~half-width; desktop keeps the full AP date. */}
                 <span className="md:hidden">{formatApWeekday(event.receivedAt)}</span>
@@ -293,7 +293,7 @@ export default function Last48EventCard({ event, onClose }: Props) {
             </div>
 
             {/* ── Headline: call type / description ────────────────── */}
-            <h3 className="font-display italic text-[18px] leading-snug text-paper-100 dark:text-paper-100 mb-1">
+            <h3 className="font-display italic text-[18px] leading-snug text-paper-900 dark:text-paper-100 mb-1">
               {event.headline ? formatHeadline(event.headline) : 'Event'}
             </h3>
 
@@ -359,7 +359,7 @@ export default function Last48EventCard({ event, onClose }: Props) {
             {event.datasetId === '911-realtime' && event.priority && (
               <div className="mt-3 flex justify-between items-baseline gap-3 md:block">
                 <div className="font-mono text-[10px] tracking-widest text-paper-500 dark:text-paper-600 shrink-0">PRIORITY</div>
-                <div className={`font-mono text-[12px] text-right md:text-left md:mt-0.5 ${event.priority === 'A' ? 'text-indigo-300 font-semibold' : 'text-paper-300'}`}>
+                <div className={`font-mono text-[12px] text-right md:text-left md:mt-0.5 ${event.priority === 'A' ? 'text-indigo-600 dark:text-indigo-300 font-semibold' : 'text-paper-800 dark:text-paper-300'}`}>
                   {event.priority}
                   {event.priority === 'A' && ' — life-threatening'}
                 </div>
@@ -370,7 +370,7 @@ export default function Last48EventCard({ event, onClose }: Props) {
             <div className="mt-3 mb-3 flex justify-between items-baseline gap-3 md:block">
               <div className="font-mono text-[10px] tracking-widest text-paper-500 dark:text-paper-600 shrink-0">LOCATION</div>
               {(event.longitude != null && event.latitude != null) ? (
-                <div className="font-mono text-[11px] text-paper-300 text-right md:text-left md:mt-0.5">
+                <div className="font-mono text-[11px] text-paper-800 dark:text-paper-300 text-right md:text-left md:mt-0.5">
                   {event.neighborhood ?? 'SF'}
                   {/* coords: desktop only — not human-actionable, and the map shows position */}
                   <span className="hidden md:inline text-paper-600 dark:text-paper-700">
@@ -401,7 +401,7 @@ export default function Last48EventCard({ event, onClose }: Props) {
                       <span className="font-mono uppercase tracking-[0.14em] text-[9px] text-paper-600 dark:text-paper-600 shrink-0 pt-0.5">
                         {label}
                       </span>
-                      <span className="font-mono text-[13px] text-paper-100 dark:text-paper-100 tabular-nums text-right truncate leading-tight">
+                      <span className="font-mono text-[13px] text-paper-900 dark:text-paper-100 tabular-nums text-right truncate leading-tight">
                         {value}
                       </span>
                     </li>

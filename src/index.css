@@ -9,7 +9,7 @@
      only the rendered color shifts. Pigment mapping rationale lives in
      src/styles/tokens.css and docs/design-handoff/colors_and_type.css. */
 
-  --color-ink: #1e140d;        /* espresso-900 */
+  --color-ink: #4b3827;        /* paper-900 — warm brown; unified light-mode text tone (was espresso-900 #1e140d, which read as near-black) */
   --color-paper: #f5ecd9;      /* cream-100 */
   --color-parchment: #ecdfc5;  /* cream-200 */
 

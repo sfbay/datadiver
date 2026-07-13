@@ -132,7 +132,7 @@ export default function BusinessDetailPanel() {
       {detail && (
         <>
           <div>
-            <p className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">{detail.name}</p>
+            <p className="text-[13px] font-semibold text-ink dark:text-slate-100">{detail.name}</p>
             <p className="text-[10px] text-slate-500 dark:text-slate-400">{detail.owner}</p>
           </div>
 

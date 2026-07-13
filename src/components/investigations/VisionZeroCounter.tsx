@@ -80,14 +80,14 @@ export default function VisionZeroCounter() {
               `About the same as ${data.year - 1} over the same months`
             ) : data.yoyPct > 0 ? (
               <>
-                <span style={{ color: '#d17566' }}>
+                <span className="text-brick-600 dark:text-brick-400">
                   ▲ {Math.round(data.yoyPct)}% more
                 </span>
                 {` severe crashes than ${data.year - 1} over the same months`}
               </>
             ) : (
               <>
-                <span style={{ color: '#9db87a' }}>
+                <span className="text-moss-600 dark:text-moss-400">
                   ▼ {Math.abs(Math.round(data.yoyPct))}% fewer
                 </span>
                 {` severe crashes than ${data.year - 1} over the same months`}
