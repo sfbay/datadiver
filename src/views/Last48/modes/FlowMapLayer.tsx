@@ -18,6 +18,7 @@ import { useMapLayer } from '@/hooks/useMapLayer'
 import { useChronologicalReveal, hashId } from '@/hooks/useChronologicalReveal'
 import type { NormalizedEvent, DatasetId } from '@/types/last48'
 import { LAST48_DATASETS } from '@/types/last48'
+import { useAppStore } from '@/stores/appStore'
 
 // Inter-sweep buffer — once stream N completes, wait this long before
 // stream N+1 is allowed to start. Gives the eye time to register "stream 1
@@ -468,6 +469,9 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewR
   // Base circles layer + selected-ring overlay.
   // The ring is filtered to the selected id at the Mapbox expression level —
   // no React re-render needed when selection changes (see useEffect below).
+  // Selection ring inverts with the basemap: cream on dark-v11, espresso on light-v11.
+  const isDarkMode = useAppStore((s) => s.isDarkMode)
+
   const layers: mapboxgl.AnyLayer[] = useMemo(() => [
     {
       id: LAYER_ID,
@@ -529,11 +533,11 @@ export default function FlowMapLayer({ map, events, selectedId, onSelect, onNewR
           14, 13,
         ],
         'circle-opacity': 1,
-        'circle-stroke-color': '#f5ecd9',  // cream
+        'circle-stroke-color': isDarkMode ? '#f5ecd9' : '#1e140d',  // cream on dark basemap, espresso on light
         'circle-stroke-width': 2,
       },
     } as mapboxgl.AnyLayer,
-  ], [])
+  ], [isDarkMode])
 
   useMapLayer(map, SOURCE_ID, geojson, layers)
 

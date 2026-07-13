@@ -16,6 +16,7 @@
 import { useEffect, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
 import type { NormalizedEvent } from '@/types/last48'
+import { useAppStore } from '@/stores/appStore'
 
 interface Props {
   map: mapboxgl.Map | null
@@ -26,6 +27,7 @@ const RING_SIZE = 120
 
 export default function FlowSelectedRadar({ map, event }: Props) {
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
+  const isDarkMode = useAppStore((s) => s.isDarkMode)
 
   useEffect(() => {
     if (!map || !event || event.longitude == null || event.latitude == null) {
@@ -49,6 +51,10 @@ export default function FlowSelectedRadar({ map, event }: Props) {
 
   const center = RING_SIZE / 2
 
+  // The ping inverts with the basemap: warm cream reads as a glow on the
+  // dark-v11 map, but washes out on light-v11 — there it becomes dark espresso.
+  const pingRgb = isDarkMode ? '245, 236, 217' : '30, 20, 13'
+
   // Clip to the map bounds (see FlowArrivalRipples for the rationale): a
   // selected dot near an edge would otherwise emanate its ring ~60px past the
   // map and over the rail. This inset-0 overflow-hidden layer masks it.
@@ -68,7 +74,7 @@ export default function FlowSelectedRadar({ map, event }: Props) {
           cy={center}
           r="18"
           fill="none"
-          stroke="rgba(245,236,217,0.75)"
+          stroke={`rgba(${pingRgb}, 0.75)`}
           strokeWidth="1.5"
           style={{
             transformBox: 'view-box',
@@ -83,7 +89,7 @@ export default function FlowSelectedRadar({ map, event }: Props) {
           cy={center}
           r="18"
           fill="none"
-          stroke="rgba(245,236,217,0.55)"
+          stroke={`rgba(${pingRgb}, 0.55)`}
           strokeWidth="1"
           style={{
             transformBox: 'view-box',
