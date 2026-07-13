@@ -172,10 +172,10 @@ export default function SectorFilter({ categories, selected, onChange, zScores }
                 Individual sectors may appear to be declining when the overall trend is growth.
               </p>
               <p className="text-[9px] text-ochre-400/60 leading-relaxed mt-1.5">
-                Some businesses report multiple NAICS sectors (e.g. a coffee shop that's also a retailer).
-                Per-sector openings and closures count those businesses in <span className="italic">each</span> listed sector,
-                so the per-sector totals can sum to more than the overall count — this is intentional, so multi-sector
-                businesses appear in every sector lens.
+                Sectors are grouped from each business's self-reported NAICS code into the
+                standard federal categories. DataSF stopped publishing a pre-labeled sector,
+                so codes that don't match a known sector are shown as Uncategorized rather
+                than guessed.
               </p>
               <p className="text-[9px] text-ochre-400/60 leading-relaxed mt-1.5">
                 The health bars below compare each sector's closure rate against its own 5-year historical baseline (2019–2023).

@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import type { BusinessLocationRecord, SectorAggRow, BusinessMonthlyRow } from '@/types/datasets'
+import { naicsSector } from '@/utils/naicsSector'
 import { extractCoordinates } from '@/utils/geo'
 import { assignNeighborhoods } from '@/utils/pointInPolygon'
 import { formatNumber } from '@/utils/time'
@@ -68,29 +69,19 @@ export function useBusinessActivityData(params: UseBusinessActivityDataParams) {
         const isAdminClosed = status === 'closed'
           && record.administratively_closed?.trim().toLowerCase() === 'yes'
 
-        // Multi-NAICS: parse `naics_code_descriptions_list` (typically comma- or
-        // semicolon-separated) and dedup. Falls back to single primary if the
-        // list is missing. A coffee+retail shop will appear in `sectors` as
-        // both "Food Services" and "Retail Trade", which lets sector counting
-        // reflect multi-sector reality (with the trade-off that per-sector
-        // openings sum to more than total openings — documented in the
-        // SectorFilter "About this data" explainer).
-        const primary = record.naic_code_description?.trim() || ''
-        const list = record.naics_code_descriptions_list?.trim() || ''
-        const sectors: string[] = list
-          ? Array.from(new Set(
-              list.split(/[,;|]/)
-                .map((s) => s.trim())
-                .filter((s) => s.length > 0)
-            ))
-          : (primary ? [primary] : ['Uncategorized'])
+        // DataSF now ships a single self-reported NAICS code per business (the
+        // old multi-NAICS list column was dropped), so each business maps to
+        // exactly one sector. `sectors` stays a one-element array to keep the
+        // downstream per-sector tally loop unchanged.
+        const sector = naicsSector(record.self_reported_naics_code)
+        const sectors: string[] = [sector]
 
         return {
           uniqueId: record.uniqueid,
           dbaName: record.dba_name || 'Unknown',
           ownerName: record.ownership_name || '',
           address: record.full_business_address || '',
-          sector: primary || 'Uncategorized',
+          sector,
           sectors,
           corridor: record.business_corridor?.trim() || null,
           status,
@@ -204,18 +195,15 @@ export function useBusinessActivityData(params: UseBusinessActivityDataParams) {
   }, [adminClosuresCount, priorAdminClosuresCount])
 
   const topSector = useMemo(() => {
-    if (sectorRows.length === 0) return null
-    const top = sectorRows.find((r) => r.naic_code_description)
-    return top ? top.naic_code_description : null
+    const top = sectorRows.find((r) => r.sector && r.sector !== 'Uncategorized')
+    return top ? top.sector : null
   }, [sectorRows])
 
-  // Sector entries for sidebar (enrich server-side counts with client-side
-  // openings/closures/net). Multi-NAICS aware: a business with `sectors`
-  // = ["Food Services", "Retail Trade"] contributes +1 to each sector's
-  // opening/closure tally. This matches the journalistic intent (a coffee
-  // shop that is also a retailer should appear in both sector views) at the
-  // cost of the per-sector openings sum exceeding the total openings count.
-  // The SectorFilter "About this data" explainer documents this trade-off.
+  // Sector entries for sidebar (enrich the server-side per-sector counts with
+  // client-side openings/closures/net). Each business now carries exactly one
+  // self-reported NAICS code → one sector, so a business contributes +1 to its
+  // single sector's opening/closure tally (the old multi-NAICS list column that
+  // let one business count in several sectors was dropped by DataSF).
   const sectorEntries = useMemo(() => {
     const sectorStats = new Map<string, { openings: number; closures: number }>()
     for (const d of dataWithNeighborhoods) {
@@ -229,12 +217,12 @@ export function useBusinessActivityData(params: UseBusinessActivityDataParams) {
     }
 
     return sectorRows
-      .filter((r) => r.naic_code_description)
+      .filter((r) => r.sector && r.sector !== 'Uncategorized')
       .map((r) => {
-        const stats = sectorStats.get(r.naic_code_description) || { openings: 0, closures: 0 }
+        const stats = sectorStats.get(r.sector) || { openings: 0, closures: 0 }
         return {
-          sector: r.naic_code_description,
-          count: parseInt(r.cnt, 10) || 0,
+          sector: r.sector,
+          count: r.count,
           openings: stats.openings,
           closures: stats.closures,
           net: stats.openings - stats.closures,

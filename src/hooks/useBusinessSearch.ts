@@ -10,6 +10,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { fetchDataset } from '@/api/client'
 import type { BusinessLocationRecord } from '@/types/datasets'
+import { naicsSector, sectorWhereClause } from '@/utils/naicsSector'
 
 export interface BusinessSearchFilters {
   sectors?: string[]
@@ -54,7 +55,7 @@ const SELECT_FIELDS = [
   'ownership_name',
   'full_business_address',
   'business_corridor',
-  'naic_code_description',
+  'self_reported_naics_code',
   'dba_start_date',
   'dba_end_date',
   'administratively_closed',
@@ -133,8 +134,10 @@ function buildWhereClause(query: string, filters: BusinessSearchFilters): string
   }
 
   if (filters.sectors && filters.sectors.length > 0) {
-    const escaped = filters.sectors.map((s) => `'${s.replace(/'/g, "''")}'`)
-    conditions.push(`naic_code_description IN (${escaped.join(',')})`)
+    // Sectors are DataDiver category labels; translate back to the NAICS code
+    // prefixes that produce them (DataSF dropped the text column).
+    const clause = sectorWhereClause(filters.sectors)
+    if (clause) conditions.push(clause)
   }
 
   if (filters.corridor) {
@@ -196,7 +199,7 @@ function transformRecord(r: BusinessLocationRecord): BusinessSearchResult {
     ownershipName: r.ownership_name || '',
     address: r.full_business_address || '',
     corridor: r.business_corridor?.trim() || null,
-    sector: r.naic_code_description || 'Uncategorized',
+    sector: naicsSector(r.self_reported_naics_code),
     status,
     startDate: r.dba_start_date,
     endDate: r.dba_end_date,

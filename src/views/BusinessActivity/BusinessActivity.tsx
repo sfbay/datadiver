@@ -15,6 +15,7 @@ import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useAppStore } from '@/stores/appStore'
 import type { BusinessLocationRecord, SectorAggRow, BusinessMonthlyRow } from '@/types/datasets'
+import { naicsSector, sectorWhereClause } from '@/utils/naicsSector'
 import { formatNumber } from '@/utils/time'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
 import MapSidebar from '@/components/layout/MapSidebar'
@@ -41,7 +42,7 @@ import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 type MapMode = 'heatmap' | 'anomaly'
 type SidebarTab = 'sectors' | 'neighborhoods'
 
-const SELECT_FIELDS = 'uniqueid,certificate_number,ttxid,dba_name,ownership_name,full_business_address,city,dba_start_date,dba_end_date,location_start_date,location_end_date,administratively_closed,naic_code,naic_code_description,naics_code_descriptions_list,lic,lic_code_description,parking_tax,transient_occupancy_tax,business_corridor,neighborhoods_analysis_boundaries,community_benefit_district,supervisor_district,mailing_address_1,mail_city,mail_state,mail_zipcode,location'
+const SELECT_FIELDS = 'uniqueid,certificate_number,ttxid,dba_name,ownership_name,full_business_address,city,dba_start_date,dba_end_date,location_start_date,location_end_date,administratively_closed,self_reported_naics_code,lic,lic_code_description,parking_tax,transient_occupancy_tax,business_corridor,neighborhoods_analysis_boundaries,community_benefit_district,supervisor_district,mailing_address_1,mail_city,mail_state,mail_zipcode,location'
 
 const SF_CITY_FILTER = "city = 'San Francisco'"
 
@@ -129,8 +130,9 @@ export default function BusinessActivity() {
   // --- WHERE clause construction ---
   const sectorClause = useMemo(() => {
     if (selectedSectors.size === 0) return ''
-    const escaped = Array.from(selectedSectors).map((c) => `'${c.replace(/'/g, "''")}'`)
-    return `naic_code_description IN (${escaped.join(',')})`
+    // Selected values are DataDiver category labels; map back to the NAICS code
+    // prefixes that produce them (DataSF dropped the text sector column).
+    return sectorWhereClause(Array.from(selectedSectors))
   }, [selectedSectors])
 
   // Corridor predicate is folded into every WHERE site so server-side counts
@@ -284,18 +286,31 @@ export default function BusinessActivity() {
   )
   const totalCount = totalCountRows[0] ? parseInt(totalCountRows[0].count, 10) : null
 
-  // Sector aggregation
-  const { data: sectorRows } = useDataset<SectorAggRow>(
+  // Sector aggregation — DataSF dropped the pre-computed category column, so we
+  // group by the 3-digit NAICS prefix (759 distinct → one query) and roll those
+  // up into DataDiver categories client-side via naicsSector(). Three digits is
+  // enough to split Accommodations (721) from Food Services (722); every other
+  // sector resolves at two. The null-code bucket rolls up to 'Uncategorized'.
+  const { data: sectorPrefixRows } = useDataset<{ p3?: string; cnt: string }>(
     'businessLocations',
     {
-      $select: 'naic_code_description, count(*) as cnt',
-      $group: 'naic_code_description',
+      $select: 'substring(self_reported_naics_code,1,3) as p3, count(*) as cnt',
+      $group: 'p3',
       $where: openingsDateOnlyClause,
       $order: 'cnt DESC',
-      $limit: 30,
+      $limit: 1000,
     },
     [openingsDateOnlyClause]
   )
+  const sectorRows: SectorAggRow[] = useMemo(() => {
+    const totals = new Map<string, number>()
+    for (const r of sectorPrefixRows) {
+      const sector = naicsSector(r.p3)
+      totals.set(sector, (totals.get(sector) ?? 0) + (parseInt(r.cnt, 10) || 0))
+    }
+    return Array.from(totals, ([sector, count]) => ({ sector, count }))
+      .sort((a, b) => b.count - a.count)
+  }, [sectorPrefixRows])
 
   // Corridor list — server-side aggregate of all distinct corridor values
   // (sorted by population). Static-ish list since SF defines a fixed set;

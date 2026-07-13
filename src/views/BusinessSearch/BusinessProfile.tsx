@@ -10,6 +10,7 @@
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useBusinessProfile } from '@/hooks/useBusinessProfile'
 import type { BusinessLocationRecord } from '@/types/datasets'
+import { naicsSector } from '@/utils/naicsSector'
 import { Skeleton } from '@/components/ui/Skeleton'
 import ExternalResourcesCard from './components/ExternalResourcesCard'
 
@@ -150,7 +151,7 @@ function StatusPill({ status }: { status: { label: string; color: string } }) {
 // ── Cards ──────────────────────────────────────────────────────
 
 function IdentityCard({ record }: { record: BusinessLocationRecord }) {
-  const sector = record.naics_code_descriptions_list?.trim() || record.naic_code_description || 'Uncategorized'
+  const sector = naicsSector(record.self_reported_naics_code)
   const license = record.lic
     ? (record.lic_code_description ? `${record.lic} — ${record.lic_code_description}` : record.lic)
     : null
@@ -297,7 +298,7 @@ function OwnerOtherCard({ ownerName, businesses }: { ownerName: string | undefin
             >
               <p className="text-[11px] text-slate-700 dark:text-slate-200 truncate">{b.dba_name || 'Unknown'}</p>
               <p className="text-[9px] text-slate-500 font-mono truncate">
-                {b.naic_code_description || 'Uncategorized'} · {b.full_business_address}
+                {naicsSector(b.self_reported_naics_code)} · {b.full_business_address}
               </p>
             </Link>
           </li>
@@ -331,7 +332,7 @@ function AddressNeighborsCard({ address, neighbors }: { address: string | undefi
             >
               <p className="text-[11px] text-slate-700 dark:text-slate-200 truncate">{n.dba_name || 'Unknown'}</p>
               <p className="text-[9px] text-slate-500 font-mono truncate">
-                {n.naic_code_description || 'Uncategorized'} ·{' '}
+                {naicsSector(n.self_reported_naics_code)} ·{' '}
                 {n.dba_start_date?.split('T')[0]?.slice(0, 4)}
                 {n.dba_end_date ? `–${n.dba_end_date.split('T')[0].slice(0, 4)}` : '–open'}
               </p>

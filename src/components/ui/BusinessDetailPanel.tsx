@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import { fetchDataset } from '@/api/client'
 import type { BusinessLocationRecord } from '@/types/datasets'
+import { naicsSector } from '@/utils/naicsSector'
 import DetailPanelShell from '@/components/ui/DetailPanelShell'
 
 interface BusinessDetail {
@@ -28,9 +29,9 @@ interface BusinessDetail {
  *  NAICS 722 = Food Services and Drinking Places. Used to surface a
  *  placeholder for inspection data that PR 5 will resolve to a real link. */
 function isLikelyFoodBusiness(record: BusinessLocationRecord): boolean {
-  if (record.naic_code?.startsWith('722')) return true
-  const sectors = (record.naics_code_descriptions_list || record.naic_code_description || '').toLowerCase()
-  return /(restaurant|food service|drinking place|caterer|bar |tavern|coffee|bakery)/i.test(sectors)
+  if (naicsSector(record.self_reported_naics_code) === 'Food Services') return true
+  const text = (record.lic_code_description || '').toLowerCase()
+  return /(restaurant|food service|drinking place|caterer|bar |tavern|coffee|bakery)/i.test(text)
 }
 
 function formatDate(iso: string | null): string {
@@ -66,8 +67,7 @@ function buildDetail(record: BusinessLocationRecord): BusinessDetail {
     ? (isAdminClosed ? 'Forced closure' : 'Closed')
     : 'Active'
 
-  // Prefer the multi-NAICS list if present (often richer than the single primary)
-  const sector = record.naics_code_descriptions_list?.trim() || record.naic_code_description || 'Uncategorized'
+  const sector = naicsSector(record.self_reported_naics_code)
 
   // Compose license code label: "G45 — Online retail" if both fields present
   const licenseCode = record.lic

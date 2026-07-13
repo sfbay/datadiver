@@ -506,9 +506,11 @@ export interface BusinessLocationRecord {
   location_start_date: string
   location_end_date: string | null
   administratively_closed?: string
-  naic_code: string
-  naic_code_description: string
-  naics_code_descriptions_list?: string
+  /** Raw self-reported NAICS code, e.g. '722511'. DataSF dropped the derived
+   *  `naic_code` / `naic_code_description` / `naics_code_descriptions_list`
+   *  columns mid-2026 — resolve a human-readable sector via
+   *  `naicsSector()` in `@/utils/naicsSector`. */
+  self_reported_naics_code?: string
   lic?: string
   lic_code_description?: string
   parking_tax: boolean
@@ -527,10 +529,12 @@ export interface BusinessLocationRecord {
   location: { type: string; coordinates: [number, number] } | null
 }
 
-/** Server-side aggregation row for sector counts */
+/** Rolled-up sector count. Built client-side by mapping the server's
+ *  NAICS-prefix group rows through `naicsSector()` (DataSF no longer ships a
+ *  pre-computed category column). */
 export interface SectorAggRow {
-  naic_code_description: string
-  cnt: string
+  sector: string
+  count: number
 }
 
 /** Monthly breakdown row for net formation chart */

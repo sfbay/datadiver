@@ -11,6 +11,7 @@
 import { useState, useEffect } from 'react'
 import { fetchDataset } from '@/api/client'
 import type { BusinessLocationRecord } from '@/types/datasets'
+import { naicsSector } from '@/utils/naicsSector'
 
 export interface FeaturedBusiness {
   uniqueid: string
@@ -56,7 +57,7 @@ const SELECT_FIELDS = [
   'dba_name',
   'ownership_name',
   'full_business_address',
-  'naic_code_description',
+  'self_reported_naics_code',
   'dba_start_date',
   'dba_end_date',
 ].join(',')
@@ -153,6 +154,6 @@ function transformBusiness(r: BusinessLocationRecord): FeaturedBusiness {
     endDate: r.dba_end_date,
     ageYears: Math.max(ageYears, 0),
     certificateNumber: r.certificate_number || null,
-    sector: r.naic_code_description || 'Uncategorized',
+    sector: naicsSector(r.self_reported_naics_code),
   }
 }

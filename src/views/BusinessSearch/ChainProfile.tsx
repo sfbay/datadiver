@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { fetchDataset } from '@/api/client'
 import type { BusinessLocationRecord } from '@/types/datasets'
+import { naicsSector } from '@/utils/naicsSector'
 import { Skeleton } from '@/components/ui/Skeleton'
 import ChainMap from './components/ChainMap'
 import ExternalResourcesCard from './components/ExternalResourcesCard'
@@ -51,7 +52,7 @@ export default function ChainProfile() {
   const sectorMix = useMemo(() => {
     const map = new Map<string, number>()
     for (const l of locations) {
-      const s = l.naic_code_description?.trim() || 'Uncategorized'
+      const s = naicsSector(l.self_reported_naics_code)
       map.set(s, (map.get(s) || 0) + 1)
     }
     return Array.from(map.entries())
