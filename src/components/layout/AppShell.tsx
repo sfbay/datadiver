@@ -190,7 +190,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
           </svg>
         </button>
         <img
-          src={isDarkMode ? '/dana-badge-mono.png' : '/dana-badge.png'}
+          src="/dana-badge-2.png"
           alt=""
           className="w-7 h-7 shrink-0 rounded-full object-cover ring-1 ring-slate-200/50 dark:ring-white/10"
         />
@@ -275,7 +275,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             aria-label="Toggle sidebar"
           >
             <img
-              src={isDarkMode ? '/dana-badge-mono.png' : '/dana-badge.png'}
+              src="/dana-badge-2.png"
               alt="DataDiver"
               className="w-full h-full object-cover"
             />
