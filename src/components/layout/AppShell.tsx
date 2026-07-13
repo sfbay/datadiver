@@ -20,6 +20,13 @@ const NAV_ITEMS = [
     accentColor: '#b85a33', // terracotta-600 — primary brand
   },
   {
+    path: '/alerts',
+    label: 'Alerts',
+    shortLabel: 'ALRT',
+    description: 'Email me events near my places',
+    accentColor: '#b85a33', // terracotta-600 — the "alert" pigment
+  },
+  {
     path: '/live',
     label: 'The Last 48',
     shortLabel: 'LIVE',
@@ -28,7 +35,7 @@ const NAV_ITEMS = [
   },
   {
     path: '/pulse',
-    label: 'The Pulse',
+    label: 'Pulse',
     shortLabel: 'PULSE',
     description: 'Trending now in S.F.',
     accentColor: '#b85a33', // terracotta-600 — signal / front-door surface
@@ -39,6 +46,27 @@ const NAV_ITEMS = [
     shortLabel: 'ER',
     description: 'Fire, Police, EMS response times',
     accentColor: '#b85a33', // terracotta-600 — emergency / alert
+  },
+  {
+    path: '/crime-incidents',
+    label: 'Crime Incidents',
+    shortLabel: 'CI',
+    description: 'SFPD incidents & 911 cross-ref',
+    accentColor: '#963e30', // brick-600 — danger / critical
+  },
+  {
+    path: '/traffic-safety',
+    label: 'Traffic Safety',
+    shortLabel: 'TS',
+    description: 'Vision Zero crash & speed analysis',
+    accentColor: '#963e30', // brick-600 — danger semantic, twin to Crime
+  },
+  {
+    path: '/city-budget',
+    label: 'City Budget',
+    shortLabel: 'BU',
+    description: 'Budget, spending, vendor & ad tracking',
+    accentColor: '#b58620', // ochre-600 — money / traditional ledger
   },
   {
     path: '/parking-revenue',
@@ -62,25 +90,11 @@ const NAV_ITEMS = [
     accentColor: '#5c7a3d', // moss-600 — civic upkeep / growth
   },
   {
-    path: '/crime-incidents',
-    label: 'Crime Incidents',
-    shortLabel: 'CI',
-    description: 'SFPD incidents & 911 cross-ref',
-    accentColor: '#963e30', // brick-600 — danger / critical
-  },
-  {
     path: '/parking-citations',
     label: 'Parking Citations',
     shortLabel: 'PC',
     description: 'SFMTA citation patterns & fines',
     accentColor: '#d47149', // terracotta-500 — kin to PR teal but warmer
-  },
-  {
-    path: '/traffic-safety',
-    label: 'Traffic Safety',
-    shortLabel: 'TS',
-    description: 'Vision Zero crash & speed analysis',
-    accentColor: '#963e30', // brick-600 — danger semantic, twin to Crime
   },
   {
     path: '/business-activity',
@@ -111,13 +125,6 @@ const NAV_ITEMS = [
     accentColor: '#8b6282', // plum-500 — editorial cool, civic profiling
   },
   {
-    path: '/city-budget',
-    label: 'City Budget',
-    shortLabel: 'BU',
-    description: 'Budget, spending, vendor & ad tracking',
-    accentColor: '#b58620', // ochre-600 — money / traditional ledger
-  },
-  {
     path: '/elections',
     label: 'Elections',
     shortLabel: 'EL',
@@ -130,13 +137,6 @@ const NAV_ITEMS = [
     shortLabel: 'NH',
     description: 'Cross-dataset civic profiles',
     accentColor: '#5c9693', // teal-500 — Dana's color, civic-place
-  },
-  {
-    path: '/alerts',
-    label: 'Alerts',
-    shortLabel: 'ALRT',
-    description: 'Email me events near my places',
-    accentColor: '#b85a33', // terracotta-600 — the "alert" pigment
   },
   {
     path: '/about',
