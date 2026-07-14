@@ -110,6 +110,38 @@ dissolved from that era's precincts. Numbers always match the certified file, an
 the map honestly morphs across the redistricting break. The scheme change is
 disclosed rather than smoothed over.
 
+## Twelve precincts in the legacy era have no geometry anywhere
+
+Surfaced by the delegate and confirmed independently: 12 precinct ids in the 2020
+`sov.xlsx` — `7055, 7056, 7649, 7651–7657, 7876, 7959` — resolve to no feature in
+`prec_2012.geojson`. They carry real votes (roughly 460–1,250 voters each), and
+the same 12 recur in June 2022.
+
+There is no fix, because there is no data:
+
+- Both DataSF "2012" precinct datasets (`bsfq-aeyw`, `fhns-n8qp`) are the **same
+  605-row file, last updated 2016-07-13**. The "2012 definition" is really a 2016
+  snapshot, and SF created precincts between it and the 2020 election.
+- Of the 12, only `7055` and `7056` appear in `prec_2022`. The other **ten exist in
+  neither published boundary file** — created after the snapshot, renumbered away
+  before 2022.
+- Berkeley's Statewide Database has no retrievable SF precinct shapefile for G20.
+
+Borrowing 2022 geometry for a 2020 id is precisely the false-friend error this
+design exists to prevent, so we don't.
+
+| | Nov 2020 | Jun 2022 |
+|---|---|---|
+| Unmappable precincts | 12 of 588 | 12 of 589 |
+| Registered voters | 9,544 (**1.84%**) | 9,410 (**1.91%**) |
+
+**This affects only the precinct map, and only for those two elections.**
+Neighborhood and citywide figures read `dsov.xlsx` directly, which includes these
+voters — they are counted, they simply cannot be drawn. The generator emits them
+as `unmapped` with their totals intact, surfaces the residual, and holds them in a
+single pinned allow-list. Any unresolved precinct **not** on that list is a hard
+build failure. `prec_2022` has zero orphans across all four of its elections.
+
 ## Reconciliation is a build gate, not a test
 
 The generator MUST fail the build unless, for every election:
