@@ -30,6 +30,7 @@
 // echoing the Liquid layout pattern established on Home.
 
 import { useState, useEffect, type CSSProperties } from 'react'
+import { useAppStore } from '@/stores/appStore'
 import type { DatasetId } from '@/types/last48'
 import type { AlertLocation, SubscriptionDraft } from '@/lib/alerts/types'
 import { ALERT_RADII } from '@/lib/alerts/radii'
@@ -484,16 +485,52 @@ export default function AlertsView() {
 
 // ─── Hero band ───────────────────────────────────────────────────────────────
 
+// Dana hero-art placement, shared by both theme variants: anchored to the card's
+// right edge at full card height, bleeding past the right/bottom (the card's
+// overflow-hidden clips it), with a left-edge mask that dissolves the art into
+// the copy so the text never fights the swirl at narrow widths.
+//
+// The two assets differ in how they meet the card:
+//   • dark  — keeps its espresso ground (#261512), which matches the dark
+//             glass-card surface (~#261a11) to within a few units, so its edges
+//             simply vanish into the card.
+//   • light — ground is knocked out to TRANSPARENT. Its cream ground (#f7ebd3)
+//             is 36 blue-levels off the near-white light card (#fdfbf7), which
+//             would have shown as a warm rectangle; the card's own surface now
+//             shows through instead. (Cut by edge-connected flood fill, so
+//             Dana's interior cream belly survives — colour alone would have
+//             punched a hole in it.)
+const HERO_ART =
+  'pointer-events-none select-none absolute inset-y-0 right-0 h-full w-auto ' +
+  'max-w-[54%] xl:max-w-[60%] object-cover object-right ' +
+  '[mask-image:linear-gradient(to_right,transparent,#000_50%)] ' +
+  '[-webkit-mask-image:linear-gradient(to_right,transparent,#000_50%)]'
+
 function HeroBand() {
+  const isDarkMode = useAppStore((s) => s.isDarkMode)
+
   return (
     <header
-      className="glass-card relative rounded-[28px] rounded-bl-none overflow-hidden glow-host"
+      className="glass-card relative rounded-[28px] rounded-bl-none overflow-hidden glow-host lg:flex lg:items-center lg:min-h-[clamp(380px,38vw,560px)]"
       style={{ '--glow': '#b85a33' } as CSSProperties}
     >
       <div className="glow-corner is-lg" style={{ opacity: 0.55 }} />
 
-      <div className="relative grid gap-6 lg:grid-cols-[1fr,auto] lg:items-center px-[clamp(20px,3vw,40px)] py-[clamp(24px,3vw,40px)]">
-        <div>
+      {/* Dana — one asset per theme, swapped through `src` rather than two
+          CSS-toggled <img>s. A display:none image is still DOWNLOADED, so the
+          CSS approach fetched BOTH grounds (~480kB) just to show one; this
+          fetches only the active theme's. loading="lazy" additionally skips the
+          fetch below lg, where the art is hidden and the copy takes full width. */}
+      <img
+        src={isDarkMode ? '/dana-alerts-hero.webp' : '/dana-alerts-hero-light.webp'}
+        alt=""
+        aria-hidden="true"
+        loading="lazy"
+        className={`hidden lg:block ${HERO_ART}`}
+      />
+
+      <div className="relative px-[clamp(20px,3vw,40px)] py-[clamp(24px,3vw,40px)]">
+        <div className="max-w-[34rem]">
           <div className="flex items-center gap-2.5 mb-4">
             <div className="h-px w-7 bg-terracotta-500/60" />
             <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-terracotta-500">
@@ -510,26 +547,24 @@ function HeroBand() {
             <span className="text-ink/55 dark:text-slate-400">in your inbox.</span>
           </h1>
 
-          <p className="mt-5 max-w-[34rem] text-[15px] leading-relaxed text-ink/70 dark:text-slate-300">
+          <p className="mt-5 text-[15px] leading-relaxed text-ink/70 dark:text-slate-300">
             A daily brief when events on 911, Fire&nbsp;&amp;&nbsp;EMS, or 311 happen
             near the places you choose. Pin a corner, set a radius, pick what
             counts. Quiet days send nothing.
           </p>
-        </div>
 
-        {/* Pull-quote margin note — editorial sidebar. Hidden on narrow viewports
-            where the hero card needs vertical room rather than horizontal split.
-            FUTURE: this slot is reserved for Dana art (harbor seal chasing
-            anchovies down Valencia St) — swap the quote into a caption then. */}
-        <aside className="hidden lg:block max-w-[18rem] border-l-2 border-terracotta-500/30 pl-5">
-          <p className="font-display italic text-[15px] leading-snug text-ink/75 dark:text-paper-100/85">
-            “Most blocks have quiet days. We never fill an inbox just to prove we’re
-            working — silence is the signal that nothing matched.”
-          </p>
-          <p className="mt-2 text-[9px] font-mono uppercase tracking-[0.22em] text-ink/40 dark:text-slate-500">
-            ── Editor’s note
-          </p>
-        </aside>
+          {/* Editorial pull-quote — stacked under the copy so the right of the
+              card stays open for Dana. */}
+          <aside className="mt-7 border-l-2 border-terracotta-500/30 pl-5">
+            <p className="font-display italic text-[15px] leading-snug text-ink/75 dark:text-paper-100/85">
+              “Most blocks have quiet days. We never fill an inbox just to prove we’re
+              working — silence is the signal that nothing matched.”
+            </p>
+            <p className="mt-2 text-[9px] font-mono uppercase tracking-[0.22em] text-ink/40 dark:text-slate-500">
+              ── Editor’s note
+            </p>
+          </aside>
+        </div>
       </div>
     </header>
   )
