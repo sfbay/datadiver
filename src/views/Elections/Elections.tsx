@@ -218,7 +218,7 @@ export default function Elections() {
       type: 'line',
       source: 'election-choropleth',
       paint: {
-        'line-color': mapMode === 'turnout' ? '#e2e8f0' : mapMode === 'margin' ? '#d4a435' : (
+        'line-color': mapMode === 'turnout' ? '#ecdfc5' : mapMode === 'margin' ? '#d4a435' : (
           activeRace?.candidates.find((c) => c.isWinner)
             ? candidateColors.get(activeRace.candidates.find((c) => c.isWinner)!.name) || ACCENT
             : ACCENT
@@ -239,7 +239,7 @@ export default function Elections() {
       return `
         <div class="tooltip-label">Neighborhood</div>
         <div class="tooltip-value">${nhood}</div>
-        ${dist ? `<div style="color:#64748b;font-size:10px">${dist}</div>` : ''}
+        ${dist ? `<div style="color:#a8926a;font-size:10px">${dist}</div>` : ''}
         <div class="tooltip-label" style="margin-top:6px">City Turnout</div>
         <div style="color:#7a9954;font-weight:600">${(Number(props.turnoutPct) * 100).toFixed(1)}%</div>
       `
@@ -248,7 +248,7 @@ export default function Elections() {
       return `
         <div class="tooltip-label">Neighborhood</div>
         <div class="tooltip-value">${nhood}</div>
-        ${dist ? `<div style="color:#64748b;font-size:10px">${dist}</div>` : ''}
+        ${dist ? `<div style="color:#a8926a;font-size:10px">${dist}</div>` : ''}
         <div class="tooltip-label" style="margin-top:6px">City Margin</div>
         <div style="color:#d4a435;font-weight:600">${(Number(props.margin) * 100).toFixed(1)}%</div>
       `
@@ -256,7 +256,7 @@ export default function Elections() {
     return `
       <div class="tooltip-label">Neighborhood</div>
       <div class="tooltip-value">${nhood}</div>
-      ${dist ? `<div style="color:#64748b;font-size:10px">${dist}</div>` : ''}
+      ${dist ? `<div style="color:#a8926a;font-size:10px">${dist}</div>` : ''}
       <div class="tooltip-label" style="margin-top:6px">Winner (Citywide)</div>
       <div style="color:${props.fillColor || ACCENT};font-weight:600">${props.winnerName || 'TBD'}</div>
     `
@@ -337,7 +337,7 @@ export default function Elections() {
         label: 'Margin',
         shortLabel: 'Margin',
         value: `${margin.toFixed(1)}%`,
-        color: margin < 5 ? '#b85545' : '#64748b',
+        color: margin < 5 ? '#b85545' : '#a8926a',
         subtitle: margin < 5 ? 'Competitive' : undefined,
       })
     }
@@ -347,7 +347,7 @@ export default function Elections() {
       label: 'Registered',
       shortLabel: 'Reg',
       value: r.registration.totalRegistered.toLocaleString(),
-      color: '#64748b',
+      color: '#a8926a',
     })
 
     if (activeRace.isRCV && rcvData) {
@@ -510,7 +510,7 @@ export default function Elections() {
             {!isLoading && hasCitywideFallback && displayResults && (
               <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/80 backdrop-blur-sm border border-white/[0.08] text-[10px] font-mono text-slate-400">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#64748b" strokeWidth="1.5">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#a8926a" strokeWidth="1.5">
                     <circle cx="6" cy="6" r="4.5" />
                     <path d="M6 4v3M6 8.5v.01" strokeLinecap="round" />
                   </svg>
@@ -598,7 +598,7 @@ export default function Elections() {
                     <div key={c.name} className="flex items-center gap-2">
                       <span
                         className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
-                        style={{ backgroundColor: candidateColors.get(c.name) || '#64748b' }}
+                        style={{ backgroundColor: candidateColors.get(c.name) || '#a8926a' }}
                       />
                       <span className="text-[10px] text-slate-400 truncate max-w-[120px]">
                         {toSentenceCase(c.name.split(',')[0])}
@@ -684,7 +684,7 @@ export default function Elections() {
                             <div className="flex items-center gap-2 mt-1">
                               <span
                                 className="w-2 h-2 rounded-full flex-shrink-0"
-                                style={{ backgroundColor: candidateColors.get(winner.name) || '#64748b' }}
+                                style={{ backgroundColor: candidateColors.get(winner.name) || '#a8926a' }}
                               />
                               <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                                 {toSentenceCase(winner.name)}
@@ -706,7 +706,7 @@ export default function Elections() {
                                     className="h-full transition-all duration-500"
                                     style={{
                                       width: `${c.percentage * 100}%`,
-                                      backgroundColor: candidateColors.get(c.name) || '#64748b',
+                                      backgroundColor: candidateColors.get(c.name) || '#a8926a',
                                       opacity: c.isWinner ? 1 : 0.5,
                                     }}
                                   />
@@ -915,7 +915,7 @@ function NeighborhoodElectionPanel({
                   <div key={c.name} className="flex items-center gap-2 py-0.5">
                     <span
                       className="w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: candidateColors.get(c.name) || '#64748b' }}
+                      style={{ backgroundColor: candidateColors.get(c.name) || '#a8926a' }}
                     />
                     <span className={`text-[10px] truncate flex-1 ${c.isWinner ? 'text-white font-semibold' : 'text-slate-400'}`}>
                       {toSentenceCase(c.name)}
