@@ -159,7 +159,9 @@ async function main() {
   console.log(`\n✓ manifest → ${join(OUT, 'manifest.json')}`)
 }
 
-main().catch((e) => {
-  console.error(e)
-  process.exit(1)
-})
+if (process.argv[1]?.endsWith('fetch-election-sources.mjs')) {
+  main().catch((e) => {
+    console.error(e)
+    process.exit(1)
+  })
+}

@@ -7,6 +7,6 @@ export default defineConfig({
   },
   test: {
     environment: 'node', // pure functions only — no DOM needed
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'scripts/__tests__/**/*.test.ts'],
   },
 })
