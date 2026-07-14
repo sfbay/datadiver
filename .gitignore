@@ -50,3 +50,9 @@ docs/design-handoff/
 public/DataDiver Design System.zip
 .env*.local
 .superpowers/
+
+# Certified election source spreadsheets (39MB of xlsx from sfelections.org).
+# Regenerate with `node scripts/fetch-election-sources.mjs`. Only the JSON the
+# generator emits into public/data/elections/ is committed — the build is local,
+# Vercel just serves the output.
+data/elections-src/
