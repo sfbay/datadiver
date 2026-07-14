@@ -53,6 +53,8 @@ interface SourceRow {
   id: string
   dateField?: string
   note?: string
+  /** Non-DataSF source. Election results are the only one — see findings. */
+  url?: string
 }
 
 // Mirrors src/api/datasets.ts — update both when the registry changes.
@@ -77,6 +79,14 @@ const SOURCES: SourceRow[] = [
   { name: 'Spending & Revenue', id: 'bpnb-jwfb' },
   { name: 'Vendor Payments (Vouchers)', id: 'n9pm-xkyq', note: '7.9M rows, FY2007+; basis of the ad-spend compliance work' },
   { name: 'Supplier Contracts', id: 'cqi5-hm2d', note: 'FY2018+' },
+  {
+    name: 'Election Results (Statement of the Vote)',
+    id: 'sfelections.org',
+    url: 'https://sfelections.org/results/',
+    note: 'NOT on DataSF — the Department of Elections publishes no results to the open data portal. Certified spreadsheets, read from the Department’s own archive (see findings)',
+  },
+  { name: 'Election Precincts — Current (2022)', id: 'd6x4-hefw', note: 'Precinct geometry, Nov 2022 onward' },
+  { name: 'Election Precincts — Historical (2012)', id: 'bsfq-aeyw', note: 'Precinct geometry through Jun 2022 — precinct numbers are NOT comparable across the 2022 renumbering (see findings)' },
 ]
 
 const STACK: { area: string; tools: string }[] = [
@@ -185,7 +195,7 @@ export default function About() {
           <SectionHead label="Data Sources" glow="#d4a435" />
           <Prose>
             <p className="mb-5">
-              All data comes from{' '}
+              Nearly all data comes from{' '}
               <a href="https://data.sfgov.org" target="_blank" rel="noopener noreferrer"
                  className="underline decoration-slate-400/50 underline-offset-2 hover:text-ink dark:hover:text-white transition-colors">
                 DataSF
@@ -196,13 +206,19 @@ export default function About() {
               dataset and is constrained by each publishing agency; no SF dataset is truly
               real-time.
             </p>
+            <p className="mb-5">
+              Election results are the exception: the Department of Elections publishes none of
+              its results to the open data portal, so those figures are read from the
+              Department&rsquo;s own certified reports. That source is listed below alongside the
+              rest, and what it costs us is described in the findings.
+            </p>
           </Prose>
           <div className="glass-card rounded-xl overflow-x-auto">
             <table className="w-full text-left min-w-[680px]">
               <thead>
                 <tr className="border-b-2 border-slate-300/50 dark:border-white/[0.08]">
                   <th className="px-4 py-2.5 text-[10px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Dataset</th>
-                  <th className="px-4 py-2.5 text-[10px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Socrata ID</th>
+                  <th className="px-4 py-2.5 text-[10px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Source ID</th>
                   <th className="px-4 py-2.5 text-[10px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Date field</th>
                   <th className="px-4 py-2.5 text-[10px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Known limitations</th>
                 </tr>
@@ -212,7 +228,7 @@ export default function About() {
                   <tr key={s.id} className="border-t border-slate-200/40 dark:border-white/[0.03]">
                     <td className="px-4 py-2.5 text-[13px] text-slate-700 dark:text-slate-200">{s.name}</td>
                     <td className="px-4 py-2.5 text-[12px] font-mono text-slate-500 dark:text-slate-400">
-                      <a href={`https://data.sfgov.org/d/${s.id}`} target="_blank" rel="noopener noreferrer"
+                      <a href={s.url ?? `https://data.sfgov.org/d/${s.id}`} target="_blank" rel="noopener noreferrer"
                          className="hover:text-ink dark:hover:text-white underline decoration-slate-400/30 underline-offset-2 transition-colors">
                         {s.id}
                       </a>
@@ -358,6 +374,47 @@ export default function About() {
                 standardized FPPC transaction codes rather than free-text descriptions, and
                 intermediary (&ldquo;earmarked&rdquo;) pass-throughs are identified by form
                 type to avoid double-counting money that merely routed through a committee.
+              </p>
+            </Finding>
+
+            <Finding title="San Francisco doesn't publish election results as open data">
+              <p className="mb-3">
+                Every other dataset on this page lives on DataSF, where anyone can re-query it.
+                Election results do not. The portal carries the precinct{' '}
+                <em>boundaries</em> but not a single vote total. The results exist only as
+                certified spreadsheets in the Department of Elections&rsquo; own archive — a
+                Statement of the Vote, reported precinct by precinct, and a District &amp;
+                Neighborhood Statement of the Vote. They have to be read out of a web page
+                rather than queried, and preliminary drops sit alongside the certified final,
+                distinguished by nothing but a letter in the filename.
+              </p>
+              <p className="mb-3">
+                Two properties of that data govern what can honestly be shown.{' '}
+                <strong>Precinct numbers are not stable over time.</strong> San Francisco
+                renumbered its precincts in the 2022 redistricting, so precinct 1101 in 2020 is
+                not the precinct that carries that number today. The numbers still match as
+                text, which is what makes them dangerous: joining a 2020 result to a current
+                precinct map reconciles only 4 of 27 neighborhoods against the city&rsquo;s own
+                certified totals, and produces a map that looks entirely plausible while being
+                wrong. Each election is therefore pinned to the precinct boundaries that were in
+                force when it was held.
+              </p>
+              <p className="mb-3">
+                <strong>The neighborhood vocabulary changed as well.</strong> Through June 2022
+                the city reported on 26 coarse, abbreviated neighborhoods — a single
+                &ldquo;RICHMOND,&rdquo; a single &ldquo;SUNSET.&rdquo; From November 2022 it
+                reports on the 41 Analysis Neighborhoods the rest of this site is built on. The
+                older scheme cannot be split back apart into the newer one; the detail simply
+                is not in the file. Older elections are shown on the vocabulary the city
+                actually used, rather than being quietly reshaped into today&rsquo;s.
+              </p>
+              <p>
+                One more quiet gap: a handful of very small precincts appear in the
+                neighborhood totals but are withheld from the precinct-level report, evidently
+                to protect ballot secrecy where too few people voted. In November 2024 that is
+                1,215 registered voters. We report that residual rather than absorbing it into
+                a neighborhood it may not belong to. Because the city certifies its own totals,
+                every figure derived from these reports can be checked against them — and is.
               </p>
             </Finding>
           </div>

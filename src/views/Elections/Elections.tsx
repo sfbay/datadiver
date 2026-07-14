@@ -11,7 +11,7 @@ import CardTray, { type CardDef } from '@/components/ui/CardTray'
 import DetailPanelShell from '@/components/ui/DetailPanelShell'
 import ExportButton from '@/components/export/ExportButton'
 import { SkeletonStatCards, SkeletonSidebarRows } from '@/components/ui/Skeleton'
-import { ACCENT, buildCandidateColorMap, turnoutColor, marginColor } from '@/utils/electionColors'
+import { ACCENT, buildCandidateColorMap, turnoutColor } from '@/utils/electionColors'
 import type { Race } from '@/types/elections'
 import RCVRoundChart from '@/components/charts/RCVRoundChart'
 import RCVSankey from '@/components/charts/RCVSankey'
@@ -118,7 +118,6 @@ export default function Elections() {
 
   // ── Geo data ──────────────────────────────────────────────────────
   const { boundaries: neighborhoodBoundaries } = useNeighborhoodBoundaries()
-  const { precincts, precinctToNeighborhood } = usePrecinctBoundaries()
 
   // ── Candidate colors ──────────────────────────────────────────────
   const candidateColors = useMemo(() => {
@@ -126,91 +125,60 @@ export default function Elections() {
     return buildCandidateColorMap(activeRace.candidates)
   }, [activeRace])
 
-  // ── Neighborhood choropleth ─────────────────────────────────────
-  // Per-neighborhood results data (neighborhoods.json) doesn't exist yet —
-  // we use precinct supervisor-district data to create visual variation.
-  // Each neighborhood gets a different shade based on its dominant supe district.
-  const hasCitywideFallback = true // TODO: set false when neighborhoods.json exists
-
-  // Build a lookup: neighborhood → dominant supervisor district
-  const nhoodToDistrict = useMemo(() => {
-    if (!precincts || !precinctToNeighborhood) return new Map<string, number>()
-    const districtVotes = new Map<string, Map<number, number>>()
-    for (const f of precincts.features) {
-      const prec = String(f.properties?.Prec_2025)
-      const nhood = precinctToNeighborhood[prec] || (f.properties?.Neigh22 as string)
-      const dist = Number(f.properties?.Supe22) || 0
-      if (!nhood) continue
-      if (!districtVotes.has(nhood)) districtVotes.set(nhood, new Map())
-      const dv = districtVotes.get(nhood)!
-      dv.set(dist, (dv.get(dist) || 0) + 1)
-    }
-    const result = new Map<string, number>()
-    for (const [nhood, dv] of districtVotes) {
-      let maxDist = 0, maxCount = 0
-      for (const [dist, count] of dv) {
-        if (count > maxCount) { maxDist = dist; maxCount = count }
-      }
-      result.set(nhood, maxDist)
-    }
-    return result
-  }, [precincts, precinctToNeighborhood])
+  // ── Neighborhood layer ──────────────────────────────────────────
+  // The results we hold are CITYWIDE. There is exactly one turnout figure, one
+  // margin, one winner — so there is nothing to vary across 41 polygons, and the
+  // map must not pretend otherwise.
+  //
+  // This previously derived `fill-opacity` from each neighborhood's dominant
+  // supervisor district (`(district % 11) / 11`) to "create visual variation."
+  // That is a fabricated encoding: a reader decodes shade as signal, and the
+  // shade carried a district id. Removed. Until per-neighborhood results land,
+  // the polygons are a uniform, deliberately flat locator — clickable, but
+  // encoding nothing. See docs/superpowers/specs/2026-07-14-elections-real-results-design.md
+  const hasCitywideFallback = true // false once precinct/neighborhood results ship
 
   const choroplethGeojson = useMemo((): GeoJSON.FeatureCollection | null => {
     if (!neighborhoodBoundaries || !activeRace || !displayResults) return null
 
     const winner = activeRace.candidates.find((c) => c.isWinner)
-    const winnerColor = winner ? candidateColors.get(winner.name) || ACCENT : ACCENT
     const topTwo = [...activeRace.candidates].sort((a, b) => b.totalVotes - a.totalVotes)
     const cityMargin = topTwo.length >= 2
       ? (topTwo[0].totalVotes - topTwo[1].totalVotes) / activeRace.totalBallotsCast
       : 0.5
     const cityTurnout = displayResults.registration.turnoutPct
 
-    const features = neighborhoodBoundaries.features.map((f) => {
-      const nhood = f.properties?.nhood as string || ''
-      const district = nhoodToDistrict.get(nhood) || 0
-
-      // Create visual variation: use district number to vary opacity/shade
-      // This gives each neighborhood a distinct look even with citywide data
-      const distFactor = (district % 11) / 11 // 0-1 based on district
-      const fillOpacity = 0.15 + distFactor * 0.35 // range: 0.15 - 0.50
-
-      let fillColor: string
-      if (mapMode === 'turnout') {
-        fillColor = turnoutColor(cityTurnout)
-      } else if (mapMode === 'margin') {
-        fillColor = marginColor(cityMargin)
-      } else {
-        fillColor = winnerColor
-      }
-
-      return {
-        ...f,
-        properties: {
-          ...f.properties,
-          fillColor,
-          fillOpacity,
-          winnerName: winner ? toSentenceCase(winner.name) : 'TBD',
-          margin: cityMargin,
-          turnoutPct: cityTurnout,
-          district,
-        },
-      }
-    })
+    const features = neighborhoodBoundaries.features.map((f) => ({
+      ...f,
+      properties: {
+        ...f.properties,
+        selected: (f.properties?.nhood as string) === selectedNeighborhood,
+        // Citywide values, carried for the tooltip — which labels them as such.
+        winnerName: winner ? toSentenceCase(winner.name) : 'TBD',
+        margin: cityMargin,
+        turnoutPct: cityTurnout,
+      },
+    }))
 
     return { type: 'FeatureCollection', features }
-  }, [neighborhoodBoundaries, activeRace, displayResults, candidateColors, nhoodToDistrict, mapMode])
+  }, [neighborhoodBoundaries, activeRace, displayResults, selectedNeighborhood])
 
   // ── Map layers ────────────────────────────────────────────────────
+  // Uniform paint. Not "not yet tuned" — uniform ON PURPOSE, because the data
+  // behind it is a single citywide number. The only thing that varies here is
+  // selection, which is UI state, not a measurement.
   const choroplethLayers = useMemo((): mapboxgl.AnyLayer[] => [
     {
       id: 'election-nhood-fill',
       type: 'fill',
       source: 'election-choropleth',
       paint: {
-        'fill-color': ['get', 'fillColor'],
-        'fill-opacity': ['get', 'fillOpacity'],
+        'fill-color': ACCENT,
+        'fill-opacity': [
+          'case',
+          ['boolean', ['get', 'selected'], false], 0.28,
+          0.10,
+        ],
       },
     },
     {
@@ -218,47 +186,39 @@ export default function Elections() {
       type: 'line',
       source: 'election-choropleth',
       paint: {
-        'line-color': mapMode === 'turnout' ? '#ecdfc5' : mapMode === 'margin' ? '#d4a435' : (
-          activeRace?.candidates.find((c) => c.isWinner)
-            ? candidateColors.get(activeRace.candidates.find((c) => c.isWinner)!.name) || ACCENT
-            : ACCENT
-        ),
-        'line-width': 1.5,
-        'line-opacity': 0.6,
+        'line-color': ACCENT,
+        'line-width': ['case', ['boolean', ['get', 'selected'], false], 2, 1],
+        'line-opacity': ['case', ['boolean', ['get', 'selected'], false], 0.9, 0.35],
       },
     },
-  ], [mapMode, activeRace, candidateColors])
+  ], [])
 
   useMapLayer(mapInstance, 'election-choropleth', choroplethGeojson, choroplethLayers)
 
   // Tooltip for neighborhood hover
+  // The figure shown is CITYWIDE — every neighborhood reports the same number.
+  // Say so in the tooltip rather than letting the neighborhood name imply it is
+  // a local measurement.
   useMapTooltip(mapInstance, 'election-nhood-fill', (props) => {
     const nhood = props.nhood || props.Neigh22 || 'Unknown'
-    const dist = props.district ? `District ${props.district}` : ''
-    if (mapMode === 'turnout') {
-      return `
-        <div class="tooltip-label">Neighborhood</div>
-        <div class="tooltip-value">${nhood}</div>
-        ${dist ? `<div style="color:#a8926a;font-size:10px">${dist}</div>` : ''}
-        <div class="tooltip-label" style="margin-top:6px">City Turnout</div>
-        <div style="color:#7a9954;font-weight:600">${(Number(props.turnoutPct) * 100).toFixed(1)}%</div>
-      `
-    }
-    if (mapMode === 'margin') {
-      return `
-        <div class="tooltip-label">Neighborhood</div>
-        <div class="tooltip-value">${nhood}</div>
-        ${dist ? `<div style="color:#a8926a;font-size:10px">${dist}</div>` : ''}
-        <div class="tooltip-label" style="margin-top:6px">City Margin</div>
-        <div style="color:#d4a435;font-weight:600">${(Number(props.margin) * 100).toFixed(1)}%</div>
-      `
-    }
+    const caveat =
+      '<div style="color:#a8926a;font-size:9px;margin-top:6px;font-style:italic">Citywide figure — S.F. does not publish this by neighborhood in the data we hold</div>'
+
+    const body =
+      mapMode === 'turnout'
+        ? `<div class="tooltip-label" style="margin-top:6px">Citywide Turnout</div>
+           <div style="color:#7a9954;font-weight:600">${(Number(props.turnoutPct) * 100).toFixed(1)}%</div>`
+        : mapMode === 'margin'
+        ? `<div class="tooltip-label" style="margin-top:6px">Citywide Margin</div>
+           <div style="color:#d4a435;font-weight:600">${(Number(props.margin) * 100).toFixed(1)}%</div>`
+        : `<div class="tooltip-label" style="margin-top:6px">Citywide Winner</div>
+           <div style="color:${ACCENT};font-weight:600">${props.winnerName || 'TBD'}</div>`
+
     return `
       <div class="tooltip-label">Neighborhood</div>
       <div class="tooltip-value">${nhood}</div>
-      ${dist ? `<div style="color:#a8926a;font-size:10px">${dist}</div>` : ''}
-      <div class="tooltip-label" style="margin-top:6px">Winner (Citywide)</div>
-      <div style="color:${props.fillColor || ACCENT};font-weight:600">${props.winnerName || 'TBD'}</div>
+      ${body}
+      ${caveat}
     `
   })
 
