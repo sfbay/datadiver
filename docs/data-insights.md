@@ -110,6 +110,55 @@ While per-sector opening counts are contaminated by NAICS lag, the **total openi
 
 ---
 
+## Elections
+
+**Source:** `sfelections.org` — **not DataSF.**
+**Key files:** `sov.xlsx` (Statement of the Vote, per precinct), `dsov.xlsx` (District & Neighborhood SOV, per neighborhood)
+
+### San Francisco publishes no election results as open data
+
+**Finding:** DataSF carries election precinct *boundaries* (`d6x4-hefw`, `bsfq-aeyw`) and **zero vote totals**. The Department of Elections does not push results to the open data portal at all. Results exist only as certified spreadsheets in the Department's own web archive, which must be scraped.
+
+**Where they hide:** the old pipeline fetched `/results/<dateCode>/data/summary.xml` — citywide by construction, which is why the Elections view had no neighborhood dimension for its entire life. The real reports live in a **parallel `w`-suffixed archive** (`/results/<dateCode>w/detail.html`, or `detail.php` for older elections). A `p` prefix marks a **preliminary** daily drop (`psov`/`dpsov`); unprefixed is the certified final. 2020 names its finals with a date prefix (`20201201_dsov.xlsx`).
+
+**Two scraper traps, both found the hard way:**
+- A detail page links to *other elections'* files. An unscoped URL match silently grabs the wrong year.
+- The pages are **reverse-chronological**, and an election can carry more than one unprefixed drop (a pre-election logic-and-accuracy shell beside the real certification). "Last match in document order" picked a 96 KB pre-election shell for Nov 2025 instead of the real result. Sort by the drop's own date.
+
+### Precinct numbers are not stable across redistricting
+
+**Finding:** SF renumbered precincts in the 2022 redistricting. **Precinct 1101 in 2020 is not precinct 1101 today.** The numbers still match as *text*, which is what makes them dangerous — a join succeeds, no error is thrown, and a plausible, wrong map renders.
+
+Validated against SF's own certified neighborhood totals (registered voters — the easiest number in the file):
+
+| Approach | Reconciles |
+|---|---|
+| 2020 precinct ids × current crosswalk | **4/27** — 114 precincts, 97,831 voters (19% of the electorate) unmapped |
+| Spatial join, max-overlap area | **20/40** — boundary-straddling precincts land in the wrong neighborhood, in exactly-offsetting pairs (`GLEN PARK +1,204` / `NOE VALLEY −1,204`) |
+| **Era-correct file's own official label** (`neigh22` on `prec_2022`) | **35/40 exact — delta zero** |
+
+**Rule:** pin every election to the precinct boundary vintage in force when it was held. Never trust a precinct id across an era, and never trust *any* published precinct→neighborhood label from a different era — even the era-correct file's `neighrep` drifts from what the report used.
+
+### The neighborhood vocabulary changed in November 2022
+
+Through June 2022 SF reported on **26 coarse abbreviated neighborhoods** (`BAYVW/HTRSPT`, `SOMA`, `CVC CTR/DWTN`). From November 2022 it reports on the **41 Analysis Neighborhoods** the rest of DataDiver is built on. The old scheme is coarser — one `RICHMOND` where there are now Inner and Outer — and **cannot be split back apart**; the detail is not in the file. Show older elections on the vocabulary the city actually used rather than reshaping them into today's.
+
+### Twelve precincts have no published geometry, anywhere
+
+12 precinct ids in the 2020 `sov.xlsx` (`7055, 7056, 7649, 7651–7657, 7876, 7959`) resolve to no feature in any boundary file, and the same 12 recur in June 2022. Both DataSF "2012" precinct datasets (`bsfq-aeyw`, `fhns-n8qp`) are the **same 605-row file, last updated 2016-07-13** — the "2012 definition" is really a 2016 snapshot, and SF created precincts after it. Only two of the 12 appear in `prec_2022`; **ten exist in neither file**. Berkeley's Statewide Database has no retrievable SF shapefile for G20.
+
+Cost: 9,544 registered voters (1.84%) in Nov 2020, 9,410 (1.91%) in Jun 2022 — **map-only**. Neighborhood and citywide figures read `dsov.xlsx` directly and still count them. They are emitted as `unmapped`, never reassigned to a neighbour's geometry.
+
+### Small precincts are withheld from the precinct report
+
+Some precincts appear in `dsov` neighborhood totals but have **no `sov` row** — SF protects ballot secrecy where too few people voted. In Nov 2024 the residual is exactly **1,215 registered voters** (521,050 in the precinct file vs 522,265 certified citywide). This is why the neighborhood grain must be *read* from `dsov`, never *derived* by summing precincts: a derived figure will silently disagree with the city's own.
+
+### Special elections consolidate precincts
+
+Nov 2025 (Proposition 50) reports **100 precinct rows for a ~500-precinct city**, and carries a single contest. Consolidated rows appear as `PCT 1104/1105` — one row, several precincts. Present in 2020, absent in 2024, dominant in specials. Registration cannot be attributed to the row's first id.
+
+---
+
 ## General Patterns
 
 ### Floating SF-Local Timestamps (all DataSF datasets)
