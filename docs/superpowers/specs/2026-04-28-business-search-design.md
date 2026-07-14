@@ -1,5 +1,13 @@
 # Business Search & Owner/Chain Drill-Down — Design Spec
 
+> ⚠️ **Partially superseded (July 13 2026).** DataSF removed `naic_code`,
+> `naic_code_description`, and `naics_code_descriptions_list` from `g8m3-pdis`,
+> so the field lists below reference dead columns and the **multi-NAICS** design
+> (counting one business in several sectors) is no longer possible — each business
+> now carries exactly one `self_reported_naics_code`. Sectors are reconstructed via
+> `src/utils/naicsSector.ts`. See `docs/data-insights.md` → "DataSF dropped the
+> pre-labeled sector column". The search/drill-down design otherwise still holds.
+
 **Date:** 2026-04-28
 **Author:** Jesse Garnier + Claude
 **Status:** Draft for review

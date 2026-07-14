@@ -1,5 +1,14 @@
 # Business Activity View — Design Spec
 
+> ⚠️ **Partially superseded (July 13 2026).** DataSF removed `naic_code`,
+> `naic_code_description`, and `naics_code_descriptions_list` from `g8m3-pdis`.
+> The SQL and field lists below reference those dead columns — querying them now
+> returns `400 no-such-column`. Sectors are reconstructed from the surviving
+> `self_reported_naics_code` via `src/utils/naicsSector.ts`; server-side sector
+> aggregation groups on `substring(self_reported_naics_code,1,3)` and rolls up
+> client-side. See `docs/data-insights.md` → "DataSF dropped the pre-labeled
+> sector column". The rest of this spec still holds.
+
 ## Overview
 
 New DataDiver view visualizing SF business opening/closing trends using the Registered Business Locations dataset (`g8m3-pdis`). Citizen-focused: answers "Is my neighborhood gaining or losing businesses? What kinds? How does this compare to last year?"

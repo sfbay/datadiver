@@ -1,5 +1,11 @@
 # Business Activity View Implementation Plan
 
+> ⚠️ **Executed, and partially superseded (July 13 2026).** DataSF removed
+> `naic_code` / `naic_code_description` / `naics_code_descriptions_list` from
+> `g8m3-pdis`. Do NOT copy the field lists or record types below — they will
+> `400`. Sectors come from `src/utils/naicsSector.ts` now. See
+> `docs/data-insights.md` → "DataSF dropped the pre-labeled sector column".
+
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build a map-centric Business Activity view showing SF business opening/closing trends by neighborhood and sector, using the Registered Business Locations dataset (`g8m3-pdis`).

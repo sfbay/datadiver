@@ -71,7 +71,7 @@ const SOURCES: SourceRow[] = [
   { name: 'Parking Meter Revenue', id: 'imvp-dq3v', dateField: 'session_start_dt' },
   { name: 'Parking Meter Inventory', id: '8vzz-qzz9' },
   { name: 'Pavement Condition Index', id: '5aye-4rtt' },
-  { name: 'Registered Business Locations', id: 'g8m3-pdis', dateField: 'dba_start_date', note: '~96% of new registrations lack NAICS codes (see findings)' },
+  { name: 'Registered Business Locations', id: 'g8m3-pdis', dateField: 'dba_start_date', note: 'DataSF dropped industry labels (Jul 2026) — sectors derived from the raw NAICS code; ~96% of new registrations have no code (see findings)' },
   { name: 'Campaign Finance (SF Ethics)', id: 'pitq-e56w', dateField: 'calculated_date', note: 'SF filings only — excludes state FPPC/CAL-ACCESS' },
   { name: 'Budget', id: 'xdgd-c79v' },
   { name: 'Spending & Revenue', id: 'bpnb-jwfb' },
@@ -269,6 +269,21 @@ export default function About() {
                 explicit Uncategorized row and uses closure-trend z-scores against a 5-year
                 baseline — not opening/closure ratios — as the per-sector health signal,
                 because closure counts are the reliable side of the ledger.
+              </p>
+            </Finding>
+
+            <Finding title="The city stopped publishing industry labels — so we rebuild them">
+              <p>
+                In July 2026 DataSF removed the industry-label columns from the Registered
+                Business Locations dataset, leaving only each business&rsquo;s raw
+                self-reported NAICS code &mdash; a bare number like 722511. Every query still
+                asking for the old label column simply broke. Rather than drop the sector lens,
+                DataDiver reconstructs it: the raw code is mapped to its standard federal NAICS
+                sector, so 722511 becomes Food Services. Codes that match no recognized sector
+                &mdash; the self-reported field is noisy, carrying stray values that aren&rsquo;t
+                NAICS codes at all &mdash; are shown as Uncategorized rather than guessed into a
+                plausible-looking bucket. Sector labels on this site are therefore{' '}
+                <em>derived</em>, not quoted from the city.
               </p>
             </Finding>
 

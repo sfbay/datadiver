@@ -7,11 +7,24 @@ Notes on data quality, known biases, and interpretation guidance for SF open dat
 ## Business Activity (Registered Business Locations)
 
 **Dataset:** `g8m3-pdis` — SF Registered Business Locations
-**Key fields:** `dba_start_date` (opening), `dba_end_date` (closure), `naic_code_description` (industry sector)
+**Key fields:** `dba_start_date` (opening), `dba_end_date` (closure), `self_reported_naics_code` (raw NAICS code — the industry *label* column was dropped, see below)
+
+### DataSF dropped the pre-labeled sector column (July 2026)
+
+**Finding:** DataSF removed `naic_code`, `naic_code_description`, and `naics_code_descriptions_list` from `g8m3-pdis`. Only the raw `self_reported_naics_code` (e.g. `722511`) survives — the dataset no longer ships **any** human-readable industry label.
+
+**How it surfaced:** every query still selecting the dead column started returning `400 query.soql.no-such-column`, taking Business Search *and* Business Activity down together (they shared a field list). The lesson generalizes: **a Socrata dataset's schema is not a stable contract.** When a query 400s on a column that "has always been there," check `https://data.sfgov.org/api/views/<id>/columns.json` — the live schema is the only ground truth, and memory of it is worthless.
+
+**Mitigation:** sectors are now **reconstructed** client-side from the raw code by `src/utils/naicsSector.ts` — a pure, unit-tested longest-prefix crosswalk. Three digits are needed only where NAICS 72 splits into two DataDiver categories (721 Accommodations vs 722 Food Services); every other sector resolves at two digits. The self-reported field is noisy — it carries junk prefixes like `00`, `20`, `59` that are not valid NAICS sectors — and those resolve to "Uncategorized" rather than being force-fit into a plausible-looking bucket.
+
+**Side effects worth knowing:**
+- **Multi-sector counting is gone.** The old `naics_code_descriptions_list` let one business (a coffee shop that is also a retailer) count in several sectors. Each business now carries exactly one code, so per-sector tallies no longer sum to more than the total.
+- **Coverage actually improved.** The surviving code is populated on ~126K of ~364K rows (~35%) — better than the label column it replaced.
+- Server-side sector aggregation now groups on `substring(self_reported_naics_code,1,3)` (759 distinct prefixes) and rolls those up into categories client-side, rather than grouping on a pre-labeled column.
 
 ### NAICS Code Bias: New registrations lack industry codes
 
-**Finding:** ~96% of new business openings have a null `naic_code_description`. Closures, being older established businesses, almost always have NAICS codes assigned.
+**Finding:** ~96% of new business openings have a null NAICS code. Closures, being older established businesses, almost always have codes assigned. (This bias survived the schema change above — it is a property of *when* SF assigns codes, not of which column carries them.)
 
 **Impact by the numbers (Mar 2025–Mar 2026):**
 
