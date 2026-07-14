@@ -1,13 +1,21 @@
 import { useState, useEffect } from 'react'
 
-const GEOJSON_URL = 'https://raw.githubusercontent.com/sfbrigade/data-science-wg/master/projects-in-this-repo/SF_311_Data-Analysis/data/GeoJSON/city_analysis_neighbor.geojson'
+/**
+ * Same-origin. This used to fetch from a raw GitHub URL on a volunteer brigade
+ * repo (sfbrigade/data-science-wg, unpinned `master`) at runtime — a single point
+ * of failure for the twelve views that need these polygons, and the app's last
+ * third-party origin after Google Fonts was removed for the same reasons.
+ * Vendored by scripts/build-neighborhood-boundaries.py, which also dissolves the
+ * source's 195 census-tract fragments into 41 neighborhoods (2065 KB → 979 KB).
+ */
+const GEOJSON_URL = '/data/geo/sf-analysis-neighborhoods.geojson'
 
 let cachedBoundaries: GeoJSON.FeatureCollection | null = null
 
 /**
- * Fetches SF Analysis Neighborhood boundary polygons (census tracts grouped by nhood).
- * 195 features, 41 unique neighborhoods. Cached in module-level variable — fetched once per session.
- * Property: feature.properties.nhood matches analysis_neighborhood from 311 data.
+ * SF Analysis Neighborhood boundary polygons — 41 features, one per neighborhood.
+ * Cached in a module-level variable, so it is fetched once per session.
+ * `feature.properties.nhood` matches `analysis_neighborhood` in the 311 data.
  */
 export function useNeighborhoodBoundaries(): {
   boundaries: GeoJSON.FeatureCollection | null
