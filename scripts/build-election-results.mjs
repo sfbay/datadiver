@@ -5,7 +5,6 @@ import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { inflateRawSync } from 'node:zlib'
 import { XMLParser } from 'fast-xml-parser'
-import { PRECINCT_ERAS, eraFor } from './fetch-election-sources.mjs'
 
 export const UNMAPPABLE_PRECINCTS = Object.freeze([
   '7055', '7056', '7649', '7651', '7652', '7653', '7654', '7655', '7656', '7657', '7876', '7959',

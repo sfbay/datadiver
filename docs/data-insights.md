@@ -153,6 +153,12 @@ Cost: 9,544 registered voters (1.84%) in Nov 2020, 9,410 (1.91%) in Jun 2022 —
 
 Some precincts appear in `dsov` neighborhood totals but have **no `sov` row** — SF protects ballot secrecy where too few people voted. In Nov 2024 the residual is exactly **1,215 registered voters** (521,050 in the precinct file vs 522,265 certified citywide). This is why the neighborhood grain must be *read* from `dsov`, never *derived* by summing precincts: a derived figure will silently disagree with the city's own.
 
+### SF's own two certified publications disagree by a vote or two
+
+**Finding:** summing the certified `dsov.xlsx` neighborhood figures per candidate and comparing against the certified `summary.xml` citywide totals, **462 of 472 candidate totals match exactly** — and the 10 that differ (all Nov 2024) are off by only **1–2 votes**, always with the neighborhood sum *under* the citywide figure (e.g. Breed 94,770 vs 94,772). Both files are certified outputs of the same election; the discrepancy is SF-side — plausibly different export moments or a handful of ballots with no precinct assignment.
+
+**Rule:** the reconciliation gate compares emitted JSON against **its own source workbook** exactly (`--check`), and does NOT enforce cross-source equality against `summary.xml` — an exact cross-source gate would fail on the city's own inconsistency, and a ±2 tolerance gate is arbitrary. Treat sub-5-vote disagreements between SF's publications as a property of the source, not a pipeline bug.
+
 ### Special elections consolidate precincts
 
 Nov 2025 (Proposition 50) reports **100 precinct rows for a ~500-precinct city**, and carries a single contest. Consolidated rows appear as `PCT 1104/1105` — one row, several precincts. Present in 2020, absent in 2024, dominant in specials. Registration cannot be attributed to the row's first id.
