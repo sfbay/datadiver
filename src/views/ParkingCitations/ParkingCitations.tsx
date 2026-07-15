@@ -57,6 +57,7 @@ export default function ParkingCitations() {
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('violations')
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
   const [sortByRevenue, setSortByRevenue] = useState(false)
+  const [geoGapDismissed, setGeoGapDismissed] = useState(false)
   const mapHandleRef = useRef<MapHandle>(null)
 
   // Deep-link: rehydrate detail panel from URL on mount
@@ -158,6 +159,7 @@ export default function ParkingCitations() {
 
   // Data freshness detection
   const freshness = useDataFreshness('parkingCitations', 'citation_issued_datetime', dateRange, { geoField: 'the_geom' })
+  useEffect(() => { setGeoGapDismissed(false) }, [dateRange.start, dateRange.end])
 
   const trendConfig = useMemo((): TrendConfig => ({
     datasetKey: 'parkingCitations',
@@ -193,6 +195,22 @@ export default function ParkingCitations() {
     [statsWhere]
   )
   const totalRevenue = revenueRows[0] ? parseFloat(revenueRows[0].total_fines) || 0 : 0
+
+  // Server-true Avg Fine / Out-of-State (no geo filter — the map's coord
+  // gap must not thin these stats, same reasoning as statsWhere above)
+  const { data: avgFineRows } = useDataset<{ avg_fine: string }>(
+    'parkingCitations',
+    { $select: 'AVG(fine_amount) as avg_fine', $where: `${statsWhere} AND fine_amount > 0` },
+    [statsWhere]
+  )
+  const serverAvgFine = avgFineRows[0] ? parseFloat(avgFineRows[0].avg_fine) : NaN
+
+  const { data: oosCountRows } = useDataset<{ count: string }>(
+    'parkingCitations',
+    { $select: 'count(*) as count', $where: `${statsWhere} AND vehicle_plate_state IS NOT NULL AND vehicle_plate_state != 'CA'` },
+    [statsWhere]
+  )
+  const serverOosCount = oosCountRows[0] ? parseInt(oosCountRows[0].count, 10) : null
 
   const { data: violationRows } = useDataset<ViolationTypeAggRow>(
     'parkingCitations',
@@ -289,13 +307,17 @@ export default function ParkingCitations() {
   }, [rawData])
 
   const stats = useMemo(() => {
-    if (citationData.length === 0) return { totalCitations: 0, avgFine: 0, outOfStatePct: 0, peakHour: 0 }
     const fines = citationData.map((c) => c.fineAmount).filter((f) => f > 0)
-    const avgFine = fines.length > 0 ? fines.reduce((a, b) => a + b, 0) / fines.length : 0
-    const outOfState = citationData.filter((c) => c.plateState !== 'CA' && c.plateState !== 'Unknown').length
-    const outOfStatePct = (outOfState / citationData.length) * 100
-    return { totalCitations: citationData.length, avgFine, outOfStatePct, peakHour: hourlyPattern.peakHour }
-  }, [citationData, hourlyPattern.peakHour])
+    const sampleAvg = fines.length > 0 ? fines.reduce((a, b) => a + b, 0) / fines.length : 0
+    const avgFine = Number.isFinite(serverAvgFine) ? serverAvgFine : sampleAvg
+    const sampleOos = citationData.length > 0
+      ? (citationData.filter((c) => c.plateState !== 'CA' && c.plateState !== 'Unknown').length / citationData.length) * 100
+      : 0
+    const outOfStatePct = (serverOosCount !== null && totalCount)
+      ? (serverOosCount / totalCount) * 100
+      : sampleOos
+    return { totalCitations: totalCount ?? citationData.length, avgFine, outOfStatePct, peakHour: hourlyPattern.peakHour }
+  }, [citationData, hourlyPattern.peakHour, serverAvgFine, serverOosCount, totalCount])
 
   const histogramData = useMemo(
     () => citationData.map((c) => c.fineAmount).filter((f) => f > 0),
@@ -803,11 +825,13 @@ export default function ParkingCitations() {
               </div>
             )}
 
-            {!isLoading && !freshness.isLoading && !freshness.hasDataInRange && (
+            {!isLoading && !freshness.isLoading && (!freshness.hasDataInRange || (!freshness.hasGeoInRange && !geoGapDismissed)) && (
               <DataFreshnessAlert
                 latestDate={freshness.latestDate}
                 latestGeoDate={freshness.latestGeoDate}
-                suggestedRange={freshness.suggestedRange}
+                mode={freshness.hasDataInRange ? 'geo-gap' : 'no-data'}
+                onDismiss={freshness.hasDataInRange ? () => setGeoGapDismissed(true) : undefined}
+                suggestedRange={freshness.hasDataInRange ? freshness.suggestedGeoRange : freshness.suggestedRange}
                 accentColor="#d47149"
               />
             )}
