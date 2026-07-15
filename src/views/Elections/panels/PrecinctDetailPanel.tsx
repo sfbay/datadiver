@@ -59,7 +59,7 @@ export default function PrecinctDetailPanel({
     <DetailPanelShell
       open={!!label}
       onClose={onClose}
-      isLoading={!row}
+      isLoading={!turnout}
       spinnerClass="border-indigo-400"
       widthClass="w-72"
       glowColor={ACCENT}
@@ -89,7 +89,11 @@ export default function PrecinctDetailPanel({
           </div>
         )}
 
-        {race && (
+        {turnout && !row && (
+          <p className="text-[11px] text-slate-500">No results reported for this precinct in this election.</p>
+        )}
+
+        {row && race && (
           <>
             <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
               {toSentenceCase(race.title)}

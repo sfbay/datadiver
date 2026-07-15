@@ -275,11 +275,11 @@ export default function Elections() {
   // ── Card definitions ──────────────────────────────────────────────
   const cardDefs = useMemo((): CardDef[] => {
     const r = displayResults
-    if (!r || !activeRace) return []
-    const winner = activeRace.candidates.find((c) => c.isWinner)
-    const topTwo = [...activeRace.candidates].sort((a, b) => b.totalVotes - a.totalVotes)
+    if (!r || !displayRace) return []
+    const winner = displayRace.candidates.find((c) => c.isWinner)
+    const topTwo = [...displayRace.candidates].sort((a, b) => b.totalVotes - a.totalVotes)
     const margin = topTwo.length >= 2
-      ? ((topTwo[0].totalVotes - topTwo[1].totalVotes) / activeRace.totalBallotsCast * 100)
+      ? ((topTwo[0].totalVotes - topTwo[1].totalVotes) / displayRace.totalBallotsCast * 100)
       : null
 
     const cards: CardDef[] = [
@@ -322,7 +322,7 @@ export default function Elections() {
       color: '#a8926a',
     })
 
-    if (activeRace.isRCV && rcvData) {
+    if (!timeMachineActive && displayRace.isRCV && rcvData) {
       cards.push({
         id: 'rcv-rounds',
         label: 'RCV Rounds',
@@ -395,9 +395,10 @@ export default function Elections() {
     return cards
   }, [
     displayResults,
-    activeRace,
+    displayRace,
     candidateColors,
     rcvData,
+    timeMachineActive,
     selectedPrecinct,
     selectedNeighborhood,
     paintBundle,

@@ -55,7 +55,7 @@ export default function NeighborhoodsSidebarContent({
       {selectedNeighborhood && (
         <button
           onClick={() => setSelectedNeighborhood(null)}
-          className="mb-3 text-[10px] font-mono text-indigo-500 hover:text-indigo-500 transition-colors"
+          className="mb-3 text-[10px] font-mono text-indigo-500 hover:text-indigo-400 transition-colors"
         >
           ← Clear: {file ? displayNhood(selectedNeighborhood, file.scheme) : selectedNeighborhood}
         </button>

@@ -26,7 +26,7 @@ describe('cleanCandidateName', () => {
 })
 
 describe('yesShareOf', () => {
-  it('handles all four observed key shapes', () => {
+  it('handles all observed key shapes', () => {
     expect(yesShareOf({ YES: 3, NO: 1 })).toBeCloseTo(0.75)
     expect(yesShareOf({ Yes: 1, No: 3 })).toBeCloseTo(0.25)
     expect(yesShareOf({ 'BONDS - YES': 390, 'BONDS - NO': 221 })).toBeCloseTo(390 / 611)
