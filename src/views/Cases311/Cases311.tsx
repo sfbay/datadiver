@@ -196,6 +196,15 @@ export default function Cases311() {
   )
   const totalCount = countRows[0] ? parseInt(countRows[0].count, 10) : null
 
+  // Citywide-true open count — mirrors the totalCount pattern; the 5K sample
+  // undercounts both totals whenever the range exceeds the row cap.
+  const { data: openCountRows } = useDataset<{ count: string }>(
+    'cases311',
+    { $select: 'count(*) as count', $where: `${whereClause} AND status_description = 'Open'` },
+    [whereClause]
+  )
+  const openCount = openCountRows[0] ? parseInt(openCountRows[0].count, 10) : null
+
   // Citywide-true resolution stats — bypasses the 5K row cap on rawData.
   // Mirrors the client-side validity filter (closed cases, 0–720h window).
   const resolutionWhere = useMemo(
@@ -323,16 +332,19 @@ export default function Cases311() {
   }, [rawData])
 
   const stats = useMemo(() => {
-    if (caseData.length === 0) return { totalCases: 0, avgResolution: 0, openCases: 0, peakHour: 0 }
-    // Citywide-true avg from the server aggregate; the 5K-sample value is
-    // only an immediate-render fallback while the aggregate loads.
+    if (caseData.length === 0 && totalCount === null) return { totalCases: 0, avgResolution: 0, openCases: 0, peakHour: 0 }
     const closedTimes = caseData.filter((c) => c.resolutionHours !== null).map((c) => c.resolutionHours!)
     const sampleAvg = closedTimes.length > 0 ? closedTimes.reduce((a, b) => a + b, 0) / closedTimes.length : 0
     const serverAvg = resolutionStatsRows[0] ? parseFloat(resolutionStatsRows[0].avg_hours) : NaN
     const avgResolution = Number.isFinite(serverAvg) ? serverAvg : sampleAvg
-    const openCases = caseData.filter((c) => c.status === 'Open').length
-    return { totalCases: caseData.length, avgResolution, openCases, peakHour: hourlyPattern.peakHour }
-  }, [caseData, resolutionStatsRows, hourlyPattern.peakHour])
+    const sampleOpen = caseData.filter((c) => c.status === 'Open').length
+    return {
+      totalCases: totalCount ?? caseData.length,
+      avgResolution,
+      openCases: openCount ?? sampleOpen,
+      peakHour: hourlyPattern.peakHour,
+    }
+  }, [caseData, resolutionStatsRows, hourlyPattern.peakHour, totalCount, openCount])
 
   // Citywide histogram: expand server bucket counts back to a flat number[]
   // of hour values so the existing ResolutionHistogram (D3-bin-based) renders
@@ -728,7 +740,7 @@ export default function Cases311() {
                 </span>
                 {hitLimit && totalCount !== null && (
                   <span className="text-[10px] font-mono text-ochre-500/80 bg-ochre-500/10 px-2 py-1 rounded-full">
-                    of {formatNumber(totalCount)} total
+                    map shows {formatNumber(caseData.length)} of {formatNumber(totalCount)}
                   </span>
                 )}
               </div>
