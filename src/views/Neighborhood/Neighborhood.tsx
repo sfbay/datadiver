@@ -32,9 +32,9 @@ export default function Neighborhood() {
   const selectedNeighborhood = searchParams.get('nh') || null
 
   // Comparison state
-  const [compareMode, setCompareMode] = useState(() => searchParams.has('compare'))
+  const [compareMode, setCompareMode] = useState(() => searchParams.has('nhcmp'))
   const [compareSet, setCompareSet] = useState<string[]>(() => {
-    const param = searchParams.get('compare')
+    const param = searchParams.get('nhcmp')
     return param ? param.split(',').map(decodeURIComponent).filter(Boolean).slice(0, 3) : []
   })
 
@@ -88,10 +88,10 @@ export default function Neighborhood() {
   useEffect(() => {
     setSearchParams((prev) => {
       if (compareMode && compareSet.length > 0) {
-        prev.set('compare', compareSet.map(encodeURIComponent).join(','))
+        prev.set('nhcmp', compareSet.map(encodeURIComponent).join(','))
         prev.delete('nh')
       } else {
-        prev.delete('compare')
+        prev.delete('nhcmp')
       }
       return prev
     }, { replace: true })
