@@ -21,6 +21,7 @@ import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useAppStore } from '@/stores/appStore'
 import type { Cases311Record, ServiceCategoryAggRow, NeighborhoodAggRow311 } from '@/types/datasets'
 import { diffHours, formatResolution, formatDelta, formatNumber, formatHour } from '@/utils/time'
+import { parseSfLocal } from '@/utils/sfTime'
 import { coordsFromFields, extractCoordinates } from '@/utils/geo'
 import { resolutionTimeColor } from '@/utils/colors'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
@@ -196,6 +197,15 @@ export default function Cases311() {
   )
   const totalCount = countRows[0] ? parseInt(countRows[0].count, 10) : null
 
+  // Citywide-true open count — mirrors the totalCount pattern; the 5K sample
+  // undercounts both totals whenever the range exceeds the row cap.
+  const { data: openCountRows } = useDataset<{ count: string }>(
+    'cases311',
+    { $select: 'count(*) as count', $where: `${whereClause} AND status_description = 'Open'` },
+    [whereClause]
+  )
+  const openCount = openCountRows[0] ? parseInt(openCountRows[0].count, 10) : null
+
   // Citywide-true resolution stats — bypasses the 5K row cap on rawData.
   // Mirrors the client-side validity filter (closed cases, 0–720h window).
   const resolutionWhere = useMemo(
@@ -260,7 +270,7 @@ export default function Cases311() {
   const hourlyPattern = use311HourlyPattern(dateRange, extraWhere)
 
   // Comparison data
-  const comparison = use311ComparisonData(dateRange, whereClause, comparisonPeriod, rawData)
+  const comparison = use311ComparisonData(dateRange, whereClause, comparisonPeriod, rawData, hitLimit)
   const compLabel = comparisonPeriod ? `vs ${comparisonPeriod >= 360 ? '1yr' : `${comparisonPeriod}d`} ago` : ''
 
   // Neighborhood boundaries for anomaly mode
@@ -323,16 +333,19 @@ export default function Cases311() {
   }, [rawData])
 
   const stats = useMemo(() => {
-    if (caseData.length === 0) return { totalCases: 0, avgResolution: 0, openCases: 0, peakHour: 0 }
-    // Citywide-true avg from the server aggregate; the 5K-sample value is
-    // only an immediate-render fallback while the aggregate loads.
+    if (caseData.length === 0 && totalCount === null) return { totalCases: 0, avgResolution: 0, openCases: 0, peakHour: 0 }
     const closedTimes = caseData.filter((c) => c.resolutionHours !== null).map((c) => c.resolutionHours!)
     const sampleAvg = closedTimes.length > 0 ? closedTimes.reduce((a, b) => a + b, 0) / closedTimes.length : 0
     const serverAvg = resolutionStatsRows[0] ? parseFloat(resolutionStatsRows[0].avg_hours) : NaN
     const avgResolution = Number.isFinite(serverAvg) ? serverAvg : sampleAvg
-    const openCases = caseData.filter((c) => c.status === 'Open').length
-    return { totalCases: caseData.length, avgResolution, openCases, peakHour: hourlyPattern.peakHour }
-  }, [caseData, resolutionStatsRows, hourlyPattern.peakHour])
+    const sampleOpen = caseData.filter((c) => c.status === 'Open').length
+    return {
+      totalCases: totalCount ?? caseData.length,
+      avgResolution,
+      openCases: openCount ?? sampleOpen,
+      peakHour: hourlyPattern.peakHour,
+    }
+  }, [caseData, resolutionStatsRows, hourlyPattern.peakHour, totalCount, openCount])
 
   // Citywide histogram: expand server bucket counts back to a flat number[]
   // of hour values so the existing ResolutionHistogram (D3-bin-based) renders
@@ -528,10 +541,12 @@ export default function Cases311() {
   // Heatmap tooltip
   useMapTooltip(mapInstance, 'cases-points', (props) => {
     const filedDate = props.requestedAt
-      ? new Date(String(props.requestedAt)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      // DataSF datetimes are floating SF-local; bare new Date() reads them
+      // in the viewer's host TZ (wrong for any non-Pacific reader).
+      ? new Date(parseSfLocal(String(props.requestedAt))).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' })
       : null
     const filedTime = props.requestedAt
-      ? new Date(String(props.requestedAt)).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+      ? new Date(parseSfLocal(String(props.requestedAt))).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' })
       : null
     const resHours = props.resolutionHours ? Number(props.resolutionHours) : null
     const resLabel = resHours !== null ? formatResolution(resHours) : null
@@ -663,7 +678,9 @@ export default function Cases311() {
       delay: 0,
       info: 'total-cases',
       defaultExpanded: true,
-      subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined,
+      subtitle: comparison.deltas
+        ? `${formatDelta(comparison.deltas.total)} ${compLabel}`
+        : (comparison.suppressed && comparisonPeriod ? 'Compare needs a narrower date range' : undefined),
       trend: comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined,
       yoyDelta: !comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null,
     },
@@ -699,7 +716,7 @@ export default function Cases311() {
       info: 'peak-hour',
       defaultExpanded: false,
     },
-  ], [stats, comparison.deltas, compLabel, trend.cityWideYoY])
+  ], [stats, comparison.deltas, comparison.suppressed, compLabel, comparisonPeriod, trend.cityWideYoY])
 
   useProgressScope()
 
@@ -728,7 +745,7 @@ export default function Cases311() {
                 </span>
                 {hitLimit && totalCount !== null && (
                   <span className="text-[10px] font-mono text-ochre-500/80 bg-ochre-500/10 px-2 py-1 rounded-full">
-                    of {formatNumber(totalCount)} total
+                    map shows {formatNumber(caseData.length)} of {formatNumber(totalCount)}
                   </span>
                 )}
               </div>

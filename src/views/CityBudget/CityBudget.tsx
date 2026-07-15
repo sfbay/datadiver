@@ -2228,7 +2228,7 @@ function ComplianceDashboard({
             {/* P-card caveat */}
             {compliance.pcardTotal > 0 && (
               <div className="text-[10px] text-slate-500 dark:text-slate-400 bg-brick-500/5 rounded-md px-3 py-2">
-                <strong className="text-brick-400">P-Card note:</strong> {formatBudgetFull(compliance.pcardTotal)} in procurement card purchases are included in the denominator but the outlet is unknown — these may or may not be ethnic/community media.
+                <strong className="text-brick-400">P-Card note:</strong> {formatBudgetFull(compliance.pcardTotal)} in procurement-card ad purchases are excluded from this calculation entirely — the outlet is untraceable, so the real community-media share could be higher or lower than shown.
               </div>
             )}
 

@@ -34,4 +34,10 @@ export interface TrendBaselineResult {
   granularity: PeriodGranularity
   cityWideYoY: { current: number; priorYear: number; pct: number } | null
   isLoading: boolean
+  /** The clamped end date actually queried (may be earlier than the requested
+   * dateRange.end when the dataset's MAX(dateField) anchor is behind it). */
+  effectiveEnd: string
+  /** Calendar days trimmed off the requested end by the freshness anchor; 0
+   * when the data is current through the requested end. */
+  truncatedDays: number
 }

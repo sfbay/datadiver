@@ -20,7 +20,8 @@ import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useAppStore } from '@/stores/appStore'
 import type { TrafficCrashRecord, CrashModeAggRow, NeighborhoodAggRowCrashes, SpeedCameraRecord, RedLightCameraRecord, PavementConditionRecord } from '@/types/datasets'
-import { formatDelta, formatNumber, formatHour } from '@/utils/time'
+import { formatDelta, formatNumber, formatHour, formatDate } from '@/utils/time'
+import { parseSfLocal } from '@/utils/sfTime'
 import { CRASH_SEVERITY_COLORS } from '@/utils/colors'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
 import MapSidebar from '@/components/layout/MapSidebar'
@@ -307,7 +308,7 @@ export default function TrafficSafety() {
   }, [modeClause, selectedNeighborhood])
 
   const hourlyPattern = useCrashHourlyPattern(dateRange, extraWhere)
-  const comparison = useCrashComparisonData(dateRange, whereClause, comparisonPeriod, rawData)
+  const comparison = useCrashComparisonData(dateRange, whereClause, comparisonPeriod, rawData, hitLimit)
   const compLabel = comparisonPeriod ? `vs ${comparisonPeriod >= 360 ? '1yr' : `${comparisonPeriod}d`} ago` : ''
   const { boundaries: neighborhoodBoundaries } = useNeighborhoodBoundaries()
   useMapCameraPresets(mapInstance, { selectedNeighborhood, neighborhoodBoundaries })
@@ -374,7 +375,21 @@ export default function TrafficSafety() {
     comparisonDeltas: comparison.deltas,
     compLabel,
     cityWideYoY: trend.cityWideYoY,
+    comparisonSuppressed: comparison.suppressed,
+    comparisonPeriod,
   })
+
+  // Disclose the freshness clamp on the card carrying cityWideYoY ('total') —
+  // Vision Zero crash data publishes ~4-6 weeks behind, so a material clamp
+  // means the current window is genuinely shorter than the requested range.
+  // The truncation note wins over the card's own comparisonDeltas subtitle.
+  const cardDefsWithFreshness = useMemo(() => {
+    if (trend.truncatedDays <= 2) return cardDefs
+    return cardDefs.map((c) => c.id === 'total'
+      ? { ...c, subtitle: `Both windows end ${formatDate(trend.effectiveEnd)} — crash data publishes ~4–6 weeks behind` }
+      : c
+    )
+  }, [cardDefs, trend.truncatedDays, trend.effectiveEnd])
 
   const chartTiles = useMemo<ChartTileDef[]>(() => {
     const tiles: ChartTileDef[] = []
@@ -430,10 +445,12 @@ export default function TrafficSafety() {
   // Tooltips
   useMapTooltip(mapInstance, 'crash-points', (props) => {
     const crashDate = props.collisionAt
-      ? new Date(String(props.collisionAt)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      // DataSF datetimes are floating SF-local; bare new Date() reads them
+      // in the viewer's host TZ (wrong for any non-Pacific reader).
+      ? new Date(parseSfLocal(String(props.collisionAt))).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' })
       : null
     const crashTime = props.collisionAt
-      ? new Date(String(props.collisionAt)).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+      ? new Date(parseSfLocal(String(props.collisionAt))).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' })
       : null
     const sevColor = CRASH_SEVERITY_COLORS[String(props.severity)] || '#64748b'
     return `
@@ -704,7 +721,7 @@ export default function TrafficSafety() {
             {/* Stat cards */}
             {isLoading && <SkeletonStatCards count={4} />}
             {!isLoading && crashData.length > 0 && (
-              <CardTray viewId="trafficSafety" cards={cardDefs} />
+              <CardTray viewId="trafficSafety" cards={cardDefsWithFreshness} />
             )}
 
             {/* Charts */}

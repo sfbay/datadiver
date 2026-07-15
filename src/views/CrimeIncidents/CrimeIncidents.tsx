@@ -244,7 +244,7 @@ export default function CrimeIncidents() {
   const hourlyPattern = usePoliceHourlyPattern(dateRange, extraWhere)
 
   // Comparison data
-  const comparison = usePoliceComparisonData(dateRange, whereClause, comparisonPeriod, rawData)
+  const comparison = usePoliceComparisonData(dateRange, whereClause, comparisonPeriod, rawData, hitLimit)
   const compLabel = comparisonPeriod ? `vs ${comparisonPeriod >= 360 ? '1yr' : `${comparisonPeriod}d`} ago` : ''
 
   // Neighborhood boundaries for anomaly mode
@@ -349,7 +349,9 @@ export default function CrimeIncidents() {
         delay: 0,
         info: 'total-incidents',
         defaultExpanded: true,
-        subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined,
+        subtitle: comparison.deltas
+          ? `${formatDelta(comparison.deltas.total)} ${compLabel}`
+          : (comparison.suppressed && comparisonPeriod ? 'Compare needs a narrower date range' : undefined),
         trend: comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined,
         yoyDelta: !comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null,
       },
@@ -384,7 +386,7 @@ export default function CrimeIncidents() {
         defaultExpanded: false,
       },
     ]
-  }, [stats, totalCount, comparison.deltas, compLabel, trend.cityWideYoY])
+  }, [stats, totalCount, comparison.deltas, comparison.suppressed, compLabel, comparisonPeriod, trend.cityWideYoY])
 
   // Chart tray definitions (bottom-left overlay)
   const chartTiles = useMemo((): ChartTileDef[] => {

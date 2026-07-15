@@ -169,7 +169,7 @@ export default function Dispatch911() {
   const hourlyPattern = useDispatchHourlyPattern(dateRange, hourlyExtraClause)
 
   // Comparison data
-  const comparison = useDispatchComparisonData(dateRange, filterClause, comparisonPeriod, rawData)
+  const comparison = useDispatchComparisonData(dateRange, filterClause, comparisonPeriod, rawData, hitLimit)
   const compLabel = comparisonPeriod ? `vs ${comparisonPeriod >= 360 ? '1yr' : `${comparisonPeriod}d`} ago` : ''
 
   // Compute stats from fetched records
@@ -357,7 +357,9 @@ export default function Dispatch911() {
                   value={formatNumber(stats.total)}
                   color={accentColor}
                   delay={0}
-                  subtitle={comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined}
+                  subtitle={comparison.deltas
+                    ? `${formatDelta(comparison.deltas.total)} ${compLabel}`
+                    : (comparison.suppressed && comparisonPeriod ? 'Compare needs a narrower date range' : undefined)}
                   trend={comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined}
                   yoyDelta={!comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null}
                 />

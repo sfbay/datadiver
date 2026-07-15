@@ -73,17 +73,27 @@ const RCV_RACE_SLUGS = [
   { slug: 'treasurer', title: 'TREASURER' },
   { slug: 'assessor', title: 'ASSESSOR-RECORDER' },
   { slug: 'publicdefender', title: 'PUBLIC DEFENDER' },
-  { slug: 'd1', title: 'BOARD OF SUPERVISORS, DISTRICT 1' },
-  { slug: 'd3', title: 'BOARD OF SUPERVISORS, DISTRICT 3' },
-  { slug: 'd5', title: 'BOARD OF SUPERVISORS, DISTRICT 5' },
-  { slug: 'd7', title: 'BOARD OF SUPERVISORS, DISTRICT 7' },
-  { slug: 'd9', title: 'BOARD OF SUPERVISORS, DISTRICT 9' },
-  { slug: 'd11', title: 'BOARD OF SUPERVISORS, DISTRICT 11' },
-  { slug: 'd2', title: 'BOARD OF SUPERVISORS, DISTRICT 2' },
-  { slug: 'd4', title: 'BOARD OF SUPERVISORS, DISTRICT 4' },
-  { slug: 'd6', title: 'BOARD OF SUPERVISORS, DISTRICT 6' },
-  { slug: 'd8', title: 'BOARD OF SUPERVISORS, DISTRICT 8' },
-  { slug: 'd10', title: 'BOARD OF SUPERVISORS, DISTRICT 10' },
+  // NOTE: title must equal the real race title verbatim (modulo contestSlug's
+  // normalization) so the primary `r.id === contestSlug(rcvRace.title)` match
+  // below succeeds directly. The matcher tries this exact-id pass across ALL
+  // races FIRST, in full, before ever considering the substring fallback — so
+  // an earlier unrelated race (e.g. "STATE ASSEMBLY MEMBER, DISTRICT 12")
+  // can't win on a shared word like "MEMBER" just because Array.find evaluates
+  // predicates in element order. The fallback (used only if no exact id
+  // matches any race) also compares the FULL uppercased title, not
+  // `title.split(',')[0]`, so a bare word like "MEMBER" can never match by
+  // itself.
+  { slug: 'd1', title: 'MEMBER, BOARD OF SUPERVISORS, DISTRICT 1' },
+  { slug: 'd3', title: 'MEMBER, BOARD OF SUPERVISORS, DISTRICT 3' },
+  { slug: 'd5', title: 'MEMBER, BOARD OF SUPERVISORS, DISTRICT 5' },
+  { slug: 'd7', title: 'MEMBER, BOARD OF SUPERVISORS, DISTRICT 7' },
+  { slug: 'd9', title: 'MEMBER, BOARD OF SUPERVISORS, DISTRICT 9' },
+  { slug: 'd11', title: 'MEMBER, BOARD OF SUPERVISORS, DISTRICT 11' },
+  { slug: 'd2', title: 'MEMBER, BOARD OF SUPERVISORS, DISTRICT 2' },
+  { slug: 'd4', title: 'MEMBER, BOARD OF SUPERVISORS, DISTRICT 4' },
+  { slug: 'd6', title: 'MEMBER, BOARD OF SUPERVISORS, DISTRICT 6' },
+  { slug: 'd8', title: 'MEMBER, BOARD OF SUPERVISORS, DISTRICT 8' },
+  { slug: 'd10', title: 'MEMBER, BOARD OF SUPERVISORS, DISTRICT 10' },
 ]
 
 // ── Helpers ─────────────────────────────────────────────────────────
@@ -148,15 +158,23 @@ async function processElection(election: (typeof ELECTIONS)[number]): Promise<El
     if (!html) continue
 
     try {
-      // Find matching race in parsed results to get proper title
-      const matchingRace = results.races.find(
-        (r) => r.id === contestSlug(rcvRace.title) || r.title.toUpperCase().includes(rcvRace.title.split(',')[0]),
-      )
+      // Find matching race in parsed results to get proper title.
+      // Primary pass: exact id match across ALL races. Only if that pass
+      // finds nothing do we fall back to a full-title substring match — the
+      // fallback never runs a race at a time interleaved with the primary
+      // check, so an earlier race can't "win" on the primary check failing
+      // for it individually.
+      const wanted = contestSlug(rcvRace.title)
+      const matchingRace =
+        results.races.find((r) => r.id === wanted) ??
+        results.races.find((r) => r.title.toUpperCase().includes(rcvRace.title.toUpperCase()))
       const raceTitle = matchingRace?.title ?? rcvRace.title
-      const raceId = matchingRace?.id ?? contestSlug(rcvRace.title)
+      const raceId = matchingRace?.id ?? wanted
 
       const rcvData = parseRCVRounds(html, raceId, raceTitle)
-      writeJSON(join(rcvDir, `${rcvRace.slug}.json`), rcvData)
+      // file name must equal the id the frontend fetches (useRCVRounds
+      // builds /rcv/${activeRace.id}.json); the URL slug is a remote-only concern.
+      writeJSON(join(rcvDir, `${raceId}.json`), rcvData)
       rcvCount++
       console.log(`  → RCV ${rcvRace.slug}: ${rcvData.totalRounds} rounds, winner: ${rcvData.winner}`)
 

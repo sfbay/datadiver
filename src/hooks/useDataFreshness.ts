@@ -6,7 +6,9 @@ interface DataFreshnessResult {
   latestDate: string | null
   latestGeoDate: string | null
   hasDataInRange: boolean
+  hasGeoInRange: boolean
   suggestedRange: { start: string; end: string } | null
+  suggestedGeoRange: { start: string; end: string } | null
   staleDays: number | null
   isLoading: boolean
 }
@@ -83,5 +85,23 @@ export function useDataFreshness(
       })()
     : null
 
-  return { latestDate, latestGeoDate, hasDataInRange, suggestedRange, staleDays, isLoading }
+  // Geo coverage can end long before the dataset does (Parking Citations
+  // publishes rows without coordinates since ~Oct 2025). A map view must
+  // gate on this, not just on latestDate.
+  const hasGeoInRange = !options?.geoField
+    ? true
+    : latestGeoDate !== null && latestGeoDate >= dateRange.start
+
+  const suggestedGeoRange = (options?.geoField && latestGeoDate && !hasGeoInRange)
+    ? (() => {
+        const end = new Date(latestGeoDate + 'T12:00:00')
+        const start = new Date(end.getTime() - 30 * 86_400_000)
+        return {
+          start: start.toISOString().split('T')[0],
+          end: end.toISOString().split('T')[0],
+        }
+      })()
+    : null
+
+  return { latestDate, latestGeoDate, hasDataInRange, hasGeoInRange, suggestedRange, suggestedGeoRange, staleDays, isLoading }
 }

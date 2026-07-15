@@ -541,7 +541,7 @@ export default function EmergencyResponse() {
   const hourlyPattern = useFireHourlyPattern(dateRange, serviceClause || undefined)
 
   // Comparison period data
-  const comparison = useFireComparisonData(dateRange, whereClause, comparisonPeriod, rawData)
+  const comparison = useFireComparisonData(dateRange, whereClause, comparisonPeriod, rawData, hitLimit)
   const compLabel = comparisonPeriod ? `vs ${comparisonPeriod >= 360 ? '1yr' : `${comparisonPeriod}d`} ago` : ''
 
   const chartTiles = useMemo((): ChartTileDef[] => {
@@ -621,7 +621,9 @@ export default function EmergencyResponse() {
     const avgValue = selectedNhStats ? selectedNhStats.nh.avgResponseTime : stats.avg
     const avgSubtitle = selectedNhStats
       ? `${selectedNhStats.nh.neighborhood} · ${selectedNhStats.avgDeltaPct >= 0 ? '+' : ''}${selectedNhStats.avgDeltaPct.toFixed(0)}% from city`
-      : (comparison.deltas ? `${formatDelta(comparison.deltas.avg)} ${compLabel}` : undefined)
+      : (comparison.deltas
+          ? `${formatDelta(comparison.deltas.avg)} ${compLabel}`
+          : (comparison.suppressed && comparisonPeriod ? 'Compare needs a narrower date range' : undefined))
     const avgTrend: 'up' | 'down' | 'neutral' | undefined = selectedNhStats
       ? (selectedNhStats.avgDeltaPct > 0 ? 'up' : selectedNhStats.avgDeltaPct < 0 ? 'down' : 'neutral')
       : (comparison.deltas ? (comparison.deltas.avg > 0 ? 'up' : comparison.deltas.avg < 0 ? 'down' : 'neutral') : undefined)
@@ -745,7 +747,7 @@ export default function EmergencyResponse() {
       })
     }
     return cards
-  }, [stats, comparison.deltas, compLabel, trend.cityWideYoY, isFireMode, fireInsights.casualties, fireInsights.priorYearCasualties, selectedNhStats])
+  }, [stats, comparison.deltas, comparison.suppressed, compLabel, comparisonPeriod, trend.cityWideYoY, isFireMode, fireInsights.casualties, fireInsights.priorYearCasualties, selectedNhStats])
 
   const handleMapReady = useCallback((map: mapboxgl.Map) => {
     setMapInstance(map)

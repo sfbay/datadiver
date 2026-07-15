@@ -6,6 +6,9 @@ interface DataFreshnessAlertProps {
   latestGeoDate?: string | null
   suggestedRange: { start: string; end: string } | null
   accentColor?: string
+  /** 'geo-gap': stats are current but map coordinates end earlier. */
+  mode?: 'no-data' | 'geo-gap'
+  onDismiss?: () => void
 }
 
 export default function DataFreshnessAlert({
@@ -13,6 +16,8 @@ export default function DataFreshnessAlert({
   latestGeoDate,
   suggestedRange,
   accentColor = '#d4a435',
+  mode = 'no-data',
+  onDismiss,
 }: DataFreshnessAlertProps) {
   const setDateRange = useAppStore((s) => s.setDateRange)
 
@@ -37,20 +42,31 @@ export default function DataFreshnessAlert({
         </div>
 
         <p className="text-sm font-medium text-ink dark:text-white mb-1">
-          No data in selected range
+          {mode === 'geo-gap' ? 'Map coverage ends earlier than stats' : 'No data in selected range'}
         </p>
 
-        {latestDate && (
+        {mode === 'geo-gap' && latestGeoDate && (
           <p className="text-xs text-slate-400 dark:text-slate-500 mb-3">
-            Latest available: <span className="font-mono text-slate-300">{formatDate(latestDate, 'long')}</span>
+            Coordinates end <span className="font-mono text-slate-300">{formatDate(latestGeoDate, 'long')}</span> — the map is
+            incomplete for this range. Stat cards remain accurate{latestDate ? ` through ${formatDate(latestDate)}` : ''}.
           </p>
         )}
 
-        {hasGeoGap && (
-          <p className="text-[10px] text-slate-500 dark:text-slate-600 mb-3 font-mono">
-            Map data ends {formatDate(latestGeoDate)}.
-            Stats available through {formatDate(latestDate)}.
-          </p>
+        {mode !== 'geo-gap' && (
+          <>
+            {latestDate && (
+              <p className="text-xs text-slate-400 dark:text-slate-500 mb-3">
+                Latest available: <span className="font-mono text-slate-300">{formatDate(latestDate, 'long')}</span>
+              </p>
+            )}
+
+            {hasGeoGap && (
+              <p className="text-[10px] text-slate-500 dark:text-slate-600 mb-3 font-mono">
+                Map data ends {formatDate(latestGeoDate)}.
+                Stats available through {formatDate(latestDate)}.
+              </p>
+            )}
+          </>
         )}
 
         {suggestedRange && (
@@ -63,6 +79,15 @@ export default function DataFreshnessAlert({
             <span className="ml-1.5 opacity-70 font-mono">
               {formatDate(suggestedRange.start)} - {formatDate(suggestedRange.end)}
             </span>
+          </button>
+        )}
+
+        {onDismiss && (
+          <button
+            onClick={onDismiss}
+            className="block mx-auto mt-2 text-[10px] font-mono text-slate-400 hover:text-slate-300 underline underline-offset-2"
+          >
+            Keep current range anyway
           </button>
         )}
       </div>

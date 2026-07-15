@@ -387,7 +387,10 @@ export default function About() {
                   Statement of the Vote, reported precinct by precinct, and a District &amp;
                   Neighborhood Statement of the Vote. They have to be read out of a web page
                   rather than queried, and preliminary drops sit alongside the certified final,
-                  distinguished by nothing but a letter in the filename.
+                  distinguished by nothing but a letter in the filename. Round-by-round
+                  ranked-choice detail exists only for the November 2024 election — SF publishes
+                  machine-readable round pages for 2024 only (earlier elections got PDFs) — and
+                  the 2024 treasurer&rsquo;s race had no published rounds.
                 </p>
                 <p className="mb-3">
                   Two properties of that data govern what can honestly be shown.{' '}
@@ -518,7 +521,7 @@ export default function About() {
             </p>
             <p>
               <span className="text-ink dark:text-white font-semibold">Classification.</span>{' '}
-              The community/ethnic outlet registry (28+ outlets, organized by community
+              The community/ethnic outlet registry (23 outlets, organized by community
               served) is maintained as visible code, so any classification can be inspected
               and challenged. Every compliance figure links to its exact source records as
               exportable CSV.

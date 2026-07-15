@@ -21,6 +21,7 @@ import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useAppStore } from '@/stores/appStore'
 import type { ParkingCitationRecord, ViolationTypeAggRow, NeighborhoodAggRowCitations } from '@/types/datasets'
 import { formatCurrency, formatDelta, formatNumber, formatHour } from '@/utils/time'
+import { parseSfLocal } from '@/utils/sfTime'
 import { extractCoordinates } from '@/utils/geo'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
 import MapSidebar from '@/components/layout/MapSidebar'
@@ -57,6 +58,7 @@ export default function ParkingCitations() {
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('violations')
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
   const [sortByRevenue, setSortByRevenue] = useState(false)
+  const [geoGapDismissed, setGeoGapDismissed] = useState(false)
   const mapHandleRef = useRef<MapHandle>(null)
 
   // Deep-link: rehydrate detail panel from URL on mount
@@ -158,6 +160,7 @@ export default function ParkingCitations() {
 
   // Data freshness detection
   const freshness = useDataFreshness('parkingCitations', 'citation_issued_datetime', dateRange, { geoField: 'the_geom' })
+  useEffect(() => { setGeoGapDismissed(false) }, [dateRange.start, dateRange.end])
 
   const trendConfig = useMemo((): TrendConfig => ({
     datasetKey: 'parkingCitations',
@@ -193,6 +196,22 @@ export default function ParkingCitations() {
     [statsWhere]
   )
   const totalRevenue = revenueRows[0] ? parseFloat(revenueRows[0].total_fines) || 0 : 0
+
+  // Server-true Avg Fine / Out-of-State (no geo filter — the map's coord
+  // gap must not thin these stats, same reasoning as statsWhere above)
+  const { data: avgFineRows } = useDataset<{ avg_fine: string }>(
+    'parkingCitations',
+    { $select: 'AVG(fine_amount) as avg_fine', $where: `${statsWhere} AND fine_amount > 0` },
+    [statsWhere]
+  )
+  const serverAvgFine = avgFineRows[0] ? parseFloat(avgFineRows[0].avg_fine) : NaN
+
+  const { data: oosCountRows } = useDataset<{ count: string }>(
+    'parkingCitations',
+    { $select: 'count(*) as count', $where: `${statsWhere} AND vehicle_plate_state IS NOT NULL AND vehicle_plate_state != 'CA'` },
+    [statsWhere]
+  )
+  const serverOosCount = oosCountRows[0] ? parseInt(oosCountRows[0].count, 10) : null
 
   const { data: violationRows } = useDataset<ViolationTypeAggRow>(
     'parkingCitations',
@@ -230,7 +249,7 @@ export default function ParkingCitations() {
   const hourlyPattern = useCitationHourlyPattern(dateRange, extraWhere)
 
   // Comparison data
-  const comparison = useCitationComparisonData(dateRange, statsWhere, comparisonPeriod, rawData)
+  const comparison = useCitationComparisonData(dateRange, statsWhere, comparisonPeriod, rawData, hitLimit)
   const compLabel = comparisonPeriod ? `vs ${comparisonPeriod >= 360 ? '1yr' : `${comparisonPeriod}d`} ago` : ''
 
   // Neighborhood boundaries for anomaly mode
@@ -289,13 +308,17 @@ export default function ParkingCitations() {
   }, [rawData])
 
   const stats = useMemo(() => {
-    if (citationData.length === 0) return { totalCitations: 0, avgFine: 0, outOfStatePct: 0, peakHour: 0 }
     const fines = citationData.map((c) => c.fineAmount).filter((f) => f > 0)
-    const avgFine = fines.length > 0 ? fines.reduce((a, b) => a + b, 0) / fines.length : 0
-    const outOfState = citationData.filter((c) => c.plateState !== 'CA' && c.plateState !== 'Unknown').length
-    const outOfStatePct = (outOfState / citationData.length) * 100
-    return { totalCitations: citationData.length, avgFine, outOfStatePct, peakHour: hourlyPattern.peakHour }
-  }, [citationData, hourlyPattern.peakHour])
+    const sampleAvg = fines.length > 0 ? fines.reduce((a, b) => a + b, 0) / fines.length : 0
+    const avgFine = Number.isFinite(serverAvgFine) ? serverAvgFine : sampleAvg
+    const sampleOos = citationData.length > 0
+      ? (citationData.filter((c) => c.plateState !== 'CA' && c.plateState !== 'Unknown').length / citationData.length) * 100
+      : 0
+    const outOfStatePct = (serverOosCount !== null && totalCount)
+      ? (serverOosCount / totalCount) * 100
+      : sampleOos
+    return { totalCitations: totalCount ?? citationData.length, avgFine, outOfStatePct, peakHour: hourlyPattern.peakHour }
+  }, [citationData, hourlyPattern.peakHour, serverAvgFine, serverOosCount, totalCount])
 
   const histogramData = useMemo(
     () => citationData.map((c) => c.fineAmount).filter((f) => f > 0),
@@ -524,10 +547,12 @@ export default function ParkingCitations() {
   // Heatmap tooltip
   useMapTooltip(mapInstance, 'citations-points', (props) => {
     const issuedDate = props.issuedAt
-      ? new Date(String(props.issuedAt)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      // DataSF datetimes are floating SF-local; bare new Date() reads them
+      // in the viewer's host TZ (wrong for any non-Pacific reader).
+      ? new Date(parseSfLocal(String(props.issuedAt))).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' })
       : null
     const issuedTime = props.issuedAt
-      ? new Date(String(props.issuedAt)).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+      ? new Date(parseSfLocal(String(props.issuedAt))).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' })
       : null
     const fine = props.fineAmount ? `$${Number(props.fineAmount).toFixed(2)}` : null
     return `
@@ -658,7 +683,9 @@ export default function ParkingCitations() {
       delay: 0,
       info: 'fine-revenue',
       defaultExpanded: true,
-      subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined,
+      subtitle: comparison.deltas
+        ? `${formatDelta(comparison.deltas.total)} ${compLabel}`
+        : (comparison.suppressed && comparisonPeriod ? 'Compare needs a narrower date range' : undefined),
       trend: comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined,
     },
     {
@@ -704,7 +731,7 @@ export default function ParkingCitations() {
       info: 'peak-hour',
       defaultExpanded: false,
     },
-  ], [totalRevenue, totalCount, stats, comparison.deltas, compLabel, trend.cityWideYoY])
+  ], [totalRevenue, totalCount, stats, comparison.deltas, comparison.suppressed, compLabel, comparisonPeriod, trend.cityWideYoY])
 
   useProgressScope()
 
@@ -803,17 +830,25 @@ export default function ParkingCitations() {
               </div>
             )}
 
-            {!isLoading && !freshness.isLoading && !freshness.hasDataInRange && (
+            {!isLoading && !freshness.isLoading && (!freshness.hasDataInRange || (!freshness.hasGeoInRange && !geoGapDismissed)) && (
               <DataFreshnessAlert
                 latestDate={freshness.latestDate}
                 latestGeoDate={freshness.latestGeoDate}
-                suggestedRange={freshness.suggestedRange}
+                mode={freshness.hasDataInRange ? 'geo-gap' : 'no-data'}
+                onDismiss={freshness.hasDataInRange ? () => setGeoGapDismissed(true) : undefined}
+                suggestedRange={freshness.hasDataInRange ? freshness.suggestedGeoRange : freshness.suggestedRange}
                 accentColor="#d47149"
               />
             )}
 
-            {/* Stat cards — top left */}
-            {!isLoading && citationData.length > 0 && (
+            {/* Stat cards — top left. All five cards are server-derived
+                (statsWhere has no geo filter), so they must render even when
+                the geo-filtered sample (citationData) is empty — precisely
+                the state the geo-gap alert fires in, including the view's
+                default last-30-days range. Gating on citationData.length
+                alone hid the server-true cards inside the gap they exist
+                to survive. */}
+            {!isLoading && (citationData.length > 0 || totalCount !== null) && (
               <CardTray viewId="parkingCitations" cards={cardDefs} />
             )}
 

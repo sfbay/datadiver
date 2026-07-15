@@ -1085,7 +1085,7 @@
           "electionDayVotes": 2117,
           "vbmVotes": 14519,
           "percentage": 0.46987713599774,
-          "isWinner": false
+          "isWinner": true
         },
         {
           "name": "MARJAN PHILHOUR",
@@ -1207,7 +1207,7 @@
           "electionDayVotes": 1615,
           "vbmVotes": 10326,
           "percentage": 0.406170277900609,
-          "isWinner": true
+          "isWinner": false
         },
         {
           "name": "BILAL MAHMOOD",
@@ -1215,7 +1215,7 @@
           "electionDayVotes": 1419,
           "vbmVotes": 10301,
           "percentage": 0.398653015408687,
-          "isWinner": false
+          "isWinner": true
         },
         {
           "name": "SCOTTY JACOBS",
@@ -1386,7 +1386,7 @@
           "electionDayVotes": 883,
           "vbmVotes": 7695,
           "percentage": 0.310145346735122,
-          "isWinner": true
+          "isWinner": false
         },
         {
           "name": "CHYANNE CHEN",
@@ -1394,7 +1394,7 @@
           "electionDayVotes": 775,
           "vbmVotes": 7441,
           "percentage": 0.297056909393304,
-          "isWinner": false
+          "isWinner": true
         },
         {
           "name": "ERNEST \"EJ\" JONES",

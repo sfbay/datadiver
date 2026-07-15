@@ -28,6 +28,7 @@ export interface ComparisonResult<TStats, TDeltas> {
   currentTrend: DailyTrendPoint[]
   comparisonTrend: DailyTrendPoint[]
   isLoading: boolean
+  suppressed: boolean
 }
 
 // ── Factory config ────────────────────────────────────────────────
@@ -58,7 +59,8 @@ export function createComparisonDataHook<TRecord, TStats, TDeltas>(
     dateRange: { start: string; end: string },
     whereClause: string,
     comparisonDays: number | null,
-    currentRecords: TRecord[]
+    currentRecords: TRecord[],
+    currentTruncated = false
   ): ComparisonResult<TStats, TDeltas> => {
     const [compRecords, setCompRecords] = useState<TRecord[]>([])
     const [isLoading, setIsLoading] = useState(false)
@@ -100,13 +102,18 @@ export function createComparisonDataHook<TRecord, TStats, TDeltas>(
 
     return useMemo((): ComparisonResult<TStats, TDeltas> => {
       if (comparisonDays === null) {
-        return { currentStats: null, comparisonStats: null, deltas: null, currentTrend: [], comparisonTrend: [], isLoading: false }
+        return { currentStats: null, comparisonStats: null, deltas: null, currentTrend: [], comparisonTrend: [], isLoading: false, suppressed: false }
       }
+
+      const compTruncated = compRecords.length >= 5000
+      const suppressed = currentTruncated || compTruncated
 
       const currentStats = computeStats(currentRecords)
       const comparisonStats = computeStats(compRecords)
 
-      const deltas = compRecords.length > 0 ? computeDeltas(currentStats, comparisonStats) : null
+      // A capped sample is the newest slice of the range, not the range — a
+      // delta computed from it is plausible and wrong. Suppress, don't guess.
+      const deltas = !suppressed && compRecords.length > 0 ? computeDeltas(currentStats, comparisonStats) : null
 
       const buildTrend = (records: TRecord[]): DailyTrendPoint[] => {
         const byDay = groupByDay(records, extractDate)
@@ -117,11 +124,11 @@ export function createComparisonDataHook<TRecord, TStats, TDeltas>(
         return points.sort((a, b) => a.day.localeCompare(b.day))
       }
 
-      const currentTrend = buildTrend(currentRecords)
-      const comparisonTrend = buildTrend(compRecords)
+      const currentTrend = suppressed ? [] : buildTrend(currentRecords)
+      const comparisonTrend = suppressed ? [] : buildTrend(compRecords)
 
-      return { currentStats, comparisonStats, deltas, currentTrend, comparisonTrend, isLoading }
-    }, [currentRecords, compRecords, comparisonDays, isLoading])
+      return { currentStats, comparisonStats, deltas, currentTrend, comparisonTrend, isLoading, suppressed }
+    }, [currentRecords, compRecords, comparisonDays, isLoading, currentTruncated])
   }
 
   Object.defineProperty(hook, 'name', { value: name })
