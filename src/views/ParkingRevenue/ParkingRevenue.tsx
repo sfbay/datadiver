@@ -31,17 +31,16 @@ import { SkeletonChart, SkeletonSidebarRows, SkeletonBreakdownList, MapScanOverl
 import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
 import { useDataFreshness } from '@/hooks/useDataFreshness'
 import { useTrendBaseline } from '@/hooks/useTrendBaseline'
-import type { TrendConfig } from '@/types/trends'
+import type { TrendConfig, PeriodGranularity } from '@/types/trends'
 import { useProgressScope } from '@/hooks/useLoadingProgress'
 import ScannerFeedChips from '@/components/ui/ScannerFeedChips'
-
-type TimeGranularity = 'hour' | 'day' | 'week'
 
 export default function ParkingRevenue() {
   const { dateRange, selectedMeter, setSelectedMeter, selectedNeighborhood, setSelectedNeighborhood } = useAppStore()
   const civicIndicators = useCivicIndicators()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [granularity, setGranularity] = useState<TimeGranularity>('day')
+  // null = auto-detect (matches the engine's detectGranularity); a pill click pins it.
+  const [granularityOverride, setGranularityOverride] = useState<PeriodGranularity | null>(null)
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
   const mapHandleRef = useRef<MapHandle>(null)
 
@@ -74,7 +73,11 @@ export default function ParkingRevenue() {
       { selectExpr: 'SUM(gross_paid_amt)', alias: 'revenue', label: 'Revenue', format: (v) => formatCurrency(v) },
     ],
   }), [])
-  const trend = useTrendBaseline(trendConfig, dateRange)
+  const trend = useTrendBaseline(trendConfig, dateRange, undefined, granularityOverride ? { granularity: granularityOverride } : undefined)
+
+  // Auto-detect should win for a fresh date range — a pinned override from a
+  // previous range shouldn't silently carry forward.
+  useEffect(() => { setGranularityOverride(null) }, [dateRange.start, dateRange.end])
 
   const { data: meters, isLoading: metersLoading } = useDataset<ParkingMeter>(
     'parkingMeters',
@@ -505,17 +508,17 @@ export default function ParkingRevenue() {
               />
             <ExportButton targetSelector="#pr-capture" filename="parking-revenue" />
             <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-lg p-0.5">
-              {(['hour', 'day', 'week'] as const).map((g) => (
+              {(['daily', 'weekly', 'monthly'] as const).map((g) => (
                 <button
                   key={g}
-                  onClick={() => setGranularity(g)}
+                  onClick={() => setGranularityOverride(g)}
                   className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all duration-200 ${
-                    granularity === g
+                    trend.granularity === g
                       ? 'bg-white dark:bg-white/[0.08] text-ink dark:text-white shadow-sm'
                       : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
                   }`}
                 >
-                  {g === 'hour' ? 'Hourly' : g === 'day' ? 'Daily' : 'Weekly'}
+                  {g === 'daily' ? 'Daily' : g === 'weekly' ? 'Weekly' : 'Monthly'}
                 </button>
               ))}
             </div>

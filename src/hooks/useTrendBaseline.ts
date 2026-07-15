@@ -26,8 +26,12 @@ export function useTrendBaseline(
    * - `skipPeriods: true` drops the two sub-period breakdown queries when a
    *   consumer only reads `neighborhoodMap` (e.g. useNeighborhoodProfiles),
    *   cutting 5 queries → 3 with no change to the data it actually uses.
+   * - `granularity` pins the sub-period breakdown to a specific bucket
+   *   (daily/weekly/monthly) instead of the auto-detected one — lets a
+   *   consumer offer a manual granularity toggle (e.g. ParkingRevenue's
+   *   Daily/Weekly/Monthly pills) that genuinely drives the chart.
    */
-  options?: { enabled?: boolean; skipPeriods?: boolean }
+  options?: { enabled?: boolean; skipPeriods?: boolean; granularity?: PeriodGranularity }
 ): TrendBaselineResult {
   const enabled = options?.enabled ?? true
   const skipPeriods = options?.skipPeriods ?? false
@@ -39,11 +43,13 @@ export function useTrendBaseline(
   const [periodPriorYear, setPeriodPriorYear] = useState<RawPeriodRow[]>([])
 
   const { datasetKey, dateField, neighborhoodField, metrics, baseWhere } = config
-  const granularity = detectGranularity(dateRange.start, dateRange.end)
+  const granularity = options?.granularity ?? detectGranularity(dateRange.start, dateRange.end)
   const hasNh = !!neighborhoodField
 
-  // Stable key for effect deps
-  const configKey = `${datasetKey}|${dateField}|${neighborhoodField ?? ''}|${baseWhere ?? ''}|${metrics?.map(m => m.alias).join(',') ?? ''}`
+  // Stable key for effect deps — granularity is included because it drives
+  // truncFn inside the effect (the override changes what queries 4 & 5 ask
+  // Socrata for, not just how the result is labeled).
+  const configKey = `${datasetKey}|${dateField}|${neighborhoodField ?? ''}|${baseWhere ?? ''}|${metrics?.map(m => m.alias).join(',') ?? ''}|${granularity}`
 
   useEffect(() => {
     // Deferred consumer: leave isLoading at its initial `true` (the UI keeps
