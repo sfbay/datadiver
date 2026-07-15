@@ -178,7 +178,9 @@ export default function Elections() {
   // useStaticJSON keeps the PREVIOUS url's data during a refetch — identity-guard.
   const turnoutFile = turnoutFileRaw?.dateCode === displayDateCode ? turnoutFileRaw : null
 
-  const raceIdForPaint = mapMode === 'results' && displayRace ? displayRace.id : null
+  // Both results AND margin need per-precinct votes (margin = leaderOf().lead);
+  // only turnout mode paints without a race file.
+  const raceIdForPaint = mapMode !== 'turnout' && displayRace ? displayRace.id : null
   const { data: raceFileRaw } = usePrecinctRace(displayDateCode, raceIdForPaint)
   const raceFile =
     raceFileRaw?.dateCode === displayDateCode && raceFileRaw?.raceId === raceIdForPaint
