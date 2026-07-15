@@ -13,6 +13,10 @@ import type {
   RCVContest,
   TurnoutRecord,
   BallotProposition,
+  PrecinctEra,
+  PrecinctTurnoutFile,
+  PrecinctRaceFile,
+  NeighborhoodResultsFile,
 } from '@/types/elections'
 
 // ── Module-level cache ──────────────────────────────────────────────
@@ -116,4 +120,64 @@ export function useTurnoutHistory() {
 /** Load ballot propositions */
 export function useBallotPropositions() {
   return useStaticJSON<BallotProposition[]>('/data/elections/propositions/index.json')
+}
+
+// ── Precinct + neighborhood result hooks (era-aware) ────────────────
+
+const ERA_GEO_URL: Record<PrecinctEra, string> = {
+  prec_2012: '/data/elections/geo/prec-2012.geojson',
+  prec_2022: '/data/elections/geo/prec-2022.geojson',
+}
+const LEGACY_NHOOD_GEO_URL = '/data/elections/geo/legacy-neighborhoods.geojson'
+
+/** Era-pinned precinct polygons. Pass null to fetch nothing. */
+export function useElectionGeo(era: PrecinctEra | null) {
+  return useStaticJSON<GeoJSON.FeatureCollection>(era ? ERA_GEO_URL[era] : null)
+}
+
+/** The 26-neighborhood legacy frame (pre-Nov-2022 vocabulary). */
+export function useLegacyNeighborhoodGeo(enabled: boolean) {
+  return useStaticJSON<GeoJSON.FeatureCollection>(enabled ? LEGACY_NHOOD_GEO_URL : null)
+}
+
+/** Per-precinct registered/ballots/turnout + the label→ids join table. */
+export function usePrecinctTurnout(dateCode: string | null) {
+  const url = useMemo(
+    () => (dateCode ? `/data/elections/results/${dateCode}/precincts/_turnout.json` : null),
+    [dateCode],
+  )
+  return useStaticJSON<PrecinctTurnoutFile>(url)
+}
+
+/** Per-precinct votes for one race — ~170 KB, lazy, cached per race. */
+export function usePrecinctRace(dateCode: string | null, raceId: string | null) {
+  const url = useMemo(
+    () =>
+      dateCode && raceId
+        ? `/data/elections/results/${dateCode}/precincts/${raceId}.json`
+        : null,
+    [dateCode, raceId],
+  )
+  return useStaticJSON<PrecinctRaceFile>(url)
+}
+
+/** Certified dsov per-neighborhood results (era-correct vocabulary). */
+export function useNeighborhoodResults(dateCode: string | null) {
+  const url = useMemo(
+    () => (dateCode ? `/data/elections/results/${dateCode}/neighborhoods.json` : null),
+    [dateCode],
+  )
+  return useStaticJSON<NeighborhoodResultsFile>(url)
+}
+
+/** Warm the module cache so Time Machine scrubs with zero fetches:
+ *  all six _turnout files (~270 KB total) + both era geometries + the
+ *  legacy frame. Race files stay lazy (fetched as the scrub crosses). */
+export function preloadTimeMachineData(dateCodes: string[]): void {
+  for (const dc of dateCodes) {
+    void fetchJSON(`/data/elections/results/${dc}/precincts/_turnout.json`).catch(() => {})
+  }
+  void fetchJSON(ERA_GEO_URL.prec_2012).catch(() => {})
+  void fetchJSON(ERA_GEO_URL.prec_2022).catch(() => {})
+  void fetchJSON(LEGACY_NHOOD_GEO_URL).catch(() => {})
 }

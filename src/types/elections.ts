@@ -104,3 +104,54 @@ export interface BallotProposition {
   yesPct: number
   passed: boolean
 }
+
+// ── Precinct + neighborhood results (public/data/elections/results/<dateCode>/) ──
+// Shapes verified against the emitted files 2026-07-14 — see the UI plan's
+// "Verified data facts". Do not re-derive from the spec sketches.
+
+export type PrecinctEra = 'prec_2012' | 'prec_2022'
+
+export interface PrecinctTurnoutRow {
+  /** Geometry feature ids this row paints. Consolidated labels ("1104/1105")
+   *  carry several. Unmapped rows KEEP their id — skip by the flag. */
+  ids: string[]
+  registered: number
+  ballots: number
+  turnout: number
+  /** True for the 12 pinned 2012-era precincts with no published geometry. */
+  unmapped?: boolean
+}
+
+export interface PrecinctTurnoutFile {
+  dateCode: string
+  era: PrecinctEra
+  precincts: Record<string, PrecinctTurnoutRow>
+  /** Voters in dsov but withheld from the precinct SOV for ballot secrecy. */
+  suppressed: { registered: number; ballots: number }
+  /** Summary of unmapped rows. NOTE: no `precincts`/`ballots` fields exist —
+   *  derive the count from ids.length. */
+  unmapped: { ids: string[]; registered: number }
+}
+
+export interface PrecinctRaceFile {
+  dateCode: string
+  raceId: string
+  title: string
+  era: PrecinctEra
+  /** Keyed by the same labels as _turnout. Vote keys may carry "\n(PARTY)". */
+  precincts: Record<string, { votes: Record<string, number>; total: number }>
+}
+
+export interface NeighborhoodRow {
+  registered: number
+  ballots: number
+  turnout: number
+  races: Record<string, { votes: Record<string, number>; total: number }>
+}
+
+export interface NeighborhoodResultsFile {
+  dateCode: string
+  scheme: 'analysis41' | 'legacy26'
+  /** Keyed by UPPERCASE dsov names ("CASTRO/UPPER MARKET"). */
+  neighborhoods: Record<string, NeighborhoodRow>
+}
