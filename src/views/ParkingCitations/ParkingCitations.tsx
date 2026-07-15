@@ -841,8 +841,14 @@ export default function ParkingCitations() {
               />
             )}
 
-            {/* Stat cards — top left */}
-            {!isLoading && citationData.length > 0 && (
+            {/* Stat cards — top left. All five cards are server-derived
+                (statsWhere has no geo filter), so they must render even when
+                the geo-filtered sample (citationData) is empty — precisely
+                the state the geo-gap alert fires in, including the view's
+                default last-30-days range. Gating on citationData.length
+                alone hid the server-true cards inside the gap they exist
+                to survive. */}
+            {!isLoading && (citationData.length > 0 || totalCount !== null) && (
               <CardTray viewId="parkingCitations" cards={cardDefs} />
             )}
 

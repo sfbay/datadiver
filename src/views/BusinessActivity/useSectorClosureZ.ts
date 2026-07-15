@@ -37,8 +37,28 @@ export function useSectorClosureZ(dateRange: { start: string; end: string }): Ma
     const current = rollupToSectors(q0.data)
     const samples = [q1, q2, q3, q4, q5].map((q) => rollupToSectors(q.data))
     // Don't compute z until the baseline windows have all answered — a
-    // half-loaded baseline reads as "everything is anomalous".
-    if ([q1, q2, q3, q4, q5].some((q) => q.isLoading)) return new Map()
+    // half-loaded (or errored) baseline reads as "everything is anomalous".
+    // useDataset retains [] on error and never auto-retries, so an errored
+    // window would otherwise roll up as zero closures for every sector,
+    // dragging the sample mean down and inflating z into a false alarm.
+    if ([q1, q2, q3, q4, q5].some((q) => q.isLoading || q.error)) return new Map()
     return computeClosureZ(current, samples)
-  }, [q0.data, q1.data, q2.data, q3.data, q4.data, q5.data, q1.isLoading, q2.isLoading, q3.isLoading, q4.isLoading, q5.isLoading])
+  }, [
+    q0.data,
+    q1.data,
+    q2.data,
+    q3.data,
+    q4.data,
+    q5.data,
+    q1.isLoading,
+    q2.isLoading,
+    q3.isLoading,
+    q4.isLoading,
+    q5.isLoading,
+    q1.error,
+    q2.error,
+    q3.error,
+    q4.error,
+    q5.error,
+  ])
 }
