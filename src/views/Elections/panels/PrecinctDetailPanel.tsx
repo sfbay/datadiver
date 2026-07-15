@@ -138,18 +138,31 @@ export default function PrecinctDetailPanel({
             <div className="space-y-1.5">
               {candidates.map((c) => {
                 const isFocused = focusedCandidate === c.name
+                const hex = candidateColors.get(c.name) || '#a8926a'
                 return (
                   <button
                     key={c.name}
                     onClick={() => onFocusCandidate(isFocused ? null : c.name)}
-                    className={`block w-full text-left rounded-md px-1.5 py-1 -mx-1.5 cursor-pointer transition-all ${
-                      isFocused ? 'ring-1 ring-indigo-500/30 bg-indigo-500/[0.06]' : 'hover:bg-white/[0.03]'
+                    style={isFocused ? {
+                      backgroundColor: `${hex}14`,
+                      boxShadow: `inset 3px 0 0 ${hex}, 0 0 0 1px ${hex}59`,
+                    } : undefined}
+                    className={`block w-full text-left rounded-lg px-1.5 py-1 -mx-1.5 cursor-pointer transition-all ${
+                      isFocused ? '' : 'hover:bg-paper-100/50 dark:hover:bg-white/[0.04]'
                     }`}
                   >
                     <div className="flex items-baseline gap-2">
-                      <span className="text-[13px] font-medium truncate flex-1 text-ink dark:text-slate-200">
+                      <span className={`text-[13px] truncate flex-1 text-ink dark:text-slate-200 ${isFocused ? 'font-semibold' : 'font-medium'}`}>
                         {toSentenceCase(c.name)}
                       </span>
+                      {isFocused && (
+                        <span
+                          className="text-[8px] font-mono uppercase tracking-[0.15em] flex-shrink-0"
+                          style={{ color: hex }}
+                        >
+                          on map
+                        </span>
+                      )}
                       <span className="text-[13px] font-mono tabular-nums text-ink dark:text-slate-300">
                         {(c.share * 100).toFixed(1)}%
                       </span>
@@ -160,10 +173,7 @@ export default function PrecinctDetailPanel({
                     <div className="h-1.5 rounded-full bg-slate-200/50 dark:bg-white/[0.06] overflow-hidden">
                       <div
                         className="h-full rounded-full"
-                        style={{
-                          width: `${c.share * 100}%`,
-                          backgroundColor: candidateColors.get(c.name) || '#a8926a',
-                        }}
+                        style={{ width: `${c.share * 100}%`, backgroundColor: hex }}
                       />
                     </div>
                   </button>
