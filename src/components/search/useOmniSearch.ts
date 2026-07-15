@@ -44,7 +44,7 @@ function buildIndex(): SearchResult[] {
       sublabel: 'San Francisco neighborhood',
       icon: '📍',
       path: '/neighborhood',
-      params: { n: name },
+      params: { nh: name },
     })
   }
 
@@ -65,13 +65,10 @@ function buildIndex(): SearchResult[] {
   return results
 }
 
-let cachedIndex: SearchResult[] | null = null
+export const SEARCH_INDEX = buildIndex()
 
 function getIndex(): SearchResult[] {
-  if (!cachedIndex) {
-    cachedIndex = buildIndex()
-  }
-  return cachedIndex
+  return SEARCH_INDEX
 }
 
 export function useOmniSearch() {
