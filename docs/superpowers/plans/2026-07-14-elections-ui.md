@@ -39,7 +39,7 @@
 
 ```
 scripts/build-precinct-geometry.py        NEW  Task 1 — vendors era geometry (build-time)
-public/data/elections/geo/prec-2012.geojson       NEW (605 features, {id, nhood})
+public/data/elections/geo/prec-2012.geojson       NEW (603 features, {id, nhood})
 public/data/elections/geo/prec-2022.geojson       NEW (514 features, {id, nhood})
 public/data/elections/geo/legacy-neighborhoods.geojson  NEW (26 features, {nhood})
 src/types/elections.ts                    MODIFY Task 2 — file-shape interfaces
@@ -97,7 +97,8 @@ Reads gitignored sources (data/elections-src/prec_{2012,2022}.geojson —
 refetch with `node scripts/fetch-election-sources.mjs`) and emits committed,
 same-origin assets to public/data/elections/geo/:
 
-  prec-2012.geojson            605 precincts, props {id, nhood} (nhood = neighrep)
+  prec-2012.geojson            603 precincts, props {id, nhood} (nhood = neighrep;
+                               605 source features minus 2 null-id GG Park placeholders)
   prec-2022.geojson            514 precincts, props {id, nhood} (nhood = neigh22)
   legacy-neighborhoods.geojson 26 legacy neighborhoods dissolved by neighrep
                                (neighrep 'NA' excluded — it is a placeholder,
@@ -121,9 +122,13 @@ RESULTS = Path('public/data/elections/results')
 SLIVER_SHARE = 0.001
 PRECISION = 6
 
+# (era, id_field, nhood_field, src_count, placeholder_nulls, date_codes)
+# placeholder_nulls: source features with a NULL precinct id — verified to be
+# the two Golden Gate Park placeholder shapes (neighrep 'NA') in the 2012
+# file. They are not precincts; no turnout row can reference them.
 ERAS = [
-    ('prec_2012', 'prec_2012', 'neighrep', 605, ['20201103', '20220607']),
-    ('prec_2022', 'prec_2022', 'neigh22', 514, ['20221108', '20240305', '20241105', '20251104']),
+    ('prec_2012', 'prec_2012', 'neighrep', 605, 2, ['20201103', '20220607']),
+    ('prec_2022', 'prec_2022', 'neigh22', 514, 0, ['20221108', '20240305', '20241105', '20251104']),
 ]
 
 
@@ -162,19 +167,33 @@ def nhood_key(s):
 def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    for era, id_field, nhood_field, expected, date_codes in ERAS:
+    for era, id_field, nhood_field, expected, expected_nulls, date_codes in ERAS:
         src = json.loads((SRC_DIR / f'{era}.geojson').read_text())
         if len(src['features']) != expected:
             die(f'{era}: {len(src["features"])} source features, expected {expected}')
 
         out, seen = [], set()
+        skipped_placeholder = 0
         for f in src['features']:
-            pid = str(f['properties'][id_field])
+            raw_id = f['properties'][id_field]
+            if raw_id is None:
+                # Skip ONLY the known placeholder form; a null id on a real
+                # neighborhood would be a source regression, not a park.
+                if f['properties'][nhood_field] != 'NA':
+                    die(f'{era}: null {id_field} on non-placeholder feature '
+                        f'({nhood_field}={f["properties"][nhood_field]!r})')
+                skipped_placeholder += 1
+                continue
+            pid = str(raw_id)
             if pid in seen:
                 die(f'{era}: duplicate precinct id {pid}')
             seen.add(pid)
             geom = shape(f['geometry']).buffer(0)
             out.append(feature({'id': pid, 'nhood': f['properties'][nhood_field]}, geom))
+
+        if skipped_placeholder != expected_nulls:
+            die(f'{era}: {skipped_placeholder} null-id placeholder features, '
+                f'expected {expected_nulls}')
 
         # Cross-check against every election of this era: each turnout id must
         # exist in this geometry, unless its row is flagged unmapped (the pinned
@@ -235,7 +254,7 @@ if __name__ == '__main__':
 - [ ] **Step 3: Run it**
 
 Run: `python3 scripts/build-precinct-geometry.py` (or the venv python from Step 1)
-Expected: three `KB (N features)` lines — 605, 514, 26 features; sizes roughly 600–900 KB for the precinct files; final line `all gates passed`. Any `GATE FAILED:` line means STOP — do not hand-patch the outputs; diagnose against the data facts above.
+Expected: three `KB (N features)` lines — 603, 514, 26 features (603 = 605 source minus the two pinned null-id placeholders); sizes roughly 600–900 KB for the precinct files; final line `all gates passed`. Any `GATE FAILED:` line means STOP — do not hand-patch the outputs; diagnose against the data facts above.
 
 - [ ] **Step 4: Prove a gate bites (falsify, don't just re-run)**
 
