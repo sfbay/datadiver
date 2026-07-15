@@ -618,7 +618,7 @@ export default function Elections() {
             {/* Stat cards */}
             {isLoading && <SkeletonStatCards count={4} />}
             {!isLoading && displayResults && cardDefs.length > 0 && (
-              <CardTray viewId="elections" cards={cardDefs} />
+              <CardTray viewId="elections" cards={cardDefs} hideComparison />
             )}
 
             {/* RCV visualization panel — bottom-left when an RCV race is selected */}

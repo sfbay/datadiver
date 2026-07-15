@@ -65,30 +65,60 @@ export default function PrecinctDetailPanel({
       onClose={onClose}
       isLoading={!turnout}
       spinnerClass="border-indigo-400"
-      widthClass="w-72"
+      widthClass="w-80"
       glowColor={ACCENT}
     >
       <div className="pr-6">
-        <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-1">
-          Precinct
-        </p>
-        <h3 className="text-lg font-display italic text-ink dark:text-white">{label}</h3>
-        {parentNhood && (
+        {/* Geography first: neighborhood is the title, precinct number one mono line under it */}
+        {parentNhood && parentNhood !== 'NA' ? (
           <button
             onClick={() => onSelectNeighborhood(parentNhood.toUpperCase())}
-            className="text-[10px] font-mono text-indigo-500/80 hover:text-indigo-500 transition-colors mb-3"
+            className="block text-left text-lg font-display italic text-ink dark:text-white leading-tight hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
           >
             {displayNhood(parentNhood.toUpperCase(), scheme)} →
           </button>
+        ) : (
+          <h3 className="text-lg font-display italic text-ink dark:text-white leading-tight">
+            Precinct {label}
+          </h3>
+        )}
+        {parentNhood && parentNhood !== 'NA' && (
+          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mt-1 mb-4">
+            Precinct {label}
+          </p>
         )}
 
+        {/* Turnout is the hero: big number + a two-part voted/didn't bar */}
         {row && (
-          <div className="mb-4 mt-1">
-            <p className="text-lg font-mono font-bold" style={{ color: turnoutColor(row.turnout) }}>
+          <div className="mb-5">
+            <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-1">
+              Turnout
+            </p>
+            <p
+              className="text-3xl font-mono font-bold leading-none tabular-nums"
+              style={{ color: turnoutColor(row.turnout) }}
+            >
               {(row.turnout * 100).toFixed(1)}%
             </p>
-            <p className="text-[10px] text-slate-500">
-              {row.ballots.toLocaleString()} of {row.registered.toLocaleString()} registered turned out
+            <div className="mt-2 h-2 rounded-full overflow-hidden flex">
+              <div
+                className="h-full"
+                style={{
+                  width: `${Math.min(100, row.turnout * 100)}%`,
+                  backgroundColor: turnoutColor(row.turnout),
+                }}
+              />
+              <div className="h-full flex-1 bg-slate-300/40 dark:bg-white/[0.08]" />
+            </div>
+            <p className="text-[10px] text-slate-500 mt-1.5">
+              <span className="font-mono tabular-nums text-ink dark:text-slate-300">
+                {row.ballots.toLocaleString()}
+              </span>{' '}
+              voted ·{' '}
+              <span className="font-mono tabular-nums">
+                {(row.registered - row.ballots).toLocaleString()}
+              </span>{' '}
+              didn't · {row.registered.toLocaleString()} registered
             </p>
           </div>
         )}
@@ -116,15 +146,18 @@ export default function PrecinctDetailPanel({
                       isFocused ? 'ring-1 ring-indigo-500/30 bg-indigo-500/[0.06]' : 'hover:bg-white/[0.03]'
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] truncate flex-1 text-ink dark:text-slate-300">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-[13px] font-medium truncate flex-1 text-ink dark:text-slate-200">
                         {toSentenceCase(c.name)}
                       </span>
-                      <span className="text-[10px] font-mono text-slate-500">
+                      <span className="text-[13px] font-mono tabular-nums text-ink dark:text-slate-300">
+                        {(c.share * 100).toFixed(1)}%
+                      </span>
+                      <span className="text-[10px] font-mono tabular-nums text-slate-500 w-12 text-right">
                         {c.votes.toLocaleString()}
                       </span>
                     </div>
-                    <div className="h-1 rounded-full bg-slate-200/50 dark:bg-white/[0.06] overflow-hidden">
+                    <div className="h-1.5 rounded-full bg-slate-200/50 dark:bg-white/[0.06] overflow-hidden">
                       <div
                         className="h-full rounded-full"
                         style={{
