@@ -2,11 +2,19 @@ import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
-import { useMapLayer } from '@/hooks/useMapLayer'
 import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { usePrecinctBoundaries } from '@/hooks/usePrecinctBoundaries'
-import { useElectionManifest, useElectionResults, useRCVRounds } from '@/hooks/useElectionResults'
+import {
+  useElectionManifest,
+  useElectionResults,
+  useRCVRounds,
+  usePrecinctTurnout,
+  usePrecinctRace,
+  useNeighborhoodResults,
+  useElectionGeo,
+  useLegacyNeighborhoodGeo,
+} from '@/hooks/useElectionResults'
 import CardTray, { type CardDef } from '@/components/ui/CardTray'
 import DetailPanelShell from '@/components/ui/DetailPanelShell'
 import ExportButton from '@/components/export/ExportButton'
@@ -20,6 +28,13 @@ import { useElectionTimeline } from '@/hooks/useElectionTimeline'
 import BallotMeasureExplorer from '@/components/charts/BallotMeasureExplorer'
 import { useBallotPropositions } from '@/hooks/useElectionResults'
 import { toSentenceCase } from '@/utils/format'
+import { displayNhood } from '@/utils/electionData'
+import { isProposition } from './map/precinctPaint'
+import type { PaintBundle } from './map/precinctJoin'
+import PrecinctFillLayer from './map/PrecinctFillLayer'
+import NeighborhoodFrameLayer from './map/NeighborhoodFrameLayer'
+import PrecinctLegend from './map/PrecinctLegend'
+import CoverageChip from './map/CoverageChip'
 
 type MapMode = 'results' | 'turnout' | 'margin'
 type SidebarTab = 'races' | 'neighborhoods' | 'measures'
@@ -64,7 +79,24 @@ export default function Elections() {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev)
       if (!n) next.delete('neighborhood')
-      else next.set('neighborhood', n)
+      else {
+        next.set('neighborhood', n)
+        next.delete('precinct') // selections are mutually exclusive
+      }
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
+
+  const selectedPrecinct = searchParams.get('precinct') || null
+
+  const setSelectedPrecinct = useCallback((label: string | null) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (!label) next.delete('precinct')
+      else {
+        next.set('precinct', label)
+        next.delete('neighborhood') // selections are mutually exclusive
+      }
       return next
     }, { replace: true })
   }, [setSearchParams])
@@ -119,144 +151,103 @@ export default function Elections() {
   // ── Geo data ──────────────────────────────────────────────────────
   const { boundaries: neighborhoodBoundaries } = useNeighborhoodBoundaries()
 
+  // ── Precinct paint inputs ──────────────────────────────────────────
+  const displayDateCode = timeMachineActive
+    ? timeline.activeElection?.dateCode ?? null
+    : activeElection
+
+  // In Time Machine, the beat's race is auto-picked from that election's own
+  // summary; outside it, activeRace already is the auto-pick.
+  const displayRace = useMemo((): Race | null => {
+    if (!timeMachineActive) return activeRace
+    const races = timeline.activeResults?.races
+    if (!races) return null
+    return (
+      races.find((r) => r.id === 'mayor') ??
+      races.find((r) => r.id.startsWith('president')) ??
+      races.find((r) => r.type === 'local') ??
+      races[0] ?? null
+    )
+  }, [timeMachineActive, activeRace, timeline.activeResults])
+
+  const raceIsProp = displayRace
+    ? displayRace.type === 'measure' || isProposition(displayRace.id, displayRace.title)
+    : false
+
+  const { data: turnoutFileRaw } = usePrecinctTurnout(displayDateCode)
+  // useStaticJSON keeps the PREVIOUS url's data during a refetch — identity-guard.
+  const turnoutFile = turnoutFileRaw?.dateCode === displayDateCode ? turnoutFileRaw : null
+
+  const raceIdForPaint = mapMode === 'results' && displayRace ? displayRace.id : null
+  const { data: raceFileRaw } = usePrecinctRace(displayDateCode, raceIdForPaint)
+  const raceFile =
+    raceFileRaw?.dateCode === displayDateCode && raceFileRaw?.raceId === raceIdForPaint
+      ? raceFileRaw
+      : null
+
+  // Race still loading (or 404 → error) → race: null → the join paints turnout
+  // for that beat instead of a blank. Progressive, never empty.
+  const paintBundle = useMemo((): PaintBundle | null => {
+    if (!displayDateCode || !turnoutFile) return null
+    return { dateCode: displayDateCode, era: turnoutFile.era, turnout: turnoutFile, race: raceFile }
+  }, [displayDateCode, turnoutFile, raceFile])
+
+  const { data: activeGeo } = useElectionGeo(paintBundle?.era ?? null)
+  const { data: legacyFrame } = useLegacyNeighborhoodGeo(paintBundle?.era === 'prec_2012')
+  const frameBoundaries = paintBundle?.era === 'prec_2012' ? legacyFrame : neighborhoodBoundaries
+
+  const { data: neighborhoodResults } = useNeighborhoodResults(displayDateCode)
+
   // ── Candidate colors ──────────────────────────────────────────────
   const candidateColors = useMemo(() => {
-    if (!activeRace) return new Map<string, string>()
-    return buildCandidateColorMap(activeRace.candidates)
-  }, [activeRace])
+    if (!displayRace) return new Map<string, string>()
+    return buildCandidateColorMap(displayRace.candidates)
+  }, [displayRace])
 
-  // ── Neighborhood layer ──────────────────────────────────────────
-  // The results we hold are CITYWIDE. There is exactly one turnout figure, one
-  // margin, one winner — so there is nothing to vary across 41 polygons, and the
-  // map must not pretend otherwise.
-  //
-  // This previously derived `fill-opacity` from each neighborhood's dominant
-  // supervisor district (`(district % 11) / 11`) to "create visual variation."
-  // That is a fabricated encoding: a reader decodes shade as signal, and the
-  // shade carried a district id. Removed. Until per-neighborhood results land,
-  // the polygons are a uniform, deliberately flat locator — clickable, but
-  // encoding nothing. See docs/superpowers/specs/2026-07-14-elections-real-results-design.md
-  const hasCitywideFallback = true // false once precinct/neighborhood results ship
-
-  const choroplethGeojson = useMemo((): GeoJSON.FeatureCollection | null => {
-    if (!neighborhoodBoundaries || !activeRace || !displayResults) return null
-
-    const winner = activeRace.candidates.find((c) => c.isWinner)
-    const topTwo = [...activeRace.candidates].sort((a, b) => b.totalVotes - a.totalVotes)
-    const cityMargin = topTwo.length >= 2
-      ? (topTwo[0].totalVotes - topTwo[1].totalVotes) / activeRace.totalBallotsCast
-      : 0.5
-    const cityTurnout = displayResults.registration.turnoutPct
-
-    const features = neighborhoodBoundaries.features.map((f) => ({
-      ...f,
-      properties: {
-        ...f.properties,
-        selected: (f.properties?.nhood as string) === selectedNeighborhood,
-        // Citywide values, carried for the tooltip — which labels them as such.
-        winnerName: winner ? toSentenceCase(winner.name) : 'TBD',
-        margin: cityMargin,
-        turnoutPct: cityTurnout,
-      },
-    }))
-
-    return { type: 'FeatureCollection', features }
-  }, [neighborhoodBoundaries, activeRace, displayResults, selectedNeighborhood])
-
-  // ── Map layers ────────────────────────────────────────────────────
-  // Uniform paint. Not "not yet tuned" — uniform ON PURPOSE, because the data
-  // behind it is a single citywide number. The only thing that varies here is
-  // selection, which is UI state, not a measurement.
-  const choroplethLayers = useMemo((): mapboxgl.AnyLayer[] => [
-    {
-      id: 'election-nhood-fill',
-      type: 'fill',
-      source: 'election-choropleth',
-      paint: {
-        'fill-color': ACCENT,
-        'fill-opacity': [
-          'case',
-          ['boolean', ['get', 'selected'], false], 0.28,
-          0.10,
-        ],
-      },
-    },
-    {
-      id: 'election-nhood-outline',
-      type: 'line',
-      source: 'election-choropleth',
-      paint: {
-        'line-color': ACCENT,
-        'line-width': ['case', ['boolean', ['get', 'selected'], false], 2, 1],
-        'line-opacity': ['case', ['boolean', ['get', 'selected'], false], 0.9, 0.35],
-      },
-    },
-  ], [])
-
-  useMapLayer(mapInstance, 'election-choropleth', choroplethGeojson, choroplethLayers)
-
-  // Tooltip for neighborhood hover
-  // The figure shown is CITYWIDE — every neighborhood reports the same number.
-  // Say so in the tooltip rather than letting the neighborhood name imply it is
-  // a local measurement.
-  useMapTooltip(mapInstance, 'election-nhood-fill', (props) => {
-    const nhood = props.nhood || props.Neigh22 || 'Unknown'
-    const caveat =
-      '<div style="color:#a8926a;font-size:9px;margin-top:6px;font-style:italic">Citywide figure — S.F. does not publish this by neighborhood in the data we hold</div>'
-
-    const body =
-      mapMode === 'turnout'
-        ? `<div class="tooltip-label" style="margin-top:6px">Citywide Turnout</div>
-           <div style="color:#7a9954;font-weight:600">${(Number(props.turnoutPct) * 100).toFixed(1)}%</div>`
-        : mapMode === 'margin'
-        ? `<div class="tooltip-label" style="margin-top:6px">Citywide Margin</div>
-           <div style="color:#d4a435;font-weight:600">${(Number(props.margin) * 100).toFixed(1)}%</div>`
-        : `<div class="tooltip-label" style="margin-top:6px">Citywide Winner</div>
-           <div style="color:${ACCENT};font-weight:600">${props.winnerName || 'TBD'}</div>`
-
+  // Real per-precinct tooltip — replaces the old citywide-caveat tooltip.
+  useMapTooltip(mapInstance, 'election-precinct-fill', (props) => {
+    const scheme = paintBundle?.era === 'prec_2012' ? 'legacy26' : 'analysis41'
+    const nhood = displayNhood(String(props.nhood ?? ''), scheme)
+    const turnoutLine = `${Math.round(Number(props.turnoutPct) * 100)}% turned out · ${Number(props.votes).toLocaleString()} votes cast`
+    const leaderLine = props.tipLeaderName
+      ? `<div style="color:${ACCENT};font-weight:600;margin-top:4px">${props.tipLeaderName} — ${props.tipLeaderPhrase}</div>`
+      : ''
     return `
-      <div class="tooltip-label">Neighborhood</div>
+      <div class="tooltip-label">Precinct ${props.label}</div>
       <div class="tooltip-value">${nhood}</div>
-      ${body}
-      ${caveat}
+      ${leaderLine}
+      <div style="color:#a8926a;font-size:10px;margin-top:4px">${turnoutLine}</div>
     `
   })
 
-  // Click handler for neighborhood selection
+  // Precinct click handler — same retry-attach shape as the old neighborhood one.
   useEffect(() => {
     if (!mapInstance) return
-
     const handleClick = (e: mapboxgl.MapLayerMouseEvent) => {
       if (!e.features || e.features.length === 0) return
-      const nhood = e.features[0].properties?.nhood || e.features[0].properties?.Neigh22
-      if (nhood) {
-        setSelectedNeighborhood(selectedNeighborhood === nhood ? null : nhood)
-        setSidebarTab('neighborhoods')
-      }
+      const label = e.features[0].properties?.label as string | undefined
+      if (label) setSelectedPrecinct(selectedPrecinct === label ? null : label)
     }
-
     const tryAttach = () => {
       try {
-        if (mapInstance.getLayer('election-nhood-fill')) {
-          mapInstance.on('click', 'election-nhood-fill', handleClick)
+        if (mapInstance.getLayer('election-precinct-fill')) {
+          mapInstance.on('click', 'election-precinct-fill', handleClick)
           return true
         }
       } catch { /* */ }
       return false
     }
-
     if (!tryAttach()) {
       const interval = setInterval(() => { if (tryAttach()) clearInterval(interval) }, 500)
       return () => {
         clearInterval(interval)
-        try { mapInstance.off('click', 'election-nhood-fill', handleClick) } catch { /* */ }
+        try { mapInstance.off('click', 'election-precinct-fill', handleClick) } catch { /* */ }
       }
     }
-
     return () => {
-      try { mapInstance.off('click', 'election-nhood-fill', handleClick) } catch { /* */ }
+      try { mapInstance.off('click', 'election-precinct-fill', handleClick) } catch { /* */ }
     }
-  }, [mapInstance, selectedNeighborhood, setSelectedNeighborhood])
+  }, [mapInstance, selectedPrecinct, setSelectedPrecinct])
 
   const handleMapReady = useCallback((map: mapboxgl.Map) => { setMapInstance(map) }, [])
 
@@ -387,6 +378,7 @@ export default function Elections() {
                       next.set('election', e.target.value)
                       next.delete('race')
                       next.delete('neighborhood')
+                      next.delete('precinct')
                       return next
                     },
                     { replace: true },
@@ -456,6 +448,26 @@ export default function Elections() {
         {/* Map area */}
         <div className="flex-1 relative">
           <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
+            {/* Precinct fill + neighborhood frame — always mounted (useMapLayer
+                cleanup depends on it); both no-op on null data */}
+            <PrecinctFillLayer
+              map={mapInstance}
+              bundle={paintBundle}
+              geometry={activeGeo}
+              mode={mapMode}
+              colorMap={candidateColors}
+              raceIsProp={raceIsProp}
+              raceIsRCV={displayRace?.isRCV ?? false}
+              selectedNeighborhood={selectedNeighborhood}
+              fade={1}
+              fadeMs={0}
+            />
+            <NeighborhoodFrameLayer
+              map={mapInstance}
+              boundaries={frameBoundaries}
+              selectedNeighborhood={selectedNeighborhood}
+            />
+
             {/* Error state */}
             {error && (
               <div className="absolute inset-0 flex items-center justify-center z-20">
@@ -466,17 +478,9 @@ export default function Elections() {
               </div>
             )}
 
-            {/* Citywide-only indicator */}
-            {!isLoading && hasCitywideFallback && displayResults && (
-              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/80 backdrop-blur-sm border border-white/[0.08] text-[10px] font-mono text-slate-400">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#a8926a" strokeWidth="1.5">
-                    <circle cx="6" cy="6" r="4.5" />
-                    <path d="M6 4v3M6 8.5v.01" strokeLinecap="round" />
-                  </svg>
-                  Citywide results — neighborhood-level data coming soon
-                </div>
-              </div>
+            {/* Coverage chip — explains gaps (unmapped precincts, sparse elections) */}
+            {!isLoading && (
+              <CoverageChip turnout={paintBundle?.turnout ?? null} geometryCount={activeGeo?.features.length ?? null} />
             )}
 
             {/* Stat cards */}
@@ -547,29 +551,9 @@ export default function Elections() {
               onClose={() => setSelectedNeighborhood(null)}
             />
 
-            {/* Map legend */}
-            {!isLoading && activeRace && mapMode === 'results' && (
-              <div className="absolute bottom-6 right-5 z-10 glass-card rounded-xl p-3">
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
-                  {activeRace.title}
-                </p>
-                <div className="space-y-1">
-                  {activeRace.candidates.slice(0, 5).map((c) => (
-                    <div key={c.name} className="flex items-center gap-2">
-                      <span
-                        className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
-                        style={{ backgroundColor: candidateColors.get(c.name) || '#a8926a' }}
-                      />
-                      <span className="text-[10px] text-slate-400 truncate max-w-[120px]">
-                        {toSentenceCase(c.name.split(',')[0])}
-                      </span>
-                      <span className="text-[10px] font-mono text-slate-500 ml-auto">
-                        {(c.percentage * 100).toFixed(1)}%
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            {/* Map legend — decodes the active precinct fill */}
+            {!isLoading && displayRace && (
+              <PrecinctLegend mode={mapMode} race={displayRace} raceIsProp={raceIsProp} candidateColors={candidateColors} />
             )}
           </MapView>
         </div>
