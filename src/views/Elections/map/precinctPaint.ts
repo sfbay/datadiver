@@ -53,10 +53,45 @@ export function decisivenessOpacity(share: number): number {
   return 0.7
 }
 
-export function resultsFill(leader: PrecinctLeader, colorMap: Map<string, string>): Fill {
+/** Quartile boundaries of this race's leader shares — the race-relative
+ *  decisiveness ladder. Absolute cutpoints flatten lopsided races (Biden 85%
+ *  citywide put ~every precinct in the top step); quartiles guarantee all
+ *  four steps appear in every race. Null (→ absolute fallback) when there are
+ *  too few precincts or the spread is degenerate. */
+export function leaderShareQuartiles(shares: number[]): [number, number, number] | null {
+  if (shares.length < 8) return null
+  const s = [...shares].sort((a, b) => a - b)
+  const q = (p: number) => s[Math.min(s.length - 1, Math.floor(p * s.length))]
+  const qs: [number, number, number] = [q(0.25), q(0.5), q(0.75)]
+  return qs[0] === qs[2] ? null : qs
+}
+
+export function decisivenessOpacityRelative(share: number, q: [number, number, number]): number {
+  if (share < q[0]) return 0.25
+  if (share < q[1]) return 0.4
+  if (share < q[2]) return 0.55
+  return 0.7
+}
+
+/** Single-hue support ramp for a FOCUSED candidate: race-relative, continuous.
+ *  Single hue is the regime where continuous tonal variation reads as a field
+ *  (the demographic-underlay recipe) rather than noise. */
+export function focusFill(share: number, extent: [number, number], hex: string): Fill {
+  const [min, max] = extent
+  const t = max > min ? (share - min) / (max - min) : 0.5
+  return { color: hex, opacity: 0.12 + t * 0.63 }
+}
+
+export function resultsFill(
+  leader: PrecinctLeader,
+  colorMap: Map<string, string>,
+  quartiles?: [number, number, number] | null,
+): Fill {
   return {
     color: colorMap.get(leader.name) ?? FALLBACK,
-    opacity: decisivenessOpacity(leader.share),
+    opacity: quartiles
+      ? decisivenessOpacityRelative(leader.share, quartiles)
+      : decisivenessOpacity(leader.share),
   }
 }
 

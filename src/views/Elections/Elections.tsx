@@ -30,7 +30,7 @@ import { useBallotPropositions } from '@/hooks/useElectionResults'
 import { toSentenceCase } from '@/utils/format'
 import { displayNhood, leaderDisplayName, nhoodKey } from '@/utils/electionData'
 import { isProposition, leaderOf } from './map/precinctPaint'
-import type { PaintBundle } from './map/precinctJoin'
+import { candidateShares, type PaintBundle } from './map/precinctJoin'
 import { useEraFadedBundle } from './map/useEraFadedBundle'
 import PrecinctFillLayer from './map/PrecinctFillLayer'
 import NeighborhoodFrameLayer from './map/NeighborhoodFrameLayer'
@@ -49,6 +49,7 @@ export default function Elections() {
   const selectedElection = searchParams.get('election') || null
   const selectedRaceId = searchParams.get('race') || null
   const selectedNeighborhood = searchParams.get('neighborhood') || null
+  const focusedCandidate = searchParams.get('candidate') || null
 
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('races')
@@ -75,6 +76,16 @@ export default function Elections() {
       const next = new URLSearchParams(prev)
       if (!raceId) next.delete('race')
       else next.set('race', raceId)
+      next.delete('candidate') // a new race has a different candidate set — focus doesn't carry over
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
+
+  const setFocusedCandidate = useCallback((name: string | null) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (!name) next.delete('candidate')
+      else next.set('candidate', name)
       return next
     }, { replace: true })
   }, [setSearchParams])
@@ -224,6 +235,16 @@ export default function Elections() {
     if (!displayRace) return new Map<string, string>()
     return buildCandidateColorMap(displayRace.candidates)
   }, [displayRace])
+
+  // ── Candidate focus mode ────────────────────────────────────────────
+  // Focus is a results-mode lens; Time Machine beats have a different
+  // candidate set per era so focus is suspended during a TM scrub.
+  const activeFocusCandidate = mapMode === 'results' && !timeMachineActive ? focusedCandidate : null
+
+  const focusExtent = useMemo((): [number, number] | null => {
+    if (!focusedCandidate || !raceFile) return null
+    return candidateShares(raceFile, focusedCandidate).extent
+  }, [focusedCandidate, raceFile])
 
   // Real per-precinct tooltip — replaces the old citywide-caveat tooltip.
   useMapTooltip(mapInstance, 'election-precinct-fill', (props) => {
@@ -470,6 +491,7 @@ export default function Elections() {
                       next.delete('race')
                       next.delete('neighborhood')
                       next.delete('precinct')
+                      next.delete('candidate')
                       return next
                     },
                     { replace: true },
@@ -560,6 +582,7 @@ export default function Elections() {
               raceIsProp={raceIsProp}
               raceIsRCV={displayRace?.isRCV ?? false}
               selectedNeighborhood={selectedNeighborhood}
+              focusCandidate={activeFocusCandidate}
               fade={fade}
               fadeMs={fadeMs}
             />
@@ -661,11 +684,21 @@ export default function Elections() {
               geometry={activeGeo}
               onSelectNeighborhood={(n) => setSelectedNeighborhood(n)}
               onClose={() => setSelectedPrecinct(null)}
+              focusedCandidate={activeFocusCandidate}
+              onFocusCandidate={setFocusedCandidate}
             />
 
             {/* Map legend — decodes the active precinct fill */}
             {!isLoading && displayRace && (
-              <PrecinctLegend mode={mapMode} race={displayRace} raceIsProp={raceIsProp} candidateColors={candidateColors} />
+              <PrecinctLegend
+                mode={mapMode}
+                race={displayRace}
+                raceIsProp={raceIsProp}
+                candidateColors={candidateColors}
+                focusedCandidate={activeFocusCandidate}
+                focusExtent={focusExtent}
+                onFocusCandidate={setFocusedCandidate}
+              />
             )}
           </MapView>
         </div>

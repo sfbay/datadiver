@@ -13,6 +13,9 @@ interface PrecinctFillLayerProps {
   raceIsProp: boolean
   raceIsRCV: boolean
   selectedNeighborhood: string | null
+  /** Clean candidate name — when set, results mode paints a continuous
+   *  single-hue support ramp for this candidate instead of the leader steps. */
+  focusCandidate: string | null
   /** Era-transition multiplier, 0..1 — multiplies every feature's opacity. */
   fade: number
   /** Mapbox paint transition for the fade (0 under reduced motion). */
@@ -23,16 +26,16 @@ interface PrecinctFillLayerProps {
  *  (house rule for dense fills); hairline outline from the underlay idiom. */
 export default function PrecinctFillLayer({
   map, bundle, geometry, mode, colorMap, raceIsProp, raceIsRCV,
-  selectedNeighborhood, fade, fadeMs,
+  selectedNeighborhood, focusCandidate, fade, fadeMs,
 }: PrecinctFillLayerProps) {
   const isDarkMode = useAppStore((s) => s.isDarkMode)
 
   const geojson = useMemo((): GeoJSON.FeatureCollection | null => {
     if (!bundle || !geometry) return null
     return buildPrecinctFeatures({
-      bundle, geometry, mode, colorMap, raceIsProp, raceIsRCV, selectedNeighborhood,
+      bundle, geometry, mode, colorMap, raceIsProp, raceIsRCV, selectedNeighborhood, focusCandidate,
     })
-  }, [bundle, geometry, mode, colorMap, raceIsProp, raceIsRCV, selectedNeighborhood])
+  }, [bundle, geometry, mode, colorMap, raceIsProp, raceIsRCV, selectedNeighborhood, focusCandidate])
 
   const layers = useMemo((): mapboxgl.AnyLayer[] => [
     {

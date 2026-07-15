@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import type { PrecinctRaceFile, PrecinctTurnoutFile } from '@/types/elections'
-import { buildPrecinctFeatures } from './precinctJoin'
+import { buildPrecinctFeatures, candidateShares } from './precinctJoin'
 
 // Real committed files as fixtures — the join is only as good as its
 // behavior against the actual emitted data (paths are repo-root relative;
@@ -19,6 +19,7 @@ const base = {
   raceIsProp: false,
   raceIsRCV: false,
   selectedNeighborhood: null,
+  focusCandidate: null,
 }
 
 describe('buildPrecinctFeatures — turnout mode, 2020 legacy era', () => {
@@ -88,6 +89,55 @@ describe('buildPrecinctFeatures — results mode, 2024', () => {
     expect(inside.length).toBeGreaterThan(0)
     const pair = (fs: GeoJSON.Feature[]) => fs.map((f) => f.properties?.fillOpacity as number)
     expect(Math.max(...pair(inside))).toBeGreaterThan(Math.min(...pair(outside)))
+  })
+})
+
+describe('candidateShares — per-candidate share + extent', () => {
+  it("Trump's 2024 president share by precinct, extent within [0,1]", () => {
+    const { byLabel, extent } = candidateShares(president2024, 'DONALD J. TRUMP / JD VANCE')
+    expect(byLabel.size).toBeGreaterThan(400)
+    expect(extent).not.toBeNull()
+    expect(extent![0]).toBeGreaterThanOrEqual(0)
+    expect(extent![1]).toBeLessThanOrEqual(1)
+    expect(extent![0]).toBeLessThan(extent![1])
+  })
+})
+
+describe('buildPrecinctFeatures — candidate focus mode, 2024 president', () => {
+  const fc = buildPrecinctFeatures({
+    ...base,
+    colorMap: new Map([['DONALD J. TRUMP / JD VANCE', '#963e30']]),
+    bundle: { dateCode: '20241105', era: 'prec_2022', turnout: turnout2024, race: president2024 },
+    geometry: geo2022,
+    mode: 'results',
+    focusCandidate: 'DONALD J. TRUMP / JD VANCE',
+  })
+
+  it('produces 501 features, all painted the focus hue, with varying opacity', () => {
+    expect(fc.features).toHaveLength(501)
+    const colors = new Set(fc.features.map((f) => f.properties?.fillColor))
+    expect(colors).toEqual(new Set(['#963e30']))
+    const opacities = fc.features.map((f) => f.properties?.fillOpacity as number)
+    expect(Math.min(...opacities)).toBeLessThan(Math.max(...opacities))
+  })
+
+  it('carries a sane extent-derived tooltip with the focused candidate name', () => {
+    const f = fc.features.find((x) => x.properties?.label === '1101')
+    expect(f?.properties?.tipLeaderName).toBe('Trump')
+  })
+})
+
+describe('buildPrecinctFeatures — leader view now spreads across quartile steps (2024 president)', () => {
+  it('paints at least 3 distinct opacity values (the quartile fix, pinned)', () => {
+    const fc = buildPrecinctFeatures({
+      ...base,
+      colorMap: new Map([['KAMALA D. HARRIS / TIM WALZ', '#616a96'], ['DONALD J. TRUMP / JD VANCE', '#963e30']]),
+      bundle: { dateCode: '20241105', era: 'prec_2022', turnout: turnout2024, race: president2024 },
+      geometry: geo2022,
+      mode: 'results',
+    })
+    const distinctOpacities = new Set(fc.features.map((f) => f.properties?.fillOpacity))
+    expect(distinctOpacities.size).toBeGreaterThanOrEqual(3)
   })
 })
 

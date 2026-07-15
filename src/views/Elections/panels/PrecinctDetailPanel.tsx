@@ -14,6 +14,9 @@ interface PrecinctDetailPanelProps {
   geometry: GeoJSON.FeatureCollection | null  // era geometry — parent-nhood lookup
   onSelectNeighborhood: (nhood: string) => void
   onClose: () => void
+  /** Clean candidate name currently in FOCUS mode, or null. */
+  focusedCandidate: string | null
+  onFocusCandidate: (name: string | null) => void
 }
 
 /** Compact top-right precinct card (house DetailPanelShell pattern). Fetches
@@ -21,6 +24,7 @@ interface PrecinctDetailPanelProps {
  *  Footer discloses the suppressed-precinct residual, data-driven. */
 export default function PrecinctDetailPanel({
   label, dateCode, race, candidateColors, geometry, onSelectNeighborhood, onClose,
+  focusedCandidate, onFocusCandidate,
 }: PrecinctDetailPanelProps) {
   const { data: turnoutRaw } = usePrecinctTurnout(label ? dateCode : null)
   const turnout = turnoutRaw?.dateCode === dateCode ? turnoutRaw : null
@@ -102,27 +106,36 @@ export default function PrecinctDetailPanel({
               <p className="text-[10px] text-slate-500">Loading votes…</p>
             )}
             <div className="space-y-1.5">
-              {candidates.map((c) => (
-                <div key={c.name}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] truncate flex-1 text-ink dark:text-slate-300">
-                      {toSentenceCase(c.name)}
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-500">
-                      {c.votes.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="h-1 rounded-full bg-slate-200/50 dark:bg-white/[0.06] overflow-hidden">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${c.share * 100}%`,
-                        backgroundColor: candidateColors.get(c.name) || '#a8926a',
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
+              {candidates.map((c) => {
+                const isFocused = focusedCandidate === c.name
+                return (
+                  <button
+                    key={c.name}
+                    onClick={() => onFocusCandidate(isFocused ? null : c.name)}
+                    className={`block w-full text-left rounded-md px-1.5 py-1 -mx-1.5 cursor-pointer transition-all ${
+                      isFocused ? 'ring-1 ring-indigo-500/30 bg-indigo-500/[0.06]' : 'hover:bg-white/[0.03]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] truncate flex-1 text-ink dark:text-slate-300">
+                        {toSentenceCase(c.name)}
+                      </span>
+                      <span className="text-[10px] font-mono text-slate-500">
+                        {c.votes.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="h-1 rounded-full bg-slate-200/50 dark:bg-white/[0.06] overflow-hidden">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${c.share * 100}%`,
+                          backgroundColor: candidateColors.get(c.name) || '#a8926a',
+                        }}
+                      />
+                    </div>
+                  </button>
+                )
+              })}
             </div>
             {race.isRCV && (
               <p className="text-[9px] font-mono text-indigo-500 mt-2">First choices — Ranked Choice Voting</p>
