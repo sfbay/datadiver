@@ -394,7 +394,7 @@
           "totalVotes": 33,
           "electionDayVotes": 3,
           "vbmVotes": 30,
-          "percentage": 0.0000818864656560719,
+          "percentage": 8.18864656560719e-05,
           "isWinner": false
         }
       ]
@@ -991,7 +991,7 @@
           "isWinner": false
         },
         {
-          "name": "AHSHA SAFAÍ",
+          "name": "AHSHA SAFA\u00cd",
           "totalVotes": 11366,
           "electionDayVotes": 1661,
           "vbmVotes": 9705,
@@ -1067,7 +1067,7 @@
           "totalVotes": 4,
           "electionDayVotes": 0,
           "vbmVotes": 4,
-          "percentage": 0.0000102805035390633,
+          "percentage": 1.02805035390633e-05,
           "isWinner": false
         }
       ]
@@ -1085,7 +1085,7 @@
           "electionDayVotes": 2117,
           "vbmVotes": 14519,
           "percentage": 0.46987713599774,
-          "isWinner": false
+          "isWinner": true
         },
         {
           "name": "MARJAN PHILHOUR",
@@ -1207,7 +1207,7 @@
           "electionDayVotes": 1615,
           "vbmVotes": 10326,
           "percentage": 0.406170277900609,
-          "isWinner": true
+          "isWinner": false
         },
         {
           "name": "BILAL MAHMOOD",
@@ -1215,7 +1215,7 @@
           "electionDayVotes": 1419,
           "vbmVotes": 10301,
           "percentage": 0.398653015408687,
-          "isWinner": false
+          "isWinner": true
         },
         {
           "name": "SCOTTY JACOBS",
@@ -1386,7 +1386,7 @@
           "electionDayVotes": 883,
           "vbmVotes": 7695,
           "percentage": 0.310145346735122,
-          "isWinner": true
+          "isWinner": false
         },
         {
           "name": "CHYANNE CHEN",
@@ -1394,7 +1394,7 @@
           "electionDayVotes": 775,
           "vbmVotes": 7441,
           "percentage": 0.297056909393304,
-          "isWinner": false
+          "isWinner": true
         },
         {
           "name": "ERNEST \"EJ\" JONES",
@@ -1553,7 +1553,7 @@
       "totalBallotsCast": 300411,
       "candidates": [
         {
-          "name": "JOSÉ CISNEROS",
+          "name": "JOS\u00c9 CISNEROS",
           "totalVotes": 300411,
           "electionDayVotes": 38446,
           "vbmVotes": 261965,

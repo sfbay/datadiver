@@ -73,17 +73,24 @@ const RCV_RACE_SLUGS = [
   { slug: 'treasurer', title: 'TREASURER' },
   { slug: 'assessor', title: 'ASSESSOR-RECORDER' },
   { slug: 'publicdefender', title: 'PUBLIC DEFENDER' },
-  { slug: 'd1', title: 'BOARD OF SUPERVISORS, DISTRICT 1' },
-  { slug: 'd3', title: 'BOARD OF SUPERVISORS, DISTRICT 3' },
-  { slug: 'd5', title: 'BOARD OF SUPERVISORS, DISTRICT 5' },
-  { slug: 'd7', title: 'BOARD OF SUPERVISORS, DISTRICT 7' },
-  { slug: 'd9', title: 'BOARD OF SUPERVISORS, DISTRICT 9' },
-  { slug: 'd11', title: 'BOARD OF SUPERVISORS, DISTRICT 11' },
-  { slug: 'd2', title: 'BOARD OF SUPERVISORS, DISTRICT 2' },
-  { slug: 'd4', title: 'BOARD OF SUPERVISORS, DISTRICT 4' },
-  { slug: 'd6', title: 'BOARD OF SUPERVISORS, DISTRICT 6' },
-  { slug: 'd8', title: 'BOARD OF SUPERVISORS, DISTRICT 8' },
-  { slug: 'd10', title: 'BOARD OF SUPERVISORS, DISTRICT 10' },
+  // NOTE: title must equal the real race title verbatim (modulo contestSlug's
+  // normalization) so the primary `r.id === contestSlug(rcvRace.title)` match
+  // below succeeds directly. The bare "BOARD OF SUPERVISORS, DISTRICT N" form
+  // (missing the "MEMBER, " prefix the XML actually uses) never satisfied that
+  // check, so every district race fell through to the substring fallback —
+  // which matches the FIRST race whose title includes "BOARD OF SUPERVISORS",
+  // silently mislabeling d3/d5/d7/d9/d11's raceId + title as District 1's.
+  { slug: 'd1', title: 'MEMBER, BOARD OF SUPERVISORS, DISTRICT 1' },
+  { slug: 'd3', title: 'MEMBER, BOARD OF SUPERVISORS, DISTRICT 3' },
+  { slug: 'd5', title: 'MEMBER, BOARD OF SUPERVISORS, DISTRICT 5' },
+  { slug: 'd7', title: 'MEMBER, BOARD OF SUPERVISORS, DISTRICT 7' },
+  { slug: 'd9', title: 'MEMBER, BOARD OF SUPERVISORS, DISTRICT 9' },
+  { slug: 'd11', title: 'MEMBER, BOARD OF SUPERVISORS, DISTRICT 11' },
+  { slug: 'd2', title: 'MEMBER, BOARD OF SUPERVISORS, DISTRICT 2' },
+  { slug: 'd4', title: 'MEMBER, BOARD OF SUPERVISORS, DISTRICT 4' },
+  { slug: 'd6', title: 'MEMBER, BOARD OF SUPERVISORS, DISTRICT 6' },
+  { slug: 'd8', title: 'MEMBER, BOARD OF SUPERVISORS, DISTRICT 8' },
+  { slug: 'd10', title: 'MEMBER, BOARD OF SUPERVISORS, DISTRICT 10' },
 ]
 
 // ── Helpers ─────────────────────────────────────────────────────────
@@ -156,7 +163,9 @@ async function processElection(election: (typeof ELECTIONS)[number]): Promise<El
       const raceId = matchingRace?.id ?? contestSlug(rcvRace.title)
 
       const rcvData = parseRCVRounds(html, raceId, raceTitle)
-      writeJSON(join(rcvDir, `${rcvRace.slug}.json`), rcvData)
+      // file name must equal the id the frontend fetches (useRCVRounds
+      // builds /rcv/${activeRace.id}.json); the URL slug is a remote-only concern.
+      writeJSON(join(rcvDir, `${raceId}.json`), rcvData)
       rcvCount++
       console.log(`  → RCV ${rcvRace.slug}: ${rcvData.totalRounds} rounds, winner: ${rcvData.winner}`)
 

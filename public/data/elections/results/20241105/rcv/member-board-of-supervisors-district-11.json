@@ -1,126 +1,126 @@
 {
-  "raceId": "member-board-of-supervisors-district-1",
-  "title": "MEMBER, BOARD OF SUPERVISORS, DISTRICT 1",
+  "raceId": "member-board-of-supervisors-district-11",
+  "title": "MEMBER, BOARD OF SUPERVISORS, DISTRICT 11",
   "totalRounds": 6,
   "rounds": [
     {
       "round": 1,
       "candidates": [
         {
-          "name": "JACKIE FIELDER",
-          "votes": 13844,
-          "percentage": 0.423,
-          "transfer": 61,
+          "name": "CHYANNE CHEN",
+          "votes": 8249,
+          "percentage": 0.2954,
+          "transfer": 48,
           "isEliminated": false,
           "isLeader": true
         },
         {
-          "name": "TREVOR CHANDLER",
-          "votes": 9042,
-          "percentage": 0.2763,
-          "transfer": 136,
+          "name": "MICHAEL LAI",
+          "votes": 8675,
+          "percentage": 0.3106,
+          "transfer": 106,
           "isEliminated": false,
           "isLeader": false
         },
         {
-          "name": "ROBERTO HERNANDEZ",
-          "votes": 6606,
-          "percentage": 0.2018,
-          "transfer": 47,
+          "name": "ERNEST \"EJ\" JONES",
+          "votes": 5441,
+          "percentage": 0.1948,
+          "transfer": 82,
           "isEliminated": false,
           "isLeader": false
         },
         {
-          "name": "STEPHEN JON TORRES",
-          "votes": 1140,
-          "percentage": 0.0348,
-          "transfer": 36,
+          "name": "OSCAR FLORES",
+          "votes": 2896,
+          "percentage": 0.1037,
+          "transfer": 101,
           "isEliminated": false,
           "isLeader": false
         },
         {
-          "name": "JAIME GUTIERREZ",
-          "votes": 931,
-          "percentage": 0.0284,
+          "name": "ADLAH CHISTI",
+          "votes": 1434,
+          "percentage": 0.0513,
           "transfer": 53,
           "isEliminated": false,
           "isLeader": false
         },
         {
-          "name": "JULIAN BERMUDEZ",
-          "votes": 600,
-          "percentage": 0.0183,
-          "transfer": 90,
+          "name": "JOSE MORALES",
+          "votes": 629,
+          "percentage": 0.0225,
+          "transfer": 73,
           "isEliminated": false,
           "isLeader": false
         },
         {
-          "name": "H. BROWN",
-          "votes": 568,
-          "percentage": 0.0174,
-          "transfer": -568,
+          "name": "ROGER K. MARENCO",
+          "votes": 604,
+          "percentage": 0.0216,
+          "transfer": -604,
           "isEliminated": true,
           "isLeader": false
         }
       ],
-      "continuingTotal": 32731,
+      "continuingTotal": 27928,
       "exhausted": 0,
-      "overvotes": 140,
-      "blanks": 4220
+      "overvotes": 160,
+      "blanks": 4186
     },
     {
       "round": 2,
       "candidates": [
         {
-          "name": "JACKIE FIELDER",
-          "votes": 13905,
-          "percentage": 0.4267,
-          "transfer": 59,
+          "name": "CHYANNE CHEN",
+          "votes": 8297,
+          "percentage": 0.2986,
+          "transfer": 58,
           "isEliminated": false,
           "isLeader": true
         },
         {
-          "name": "TREVOR CHANDLER",
-          "votes": 9178,
-          "percentage": 0.2817,
-          "transfer": 135,
-          "isEliminated": false,
-          "isLeader": false
-        },
-        {
-          "name": "ROBERTO HERNANDEZ",
-          "votes": 6653,
-          "percentage": 0.2042,
-          "transfer": 91,
-          "isEliminated": false,
-          "isLeader": false
-        },
-        {
-          "name": "STEPHEN JON TORRES",
-          "votes": 1176,
-          "percentage": 0.0361,
+          "name": "MICHAEL LAI",
+          "votes": 8781,
+          "percentage": 0.316,
           "transfer": 98,
           "isEliminated": false,
           "isLeader": false
         },
         {
-          "name": "JAIME GUTIERREZ",
-          "votes": 984,
-          "percentage": 0.0302,
-          "transfer": 96,
+          "name": "ERNEST \"EJ\" JONES",
+          "votes": 5523,
+          "percentage": 0.1988,
+          "transfer": 105,
           "isEliminated": false,
           "isLeader": false
         },
         {
-          "name": "JULIAN BERMUDEZ",
-          "votes": 690,
-          "percentage": 0.0212,
-          "transfer": -690,
+          "name": "OSCAR FLORES",
+          "votes": 2997,
+          "percentage": 0.1079,
+          "transfer": 201,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "ADLAH CHISTI",
+          "votes": 1487,
+          "percentage": 0.0535,
+          "transfer": 31,
+          "isEliminated": false,
+          "isLeader": false
+        },
+        {
+          "name": "JOSE MORALES",
+          "votes": 702,
+          "percentage": 0.0253,
+          "transfer": -702,
           "isEliminated": true,
           "isLeader": false
         },
         {
-          "name": "H. BROWN",
+          "name": "ROGER K. MARENCO",
           "votes": 0,
           "percentage": 0,
           "transfer": 0,
@@ -128,56 +128,56 @@
           "isLeader": false
         }
       ],
-      "continuingTotal": 32586,
-      "exhausted": 142,
-      "overvotes": 143,
-      "blanks": 4220
+      "continuingTotal": 27787,
+      "exhausted": 139,
+      "overvotes": 162,
+      "blanks": 4186
     },
     {
       "round": 3,
       "candidates": [
         {
-          "name": "JACKIE FIELDER",
-          "votes": 13964,
-          "percentage": 0.4313,
-          "transfer": 162,
+          "name": "CHYANNE CHEN",
+          "votes": 8355,
+          "percentage": 0.303,
+          "transfer": 381,
           "isEliminated": false,
           "isLeader": true
         },
         {
-          "name": "TREVOR CHANDLER",
-          "votes": 9313,
-          "percentage": 0.2877,
-          "transfer": 176,
+          "name": "MICHAEL LAI",
+          "votes": 8879,
+          "percentage": 0.322,
+          "transfer": 286,
           "isEliminated": false,
           "isLeader": false
         },
         {
-          "name": "ROBERTO HERNANDEZ",
-          "votes": 6744,
-          "percentage": 0.2083,
-          "transfer": 310,
+          "name": "ERNEST \"EJ\" JONES",
+          "votes": 5628,
+          "percentage": 0.2041,
+          "transfer": 327,
           "isEliminated": false,
           "isLeader": false
         },
         {
-          "name": "STEPHEN JON TORRES",
-          "votes": 1274,
-          "percentage": 0.0394,
-          "transfer": 125,
+          "name": "OSCAR FLORES",
+          "votes": 3198,
+          "percentage": 0.116,
+          "transfer": 218,
           "isEliminated": false,
           "isLeader": false
         },
         {
-          "name": "JAIME GUTIERREZ",
-          "votes": 1080,
-          "percentage": 0.0334,
-          "transfer": -1080,
+          "name": "ADLAH CHISTI",
+          "votes": 1518,
+          "percentage": 0.055,
+          "transfer": -1518,
           "isEliminated": true,
           "isLeader": false
         },
         {
-          "name": "JULIAN BERMUDEZ",
+          "name": "JOSE MORALES",
           "votes": 0,
           "percentage": 0,
           "transfer": 0,
@@ -185,7 +185,7 @@
           "isLeader": false
         },
         {
-          "name": "H. BROWN",
+          "name": "ROGER K. MARENCO",
           "votes": 0,
           "percentage": 0,
           "transfer": 0,
@@ -193,48 +193,48 @@
           "isLeader": false
         }
       ],
-      "continuingTotal": 32375,
-      "exhausted": 352,
-      "overvotes": 144,
-      "blanks": 4220
+      "continuingTotal": 27578,
+      "exhausted": 344,
+      "overvotes": 166,
+      "blanks": 4186
     },
     {
       "round": 4,
       "candidates": [
         {
-          "name": "JACKIE FIELDER",
-          "votes": 14126,
-          "percentage": 0.4405,
-          "transfer": 577,
+          "name": "CHYANNE CHEN",
+          "votes": 8736,
+          "percentage": 0.3203,
+          "transfer": 426,
           "isEliminated": false,
           "isLeader": true
         },
         {
-          "name": "TREVOR CHANDLER",
-          "votes": 9489,
-          "percentage": 0.2959,
-          "transfer": 241,
+          "name": "MICHAEL LAI",
+          "votes": 9165,
+          "percentage": 0.3361,
+          "transfer": 1070,
           "isEliminated": false,
           "isLeader": false
         },
         {
-          "name": "ROBERTO HERNANDEZ",
-          "votes": 7054,
-          "percentage": 0.22,
-          "transfer": 315,
+          "name": "ERNEST \"EJ\" JONES",
+          "votes": 5955,
+          "percentage": 0.2184,
+          "transfer": 598,
           "isEliminated": false,
           "isLeader": false
         },
         {
-          "name": "STEPHEN JON TORRES",
-          "votes": 1399,
-          "percentage": 0.0436,
-          "transfer": -1399,
+          "name": "OSCAR FLORES",
+          "votes": 3416,
+          "percentage": 0.1253,
+          "transfer": -3416,
           "isEliminated": true,
           "isLeader": false
         },
         {
-          "name": "JAIME GUTIERREZ",
+          "name": "ADLAH CHISTI",
           "votes": 0,
           "percentage": 0,
           "transfer": 0,
@@ -242,7 +242,7 @@
           "isLeader": false
         },
         {
-          "name": "JULIAN BERMUDEZ",
+          "name": "JOSE MORALES",
           "votes": 0,
           "percentage": 0,
           "transfer": 0,
@@ -250,7 +250,7 @@
           "isLeader": false
         },
         {
-          "name": "H. BROWN",
+          "name": "ROGER K. MARENCO",
           "votes": 0,
           "percentage": 0,
           "transfer": 0,
@@ -258,40 +258,40 @@
           "isLeader": false
         }
       ],
-      "continuingTotal": 32068,
-      "exhausted": 650,
-      "overvotes": 153,
-      "blanks": 4220
+      "continuingTotal": 27272,
+      "exhausted": 644,
+      "overvotes": 172,
+      "blanks": 4186
     },
     {
       "round": 5,
       "candidates": [
         {
-          "name": "JACKIE FIELDER",
-          "votes": 14703,
-          "percentage": 0.4623,
-          "transfer": 2843,
+          "name": "CHYANNE CHEN",
+          "votes": 9162,
+          "percentage": 0.3531,
+          "transfer": 2839,
           "isEliminated": false,
           "isLeader": true
         },
         {
-          "name": "TREVOR CHANDLER",
-          "votes": 9730,
-          "percentage": 0.306,
-          "transfer": 2133,
+          "name": "MICHAEL LAI",
+          "votes": 10235,
+          "percentage": 0.3944,
+          "transfer": 1568,
           "isEliminated": false,
           "isLeader": false
         },
         {
-          "name": "ROBERTO HERNANDEZ",
-          "votes": 7369,
-          "percentage": 0.2317,
-          "transfer": -7369,
+          "name": "ERNEST \"EJ\" JONES",
+          "votes": 6553,
+          "percentage": 0.2525,
+          "transfer": -6553,
           "isEliminated": true,
           "isLeader": false
         },
         {
-          "name": "STEPHEN JON TORRES",
+          "name": "OSCAR FLORES",
           "votes": 0,
           "percentage": 0,
           "transfer": 0,
@@ -299,7 +299,7 @@
           "isLeader": false
         },
         {
-          "name": "JAIME GUTIERREZ",
+          "name": "ADLAH CHISTI",
           "votes": 0,
           "percentage": 0,
           "transfer": 0,
@@ -307,7 +307,7 @@
           "isLeader": false
         },
         {
-          "name": "JULIAN BERMUDEZ",
+          "name": "JOSE MORALES",
           "votes": 0,
           "percentage": 0,
           "transfer": 0,
@@ -315,7 +315,7 @@
           "isLeader": false
         },
         {
-          "name": "H. BROWN",
+          "name": "ROGER K. MARENCO",
           "votes": 0,
           "percentage": 0,
           "transfer": 0,
@@ -323,32 +323,32 @@
           "isLeader": false
         }
       ],
-      "continuingTotal": 31802,
-      "exhausted": 914,
-      "overvotes": 155,
-      "blanks": 4220
+      "continuingTotal": 25950,
+      "exhausted": 1949,
+      "overvotes": 189,
+      "blanks": 4186
     },
     {
       "round": 6,
       "candidates": [
         {
-          "name": "JACKIE FIELDER",
-          "votes": 17546,
-          "percentage": 0.5966,
+          "name": "CHYANNE CHEN",
+          "votes": 12001,
+          "percentage": 0.5042,
           "transfer": 0,
           "isEliminated": false,
           "isLeader": true
         },
         {
-          "name": "TREVOR CHANDLER",
-          "votes": 11863,
-          "percentage": 0.4034,
+          "name": "MICHAEL LAI",
+          "votes": 11803,
+          "percentage": 0.4958,
           "transfer": 0,
           "isEliminated": false,
           "isLeader": false
         },
         {
-          "name": "ROBERTO HERNANDEZ",
+          "name": "ERNEST \"EJ\" JONES",
           "votes": 0,
           "percentage": 0,
           "transfer": 0,
@@ -356,7 +356,7 @@
           "isLeader": false
         },
         {
-          "name": "STEPHEN JON TORRES",
+          "name": "OSCAR FLORES",
           "votes": 0,
           "percentage": 0,
           "transfer": 0,
@@ -364,7 +364,7 @@
           "isLeader": false
         },
         {
-          "name": "JAIME GUTIERREZ",
+          "name": "ADLAH CHISTI",
           "votes": 0,
           "percentage": 0,
           "transfer": 0,
@@ -372,7 +372,7 @@
           "isLeader": false
         },
         {
-          "name": "JULIAN BERMUDEZ",
+          "name": "JOSE MORALES",
           "votes": 0,
           "percentage": 0,
           "transfer": 0,
@@ -380,7 +380,7 @@
           "isLeader": false
         },
         {
-          "name": "H. BROWN",
+          "name": "ROGER K. MARENCO",
           "votes": 0,
           "percentage": 0,
           "transfer": 0,
@@ -388,11 +388,11 @@
           "isLeader": false
         }
       ],
-      "continuingTotal": 29409,
-      "exhausted": 3285,
-      "overvotes": 177,
-      "blanks": 4220
+      "continuingTotal": 23804,
+      "exhausted": 4080,
+      "overvotes": 204,
+      "blanks": 4186
     }
   ],
-  "winner": "JACKIE FIELDER"
+  "winner": "CHYANNE CHEN"
 }
