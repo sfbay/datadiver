@@ -75,11 +75,14 @@ const RCV_RACE_SLUGS = [
   { slug: 'publicdefender', title: 'PUBLIC DEFENDER' },
   // NOTE: title must equal the real race title verbatim (modulo contestSlug's
   // normalization) so the primary `r.id === contestSlug(rcvRace.title)` match
-  // below succeeds directly. The bare "BOARD OF SUPERVISORS, DISTRICT N" form
-  // (missing the "MEMBER, " prefix the XML actually uses) never satisfied that
-  // check, so every district race fell through to the substring fallback —
-  // which matches the FIRST race whose title includes "BOARD OF SUPERVISORS",
-  // silently mislabeling d3/d5/d7/d9/d11's raceId + title as District 1's.
+  // below succeeds directly. The matcher tries this exact-id pass across ALL
+  // races FIRST, in full, before ever considering the substring fallback — so
+  // an earlier unrelated race (e.g. "STATE ASSEMBLY MEMBER, DISTRICT 12")
+  // can't win on a shared word like "MEMBER" just because Array.find evaluates
+  // predicates in element order. The fallback (used only if no exact id
+  // matches any race) also compares the FULL uppercased title, not
+  // `title.split(',')[0]`, so a bare word like "MEMBER" can never match by
+  // itself.
   { slug: 'd1', title: 'MEMBER, BOARD OF SUPERVISORS, DISTRICT 1' },
   { slug: 'd3', title: 'MEMBER, BOARD OF SUPERVISORS, DISTRICT 3' },
   { slug: 'd5', title: 'MEMBER, BOARD OF SUPERVISORS, DISTRICT 5' },
@@ -155,12 +158,18 @@ async function processElection(election: (typeof ELECTIONS)[number]): Promise<El
     if (!html) continue
 
     try {
-      // Find matching race in parsed results to get proper title
-      const matchingRace = results.races.find(
-        (r) => r.id === contestSlug(rcvRace.title) || r.title.toUpperCase().includes(rcvRace.title.split(',')[0]),
-      )
+      // Find matching race in parsed results to get proper title.
+      // Primary pass: exact id match across ALL races. Only if that pass
+      // finds nothing do we fall back to a full-title substring match — the
+      // fallback never runs a race at a time interleaved with the primary
+      // check, so an earlier race can't "win" on the primary check failing
+      // for it individually.
+      const wanted = contestSlug(rcvRace.title)
+      const matchingRace =
+        results.races.find((r) => r.id === wanted) ??
+        results.races.find((r) => r.title.toUpperCase().includes(rcvRace.title.toUpperCase()))
       const raceTitle = matchingRace?.title ?? rcvRace.title
-      const raceId = matchingRace?.id ?? contestSlug(rcvRace.title)
+      const raceId = matchingRace?.id ?? wanted
 
       const rcvData = parseRCVRounds(html, raceId, raceTitle)
       // file name must equal the id the frontend fetches (useRCVRounds

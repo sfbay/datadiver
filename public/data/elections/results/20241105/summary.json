@@ -394,7 +394,7 @@
           "totalVotes": 33,
           "electionDayVotes": 3,
           "vbmVotes": 30,
-          "percentage": 8.18864656560719e-05,
+          "percentage": 0.0000818864656560719,
           "isWinner": false
         }
       ]
@@ -991,7 +991,7 @@
           "isWinner": false
         },
         {
-          "name": "AHSHA SAFA\u00cd",
+          "name": "AHSHA SAFAÍ",
           "totalVotes": 11366,
           "electionDayVotes": 1661,
           "vbmVotes": 9705,
@@ -1067,7 +1067,7 @@
           "totalVotes": 4,
           "electionDayVotes": 0,
           "vbmVotes": 4,
-          "percentage": 1.02805035390633e-05,
+          "percentage": 0.0000102805035390633,
           "isWinner": false
         }
       ]
@@ -1553,7 +1553,7 @@
       "totalBallotsCast": 300411,
       "candidates": [
         {
-          "name": "JOS\u00c9 CISNEROS",
+          "name": "JOSÉ CISNEROS",
           "totalVotes": 300411,
           "electionDayVotes": 38446,
           "vbmVotes": 261965,
