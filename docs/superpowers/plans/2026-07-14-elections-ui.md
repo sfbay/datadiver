@@ -2522,6 +2522,83 @@ git add src/views/Elections/panels/PrecinctDetailPanel.tsx src/components/ui/Car
 git commit -m "feat(elections): geography-first precinct card with turnout hero; hide period-compare"
 ```
 
+### Task 14: Focused-candidate row prominence, Last-48-aligned (approved live-QA follow-up #4)
+
+Jesse: the focused row's indigo ring is too faint, and set a STANDING rule — align with
+Last 48 styles/functionality on disconnects (Last 48 = the freshest map-viz build). The
+Last 48 selected-row idiom (FlowRail.tsx ~:236) is a pigment-tinted bg + pigment ring,
+with "dot is the scan cue, text is the confirmation" for emphasis. Applied here: the
+focused row wears the CANDIDATE'S OWN pigment (inset left bar + tint + ring, all inline
+style — candidate colors are runtime values Tailwind can't see), a semibold name, and a
+tiny `ON MAP` confirmation tag in their color. Hover state goes theme-aware per Last 48.
+
+**Files:**
+- Modify: `src/views/Elections/panels/PrecinctDetailPanel.tsx` (candidate row button only)
+
+- [ ] **Step 1: Restyle the candidate row button**
+
+Inside the `candidates.map`, the row becomes (focus semantics — onClick toggle, key — unchanged):
+
+```tsx
+{candidates.map((c) => {
+  const isFocused = focusedCandidate === c.name
+  const hex = candidateColors.get(c.name) || '#a8926a'
+  return (
+    <button
+      key={c.name}
+      onClick={() => onFocusCandidate(isFocused ? null : c.name)}
+      style={isFocused ? {
+        backgroundColor: `${hex}14`,
+        boxShadow: `inset 3px 0 0 ${hex}, 0 0 0 1px ${hex}59`,
+      } : undefined}
+      className={`block w-full text-left rounded-lg px-1.5 py-1 -mx-1.5 cursor-pointer transition-all ${
+        isFocused ? '' : 'hover:bg-paper-100/50 dark:hover:bg-white/[0.04]'
+      }`}
+    >
+      <div className="flex items-baseline gap-2">
+        <span className={`text-[13px] truncate flex-1 text-ink dark:text-slate-200 ${isFocused ? 'font-semibold' : 'font-medium'}`}>
+          {toSentenceCase(c.name)}
+        </span>
+        {isFocused && (
+          <span
+            className="text-[8px] font-mono uppercase tracking-[0.15em] flex-shrink-0"
+            style={{ color: hex }}
+          >
+            on map
+          </span>
+        )}
+        <span className="text-[13px] font-mono tabular-nums text-ink dark:text-slate-300">
+          {(c.share * 100).toFixed(1)}%
+        </span>
+        <span className="text-[10px] font-mono tabular-nums text-slate-500 w-12 text-right">
+          {c.votes.toLocaleString()}
+        </span>
+      </div>
+      <div className="h-1.5 rounded-full bg-slate-200/50 dark:bg-white/[0.06] overflow-hidden">
+        <div
+          className="h-full rounded-full"
+          style={{ width: `${c.share * 100}%`, backgroundColor: hex }}
+        />
+      </div>
+    </button>
+  )
+})}
+```
+
+(Hex-alpha suffixes: `14` ≈ 8% tint, `59` ≈ 35% ring — the Last 48 10%/30% register,
+nudged up because this card is denser than the rail. All candidate palette values are
+6-digit hex, so suffixing is safe.)
+
+- [ ] **Step 2: Verify + commit**
+
+`npx vitest run` (251 green) + `npx tsc -b --force` clean. Visual: focused row shows a
+3px left bar + tint + ring in the candidate's color with the `ON MAP` tag, in both themes.
+
+```bash
+git add src/views/Elections/panels/PrecinctDetailPanel.tsx
+git commit -m "feat(elections): focused candidate row wears its own pigment (Last 48 idiom)"
+```
+
 ## Self-review (done at plan-writing time)
 
 - **Spec coverage:** spec Task 1 → plan Task 1; spec Task 2 → plan Task 2; spec Task 3 → plan Tasks 3–5 (paint, join, components split for reviewability); spec Task 4 → plan Tasks 6–7; spec Task 5 → plan Task 8; spec Task 6 → plan Task 9; spec Testing section → Tasks 2/3/4 test files (leaderOf edge cases ✓, step boundaries ✓, propFill midpoint ✓, isProposition ✓, consolidated-label expansion ✓, unmapped-zero-features ✓, six-election name gate ✓) + Task 10 full suite. The spec's "every 2022-era geometry id receives paint for 20241105" test was AMENDED to "every 2024 turnout row paints exactly one feature (501)" — 13 geometry ids verifiably receive no data in the real files (fact 5); the original criterion is unsatisfiable as written.
