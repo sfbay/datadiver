@@ -57,7 +57,7 @@ export interface ComplianceData {
   exclusions: ComplianceExclusion[]
   /** Total legal notice spend (excluded from denominator) */
   legalNoticeTotal: number
-  /** P-card spend (included in denominator, flagged as outlet-unknown) */
+  /** P-card spend across all layers — excluded from the discretionary denominator; outlet is untraceable */
   pcardTotal: number
   /** Total record count backing this computation */
   recordCount: number
@@ -298,6 +298,15 @@ export function useComplianceData(adData: AdvertisingData, fiscalYear?: FiscalYe
     [adData.vendors]
   )
 
+  // P-card spend lives on layer 'pcard' — the tagged filter above structurally
+  // zeroed the old computation, which made the UI's P-card caveat unreachable.
+  const pcardTotal = useMemo(
+    () => adData.vendors
+      .filter((v) => v.layer === 'pcard')
+      .reduce((s, v) => s + (parseFloat(v.total_paid) || 0), 0),
+    [adData.vendors]
+  )
+
   const singleFY = useMemo(() => computeFromVendors(taggedVendors), [taggedVendors])
 
   // Per-department cards (also tagged-only)
@@ -344,6 +353,7 @@ export function useComplianceData(adData: AdvertisingData, fiscalYear?: FiscalYe
 
   return {
     ...singleFY,
+    pcardTotal,
     departmentCards,
     trend,
     trendLoading,
