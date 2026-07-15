@@ -213,7 +213,7 @@ export function useTrendBaseline(
           const stdDev = Math.sqrt(variance)
           if (stdDev > 0) {
             // Normalize current count to monthly rate for comparison
-            const daysInRange = (new Date(dateRange.end + 'T12:00:00').getTime() - new Date(dateRange.start + 'T12:00:00').getTime()) / 86_400_000
+            const daysInRange = (new Date(effectiveEnd + 'T12:00:00').getTime() - new Date(dateRange.start + 'T12:00:00').getTime()) / 86_400_000
             const monthlyRate = currentCount * (30 / Math.max(daysInRange, 1))
             zScore = (monthlyRate - mean) / stdDev
           }
@@ -231,7 +231,7 @@ export function useTrendBaseline(
 
         return { neighborhood: row.neighborhood, currentCount, priorYearCount, yoyPct, zScore, metrics: metricStats }
       })
-  }, [nhCurrent, nhPriorYear, baselineRows, hasNh, metrics, dateRange.start, dateRange.end])
+  }, [nhCurrent, nhPriorYear, baselineRows, hasNh, metrics, dateRange.start, effectiveEnd])
 
   const neighborhoodMap = useMemo(() => {
     const map = new Map<string, NeighborhoodTrendStats>()
