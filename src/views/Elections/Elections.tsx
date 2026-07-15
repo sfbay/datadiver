@@ -28,8 +28,8 @@ import { useElectionTimeline } from '@/hooks/useElectionTimeline'
 import BallotMeasureExplorer from '@/components/charts/BallotMeasureExplorer'
 import { useBallotPropositions } from '@/hooks/useElectionResults'
 import { toSentenceCase } from '@/utils/format'
-import { displayNhood } from '@/utils/electionData'
-import { isProposition } from './map/precinctPaint'
+import { displayNhood, leaderDisplayName, nhoodKey } from '@/utils/electionData'
+import { isProposition, leaderOf } from './map/precinctPaint'
 import type { PaintBundle } from './map/precinctJoin'
 import { useEraFadedBundle } from './map/useEraFadedBundle'
 import PrecinctFillLayer from './map/PrecinctFillLayer'
@@ -333,8 +333,77 @@ export default function Elections() {
       })
     }
 
+    // ── Selection-aware overrides (comparison-framed, citywide = reference) ──
+    const nfile = neighborhoodResults?.dateCode === displayDateCode ? neighborhoodResults : null
+
+    if (selectedPrecinct && paintBundle) {
+      const row = paintBundle.turnout.precincts[selectedPrecinct]
+      if (row) {
+        const allTurnouts = Object.values(paintBundle.turnout.precincts)
+          .filter((p) => !p.unmapped && p.registered > 0)
+          .map((p) => p.turnout)
+        cards[1] = {
+          ...cards[1],
+          label: `Turnout — precinct ${selectedPrecinct}`,
+          value: `${(row.turnout * 100).toFixed(1)}%`,
+          color: turnoutColor(row.turnout),
+          subtitle: `citywide ${(r.registration.turnoutPct * 100).toFixed(1)}%`,
+          positionScale: {
+            value: row.turnout,
+            range: allTurnouts.length > 0
+              ? [Math.min(...allTurnouts), Math.max(...allTurnouts)]
+              : [row.turnout, row.turnout],
+            reference: r.registration.turnoutPct,
+          },
+        }
+        const raceRow = paintBundle.race?.precincts[selectedPrecinct]
+        const leader = raceRow ? leaderOf(raceRow.votes) : null
+        if (leader) {
+          cards[0] = {
+            ...cards[0],
+            label: 'Leads this precinct',
+            value: leaderDisplayName(leader.name),
+            color: candidateColors.get(leader.name) || ACCENT,
+            subtitle: `${(leader.share * 100).toFixed(1)}% here`,
+          }
+        }
+      }
+    } else if (selectedNeighborhood && nfile) {
+      const key = Object.keys(nfile.neighborhoods).find((k) => nhoodKey(k) === nhoodKey(selectedNeighborhood))
+      const nrow = key ? nfile.neighborhoods[key] : null
+      if (nrow) {
+        const allTurnouts = Object.values(nfile.neighborhoods)
+          .filter((n) => n.registered > 0)
+          .map((n) => n.turnout)
+        cards[1] = {
+          ...cards[1],
+          label: `Turnout — ${displayNhood(key!, nfile.scheme)}`,
+          value: `${(nrow.turnout * 100).toFixed(1)}%`,
+          color: turnoutColor(nrow.turnout),
+          subtitle: `${nrow.ballots.toLocaleString()} ballots · citywide ${(r.registration.turnoutPct * 100).toFixed(1)}%`,
+          positionScale: {
+            value: nrow.turnout,
+            range: allTurnouts.length > 0
+              ? [Math.min(...allTurnouts), Math.max(...allTurnouts)]
+              : [nrow.turnout, nrow.turnout],
+            reference: r.registration.turnoutPct,
+          },
+        }
+      }
+    }
+
     return cards
-  }, [displayResults, activeRace, candidateColors, rcvData])
+  }, [
+    displayResults,
+    activeRace,
+    candidateColors,
+    rcvData,
+    selectedPrecinct,
+    selectedNeighborhood,
+    paintBundle,
+    neighborhoodResults,
+    displayDateCode,
+  ])
 
   // ── Filtered races for sidebar ────────────────────────────────────
   const filteredRaces = useMemo(() => {
