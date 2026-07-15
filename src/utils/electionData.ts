@@ -48,7 +48,10 @@ export function sharePhrase(share: number): string {
 export function leaderDisplayName(cleanName: string): string {
   if (isYesKey(cleanName)) return 'Yes'
   if (isNoKey(cleanName)) return 'No'
-  const firstTicket = cleanName.split('/')[0].trim()
+  // SF joins presidential tickets two ways: " / " in the precinct SOV files,
+  // " AND " in summary.json. Take the top of the ticket either way; \b guards
+  // keep surnames like ANDERSON intact.
+  const firstTicket = cleanName.split(/\s*\/\s*|\s+AND\s+/i)[0].trim()
   const last = firstTicket.split(' ').pop() ?? firstTicket
   return toSentenceCase(last)
 }

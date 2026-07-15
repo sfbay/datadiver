@@ -44,6 +44,14 @@ type MapMode = 'results' | 'turnout' | 'margin'
 type SidebarTab = 'races' | 'neighborhoods' | 'measures'
 type RaceFilter = 'all' | 'federal' | 'state' | 'local' | 'measure'
 
+const FILTER_LABELS: Record<RaceFilter, string> = {
+  all: 'All',
+  local: 'Local',
+  federal: 'Federal',
+  state: 'State',
+  measure: 'Propositions',
+}
+
 export default function Elections() {
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedElection = searchParams.get('election') || null
@@ -308,7 +316,7 @@ export default function Elections() {
         id: 'winner',
         label: 'Winner',
         shortLabel: 'Winner',
-        value: winner ? toSentenceCase(winner.name.split(' ').pop() || winner.name) : 'TBD',
+        value: winner ? leaderDisplayName(winner.name) : 'TBD',
         color: winner ? candidateColors.get(winner.name) || ACCENT : ACCENT,
         defaultExpanded: true,
         subtitle: winner ? `${(winner.percentage * 100).toFixed(1)}%` : undefined,
@@ -707,7 +715,7 @@ export default function Elections() {
         <aside className="w-80 flex-shrink-0 border-l border-slate-200/50 dark:border-white/[0.04] overflow-y-auto bg-white/50 dark:bg-slate-900/30 backdrop-blur-xl flex flex-col">
           {/* Tab bar */}
           <div className="flex border-b border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
-            {([['races', 'Races'], ['neighborhoods', 'Neighborhoods'], ['measures', 'Measures']] as const).map(([key, label]) => (
+            {([['races', 'Races'], ['neighborhoods', 'Neighborhoods'], ['measures', 'Props']] as const).map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setSidebarTab(key)}
@@ -737,7 +745,7 @@ export default function Elections() {
                           : 'text-slate-400 hover:text-slate-300 border border-transparent hover:border-slate-700'
                       }`}
                     >
-                      {filter === 'all' ? 'All' : filter.charAt(0).toUpperCase() + filter.slice(1)}
+                      {FILTER_LABELS[filter]}
                       {raceCounts[filter] ? ` (${raceCounts[filter]})` : ''}
                     </button>
                   ))}

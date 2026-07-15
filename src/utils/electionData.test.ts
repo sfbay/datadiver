@@ -56,6 +56,13 @@ describe('leaderDisplayName', () => {
   it('single-name candidates keep the surname', () => {
     expect(leaderDisplayName('DANIEL LURIE')).toBe('Lurie')
   })
+  it('handles summary.json AND-joined tickets (the Winner-card regression)', () => {
+    expect(leaderDisplayName('JOSEPH R. BIDEN AND KAMALA D. HARRIS')).toBe('Biden')
+    expect(leaderDisplayName('DONALD J. TRUMP AND MICHAEL R. PENCE')).toBe('Trump')
+  })
+  it('does not split surnames containing AND as a substring', () => {
+    expect(leaderDisplayName('MARIA ANDERSON')).toBe('Anderson')
+  })
 })
 
 describe('displayNhood', () => {
