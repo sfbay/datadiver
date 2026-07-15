@@ -2342,6 +2342,77 @@ git add -A src/views/Elections src/views/Elections/map
 git commit -m "feat(elections): race-relative decisiveness steps + click-a-candidate focus ramp"
 ```
 
+### Task 12: SF-vernacular labels + presidential-ticket surname fix (approved live-QA follow-up #2)
+
+Jesse's live-QA feedback: (a) "nobody says measure in SF" — the sidebar tab reads `PROPS`
+and the race-filter pill spells out `Propositions`; (b) the Winner card for presidential
+races shows the RUNNING MATE's surname ("Harris" for Biden/Harris 2020) because
+`summary.json` joins tickets with ` AND ` while the precinct SOV files use ` / ` — the
+display helper only knew the slash form, and the card didn't use the helper at all.
+
+**Files:**
+- Modify: `src/utils/electionData.ts` (+test), `src/views/Elections/Elections.tsx`
+
+- [ ] **Step 1: Harden `leaderDisplayName` (TDD)**
+
+Add to `src/utils/electionData.test.ts` in the `leaderDisplayName` describe:
+
+```ts
+it('handles summary.json AND-joined tickets (the Winner-card regression)', () => {
+  expect(leaderDisplayName('JOSEPH R. BIDEN AND KAMALA D. HARRIS')).toBe('Biden')
+  expect(leaderDisplayName('DONALD J. TRUMP AND MICHAEL R. PENCE')).toBe('Trump')
+})
+it('does not split surnames containing AND as a substring', () => {
+  expect(leaderDisplayName('MARIA ANDERSON')).toBe('Anderson')
+})
+```
+
+Run → RED. Then in `src/utils/electionData.ts` change the first-ticket extraction:
+
+```ts
+export function leaderDisplayName(cleanName: string): string {
+  if (isYesKey(cleanName)) return 'Yes'
+  if (isNoKey(cleanName)) return 'No'
+  // SF joins presidential tickets two ways: " / " in the precinct SOV files,
+  // " AND " in summary.json. Take the top of the ticket either way; \b guards
+  // keep surnames like ANDERSON intact.
+  const firstTicket = cleanName.split(/\s*\/\s*|\s+AND\s+/i)[0].trim()
+  const last = firstTicket.split(' ').pop() ?? firstTicket
+  return toSentenceCase(last)
+}
+```
+
+Run → GREEN (all prior leaderDisplayName tests must stay green unchanged).
+
+- [ ] **Step 2: Route the Winner card through the helper**
+
+In `Elections.tsx` `cardDefs`, the base Winner card value is currently
+`toSentenceCase(winner.name.split(' ').pop() || winner.name)` — replace with
+`leaderDisplayName(winner.name)` (already imported since Task 9).
+
+- [ ] **Step 3: Labels**
+
+In `Elections.tsx`:
+- Tab bar: `['measures', 'Measures']` → `['measures', 'Props']` (the `SidebarTab` KEY stays `'measures'` — state/logic untouched).
+- Filter pills: replace the generic `filter.charAt(0).toUpperCase() + filter.slice(1)` label with a lookup so `measure` renders as `Propositions`:
+
+```ts
+const FILTER_LABELS: Record<RaceFilter, string> = {
+  all: 'All', local: 'Local', federal: 'Federal', state: 'State', measure: 'Propositions',
+}
+```
+
+and render `FILTER_LABELS[filter]`. The `RaceFilter` type and `race.type === 'measure'` comparisons are the data contract — labels only.
+
+- [ ] **Step 4: Verify + commit**
+
+`npx vitest run` (all green incl. the new cases) + `npx tsc -b --force`.
+
+```bash
+git add src/utils/electionData.ts src/utils/electionData.test.ts src/views/Elections/Elections.tsx
+git commit -m "fix(elections): Biden not Harris on the winner card; PROPS vernacular labels"
+```
+
 ## Self-review (done at plan-writing time)
 
 - **Spec coverage:** spec Task 1 → plan Task 1; spec Task 2 → plan Task 2; spec Task 3 → plan Tasks 3–5 (paint, join, components split for reviewability); spec Task 4 → plan Tasks 6–7; spec Task 5 → plan Task 8; spec Task 6 → plan Task 9; spec Testing section → Tasks 2/3/4 test files (leaderOf edge cases ✓, step boundaries ✓, propFill midpoint ✓, isProposition ✓, consolidated-label expansion ✓, unmapped-zero-features ✓, six-election name gate ✓) + Task 10 full suite. The spec's "every 2022-era geometry id receives paint for 20241105" test was AMENDED to "every 2024 turnout row paints exactly one feature (501)" — 13 geometry ids verifiably receive no data in the real files (fact 5); the original criterion is unsatisfiable as written.
