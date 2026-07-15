@@ -521,7 +521,7 @@ export default function About() {
             </p>
             <p>
               <span className="text-ink dark:text-white font-semibold">Classification.</span>{' '}
-              The community/ethnic outlet registry (28+ outlets, organized by community
+              The community/ethnic outlet registry (23 outlets, organized by community
               served) is maintained as visible code, so any classification can be inspected
               and challenged. Every compliance figure links to its exact source records as
               exportable CSV.

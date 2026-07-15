@@ -21,6 +21,7 @@ import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useAppStore } from '@/stores/appStore'
 import type { Cases311Record, ServiceCategoryAggRow, NeighborhoodAggRow311 } from '@/types/datasets'
 import { diffHours, formatResolution, formatDelta, formatNumber, formatHour } from '@/utils/time'
+import { parseSfLocal } from '@/utils/sfTime'
 import { coordsFromFields, extractCoordinates } from '@/utils/geo'
 import { resolutionTimeColor } from '@/utils/colors'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
@@ -540,10 +541,12 @@ export default function Cases311() {
   // Heatmap tooltip
   useMapTooltip(mapInstance, 'cases-points', (props) => {
     const filedDate = props.requestedAt
-      ? new Date(String(props.requestedAt)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      // DataSF datetimes are floating SF-local; bare new Date() reads them
+      // in the viewer's host TZ (wrong for any non-Pacific reader).
+      ? new Date(parseSfLocal(String(props.requestedAt))).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' })
       : null
     const filedTime = props.requestedAt
-      ? new Date(String(props.requestedAt)).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+      ? new Date(parseSfLocal(String(props.requestedAt))).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' })
       : null
     const resHours = props.resolutionHours ? Number(props.resolutionHours) : null
     const resLabel = resHours !== null ? formatResolution(resHours) : null

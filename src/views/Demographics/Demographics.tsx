@@ -268,10 +268,6 @@ export default function Demographics() {
     setSelectedNeighborhood(prev => (prev === name ? null : name))
   }, [])
 
-  const handleNeighborhoodHover = useCallback((_name: string | null) => {
-    // Could highlight on map — for now a no-op placeholder
-  }, [])
-
   // --- Determine which cards are expanded vs collapsed ---
   const allCardVariables: CensusVariable[] = useMemo(() => {
     // All variables with verified ACS 5-Year source data (Census API)
@@ -461,7 +457,6 @@ export default function Demographics() {
                     colorScale={cartogramColorScale}
                     width={520}
                     height={400}
-                    onHover={handleNeighborhoodHover}
                     onSelect={handleScatterSelect}
                   />
                 ) : (
@@ -545,7 +540,6 @@ export default function Demographics() {
                   yLabel={yLabel}
                   width={385}
                   height={280}
-                  onHover={handleNeighborhoodHover}
                   onSelect={handleScatterSelect}
                 />
               ) : (

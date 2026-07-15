@@ -21,6 +21,7 @@ import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useAppStore } from '@/stores/appStore'
 import type { ParkingCitationRecord, ViolationTypeAggRow, NeighborhoodAggRowCitations } from '@/types/datasets'
 import { formatCurrency, formatDelta, formatNumber, formatHour } from '@/utils/time'
+import { parseSfLocal } from '@/utils/sfTime'
 import { extractCoordinates } from '@/utils/geo'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
 import MapSidebar from '@/components/layout/MapSidebar'
@@ -546,10 +547,12 @@ export default function ParkingCitations() {
   // Heatmap tooltip
   useMapTooltip(mapInstance, 'citations-points', (props) => {
     const issuedDate = props.issuedAt
-      ? new Date(String(props.issuedAt)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      // DataSF datetimes are floating SF-local; bare new Date() reads them
+      // in the viewer's host TZ (wrong for any non-Pacific reader).
+      ? new Date(parseSfLocal(String(props.issuedAt))).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' })
       : null
     const issuedTime = props.issuedAt
-      ? new Date(String(props.issuedAt)).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+      ? new Date(parseSfLocal(String(props.issuedAt))).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' })
       : null
     const fine = props.fineAmount ? `$${Number(props.fineAmount).toFixed(2)}` : null
     return `

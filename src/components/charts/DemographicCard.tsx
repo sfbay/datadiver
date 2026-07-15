@@ -175,7 +175,7 @@ export default function DemographicCard({
         ) : (
           <span className="font-mono text-lg text-slate-500">—</span>
         )}
-        <span className="ml-2 text-[10px] text-slate-500 font-mono">SF · ACS 2024</span>
+        <span className="ml-2 text-[10px] text-slate-500 font-mono">SF · ACS 2019–2023</span>
       </div>
 
       {/* SparkBars — neighborhood distribution */}
