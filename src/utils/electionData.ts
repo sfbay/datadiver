@@ -49,8 +49,8 @@ export function leaderDisplayName(cleanName: string): string {
   if (isYesKey(cleanName)) return 'Yes'
   if (isNoKey(cleanName)) return 'No'
   // SF joins presidential tickets two ways: " / " in the precinct SOV files,
-  // " AND " in summary.json. Take the top of the ticket either way; \b guards
-  // keep surnames like ANDERSON intact.
+  // " AND " in summary.json. Take the top of the ticket either way; the
+  // required flanking whitespace keeps surnames like ANDERSON intact.
   const firstTicket = cleanName.split(/\s*\/\s*|\s+AND\s+/i)[0].trim()
   const last = firstTicket.split(' ').pop() ?? firstTicket
   return toSentenceCase(last)
