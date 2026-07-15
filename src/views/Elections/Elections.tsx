@@ -13,7 +13,9 @@ import {
   useNeighborhoodResults,
   useElectionGeo,
   useLegacyNeighborhoodGeo,
+  preloadTimeMachineData,
 } from '@/hooks/useElectionResults'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import CardTray, { type CardDef } from '@/components/ui/CardTray'
 import ExportButton from '@/components/export/ExportButton'
 import { SkeletonStatCards, SkeletonSidebarRows } from '@/components/ui/Skeleton'
@@ -29,6 +31,7 @@ import { toSentenceCase } from '@/utils/format'
 import { displayNhood } from '@/utils/electionData'
 import { isProposition } from './map/precinctPaint'
 import type { PaintBundle } from './map/precinctJoin'
+import { useEraFadedBundle } from './map/useEraFadedBundle'
 import PrecinctFillLayer from './map/PrecinctFillLayer'
 import NeighborhoodFrameLayer from './map/NeighborhoodFrameLayer'
 import PrecinctLegend from './map/PrecinctLegend'
@@ -141,6 +144,14 @@ export default function Elections() {
   // ── Time Machine ───────────────────────────────────────────────────
   const timeline = useElectionTimeline({ enabled: timeMachineActive })
 
+  // Warm the module cache on activation so scrubbing is fetch-free after
+  // the first pass (all _turnout files + both era geometries).
+  useEffect(() => {
+    if (timeMachineActive && manifest) {
+      preloadTimeMachineData(manifest.elections.map((e) => e.dateCode))
+    }
+  }, [timeMachineActive, manifest])
+
   // When Time Machine is active, override the displayed results
   const displayResults = timeMachineActive && timeline.activeResults
     ? timeline.activeResults
@@ -190,10 +201,17 @@ export default function Elections() {
 
   // Race still loading (or 404 → error) → race: null → the join paints turnout
   // for that beat instead of a blank. Progressive, never empty.
-  const paintBundle = useMemo((): PaintBundle | null => {
+  const nextBundle = useMemo((): PaintBundle | null => {
     if (!displayDateCode || !turnoutFile) return null
     return { dateCode: displayDateCode, era: turnoutFile.era, turnout: turnoutFile, race: raceFile }
   }, [displayDateCode, turnoutFile, raceFile])
+
+  // Time Machine drives the precinct fill: same-era scrubs swap instantly,
+  // era boundaries fade out/in (~150ms), reduced motion swaps instantly.
+  // Everything downstream reads `paintBundle` — geometry + frame + fill all
+  // swap in the same faded beat.
+  const prefersReducedMotion = usePrefersReducedMotion()
+  const { bundle: paintBundle, fade, fadeMs } = useEraFadedBundle(nextBundle, prefersReducedMotion)
 
   const { data: activeGeo } = useElectionGeo(paintBundle?.era ?? null)
   const { data: legacyFrame } = useLegacyNeighborhoodGeo(paintBundle?.era === 'prec_2012')
@@ -439,6 +457,16 @@ export default function Elections() {
           <p className="text-[10px] font-mono text-indigo-500">
             TIME MACHINE — {displayElectionLabel}
           </p>
+          {mapMode === 'results' && displayRace && (
+            <span className="text-[10px] font-mono text-slate-500">
+              · {toSentenceCase(displayRace.title)}
+            </span>
+          )}
+          {paintBundle?.era === 'prec_2012' && (
+            <span className="text-[10px] font-mono text-slate-500 italic">
+              · boundaries as drawn for this election era
+            </span>
+          )}
           {timeline.isLoading && (
             <span className="text-[10px] font-mono text-slate-500 ml-auto">Loading…</span>
           )}
@@ -462,8 +490,8 @@ export default function Elections() {
               raceIsProp={raceIsProp}
               raceIsRCV={displayRace?.isRCV ?? false}
               selectedNeighborhood={selectedNeighborhood}
-              fade={1}
-              fadeMs={0}
+              fade={fade}
+              fadeMs={fadeMs}
             />
             <NeighborhoodFrameLayer
               map={mapInstance}
