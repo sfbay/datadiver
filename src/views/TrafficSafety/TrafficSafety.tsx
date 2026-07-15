@@ -307,7 +307,7 @@ export default function TrafficSafety() {
   }, [modeClause, selectedNeighborhood])
 
   const hourlyPattern = useCrashHourlyPattern(dateRange, extraWhere)
-  const comparison = useCrashComparisonData(dateRange, whereClause, comparisonPeriod, rawData)
+  const comparison = useCrashComparisonData(dateRange, whereClause, comparisonPeriod, rawData, hitLimit)
   const compLabel = comparisonPeriod ? `vs ${comparisonPeriod >= 360 ? '1yr' : `${comparisonPeriod}d`} ago` : ''
   const { boundaries: neighborhoodBoundaries } = useNeighborhoodBoundaries()
   useMapCameraPresets(mapInstance, { selectedNeighborhood, neighborhoodBoundaries })
@@ -374,6 +374,8 @@ export default function TrafficSafety() {
     comparisonDeltas: comparison.deltas,
     compLabel,
     cityWideYoY: trend.cityWideYoY,
+    comparisonSuppressed: comparison.suppressed,
+    comparisonPeriod,
   })
 
   // Disclose the freshness clamp on the card carrying cityWideYoY ('total') —

@@ -248,7 +248,7 @@ export default function ParkingCitations() {
   const hourlyPattern = useCitationHourlyPattern(dateRange, extraWhere)
 
   // Comparison data
-  const comparison = useCitationComparisonData(dateRange, statsWhere, comparisonPeriod, rawData)
+  const comparison = useCitationComparisonData(dateRange, statsWhere, comparisonPeriod, rawData, hitLimit)
   const compLabel = comparisonPeriod ? `vs ${comparisonPeriod >= 360 ? '1yr' : `${comparisonPeriod}d`} ago` : ''
 
   // Neighborhood boundaries for anomaly mode
@@ -680,7 +680,9 @@ export default function ParkingCitations() {
       delay: 0,
       info: 'fine-revenue',
       defaultExpanded: true,
-      subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined,
+      subtitle: comparison.deltas
+        ? `${formatDelta(comparison.deltas.total)} ${compLabel}`
+        : (comparison.suppressed && comparisonPeriod ? 'Compare needs a narrower date range' : undefined),
       trend: comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined,
     },
     {
@@ -726,7 +728,7 @@ export default function ParkingCitations() {
       info: 'peak-hour',
       defaultExpanded: false,
     },
-  ], [totalRevenue, totalCount, stats, comparison.deltas, compLabel, trend.cityWideYoY])
+  ], [totalRevenue, totalCount, stats, comparison.deltas, comparison.suppressed, compLabel, comparisonPeriod, trend.cityWideYoY])
 
   useProgressScope()
 

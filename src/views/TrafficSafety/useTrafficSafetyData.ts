@@ -26,6 +26,8 @@ interface UseTrafficSafetyDataParams {
   comparisonDeltas: { total: number; injuries: number } | null
   compLabel: string
   cityWideYoY: { pct: number } | null
+  comparisonSuppressed: boolean
+  comparisonPeriod: number | null
 }
 
 export function useTrafficSafetyData(params: UseTrafficSafetyDataParams) {
@@ -48,6 +50,8 @@ export function useTrafficSafetyData(params: UseTrafficSafetyDataParams) {
     comparisonDeltas,
     compLabel,
     cityWideYoY,
+    comparisonSuppressed,
+    comparisonPeriod,
   } = params
 
   // --- Computed data ---
@@ -118,7 +122,9 @@ export function useTrafficSafetyData(params: UseTrafficSafetyDataParams) {
       delay: 160,
       info: 'injuries',
       defaultExpanded: true,
-      subtitle: comparisonDeltas ? `${formatDelta(comparisonDeltas.injuries)} ${compLabel}` : undefined,
+      subtitle: comparisonDeltas
+        ? `${formatDelta(comparisonDeltas.injuries)} ${compLabel}`
+        : (comparisonSuppressed && comparisonPeriod ? 'Compare needs a narrower date range' : undefined),
       trend: comparisonDeltas ? (comparisonDeltas.injuries > 0 ? 'up' : comparisonDeltas.injuries < 0 ? 'down' : 'neutral') : undefined,
     },
     {
@@ -145,7 +151,7 @@ export function useTrafficSafetyData(params: UseTrafficSafetyDataParams) {
       info: 'ped-bike-pct',
       defaultExpanded: false,
     },
-  ], [stats, totalCount, comparisonDeltas, compLabel, cityWideYoY, duiCount, duiKilled, duiInjured, duiYoY])
+  ], [stats, totalCount, comparisonDeltas, compLabel, cityWideYoY, duiCount, duiKilled, duiInjured, duiYoY, comparisonSuppressed, comparisonPeriod])
 
   // Sidebar data
   const modeEntries = useMemo(

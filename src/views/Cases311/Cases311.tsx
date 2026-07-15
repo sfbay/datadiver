@@ -269,7 +269,7 @@ export default function Cases311() {
   const hourlyPattern = use311HourlyPattern(dateRange, extraWhere)
 
   // Comparison data
-  const comparison = use311ComparisonData(dateRange, whereClause, comparisonPeriod, rawData)
+  const comparison = use311ComparisonData(dateRange, whereClause, comparisonPeriod, rawData, hitLimit)
   const compLabel = comparisonPeriod ? `vs ${comparisonPeriod >= 360 ? '1yr' : `${comparisonPeriod}d`} ago` : ''
 
   // Neighborhood boundaries for anomaly mode
@@ -675,7 +675,9 @@ export default function Cases311() {
       delay: 0,
       info: 'total-cases',
       defaultExpanded: true,
-      subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined,
+      subtitle: comparison.deltas
+        ? `${formatDelta(comparison.deltas.total)} ${compLabel}`
+        : (comparison.suppressed && comparisonPeriod ? 'Compare needs a narrower date range' : undefined),
       trend: comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined,
       yoyDelta: !comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null,
     },
@@ -711,7 +713,7 @@ export default function Cases311() {
       info: 'peak-hour',
       defaultExpanded: false,
     },
-  ], [stats, comparison.deltas, compLabel, trend.cityWideYoY])
+  ], [stats, comparison.deltas, comparison.suppressed, compLabel, comparisonPeriod, trend.cityWideYoY])
 
   useProgressScope()
 
