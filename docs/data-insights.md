@@ -163,6 +163,18 @@ Some precincts appear in `dsov` neighborhood totals but have **no `sov` row** �
 
 Nov 2025 (Proposition 50) reports **100 precinct rows for a ~500-precinct city**, and carries a single contest. Consolidated rows appear as `PCT 1104/1105` — one row, several precincts. Present in 2020, absent in 2024, dominant in specials. Registration cannot be attributed to the row's first id.
 
+### Candidate identity is spelled several ways across SF's own files
+
+**Finding:** the same candidate appears under different strings depending on which certified file you read. Precinct SOV vote keys embed a party suffix after a literal newline (`"KAMALA D. HARRIS / TIM WALZ\n(DEM)"`); `summary.xml`-derived names are clean. Presidential tickets are joined `" / "` in some elections and `" AND "` in others (2020: `AND` in both files; 2024: `/` in both — consistent *within* an election, not across them). Yes/no votes come in at least four key shapes: `YES`/`NO` (2024 state props), `Yes`/`No` (2020), `BONDS - YES`/`BONDS - NO` (2024 local bonds). The `AND` form is what put the *running mate's* surname on the Winner card ("Harris" for Biden/Harris) — last-word-of-string logic silently grabs the VP.
+
+**Rule:** never compare or display candidate strings raw. Strip at the first newline (`cleanCandidateName`), treat both ticket separators as equivalent when extracting the top of the ticket (`leaderDisplayName` splits on `/\s*\/\s*|\s+AND\s+/i` — the flanking whitespace keeps ANDERSON intact), and match yes/no by suffix, not equality.
+
+### Boundary files carry placeholder features; per-election no-data geometry is normal
+
+**Finding:** the `prec_2012` source contains **two features with a NULL precinct id** (both `neighrep 'NA'` — Golden Gate Park placeholder shapes; they duplicate as `"None"` on naive string conversion), and `prec_2022` has null `neigh22` on ids 9903/9904. Separately, geometry with no data row is a per-election norm, not an error: 13 of 514 precincts got no turnout row in Nov 2024 (unstaffed/zero-voter), and the consolidated Nov 2025 special leaves 414 of 514 without data.
+
+**Rule:** vendor-time gates pin the placeholder count exactly (2 for 2012, 0 for 2022) and normalize null neighborhood labels to `'NA'` — skip only the known form, die on surprises. Render geometry-without-data as *unpainted* (the CoverageChip explains sparse elections from `_turnout`); never backfill or interpolate.
+
 ---
 
 ## General Patterns

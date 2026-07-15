@@ -1,7 +1,12 @@
 # Elections UI — precinct fill, neighborhood frame, era-aware geometry
 
 **Date:** 2026-07-14
-**Status:** design approved (Jesse); plan + implementation follow in a later session
+**Status:** SHIPPED — implemented via `docs/superpowers/plans/2026-07-14-elections-ui.md`
+(14 tasks) and merged in PR #112 (`752e828`, 2026-07-14 evening). Two user-approved
+post-review amendments supersede this text: Task 3's decisiveness steps became
+RACE-RELATIVE quartiles (absolute cutpoints flattened lopsided races), and a
+candidate-focus mode (`?candidate=`, single-hue support ramp) was added — see the
+plan's Tasks 11–14 addenda.
 **Depends on:** the results generator shipped in `60e302c`/`8632cf7` (see
 `docs/superpowers/specs/2026-07-14-elections-real-results-design.md` for the data
 pipeline, the precinct-renumbering trap, and the reconciliation gate)
