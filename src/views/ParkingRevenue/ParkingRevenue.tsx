@@ -39,8 +39,15 @@ export default function ParkingRevenue() {
   const { dateRange, selectedMeter, setSelectedMeter, selectedNeighborhood, setSelectedNeighborhood } = useAppStore()
   const civicIndicators = useCivicIndicators()
   const [searchParams, setSearchParams] = useSearchParams()
-  // null = auto-detect (matches the engine's detectGranularity); a pill click pins it.
-  const [granularityOverride, setGranularityOverride] = useState<PeriodGranularity | null>(null)
+  // Range-keyed override: null = auto-detect (matches the engine's
+  // detectGranularity); a pill click pins it FOR THE RANGE IT WAS CLICKED ON.
+  // Keying by range (rather than resetting via a separate effect) means a
+  // stale override from a previous range can never reach the hook even for
+  // one render — the key mismatch invalidates it immediately, no extra
+  // render + query round-trip.
+  const [override, setOverride] = useState<{ key: string; g: PeriodGranularity } | null>(null)
+  const rangeKey = `${dateRange.start}|${dateRange.end}`
+  const granularityOverride = override && override.key === rangeKey ? override.g : null
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
   const mapHandleRef = useRef<MapHandle>(null)
 
@@ -75,9 +82,13 @@ export default function ParkingRevenue() {
   }), [])
   const trend = useTrendBaseline(trendConfig, dateRange, undefined, granularityOverride ? { granularity: granularityOverride } : undefined)
 
-  // Auto-detect should win for a fresh date range — a pinned override from a
-  // previous range shouldn't silently carry forward.
-  useEffect(() => { setGranularityOverride(null) }, [dateRange.start, dateRange.end])
+  // Day-bucketed granularities fetch one row per day; beyond the hook's
+  // 500-row query cap they'd silently drop the newest days. Same formula the
+  // hook itself uses to decide whether an override is safe — mirrored here
+  // so the pills can honestly disable themselves before that ever happens.
+  const rangeDays = Math.round(
+    (new Date(dateRange.end + 'T12:00:00').getTime() - new Date(dateRange.start + 'T12:00:00').getTime()) / 86_400_000
+  ) + 1
 
   const { data: meters, isLoading: metersLoading } = useDataset<ParkingMeter>(
     'parkingMeters',
@@ -511,8 +522,10 @@ export default function ParkingRevenue() {
               {(['daily', 'weekly', 'monthly'] as const).map((g) => (
                 <button
                   key={g}
-                  onClick={() => setGranularityOverride(g)}
-                  className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all duration-200 ${
+                  onClick={() => setOverride({ key: rangeKey, g })}
+                  disabled={g !== 'monthly' && rangeDays > 500}
+                  title={g !== 'monthly' && rangeDays > 500 ? 'Range too wide for daily buckets — data beyond 500 days would be cut off' : undefined}
+                  className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed ${
                     trend.granularity === g
                       ? 'bg-white dark:bg-white/[0.08] text-ink dark:text-white shadow-sm'
                       : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'

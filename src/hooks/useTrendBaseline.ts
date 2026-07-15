@@ -44,7 +44,18 @@ export function useTrendBaseline(
   const [effectiveEnd, setEffectiveEnd] = useState<string>(dateRange.end)
 
   const { datasetKey, dateField, neighborhoodField, metrics, baseWhere } = config
-  const granularity = options?.granularity ?? detectGranularity(dateRange.start, dateRange.end)
+  // Day-bucketed granularities ('daily' AND 'weekly' — weekly is daily rows
+  // aggregated client-side, see truncFn below) fetch one row per day via
+  // queries 4/5's $limit: 500. Beyond 500 days, a pinned override would
+  // silently drop the newest days (Socrata returns the earliest 500 under
+  // `$order: 'period ASC'`). Ignore an unsafe override and fall back to the
+  // auto-detected granularity, which never requests day-buckets past 180 days.
+  const rangeDays = Math.round(
+    (new Date(dateRange.end + 'T12:00:00').getTime() - new Date(dateRange.start + 'T12:00:00').getTime()) / 86_400_000
+  ) + 1
+  const requestedGranularity = options?.granularity
+  const overrideSafe = requestedGranularity === 'monthly' || rangeDays <= 500
+  const granularity = (requestedGranularity && overrideSafe ? requestedGranularity : null) ?? detectGranularity(dateRange.start, dateRange.end)
   const hasNh = !!neighborhoodField
 
   // Stable key for effect deps — granularity is included because it drives
