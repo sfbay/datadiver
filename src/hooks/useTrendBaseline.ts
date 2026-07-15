@@ -41,6 +41,7 @@ export function useTrendBaseline(
   const [baselineRows, setBaselineRows] = useState<RawBaselineRow[]>([])
   const [periodCurrent, setPeriodCurrent] = useState<RawPeriodRow[]>([])
   const [periodPriorYear, setPeriodPriorYear] = useState<RawPeriodRow[]>([])
+  const [effectiveEnd, setEffectiveEnd] = useState<string>(dateRange.end)
 
   const { datasetKey, dateField, neighborhoodField, metrics, baseWhere } = config
   const granularity = options?.granularity ?? detectGranularity(dateRange.start, dateRange.end)
@@ -58,87 +59,111 @@ export function useTrendBaseline(
 
     let cancelled = false
     setIsLoading(true)
+    // Reset each effect run — otherwise a stale clamp from a previous
+    // dataset/range leaks into truncatedDays while this run is still loading.
+    setEffectiveEnd(dateRange.end)
 
-    const priStart = yearAgo(dateRange.start)
-    const priEnd = yearAgo(dateRange.end)
+    const run = async () => {
+      // Anchor: how far does this dataset actually extend? A lagged dataset
+      // (Vision Zero publishes ~4-6 weeks behind) must not have its incomplete
+      // tail compared against a fully-settled prior year — that fabricates a
+      // decline. Clamp the window, then shift the CLAMPED window back a year.
+      let effEnd = dateRange.end
+      try {
+        const rows = await fetchDataset<{ latest: string }>(datasetKey, {
+          $select: `MAX(${dateField}) as latest`,
+          $limit: 1,
+        })
+        const latest = rows[0]?.latest?.split('T')[0]
+        if (latest && latest < dateRange.end && latest >= dateRange.start) {
+          effEnd = latest
+        }
+      } catch { /* anchoring is best-effort; unclamped beats no data */ }
+      if (cancelled) return
+      setEffectiveEnd(effEnd)
 
-    // Shared WHERE fragments
-    const base = baseWhere ? ` AND ${baseWhere}` : ''
-    const extra = extraWhere ? ` AND ${extraWhere}` : ''
-    const metricSelect = metrics?.map(m => `, ${m.selectExpr} as ${m.alias}`).join('') ?? ''
+      const priStart = yearAgo(dateRange.start)
+      const priEnd = yearAgo(effEnd)
 
-    // Determine Socrata date_trunc function based on granularity
-    const truncFn = granularity === 'monthly' ? 'date_trunc_ym' : 'date_trunc_ymd'
+      // Shared WHERE fragments
+      const base = baseWhere ? ` AND ${baseWhere}` : ''
+      const extra = extraWhere ? ` AND ${extraWhere}` : ''
+      const metricSelect = metrics?.map(m => `, ${m.selectExpr} as ${m.alias}`).join('') ?? ''
 
-    const queries: Promise<void>[] = []
+      // Determine Socrata date_trunc function based on granularity
+      const truncFn = granularity === 'monthly' ? 'date_trunc_ym' : 'date_trunc_ymd'
 
-    // Query 1 & 2: Neighborhood current + prior year (only if hasNh)
-    if (hasNh) {
-      queries.push(
-        fetchDataset<RawNhRow>(datasetKey, {
-          $select: `${neighborhoodField} as neighborhood, count(*) as cnt${metricSelect}`,
-          $where: `${dateField} >= '${dateRange.start}T00:00:00' AND ${dateField} <= '${dateRange.end}T23:59:59'${base}${extra}`,
-          $group: neighborhoodField,
-          $order: 'cnt DESC',
-          $limit: 100,
-        }).then(rows => { if (!cancelled) setNhCurrent(rows) })
-      )
+      const queries: Promise<void>[] = []
 
-      queries.push(
-        fetchDataset<RawNhRow>(datasetKey, {
-          $select: `${neighborhoodField} as neighborhood, count(*) as cnt${metricSelect}`,
-          $where: `${dateField} >= '${priStart}T00:00:00' AND ${dateField} <= '${priEnd}T23:59:59'${base}${extra}`,
-          $group: neighborhoodField,
-          $order: 'cnt DESC',
-          $limit: 100,
-        }).then(rows => { if (!cancelled) setNhPriorYear(rows) })
-      )
+      // Query 1 & 2: Neighborhood current + prior year (only if hasNh)
+      if (hasNh) {
+        queries.push(
+          fetchDataset<RawNhRow>(datasetKey, {
+            $select: `${neighborhoodField} as neighborhood, count(*) as cnt${metricSelect}`,
+            $where: `${dateField} >= '${dateRange.start}T00:00:00' AND ${dateField} <= '${effEnd}T23:59:59'${base}${extra}`,
+            $group: neighborhoodField,
+            $order: 'cnt DESC',
+            $limit: 100,
+          }).then(rows => { if (!cancelled) setNhCurrent(rows) })
+        )
 
-      // Query 3: 12-month baseline by neighborhood × month
-      const baselineStart = new Date(dateRange.end + 'T12:00:00')
-      baselineStart.setMonth(baselineStart.getMonth() - 12)
-      const baselineStartStr = baselineStart.toISOString().split('T')[0]
+        queries.push(
+          fetchDataset<RawNhRow>(datasetKey, {
+            $select: `${neighborhoodField} as neighborhood, count(*) as cnt${metricSelect}`,
+            $where: `${dateField} >= '${priStart}T00:00:00' AND ${dateField} <= '${priEnd}T23:59:59'${base}${extra}`,
+            $group: neighborhoodField,
+            $order: 'cnt DESC',
+            $limit: 100,
+          }).then(rows => { if (!cancelled) setNhPriorYear(rows) })
+        )
 
-      queries.push(
-        fetchDataset<RawBaselineRow>(datasetKey, {
-          $select: `${neighborhoodField} as neighborhood, date_trunc_ym(${dateField}) as month, count(*) as cnt`,
-          $where: `${dateField} >= '${baselineStartStr}T00:00:00' AND ${dateField} < '${dateRange.end}T23:59:59'${base}`,
-          $group: `${neighborhoodField}, month`,
-          $limit: 5000,
-        }).then(rows => { if (!cancelled) setBaselineRows(rows) })
-      )
+        // Query 3: 12-month baseline by neighborhood × month
+        const baselineStart = new Date(effEnd + 'T12:00:00')
+        baselineStart.setMonth(baselineStart.getMonth() - 12)
+        const baselineStartStr = baselineStart.toISOString().split('T')[0]
+
+        queries.push(
+          fetchDataset<RawBaselineRow>(datasetKey, {
+            $select: `${neighborhoodField} as neighborhood, date_trunc_ym(${dateField}) as month, count(*) as cnt`,
+            $where: `${dateField} >= '${baselineStartStr}T00:00:00' AND ${dateField} < '${effEnd}T23:59:59'${base}`,
+            $group: `${neighborhoodField}, month`,
+            $limit: 5000,
+          }).then(rows => { if (!cancelled) setBaselineRows(rows) })
+        )
+      }
+
+      // Queries 4 & 5: Sub-period breakdown (current + prior year).
+      // Skipped when the consumer only needs neighborhood stats — these power
+      // the trend charts, not the per-neighborhood map/z-score.
+      if (!skipPeriods) {
+        // Query 4: Sub-period breakdown (current)
+        queries.push(
+          fetchDataset<RawPeriodRow>(datasetKey, {
+            $select: `${truncFn}(${dateField}) as period, count(*) as cnt${metricSelect}`,
+            $where: `${dateField} >= '${dateRange.start}T00:00:00' AND ${dateField} <= '${effEnd}T23:59:59'${base}${extra}`,
+            $group: 'period',
+            $order: 'period ASC',
+            $limit: 500,
+          }).then(rows => { if (!cancelled) setPeriodCurrent(rows) })
+        )
+
+        // Query 5: Sub-period breakdown (prior year)
+        queries.push(
+          fetchDataset<RawPeriodRow>(datasetKey, {
+            $select: `${truncFn}(${dateField}) as period, count(*) as cnt${metricSelect}`,
+            $where: `${dateField} >= '${priStart}T00:00:00' AND ${dateField} <= '${priEnd}T23:59:59'${base}${extra}`,
+            $group: 'period',
+            $order: 'period ASC',
+            $limit: 500,
+          }).then(rows => { if (!cancelled) setPeriodPriorYear(rows) })
+        )
+      }
+
+      await Promise.all(queries).catch(() => {})
+      if (!cancelled) setIsLoading(false)
     }
 
-    // Queries 4 & 5: Sub-period breakdown (current + prior year).
-    // Skipped when the consumer only needs neighborhood stats — these power
-    // the trend charts, not the per-neighborhood map/z-score.
-    if (!skipPeriods) {
-      // Query 4: Sub-period breakdown (current)
-      queries.push(
-        fetchDataset<RawPeriodRow>(datasetKey, {
-          $select: `${truncFn}(${dateField}) as period, count(*) as cnt${metricSelect}`,
-          $where: `${dateField} >= '${dateRange.start}T00:00:00' AND ${dateField} <= '${dateRange.end}T23:59:59'${base}${extra}`,
-          $group: 'period',
-          $order: 'period ASC',
-          $limit: 500,
-        }).then(rows => { if (!cancelled) setPeriodCurrent(rows) })
-      )
-
-      // Query 5: Sub-period breakdown (prior year)
-      queries.push(
-        fetchDataset<RawPeriodRow>(datasetKey, {
-          $select: `${truncFn}(${dateField}) as period, count(*) as cnt${metricSelect}`,
-          $where: `${dateField} >= '${priStart}T00:00:00' AND ${dateField} <= '${priEnd}T23:59:59'${base}${extra}`,
-          $group: 'period',
-          $order: 'period ASC',
-          $limit: 500,
-        }).then(rows => { if (!cancelled) setPeriodPriorYear(rows) })
-      )
-    }
-
-    Promise.all(queries)
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setIsLoading(false) })
+    run()
 
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -216,7 +241,12 @@ export function useTrendBaseline(
     return { current: curTotal, priorYear: priTotal, pct }
   }, [currentPeriods, priorYearPeriods])
 
-  return { neighborhoods, neighborhoodMap, currentPeriods, priorYearPeriods, granularity, cityWideYoY, isLoading }
+  // Calendar days trimmed off the requested end by the freshness anchor.
+  const truncatedDays = Math.max(0, Math.round(
+    (new Date(dateRange.end + 'T12:00:00').getTime() - new Date(effectiveEnd + 'T12:00:00').getTime()) / 86_400_000
+  ))
+
+  return { neighborhoods, neighborhoodMap, currentPeriods, priorYearPeriods, granularity, cityWideYoY, isLoading, effectiveEnd, truncatedDays }
 }
 
 /** Convert raw period rows into PeriodDataPoint[] with labels */

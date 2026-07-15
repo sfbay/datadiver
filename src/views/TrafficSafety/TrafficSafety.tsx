@@ -20,7 +20,7 @@ import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useAppStore } from '@/stores/appStore'
 import type { TrafficCrashRecord, CrashModeAggRow, NeighborhoodAggRowCrashes, SpeedCameraRecord, RedLightCameraRecord, PavementConditionRecord } from '@/types/datasets'
-import { formatDelta, formatNumber, formatHour } from '@/utils/time'
+import { formatDelta, formatNumber, formatHour, formatDate } from '@/utils/time'
 import { CRASH_SEVERITY_COLORS } from '@/utils/colors'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
 import MapSidebar from '@/components/layout/MapSidebar'
@@ -376,6 +376,18 @@ export default function TrafficSafety() {
     cityWideYoY: trend.cityWideYoY,
   })
 
+  // Disclose the freshness clamp on the card carrying cityWideYoY ('total') —
+  // Vision Zero crash data publishes ~4-6 weeks behind, so a material clamp
+  // means the current window is genuinely shorter than the requested range.
+  // The truncation note wins over the card's own comparisonDeltas subtitle.
+  const cardDefsWithFreshness = useMemo(() => {
+    if (trend.truncatedDays <= 2) return cardDefs
+    return cardDefs.map((c) => c.id === 'total'
+      ? { ...c, subtitle: `Both windows end ${formatDate(trend.effectiveEnd)} — crash data publishes ~4–6 weeks behind` }
+      : c
+    )
+  }, [cardDefs, trend.truncatedDays, trend.effectiveEnd])
+
   const chartTiles = useMemo<ChartTileDef[]>(() => {
     const tiles: ChartTileDef[] = []
     if (severityData.length > 0) {
@@ -704,7 +716,7 @@ export default function TrafficSafety() {
             {/* Stat cards */}
             {isLoading && <SkeletonStatCards count={4} />}
             {!isLoading && crashData.length > 0 && (
-              <CardTray viewId="trafficSafety" cards={cardDefs} />
+              <CardTray viewId="trafficSafety" cards={cardDefsWithFreshness} />
             )}
 
             {/* Charts */}
