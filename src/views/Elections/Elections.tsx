@@ -4,7 +4,6 @@ import mapboxgl from 'mapbox-gl'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
 import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
-import { usePrecinctBoundaries } from '@/hooks/usePrecinctBoundaries'
 import {
   useElectionManifest,
   useElectionResults,
@@ -16,7 +15,6 @@ import {
   useLegacyNeighborhoodGeo,
 } from '@/hooks/useElectionResults'
 import CardTray, { type CardDef } from '@/components/ui/CardTray'
-import DetailPanelShell from '@/components/ui/DetailPanelShell'
 import ExportButton from '@/components/export/ExportButton'
 import { SkeletonStatCards, SkeletonSidebarRows } from '@/components/ui/Skeleton'
 import { ACCENT, buildCandidateColorMap, turnoutColor } from '@/utils/electionColors'
@@ -35,6 +33,9 @@ import PrecinctFillLayer from './map/PrecinctFillLayer'
 import NeighborhoodFrameLayer from './map/NeighborhoodFrameLayer'
 import PrecinctLegend from './map/PrecinctLegend'
 import CoverageChip from './map/CoverageChip'
+import NeighborhoodElectionPanel from './panels/NeighborhoodElectionPanel'
+import PrecinctDetailPanel from './panels/PrecinctDetailPanel'
+import NeighborhoodsSidebarContent from './panels/NeighborhoodsSidebarContent'
 
 type MapMode = 'results' | 'turnout' | 'margin'
 type SidebarTab = 'races' | 'neighborhoods' | 'measures'
@@ -548,9 +549,20 @@ export default function Elections() {
             {/* Neighborhood detail panel */}
             <NeighborhoodElectionPanel
               neighborhood={selectedNeighborhood}
-              results={displayResults}
+              dateCode={displayDateCode}
+              race={displayRace}
+              citywideTurnout={displayResults?.registration.turnoutPct ?? null}
               candidateColors={candidateColors}
               onClose={() => setSelectedNeighborhood(null)}
+            />
+            <PrecinctDetailPanel
+              label={selectedPrecinct}
+              dateCode={displayDateCode}
+              race={displayRace}
+              candidateColors={candidateColors}
+              geometry={activeGeo}
+              onSelectNeighborhood={(n) => setSelectedNeighborhood(n)}
+              onClose={() => setSelectedPrecinct(null)}
             />
 
             {/* Map legend — decodes the active precinct fill */}
@@ -679,6 +691,8 @@ export default function Elections() {
 
             {sidebarTab === 'neighborhoods' && (
               <NeighborhoodsSidebarContent
+                dateCode={displayDateCode}
+                citywideTurnout={displayResults?.registration.turnoutPct ?? null}
                 selectedNeighborhood={selectedNeighborhood}
                 setSelectedNeighborhood={setSelectedNeighborhood}
               />
@@ -718,167 +732,5 @@ export default function Elections() {
       )}
       </div>
     </div>
-  )
-}
-
-// ── Neighborhood sidebar content ────────────────────────────────────
-
-function NeighborhoodsSidebarContent({
-  selectedNeighborhood,
-  setSelectedNeighborhood,
-}: {
-  selectedNeighborhood: string | null
-  setSelectedNeighborhood: (n: string | null) => void
-}) {
-  const { precinctToNeighborhood } = usePrecinctBoundaries()
-
-  // Build list of neighborhoods from precinct mapping
-  const neighborhoods = useMemo(() => {
-    if (!precinctToNeighborhood) return []
-    const countMap = new Map<string, number>()
-    for (const nhood of Object.values(precinctToNeighborhood)) {
-      countMap.set(nhood, (countMap.get(nhood) || 0) + 1)
-    }
-    return Array.from(countMap.entries())
-      .map(([name, precinctCount]) => ({ name, precinctCount }))
-      .sort((a, b) => a.name.localeCompare(b.name))
-  }, [precinctToNeighborhood])
-
-  const handleClick = useCallback((nhood: string) => {
-    setSelectedNeighborhood(selectedNeighborhood === nhood ? null : nhood)
-  }, [selectedNeighborhood, setSelectedNeighborhood])
-
-  return (
-    <>
-      <div className="flex items-center gap-2 mb-4">
-        <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
-          {neighborhoods.length} Neighborhoods
-        </p>
-        <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
-      </div>
-
-      {selectedNeighborhood && (
-        <button
-          onClick={() => setSelectedNeighborhood(null)}
-          className="mb-3 text-[10px] font-mono text-indigo-500 hover:text-indigo-500 transition-colors"
-        >
-          ← Clear filter: {selectedNeighborhood}
-        </button>
-      )}
-
-      <div className="space-y-0.5">
-        {neighborhoods.map((n) => {
-          const isActive = selectedNeighborhood === n.name
-          return (
-            <div
-              key={n.name}
-              onClick={() => handleClick(n.name)}
-              className={`py-2 px-3 rounded-lg cursor-pointer transition-all duration-200 ${
-                isActive
-                  ? 'bg-indigo-500/10 ring-1 ring-indigo-500/30'
-                  : 'hover:bg-white/80 dark:hover:bg-white/[0.04]'
-              }`}
-            >
-              <p className="text-[12px] font-medium text-ink dark:text-slate-200 leading-tight">
-                {n.name}
-              </p>
-              <p className="text-[10px] text-slate-400 dark:text-slate-600 font-mono">
-                {n.precinctCount} precincts
-              </p>
-            </div>
-          )
-        })}
-      </div>
-    </>
-  )
-}
-
-// ── Neighborhood election detail panel ──────────────────────────────
-
-function NeighborhoodElectionPanel({
-  neighborhood,
-  results,
-  candidateColors,
-  onClose,
-}: {
-  neighborhood: string | null
-  results: import('@/types/elections').ElectionResults | null
-  candidateColors: Map<string, string>
-  onClose: () => void
-}) {
-  if (!neighborhood || !results) return null
-
-  // Show top 5 races with their winners for this election
-  const topRaces = results.races.filter(
-    (r) => r.type === 'local' || r.type === 'federal'
-  ).slice(0, 8)
-
-  return (
-    <DetailPanelShell
-      open={!!neighborhood}
-      onClose={onClose}
-      isLoading={false}
-      spinnerClass="border-indigo-400"
-      widthClass="w-80"
-    >
-      <div className="pr-6">
-        <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-1">
-          Neighborhood
-        </p>
-        <h3 className="text-lg font-display italic text-ink dark:text-white mb-1">
-          {neighborhood}
-        </h3>
-        <p className="text-[10px] font-mono text-slate-500 mb-4">
-          {results.election.label}
-        </p>
-
-        {/* Turnout */}
-        <div className="mb-4">
-          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-1">
-            City Turnout
-          </p>
-          <p className="text-lg font-mono font-bold" style={{ color: turnoutColor(results.registration.turnoutPct) }}>
-            {(results.registration.turnoutPct * 100).toFixed(1)}%
-          </p>
-          <p className="text-[10px] text-slate-500">
-            {results.registration.totalBallotsCast.toLocaleString()} of {results.registration.totalRegistered.toLocaleString()} registered
-          </p>
-        </div>
-
-        {/* Key races */}
-        <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
-          Key Races
-        </p>
-        <div className="space-y-3">
-          {topRaces.map((race) => {
-            const winner = race.candidates.find((c) => c.isWinner)
-            return (
-              <div key={race.id}>
-                <p className="text-[11px] font-semibold text-ink dark:text-white capitalize mb-1">
-                  {race.title.toLowerCase()}
-                </p>
-                {race.candidates.slice(0, 3).map((c) => (
-                  <div key={c.name} className="flex items-center gap-2 py-0.5">
-                    <span
-                      className="w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: candidateColors.get(c.name) || '#a8926a' }}
-                    />
-                    <span className={`text-[10px] truncate flex-1 ${c.isWinner ? 'text-white font-semibold' : 'text-slate-400'}`}>
-                      {toSentenceCase(c.name)}
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-500">
-                      {(c.percentage * 100).toFixed(1)}%
-                    </span>
-                  </div>
-                ))}
-                {race.isRCV && (
-                  <p className="text-[9px] font-mono text-indigo-500 mt-0.5">Ranked Choice Voting</p>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      </div>
-    </DetailPanelShell>
   )
 }
