@@ -2413,6 +2413,115 @@ git add src/utils/electionData.ts src/utils/electionData.test.ts src/views/Elect
 git commit -m "fix(elections): Biden not Harris on the winner card; PROPS vernacular labels"
 ```
 
+### Task 13: Precinct panel layout redesign + drop the period-compare control (approved live-QA follow-up #3)
+
+Jesse's live-QA feedback: the precinct card's hierarchy should be geography-first and
+turnout-hero — NEIGHBORHOOD title, then `PRECINCT XXXX` on one line, then turnout as a
+big number with a two-part voted/didn't bar, then LARGER candidate rows carrying both
+percentage and vote count. Also: the CardTray's `vs 180d` ComparisonPopover is
+meaningless on certified point-in-time election data (Time Machine is the comparison
+axis here) — hide it on the Elections view.
+
+**Files:**
+- Modify: `src/views/Elections/panels/PrecinctDetailPanel.tsx`, `src/components/ui/CardTray.tsx`, `src/views/Elections/Elections.tsx`
+
+- [ ] **Step 1: CardTray opt-out**
+
+`CardTrayProps` gains `/** Hide the period-comparison popover (views whose data has no prior-period axis — e.g. certified election results). */ hideComparison?: boolean` (default false). The `<ComparisonPopover />` mount becomes `{!hideComparison && <ComparisonPopover />}`. In `Elections.tsx`, the CardTray mount becomes `<CardTray viewId="elections" cards={cardDefs} hideComparison />`. No other view changes.
+
+- [ ] **Step 2: Panel body redesign — `PrecinctDetailPanel.tsx`**
+
+Widen the shell: `widthClass="w-80"`. Replace the body between `<div className="pr-6">` and the empty-state/suppressed blocks with this hierarchy (empty state, race-loading line, focus-toggle behavior, RCV note, and suppressed footer all KEEP their current logic — only layout/typography changes):
+
+```tsx
+{/* Geography first: neighborhood is the title, precinct number one mono line under it */}
+{parentNhood && parentNhood !== 'NA' ? (
+  <button
+    onClick={() => onSelectNeighborhood(parentNhood.toUpperCase())}
+    className="block text-left text-lg font-display italic text-ink dark:text-white leading-tight hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+  >
+    {displayNhood(parentNhood.toUpperCase(), scheme)} →
+  </button>
+) : (
+  <h3 className="text-lg font-display italic text-ink dark:text-white leading-tight">
+    Precinct {label}
+  </h3>
+)}
+{parentNhood && parentNhood !== 'NA' && (
+  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mt-1 mb-4">
+    Precinct {label}
+  </p>
+)}
+
+{/* Turnout is the hero: big number + a two-part voted/didn't bar */}
+{row && (
+  <div className="mb-5">
+    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-1">
+      Turnout
+    </p>
+    <p
+      className="text-3xl font-mono font-bold leading-none tabular-nums"
+      style={{ color: turnoutColor(row.turnout) }}
+    >
+      {(row.turnout * 100).toFixed(1)}%
+    </p>
+    <div className="mt-2 h-2 rounded-full overflow-hidden flex">
+      <div
+        className="h-full"
+        style={{
+          width: `${Math.min(100, row.turnout * 100)}%`,
+          backgroundColor: turnoutColor(row.turnout),
+        }}
+      />
+      <div className="h-full flex-1 bg-slate-300/40 dark:bg-white/[0.08]" />
+    </div>
+    <p className="text-[10px] text-slate-500 mt-1.5">
+      <span className="font-mono tabular-nums text-ink dark:text-slate-300">
+        {row.ballots.toLocaleString()}
+      </span>{' '}
+      voted ·{' '}
+      <span className="font-mono tabular-nums">
+        {(row.registered - row.ballots).toLocaleString()}
+      </span>{' '}
+      didn't · {row.registered.toLocaleString()} registered
+    </p>
+  </div>
+)}
+```
+
+Candidate rows step up a full size tier and carry BOTH percentage and vote count (keep the exact focus-toggle button semantics from Task 11 — onClick, focused ring, hover):
+
+```tsx
+<div className="flex items-baseline gap-2">
+  <span className="text-[13px] font-medium truncate flex-1 text-ink dark:text-slate-200">
+    {toSentenceCase(c.name)}
+  </span>
+  <span className="text-[13px] font-mono tabular-nums text-ink dark:text-slate-300">
+    {(c.share * 100).toFixed(1)}%
+  </span>
+  <span className="text-[10px] font-mono tabular-nums text-slate-500 w-12 text-right">
+    {c.votes.toLocaleString()}
+  </span>
+</div>
+<div className="h-1.5 rounded-full bg-slate-200/50 dark:bg-white/[0.06] overflow-hidden">
+  <div
+    className="h-full rounded-full"
+    style={{ width: `${c.share * 100}%`, backgroundColor: candidateColors.get(c.name) || '#a8926a' }}
+  />
+</div>
+```
+
+The old top-of-panel "Precinct" eyebrow + `{label}` heading + neighborhood link block is REPLACED by the geography-first block above (don't leave both).
+
+- [ ] **Step 3: Verify + commit**
+
+`npx vitest run` (251 green — no test touches this JSX) + `npx tsc -b --force`.
+
+```bash
+git add src/views/Elections/panels/PrecinctDetailPanel.tsx src/components/ui/CardTray.tsx src/views/Elections/Elections.tsx
+git commit -m "feat(elections): geography-first precinct card with turnout hero; hide period-compare"
+```
+
 ## Self-review (done at plan-writing time)
 
 - **Spec coverage:** spec Task 1 → plan Task 1; spec Task 2 → plan Task 2; spec Task 3 → plan Tasks 3–5 (paint, join, components split for reviewability); spec Task 4 → plan Tasks 6–7; spec Task 5 → plan Task 8; spec Task 6 → plan Task 9; spec Testing section → Tasks 2/3/4 test files (leaderOf edge cases ✓, step boundaries ✓, propFill midpoint ✓, isProposition ✓, consolidated-label expansion ✓, unmapped-zero-features ✓, six-election name gate ✓) + Task 10 full suite. The spec's "every 2022-era geometry id receives paint for 20241105" test was AMENDED to "every 2024 turnout row paints exactly one feature (501)" — 13 geometry ids verifiably receive no data in the real files (fact 5); the original criterion is unsatisfiable as written.
