@@ -50,6 +50,8 @@ interface CardTrayProps {
   cards: CardDef[]
   /** CSS class for the tray container */
   className?: string
+  /** Hide the period-comparison popover (views whose data has no prior-period axis — e.g. certified election results). */
+  hideComparison?: boolean
 }
 
 function getStorageKey(viewId: string) {
@@ -75,7 +77,7 @@ function saveCardStates(viewId: string, states: Record<string, CardState>) {
   } catch { /* ignore */ }
 }
 
-export default function CardTray({ viewId, cards, className = '' }: CardTrayProps) {
+export default function CardTray({ viewId, cards, className = '', hideComparison = false }: CardTrayProps) {
   const trayRef = useRef<HTMLDivElement>(null)
   const compact = useCompactViewport(trayRef)
   const [states, setStates] = useState<Record<string, CardState>>(() =>
@@ -152,9 +154,11 @@ export default function CardTray({ viewId, cards, className = '' }: CardTrayProp
         <div className="flex flex-wrap items-center gap-1.5 px-4 py-2 pointer-events-none">
           {/* Comparison-period popover — relocated from the global header
               so it lives next to the deltas it actually controls. */}
-          <div className="pointer-events-auto">
-            <ComparisonPopover />
-          </div>
+          {!hideComparison && (
+            <div className="pointer-events-auto">
+              <ComparisonPopover />
+            </div>
+          )}
 
           {minimizedCards.map((card) => {
             const trendArrow = card.yoyDelta != null

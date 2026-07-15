@@ -2,13 +2,21 @@ import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
-import { useMapLayer } from '@/hooks/useMapLayer'
 import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
-import { usePrecinctBoundaries } from '@/hooks/usePrecinctBoundaries'
-import { useElectionManifest, useElectionResults, useRCVRounds } from '@/hooks/useElectionResults'
+import {
+  useElectionManifest,
+  useElectionResults,
+  useRCVRounds,
+  usePrecinctTurnout,
+  usePrecinctRace,
+  useNeighborhoodResults,
+  useElectionGeo,
+  useLegacyNeighborhoodGeo,
+  preloadTimeMachineData,
+} from '@/hooks/useElectionResults'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import CardTray, { type CardDef } from '@/components/ui/CardTray'
-import DetailPanelShell from '@/components/ui/DetailPanelShell'
 import ExportButton from '@/components/export/ExportButton'
 import { SkeletonStatCards, SkeletonSidebarRows } from '@/components/ui/Skeleton'
 import { ACCENT, buildCandidateColorMap, turnoutColor } from '@/utils/electionColors'
@@ -20,16 +28,36 @@ import { useElectionTimeline } from '@/hooks/useElectionTimeline'
 import BallotMeasureExplorer from '@/components/charts/BallotMeasureExplorer'
 import { useBallotPropositions } from '@/hooks/useElectionResults'
 import { toSentenceCase } from '@/utils/format'
+import { displayNhood, leaderDisplayName, nhoodKey } from '@/utils/electionData'
+import { isProposition, leaderOf } from './map/precinctPaint'
+import { candidateShares, type PaintBundle } from './map/precinctJoin'
+import { useEraFadedBundle } from './map/useEraFadedBundle'
+import PrecinctFillLayer from './map/PrecinctFillLayer'
+import NeighborhoodFrameLayer from './map/NeighborhoodFrameLayer'
+import PrecinctLegend from './map/PrecinctLegend'
+import CoverageChip from './map/CoverageChip'
+import NeighborhoodElectionPanel from './panels/NeighborhoodElectionPanel'
+import PrecinctDetailPanel from './panels/PrecinctDetailPanel'
+import NeighborhoodsSidebarContent from './panels/NeighborhoodsSidebarContent'
 
 type MapMode = 'results' | 'turnout' | 'margin'
 type SidebarTab = 'races' | 'neighborhoods' | 'measures'
 type RaceFilter = 'all' | 'federal' | 'state' | 'local' | 'measure'
+
+const FILTER_LABELS: Record<RaceFilter, string> = {
+  all: 'All',
+  local: 'Local',
+  federal: 'Federal',
+  state: 'State',
+  measure: 'Propositions',
+}
 
 export default function Elections() {
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedElection = searchParams.get('election') || null
   const selectedRaceId = searchParams.get('race') || null
   const selectedNeighborhood = searchParams.get('neighborhood') || null
+  const focusedCandidate = searchParams.get('candidate') || null
 
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('races')
@@ -56,6 +84,16 @@ export default function Elections() {
       const next = new URLSearchParams(prev)
       if (!raceId) next.delete('race')
       else next.set('race', raceId)
+      next.delete('candidate') // a new race has a different candidate set — focus doesn't carry over
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
+
+  const setFocusedCandidate = useCallback((name: string | null) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (!name) next.delete('candidate')
+      else next.set('candidate', name)
       return next
     }, { replace: true })
   }, [setSearchParams])
@@ -64,7 +102,24 @@ export default function Elections() {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev)
       if (!n) next.delete('neighborhood')
-      else next.set('neighborhood', n)
+      else {
+        next.set('neighborhood', n)
+        next.delete('precinct') // selections are mutually exclusive
+      }
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
+
+  const selectedPrecinct = searchParams.get('precinct') || null
+
+  const setSelectedPrecinct = useCallback((label: string | null) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (!label) next.delete('precinct')
+      else {
+        next.set('precinct', label)
+        next.delete('neighborhood') // selections are mutually exclusive
+      }
       return next
     }, { replace: true })
   }, [setSearchParams])
@@ -108,6 +163,14 @@ export default function Elections() {
   // ── Time Machine ───────────────────────────────────────────────────
   const timeline = useElectionTimeline({ enabled: timeMachineActive })
 
+  // Warm the module cache on activation so scrubbing is fetch-free after
+  // the first pass (all _turnout files + both era geometries).
+  useEffect(() => {
+    if (timeMachineActive && manifest) {
+      preloadTimeMachineData(manifest.elections.map((e) => e.dateCode))
+    }
+  }, [timeMachineActive, manifest])
+
   // When Time Machine is active, override the displayed results
   const displayResults = timeMachineActive && timeline.activeResults
     ? timeline.activeResults
@@ -119,155 +182,133 @@ export default function Elections() {
   // ── Geo data ──────────────────────────────────────────────────────
   const { boundaries: neighborhoodBoundaries } = useNeighborhoodBoundaries()
 
+  // ── Precinct paint inputs ──────────────────────────────────────────
+  const displayDateCode = timeMachineActive
+    ? timeline.activeElection?.dateCode ?? null
+    : activeElection
+
+  // In Time Machine, the beat's race is auto-picked from that election's own
+  // summary; outside it, activeRace already is the auto-pick.
+  const displayRace = useMemo((): Race | null => {
+    if (!timeMachineActive) return activeRace
+    const races = timeline.activeResults?.races
+    if (!races) return null
+    return (
+      races.find((r) => r.id === 'mayor') ??
+      races.find((r) => r.id.startsWith('president')) ??
+      races.find((r) => r.type === 'local') ??
+      races[0] ?? null
+    )
+  }, [timeMachineActive, activeRace, timeline.activeResults])
+
+  const raceIsProp = displayRace
+    ? displayRace.type === 'measure' || isProposition(displayRace.id, displayRace.title)
+    : false
+
+  const { data: turnoutFileRaw } = usePrecinctTurnout(displayDateCode)
+  // useStaticJSON keeps the PREVIOUS url's data during a refetch — identity-guard.
+  const turnoutFile = turnoutFileRaw?.dateCode === displayDateCode ? turnoutFileRaw : null
+
+  // Both results AND margin need per-precinct votes (margin = leaderOf().lead);
+  // only turnout mode paints without a race file.
+  const raceIdForPaint = mapMode !== 'turnout' && displayRace ? displayRace.id : null
+  const { data: raceFileRaw } = usePrecinctRace(displayDateCode, raceIdForPaint)
+  const raceFile =
+    raceFileRaw?.dateCode === displayDateCode && raceFileRaw?.raceId === raceIdForPaint
+      ? raceFileRaw
+      : null
+
+  // Race still loading (or 404 → error) → race: null → the join paints turnout
+  // for that beat instead of a blank. Progressive, never empty.
+  const nextBundle = useMemo((): PaintBundle | null => {
+    if (!displayDateCode || !turnoutFile) return null
+    return { dateCode: displayDateCode, era: turnoutFile.era, turnout: turnoutFile, race: raceFile }
+  }, [displayDateCode, turnoutFile, raceFile])
+
+  // Time Machine drives the precinct fill: same-era scrubs swap instantly,
+  // era boundaries fade out/in (~150ms), reduced motion swaps instantly.
+  // Everything downstream reads `paintBundle` — geometry + frame + fill all
+  // swap in the same faded beat.
+  const prefersReducedMotion = usePrefersReducedMotion()
+  const { bundle: paintBundle, fade, fadeMs } = useEraFadedBundle(nextBundle, prefersReducedMotion)
+
+  const { data: activeGeo } = useElectionGeo(paintBundle?.era ?? null)
+  const { data: legacyFrame } = useLegacyNeighborhoodGeo(paintBundle?.era === 'prec_2012')
+  const frameBoundaries = paintBundle?.era === 'prec_2012' ? legacyFrame : neighborhoodBoundaries
+
+  const { data: neighborhoodResults } = useNeighborhoodResults(displayDateCode)
+
   // ── Candidate colors ──────────────────────────────────────────────
   const candidateColors = useMemo(() => {
-    if (!activeRace) return new Map<string, string>()
-    return buildCandidateColorMap(activeRace.candidates)
-  }, [activeRace])
+    if (!displayRace) return new Map<string, string>()
+    return buildCandidateColorMap(displayRace.candidates)
+  }, [displayRace])
 
-  // ── Neighborhood layer ──────────────────────────────────────────
-  // The results we hold are CITYWIDE. There is exactly one turnout figure, one
-  // margin, one winner — so there is nothing to vary across 41 polygons, and the
-  // map must not pretend otherwise.
-  //
-  // This previously derived `fill-opacity` from each neighborhood's dominant
-  // supervisor district (`(district % 11) / 11`) to "create visual variation."
-  // That is a fabricated encoding: a reader decodes shade as signal, and the
-  // shade carried a district id. Removed. Until per-neighborhood results land,
-  // the polygons are a uniform, deliberately flat locator — clickable, but
-  // encoding nothing. See docs/superpowers/specs/2026-07-14-elections-real-results-design.md
-  const hasCitywideFallback = true // false once precinct/neighborhood results ship
+  // ── Candidate focus mode ────────────────────────────────────────────
+  // Focus is a results-mode lens; Time Machine beats have a different
+  // candidate set per era so focus is suspended during a TM scrub.
+  const activeFocusCandidate = mapMode === 'results' && !timeMachineActive ? focusedCandidate : null
 
-  const choroplethGeojson = useMemo((): GeoJSON.FeatureCollection | null => {
-    if (!neighborhoodBoundaries || !activeRace || !displayResults) return null
+  const focusExtent = useMemo((): [number, number] | null => {
+    if (!focusedCandidate || !raceFile) return null
+    return candidateShares(raceFile, focusedCandidate).extent
+  }, [focusedCandidate, raceFile])
 
-    const winner = activeRace.candidates.find((c) => c.isWinner)
-    const topTwo = [...activeRace.candidates].sort((a, b) => b.totalVotes - a.totalVotes)
-    const cityMargin = topTwo.length >= 2
-      ? (topTwo[0].totalVotes - topTwo[1].totalVotes) / activeRace.totalBallotsCast
-      : 0.5
-    const cityTurnout = displayResults.registration.turnoutPct
-
-    const features = neighborhoodBoundaries.features.map((f) => ({
-      ...f,
-      properties: {
-        ...f.properties,
-        selected: (f.properties?.nhood as string) === selectedNeighborhood,
-        // Citywide values, carried for the tooltip — which labels them as such.
-        winnerName: winner ? toSentenceCase(winner.name) : 'TBD',
-        margin: cityMargin,
-        turnoutPct: cityTurnout,
-      },
-    }))
-
-    return { type: 'FeatureCollection', features }
-  }, [neighborhoodBoundaries, activeRace, displayResults, selectedNeighborhood])
-
-  // ── Map layers ────────────────────────────────────────────────────
-  // Uniform paint. Not "not yet tuned" — uniform ON PURPOSE, because the data
-  // behind it is a single citywide number. The only thing that varies here is
-  // selection, which is UI state, not a measurement.
-  const choroplethLayers = useMemo((): mapboxgl.AnyLayer[] => [
-    {
-      id: 'election-nhood-fill',
-      type: 'fill',
-      source: 'election-choropleth',
-      paint: {
-        'fill-color': ACCENT,
-        'fill-opacity': [
-          'case',
-          ['boolean', ['get', 'selected'], false], 0.28,
-          0.10,
-        ],
-      },
-    },
-    {
-      id: 'election-nhood-outline',
-      type: 'line',
-      source: 'election-choropleth',
-      paint: {
-        'line-color': ACCENT,
-        'line-width': ['case', ['boolean', ['get', 'selected'], false], 2, 1],
-        'line-opacity': ['case', ['boolean', ['get', 'selected'], false], 0.9, 0.35],
-      },
-    },
-  ], [])
-
-  useMapLayer(mapInstance, 'election-choropleth', choroplethGeojson, choroplethLayers)
-
-  // Tooltip for neighborhood hover
-  // The figure shown is CITYWIDE — every neighborhood reports the same number.
-  // Say so in the tooltip rather than letting the neighborhood name imply it is
-  // a local measurement.
-  useMapTooltip(mapInstance, 'election-nhood-fill', (props) => {
-    const nhood = props.nhood || props.Neigh22 || 'Unknown'
-    const caveat =
-      '<div style="color:#a8926a;font-size:9px;margin-top:6px;font-style:italic">Citywide figure — S.F. does not publish this by neighborhood in the data we hold</div>'
-
-    const body =
-      mapMode === 'turnout'
-        ? `<div class="tooltip-label" style="margin-top:6px">Citywide Turnout</div>
-           <div style="color:#7a9954;font-weight:600">${(Number(props.turnoutPct) * 100).toFixed(1)}%</div>`
-        : mapMode === 'margin'
-        ? `<div class="tooltip-label" style="margin-top:6px">Citywide Margin</div>
-           <div style="color:#d4a435;font-weight:600">${(Number(props.margin) * 100).toFixed(1)}%</div>`
-        : `<div class="tooltip-label" style="margin-top:6px">Citywide Winner</div>
-           <div style="color:${ACCENT};font-weight:600">${props.winnerName || 'TBD'}</div>`
-
+  // Real per-precinct tooltip — replaces the old citywide-caveat tooltip.
+  useMapTooltip(mapInstance, 'election-precinct-fill', (props) => {
+    const scheme = paintBundle?.era === 'prec_2012' ? 'legacy26' : 'analysis41'
+    const nhood = displayNhood(String(props.nhood ?? ''), scheme)
+    const turnoutLine = `${Math.round(Number(props.turnoutPct) * 100)}% turned out · ${Number(props.votes).toLocaleString()} votes cast`
+    const leaderLine = props.tipLeaderName
+      ? `<div style="color:${ACCENT};font-weight:600;margin-top:4px">${props.tipLeaderName} — ${props.tipLeaderPhrase}</div>`
+      : ''
     return `
-      <div class="tooltip-label">Neighborhood</div>
+      <div class="tooltip-label">Precinct ${props.label}</div>
       <div class="tooltip-value">${nhood}</div>
-      ${body}
-      ${caveat}
+      ${leaderLine}
+      <div style="color:#a8926a;font-size:10px;margin-top:4px">${turnoutLine}</div>
     `
   })
 
-  // Click handler for neighborhood selection
+  // Precinct click handler — same retry-attach shape as the old neighborhood one.
   useEffect(() => {
     if (!mapInstance) return
-
     const handleClick = (e: mapboxgl.MapLayerMouseEvent) => {
       if (!e.features || e.features.length === 0) return
-      const nhood = e.features[0].properties?.nhood || e.features[0].properties?.Neigh22
-      if (nhood) {
-        setSelectedNeighborhood(selectedNeighborhood === nhood ? null : nhood)
-        setSidebarTab('neighborhoods')
-      }
+      const label = e.features[0].properties?.label as string | undefined
+      if (label) setSelectedPrecinct(selectedPrecinct === label ? null : label)
     }
-
     const tryAttach = () => {
       try {
-        if (mapInstance.getLayer('election-nhood-fill')) {
-          mapInstance.on('click', 'election-nhood-fill', handleClick)
+        if (mapInstance.getLayer('election-precinct-fill')) {
+          mapInstance.on('click', 'election-precinct-fill', handleClick)
           return true
         }
       } catch { /* */ }
       return false
     }
-
     if (!tryAttach()) {
       const interval = setInterval(() => { if (tryAttach()) clearInterval(interval) }, 500)
       return () => {
         clearInterval(interval)
-        try { mapInstance.off('click', 'election-nhood-fill', handleClick) } catch { /* */ }
+        try { mapInstance.off('click', 'election-precinct-fill', handleClick) } catch { /* */ }
       }
     }
-
     return () => {
-      try { mapInstance.off('click', 'election-nhood-fill', handleClick) } catch { /* */ }
+      try { mapInstance.off('click', 'election-precinct-fill', handleClick) } catch { /* */ }
     }
-  }, [mapInstance, selectedNeighborhood, setSelectedNeighborhood])
+  }, [mapInstance, selectedPrecinct, setSelectedPrecinct])
 
   const handleMapReady = useCallback((map: mapboxgl.Map) => { setMapInstance(map) }, [])
 
   // ── Card definitions ──────────────────────────────────────────────
   const cardDefs = useMemo((): CardDef[] => {
     const r = displayResults
-    if (!r || !activeRace) return []
-    const winner = activeRace.candidates.find((c) => c.isWinner)
-    const topTwo = [...activeRace.candidates].sort((a, b) => b.totalVotes - a.totalVotes)
+    if (!r || !displayRace) return []
+    const winner = displayRace.candidates.find((c) => c.isWinner)
+    const topTwo = [...displayRace.candidates].sort((a, b) => b.totalVotes - a.totalVotes)
     const margin = topTwo.length >= 2
-      ? ((topTwo[0].totalVotes - topTwo[1].totalVotes) / activeRace.totalBallotsCast * 100)
+      ? ((topTwo[0].totalVotes - topTwo[1].totalVotes) / displayRace.totalBallotsCast * 100)
       : null
 
     const cards: CardDef[] = [
@@ -275,7 +316,7 @@ export default function Elections() {
         id: 'winner',
         label: 'Winner',
         shortLabel: 'Winner',
-        value: winner ? toSentenceCase(winner.name.split(' ').pop() || winner.name) : 'TBD',
+        value: winner ? leaderDisplayName(winner.name) : 'TBD',
         color: winner ? candidateColors.get(winner.name) || ACCENT : ACCENT,
         defaultExpanded: true,
         subtitle: winner ? `${(winner.percentage * 100).toFixed(1)}%` : undefined,
@@ -310,7 +351,7 @@ export default function Elections() {
       color: '#a8926a',
     })
 
-    if (activeRace.isRCV && rcvData) {
+    if (!timeMachineActive && displayRace.isRCV && rcvData) {
       cards.push({
         id: 'rcv-rounds',
         label: 'RCV Rounds',
@@ -321,8 +362,78 @@ export default function Elections() {
       })
     }
 
+    // ── Selection-aware overrides (comparison-framed, citywide = reference) ──
+    const nfile = neighborhoodResults?.dateCode === displayDateCode ? neighborhoodResults : null
+
+    if (selectedPrecinct && paintBundle) {
+      const row = paintBundle.turnout.precincts[selectedPrecinct]
+      if (row) {
+        const allTurnouts = Object.values(paintBundle.turnout.precincts)
+          .filter((p) => !p.unmapped && p.registered > 0)
+          .map((p) => p.turnout)
+        cards[1] = {
+          ...cards[1],
+          label: `Turnout — precinct ${selectedPrecinct}`,
+          value: `${(row.turnout * 100).toFixed(1)}%`,
+          color: turnoutColor(row.turnout),
+          subtitle: `citywide ${(r.registration.turnoutPct * 100).toFixed(1)}%`,
+          positionScale: {
+            value: row.turnout,
+            range: allTurnouts.length > 0
+              ? [Math.min(...allTurnouts), Math.max(...allTurnouts)]
+              : [row.turnout, row.turnout],
+            reference: r.registration.turnoutPct,
+          },
+        }
+        const raceRow = paintBundle.race?.precincts[selectedPrecinct]
+        const leader = raceRow ? leaderOf(raceRow.votes) : null
+        if (leader) {
+          cards[0] = {
+            ...cards[0],
+            label: 'Leads this precinct',
+            value: leaderDisplayName(leader.name),
+            color: candidateColors.get(leader.name) || ACCENT,
+            subtitle: `${(leader.share * 100).toFixed(1)}% here`,
+          }
+        }
+      }
+    } else if (selectedNeighborhood && nfile) {
+      const key = Object.keys(nfile.neighborhoods).find((k) => nhoodKey(k) === nhoodKey(selectedNeighborhood))
+      const nrow = key ? nfile.neighborhoods[key] : null
+      if (nrow) {
+        const allTurnouts = Object.values(nfile.neighborhoods)
+          .filter((n) => n.registered > 0)
+          .map((n) => n.turnout)
+        cards[1] = {
+          ...cards[1],
+          label: `Turnout — ${displayNhood(key!, nfile.scheme)}`,
+          value: `${(nrow.turnout * 100).toFixed(1)}%`,
+          color: turnoutColor(nrow.turnout),
+          subtitle: `${nrow.ballots.toLocaleString()} ballots · citywide ${(r.registration.turnoutPct * 100).toFixed(1)}%`,
+          positionScale: {
+            value: nrow.turnout,
+            range: allTurnouts.length > 0
+              ? [Math.min(...allTurnouts), Math.max(...allTurnouts)]
+              : [nrow.turnout, nrow.turnout],
+            reference: r.registration.turnoutPct,
+          },
+        }
+      }
+    }
+
     return cards
-  }, [displayResults, activeRace, candidateColors, rcvData])
+  }, [
+    displayResults,
+    displayRace,
+    candidateColors,
+    rcvData,
+    timeMachineActive,
+    selectedPrecinct,
+    selectedNeighborhood,
+    paintBundle,
+    neighborhoodResults,
+    displayDateCode,
+  ])
 
   // ── Filtered races for sidebar ────────────────────────────────────
   const filteredRaces = useMemo(() => {
@@ -387,6 +498,8 @@ export default function Elections() {
                       next.set('election', e.target.value)
                       next.delete('race')
                       next.delete('neighborhood')
+                      next.delete('precinct')
+                      next.delete('candidate')
                       return next
                     },
                     { replace: true },
@@ -444,6 +557,16 @@ export default function Elections() {
           <p className="text-[10px] font-mono text-indigo-500">
             TIME MACHINE — {displayElectionLabel}
           </p>
+          {mapMode === 'results' && displayRace && (
+            <span className="text-[10px] font-mono text-slate-500">
+              · {toSentenceCase(displayRace.title)}
+            </span>
+          )}
+          {paintBundle?.era === 'prec_2012' && (
+            <span className="text-[10px] font-mono text-slate-500 italic">
+              · boundaries as drawn for this election era
+            </span>
+          )}
           {timeline.isLoading && (
             <span className="text-[10px] font-mono text-slate-500 ml-auto">Loading…</span>
           )}
@@ -456,6 +579,27 @@ export default function Elections() {
         {/* Map area */}
         <div className="flex-1 relative">
           <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
+            {/* Precinct fill + neighborhood frame — always mounted (useMapLayer
+                cleanup depends on it); both no-op on null data */}
+            <PrecinctFillLayer
+              map={mapInstance}
+              bundle={paintBundle}
+              geometry={activeGeo}
+              mode={mapMode}
+              colorMap={candidateColors}
+              raceIsProp={raceIsProp}
+              raceIsRCV={displayRace?.isRCV ?? false}
+              selectedNeighborhood={selectedNeighborhood}
+              focusCandidate={activeFocusCandidate}
+              fade={fade}
+              fadeMs={fadeMs}
+            />
+            <NeighborhoodFrameLayer
+              map={mapInstance}
+              boundaries={frameBoundaries}
+              selectedNeighborhood={selectedNeighborhood}
+            />
+
             {/* Error state */}
             {error && (
               <div className="absolute inset-0 flex items-center justify-center z-20">
@@ -466,27 +610,19 @@ export default function Elections() {
               </div>
             )}
 
-            {/* Citywide-only indicator */}
-            {!isLoading && hasCitywideFallback && displayResults && (
-              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/80 backdrop-blur-sm border border-white/[0.08] text-[10px] font-mono text-slate-400">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#a8926a" strokeWidth="1.5">
-                    <circle cx="6" cy="6" r="4.5" />
-                    <path d="M6 4v3M6 8.5v.01" strokeLinecap="round" />
-                  </svg>
-                  Citywide results — neighborhood-level data coming soon
-                </div>
-              </div>
+            {/* Coverage chip — explains gaps (unmapped precincts, sparse elections) */}
+            {!isLoading && (
+              <CoverageChip turnout={paintBundle?.turnout ?? null} geometryCount={activeGeo?.features.length ?? null} />
             )}
 
             {/* Stat cards */}
             {isLoading && <SkeletonStatCards count={4} />}
             {!isLoading && displayResults && cardDefs.length > 0 && (
-              <CardTray viewId="elections" cards={cardDefs} />
+              <CardTray viewId="elections" cards={cardDefs} hideComparison />
             )}
 
             {/* RCV visualization panel — bottom-left when an RCV race is selected */}
-            {!isLoading && activeRace?.isRCV && rcvData && (
+            {!isLoading && !timeMachineActive && activeRace?.isRCV && rcvData && (
               <div className="absolute bottom-6 left-5 z-10 glass-card rounded-xl p-4" style={{ maxWidth: rcvViewMode === 'sankey' ? 620 : 420 }}>
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-500">
@@ -542,34 +678,35 @@ export default function Elections() {
             {/* Neighborhood detail panel */}
             <NeighborhoodElectionPanel
               neighborhood={selectedNeighborhood}
-              results={displayResults}
+              dateCode={displayDateCode}
+              race={displayRace}
+              citywideTurnout={displayResults?.registration.turnoutPct ?? null}
               candidateColors={candidateColors}
               onClose={() => setSelectedNeighborhood(null)}
             />
+            <PrecinctDetailPanel
+              label={selectedPrecinct}
+              dateCode={displayDateCode}
+              race={displayRace}
+              candidateColors={candidateColors}
+              geometry={activeGeo}
+              onSelectNeighborhood={(n) => setSelectedNeighborhood(n)}
+              onClose={() => setSelectedPrecinct(null)}
+              focusedCandidate={activeFocusCandidate}
+              onFocusCandidate={setFocusedCandidate}
+            />
 
-            {/* Map legend */}
-            {!isLoading && activeRace && mapMode === 'results' && (
-              <div className="absolute bottom-6 right-5 z-10 glass-card rounded-xl p-3">
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
-                  {activeRace.title}
-                </p>
-                <div className="space-y-1">
-                  {activeRace.candidates.slice(0, 5).map((c) => (
-                    <div key={c.name} className="flex items-center gap-2">
-                      <span
-                        className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
-                        style={{ backgroundColor: candidateColors.get(c.name) || '#a8926a' }}
-                      />
-                      <span className="text-[10px] text-slate-400 truncate max-w-[120px]">
-                        {toSentenceCase(c.name.split(',')[0])}
-                      </span>
-                      <span className="text-[10px] font-mono text-slate-500 ml-auto">
-                        {(c.percentage * 100).toFixed(1)}%
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            {/* Map legend — decodes the active precinct fill */}
+            {!isLoading && displayRace && (
+              <PrecinctLegend
+                mode={mapMode}
+                race={displayRace}
+                raceIsProp={raceIsProp}
+                candidateColors={candidateColors}
+                focusedCandidate={activeFocusCandidate}
+                focusExtent={focusExtent}
+                onFocusCandidate={setFocusedCandidate}
+              />
             )}
           </MapView>
         </div>
@@ -578,7 +715,7 @@ export default function Elections() {
         <aside className="w-80 flex-shrink-0 border-l border-slate-200/50 dark:border-white/[0.04] overflow-y-auto bg-white/50 dark:bg-slate-900/30 backdrop-blur-xl flex flex-col">
           {/* Tab bar */}
           <div className="flex border-b border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
-            {([['races', 'Races'], ['neighborhoods', 'Neighborhoods'], ['measures', 'Measures']] as const).map(([key, label]) => (
+            {([['races', 'Races'], ['neighborhoods', 'Neighborhoods'], ['measures', 'Props']] as const).map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setSidebarTab(key)}
@@ -608,7 +745,7 @@ export default function Elections() {
                           : 'text-slate-400 hover:text-slate-300 border border-transparent hover:border-slate-700'
                       }`}
                     >
-                      {filter === 'all' ? 'All' : filter.charAt(0).toUpperCase() + filter.slice(1)}
+                      {FILTER_LABELS[filter]}
                       {raceCounts[filter] ? ` (${raceCounts[filter]})` : ''}
                     </button>
                   ))}
@@ -693,6 +830,8 @@ export default function Elections() {
 
             {sidebarTab === 'neighborhoods' && (
               <NeighborhoodsSidebarContent
+                dateCode={displayDateCode}
+                citywideTurnout={displayResults?.registration.turnoutPct ?? null}
                 selectedNeighborhood={selectedNeighborhood}
                 setSelectedNeighborhood={setSelectedNeighborhood}
               />
@@ -732,167 +871,5 @@ export default function Elections() {
       )}
       </div>
     </div>
-  )
-}
-
-// ── Neighborhood sidebar content ────────────────────────────────────
-
-function NeighborhoodsSidebarContent({
-  selectedNeighborhood,
-  setSelectedNeighborhood,
-}: {
-  selectedNeighborhood: string | null
-  setSelectedNeighborhood: (n: string | null) => void
-}) {
-  const { precinctToNeighborhood } = usePrecinctBoundaries()
-
-  // Build list of neighborhoods from precinct mapping
-  const neighborhoods = useMemo(() => {
-    if (!precinctToNeighborhood) return []
-    const countMap = new Map<string, number>()
-    for (const nhood of Object.values(precinctToNeighborhood)) {
-      countMap.set(nhood, (countMap.get(nhood) || 0) + 1)
-    }
-    return Array.from(countMap.entries())
-      .map(([name, precinctCount]) => ({ name, precinctCount }))
-      .sort((a, b) => a.name.localeCompare(b.name))
-  }, [precinctToNeighborhood])
-
-  const handleClick = useCallback((nhood: string) => {
-    setSelectedNeighborhood(selectedNeighborhood === nhood ? null : nhood)
-  }, [selectedNeighborhood, setSelectedNeighborhood])
-
-  return (
-    <>
-      <div className="flex items-center gap-2 mb-4">
-        <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
-          {neighborhoods.length} Neighborhoods
-        </p>
-        <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
-      </div>
-
-      {selectedNeighborhood && (
-        <button
-          onClick={() => setSelectedNeighborhood(null)}
-          className="mb-3 text-[10px] font-mono text-indigo-500 hover:text-indigo-500 transition-colors"
-        >
-          ← Clear filter: {selectedNeighborhood}
-        </button>
-      )}
-
-      <div className="space-y-0.5">
-        {neighborhoods.map((n) => {
-          const isActive = selectedNeighborhood === n.name
-          return (
-            <div
-              key={n.name}
-              onClick={() => handleClick(n.name)}
-              className={`py-2 px-3 rounded-lg cursor-pointer transition-all duration-200 ${
-                isActive
-                  ? 'bg-indigo-500/10 ring-1 ring-indigo-500/30'
-                  : 'hover:bg-white/80 dark:hover:bg-white/[0.04]'
-              }`}
-            >
-              <p className="text-[12px] font-medium text-ink dark:text-slate-200 leading-tight">
-                {n.name}
-              </p>
-              <p className="text-[10px] text-slate-400 dark:text-slate-600 font-mono">
-                {n.precinctCount} precincts
-              </p>
-            </div>
-          )
-        })}
-      </div>
-    </>
-  )
-}
-
-// ── Neighborhood election detail panel ──────────────────────────────
-
-function NeighborhoodElectionPanel({
-  neighborhood,
-  results,
-  candidateColors,
-  onClose,
-}: {
-  neighborhood: string | null
-  results: import('@/types/elections').ElectionResults | null
-  candidateColors: Map<string, string>
-  onClose: () => void
-}) {
-  if (!neighborhood || !results) return null
-
-  // Show top 5 races with their winners for this election
-  const topRaces = results.races.filter(
-    (r) => r.type === 'local' || r.type === 'federal'
-  ).slice(0, 8)
-
-  return (
-    <DetailPanelShell
-      open={!!neighborhood}
-      onClose={onClose}
-      isLoading={false}
-      spinnerClass="border-indigo-400"
-      widthClass="w-80"
-    >
-      <div className="pr-6">
-        <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-1">
-          Neighborhood
-        </p>
-        <h3 className="text-lg font-display italic text-ink dark:text-white mb-1">
-          {neighborhood}
-        </h3>
-        <p className="text-[10px] font-mono text-slate-500 mb-4">
-          {results.election.label}
-        </p>
-
-        {/* Turnout */}
-        <div className="mb-4">
-          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-1">
-            City Turnout
-          </p>
-          <p className="text-lg font-mono font-bold" style={{ color: turnoutColor(results.registration.turnoutPct) }}>
-            {(results.registration.turnoutPct * 100).toFixed(1)}%
-          </p>
-          <p className="text-[10px] text-slate-500">
-            {results.registration.totalBallotsCast.toLocaleString()} of {results.registration.totalRegistered.toLocaleString()} registered
-          </p>
-        </div>
-
-        {/* Key races */}
-        <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
-          Key Races
-        </p>
-        <div className="space-y-3">
-          {topRaces.map((race) => {
-            const winner = race.candidates.find((c) => c.isWinner)
-            return (
-              <div key={race.id}>
-                <p className="text-[11px] font-semibold text-ink dark:text-white capitalize mb-1">
-                  {race.title.toLowerCase()}
-                </p>
-                {race.candidates.slice(0, 3).map((c) => (
-                  <div key={c.name} className="flex items-center gap-2 py-0.5">
-                    <span
-                      className="w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: candidateColors.get(c.name) || '#a8926a' }}
-                    />
-                    <span className={`text-[10px] truncate flex-1 ${c.isWinner ? 'text-white font-semibold' : 'text-slate-400'}`}>
-                      {toSentenceCase(c.name)}
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-500">
-                      {(c.percentage * 100).toFixed(1)}%
-                    </span>
-                  </div>
-                ))}
-                {race.isRCV && (
-                  <p className="text-[9px] font-mono text-indigo-500 mt-0.5">Ranked Choice Voting</p>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      </div>
-    </DetailPanelShell>
   )
 }

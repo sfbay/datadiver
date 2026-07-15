@@ -39,7 +39,7 @@
 
 ```
 scripts/build-precinct-geometry.py        NEW  Task 1 — vendors era geometry (build-time)
-public/data/elections/geo/prec-2012.geojson       NEW (605 features, {id, nhood})
+public/data/elections/geo/prec-2012.geojson       NEW (603 features, {id, nhood})
 public/data/elections/geo/prec-2022.geojson       NEW (514 features, {id, nhood})
 public/data/elections/geo/legacy-neighborhoods.geojson  NEW (26 features, {nhood})
 src/types/elections.ts                    MODIFY Task 2 — file-shape interfaces
@@ -97,7 +97,8 @@ Reads gitignored sources (data/elections-src/prec_{2012,2022}.geojson —
 refetch with `node scripts/fetch-election-sources.mjs`) and emits committed,
 same-origin assets to public/data/elections/geo/:
 
-  prec-2012.geojson            605 precincts, props {id, nhood} (nhood = neighrep)
+  prec-2012.geojson            603 precincts, props {id, nhood} (nhood = neighrep;
+                               605 source features minus 2 null-id GG Park placeholders)
   prec-2022.geojson            514 precincts, props {id, nhood} (nhood = neigh22)
   legacy-neighborhoods.geojson 26 legacy neighborhoods dissolved by neighrep
                                (neighrep 'NA' excluded — it is a placeholder,
@@ -121,9 +122,13 @@ RESULTS = Path('public/data/elections/results')
 SLIVER_SHARE = 0.001
 PRECISION = 6
 
+# (era, id_field, nhood_field, src_count, placeholder_nulls, date_codes)
+# placeholder_nulls: source features with a NULL precinct id — verified to be
+# the two Golden Gate Park placeholder shapes (neighrep 'NA') in the 2012
+# file. They are not precincts; no turnout row can reference them.
 ERAS = [
-    ('prec_2012', 'prec_2012', 'neighrep', 605, ['20201103', '20220607']),
-    ('prec_2022', 'prec_2022', 'neigh22', 514, ['20221108', '20240305', '20241105', '20251104']),
+    ('prec_2012', 'prec_2012', 'neighrep', 605, 2, ['20201103', '20220607']),
+    ('prec_2022', 'prec_2022', 'neigh22', 514, 0, ['20221108', '20240305', '20241105', '20251104']),
 ]
 
 
@@ -162,19 +167,37 @@ def nhood_key(s):
 def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    for era, id_field, nhood_field, expected, date_codes in ERAS:
+    for era, id_field, nhood_field, expected, expected_nulls, date_codes in ERAS:
         src = json.loads((SRC_DIR / f'{era}.geojson').read_text())
         if len(src['features']) != expected:
             die(f'{era}: {len(src["features"])} source features, expected {expected}')
 
         out, seen = [], set()
+        skipped_placeholder = 0
         for f in src['features']:
-            pid = str(f['properties'][id_field])
+            raw_id = f['properties'][id_field]
+            if raw_id is None:
+                # Skip ONLY the known placeholder form; a null id on a real
+                # neighborhood would be a source regression, not a park.
+                if f['properties'][nhood_field] != 'NA':
+                    die(f'{era}: null {id_field} on non-placeholder feature '
+                        f'({nhood_field}={f["properties"][nhood_field]!r})')
+                skipped_placeholder += 1
+                continue
+            pid = str(raw_id)
             if pid in seen:
                 die(f'{era}: duplicate precinct id {pid}')
             seen.add(pid)
             geom = shape(f['geometry']).buffer(0)
-            out.append(feature({'id': pid, 'nhood': f['properties'][nhood_field]}, geom))
+            # neigh22 is null for two park/water placeholder precincts
+            # (9903/9904) — normalize to the 2012 file's 'NA' convention so
+            # the emitted contract stays {id: string, nhood: string}.
+            nhood = f['properties'][nhood_field] or 'NA'
+            out.append(feature({'id': pid, 'nhood': nhood}, geom))
+
+        if skipped_placeholder != expected_nulls:
+            die(f'{era}: {skipped_placeholder} null-id placeholder features, '
+                f'expected {expected_nulls}')
 
         # Cross-check against every election of this era: each turnout id must
         # exist in this geometry, unless its row is flagged unmapped (the pinned
@@ -235,7 +258,7 @@ if __name__ == '__main__':
 - [ ] **Step 3: Run it**
 
 Run: `python3 scripts/build-precinct-geometry.py` (or the venv python from Step 1)
-Expected: three `KB (N features)` lines — 605, 514, 26 features; sizes roughly 600–900 KB for the precinct files; final line `all gates passed`. Any `GATE FAILED:` line means STOP — do not hand-patch the outputs; diagnose against the data facts above.
+Expected: three `KB (N features)` lines — 603, 514, 26 features (603 = 605 source minus the two pinned null-id placeholders); sizes roughly 600–900 KB for the precinct files; final line `all gates passed`. Any `GATE FAILED:` line means STOP — do not hand-patch the outputs; diagnose against the data facts above.
 
 - [ ] **Step 4: Prove a gate bites (falsify, don't just re-run)**
 
@@ -1344,7 +1367,9 @@ const { data: turnoutFileRaw } = usePrecinctTurnout(displayDateCode)
 // useStaticJSON keeps the PREVIOUS url's data during a refetch — identity-guard.
 const turnoutFile = turnoutFileRaw?.dateCode === displayDateCode ? turnoutFileRaw : null
 
-const raceIdForPaint = mapMode === 'results' && displayRace ? displayRace.id : null
+// Both results AND margin need per-precinct votes (margin = leaderOf().lead);
+// only turnout mode paints without a race file.
+const raceIdForPaint = mapMode !== 'turnout' && displayRace ? displayRace.id : null
 const { data: raceFileRaw } = usePrecinctRace(displayDateCode, raceIdForPaint)
 const raceFile =
   raceFileRaw?.dateCode === displayDateCode && raceFileRaw?.raceId === raceIdForPaint
@@ -2189,6 +2214,390 @@ unset GITHUB_TOKEN && git push -u origin feat/elections-ui
 Do not merge without Jesse's review of the ship checklist — the era-boundary behavior and the sparse-2025 presentation are editorial calls he should eyeball on the preview deploy.
 
 ---
+
+### Task 11: Race-relative texture + candidate focus mode (approved follow-up, 7/14 evening)
+
+Jesse's live-QA feedback on PR #112: walkover races (Biden 85%, Pelosi 77%) put nearly
+every precinct in the top absolute opacity step — the interesting within-race variety is
+papered over. Approved design: (A) the leader view's four steps become RACE-RELATIVE
+(quartiles of this race's leader shares); (B) clicking a candidate (map legend + precinct
+panel rows) enters FOCUS mode — that candidate's support as a continuous single-hue
+race-relative ramp (`?candidate=` param). Continuous is correct there because focus is
+single-hue (the underlay regime); the leader view keeps steps because multi-hue +
+continuous reads as noise.
+
+**Files:**
+- Modify: `src/views/Elections/map/precinctPaint.ts` (+test), `src/views/Elections/map/precinctJoin.ts` (+test), `src/views/Elections/map/PrecinctFillLayer.tsx`, `src/views/Elections/map/PrecinctLegend.tsx`, `src/views/Elections/panels/PrecinctDetailPanel.tsx`, `src/views/Elections/Elections.tsx`
+
+- [ ] **Step 1: Pure paint additions — `precinctPaint.ts`**
+
+```ts
+/** Quartile boundaries of this race's leader shares — the race-relative
+ *  decisiveness ladder. Absolute cutpoints flatten lopsided races (Biden 85%
+ *  citywide put ~every precinct in the top step); quartiles guarantee all
+ *  four steps appear in every race. Null (→ absolute fallback) when there are
+ *  too few precincts or the spread is degenerate. */
+export function leaderShareQuartiles(shares: number[]): [number, number, number] | null {
+  if (shares.length < 8) return null
+  const s = [...shares].sort((a, b) => a - b)
+  const q = (p: number) => s[Math.min(s.length - 1, Math.floor(p * s.length))]
+  const qs: [number, number, number] = [q(0.25), q(0.5), q(0.75)]
+  return qs[0] === qs[2] ? null : qs
+}
+
+export function decisivenessOpacityRelative(share: number, q: [number, number, number]): number {
+  if (share < q[0]) return 0.25
+  if (share < q[1]) return 0.4
+  if (share < q[2]) return 0.55
+  return 0.7
+}
+
+/** Single-hue support ramp for a FOCUSED candidate: race-relative, continuous.
+ *  Single hue is the regime where continuous tonal variation reads as a field
+ *  (the demographic-underlay recipe) rather than noise. */
+export function focusFill(share: number, extent: [number, number], hex: string): Fill {
+  const [min, max] = extent
+  const t = max > min ? (share - min) / (max - min) : 0.5
+  return { color: hex, opacity: 0.12 + t * 0.63 }
+}
+```
+
+`resultsFill` gains an optional third param (backwards-compatible — existing tests unchanged):
+
+```ts
+export function resultsFill(
+  leader: PrecinctLeader,
+  colorMap: Map<string, string>,
+  quartiles?: [number, number, number] | null,
+): Fill {
+  return {
+    color: colorMap.get(leader.name) ?? FALLBACK,
+    opacity: quartiles
+      ? decisivenessOpacityRelative(leader.share, quartiles)
+      : decisivenessOpacity(leader.share),
+  }
+}
+```
+
+New tests (`precinctPaint.test.ts`): quartiles of a known 12-value array; `< 8 values → null`; all-equal spread → null; relative boundaries (share below q1 → 0.25, at q3 → 0.7); focusFill extent mapping (min → 0.12, max → 0.75, degenerate extent → midpoint 0.435); resultsFill with quartiles uses the relative ladder, without stays absolute.
+
+- [ ] **Step 2: Join — `precinctJoin.ts`**
+
+Add to `BuildPrecinctOptions`: `focusCandidate: string | null` (CLEAN name). Export a shared pure helper both the join and the legend use:
+
+```ts
+/** Per-precinct share of one candidate (clean name) across a race file,
+ *  plus its [min,max] extent. Vote keys are RAW ("\n(PARTY)") — matched via
+ *  cleanCandidateName. Zero-total precincts are skipped. */
+export function candidateShares(
+  race: PrecinctRaceFile,
+  cleanName: string,
+): { byLabel: Map<string, number>; extent: [number, number] | null } {
+  const byLabel = new Map<string, number>()
+  let min = Infinity
+  let max = -Infinity
+  for (const [label, row] of Object.entries(race.precincts)) {
+    if (row.total === 0) continue
+    let votes = 0
+    for (const [k, v] of Object.entries(row.votes)) {
+      if (cleanCandidateName(k) === cleanName) votes += v
+    }
+    const share = votes / row.total
+    byLabel.set(label, share)
+    if (share < min) min = share
+    if (share > max) max = share
+  }
+  return { byLabel, extent: byLabel.size > 0 ? [min, max] : null }
+}
+```
+
+In `buildPrecinctFeatures`, results mode (non-prop, race present):
+1. Pre-pass: collect `leaderOf(raceRow.votes)?.share` across non-unmapped rows → `const quartiles = leaderShareQuartiles(shares)`; pass as `resultsFill`'s third arg.
+2. When `focusCandidate` is set (and mode==='results', race present, non-prop): compute `const focus = candidateShares(bundle.race, focusCandidate)` once; per row use `const share = focus.byLabel.get(label)`; skip if undefined; `fill = focusFill(share, focus.extent!, colorMap.get(focusCandidate) ?? '#a8926a')`; tooltip fields `tipLeaderName = leaderDisplayName(focusCandidate)`, `tipLeaderPhrase = sharePhrase(share)` (RCV → "first choices" replacement as in the leader path); `votes = raceRow.total`.
+
+New tests (`precinctJoin.test.ts`, real fixtures): focusing `'DONALD J. TRUMP / JD VANCE'` on 2024 president → 501 features, every `fillColor` identical (the focus hue), opacities vary (min < max), the extent is sane (`extent[0] >= 0 && extent[1] <= 1 && extent[0] < extent[1]`), `tipLeaderName === 'Trump'`; leader view on the same race now spreads across ≥3 distinct opacity values (the quartile fix's whole point — pin it).
+
+- [ ] **Step 3: Thread through the layer + Elections.tsx**
+
+`PrecinctFillLayer` gains `focusCandidate: string | null` prop → geojson memo input. Elections.tsx:
+- `const focusedCandidate = searchParams.get('candidate') || null` + `setFocusedCandidate` (same URLSearchParams pattern, replace: true).
+- Clearing: `setSelectedRace` and the election picker `onChange` both `next.delete('candidate')`.
+- Pass `focusCandidate={mapMode === 'results' && !timeMachineActive ? focusedCandidate : null}` to the fill layer (focus is a results-mode lens; Time Machine beats have different candidate sets, so focus is suspended during TM).
+
+- [ ] **Step 4: Legend + panel entry points**
+
+`PrecinctLegend` new props: `focusedCandidate: string | null`, `focusExtent: [number, number] | null`, `onFocusCandidate: (name: string | null) => void`. In results (non-prop) mode:
+- Unfocused: each candidate row becomes a `<button>` (hover ring, cursor-pointer) calling `onFocusCandidate(c.name)`; add a hint line `Click a candidate to map their support`.
+- Focused: header row = swatch + `toSentenceCase(name)` + an `✕` button (`onFocusCandidate(null)`); then a `GradientRow` `linear-gradient(to right, ${hex}1f, ${hex})` with labels `weakest ${Math.round(extent[0]*100)}%` / `strongest ${Math.round(extent[1]*100)}%`; hint `Where their support ran`.
+Elections.tsx computes `focusExtent` via `candidateShares(raceFile, focusedCandidate).extent` in a memo (null unless focused + raceFile matches).
+
+`PrecinctDetailPanel` new props: `focusedCandidate: string | null`, `onFocusCandidate: (name: string | null) => void`. Each candidate row becomes a button toggling focus (`onFocusCandidate(focusedCandidate === c.name ? null : c.name)`), with the focused row ring-highlighted (`ring-1 ring-indigo-500/30`).
+
+- [ ] **Step 5: Verify + commit**
+
+`npx vitest run` (all green, new tests included) + `npx tsc -b --force`. Browser QA rides the existing PR checklist (add: click Buttar on the Pelosi race → a real support field appears; the Biden map now shows quartile texture).
+
+```bash
+git add -A src/views/Elections src/views/Elections/map
+git commit -m "feat(elections): race-relative decisiveness steps + click-a-candidate focus ramp"
+```
+
+### Task 12: SF-vernacular labels + presidential-ticket surname fix (approved live-QA follow-up #2)
+
+Jesse's live-QA feedback: (a) "nobody says measure in SF" — the sidebar tab reads `PROPS`
+and the race-filter pill spells out `Propositions`; (b) the Winner card for presidential
+races shows the RUNNING MATE's surname ("Harris" for Biden/Harris 2020) because
+`summary.json` joins tickets with ` AND ` while the precinct SOV files use ` / ` — the
+display helper only knew the slash form, and the card didn't use the helper at all.
+
+**Files:**
+- Modify: `src/utils/electionData.ts` (+test), `src/views/Elections/Elections.tsx`
+
+- [ ] **Step 1: Harden `leaderDisplayName` (TDD)**
+
+Add to `src/utils/electionData.test.ts` in the `leaderDisplayName` describe:
+
+```ts
+it('handles summary.json AND-joined tickets (the Winner-card regression)', () => {
+  expect(leaderDisplayName('JOSEPH R. BIDEN AND KAMALA D. HARRIS')).toBe('Biden')
+  expect(leaderDisplayName('DONALD J. TRUMP AND MICHAEL R. PENCE')).toBe('Trump')
+})
+it('does not split surnames containing AND as a substring', () => {
+  expect(leaderDisplayName('MARIA ANDERSON')).toBe('Anderson')
+})
+```
+
+Run → RED. Then in `src/utils/electionData.ts` change the first-ticket extraction:
+
+```ts
+export function leaderDisplayName(cleanName: string): string {
+  if (isYesKey(cleanName)) return 'Yes'
+  if (isNoKey(cleanName)) return 'No'
+  // SF joins presidential tickets two ways: " / " in the precinct SOV files,
+  // " AND " in summary.json. Take the top of the ticket either way; \b guards
+  // keep surnames like ANDERSON intact.
+  const firstTicket = cleanName.split(/\s*\/\s*|\s+AND\s+/i)[0].trim()
+  const last = firstTicket.split(' ').pop() ?? firstTicket
+  return toSentenceCase(last)
+}
+```
+
+Run → GREEN (all prior leaderDisplayName tests must stay green unchanged).
+
+- [ ] **Step 2: Route the Winner card through the helper**
+
+In `Elections.tsx` `cardDefs`, the base Winner card value is currently
+`toSentenceCase(winner.name.split(' ').pop() || winner.name)` — replace with
+`leaderDisplayName(winner.name)` (already imported since Task 9).
+
+- [ ] **Step 3: Labels**
+
+In `Elections.tsx`:
+- Tab bar: `['measures', 'Measures']` → `['measures', 'Props']` (the `SidebarTab` KEY stays `'measures'` — state/logic untouched).
+- Filter pills: replace the generic `filter.charAt(0).toUpperCase() + filter.slice(1)` label with a lookup so `measure` renders as `Propositions`:
+
+```ts
+const FILTER_LABELS: Record<RaceFilter, string> = {
+  all: 'All', local: 'Local', federal: 'Federal', state: 'State', measure: 'Propositions',
+}
+```
+
+and render `FILTER_LABELS[filter]`. The `RaceFilter` type and `race.type === 'measure'` comparisons are the data contract — labels only.
+
+- [ ] **Step 4: Verify + commit**
+
+`npx vitest run` (all green incl. the new cases) + `npx tsc -b --force`.
+
+```bash
+git add src/utils/electionData.ts src/utils/electionData.test.ts src/views/Elections/Elections.tsx
+git commit -m "fix(elections): Biden not Harris on the winner card; PROPS vernacular labels"
+```
+
+### Task 13: Precinct panel layout redesign + drop the period-compare control (approved live-QA follow-up #3)
+
+Jesse's live-QA feedback: the precinct card's hierarchy should be geography-first and
+turnout-hero — NEIGHBORHOOD title, then `PRECINCT XXXX` on one line, then turnout as a
+big number with a two-part voted/didn't bar, then LARGER candidate rows carrying both
+percentage and vote count. Also: the CardTray's `vs 180d` ComparisonPopover is
+meaningless on certified point-in-time election data (Time Machine is the comparison
+axis here) — hide it on the Elections view.
+
+**Files:**
+- Modify: `src/views/Elections/panels/PrecinctDetailPanel.tsx`, `src/components/ui/CardTray.tsx`, `src/views/Elections/Elections.tsx`
+
+- [ ] **Step 1: CardTray opt-out**
+
+`CardTrayProps` gains `/** Hide the period-comparison popover (views whose data has no prior-period axis — e.g. certified election results). */ hideComparison?: boolean` (default false). The `<ComparisonPopover />` mount becomes `{!hideComparison && <ComparisonPopover />}`. In `Elections.tsx`, the CardTray mount becomes `<CardTray viewId="elections" cards={cardDefs} hideComparison />`. No other view changes.
+
+- [ ] **Step 2: Panel body redesign — `PrecinctDetailPanel.tsx`**
+
+Widen the shell: `widthClass="w-80"`. Replace the body between `<div className="pr-6">` and the empty-state/suppressed blocks with this hierarchy (empty state, race-loading line, focus-toggle behavior, RCV note, and suppressed footer all KEEP their current logic — only layout/typography changes):
+
+```tsx
+{/* Geography first: neighborhood is the title, precinct number one mono line under it */}
+{parentNhood && parentNhood !== 'NA' ? (
+  <button
+    onClick={() => onSelectNeighborhood(parentNhood.toUpperCase())}
+    className="block text-left text-lg font-display italic text-ink dark:text-white leading-tight hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+  >
+    {displayNhood(parentNhood.toUpperCase(), scheme)} →
+  </button>
+) : (
+  <h3 className="text-lg font-display italic text-ink dark:text-white leading-tight">
+    Precinct {label}
+  </h3>
+)}
+{parentNhood && parentNhood !== 'NA' && (
+  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mt-1 mb-4">
+    Precinct {label}
+  </p>
+)}
+
+{/* Turnout is the hero: big number + a two-part voted/didn't bar */}
+{row && (
+  <div className="mb-5">
+    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-1">
+      Turnout
+    </p>
+    <p
+      className="text-3xl font-mono font-bold leading-none tabular-nums"
+      style={{ color: turnoutColor(row.turnout) }}
+    >
+      {(row.turnout * 100).toFixed(1)}%
+    </p>
+    <div className="mt-2 h-2 rounded-full overflow-hidden flex">
+      <div
+        className="h-full"
+        style={{
+          width: `${Math.min(100, row.turnout * 100)}%`,
+          backgroundColor: turnoutColor(row.turnout),
+        }}
+      />
+      <div className="h-full flex-1 bg-slate-300/40 dark:bg-white/[0.08]" />
+    </div>
+    <p className="text-[10px] text-slate-500 mt-1.5">
+      <span className="font-mono tabular-nums text-ink dark:text-slate-300">
+        {row.ballots.toLocaleString()}
+      </span>{' '}
+      voted ·{' '}
+      <span className="font-mono tabular-nums">
+        {(row.registered - row.ballots).toLocaleString()}
+      </span>{' '}
+      didn't · {row.registered.toLocaleString()} registered
+    </p>
+  </div>
+)}
+```
+
+Candidate rows step up a full size tier and carry BOTH percentage and vote count (keep the exact focus-toggle button semantics from Task 11 — onClick, focused ring, hover):
+
+```tsx
+<div className="flex items-baseline gap-2">
+  <span className="text-[13px] font-medium truncate flex-1 text-ink dark:text-slate-200">
+    {toSentenceCase(c.name)}
+  </span>
+  <span className="text-[13px] font-mono tabular-nums text-ink dark:text-slate-300">
+    {(c.share * 100).toFixed(1)}%
+  </span>
+  <span className="text-[10px] font-mono tabular-nums text-slate-500 w-12 text-right">
+    {c.votes.toLocaleString()}
+  </span>
+</div>
+<div className="h-1.5 rounded-full bg-slate-200/50 dark:bg-white/[0.06] overflow-hidden">
+  <div
+    className="h-full rounded-full"
+    style={{ width: `${c.share * 100}%`, backgroundColor: candidateColors.get(c.name) || '#a8926a' }}
+  />
+</div>
+```
+
+The old top-of-panel "Precinct" eyebrow + `{label}` heading + neighborhood link block is REPLACED by the geography-first block above (don't leave both).
+
+- [ ] **Step 3: Verify + commit**
+
+`npx vitest run` (251 green — no test touches this JSX) + `npx tsc -b --force`.
+
+```bash
+git add src/views/Elections/panels/PrecinctDetailPanel.tsx src/components/ui/CardTray.tsx src/views/Elections/Elections.tsx
+git commit -m "feat(elections): geography-first precinct card with turnout hero; hide period-compare"
+```
+
+### Task 14: Focused-candidate row prominence, Last-48-aligned (approved live-QA follow-up #4)
+
+Jesse: the focused row's indigo ring is too faint, and set a STANDING rule — align with
+Last 48 styles/functionality on disconnects (Last 48 = the freshest map-viz build). The
+Last 48 selected-row idiom (FlowRail.tsx ~:236) is a pigment-tinted bg + pigment ring,
+with "dot is the scan cue, text is the confirmation" for emphasis. Applied here: the
+focused row wears the CANDIDATE'S OWN pigment (inset left bar + tint + ring, all inline
+style — candidate colors are runtime values Tailwind can't see), a semibold name, and a
+tiny `ON MAP` confirmation tag in their color. Hover state goes theme-aware per Last 48.
+
+**Files:**
+- Modify: `src/views/Elections/panels/PrecinctDetailPanel.tsx` (candidate row button only)
+
+- [ ] **Step 1: Restyle the candidate row button**
+
+Inside the `candidates.map`, the row becomes (focus semantics — onClick toggle, key — unchanged):
+
+```tsx
+{candidates.map((c) => {
+  const isFocused = focusedCandidate === c.name
+  const hex = candidateColors.get(c.name) || '#a8926a'
+  return (
+    <button
+      key={c.name}
+      onClick={() => onFocusCandidate(isFocused ? null : c.name)}
+      style={isFocused ? {
+        backgroundColor: `${hex}14`,
+        boxShadow: `inset 3px 0 0 ${hex}, 0 0 0 1px ${hex}59`,
+      } : undefined}
+      className={`block w-full text-left rounded-lg px-1.5 py-1 -mx-1.5 cursor-pointer transition-all ${
+        isFocused ? '' : 'hover:bg-paper-100/50 dark:hover:bg-white/[0.04]'
+      }`}
+    >
+      <div className="flex items-baseline gap-2">
+        <span className={`text-[13px] truncate flex-1 text-ink dark:text-slate-200 ${isFocused ? 'font-semibold' : 'font-medium'}`}>
+          {toSentenceCase(c.name)}
+        </span>
+        {isFocused && (
+          <span
+            className="text-[8px] font-mono uppercase tracking-[0.15em] flex-shrink-0"
+            style={{ color: hex }}
+          >
+            on map
+          </span>
+        )}
+        <span className="text-[13px] font-mono tabular-nums text-ink dark:text-slate-300">
+          {(c.share * 100).toFixed(1)}%
+        </span>
+        <span className="text-[10px] font-mono tabular-nums text-slate-500 w-12 text-right">
+          {c.votes.toLocaleString()}
+        </span>
+      </div>
+      <div className="h-1.5 rounded-full bg-slate-200/50 dark:bg-white/[0.06] overflow-hidden">
+        <div
+          className="h-full rounded-full"
+          style={{ width: `${c.share * 100}%`, backgroundColor: hex }}
+        />
+      </div>
+    </button>
+  )
+})}
+```
+
+(Hex-alpha suffixes: `14` ≈ 8% tint, `59` ≈ 35% ring — the Last 48 10%/30% register,
+nudged up because this card is denser than the rail. All candidate palette values are
+6-digit hex, so suffixing is safe.)
+
+- [ ] **Step 2: Verify + commit**
+
+`npx vitest run` (251 green) + `npx tsc -b --force` clean. Visual: focused row shows a
+3px left bar + tint + ring in the candidate's color with the `ON MAP` tag, in both themes.
+
+```bash
+git add src/views/Elections/panels/PrecinctDetailPanel.tsx
+git commit -m "feat(elections): focused candidate row wears its own pigment (Last 48 idiom)"
+```
 
 ## Self-review (done at plan-writing time)
 

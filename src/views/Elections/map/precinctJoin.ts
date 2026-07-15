@@ -1,0 +1,173 @@
+/**
+ * The label→ids→features join. Race files key on row LABELS ("1104/1105");
+ * only _turnout carries ids; every member id of a consolidated label paints
+ * with that label's values. Rules verified against the emitted files:
+ *   - rows flagged `unmapped` render nowhere, on purpose
+ *   - an id absent from era geometry is tolerated only when registered === 0
+ *   - geometry features with no data row stay unpainted (normal: 13 in 2024,
+ *     414 in the consolidated 2025 special — the CoverageChip explains it)
+ */
+import type { PrecinctEra, PrecinctRaceFile, PrecinctTurnoutFile } from '@/types/elections'
+import { cleanCandidateName, leaderDisplayName, nhoodKey, sharePhrase, yesShareOf } from '@/utils/electionData'
+import {
+  focusFill,
+  leaderOf,
+  leaderShareQuartiles,
+  marginFill,
+  propFill,
+  resultsFill,
+  turnoutFill,
+  type Fill,
+} from './precinctPaint'
+
+export type PrecinctMapMode = 'results' | 'turnout' | 'margin'
+
+export interface PaintBundle {
+  dateCode: string
+  era: PrecinctEra
+  turnout: PrecinctTurnoutFile
+  /** Null → paint turnout instead (mode fallback while a race file loads). */
+  race: PrecinctRaceFile | null
+}
+
+export interface BuildPrecinctOptions {
+  bundle: PaintBundle
+  geometry: GeoJSON.FeatureCollection
+  mode: PrecinctMapMode
+  colorMap: Map<string, string>
+  raceIsProp: boolean
+  raceIsRCV: boolean
+  selectedNeighborhood: string | null
+  /** Clean candidate name — when set, results mode paints a continuous
+   *  single-hue support ramp for this candidate instead of the leader steps. */
+  focusCandidate: string | null
+}
+
+const SELECT_LIFT = 0.1
+const MAX_OPACITY = 0.8
+
+/** Per-precinct share of one candidate (clean name) across a race file,
+ *  plus its [min,max] extent. Vote keys are RAW ("\n(PARTY)") — matched via
+ *  cleanCandidateName. Zero-total precincts are skipped. */
+export function candidateShares(
+  race: PrecinctRaceFile,
+  cleanName: string,
+): { byLabel: Map<string, number>; extent: [number, number] | null } {
+  const byLabel = new Map<string, number>()
+  let min = Infinity
+  let max = -Infinity
+  for (const [label, row] of Object.entries(race.precincts)) {
+    if (row.total === 0) continue
+    let votes = 0
+    for (const [k, v] of Object.entries(row.votes)) {
+      if (cleanCandidateName(k) === cleanName) votes += v
+    }
+    const share = votes / row.total
+    byLabel.set(label, share)
+    if (share < min) min = share
+    if (share > max) max = share
+  }
+  return { byLabel, extent: byLabel.size > 0 ? [min, max] : null }
+}
+
+export function buildPrecinctFeatures(opts: BuildPrecinctOptions): GeoJSON.FeatureCollection {
+  const { bundle, geometry, mode, colorMap, raceIsProp, raceIsRCV, selectedNeighborhood, focusCandidate } = opts
+  const byId = new Map<string, GeoJSON.Feature>()
+  for (const f of geometry.features) byId.set(String(f.properties?.id), f)
+
+  const selectedKey = selectedNeighborhood ? nhoodKey(selectedNeighborhood) : null
+  const features: GeoJSON.Feature[] = []
+
+  // Results mode (non-prop) precomputes ONE of two things before the main
+  // loop: either the focused candidate's per-precinct share map (focus mode)
+  // or the race-relative leader-share quartiles (leader-steps mode). Never
+  // both — focus mode doesn't use resultsFill/quartiles at all.
+  let quartiles: [number, number, number] | null = null
+  let focus: { byLabel: Map<string, number>; extent: [number, number] | null } | null = null
+  if (mode === 'results' && bundle.race && !raceIsProp) {
+    if (focusCandidate) {
+      focus = candidateShares(bundle.race, focusCandidate)
+    } else {
+      const shares: number[] = []
+      for (const [label, row] of Object.entries(bundle.turnout.precincts)) {
+        if (row.unmapped) continue
+        const raceRow = bundle.race.precincts[label]
+        if (!raceRow) continue
+        const leader = leaderOf(raceRow.votes)
+        if (leader) shares.push(leader.share)
+      }
+      quartiles = leaderShareQuartiles(shares)
+    }
+  }
+
+  for (const [label, row] of Object.entries(bundle.turnout.precincts)) {
+    if (row.unmapped) continue
+
+    const raceRow = bundle.race?.precincts[label] ?? null
+    let fill: Fill | null = null
+    let tipLeaderName = ''
+    let tipLeaderPhrase = ''
+    let votes = row.ballots
+
+    if (mode === 'turnout' || !bundle.race) {
+      fill = turnoutFill(row.turnout)
+    } else if (!raceRow) {
+      continue // no votes reported for this race here — unpainted, honest
+    } else if (mode === 'margin') {
+      const leader = leaderOf(raceRow.votes)
+      if (!leader) continue
+      fill = marginFill(leader.lead)
+      tipLeaderName = leaderDisplayName(leader.name)
+      tipLeaderPhrase = sharePhrase(leader.share)
+      votes = raceRow.total
+    } else if (raceIsProp) {
+      const yes = yesShareOf(raceRow.votes)
+      if (yes === null) continue
+      fill = propFill(yes)
+      tipLeaderName = yes >= 0.5 ? 'Yes' : 'No'
+      tipLeaderPhrase = sharePhrase(Math.max(yes, 1 - yes))
+      votes = raceRow.total
+    } else if (focusCandidate && focus) {
+      const share = focus.byLabel.get(label)
+      if (share === undefined) continue
+      fill = focusFill(share, focus.extent!, colorMap.get(focusCandidate) ?? '#a8926a')
+      tipLeaderName = leaderDisplayName(focusCandidate)
+      tipLeaderPhrase = raceIsRCV
+        ? sharePhrase(share).replace('votes', 'first choices').replace('every vote', 'every first choice')
+        : sharePhrase(share)
+      votes = raceRow.total
+    } else {
+      const leader = leaderOf(raceRow.votes)
+      if (!leader) continue
+      fill = resultsFill(leader, colorMap, quartiles)
+      tipLeaderName = leaderDisplayName(leader.name)
+      tipLeaderPhrase = raceIsRCV
+        ? sharePhrase(leader.share).replace('votes', 'first choices').replace('every vote', 'every first choice')
+        : sharePhrase(leader.share)
+      votes = raceRow.total
+    }
+
+    for (const id of row.ids) {
+      const geoFeature = byId.get(id)
+      if (!geoFeature) continue // tolerated only for zero-registration strays (gated in Task 1)
+      const nhood = String(geoFeature.properties?.nhood ?? '')
+      const selected = selectedKey !== null && nhoodKey(nhood) === selectedKey
+      features.push({
+        ...geoFeature,
+        properties: {
+          label,
+          nhood,
+          selected,
+          fillColor: fill.color,
+          fillOpacity: selected ? Math.min(MAX_OPACITY, fill.opacity + SELECT_LIFT) : fill.opacity,
+          tipLeaderName,
+          tipLeaderPhrase,
+          turnoutPct: row.turnout,
+          votes,
+        },
+      })
+    }
+  }
+
+  return { type: 'FeatureCollection', features }
+}

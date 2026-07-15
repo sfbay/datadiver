@@ -377,46 +377,48 @@ export default function About() {
               </p>
             </Finding>
 
-            <Finding title="San Francisco doesn't publish election results as open data">
-              <p className="mb-3">
-                Every other dataset on this page lives on DataSF, where anyone can re-query it.
-                Election results do not. The portal carries the precinct{' '}
-                <em>boundaries</em> but not a single vote total. The results exist only as
-                certified spreadsheets in the Department of Elections&rsquo; own archive — a
-                Statement of the Vote, reported precinct by precinct, and a District &amp;
-                Neighborhood Statement of the Vote. They have to be read out of a web page
-                rather than queried, and preliminary drops sit alongside the certified final,
-                distinguished by nothing but a letter in the filename.
-              </p>
-              <p className="mb-3">
-                Two properties of that data govern what can honestly be shown.{' '}
-                <strong>Precinct numbers are not stable over time.</strong> San Francisco
-                renumbered its precincts in the 2022 redistricting, so precinct 1101 in 2020 is
-                not the precinct that carries that number today. The numbers still match as
-                text, which is what makes them dangerous: joining a 2020 result to a current
-                precinct map reconciles only 4 of 27 neighborhoods against the city&rsquo;s own
-                certified totals, and produces a map that looks entirely plausible while being
-                wrong. Each election is therefore pinned to the precinct boundaries that were in
-                force when it was held.
-              </p>
-              <p className="mb-3">
-                <strong>The neighborhood vocabulary changed as well.</strong> Through June 2022
-                the city reported on 26 coarse, abbreviated neighborhoods — a single
-                &ldquo;RICHMOND,&rdquo; a single &ldquo;SUNSET.&rdquo; From November 2022 it
-                reports on the 41 Analysis Neighborhoods the rest of this site is built on. The
-                older scheme cannot be split back apart into the newer one; the detail simply
-                is not in the file. Older elections are shown on the vocabulary the city
-                actually used, rather than being quietly reshaped into today&rsquo;s.
-              </p>
-              <p>
-                One more quiet gap: a handful of very small precincts appear in the
-                neighborhood totals but are withheld from the precinct-level report, evidently
-                to protect ballot secrecy where too few people voted. In November 2024 that is
-                1,215 registered voters. We report that residual rather than absorbing it into
-                a neighborhood it may not belong to. Because the city certifies its own totals,
-                every figure derived from these reports can be checked against them — and is.
-              </p>
-            </Finding>
+            <div id="elections" className="scroll-mt-4">
+              <Finding title="San Francisco doesn't publish election results as open data">
+                <p className="mb-3">
+                  Every other dataset on this page lives on DataSF, where anyone can re-query it.
+                  Election results do not. The portal carries the precinct{' '}
+                  <em>boundaries</em> but not a single vote total. The results exist only as
+                  certified spreadsheets in the Department of Elections&rsquo; own archive — a
+                  Statement of the Vote, reported precinct by precinct, and a District &amp;
+                  Neighborhood Statement of the Vote. They have to be read out of a web page
+                  rather than queried, and preliminary drops sit alongside the certified final,
+                  distinguished by nothing but a letter in the filename.
+                </p>
+                <p className="mb-3">
+                  Two properties of that data govern what can honestly be shown.{' '}
+                  <strong>Precinct numbers are not stable over time.</strong> San Francisco
+                  renumbered its precincts in the 2022 redistricting, so precinct 1101 in 2020 is
+                  not the precinct that carries that number today. The numbers still match as
+                  text, which is what makes them dangerous: joining a 2020 result to a current
+                  precinct map reconciles only 4 of 27 neighborhoods against the city&rsquo;s own
+                  certified totals, and produces a map that looks entirely plausible while being
+                  wrong. Each election is therefore pinned to the precinct boundaries that were in
+                  force when it was held.
+                </p>
+                <p className="mb-3">
+                  <strong>The neighborhood vocabulary changed as well.</strong> Through June 2022
+                  the city reported on 26 coarse, abbreviated neighborhoods — a single
+                  &ldquo;RICHMOND,&rdquo; a single &ldquo;SUNSET.&rdquo; From November 2022 it
+                  reports on the 41 Analysis Neighborhoods the rest of this site is built on. The
+                  older scheme cannot be split back apart into the newer one; the detail simply
+                  is not in the file. Older elections are shown on the vocabulary the city
+                  actually used, rather than being quietly reshaped into today&rsquo;s.
+                </p>
+                <p>
+                  One more quiet gap: a handful of very small precincts appear in the
+                  neighborhood totals but are withheld from the precinct-level report, evidently
+                  to protect ballot secrecy where too few people voted. In November 2024 that is
+                  1,215 registered voters. We report that residual rather than absorbing it into
+                  a neighborhood it may not belong to. Because the city certifies its own totals,
+                  every figure derived from these reports can be checked against them — and is.
+                </p>
+              </Finding>
+            </div>
           </div>
         </section>
 
