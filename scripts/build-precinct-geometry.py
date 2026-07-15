@@ -103,7 +103,11 @@ def main():
                 die(f'{era}: duplicate precinct id {pid}')
             seen.add(pid)
             geom = shape(f['geometry']).buffer(0)
-            out.append(feature({'id': pid, 'nhood': f['properties'][nhood_field]}, geom))
+            # neigh22 is null for two park/water placeholder precincts
+            # (9903/9904) — normalize to the 2012 file's 'NA' convention so
+            # the emitted contract stays {id: string, nhood: string}.
+            nhood = f['properties'][nhood_field] or 'NA'
+            out.append(feature({'id': pid, 'nhood': nhood}, geom))
 
         if skipped_placeholder != expected_nulls:
             die(f'{era}: {skipped_placeholder} null-id placeholder features, '
