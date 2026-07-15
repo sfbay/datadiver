@@ -178,7 +178,7 @@ export default function SectorFilter({ categories, selected, onChange, zScores }
                 than guessed.
               </p>
               <p className="text-[9px] text-ochre-400/60 leading-relaxed mt-1.5">
-                The health bars below compare each sector's closure rate against its own 5-year historical baseline (2019–2023).
+                The health bars below compare each sector's closure rate against the same window in each of its own prior five years.
                 Green = fewer closures than typical. Red = more closures than typical. This normalizes for the data bias.
               </p>
             </div>

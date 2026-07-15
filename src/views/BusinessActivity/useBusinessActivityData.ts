@@ -208,7 +208,7 @@ export function useBusinessActivityData(params: UseBusinessActivityDataParams) {
     const sectorStats = new Map<string, { openings: number; closures: number }>()
     for (const d of dataWithNeighborhoods) {
       for (const s of d.sectors) {
-        if (!s || s === 'Uncategorized') continue
+        if (!s) continue
         const entry = sectorStats.get(s) || { openings: 0, closures: 0 }
         if (d.status === 'opened') entry.openings++
         if (d.status === 'closed') entry.closures++
@@ -217,7 +217,7 @@ export function useBusinessActivityData(params: UseBusinessActivityDataParams) {
     }
 
     return sectorRows
-      .filter((r) => r.sector && r.sector !== 'Uncategorized')
+      .filter((r) => r.sector)
       .map((r) => {
         const stats = sectorStats.get(r.sector) || { openings: 0, closures: 0 }
         return {

@@ -36,6 +36,7 @@ import type { TrendConfig } from '@/types/trends'
 import { useProgressScope } from '@/hooks/useLoadingProgress'
 import InfoTip from '@/components/ui/InfoTip'
 import { useBusinessActivityData } from './useBusinessActivityData'
+import { useSectorClosureZ } from './useSectorClosureZ'
 import { BUSINESS_HEATMAP_LAYERS, ANOMALY_LAYERS } from './mapLayers'
 import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 
@@ -501,6 +502,8 @@ export default function BusinessActivity() {
     priorAdminClosuresCount,
   })
 
+  const sectorZScores = useSectorClosureZ(dateRange)
+
   // Chart tiles
   const chartTiles = useMemo<ChartTileDef[]>(() => {
     const tiles: ChartTileDef[] = []
@@ -872,6 +875,7 @@ export default function BusinessActivity() {
                     categories={sectorEntries}
                     selected={selectedSectors}
                     onChange={setSelectedSectors}
+                    zScores={sectorZScores}
                   />
                 )}
               </>
