@@ -591,7 +591,7 @@ export default function Elections() {
             )}
 
             {/* RCV visualization panel — bottom-left when an RCV race is selected */}
-            {!isLoading && activeRace?.isRCV && rcvData && (
+            {!isLoading && !timeMachineActive && activeRace?.isRCV && rcvData && (
               <div className="absolute bottom-6 left-5 z-10 glass-card rounded-xl p-4" style={{ maxWidth: rcvViewMode === 'sankey' ? 620 : 420 }}>
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-500">
