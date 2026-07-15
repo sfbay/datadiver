@@ -2215,6 +2215,133 @@ Do not merge without Jesse's review of the ship checklist — the era-boundary b
 
 ---
 
+### Task 11: Race-relative texture + candidate focus mode (approved follow-up, 7/14 evening)
+
+Jesse's live-QA feedback on PR #112: walkover races (Biden 85%, Pelosi 77%) put nearly
+every precinct in the top absolute opacity step — the interesting within-race variety is
+papered over. Approved design: (A) the leader view's four steps become RACE-RELATIVE
+(quartiles of this race's leader shares); (B) clicking a candidate (map legend + precinct
+panel rows) enters FOCUS mode — that candidate's support as a continuous single-hue
+race-relative ramp (`?candidate=` param). Continuous is correct there because focus is
+single-hue (the underlay regime); the leader view keeps steps because multi-hue +
+continuous reads as noise.
+
+**Files:**
+- Modify: `src/views/Elections/map/precinctPaint.ts` (+test), `src/views/Elections/map/precinctJoin.ts` (+test), `src/views/Elections/map/PrecinctFillLayer.tsx`, `src/views/Elections/map/PrecinctLegend.tsx`, `src/views/Elections/panels/PrecinctDetailPanel.tsx`, `src/views/Elections/Elections.tsx`
+
+- [ ] **Step 1: Pure paint additions — `precinctPaint.ts`**
+
+```ts
+/** Quartile boundaries of this race's leader shares — the race-relative
+ *  decisiveness ladder. Absolute cutpoints flatten lopsided races (Biden 85%
+ *  citywide put ~every precinct in the top step); quartiles guarantee all
+ *  four steps appear in every race. Null (→ absolute fallback) when there are
+ *  too few precincts or the spread is degenerate. */
+export function leaderShareQuartiles(shares: number[]): [number, number, number] | null {
+  if (shares.length < 8) return null
+  const s = [...shares].sort((a, b) => a - b)
+  const q = (p: number) => s[Math.min(s.length - 1, Math.floor(p * s.length))]
+  const qs: [number, number, number] = [q(0.25), q(0.5), q(0.75)]
+  return qs[0] === qs[2] ? null : qs
+}
+
+export function decisivenessOpacityRelative(share: number, q: [number, number, number]): number {
+  if (share < q[0]) return 0.25
+  if (share < q[1]) return 0.4
+  if (share < q[2]) return 0.55
+  return 0.7
+}
+
+/** Single-hue support ramp for a FOCUSED candidate: race-relative, continuous.
+ *  Single hue is the regime where continuous tonal variation reads as a field
+ *  (the demographic-underlay recipe) rather than noise. */
+export function focusFill(share: number, extent: [number, number], hex: string): Fill {
+  const [min, max] = extent
+  const t = max > min ? (share - min) / (max - min) : 0.5
+  return { color: hex, opacity: 0.12 + t * 0.63 }
+}
+```
+
+`resultsFill` gains an optional third param (backwards-compatible — existing tests unchanged):
+
+```ts
+export function resultsFill(
+  leader: PrecinctLeader,
+  colorMap: Map<string, string>,
+  quartiles?: [number, number, number] | null,
+): Fill {
+  return {
+    color: colorMap.get(leader.name) ?? FALLBACK,
+    opacity: quartiles
+      ? decisivenessOpacityRelative(leader.share, quartiles)
+      : decisivenessOpacity(leader.share),
+  }
+}
+```
+
+New tests (`precinctPaint.test.ts`): quartiles of a known 12-value array; `< 8 values → null`; all-equal spread → null; relative boundaries (share below q1 → 0.25, at q3 → 0.7); focusFill extent mapping (min → 0.12, max → 0.75, degenerate extent → midpoint 0.435); resultsFill with quartiles uses the relative ladder, without stays absolute.
+
+- [ ] **Step 2: Join — `precinctJoin.ts`**
+
+Add to `BuildPrecinctOptions`: `focusCandidate: string | null` (CLEAN name). Export a shared pure helper both the join and the legend use:
+
+```ts
+/** Per-precinct share of one candidate (clean name) across a race file,
+ *  plus its [min,max] extent. Vote keys are RAW ("\n(PARTY)") — matched via
+ *  cleanCandidateName. Zero-total precincts are skipped. */
+export function candidateShares(
+  race: PrecinctRaceFile,
+  cleanName: string,
+): { byLabel: Map<string, number>; extent: [number, number] | null } {
+  const byLabel = new Map<string, number>()
+  let min = Infinity
+  let max = -Infinity
+  for (const [label, row] of Object.entries(race.precincts)) {
+    if (row.total === 0) continue
+    let votes = 0
+    for (const [k, v] of Object.entries(row.votes)) {
+      if (cleanCandidateName(k) === cleanName) votes += v
+    }
+    const share = votes / row.total
+    byLabel.set(label, share)
+    if (share < min) min = share
+    if (share > max) max = share
+  }
+  return { byLabel, extent: byLabel.size > 0 ? [min, max] : null }
+}
+```
+
+In `buildPrecinctFeatures`, results mode (non-prop, race present):
+1. Pre-pass: collect `leaderOf(raceRow.votes)?.share` across non-unmapped rows → `const quartiles = leaderShareQuartiles(shares)`; pass as `resultsFill`'s third arg.
+2. When `focusCandidate` is set (and mode==='results', race present, non-prop): compute `const focus = candidateShares(bundle.race, focusCandidate)` once; per row use `const share = focus.byLabel.get(label)`; skip if undefined; `fill = focusFill(share, focus.extent!, colorMap.get(focusCandidate) ?? '#a8926a')`; tooltip fields `tipLeaderName = leaderDisplayName(focusCandidate)`, `tipLeaderPhrase = sharePhrase(share)` (RCV → "first choices" replacement as in the leader path); `votes = raceRow.total`.
+
+New tests (`precinctJoin.test.ts`, real fixtures): focusing `'DONALD J. TRUMP / JD VANCE'` on 2024 president → 501 features, every `fillColor` identical (the focus hue), opacities vary (min < max), the extent is sane (`extent[0] >= 0 && extent[1] <= 1 && extent[0] < extent[1]`), `tipLeaderName === 'Trump'`; leader view on the same race now spreads across ≥3 distinct opacity values (the quartile fix's whole point — pin it).
+
+- [ ] **Step 3: Thread through the layer + Elections.tsx**
+
+`PrecinctFillLayer` gains `focusCandidate: string | null` prop → geojson memo input. Elections.tsx:
+- `const focusedCandidate = searchParams.get('candidate') || null` + `setFocusedCandidate` (same URLSearchParams pattern, replace: true).
+- Clearing: `setSelectedRace` and the election picker `onChange` both `next.delete('candidate')`.
+- Pass `focusCandidate={mapMode === 'results' && !timeMachineActive ? focusedCandidate : null}` to the fill layer (focus is a results-mode lens; Time Machine beats have different candidate sets, so focus is suspended during TM).
+
+- [ ] **Step 4: Legend + panel entry points**
+
+`PrecinctLegend` new props: `focusedCandidate: string | null`, `focusExtent: [number, number] | null`, `onFocusCandidate: (name: string | null) => void`. In results (non-prop) mode:
+- Unfocused: each candidate row becomes a `<button>` (hover ring, cursor-pointer) calling `onFocusCandidate(c.name)`; add a hint line `Click a candidate to map their support`.
+- Focused: header row = swatch + `toSentenceCase(name)` + an `✕` button (`onFocusCandidate(null)`); then a `GradientRow` `linear-gradient(to right, ${hex}1f, ${hex})` with labels `weakest ${Math.round(extent[0]*100)}%` / `strongest ${Math.round(extent[1]*100)}%`; hint `Where their support ran`.
+Elections.tsx computes `focusExtent` via `candidateShares(raceFile, focusedCandidate).extent` in a memo (null unless focused + raceFile matches).
+
+`PrecinctDetailPanel` new props: `focusedCandidate: string | null`, `onFocusCandidate: (name: string | null) => void`. Each candidate row becomes a button toggling focus (`onFocusCandidate(focusedCandidate === c.name ? null : c.name)`), with the focused row ring-highlighted (`ring-1 ring-indigo-500/30`).
+
+- [ ] **Step 5: Verify + commit**
+
+`npx vitest run` (all green, new tests included) + `npx tsc -b --force`. Browser QA rides the existing PR checklist (add: click Buttar on the Pelosi race → a real support field appears; the Biden map now shows quartile texture).
+
+```bash
+git add -A src/views/Elections src/views/Elections/map
+git commit -m "feat(elections): race-relative decisiveness steps + click-a-candidate focus ramp"
+```
+
 ## Self-review (done at plan-writing time)
 
 - **Spec coverage:** spec Task 1 → plan Task 1; spec Task 2 → plan Task 2; spec Task 3 → plan Tasks 3–5 (paint, join, components split for reviewability); spec Task 4 → plan Tasks 6–7; spec Task 5 → plan Task 8; spec Task 6 → plan Task 9; spec Testing section → Tasks 2/3/4 test files (leaderOf edge cases ✓, step boundaries ✓, propFill midpoint ✓, isProposition ✓, consolidated-label expansion ✓, unmapped-zero-features ✓, six-election name gate ✓) + Task 10 full suite. The spec's "every 2022-era geometry id receives paint for 20241105" test was AMENDED to "every 2024 turnout row paints exactly one feature (501)" — 13 geometry ids verifiably receive no data in the real files (fact 5); the original criterion is unsatisfiable as written.
