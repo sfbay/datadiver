@@ -134,7 +134,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         tokenSecret,
       )
       await sendDigestEmail(sub.email, payload, unsubToken)
-      await markDispatched(sub.id, nextWatermarks(sub, matched), now)
+      await markDispatched(sub.id, nextWatermarks(sub, matched), {}, now)
       sent++
     } catch (err) {
       // one bad subscription must not abort the whole run
