@@ -18,6 +18,11 @@ const CATEGORIES: Array<{ key: string; test: RegExp; plural: string }> = [
   { key: 'fire',     test: /\b(structure fire|working fire|vehicle fire|explos)/i, plural: 'fires' },
 ]
 
+/** The category-key vocabulary, derived from the table above so it can never
+ *  drift from the classifier. Shared by the subscribe validator (and, via
+ *  400s, effectively pins the builder UI's own category list). */
+export const SIGNIFICANCE_KEYS: string[] = CATEGORIES.map((c) => c.key)
+
 /** Classify a raw call-type string into a significant category, or null. The
  *  string-level core of classifySignificant — reusable by surfaces that only
  *  hold a grouped call-type label (e.g. the Home ticker's 48h tally), not a
