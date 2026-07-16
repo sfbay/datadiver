@@ -152,13 +152,13 @@ function rowHtml(r: DigestRow): string {
 
 function blockHtml(block: TimeBlock): string {
   return `
-    <div style="font-family:${SANS};font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#5c9693;margin:18px 0 10px;border-top:1px solid ${PAPERLINE};padding-top:10px">${escapeHtml(block.label)} <span style="color:${MUTED};letter-spacing:.06em">· ${escapeHtml(block.rangeLabel)}</span></div>
+    <div style="font-family:${SANS};font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#5c9693;margin:24px 0 10px">${escapeHtml(block.label)} <span style="color:${MUTED};letter-spacing:.06em">· ${escapeHtml(block.rangeLabel)}</span></div>
     ${block.rows.map(rowHtml).join('')}`
 }
 
 function dayHtml(day: DayGroup, showHeader: boolean): string {
   const header = showHeader
-    ? `<div style="border-top:3px double ${PAPERLINE};margin-top:22px;padding-top:12px;font-family:${TIMES};font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:${INK};font-weight:bold">${escapeHtml(day.dayLabel)}</div>`
+    ? `<div style="border-top:3px double ${PAPERLINE};margin-top:22px;padding-top:12px;font-family:${TIMES};font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:${INK};font-weight:bold">${escapeHtml(day.dayLabel)}</div>`
     : ''
   return header + day.blocks.map(blockHtml).join('')
 }
