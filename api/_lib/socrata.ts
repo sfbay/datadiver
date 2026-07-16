@@ -29,7 +29,10 @@ const MAX_PAGES = 4
  *  ASC ordering + $offset pagination: rows arriving mid-pagination append
  *  after the cursor, so pages never shift underneath us the way DESC pages
  *  do — and any truncation drops the newest tail (recoverable next run), not
- *  the oldest (permanently below the advancing watermark).
+ *  the oldest (permanently below the advancing watermark). Caveat: a
+ *  BACKFILLED row with a mid-range timestamp landing between two page
+ *  fetches can still dup/skip one boundary row — same late-arrival class
+ *  any watermark scheme carries, and pagination past page 0 is itself rare.
  *
  *  A stream that errors returns ok:false and NO events: delivering a partial
  *  page would email an arbitrary slice while its watermark can't advance,
