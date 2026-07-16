@@ -53,39 +53,55 @@ export function LocationPicker({ locations, radiusMiles, onAdd, className }: Loc
   const prevCount = useRef(locations.length)
 
   function handleReady(map: mapboxgl.Map) {
+    // A full-width map inside a scrolling form: plain trackpad scroll must
+    // scroll the PAGE, not zoom the map — the picker is a form station, not
+    // an exploration view, and the scroll-capture trap catches ~everyone
+    // whose cursor rests here after picking an address. Zoom stays available
+    // via the buttons (MapView already adds a NavigationControl) + double-click,
+    // and the auto-framing below removes most of the need to zoom at all.
+    map.scrollZoom.disable()
     map.on('click', (e) => onAdd({ lat: e.lngLat.lat, lng: e.lngLat.lng }))
   }
 
-  // When a pin is ADDED (an address is picked, or the map is clicked), animate
-  // the camera to frame that point AND its radius ring. Guarded to fire only on
-  // a new pin — not on radius changes or removals — so nudging the radius or
-  // deleting a pin doesn't yank the camera. Reduced-motion users get an instant
+  // When a pin is ADDED (an address is picked, or the map is clicked) OR the
+  // RADIUS changes, animate the camera to reframe. Guarded to skip removals —
+  // deleting a pin never yanks the camera. Reduced-motion users get an instant
   // fit (Mapbox skips the animation when `essential` is not set).
   //
   // fitBounds resets pitch/bearing to 0 by default, which would flatten the
   // map's signature SF tilt — so we hand it the CURRENT pitch + bearing to
   // preserve the tilt through the framing.
+  const prevRadius = useRef(radiusMiles)
   useEffect(() => {
     const map = mapRef.current?.getMap()
-    if (map && locations.length > prevCount.current) {
-      const l = locations[locations.length - 1]
-      const { dLat, dLng } = radiusDegrees(l.lat, radiusMiles)
+    const pinAdded = locations.length > prevCount.current
+    const radiusChanged = radiusMiles !== prevRadius.current
+    if (map && locations.length > 0 && (pinAdded || radiusChanged)) {
+      // Pin add → frame the NEW pin's circle (tight, local). Radius change →
+      // frame the union of all circles. Removals still never yank the camera.
+      const targets = pinAdded ? [locations[locations.length - 1]] : locations
+      let west = Infinity, south = Infinity, east = -Infinity, north = -Infinity
+      for (const l of targets) {
+        const { dLat, dLng } = radiusDegrees(l.lat, radiusMiles)
+        west = Math.min(west, l.lng - dLng)
+        east = Math.max(east, l.lng + dLng)
+        south = Math.min(south, l.lat - dLat)
+        north = Math.max(north, l.lat + dLat)
+      }
       map.fitBounds(
-        [
-          [l.lng - dLng, l.lat - dLat],
-          [l.lng + dLng, l.lat + dLat],
-        ],
+        [[west, south], [east, north]],
         {
           padding: 40,
           maxZoom: 16,
           duration: 1200,
           bearing: map.getBearing(),
           // lean in a touch MORE than the resting camera for a dramatic settle
-          pitch: Math.min(map.getPitch() + 14, 60),
+          pitch: Math.min(map.getPitch() + (pinAdded ? 14 : 0), 60),
         },
       )
     }
     prevCount.current = locations.length
+    prevRadius.current = radiusMiles
   }, [locations, radiusMiles])
 
   // Render markers + radius circles whenever locations/radius change.

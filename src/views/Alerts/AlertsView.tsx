@@ -629,11 +629,11 @@ function SubscribeButton({
       onClick={onClick}
       disabled={disabled}
       className="
-        group relative w-full inline-flex items-center justify-between gap-4
+        group relative inline-flex items-center gap-3
         rounded-[20px] rounded-bl-none
         bg-terracotta-500 hover:bg-terracotta-600
         text-white
-        pl-5 pr-[60px] py-4
+        pl-6 pr-[64px] py-3.5
         shadow-sm hover:shadow-md
         transition-all duration-300
         disabled:opacity-60 disabled:cursor-not-allowed
@@ -642,9 +642,6 @@ function SubscribeButton({
     >
       <span className="font-display italic text-[19px] leading-tight">
         {sending ? 'Sending…' : 'Subscribe'}
-      </span>
-      <span className="text-[10px] font-mono uppercase tracking-[0.22em] text-white/75 hidden sm:inline">
-        confirm via email
       </span>
 
       {/* Top-right notched accent tab — paper / espresso plate with chevron */}
