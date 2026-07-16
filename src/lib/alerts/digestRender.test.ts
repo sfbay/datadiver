@@ -92,7 +92,8 @@ describe('renderDigest', () => {
     expect(html).toContain('The Last 48')
     expect(html).toContain(sfDayLine(NOW))
     expect(html).not.toContain('AT A GLANCE')
-    expect(html).toContain('New report') // true stat header label
+    expect(html).toContain('>New</div>') // true stat header lead label
+    expect(html).toContain('>Significant</div>') // significant elevated to the top line
   })
 
   it('labels the hour axis and each block with its time range', () => {

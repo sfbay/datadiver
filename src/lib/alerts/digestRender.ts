@@ -75,23 +75,33 @@ function placeShort(label: string): string {
   return /^-?\d+(\.\d+)?$/.test(first) ? label : first
 }
 
+/** Tahoma leads the label voice (designed for small sizes — the email cousin
+ *  of the app's mono micro-labels); Georgia stays the reading voice. */
+const SANS = "Tahoma,Verdana,'Segoe UI',Arial,sans-serif"
+
+/** Display order for the heat strip: the civic day reads dawn to dawn, so
+ *  the strip starts at 6 a.m. and wraps through the small hours. Buckets
+ *  stay midnight-indexed upstream (peak label et al. unaffected). */
+const STRIP_ORDER = [3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2]
+
 /** 12-cell two-hour heat strip + a time axis so the day has coordinates. */
 function barHtml(buckets: number[]): string {
   const max = Math.max(1, ...buckets)
-  const cells = buckets
-    .map((c) => {
-      const bg = lerpHex('#ece0c6', '#b85a33', c / max)
+  const cells = STRIP_ORDER
+    .map((i) => {
+      const bg = lerpHex('#ece0c6', '#b85a33', buckets[i] / max)
       return `<td width="40" height="20" bgcolor="${bg}" style="font-size:0;line-height:0">&nbsp;</td>`
     })
     .join('<td width="2" style="font-size:0;line-height:0">&nbsp;</td>')
-  const axis = ['12 a.m.', '6 a.m.', 'noon', '6 p.m.']
-    .map((l) => `<td width="25%" style="font-size:10px;color:${MUTED};padding-top:3px">${l}</td>`)
+  const axis = ['6 a.m.', 'noon', '6 p.m.', '12 a.m.']
+    .map((l) => `<td width="25%" style="font-family:${SANS};font-size:10px;color:${MUTED};padding-top:3px">${l}</td>`)
     .join('')
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:10px 0 0"><tr>${cells}</tr></table>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>${axis}</tr></table>`
 }
 
-/** The true header: big total + one pigment-ruled cell per non-zero stream. */
+/** The true header: NEW + SIGNIFICANT lead as a pair, a hairline divider,
+ *  then one pigment-ruled cell per non-zero stream. */
 function statHeaderHtml(s: Summary, buckets: number[]): string {
   const byStream = s.byStream as Record<string, number>
   const streamCells = Object.keys(STREAM_META)
@@ -100,23 +110,26 @@ function statHeaderHtml(s: Summary, buckets: number[]): string {
       const m = STREAM_META[id]
       return `<td valign="bottom" style="border-top:6px solid ${m.hex};padding:8px 18px 0 0">
         <div style="font-style:italic;font-size:22px;font-weight:bold;color:${INK};line-height:1">${byStream[id]}</div>
-        <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:${m.hex};margin-top:3px;white-space:nowrap">${m.tag}</div>
+        <div style="font-family:${SANS};font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:${m.hex};margin-top:3px;white-space:nowrap">${m.tag}</div>
       </td>`
     })
     .join('<td width="14" style="font-size:0">&nbsp;</td>')
-  const caption = [
-    s.significant > 0 ? `${s.significant} significant` : null,
-    s.busiestLabel ? `busiest ${s.busiestLabel}` : null,
-  ].filter(Boolean).join(' · ')
+  const caption = s.busiestLabel ? `busiest ${s.busiestLabel}` : ''
   return `
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0 0"><tr>
-      <td valign="bottom" style="padding-right:24px">
+      <td valign="bottom" style="padding-right:22px">
         <div style="font-style:italic;font-size:36px;font-weight:bold;color:${INK};line-height:1">${s.total}</div>
-        <div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:${MUTED};margin-top:3px;white-space:nowrap">New report${s.total === 1 ? '' : 's'}</div>
+        <div style="font-family:${SANS};font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:${MUTED};margin-top:3px;white-space:nowrap">New</div>
       </td>
+      <td valign="bottom" style="border-top:6px solid #963e30;padding:8px 22px 0 0">
+        <div style="font-style:italic;font-size:36px;font-weight:bold;color:${INK};line-height:1">${s.significant}</div>
+        <div style="font-family:${SANS};font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#963e30;margin-top:3px;white-space:nowrap">Significant</div>
+      </td>
+      <td width="1" bgcolor="${PAPERLINE}" style="font-size:0;line-height:0">&nbsp;</td>
+      <td width="20" style="font-size:0">&nbsp;</td>
       ${streamCells}
     </tr></table>
-    ${caption ? `<div style="font-size:12px;color:${MUTED};margin-top:6px">${escapeHtml(caption)}</div>` : ''}
+    ${caption ? `<div style="font-family:${SANS};font-size:12px;color:${MUTED};margin-top:6px">${escapeHtml(caption)}</div>` : ''}
     ${barHtml(buckets)}`
 }
 
@@ -127,21 +140,21 @@ function rowHtml(r: DigestRow): string {
   const late = r.late ? ` <span style="font-size:11px;color:#a8926a;font-style:italic">late report</span>` : ''
   const href = `${PUBLIC_LINK_BASE}/live?event=${encodeURIComponent(r.id)}`
   return `<div style="margin:0 0 10px;line-height:1.45">
-    <span style="display:inline-block;width:64px;color:${MUTED};font-size:12px">${escapeHtml(r.clock)}</span>
-    <span style="color:${m.hex};font-size:10px;letter-spacing:.08em">&#9679;&nbsp;${escapeHtml(m.tag)}</span>
+    <span style="display:inline-block;width:64px;font-family:${SANS};color:${MUTED};font-size:11px">${escapeHtml(r.clock)}</span>
+    <span style="font-family:${SANS};color:${m.hex};font-size:10px;letter-spacing:.08em">&#9679;&nbsp;${escapeHtml(m.tag)}</span>
     <a href="${href}" style="color:${INK};text-decoration:none;font-size:16px">&nbsp;${sig}${escapeHtml(r.what)}</a>${where}${late}
   </div>`
 }
 
 function blockHtml(block: TimeBlock): string {
   return `
-    <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#5c9693;margin:18px 0 10px;border-top:1px solid ${PAPERLINE};padding-top:10px">${escapeHtml(block.label)} <span style="color:${MUTED};letter-spacing:.06em">· ${escapeHtml(block.rangeLabel)}</span></div>
+    <div style="font-family:${SANS};font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#5c9693;margin:18px 0 10px;border-top:1px solid ${PAPERLINE};padding-top:10px">${escapeHtml(block.label)} <span style="color:${MUTED};letter-spacing:.06em">· ${escapeHtml(block.rangeLabel)}</span></div>
     ${block.rows.map(rowHtml).join('')}`
 }
 
 function dayHtml(day: DayGroup, showHeader: boolean): string {
   const header = showHeader
-    ? `<div style="border-top:3px double ${PAPERLINE};margin-top:22px;padding-top:12px;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:${INK};font-weight:bold">${escapeHtml(day.dayLabel)}</div>`
+    ? `<div style="border-top:3px double ${PAPERLINE};margin-top:22px;padding-top:12px;font-family:${SANS};font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:${INK};font-weight:bold">${escapeHtml(day.dayLabel)}</div>`
     : ''
   return header + day.blocks.map(blockHtml).join('')
 }
@@ -185,16 +198,16 @@ export function renderDigest(payload: DigestPayload, unsubUrl: string): Rendered
   <div style="max-width:560px;margin:0 auto;padding:24px 24px 28px">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px"><tr>
       <td bgcolor="${INK}" style="padding:20px 24px;border-radius:10px">
-        <div style="font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:${OCHRE}">DataDiver &#8226; The Last 48</div>
+        <div style="font-family:${SANS};font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:${OCHRE}">DataDiver &#8226; The Last 48</div>
         <div style="font-style:italic;font-size:24px;color:${CREAM};margin-top:6px">${escapeHtml(dateLine)}</div>
-        <div style="font-size:13px;color:${PAPERLINE};margin-top:5px">${escapeHtml(introLine)}</div>
+        <div style="font-family:${SANS};font-size:12px;color:${PAPERLINE};margin-top:6px">${escapeHtml(introLine)}</div>
       </td>
     </tr></table>
     ${body}
     <hr style="border:none;border-top:1px solid ${PAPERLINE};margin:24px 0">
     <div style="font-size:12px;color:${MUTED};line-height:1.5">
       ${SENDER_IDENTITY}<br>
-      Reports are grouped by the day they occurred; some arrive a day late as the city releases data.<br>
+      Reports are grouped by the day they occurred; some arrive late as the city releases data.<br>
       You're receiving this because you subscribed to DataDiver alerts.<br>
       <a href="${escapeHtml(unsubUrl)}" style="color:${MUTED}">Unsubscribe</a> (one click — removes your data).
     </div>
@@ -214,7 +227,7 @@ function renderText(payload: DigestPayload, dateLine: string, introLine: string,
         .filter((id) => byStream[id])
         .map((id) => `${STREAM_META[id].tag} ${byStream[id]}`)
         .join(' · ')
-      const glance = `${s.total} new report${s.total === 1 ? '' : 's'} — ${split}` +
+      const glance = `${s.total} new report${s.total === 1 ? '' : 's'}, ${s.significant} significant — ${split}` +
         (s.busiestLabel ? ` · busiest ${s.busiestLabel}` : '')
       const showDayHeaders =
         loc.days.length > 1 || (loc.days.length === 1 && loc.days[0].dateKey !== sfDayKey(payload.nowMs))
@@ -231,5 +244,5 @@ function renderText(payload: DigestPayload, dateLine: string, introLine: string,
       return `${head}${loc.mapAlt}\n${glance}\n\n${body}`
     })
     .join('\n\n')
-  return `THE LAST 48 — ${dateLine}\n${introLine}\n\n${blocks}\n\nReports are grouped by the day they occurred; some arrive a day late as the city releases data.\nUnsubscribe: ${unsubUrl}\n${SENDER_IDENTITY}`
+  return `THE LAST 48 — ${dateLine}\n${introLine}\n\n${blocks}\n\nReports are grouped by the day they occurred; some arrive late as the city releases data.\nUnsubscribe: ${unsubUrl}\n${SENDER_IDENTITY}`
 }
