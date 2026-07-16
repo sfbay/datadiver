@@ -10,8 +10,9 @@ import { buildStaticMapUrl } from '../../src/lib/alerts/staticMap.js'
 import { summarize, busiestBuckets, bucketByTimeOfDay, radiusLabelText } from '../../src/lib/alerts/digestSummary.js'
 import { mapAltText, type DigestPayload, type LocationDigest } from '../../src/lib/alerts/digestRender.js'
 import { getActiveConfirmedSubscriptions, markDispatched, markChecked, pruneStaleRows } from '../_lib/db.js'
-import { fetchRecentEvents } from '../_lib/socrata.js'
+import { fetchStreamEvents } from '../_lib/socrata.js'
 import { sendDigestEmail } from '../_lib/email.js'
+import { watermarkFor, nextWatermarks } from '../../src/lib/alerts/watermarks.js'
 
 const WINDOW_MS = 48 * 60 * 60_000
 
@@ -92,10 +93,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const due = (await getActiveConfirmedSubscriptions()).filter((s) => isSubscriptionDue(s, now))
   let sent = 0
 
+  // One fetch per unique stream per run — not per subscription.
+  const uniqueStreams = [...new Set(due.flatMap((s) => s.filters.streams))]
+  const fetched = due.length > 0 ? await fetchStreamEvents(uniqueStreams, now - WINDOW_MS) : {}
+
   for (const sub of due) {
     try {
-      const events = await fetchRecentEvents(sub.filters.streams, now - WINDOW_MS)
-      const matched = events.filter((e) => eventMatchesSubscription(e, sub, sub.lastEventTs))
+      const okStreams = sub.filters.streams.filter((s) => fetched[s]?.ok)
+      if (okStreams.length === 0) {
+        // Every stream this subscription reads failed to fetch. Leave BOTH
+        // clocks alone so the next run retries in full — advancing
+        // last_sent_at here would swallow a whole cadence period on an
+        // upstream outage.
+        console.error('[cron] all streams failed for subscription', sub.id)
+        continue
+      }
+      const events = okStreams.flatMap((s) => fetched[s].events)
+      // Per-stream watermarks: a failed stream's mark never advances (its
+      // events return next run), so one stream's success can no longer
+      // discard another stream's backlog.
+      const matched = events.filter((e) => eventMatchesSubscription(e, sub, watermarkFor(sub, e.datasetId)))
       if (matched.length === 0) {
         await markChecked(sub.id, now)
         continue
@@ -114,10 +131,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         tokenSecret,
       )
       await sendDigestEmail(sub.email, payload, unsubToken)
-      // reduce, not Math.max(...spread) — spread puts every element on the
-      // call stack and throws RangeError on large matched arrays.
-      const newWatermark = matched.reduce((max, m) => Math.max(max, m.receivedAt), 0)
-      await markDispatched(sub.id, newWatermark, now)
+      await markDispatched(sub.id, nextWatermarks(sub, matched), now)
       sent++
     } catch (err) {
       // one bad subscription must not abort the whole run

@@ -34,6 +34,9 @@ export interface DueSubscription extends MatchableSubscription {
   cadence: Cadence
   lastSentAt: number | null
   lastEventTs: number
+  /** Per-stream dedup watermarks (epoch ms). Falls back to lastEventTs for
+   *  rows created before the July 2026 migration — see watermarks.ts. */
+  streamWatermarks: Partial<Record<string, number>>
   active: boolean
 }
 

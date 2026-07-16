@@ -106,7 +106,7 @@ export async function getActiveConfirmedSubscriptions(): Promise<DueSubscription
   const rows = await sql()`
     SELECT s.id, s.subscriber_id, s.name, s.cadence, s.filters, s.radius_miles,
            EXTRACT(EPOCH FROM s.last_sent_at) * 1000 AS last_sent_ms,
-           s.last_event_ts, s.active, sub.email,
+           s.last_event_ts, s.stream_watermarks, s.active, sub.email,
            COALESCE((
              SELECT json_agg(json_build_object('label', l.label, 'lat', l.lat, 'lng', l.lng))
              FROM subscription_locations l WHERE l.subscription_id = s.id
@@ -136,20 +136,28 @@ export async function getActiveConfirmedSubscriptions(): Promise<DueSubscription
     })),
     lastSentAt: r.last_sent_ms == null ? null : Number(r.last_sent_ms),
     lastEventTs: Number(r.last_event_ts),
+    streamWatermarks: Object.fromEntries(
+      Object.entries((r.stream_watermarks ?? {}) as Record<string, unknown>).map(([k, v]) => [k, Number(v)]),
+    ),
     active: r.active as boolean,
   }))
 }
 
-/** A digest was sent: advance both clocks. */
+/** A digest was sent: advance the cadence clock, merge the per-stream
+ *  watermarks (nextWatermarks pre-floors them — jsonb || overwrites keys),
+ *  and keep the legacy scalar at the global max so a code rollback still
+ *  dedups approximately. */
 export async function markDispatched(
   subscriptionId: string,
-  newWatermark: number,
+  newWatermarks: Partial<Record<string, number>>,
   sentAt: number,
 ): Promise<void> {
+  const maxAll = Object.values(newWatermarks).reduce<number>((a, b) => Math.max(a, Number(b)), 0)
   await sql()`
     UPDATE subscriptions
     SET last_sent_at = to_timestamp(${sentAt} / 1000.0),
-        last_event_ts = GREATEST(last_event_ts, ${newWatermark})
+        stream_watermarks = stream_watermarks || ${JSON.stringify(newWatermarks)}::jsonb,
+        last_event_ts = GREATEST(last_event_ts, ${maxAll})
     WHERE id = ${subscriptionId}`
 }
 

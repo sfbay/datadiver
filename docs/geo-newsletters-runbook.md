@@ -28,6 +28,8 @@ WHERE sub.id = s.subscriber_id AND s.confirmed_at IS NULL AND sub.confirmed_at I
 
 Run BEFORE merging the PR (additive; old code unaffected). Old in-flight confirm links show "Link expired" after deploy — re-subscribe.
 
+Dispatch now fetches each stream once per run with ASC `$offset` pagination (4×5,000 cap, logged if hit) and advances watermarks per stream; a failed stream defers, never discards.
+
 ## Environment variables (Vercel dashboard → Project → Settings → Environment Variables)
 | Var | Example / note |
 |-----|----------------|
