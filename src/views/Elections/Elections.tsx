@@ -537,7 +537,7 @@ export default function Elections() {
               onClick={() => setTimeMachineActive(!timeMachineActive)}
               className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all duration-200 border ${
                 timeMachineActive
-                  ? 'bg-indigo-500/20 text-indigo-500 border-indigo-500/30'
+                  ? 'bg-ochre-500/15 text-ink dark:text-paper-100 border-ochre-500/30'
                   : 'text-slate-400 border-slate-200 dark:border-white/10 hover:text-slate-300 hover:border-white/20'
               }`}
               title="Cross-election playback"
@@ -552,9 +552,9 @@ export default function Elections() {
 
       {/* Time Machine banner */}
       {timeMachineActive && (
-        <div className="flex-shrink-0 px-6 py-1.5 bg-indigo-500/10 border-b border-indigo-500/20 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-          <p className="text-[10px] font-mono text-indigo-500">
+        <div className="flex-shrink-0 px-6 py-1.5 bg-ochre-500/10 border-b border-ochre-500/20 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-ochre-500 animate-pulse" />
+          <p className="text-[10px] font-mono text-ochre-600 dark:text-ochre-500">
             TIME MACHINE — {displayElectionLabel}
           </p>
           {mapMode === 'results' && displayRace && (
@@ -637,7 +637,7 @@ export default function Elections() {
                       onClick={() => setRcvViewMode('rounds')}
                       className={`px-2 py-0.5 rounded text-[9px] font-mono transition-all ${
                         rcvViewMode === 'rounds'
-                          ? 'bg-indigo-500/20 text-indigo-500'
+                          ? 'bg-ochre-500/20 text-ochre-400'
                           : 'text-slate-500 hover:text-slate-300'
                       }`}
                     >
@@ -647,7 +647,7 @@ export default function Elections() {
                       onClick={() => setRcvViewMode('sankey')}
                       className={`px-2 py-0.5 rounded text-[9px] font-mono transition-all ${
                         rcvViewMode === 'sankey'
-                          ? 'bg-indigo-500/20 text-indigo-500'
+                          ? 'bg-ochre-500/20 text-ochre-400'
                           : 'text-slate-500 hover:text-slate-300'
                       }`}
                     >
@@ -721,7 +721,7 @@ export default function Elections() {
                 onClick={() => setSidebarTab(key)}
                 className={`flex-1 py-2.5 text-[10px] font-mono uppercase tracking-[0.15em] transition-all duration-200 ${
                   sidebarTab === key
-                    ? 'text-ink dark:text-white border-b-2 border-indigo-500'
+                    ? 'text-ink dark:text-white border-b-2 border-ochre-500'
                     : 'text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400'
                 }`}
               >
@@ -741,7 +741,7 @@ export default function Elections() {
                       onClick={() => setRaceFilter(filter)}
                       className={`px-2.5 py-1 rounded-full text-[10px] font-mono transition-all ${
                         raceFilter === filter
-                          ? 'bg-indigo-500/20 text-indigo-500 border border-indigo-500/30'
+                          ? 'bg-ochre-500/15 text-ink dark:text-paper-100 border border-transparent'
                           : 'text-slate-400 hover:text-slate-300 border border-transparent hover:border-slate-700'
                       }`}
                     >
@@ -753,7 +753,7 @@ export default function Elections() {
 
                 {isLoading && <SkeletonSidebarRows count={10} />}
                 {!isLoading && (
-                  <div className="divide-y divide-slate-100 dark:divide-white/[0.04]">
+                  <div className="space-y-0.5">
                     {filteredRaces.map((race) => {
                       const winner = race.candidates.find((c) => c.isWinner)
                       const isActive = activeRace?.id === race.id
@@ -761,10 +761,10 @@ export default function Elections() {
                         <button
                           key={race.id}
                           onClick={() => setSelectedRace(race.id)}
-                          className={`w-full text-left px-3 py-3 transition-all duration-200 ${
+                          className={`w-full text-left px-3 py-3 rounded-lg transition-all duration-200 ${
                             isActive
-                              ? 'bg-indigo-500/10 border-l-2 border-indigo-500'
-                              : 'hover:bg-slate-50 dark:hover:bg-white/[0.03] border-l-2 border-transparent'
+                              ? 'bg-ochre-500/10 ring-1 ring-ochre-500/30'
+                              : 'hover:bg-slate-50 dark:hover:bg-white/[0.03]'
                           }`}
                         >
                           <div className="flex items-center gap-2">
