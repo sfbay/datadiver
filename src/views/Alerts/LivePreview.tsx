@@ -21,6 +21,8 @@
 import { useMemo } from 'react'
 import { useLast48Window } from '@/hooks/useLast48Window'
 import type { DatasetId, NormalizedEvent } from '@/types/last48'
+import type { AlertStreamId } from '@/lib/alerts/streams'
+import { isLiveStream } from '@/lib/alerts/streams'
 import type { AlertLocation } from '@/lib/alerts/types'
 import { eventMatchesSubscription } from '@/lib/alerts/match'
 import { classifySignificant, timeAgo } from '@/lib/alerts/significance'
@@ -36,7 +38,7 @@ const ALL_STREAMS: DatasetId[] = ['911-realtime', 'fire-ems-dispatch', '311-case
 
 interface LivePreviewProps {
   email: string
-  streams: DatasetId[]
+  streams: AlertStreamId[]
   categories: string[]
   radiusMiles: number
   locations: AlertLocation[]
@@ -83,6 +85,7 @@ export function LivePreview({ email, streams, categories, radiusMiles, locations
 
   const now = Date.now()
   const isLoading = window48.isLoading && locations.length > 0 && streams.length > 0
+  const liveSelected = streams.some(isLiveStream)
 
   return (
     <div
@@ -142,6 +145,11 @@ export function LivePreview({ email, streams, categories, radiusMiles, locations
             line1="Choose what to watch."
             line2="Pick at least one stream — 911, Fire & EMS, or 311."
           />
+        ) : !liveSelected ? (
+          <EmptyPrompt
+            line1="These streams arrive in batches."
+            line2="The preview shows live streams; released data lands in your digest when the city publishes it."
+          />
         ) : isLoading ? (
           <LoadingShimmer />
         ) : matched.length === 0 ? (
@@ -177,7 +185,7 @@ function composeLocationLabel(locations: AlertLocation[]): string {
 
 function composeSubjectLine(args: {
   matchedCount: number
-  streams: DatasetId[]
+  streams: AlertStreamId[]
   locations: AlertLocation[]
   locationLabel: string
   loading: boolean

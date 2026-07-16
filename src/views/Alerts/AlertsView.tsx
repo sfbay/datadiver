@@ -31,7 +31,7 @@
 
 import { useState, useEffect, type CSSProperties } from 'react'
 import { useAppStore } from '@/stores/appStore'
-import type { DatasetId } from '@/types/last48'
+import type { AlertStreamId } from '@/lib/alerts/streams'
 import type { AlertLocation, SubscriptionDraft } from '@/lib/alerts/types'
 import { ALERT_RADII } from '@/lib/alerts/radii'
 import { LocationPicker } from './LocationPicker'
@@ -39,8 +39,8 @@ import { LivePreview } from './LivePreview'
 
 // ─── Stream pigments — same earth-tone identity each dataset wears
 //     everywhere else in DataDiver (CLAUDE.md pigment vocabulary). ────
-const STREAM_OPTIONS: {
-  id: DatasetId
+const LIVE_STREAM_OPTIONS: {
+  id: AlertStreamId
   label: string
   sublabel: string
   pigment: { dot: string; border: string; tintLight: string; tintDark: string }
@@ -80,6 +80,35 @@ const STREAM_OPTIONS: {
   },
 ]
 
+// Released-tier streams: the city publishes these when it publishes them —
+// crash data lands in batches weeks behind; the business registry refreshes
+// nightly. Dot hexes are the registry canon (streams.ts); borders follow the
+// hand-derived lighter-ramp convention of the live entries above.
+const RELEASED_STREAM_OPTIONS: typeof LIVE_STREAM_OPTIONS = [
+  {
+    id: 'traffic-crashes',
+    label: 'Traffic crashes',
+    sublabel: 'Vision Zero · in batches, wks behind',
+    pigment: {
+      dot: '#963e30',
+      border: '#b5624f',
+      tintLight: 'rgba(150, 62, 48, 0.10)',
+      tintDark: 'rgba(181, 98, 79, 0.18)',
+    },
+  },
+  {
+    id: 'business-openings',
+    label: 'Business openings',
+    sublabel: 'City registry · refreshed nightly',
+    pigment: {
+      dot: '#5c9693',
+      border: '#8bb5b2',
+      tintLight: 'rgba(92, 150, 147, 0.10)',
+      tintDark: 'rgba(139, 181, 178, 0.18)',
+    },
+  },
+]
+
 const CATEGORY_OPTIONS: { key: string; label: string }[] = [
   { key: 'shooting', label: 'Shootings' },
   { key: 'stabbing', label: 'Stabbings' },
@@ -98,7 +127,7 @@ const radiusLabel = (r: number) => (r === 0.125 ? '⅛' : r === 0.25 ? '¼' : r 
 
 export default function AlertsView() {
   const [email, setEmail] = useState('')
-  const [streams, setStreams] = useState<DatasetId[]>(['911-realtime', 'fire-ems-dispatch'])
+  const [streams, setStreams] = useState<AlertStreamId[]>(['911-realtime', 'fire-ems-dispatch'])
   const [categories, setCategories] = useState<string[]>([])
   const [radiusMiles, setRadiusMiles] = useState(0.5)
   const [locations, setLocations] = useState<AlertLocation[]>([])
@@ -360,8 +389,8 @@ export default function AlertsView() {
 
             {/* 02 — Streams (identity chips) */}
             <FormSection n={2} label="Streams" isFirst>
-              <div className="grid gap-2 sm:grid-cols-3">
-                {STREAM_OPTIONS.map((s) => {
+              {(() => {
+                const chip = (s: (typeof LIVE_STREAM_OPTIONS)[number]) => {
                   const selected = streams.includes(s.id)
                   return (
                     <button
@@ -400,8 +429,29 @@ export default function AlertsView() {
                       </div>
                     </button>
                   )
-                })}
-              </div>
+                }
+                return (
+                  <>
+                    <div className="grid gap-2 sm:grid-cols-3">
+                      {LIVE_STREAM_OPTIONS.map(chip)}
+                    </div>
+                    <div className="mt-4 mb-1.5 flex items-center gap-2">
+                      <span className="text-[9px] font-mono uppercase tracking-[0.22em] text-ink/45 dark:text-slate-400">
+                        ── Released on a delay
+                      </span>
+                      <div className="flex-1 h-px bg-ink/[0.08] dark:bg-white/[0.06]" />
+                    </div>
+                    <p className="mb-2.5 text-[12.5px] leading-relaxed text-ink/60 dark:text-slate-400">
+                      These arrive when the city publishes new data, not in real time — crash
+                      reports land in batches roughly 4–6 weeks behind; business registrations
+                      refresh nightly. Your digest includes them as they're released.
+                    </p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {RELEASED_STREAM_OPTIONS.map(chip)}
+                    </div>
+                  </>
+                )
+              })()}
             </FormSection>
 
             {/* 03 — Categories (only when relevant streams selected) */}
