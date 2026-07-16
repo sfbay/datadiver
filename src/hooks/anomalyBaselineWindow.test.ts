@@ -38,12 +38,16 @@ describe('baselineWindow', () => {
 
   it('never lets the window reach the live rolling 48h', () => {
     // For ANY hour of the day, `until` must sit at least 48h before `now`
-    // could reach back — i.e. untilDay ≤ todayDay − 2.
-    for (let h = 0; h < 24; h++) {
-      const t = parseSfLocal(`2026-07-15T${String(h).padStart(2, '0')}:30:00`)
-      const { until } = baselineWindow(t)
-      const todayIdx = sfDayIndex('2026-07-15')!
-      expect(sfDayIndex(until)!).toBeLessThanOrEqual(todayIdx - 2)
+    // could reach back — i.e. untilDay ≤ todayDay − 2. Both parities matter:
+    // 2026-07-15 is an odd-index day (a spare day of slack), 2026-07-14 is
+    // even — the case where the guarantee binds with equality.
+    for (const day of ['2026-07-14', '2026-07-15']) {
+      for (let h = 0; h < 24; h++) {
+        const t = parseSfLocal(`${day}T${String(h).padStart(2, '0')}:30:00`)
+        const { until } = baselineWindow(t)
+        const todayIdx = sfDayIndex(day)!
+        expect(sfDayIndex(until)!).toBeLessThanOrEqual(todayIdx - 2)
+      }
     }
   })
 

@@ -32,7 +32,8 @@ function sfMidnightOfDay(dayIndex: number): string {
 
 /** The exact floating-SF-local bounds of the baseline: BASELINE_PAIRS
  *  complete two-day pairs, ending BEFORE any pair that the live rolling 48h
- *  window can touch. `now − 48h` reaches up to three calendar days back, so
+ *  window can touch. The live window spans up to three calendar days
+ *  (reaching back to day −2), so
  *  both the current pair and the previous one are excluded — the anomaly is
  *  never compared against a baseline that contains it. Use as
  *  `dateField >= since AND dateField < until`. */
