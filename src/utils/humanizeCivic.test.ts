@@ -13,6 +13,9 @@ describe('humanizeCallType', () => {
   it('leaves already-plain text readable', () => {
     expect(humanizeCallType('Shooting')).toBe('Shooting')
   })
+  it('treats underscores as word separators (311 category keys)', () => {
+    expect(humanizeCallType('Garbage_and_debris')).toBe('Garbage and debris')
+  })
   it('handles empty/undefined', () => {
     expect(humanizeCallType(undefined)).toBe('')
     expect(humanizeCallType('')).toBe('')

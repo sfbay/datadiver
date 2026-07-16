@@ -5,7 +5,9 @@ import {
   clockText,
   summarize,
   busiestBuckets,
-  bucketByTimeOfDay,
+  bucketByDay,
+  sfDayKey,
+  sfDayLine,
   radiusLabelText,
 } from './digestSummary'
 
@@ -77,14 +79,21 @@ describe('busiestBuckets', () => {
   })
 })
 
-describe('bucketByTimeOfDay', () => {
+describe('bucketByDay', () => {
+  // Reference "now" for tests that don't care about the late flag — well
+  // after every fixture event so nothing here happens to sit exactly on a
+  // day/late boundary by accident.
+  const NOW = Date.UTC(2026, 0, 17, 0, 0)
+
   it('groups into ordered blocks, newest-first, omitting empties', () => {
     const events = [
       ev({ receivedAt: Date.UTC(2026, 0, 15, 17), callType: 'Medical' }),       //  9 a.m. -> morning
       ev({ receivedAt: Date.UTC(2026, 0, 15, 22), callType: 'Traffic stop' }),   //  2 p.m. -> afternoon
       ev({ receivedAt: Date.UTC(2026, 0, 15, 23), callType: 'Shooting' }),       //  3 p.m. -> afternoon (sig)
     ]
-    const blocks = bucketByTimeOfDay(events)
+    const groups = bucketByDay(events, NOW)
+    expect(groups).toHaveLength(1)
+    const blocks = groups[0].blocks
     expect(blocks.map((b) => b.key)).toEqual(['morning', 'afternoon'])
     const afternoon = blocks.find((b) => b.key === 'afternoon')!
     expect(afternoon.rows[0].clock).toBe('3:00 p.m.') // newest first
@@ -98,11 +107,51 @@ describe('bucketByTimeOfDay', () => {
       ev({ receivedAt: Date.UTC(2026, 0, 15, 22), callType: 'Assault', address: '19th St & Dolores St', neighborhood: 'Mission' }),
       ev({ receivedAt: Date.UTC(2026, 0, 15, 21), datasetId: '311-cases', callType: 'Graffiti', neighborhood: 'Mission' }), // no address
     ]
-    const rows = bucketByTimeOfDay(events).flatMap((b) => b.rows)
+    const rows = bucketByDay(events, NOW).flatMap((g) => g.blocks).flatMap((b) => b.rows)
     expect(rows[0].location).toBe('19th St & Dolores St') // street wins over neighborhood
     expect(rows[0].streamLabel).toBe('911')
     expect(rows[1].location).toBe('Mission')              // neighborhood fallback
     expect(rows[1].streamLabel).toBe('311')
+  })
+
+  it('groups events on different SF days into separate DayGroups, newest day first', () => {
+    const dayOne = Date.UTC(2026, 0, 15, 20) // SF Jan 15, noon PST
+    const dayTwo = Date.UTC(2026, 0, 16, 20) // SF Jan 16, noon PST
+    const events = [
+      ev({ receivedAt: dayOne, callType: 'Graffiti', datasetId: '311-cases' }),
+      ev({ receivedAt: dayTwo, callType: 'Shooting' }),
+    ]
+    const groups = bucketByDay(events, dayTwo)
+    expect(groups).toHaveLength(2)
+    expect(groups[0].dateKey).toBe(sfDayKey(dayTwo))
+    expect(groups[0].dayLabel).toBe(sfDayLine(dayTwo).toUpperCase())
+    expect(groups[1].dateKey).toBe(sfDayKey(dayOne))
+    expect(groups[1].dayLabel).toBe(sfDayLine(dayOne).toUpperCase())
+  })
+
+  it('flags rows more than 24h old as late, fresh rows as not late', () => {
+    const now = Date.UTC(2026, 0, 16, 20)
+    const events = [
+      ev({ receivedAt: now - 2 * 3600_000, callType: 'Fresh' }), // 2h old -> not late
+      ev({ receivedAt: now - 30 * 3600_000, callType: 'Old', datasetId: 'fire-ems-dispatch' }), // 30h old -> late
+    ]
+    const rows = bucketByDay(events, now).flatMap((g) => g.blocks).flatMap((b) => b.rows)
+    const fresh = rows.find((r) => r.what === 'Fresh')!
+    const old = rows.find((r) => r.what === 'Old')!
+    expect(fresh.late).toBe(false)
+    expect(old.late).toBe(true)
+  })
+
+  it('carries a rangeLabel on every block', () => {
+    const events = [
+      ev({ receivedAt: Date.UTC(2026, 0, 15, 17), callType: 'Medical' }),     // morning
+      ev({ receivedAt: Date.UTC(2026, 0, 15, 22), callType: 'Traffic stop' }), // afternoon
+    ]
+    const blocks = bucketByDay(events, NOW).flatMap((g) => g.blocks)
+    const morning = blocks.find((b) => b.key === 'morning')!
+    const afternoon = blocks.find((b) => b.key === 'afternoon')!
+    expect(morning.rangeLabel).toBe('6–11 a.m.')
+    expect(afternoon.rangeLabel).toBe('noon–5 p.m.')
   })
 })
 

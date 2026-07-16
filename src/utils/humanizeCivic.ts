@@ -21,7 +21,8 @@ const TOKEN_MAP: Record<string, string> = {
 export function humanizeCallType(raw: string | undefined): string {
   if (!raw) return ''
   // "W/" / "w/" is the field shorthand for "with" (e.g. "Meet W/Citizen").
-  const withExpanded = raw.replace(/\bw\//gi, 'with ')
+  // Underscores are word separators too (311 category keys: "Garbage_and_debris").
+  const withExpanded = raw.replace(/_/g, ' ').replace(/\bw\//gi, 'with ')
   const tokens = withExpanded.split(/\s+/).filter(Boolean)
   const expanded = tokens.map((tok) => {
     const key = tok.toLowerCase().replace(/[.,]/g, '')

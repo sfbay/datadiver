@@ -80,7 +80,25 @@ export interface StaticMapOptions {
   width?: number
   height?: number
   maxDots?: number
-  padding?: number
+  /** Camera pitch in degrees (0–60). The tilt is the email map's whole personality. */
+  pitch?: number
+}
+
+/** Mapbox GL zoom at which a circle of `radiusMiles` around `lat` fills
+ *  `fillFrac` of a `heightPx`-tall frame. 512px-tile zoom semantics:
+ *  metersPerPixel = 78271.517 · cos(lat) / 2^zoom. Needed because a PITCHED
+ *  static map can't use the API's `auto` positioning — pitch requires the
+ *  explicit center/zoom form. Clamped to sane city zooms. */
+export function zoomForRadius(
+  radiusMiles: number,
+  lat: number,
+  heightPx = 280,
+  fillFrac = 0.55,
+): number {
+  const diameterM = radiusMiles * 1609.344 * 2
+  const targetMpp = diameterM / (fillFrac * heightPx)
+  const z = Math.log2((78271.517 * Math.cos((lat * Math.PI) / 180)) / targetMpp)
+  return Math.round(Math.min(15.5, Math.max(11.5, z)) * 100) / 100
 }
 
 /** Build the Mapbox Static Images URL, or null if it can't be built safely
@@ -93,7 +111,8 @@ export function buildStaticMapUrl(opts: StaticMapOptions): string | null {
   const width = opts.width ?? 560
   const height = opts.height ?? 280
   const maxDots = opts.maxDots ?? 20
-  const padding = opts.padding ?? 24
+  const pitch = opts.pitch ?? 30
+  const zoom = zoomForRadius(radiusMiles, center.lat, height)
 
   const ring = circlePolyline(center.lat, center.lng, radiusMiles)
   const ringOverlay = `path-2+963e30-0.9+963e30-0.12(${encodeURIComponent(ring)})`
@@ -104,7 +123,8 @@ export function buildStaticMapUrl(opts: StaticMapOptions): string | null {
   const overlays = [ringOverlay, homeOverlay, ...dotOverlays].join(',')
 
   const url =
-    `${MAPBOX_STATIC_BASE}/${style}/static/${overlays}/auto/${width}x${height}@2x` +
-    `?padding=${padding}&access_token=${token}`
+    `${MAPBOX_STATIC_BASE}/${style}/static/${overlays}/` +
+    `${center.lng.toFixed(5)},${center.lat.toFixed(5)},${zoom},0,${pitch}/${width}x${height}@2x` +
+    `?access_token=${token}`
   return url.length > URL_BUDGET ? null : url
 }
