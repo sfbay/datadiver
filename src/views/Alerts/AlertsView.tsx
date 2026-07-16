@@ -433,36 +433,39 @@ export default function AlertsView() {
               </p>
             </FormSection>
 
-            {/* 04 — Email — the commitment, asked for last */}
+            {/* 04 — Email — the commitment, asked for last. Input + button
+                share the row: the act of typing and the act of committing sit
+                together, like a masthead subscription slip. */}
             <FormSection n={4} label="Your email">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                aria-label="Your email address"
-                className="w-full rounded-md border border-ink/15 dark:border-white/[0.12] bg-paper-100/60 dark:bg-espresso-900/60 px-3.5 py-2.5 text-[15px] text-ink dark:text-paper-100 placeholder:text-ink/35 dark:placeholder:text-slate-500 focus:border-teal-500 focus:outline-none transition-colors"
-              />
+              <div className="flex items-stretch gap-3">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  aria-label="Your email address"
+                  className="min-w-0 flex-1 rounded-md border border-ink/15 dark:border-white/[0.12] bg-paper-100/60 dark:bg-espresso-900/60 px-3.5 py-2.5 text-[15px] text-ink dark:text-paper-100 placeholder:text-ink/35 dark:placeholder:text-slate-500 focus:border-teal-500 focus:outline-none transition-colors"
+                />
+                <SubscribeButton
+                  onClick={submit}
+                  sending={status === 'sending'}
+                  disabled={status === 'sending'}
+                />
+              </div>
+              {/* Read-me text, not a label — body serif, not mono (house rule:
+                  mono is for labels/data; prose in mono reads robotic). */}
+              <p className="mt-3 text-[12.5px] leading-relaxed text-ink/55 dark:text-slate-400">
+                First we email you a confirmation link — nothing starts until you click it.
+                Every digest includes a one-click unsubscribe, which also deletes your info.
+              </p>
             </FormSection>
 
             {/* Error rail */}
             {errorMsg && (
-              <div className="mx-6 mb-4 rounded-md border border-brick-500/30 bg-brick-500/[0.06] px-3.5 py-2.5">
+              <div className="mx-6 mb-6 rounded-md border border-brick-500/30 bg-brick-500/[0.06] px-3.5 py-2.5">
                 <p className="text-[12px] font-mono text-brick-500">{errorMsg}</p>
               </div>
             )}
-
-            {/* Subscribe — notched corner accent matching VizCard idiom */}
-            <div className="px-6 pb-6">
-              <SubscribeButton
-                onClick={submit}
-                sending={status === 'sending'}
-                disabled={status === 'sending'}
-              />
-              <p className="mt-3 text-[10px] font-mono text-ink/40 dark:text-slate-500 leading-relaxed">
-                Double opt-in · we email a confirmation link first. One-click unsubscribe in every digest. We delete everything on the way out.
-              </p>
-            </div>
           </form>
 
           {/* SAMPLE — the editorial proof, reacting live to the entry card */}
@@ -612,7 +615,9 @@ function FormSection({
   )
 }
 
-// ─── Subscribe button — notched-corner accent in DataDiver's tab idiom ──────
+// ─── Subscribe button — sits beside the email input; deliberately plain ─────
+// No notch tab here (Jesse, July 2026): beside an input the accent plate read
+// as a second control. The display-italic label carries the identity alone.
 
 function SubscribeButton({
   onClick,
@@ -629,39 +634,19 @@ function SubscribeButton({
       onClick={onClick}
       disabled={disabled}
       className="
-        group relative inline-flex items-center gap-3
-        rounded-[20px] rounded-bl-none
+        inline-flex items-center justify-center
+        rounded-md
         bg-terracotta-500 hover:bg-terracotta-600
         text-white
-        pl-6 pr-[64px] py-3.5
+        px-6
         shadow-sm hover:shadow-md
         transition-all duration-300
         disabled:opacity-60 disabled:cursor-not-allowed
-        overflow-hidden
+        whitespace-nowrap
       "
     >
-      <span className="font-display italic text-[19px] leading-tight">
+      <span className="font-display italic text-[17px] leading-tight">
         {sending ? 'Sending…' : 'Subscribe'}
-      </span>
-
-      {/* Top-right notched accent tab — paper / espresso plate with chevron */}
-      <span
-        className="
-          absolute top-0 right-0 grid place-items-center
-          w-[46px] h-[46px] rounded-tr-[20px] rounded-bl-[18px]
-          bg-paper-100 dark:bg-espresso-700
-          transition-[width,height] duration-300
-          group-hover:w-[54px] group-hover:h-[54px]
-        "
-        aria-hidden
-      >
-        <svg
-          width="14" height="14" viewBox="0 0 16 16" fill="none"
-          stroke="#b85a33" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"
-          className="transition-transform duration-300 group-hover:translate-x-0.5"
-        >
-          <path d="M5 3 L11 8 L5 13" />
-        </svg>
       </span>
     </button>
   )
