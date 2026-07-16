@@ -1,7 +1,7 @@
 // api/cron/dispatch-digests.ts — the daily matcher (CRON_SECRET-guarded).
 import { timingSafeEqual } from 'node:crypto'
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import type { NormalizedEvent } from '../../src/types/last48'
+import type { DatasetId, NormalizedEvent } from '../../src/types/last48'
 import type { Cadence, DueSubscription } from '../../src/lib/alerts/types'
 import { eventMatchesSubscription, isSubscriptionDue, haversineMiles } from '../../src/lib/alerts/match.js'
 import { classifySignificant } from '../../src/lib/alerts/significance.js'
@@ -95,7 +95,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // One fetch per unique stream per run — not per subscription.
   const uniqueStreams = [...new Set(due.flatMap((s) => s.filters.streams))]
-  const fetched = due.length > 0 ? await fetchStreamEvents(uniqueStreams, now - WINDOW_MS) : {}
+  // TEMP cast until Task 7 rewires fetchStreamEvents onto the registry: the
+  // old signature is DatasetId-typed, but its SOCRATA-map guard already skips
+  // unknown ids, so released streams are safely ignored here for now.
+  const fetched = due.length > 0 ? await fetchStreamEvents(uniqueStreams as DatasetId[], now - WINDOW_MS) : {}
 
   for (const sub of due) {
     try {
