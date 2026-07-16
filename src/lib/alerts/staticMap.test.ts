@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { haversineMiles } from './match'
-import { encodePolyline, circleRing, circlePolyline, buildStaticMapUrl } from './staticMap'
+import { encodePolyline, circleRing, circlePolyline, buildStaticMapUrl, zoomForRadius } from './staticMap'
 
 describe('encodePolyline', () => {
   it('matches the Google reference vector', () => {
@@ -45,10 +45,10 @@ describe('buildStaticMapUrl', () => {
   it('returns null with no token', () => {
     expect(buildStaticMapUrl({ ...base, token: '' })).toBeNull()
   })
-  it('builds an auto-framed @2x url with ring, home pin, and capped dots', () => {
+  it('builds an explicit-positioned @2x url with ring, home pin, and capped dots', () => {
     const url = buildStaticMapUrl(base)!
     expect(url).toContain('/styles/v1/mapbox/light-v11/static/')
-    expect(url).toContain('/auto/560x280@2x')
+    expect(url).not.toContain('/auto/')
     expect(url).toContain('access_token=pk.test')
     expect(url).toContain('path-2+963e30')          // ring
     expect(url).toContain('pin-l+1e140d')           // home
@@ -62,5 +62,24 @@ describe('buildStaticMapUrl', () => {
   it('returns null when the url would exceed the length budget', () => {
     const hugeToken = 'p'.repeat(8000)
     expect(buildStaticMapUrl({ ...base, token: hugeToken })).toBeNull()
+  })
+})
+
+describe('zoomForRadius', () => {
+  it('pins city-scale zooms for the radius vocabulary at SF latitude', () => {
+    expect(zoomForRadius(0.5, 37.76)).toBeCloseTo(12.53, 1)
+    expect(zoomForRadius(0.125, 37.76)).toBeCloseTo(14.53, 1)
+  })
+  it('clamps extreme radii into the sane band', () => {
+    expect(zoomForRadius(20, 37.76)).toBe(11.5)
+    expect(zoomForRadius(0.001, 37.76)).toBe(15.5)
+  })
+})
+
+describe('buildStaticMapUrl pitch positioning', () => {
+  it('positions explicitly with pitch 30 (no auto)', () => {
+    const url = buildStaticMapUrl({ center: { lat: 37.76, lng: -122.42 }, radiusMiles: 0.5, dots: [], token: 'tok' })!
+    expect(url).not.toContain('/auto/')
+    expect(url).toMatch(/,-?\d+(\.\d+)?,0,30\/560x280@2x/)
   })
 })
