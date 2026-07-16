@@ -99,7 +99,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   for (const sub of due) {
     try {
-      const okStreams = sub.filters.streams.filter((s) => fetched[s]?.ok)
+      // Set-dedup defends grandfathered rows: pre-July-2026 subscriptions
+      // were stored without validateDraft's dedup, and a duplicate stream id
+      // here would concatenate the same event array twice into the digest.
+      const okStreams = [...new Set(sub.filters.streams)].filter((s) => fetched[s]?.ok)
       if (okStreams.length === 0) {
         // Every stream this subscription reads failed to fetch. Leave BOTH
         // clocks alone so the next run retries in full — advancing

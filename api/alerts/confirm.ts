@@ -34,7 +34,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    await confirmSubscription(payload.subjectId)
+    // verifyToken is stateless (signature + purpose + exp only), so a token
+    // whose subscription no longer exists — pruned, unsubscribed, or an old
+    // subscriber-scoped token from before the July 2026 per-subscription
+    // migration — still verifies. The boolean is the DB's verdict; honoring
+    // it is what makes this page's claim true.
+    const ok = await confirmSubscription(payload.subjectId)
+    if (!ok) {
+      return res.status(400).send(page('Link expired', 'This confirmation link is invalid or has expired. Please subscribe again from DataDiver.'))
+    }
   } catch (err) {
     console.error('[confirm] db error', err)
     return res.status(503).send(page('Something went wrong', 'We could not confirm your subscription right now. Please try the link again shortly.'))
