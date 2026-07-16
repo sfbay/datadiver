@@ -1,7 +1,8 @@
 // api/cron/dispatch-digests.ts — the daily matcher (CRON_SECRET-guarded).
 import { timingSafeEqual } from 'node:crypto'
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import type { DatasetId, NormalizedEvent } from '../../src/types/last48'
+import type { NormalizedEvent } from '../../src/types/last48'
+import type { AlertEvent } from '../../src/lib/alerts/streams.js'
 import type { Cadence, DueSubscription } from '../../src/lib/alerts/types'
 import { eventMatchesSubscription, isSubscriptionDue, haversineMiles } from '../../src/lib/alerts/match.js'
 import { classifySignificant } from '../../src/lib/alerts/significance.js'
@@ -14,8 +15,6 @@ import { fetchStreamEvents } from '../_lib/socrata.js'
 import { sendDigestEmail } from '../_lib/email.js'
 import { watermarkFor, nextWatermarks } from '../../src/lib/alerts/watermarks.js'
 
-const WINDOW_MS = 48 * 60 * 60_000
-
 const WINDOW_LABEL: Record<Cadence, string> = {
   hourly: 'past hour',
   daily: 'published since your last digest',
@@ -26,7 +25,7 @@ function locLabel(loc: { label?: string; lat: number; lng: number }): string {
   return loc.label || `${loc.lat.toFixed(3)}, ${loc.lng.toFixed(3)}`
 }
 
-function buildPayload(sub: DueSubscription, events: NormalizedEvent[], now: number): DigestPayload {
+function buildPayload(sub: DueSubscription, events: AlertEvent[], now: number): DigestPayload {
   const token = process.env.MAPBOX_STATIC_TOKEN || ''
   const radiusLabel = radiusLabelText(sub.radiusMiles)
   const locations: LocationDigest[] = []
@@ -96,10 +95,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // One fetch per unique stream per run — not per subscription.
   const uniqueStreams = [...new Set(due.flatMap((s) => s.filters.streams))]
-  // TEMP cast until Task 7 rewires fetchStreamEvents onto the registry: the
-  // old signature is DatasetId-typed, but its SOCRATA-map guard already skips
-  // unknown ids, so released streams are safely ignored here for now.
-  const fetched = due.length > 0 ? await fetchStreamEvents(uniqueStreams as DatasetId[], now - WINDOW_MS) : {}
+  const fetched = due.length > 0 ? await fetchStreamEvents(uniqueStreams, now) : {}
 
   for (const sub of due) {
     try {
