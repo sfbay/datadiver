@@ -121,6 +121,10 @@ function statHeaderHtml(s: Summary, buckets: number[]): string {
   const caption = s.busiestLabel ? `busiest ${s.busiestLabel}` : ''
   return `
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0 0"><tr>
+      <td valign="bottom" style="padding-right:24px">
+        <div style="font-style:italic;font-size:27px;color:${INK};line-height:1">Reports</div>
+        <div style="font-size:10px;margin-top:3px;line-height:1">&nbsp;</div>
+      </td>
       <td valign="bottom" style="padding-right:22px">
         <div style="font-style:italic;font-size:36px;font-weight:bold;color:${INK};line-height:1">${s.total}</div>
         <div style="font-family:${SANS};font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:${MUTED};margin-top:3px;white-space:nowrap">New</div>
