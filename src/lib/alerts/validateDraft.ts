@@ -3,7 +3,10 @@
 // unit-testable beside the other alerts pure modules, and so its stream and
 // category vocabularies come from the existing single sources
 // (LAST48_DATASETS, significance CATEGORIES) instead of drifting copies.
-import { LAST48_DATASETS, type DatasetId } from '@/types/last48'
+// Relative (not '@/') on purpose: this module is bundled into the Vercel API
+// functions, and this is the chain's only RUNTIME value import from types —
+// the '@/' alias has no deployed precedent outside erased `import type`s.
+import { LAST48_DATASETS, type DatasetId } from '../../types/last48.js'
 import { SIGNIFICANCE_KEYS } from './significance.js'
 import { ALERT_RADII } from './radii.js'
 import type { SubscriptionDraft } from './types'
