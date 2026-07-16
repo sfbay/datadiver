@@ -357,7 +357,9 @@ All emanation animations respect `motion-reduce:hidden` on the wrapper SVG.
 
 When encoding event age as dot color in FLOW mode, use the helpers in `src/views/Last48/modes/FlowMapLayer.tsx`:
 
-- `LATENCY_BASELINE_MS` — per-dataset floor: 911 Realtime 7h, Fire/EMS 12h, 311 15h, etc. Subtract from raw age before bucketing.
+**Stream pigment identity — `COLORS` in FlowMapLayer.tsx is the canonical source** (used by chips, rail, event cards, AND the digest email): 911 Realtime = indigo `#616a96`, Fire/EMS = terracotta `#b85a33`, 311 = moss `#7a9954`. Do NOT restate these from memory in specs/plans — a July 2026 email plan asserted 911 = terracotta and every review gate faithfully verified the wrong constant; only the designer's eye caught it.
+
+- `LATENCY_BASELINE_MS` — per-dataset floor: 911 Realtime 30min, Fire/EMS 12h, 311 15h, etc. Subtract from raw age before bucketing. (The old "7h" figure for 911 was the SF-local timestamp bug's artifact — exactly the PDT offset; fixed PR #101.)
 - `AGE_BUCKETS` — asymmetric `[0, 0.45, 0.60, 0.70]` t-values across 4 buckets. Heaviest tonal shift in the first 18h post-floor.
 - `ageColor(datasetId, rawAgeMs)` — returns hex, fades toward `#d4c8a8` (paper anchor).
 - `ageStrokeOpen(datasetId, rawAgeMs)` — same fade for open-event stroke color.

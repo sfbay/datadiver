@@ -18,6 +18,8 @@ The geo-newsletters feature is DataDiver's first backend (Vercel Functions + Ver
 
 ## Migration — July 2026 (per-subscription confirm + per-stream watermarks)
 
+> **Executed in prod Neon 2026-07-16** (all three statements; the grandfathering UPDATE touched 1 row — the owner's confirmed subscription). Recorded here because deploy state ≠ repo state; re-running is idempotent and safe.
+
 ```sql
 ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS confirmed_at timestamptz;
 ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS stream_watermarks jsonb NOT NULL DEFAULT '{}';
