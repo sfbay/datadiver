@@ -2,7 +2,7 @@
 // Pure per-stream watermark arithmetic for the digest cron. A single scalar
 // watermark shared across streams let one stream's success discard another's
 // backlog (fetch fails on A, B advances the mark past A's unseen events).
-import type { DatasetId, NormalizedEvent } from '@/types/last48'
+import type { AlertEvent } from './streams.js'
 
 export interface WatermarkedSubscription {
   lastEventTs: number
@@ -11,7 +11,7 @@ export interface WatermarkedSubscription {
 
 /** The dedup watermark for one stream: the per-stream mark when present,
  *  else the legacy scalar (pre-migration rows carry only last_event_ts). */
-export function watermarkFor(sub: WatermarkedSubscription, ds: DatasetId | string): number {
+export function watermarkFor(sub: WatermarkedSubscription, ds: string): number {
   return sub.streamWatermarks[ds] ?? sub.lastEventTs
 }
 
@@ -22,7 +22,7 @@ export function watermarkFor(sub: WatermarkedSubscription, ds: DatasetId | strin
  *  stay put and their events remain eligible next run). */
 export function nextWatermarks(
   sub: WatermarkedSubscription,
-  matched: NormalizedEvent[],
+  matched: AlertEvent[],
 ): Partial<Record<string, number>> {
   const next: Partial<Record<string, number>> = {}
   for (const e of matched) {

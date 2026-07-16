@@ -86,4 +86,21 @@ describe('validateDraft', () => {
     expect(d.name).toHaveLength(80)
     expect(d.locations[0].label).toHaveLength(80)
   })
+
+  it('accepts the released-tier streams', () => {
+    const d = validateDraft({
+      email: 'a@b.co', cadence: 'daily',
+      filters: { streams: ['traffic-crashes', 'business-openings'], categories: [] },
+      radiusMiles: 0.25, locations: [{ lat: 37.76, lng: -122.42 }],
+    })
+    expect(typeof d).not.toBe('string')
+  })
+  it('still rejects unknown streams', () => {
+    const d = validateDraft({
+      email: 'a@b.co', cadence: 'daily',
+      filters: { streams: ['police-blotter'], categories: [] },
+      radiusMiles: 0.25, locations: [{ lat: 37.76, lng: -122.42 }],
+    })
+    expect(d).toBe('pick at least one valid stream')
+  })
 })

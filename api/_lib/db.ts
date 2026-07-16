@@ -1,7 +1,7 @@
 // api/_lib/db.ts — Neon serverless client + typed queries (server-only).
 import { neon, type NeonQueryFunction } from '@neondatabase/serverless'
 import type { DueSubscription, SubscriptionDraft } from '../../src/lib/alerts/types'
-import type { DatasetId } from '../../src/types/last48'
+import type { AlertStreamId } from '../../src/lib/alerts/streams.js'
 
 let _sql: NeonQueryFunction<false, false> | null = null
 function sql(): NeonQueryFunction<false, false> {
@@ -125,7 +125,7 @@ export async function getActiveConfirmedSubscriptions(): Promise<DueSubscription
     name: r.name as string,
     cadence: r.cadence as DueSubscription['cadence'],
     filters: {
-      streams: ((r.filters?.streams ?? []) as string[]) as DatasetId[],
+      streams: ((r.filters?.streams ?? []) as string[]) as AlertStreamId[],
       categories: (r.filters?.categories ?? []) as string[],
     },
     radiusMiles: Number(r.radius_miles),
@@ -139,6 +139,7 @@ export async function getActiveConfirmedSubscriptions(): Promise<DueSubscription
     streamWatermarks: Object.fromEntries(
       Object.entries((r.stream_watermarks ?? {}) as Record<string, unknown>).map(([k, v]) => [k, Number(v)]),
     ),
+    sentEventIds: {}, // Task 8 reads the real column
     active: r.active as boolean,
   }))
 }

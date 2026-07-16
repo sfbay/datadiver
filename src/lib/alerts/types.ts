@@ -1,6 +1,7 @@
 // src/lib/alerts/types.ts
 // Shared across the builder UI and the API/cron. Pure types, no runtime.
-import type { DatasetId } from '@/types/last48'
+import type { AlertStreamId } from './streams.js'
+import type { SentIdMap } from './sentIds.js'
 
 export type Cadence = 'hourly' | 'daily' | 'weekly'
 
@@ -8,7 +9,7 @@ export type Cadence = 'hourly' | 'daily' | 'weekly'
  *  homicide, robbery, weapon, assault, fire. Empty array = any event on the
  *  stream (no significance filter). */
 export interface SubscriptionFilters {
-  streams: DatasetId[]
+  streams: AlertStreamId[]
   categories: string[]
 }
 
@@ -37,6 +38,9 @@ export interface DueSubscription extends MatchableSubscription {
   /** Per-stream dedup watermarks (epoch ms). Falls back to lastEventTs for
    *  rows created before the July 2026 migration — see watermarks.ts. */
   streamWatermarks: Partial<Record<string, number>>
+  /** Released-tier ids already emailed (jsonb sent_event_ids) — see
+   *  sentIds.ts. Live streams dedup via streamWatermarks instead. */
+  sentEventIds: SentIdMap
   active: boolean
 }
 

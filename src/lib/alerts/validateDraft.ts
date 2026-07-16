@@ -2,11 +2,12 @@
 // Pure request validation for /api/alerts/subscribe — in src/lib so it is
 // unit-testable beside the other alerts pure modules, and so its stream and
 // category vocabularies come from the existing single sources
-// (LAST48_DATASETS, significance CATEGORIES) instead of drifting copies.
+// (ALERT_STREAMS registry, significance CATEGORIES) instead of drifting
+// copies.
 // Relative (not '@/') on purpose: this module is bundled into the Vercel API
 // functions, and this is the chain's only RUNTIME value import from types —
 // the '@/' alias has no deployed precedent outside erased `import type`s.
-import { LAST48_DATASETS, type DatasetId } from '../../types/last48.js'
+import { ALERT_STREAM_IDS, type AlertStreamId } from './streams.js'
 import { SIGNIFICANCE_KEYS } from './significance.js'
 import { ALERT_RADII } from './radii.js'
 import type { SubscriptionDraft } from './types'
@@ -32,7 +33,7 @@ export function validateDraft(b: unknown): SubscriptionDraft | string {
   // Set-dedup: duplicate entries are accepted client bugs, not errors — but
   // they must not double-fetch or double-count digest events downstream.
   const streams = [...new Set(Array.isArray(f.streams) ? (f.streams as unknown[]) : [])]
-  if (streams.length === 0 || !streams.every((s) => (LAST48_DATASETS as string[]).includes(s as string)))
+  if (streams.length === 0 || !streams.every((s) => (ALERT_STREAM_IDS as string[]).includes(s as string)))
     return 'pick at least one valid stream'
   const categories = [...new Set(Array.isArray(f.categories) ? (f.categories as unknown[]) : [])]
   if (!categories.every((c) => SIGNIFICANCE_KEYS.includes(c as string))) return 'invalid category'
@@ -59,7 +60,7 @@ export function validateDraft(b: unknown): SubscriptionDraft | string {
     email,
     name,
     cadence: 'daily',
-    filters: { streams: streams as DatasetId[], categories: categories as string[] },
+    filters: { streams: streams as AlertStreamId[], categories: categories as string[] },
     radiusMiles,
     locations,
   }
