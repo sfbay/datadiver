@@ -37,9 +37,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const attempts = await recordSubscribeAttempt(ip)
     if (attempts > MAX_PER_IP_PER_HOUR) return res.status(429).json({ error: 'too many requests, try later' })
 
-    const { subscriberId } = await createPendingSubscription(draft)
+    const { subscriptionId } = await createPendingSubscription(draft)
     const token = signToken(
-      { purpose: 'confirm', subjectId: subscriberId, exp: Date.now() + 7 * 24 * 3600_000 },
+      { purpose: 'confirm', subjectId: subscriptionId, exp: Date.now() + 7 * 24 * 3600_000 },
       secret,
     )
     await sendConfirmEmail(draft.email, token)

@@ -16,6 +16,18 @@ The geo-newsletters feature is DataDiver's first backend (Vercel Functions + Ver
    CREATE INDEX IF NOT EXISTS idx_attempts_created_at ON subscribe_attempts (created_at);
    ```
 
+## Migration — July 2026 (per-subscription confirm + per-stream watermarks)
+
+```sql
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS confirmed_at timestamptz;
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS stream_watermarks jsonb NOT NULL DEFAULT '{}';
+UPDATE subscriptions s SET confirmed_at = sub.confirmed_at
+FROM subscribers sub
+WHERE sub.id = s.subscriber_id AND s.confirmed_at IS NULL AND sub.confirmed_at IS NOT NULL;
+```
+
+Run BEFORE merging the PR (additive; old code unaffected). Old in-flight confirm links show "Link expired" after deploy — re-subscribe.
+
 ## Environment variables (Vercel dashboard → Project → Settings → Environment Variables)
 | Var | Example / note |
 |-----|----------------|
@@ -66,7 +78,7 @@ The geo-newsletters feature is DataDiver's first backend (Vercel Functions + Ver
 
 Added by the July 2026 retrospective review (ranked; first two are the priority):
 - **Unsubscribe is a destructive GET** — corporate link scanners (Outlook SafeLinks, Mimecast) prefetch email links and silently hard-delete the subscriber. Serve a confirm page with a POST button; keep the RFC 8058 one-click header path. `confirm.ts` has the mirror issue (scanner can complete opt-in).
-- **Consent gap**: once an email is confirmed, any subscribe POST attaches a live subscription to it without re-confirmation, with `last_event_ts=0` → full backlog in the first digest. Require per-subscription confirm (or re-confirm on new subscription) and seed the watermark at insert.
+- **Consent gap — CLOSED (July 2026)**: confirmation is per-subscription (tokens carry subscriptionId; dispatch gates on subscriptions.confirmed_at). A new alert on an already-confirmed email stays pending until ITS link is clicked; never-confirmed rows are pruned after 8 days.
 - **No subscription dedupe** — double-click or post-503 retry creates permanent duplicate digests with no management UI to remove them.
 - **Streams + categories allow-lists still triplicated** (client `AlertsView`, server `subscribe.ts`, `significance.ts`) — same drift bomb `radii.ts` was created to defuse; lift into one shared constants module with a pinning test.
 - Cron scaling: fetch the stream union once per run (currently re-fetched per subscription), add `maxDuration` to `vercel.json`; 311 runs ~5K rows/48h, brushing the `$limit=5000` cap (DESC order silently drops oldest).

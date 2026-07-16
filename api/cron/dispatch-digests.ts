@@ -9,7 +9,7 @@ import { signToken } from '../../src/lib/alerts/tokens.js'
 import { buildStaticMapUrl } from '../../src/lib/alerts/staticMap.js'
 import { summarize, busiestBuckets, bucketByTimeOfDay, radiusLabelText } from '../../src/lib/alerts/digestSummary.js'
 import { mapAltText, type DigestPayload, type LocationDigest } from '../../src/lib/alerts/digestRender.js'
-import { getActiveConfirmedSubscriptions, markDispatched, markChecked, pruneSubscribeAttempts } from '../_lib/db.js'
+import { getActiveConfirmedSubscriptions, markDispatched, markChecked, pruneStaleRows } from '../_lib/db.js'
 import { fetchRecentEvents } from '../_lib/socrata.js'
 import { sendDigestEmail } from '../_lib/email.js'
 
@@ -83,7 +83,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    await pruneSubscribeAttempts()
+    await pruneStaleRows()
   } catch (err) {
     console.error('[cron] prune failed', err)
   }

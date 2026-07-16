@@ -1,7 +1,7 @@
 // api/alerts/confirm.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { verifyToken } from '../../src/lib/alerts/tokens.js'
-import { confirmSubscriber } from '../_lib/db.js'
+import { confirmSubscription } from '../_lib/db.js'
 import { escapeHtml } from '../_lib/email.js'
 
 // All current callers pass static strings, but escape anyway — the day
@@ -34,11 +34,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    await confirmSubscriber(payload.subjectId)
+    await confirmSubscription(payload.subjectId)
   } catch (err) {
     console.error('[confirm] db error', err)
     return res.status(503).send(page('Something went wrong', 'We could not confirm your subscription right now. Please try the link again shortly.'))
   }
 
-  return res.status(200).send(page("You're subscribed", "Your DataDiver alerts are active. You'll get a daily email when matching events happen near your locations. Quiet days send nothing."))
+  return res.status(200).send(page("You're subscribed", "This alert is confirmed and active. You'll get a daily email when matching events happen near your locations. Quiet days send nothing."))
 }
