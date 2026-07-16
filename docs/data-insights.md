@@ -175,6 +175,12 @@ Nov 2025 (Proposition 50) reports **100 precinct rows for a ~500-precinct city**
 
 **Rule:** vendor-time gates pin the placeholder count exactly (2 for 2012, 0 for 2022) and normalize null neighborhood labels to `'NA'` — skip only the known form, die on surprises. Render geometry-without-data as *unpainted* (the CoverageChip explains sparse elections from `_turnout`); never backfill or interpolate.
 
+### RCV round pages live under abbreviated URL slugs that are NOT race identities
+
+**Finding:** SF's per-race round pages (`round-pages/<slug>_short-rounds-en.html`) use short slugs — `da`, `ca`, `d1`…`d11` — that share no naming scheme with the races they describe. Naming emitted files after those slugs broke the frontend's fetch-by-race-id contract for 9 of 11 RCV races, and fuzzy title-matching slugs back to races silently mislabeled all five odd districts as District 1 — which also **corrupted the `isWinner` flags** in `summary.json` (the site showed Preston as the D5 winner and Lai as the D11 winner; the certified winners are Mahmood and Chen). Also: SF published **no round page at all** for the 2024 treasurer's race, though it was RCV.
+
+**Rule:** the URL slug is a remote-only concern — emit round files named by the race id the frontend fetches, match slugs to races by exact id first (full-array pass) with a full-title fallback only, and pin the contract with a test (`rcvFiles.test.ts`: every `isRCV` race has a file or is an explicit known-missing; every file's internal `raceId` equals its filename).
+
 ---
 
 ## General Patterns

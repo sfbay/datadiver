@@ -273,7 +273,9 @@ className={`
 `}
 ```
 
-The `bg-{pigment}-500/10` + `ring-1 ring-{pigment}-500/30` pattern adapts to any pigment. Use the dataset's own pigment (ochre for Last 48 FLOW, terracotta for emergency, etc.) so selection reinforces the dataset identity.
+The `bg-{pigment}-500/10` + `ring-1 ring-{pigment}-500/30` pattern adapts to any pigment. Use the dataset's own pigment (ochre for Last 48 FLOW, terracotta for emergency, etc.) so selection reinforces the dataset identity. For entity-focus rows (e.g. a focused candidate in the Elections precinct card), the ring/tint wear the ENTITY's own pigment as inline styles (`{hex}1a` / `0 0 0 1px {hex}4d`) so the highlight binds to what's on the map.
+
+**Disfavored (standing rule, July 2026 — Elections was the last holdout, converted in PR #114):** `border-l-2` / inset-`boxShadow` side bars and blue/indigo selection tints. No edge-border highlights anywhere — the rounded ring is the one sanctioned margin, and active-state color stays in the warm family (`bg-ochre-500/15` + ink text for pills, per Last 48's LayerControls). Blue (indigo) survives only as metadata/navigation pigment, never as a selected/active state. Rounded rings also need `space-y-*` list containers, not `divide-y` — hairlines cutting a ring read as broken.
 
 **When the cream-inversion is appropriate:** only for listbox-style components where strong contrast is required for accessibility (see "Listbox keyboard nav" below and the design-doc history). In most sidebar contexts the soft tint is sufficient and less visually jarring at the density DataDiver operates at.
 
