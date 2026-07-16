@@ -3,13 +3,15 @@ import { Suspense, lazy, useEffect } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import AppShell from '@/components/layout/AppShell'
 import { RouteErrorBoundary } from '@/components/ui/ErrorBoundary'
-// Eager: the landing page and the flagship view (nav position 1). Everything
-// else is route-split — each view chunk (and its D3/view-specific code) loads
-// on first navigation. Mapbox GL stays in the main bundle since most views
-// need it immediately.
+// Eager: ONLY the landing page. Every dataset view is route-split — including
+// The Last 48, whose import graph carries Mapbox GL (~467 KB gzip): keeping it
+// lazy keeps the GL engine off Home's critical path (the manualChunks split in
+// vite.config.ts only helps if no EAGER module reaches mapbox-gl). The
+// flagship still feels instant: an idle-time prefetch in App() warms its
+// chunks once the landing page has painted and gone quiet.
 import Home from '@/views/Home/Home'
-import Last48 from '@/views/Last48/Last48'
 
+const Last48 = lazy(() => import('@/views/Last48/Last48'))
 const EmergencyResponse = lazy(() => import('@/views/EmergencyResponse/EmergencyResponse'))
 const ParkingRevenue = lazy(() => import('@/views/ParkingRevenue/ParkingRevenue'))
 const Dispatch911 = lazy(() => import('@/views/Dispatch911/Dispatch911'))
@@ -61,6 +63,22 @@ export default function App() {
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDarkMode)
   }, [isDarkMode])
+
+  // Warm the flagship view's chunks (Last48 + the mapbox chunk it pulls) once
+  // the browser is idle — nav to /live stays instant without costing Home's
+  // first paint. Vite dedupes this with the route's lazy() import. Safari has
+  // no requestIdleCallback; a short timeout is close enough there.
+  useEffect(() => {
+    const warm = () => {
+      void import('@/views/Last48/Last48')
+    }
+    if ('requestIdleCallback' in window) {
+      const id = window.requestIdleCallback(warm, { timeout: 5000 })
+      return () => window.cancelIdleCallback(id)
+    }
+    const t = setTimeout(warm, 2500)
+    return () => clearTimeout(t)
+  }, [])
 
   return (
     <BrowserRouter>
