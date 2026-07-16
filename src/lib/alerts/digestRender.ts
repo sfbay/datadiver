@@ -65,7 +65,11 @@ const STREAM_META: Record<string, { tag: string; hex: string }> = {
 
 /** '77 Chula Lane' from a full geocoder label. */
 function placeShort(label: string): string {
-  return label.split(',')[0].trim()
+  const first = label.split(',')[0].trim()
+  // A label-less pin (map click, no geocode) falls back to "lat, lng" —
+  // splitting that on the comma would leave a bare latitude ("near 37.764").
+  // Keep the full coordinate pair in that case.
+  return /^-?\d+(\.\d+)?$/.test(first) ? label : first
 }
 
 /** 12-cell two-hour heat strip + a time axis so the day has coordinates. */

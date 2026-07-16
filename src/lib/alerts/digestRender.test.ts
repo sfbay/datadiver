@@ -150,3 +150,23 @@ describe('renderDigest', () => {
     expect(text).toContain('https://x/unsub')
   })
 })
+
+describe('placeShort edge (coordinate-fallback labels)', () => {
+  it('keeps the full coordinate pair for label-less pins', () => {
+    const events = [ev({ id: 'x1', datasetId: '911-realtime', receivedAt: NOW - 3600_000, callType: 'Suspicious person', address: '16th St & Church St', latitude: 37.76, longitude: -122.42 })]
+    const payload = {
+      windowLabel: 'published since your last digest',
+      nowMs: NOW,
+      locations: [{
+        label: '37.764, -122.429',
+        mapUrl: null,
+        mapAlt: 'Map — no major incidents',
+        summary: summarize(events),
+        buckets: busiestBuckets(events),
+        days: bucketByDay(events, NOW),
+      }],
+    }
+    const { subject } = renderDigest(payload, 'https://x.test/u')
+    expect(subject).toContain('near 37.764, -122.429')
+  })
+})
