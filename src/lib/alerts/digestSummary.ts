@@ -19,17 +19,22 @@ export interface DigestRow {
   id: string
   clock: string
   streamLabel: string
+  datasetId: DatasetId
   what: string
   /** Where it happened — the street-level block/intersection/address when the
    *  source publishes one, otherwise the neighborhood as a fallback. */
   location: string
   significant: boolean
   receivedAt: number
+  /** Occurred more than 24h before the digest was assembled — i.e. it reached
+   *  this email late because the source publishes behind real time. */
+  late: boolean
 }
 
 export interface TimeBlock {
   key: 'overnight' | 'morning' | 'afternoon' | 'evening'
   label: string
+  rangeLabel: string
   rows: DigestRow[]
 }
 
@@ -112,32 +117,81 @@ export function summarize(events: NormalizedEvent[]): Summary {
   }
 }
 
-const BLOCKS: Array<{ key: TimeBlock['key']; label: string; from: number; to: number }> = [
-  { key: 'overnight', label: 'OVERNIGHT', from: 0, to: 5 },
-  { key: 'morning', label: 'MORNING', from: 6, to: 11 },
-  { key: 'afternoon', label: 'AFTERNOON', from: 12, to: 17 },
-  { key: 'evening', label: 'EVENING', from: 18, to: 23 },
+const BLOCKS: Array<{ key: TimeBlock['key']; label: string; rangeLabel: string; from: number; to: number }> = [
+  { key: 'overnight', label: 'OVERNIGHT', rangeLabel: '12–5 a.m.', from: 0, to: 5 },
+  { key: 'morning', label: 'MORNING', rangeLabel: '6–11 a.m.', from: 6, to: 11 },
+  { key: 'afternoon', label: 'AFTERNOON', rangeLabel: 'noon–5 p.m.', from: 12, to: 17 },
+  { key: 'evening', label: 'EVENING', rangeLabel: '6–11 p.m.', from: 18, to: 23 },
 ]
 
-export function bucketByTimeOfDay(events: NormalizedEvent[]): TimeBlock[] {
+/** 'YYYY-MM-DD' for an instant, on the SF calendar. */
+export function sfDayKey(ms: number): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: SF_TZ, year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date(ms))
+}
+
+// AP style: March–July are spelled out; the rest abbreviate.
+const AP_MONTH: Record<string, string> = {
+  January: 'Jan.', February: 'Feb.', August: 'Aug.',
+  September: 'Sept.', October: 'Oct.', November: 'Nov.', December: 'Dec.',
+}
+
+/** 'Wednesday, July 15' — the digest's temporal anchor, AP month style. */
+export function sfDayLine(ms: number): string {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: SF_TZ, weekday: 'long', month: 'long', day: 'numeric',
+  }).formatToParts(new Date(ms))
+  const get = (t: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === t)?.value ?? ''
+  const month = get('month')
+  return `${get('weekday')}, ${AP_MONTH[month] ?? month} ${get('day')}`
+}
+
+export interface DayGroup {
+  dateKey: string
+  /** 'WEDNESDAY, JULY 15' — day header for multi-day digests. */
+  dayLabel: string
+  blocks: TimeBlock[]
+}
+
+const LATE_MS = 24 * 60 * 60 * 1000
+
+/** Rows grouped by the SF calendar day they OCCURRED (newest day first),
+ *  then time-of-day blocks within each day. The staggered-timeline layout:
+ *  sources publish behind real time, so a digest can honestly span days. */
+export function bucketByDay(events: NormalizedEvent[], nowMs: number): DayGroup[] {
   const ordered = [...events].sort((a, b) => b.receivedAt - a.receivedAt)
-  const blocks: TimeBlock[] = BLOCKS.map((b) => ({ key: b.key, label: b.label, rows: [] }))
+  const groups: DayGroup[] = []
+  const byKey = new Map<string, DayGroup>()
   for (const e of ordered) {
+    const key = sfDayKey(e.receivedAt)
+    let g = byKey.get(key)
+    if (!g) {
+      g = {
+        dateKey: key,
+        dayLabel: sfDayLine(e.receivedAt).toUpperCase(),
+        blocks: BLOCKS.map((b) => ({ key: b.key, label: b.label, rangeLabel: b.rangeLabel, rows: [] })),
+      }
+      byKey.set(key, g)
+      groups.push(g) // events are sorted desc, so groups arrive newest-day-first
+    }
     const h = sfHour(e.receivedAt)
     const bi = BLOCKS.findIndex((b) => h >= b.from && h <= b.to)
     if (bi < 0) continue
-    blocks[bi].rows.push({
+    g.blocks[bi].rows.push({
       id: e.id,
       clock: clockText(e.receivedAt),
       streamLabel: streamLabelShort(e.datasetId),
+      datasetId: e.datasetId,
       what: humanizeCallType(e.callType) || e.headline || 'Incident',
-      // Block-level location when published; neighborhood is the fallback.
       location: e.address ?? e.neighborhood ?? '',
       significant: classifySignificant(e) != null,
       receivedAt: e.receivedAt,
+      late: nowMs - e.receivedAt > LATE_MS,
     })
   }
-  return blocks.filter((b) => b.rows.length > 0)
+  for (const g of groups) g.blocks = g.blocks.filter((b) => b.rows.length > 0)
+  return groups
 }
 
 const RADIUS_FRACTION: Record<string, string> = {

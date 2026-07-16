@@ -7,7 +7,7 @@ import { eventMatchesSubscription, isSubscriptionDue, haversineMiles } from '../
 import { classifySignificant } from '../../src/lib/alerts/significance.js'
 import { signToken } from '../../src/lib/alerts/tokens.js'
 import { buildStaticMapUrl } from '../../src/lib/alerts/staticMap.js'
-import { summarize, busiestBuckets, bucketByTimeOfDay, radiusLabelText } from '../../src/lib/alerts/digestSummary.js'
+import { summarize, busiestBuckets, bucketByDay, radiusLabelText } from '../../src/lib/alerts/digestSummary.js'
 import { mapAltText, type DigestPayload, type LocationDigest } from '../../src/lib/alerts/digestRender.js'
 import { getActiveConfirmedSubscriptions, markDispatched, markChecked, pruneStaleRows } from '../_lib/db.js'
 import { fetchStreamEvents } from '../_lib/socrata.js'
@@ -18,7 +18,7 @@ const WINDOW_MS = 48 * 60 * 60_000
 
 const WINDOW_LABEL: Record<Cadence, string> = {
   hourly: 'past hour',
-  daily: 'past 24 hours',
+  daily: 'published since your last digest',
   weekly: 'past 7 days',
 }
 
@@ -26,7 +26,7 @@ function locLabel(loc: { label?: string; lat: number; lng: number }): string {
   return loc.label || `${loc.lat.toFixed(3)}, ${loc.lng.toFixed(3)}`
 }
 
-function buildPayload(sub: DueSubscription, events: NormalizedEvent[]): DigestPayload {
+function buildPayload(sub: DueSubscription, events: NormalizedEvent[], now: number): DigestPayload {
   const token = process.env.MAPBOX_STATIC_TOKEN || ''
   const radiusLabel = radiusLabelText(sub.radiusMiles)
   const locations: LocationDigest[] = []
@@ -56,11 +56,11 @@ function buildPayload(sub: DueSubscription, events: NormalizedEvent[]): DigestPa
       mapAlt: mapAltText(locLabel(loc), radiusLabel, summary.significant),
       summary,
       buckets: busiestBuckets(inRadius),
-      blocks: bucketByTimeOfDay(inRadius),
+      days: bucketByDay(inRadius, now),
     })
   }
 
-  return { windowLabel: WINDOW_LABEL[sub.cadence], locations }
+  return { windowLabel: WINDOW_LABEL[sub.cadence], nowMs: now, locations }
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -121,7 +121,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         continue
       }
 
-      const payload = buildPayload(sub, matched)
+      const payload = buildPayload(sub, matched, now)
       if (payload.locations.length === 0) {
         await markChecked(sub.id, now)
         continue
