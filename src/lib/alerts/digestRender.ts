@@ -3,8 +3,9 @@
 // markup lives here (testable) so api/_lib/email.ts stays a thin Resend send.
 // NOTE: a local escapeHtml is intentional — src/ must not import from api/
 // (dependency direction), so we can't reuse api/_lib/email.ts's copy.
-import type { Summary, TimeBlock, DigestRow, DayGroup } from './digestSummary.js'
+import type { Summary, TimeBlock, DigestRow, DayGroup, ReleasedGroup, ReleasedRow } from './digestSummary.js'
 import { sfDayKey, sfDayLine } from './digestSummary.js'
+import { ALERT_STREAMS } from './streams.js'
 
 export interface LocationDigest {
   label: string
@@ -13,6 +14,8 @@ export interface LocationDigest {
   summary: Summary
   buckets: number[]
   days: DayGroup[]
+  /** "Newly released" groups (released-tier streams) — [] when none. */
+  released: ReleasedGroup[]
 }
 
 export interface DigestPayload {
@@ -56,15 +59,13 @@ const MUTED = '#7a6a52'
 const PAPERLINE = '#d8c9a8'
 const OCHRE = '#d4a435'
 
-/** The app's canonical stream identity (FlowMapLayer COLORS): 911 indigo,
- *  Fire/EMS terracotta, 311 moss — cool/warm/green, mutually distinct. The
- *  first preview shipped 911 as terracotta beside a brick Fire/EMS; too
- *  close to tell apart, and it broke same-dataset-same-pigment. */
-const STREAM_META: Record<string, { tag: string; hex: string }> = {
-  '911-realtime': { tag: '911', hex: '#616a96' },
-  'fire-ems-dispatch': { tag: 'FIRE/EMS', hex: '#b85a33' },
-  '311-cases': { tag: '311', hex: '#7a9954' },
-}
+/** Stream tags + pigments come from the ALERT_STREAMS registry — the app's
+ *  canonical stream identity (live three pinned to FlowMapLayer COLORS by
+ *  streams.test.ts). The first bulletin preview shipped 911 as terracotta
+ *  from a hand-written copy of this table; deriving it kills that bug class. */
+const STREAM_META: Record<string, { tag: string; hex: string }> = Object.fromEntries(
+  Object.entries(ALERT_STREAMS).map(([id, cfg]) => [id, { tag: cfg.tag, hex: cfg.hex }]),
+)
 
 /** '77 Chula Lane' from a full geocoder label. */
 function placeShort(label: string): string {
@@ -168,6 +169,31 @@ function dayHtml(day: DayGroup, showHeader: boolean): string {
   return header + day.blocks.map(blockHtml).join('')
 }
 
+function releasedRowHtml(r: ReleasedRow): string {
+  const m = STREAM_META[r.datasetId] ?? { tag: '', hex: MUTED }
+  const sig = r.significant ? '<span style="color:#963e30;font-weight:bold">&#9656; </span>' : ''
+  const where = r.location ? ` <span style="color:${MUTED};font-size:13px">· ${escapeHtml(r.location)}</span>` : ''
+  // No deep link: released streams have no Last 48 presence, and a link
+  // that lands nowhere is worse than none.
+  return `<div style="margin:0 0 10px;line-height:1.45">
+    <span style="display:inline-block;width:64px;font-family:${SANS};color:${MUTED};font-size:11px">${escapeHtml(r.dateLabel)}</span>
+    <span style="font-family:${SANS};color:${m.hex};font-size:10px;letter-spacing:.08em">&#9679;&nbsp;${escapeHtml(m.tag)}</span>
+    <span style="color:${INK};font-size:16px">&nbsp;${sig}${escapeHtml(r.what)}</span>${where}
+  </div>`
+}
+
+/** The staggered-timeline section: released-tier events under their own
+ *  Times-rule head with the honest framing note. Same double-rule language
+ *  as day headers — these ARE day-scale content, just batch-published. */
+function releasedGroupHtml(g: ReleasedGroup): string {
+  const note = g.note
+    ? `<div style="font-size:12.5px;color:${MUTED};font-style:italic;margin:8px 0 12px;line-height:1.5">${escapeHtml(g.note)}</div>`
+    : ''
+  return `
+    <div style="border-top:3px double ${PAPERLINE};margin-top:22px;padding-top:12px;font-family:${TIMES};font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:${INK};font-weight:bold">NEWLY RELEASED &#183; ${escapeHtml(g.heading.toUpperCase())}</div>
+    ${note}${g.rows.map(releasedRowHtml).join('')}`
+}
+
 function locationHtml(loc: LocationDigest, showLabel: boolean, nowMs: number): string {
   const mapBlock = loc.mapUrl
     ? `<img src="${escapeHtml(loc.mapUrl)}" width="560" alt="${escapeHtml(loc.mapAlt)}" style="width:100%;max-width:560px;border:1px solid ${PAPERLINE};border-radius:8px;display:block">`
@@ -183,7 +209,8 @@ function locationHtml(loc: LocationDigest, showLabel: boolean, nowMs: number): s
     ${label}
     ${mapBlock}
     ${statHeaderHtml(loc.summary, loc.buckets)}
-    ${loc.days.map((d) => dayHtml(d, showDayHeaders)).join('')}`
+    ${loc.days.map((d) => dayHtml(d, showDayHeaders)).join('')}
+    ${loc.released.map(releasedGroupHtml).join('')}`
 }
 
 export function renderDigest(payload: DigestPayload, unsubUrl: string): RenderedDigest {
@@ -250,7 +277,15 @@ function renderText(payload: DigestPayload, dateLine: string, introLine: string,
             .join('\n')
         })
         .join('\n')
-      return `${head}${loc.mapAlt}\n${glance}\n\n${body}`
+      const releasedText = loc.released
+        .map((g) =>
+          `NEWLY RELEASED · ${g.heading.toUpperCase()}\n${g.note}\n` +
+          g.rows
+            .map((r) => `  ${r.dateLabel}  [${STREAM_META[r.datasetId]?.tag ?? ''}] ${r.what}${r.location ? ` · ${r.location}` : ''}`)
+            .join('\n'),
+        )
+        .join('\n\n')
+      return `${head}${loc.mapAlt}\n${glance}\n\n${body}${releasedText ? `\n\n${releasedText}` : ''}`
     })
     .join('\n\n')
   return `THE LAST 48 — ${dateLine}\n${introLine}\n\n${blocks}\n\nReports are grouped by the day they occurred; some arrive late as the city releases data.\nUnsubscribe: ${unsubUrl}\n${SENDER_IDENTITY}`

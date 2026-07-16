@@ -40,6 +40,7 @@ const payload = {
     summary,
     buckets: busiestBuckets(events),
     days: bucketByDay(events, now),
+    released: [],
   }],
 }
 

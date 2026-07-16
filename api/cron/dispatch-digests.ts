@@ -57,6 +57,7 @@ function buildPayload(sub: DueSubscription, events: NormalizedEvent[], now: numb
       summary,
       buckets: busiestBuckets(inRadius),
       days: bucketByDay(inRadius, now),
+      released: [],
     })
   }
 
