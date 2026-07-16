@@ -7,11 +7,16 @@
 // query per dataset that GROUP BY neighborhood and bucket events into
 // 48h windows.
 //
+// The window contains only COMPLETE SF day-pairs and ends before the live
+// rolling 48h window — the current spike is never inside its own baseline.
+// All bounds/bucketing arithmetic lives in anomalyBaselineWindow.ts (tested).
+//
 // Cached for the session — refreshes only when the hook is first
 // instantiated (HOTSPOTS mode entry). Re-entry uses cache.
 
 import { useEffect, useState } from 'react'
 import { fetchDataset } from '@/api/client'
+import { baselineWindow, sfDayIndex } from './anomalyBaselineWindow'
 import type {
   AnomalyResult,
   DatasetId,
@@ -83,10 +88,9 @@ async function fetchBaselineForDataset(datasetId: DatasetId): Promise<BaselineEn
   const nhField = NEIGHBORHOOD_FIELD[datasetId]
   const registryKey = DATASET_REGISTRY_KEY[datasetId]
 
-  // 84 days = 12 weeks. CRITICAL: trim the .000Z from toISOString — Socrata
-  // rejects that form as a text literal (same bug we fixed in Phase 1's
-  // useLast48Window). Use slice(0, 19) for YYYY-MM-DDTHH:MM:SS.
-  const since = new Date(Date.now() - 84 * 24 * 60 * 60 * 1000).toISOString().slice(0, 19)
+  // Complete SF day-pairs only, ending before the live 48h window — SF-local
+  // digits (never toISOString: DataSF reads bare digits as SF wall time).
+  const { since, until } = baselineWindow(Date.now())
 
   const rows = await fetchDataset<BaselineRow>(
     // DatasetKey is just a string alias — cast is safe since all
@@ -94,7 +98,7 @@ async function fetchBaselineForDataset(datasetId: DatasetId): Promise<BaselineEn
     registryKey as Parameters<typeof fetchDataset>[0],
     {
       $select: `${nhField} as neighborhood, date_trunc_ymd(${dateField}) as window_start, COUNT(*) as cnt`,
-      $where: `${dateField} >= '${since}' AND ${nhField} IS NOT NULL`,
+      $where: `${dateField} >= '${since}' AND ${dateField} < '${until}' AND ${nhField} IS NOT NULL`,
       $group: `${nhField}, date_trunc_ymd(${dateField})`,
       $limit: 50000,
     },
@@ -106,9 +110,8 @@ async function fetchBaselineForDataset(datasetId: DatasetId): Promise<BaselineEn
   const byNeighborhood: Record<string, Record<string, number>> = {}
   for (const r of rows) {
     if (!r.neighborhood) continue
-    const dayMs = Date.parse(r.window_start)
-    if (isNaN(dayMs)) continue
-    const days = Math.floor(dayMs / (24 * 60 * 60 * 1000))
+    const days = sfDayIndex(r.window_start)
+    if (days === null) continue
     const bucket = Math.floor(days / 2) * 2
     const key = String(bucket)
     if (!byNeighborhood[r.neighborhood]) byNeighborhood[r.neighborhood] = {}
