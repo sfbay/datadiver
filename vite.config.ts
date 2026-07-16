@@ -21,6 +21,13 @@ export default defineConfig({
         // chunk pulls it off the critical path: it now loads on-demand when a
         // map view mounts and is cached across all of them.
         manualChunks(id) {
+          // Rollup's virtual CommonJS interop helper (\x00commonjsHelpers.js)
+          // is shared by CJS deps in EVERY chunk. Left unassigned, Rollup
+          // co-locates it inside the mapbox chunk — and the entry then
+          // statically imports the helper from there, modulepreloading the
+          // whole 1.7 MB GL engine for a three-line function. Pin it to its
+          // own micro-chunk so nothing drags the whale.
+          if (id.includes('commonjsHelpers')) return 'cjs-helpers'
           if (!id.includes('node_modules')) return
           if (id.includes('mapbox-gl') || id.includes('@mapbox')) return 'mapbox'
         },

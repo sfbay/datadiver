@@ -216,6 +216,9 @@ git commit -m "fix(pulse): SF-local complete-pair anomaly baseline — no UTC sk
 
 **Files:**
 - Modify: `src/App.tsx`
+- Modify: `vite.config.ts` *(added during execution — see amendment below)*
+
+> **Execution amendment (controller):** with App.tsx alone, the Step-4 grep read 2, not 0 — Rollup's virtual CommonJS interop helper (`\x00commonjsHelpers.js`, no `node_modules` in its id, so `manualChunks` ignored it) was co-located inside the mapbox chunk, and the entry statically imported the three-line helper from there, dragging the whole chunk back into the preload set. Fix: pin `commonjsHelpers` to its own `cjs-helpers` micro-chunk in `manualChunks`. Verified after: grep = 0, entry 226→124 KB gzip.
 
 **Interfaces:**
 - Consumes: the existing `lazy`/`Suspense`/`RouteFallback` scaffolding already in App.tsx.
