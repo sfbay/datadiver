@@ -52,24 +52,46 @@ export async function createPendingSubscription(
   return { subscriberId, subscriptionId }
 }
 
-export async function confirmSubscriber(subscriberId: string): Promise<boolean> {
+/** Confirm ONE subscription (tokens are subscription-scoped so a new alert on
+ *  an already-confirmed email still requires an inbox click — the consent gap
+ *  fix). Also stamps the subscriber's confirmed_at on first confirmation, and
+ *  seeds this subscription's watermarks to "now" so the first digest contains
+ *  only events from after sign-up — not a backlog of the whole 48h window.
+ *  Returns false when the subscription doesn't exist or its subscriber has
+ *  unsubscribed. */
+export async function confirmSubscription(subscriptionId: string): Promise<boolean> {
   const rows = await sql()`
-    UPDATE subscribers SET confirmed_at = COALESCE(confirmed_at, now())
-    WHERE id = ${subscriberId} AND unsubscribed_at IS NULL
-    RETURNING id`
+    UPDATE subscriptions s SET confirmed_at = COALESCE(s.confirmed_at, now())
+    FROM subscribers sub
+    WHERE s.id = ${subscriptionId} AND sub.id = s.subscriber_id AND sub.unsubscribed_at IS NULL
+    RETURNING s.subscriber_id, s.filters`
   if (rows.length === 0) return false
-  // Seed the event watermark to "now" so the first digest contains only events
-  // from after sign-up — not a backlog of the whole 48h window.
+  const subscriberId = rows[0].subscriber_id as string
+  await sql()`
+    UPDATE subscribers SET confirmed_at = COALESCE(confirmed_at, now()) WHERE id = ${subscriberId}`
+
+  const nowMs = Date.now()
+  const streams = ((rows[0].filters as { streams?: string[] } | null)?.streams ?? []) as string[]
+  const seed = JSON.stringify(Object.fromEntries(streams.map((s) => [s, nowMs])))
   await sql()`
     UPDATE subscriptions
-    SET last_event_ts = (EXTRACT(EPOCH FROM now()) * 1000)::bigint
-    WHERE subscriber_id = ${subscriberId} AND last_event_ts = 0`
+    SET stream_watermarks = CASE WHEN stream_watermarks = '{}'::jsonb THEN ${seed}::jsonb ELSE stream_watermarks END,
+        last_event_ts = CASE WHEN last_event_ts = 0 THEN ${nowMs} ELSE last_event_ts END
+    WHERE id = ${subscriptionId}`
   return true
 }
 
-/** Prune rate-limit rows older than a day. Called from the daily cron. */
-export async function pruneSubscribeAttempts(): Promise<void> {
+/** Prune rate-limit rows older than a day, plus never-confirmed subscriptions
+ *  (and their orphaned never-confirmed subscribers) past the 7-day confirm
+ *  token life. Called from the daily cron. */
+export async function pruneStaleRows(): Promise<void> {
   await sql()`DELETE FROM subscribe_attempts WHERE created_at < now() - interval '1 day'`
+  await sql()`
+    DELETE FROM subscriptions WHERE confirmed_at IS NULL AND created_at < now() - interval '8 days'`
+  await sql()`
+    DELETE FROM subscribers sub
+    WHERE sub.confirmed_at IS NULL AND sub.created_at < now() - interval '8 days'
+      AND NOT EXISTS (SELECT 1 FROM subscriptions s WHERE s.subscriber_id = sub.id)`
 }
 
 /** Hard-delete the subscriber; cascade removes subscriptions + locations. */
@@ -77,14 +99,14 @@ export async function deleteSubscriber(subscriberId: string): Promise<void> {
   await sql()`DELETE FROM subscribers WHERE id = ${subscriberId}`
 }
 
-/** All active subscriptions belonging to confirmed, non-unsubscribed people,
- *  with email + locations joined. Cadence-due filtering happens in JS via the
- *  pure isSubscriptionDue. */
+/** All active, individually-confirmed subscriptions belonging to confirmed,
+ *  non-unsubscribed people, with email + locations joined. Cadence-due
+ *  filtering happens in JS via the pure isSubscriptionDue. */
 export async function getActiveConfirmedSubscriptions(): Promise<DueSubscription[]> {
   const rows = await sql()`
     SELECT s.id, s.subscriber_id, s.name, s.cadence, s.filters, s.radius_miles,
            EXTRACT(EPOCH FROM s.last_sent_at) * 1000 AS last_sent_ms,
-           s.last_event_ts, s.active, sub.email,
+           s.last_event_ts, s.stream_watermarks, s.active, sub.email,
            COALESCE((
              SELECT json_agg(json_build_object('label', l.label, 'lat', l.lat, 'lng', l.lng))
              FROM subscription_locations l WHERE l.subscription_id = s.id
@@ -92,6 +114,7 @@ export async function getActiveConfirmedSubscriptions(): Promise<DueSubscription
     FROM subscriptions s
     JOIN subscribers sub ON sub.id = s.subscriber_id
     WHERE s.active = true
+      AND s.confirmed_at IS NOT NULL
       AND sub.confirmed_at IS NOT NULL
       AND sub.unsubscribed_at IS NULL`
 
@@ -113,20 +136,28 @@ export async function getActiveConfirmedSubscriptions(): Promise<DueSubscription
     })),
     lastSentAt: r.last_sent_ms == null ? null : Number(r.last_sent_ms),
     lastEventTs: Number(r.last_event_ts),
+    streamWatermarks: Object.fromEntries(
+      Object.entries((r.stream_watermarks ?? {}) as Record<string, unknown>).map(([k, v]) => [k, Number(v)]),
+    ),
     active: r.active as boolean,
   }))
 }
 
-/** A digest was sent: advance both clocks. */
+/** A digest was sent: advance the cadence clock, merge the per-stream
+ *  watermarks (nextWatermarks pre-floors them — jsonb || overwrites keys),
+ *  and keep the legacy scalar at the global max so a code rollback still
+ *  dedups approximately. */
 export async function markDispatched(
   subscriptionId: string,
-  newWatermark: number,
+  newWatermarks: Partial<Record<string, number>>,
   sentAt: number,
 ): Promise<void> {
+  const maxAll = Object.values(newWatermarks).reduce<number>((a, b) => Math.max(a, Number(b)), 0)
   await sql()`
     UPDATE subscriptions
     SET last_sent_at = to_timestamp(${sentAt} / 1000.0),
-        last_event_ts = GREATEST(last_event_ts, ${newWatermark})
+        stream_watermarks = stream_watermarks || ${JSON.stringify(newWatermarks)}::jsonb,
+        last_event_ts = GREATEST(last_event_ts, ${maxAll})
     WHERE id = ${subscriptionId}`
 }
 

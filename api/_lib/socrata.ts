@@ -11,36 +11,75 @@ const SOCRATA: Record<DatasetId, { id: string; dateField: string }> = {
 }
 const BASE = 'https://data.sfgov.org/resource'
 
-export async function fetchRecentEvents(
+export interface StreamFetchResult {
+  events: NormalizedEvent[]
+  ok: boolean
+}
+
+const PAGE_SIZE = 5000
+// 4 pages = 20k rows per stream per run — far above any real 48h volume (the
+// busiest stream runs ~4–5k). If the cap is ever hit we log and stay ok:true —
+// ASC ordering means the unseen tail is the NEWEST rows, which sit above the
+// watermark and simply arrive next run. Nothing is permanently lost.
+const MAX_PAGES = 4
+
+/** Fetch each unique stream ONCE per cron run (the caller fans results out
+ *  across subscriptions — N subscribers sharing 3 streams = 3 reads, not 3N).
+ *
+ *  ASC ordering + $offset pagination: rows arriving mid-pagination append
+ *  after the cursor, so pages never shift underneath us the way DESC pages
+ *  do — and any truncation drops the newest tail (recoverable next run), not
+ *  the oldest (permanently below the advancing watermark). Caveat: a
+ *  BACKFILLED row with a mid-range timestamp landing between two page
+ *  fetches can still dup/skip one boundary row — same late-arrival class
+ *  any watermark scheme carries, and pagination past page 0 is itself rare.
+ *
+ *  A stream that errors returns ok:false and NO events: delivering a partial
+ *  page would email an arbitrary slice while its watermark can't advance,
+ *  duplicating those events in the next digest. Skipping the stream keeps
+ *  every one of its events eligible for the next run. */
+export async function fetchStreamEvents(
   streams: DatasetId[],
   sinceMs: number,
-): Promise<NormalizedEvent[]> {
+): Promise<Record<string, StreamFetchResult>> {
   // SF wall-clock digits — DataSF datetimes are floating local times. The
   // cron host runs TZ=UTC, so toISOString() digits here shrank every digest
   // window by 7–8h. See src/utils/sfTime.ts.
   const cutoff = sfLocalCutoff(sinceMs)
   const token = process.env.SOCRATA_APP_TOKEN
-  const out: NormalizedEvent[] = []
+  const out: Record<string, StreamFetchResult> = {}
 
-  for (const ds of streams) {
+  for (const ds of [...new Set(streams)]) {
     const cfg = SOCRATA[ds]
     if (!cfg) continue
-    const url = new URL(`${BASE}/${cfg.id}.json`)
-    url.searchParams.set('$where', `${cfg.dateField} >= '${cutoff}'`)
-    url.searchParams.set('$order', `${cfg.dateField} DESC`)
-    url.searchParams.set('$limit', '5000')
-
-    try {
-      const res = await fetch(url, token ? { headers: { 'X-App-Token': token } } : undefined)
-      if (!res.ok) continue
-      const rows = (await res.json()) as Record<string, unknown>[]
-      for (const row of rows) {
-        const ev = normalizeEvent(ds, row)
-        if (ev) out.push(ev)
+    const events: NormalizedEvent[] = []
+    let ok = true
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const url = new URL(`${BASE}/${cfg.id}.json`)
+      url.searchParams.set('$where', `${cfg.dateField} >= '${cutoff}'`)
+      url.searchParams.set('$order', `${cfg.dateField} ASC`)
+      url.searchParams.set('$limit', String(PAGE_SIZE))
+      url.searchParams.set('$offset', String(page * PAGE_SIZE))
+      try {
+        const res = await fetch(url, token ? { headers: { 'X-App-Token': token } } : undefined)
+        if (!res.ok) {
+          ok = false
+          break
+        }
+        const rows = (await res.json()) as Record<string, unknown>[]
+        for (const row of rows) {
+          const ev = normalizeEvent(ds, row)
+          if (ev) events.push(ev)
+        }
+        if (rows.length < PAGE_SIZE) break
+        if (page === MAX_PAGES - 1)
+          console.warn(`[cron] ${ds}: page cap hit (${MAX_PAGES * PAGE_SIZE} rows) — newest tail defers to next run`)
+      } catch {
+        ok = false
+        break
       }
-    } catch {
-      // skip a failed stream; other streams still produce a digest
     }
+    out[ds] = { events: ok ? events : [], ok }
   }
   return out
 }
