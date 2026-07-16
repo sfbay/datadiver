@@ -88,7 +88,7 @@ export default function BallotMeasureExplorer({ measures }: BallotMeasureExplore
           onClick={() => setSelectedTopic(null)}
           className={`px-2 py-0.5 rounded-full text-[9px] font-mono transition-all ${
             !selectedTopic
-              ? 'bg-indigo-500/20 text-indigo-500 border border-indigo-500/30'
+              ? 'bg-ochre-500/15 text-ink dark:text-paper-100 border border-transparent'
               : 'text-slate-500 hover:text-slate-300 border border-transparent'
           }`}
         >
@@ -100,7 +100,7 @@ export default function BallotMeasureExplorer({ measures }: BallotMeasureExplore
             onClick={() => setSelectedTopic(selectedTopic === topic ? null : topic)}
             className={`px-2 py-0.5 rounded-full text-[9px] font-mono transition-all ${
               selectedTopic === topic
-                ? 'bg-indigo-500/20 text-indigo-500 border border-indigo-500/30'
+                ? 'bg-ochre-500/15 text-ink dark:text-paper-100 border border-transparent'
                 : 'text-slate-500 hover:text-slate-300 border border-transparent'
             }`}
           >

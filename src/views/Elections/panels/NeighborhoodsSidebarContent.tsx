@@ -70,7 +70,7 @@ export default function NeighborhoodsSidebarContent({
               onClick={() => handleClick(r.name)}
               className={`py-2 px-3 rounded-lg cursor-pointer transition-all duration-200 ${
                 isActive
-                  ? 'bg-indigo-500/10 ring-1 ring-indigo-500/30'
+                  ? 'bg-ochre-500/10 ring-1 ring-ochre-500/30'
                   : 'hover:bg-white/80 dark:hover:bg-white/[0.04]'
               }`}
             >

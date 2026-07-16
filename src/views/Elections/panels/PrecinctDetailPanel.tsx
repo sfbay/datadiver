@@ -144,8 +144,11 @@ export default function PrecinctDetailPanel({
                     key={c.name}
                     onClick={() => onFocusCandidate(isFocused ? null : c.name)}
                     style={isFocused ? {
-                      backgroundColor: `${hex}14`,
-                      boxShadow: `inset 3px 0 0 ${hex}, 0 0 0 1px ${hex}59`,
+                      // Last 48 selected-row idiom: soft tint + rounded 1px ring in the
+                      // row's own pigment — no inset side bar (house rule: no edge-border
+                      // highlights; the rounded ring is the one sanctioned margin).
+                      backgroundColor: `${hex}1a`,
+                      boxShadow: `0 0 0 1px ${hex}4d`,
                     } : undefined}
                     className={`block w-full text-left rounded-lg px-1.5 py-1 -mx-1.5 cursor-pointer transition-all ${
                       isFocused ? '' : 'hover:bg-paper-100/50 dark:hover:bg-white/[0.04]'
