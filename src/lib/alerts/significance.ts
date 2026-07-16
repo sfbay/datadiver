@@ -2,7 +2,7 @@
 //
 // Shared significance helpers for the heartbeat detectors. Pure + tested.
 
-import type { NormalizedEvent } from '@/types/last48'
+import type { AlertEvent } from './streams.js'
 
 export const BREAKING_WINDOW_MS = 2 * 60_000
 
@@ -36,11 +36,22 @@ export function classifyCallType(
   return null
 }
 
-/** Classify an event into a significant category, or null. Excludes 311. */
+/** Classify an event into a significant category, or null. 311 and
+ *  business openings never qualify. Crashes qualify on severity — the
+ *  Vision Zero dataset is injury-only, so "significant" means fatal or
+ *  severe, read from the raw row. `crash-severe` deliberately stays out
+ *  of CATEGORIES: it marks rows, it is not a subscriber filter. */
 export function classifySignificant(
-  event: NormalizedEvent,
+  event: AlertEvent,
 ): { key: string; plural: string } | null {
-  if (event.datasetId === '311-cases') return null
+  if (event.datasetId === '311-cases' || event.datasetId === 'business-openings') return null
+  if (event.datasetId === 'traffic-crashes') {
+    const sev = event.raw?.collision_severity
+    const killed = Number(event.raw?.number_killed ?? 0)
+    return killed > 0 || sev === 'Fatal' || sev === 'Injury (Severe)'
+      ? { key: 'crash-severe', plural: 'severe crashes' }
+      : null
+  }
   return classifyCallType(event.callType ?? event.headline ?? '')
 }
 

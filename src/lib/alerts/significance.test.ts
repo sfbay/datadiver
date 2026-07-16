@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { classifyCallType, classifySignificant, recencyBoost, timeAgo, spellNumber } from './significance'
+import { classifyCallType, classifySignificant, recencyBoost, timeAgo, spellNumber, SIGNIFICANCE_KEYS } from './significance'
 import type { NormalizedEvent } from '@/types/last48'
+import type { AlertEvent } from './streams'
 
 function ev(partial: Partial<NormalizedEvent>): NormalizedEvent {
   return {
@@ -55,5 +56,25 @@ describe('timeAgo', () => {
     const now = 10 * 3600_000
     expect(timeAgo(now - 8 * 60_000, now)).toBe('8 minutes ago')
     expect(timeAgo(now - 2 * 3600_000, now)).toBe('2 hours ago')
+  })
+})
+
+describe('classifySignificant — released streams', () => {
+  const crash = (raw: Record<string, unknown>): AlertEvent =>
+    ({ id: 'traffic-crashes:1', datasetId: 'traffic-crashes', timestamp: '', receivedAt: 0, raw }) as AlertEvent
+
+  it('fatal + severe-injury crashes are significant', () => {
+    expect(classifySignificant(crash({ collision_severity: 'Fatal', number_killed: '1' }))?.key).toBe('crash-severe')
+    expect(classifySignificant(crash({ collision_severity: 'Injury (Severe)', number_killed: '0' }))?.key).toBe('crash-severe')
+  })
+  it('lesser-injury crashes are not', () => {
+    expect(classifySignificant(crash({ collision_severity: 'Injury (Complaint of Pain)', number_killed: '0' }))).toBeNull()
+  })
+  it('business openings are never significant', () => {
+    const biz = { id: 'business-openings:1', datasetId: 'business-openings', timestamp: '', receivedAt: 0, headline: 'New business — Gun Range LLC', raw: {} } as AlertEvent
+    expect(classifySignificant(biz)).toBeNull()
+  })
+  it('crash-severe is NOT in the subscriber category vocabulary', () => {
+    expect(SIGNIFICANCE_KEYS).not.toContain('crash-severe')
   })
 })
