@@ -56,10 +56,13 @@ const MUTED = '#7a6a52'
 const PAPERLINE = '#d8c9a8'
 const OCHRE = '#d4a435'
 
-/** Same stream identity the app uses: 911 terracotta, Fire/EMS brick, 311 moss. */
+/** The app's canonical stream identity (FlowMapLayer COLORS): 911 indigo,
+ *  Fire/EMS terracotta, 311 moss — cool/warm/green, mutually distinct. The
+ *  first preview shipped 911 as terracotta beside a brick Fire/EMS; too
+ *  close to tell apart, and it broke same-dataset-same-pigment. */
 const STREAM_META: Record<string, { tag: string; hex: string }> = {
-  '911-realtime': { tag: '911', hex: '#b85a33' },
-  'fire-ems-dispatch': { tag: 'FIRE/EMS', hex: '#963e30' },
+  '911-realtime': { tag: '911', hex: '#616a96' },
+  'fire-ems-dispatch': { tag: 'FIRE/EMS', hex: '#b85a33' },
   '311-cases': { tag: '311', hex: '#7a9954' },
 }
 
@@ -95,8 +98,8 @@ function statHeaderHtml(s: Summary, buckets: number[]): string {
     .filter((id) => byStream[id])
     .map((id) => {
       const m = STREAM_META[id]
-      return `<td valign="bottom" style="border-top:3px solid ${m.hex};padding:8px 18px 0 0">
-        <div style="font-size:22px;font-weight:bold;color:${INK};line-height:1">${byStream[id]}</div>
+      return `<td valign="bottom" style="border-top:6px solid ${m.hex};padding:8px 18px 0 0">
+        <div style="font-style:italic;font-size:22px;font-weight:bold;color:${INK};line-height:1">${byStream[id]}</div>
         <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:${m.hex};margin-top:3px;white-space:nowrap">${m.tag}</div>
       </td>`
     })
@@ -108,7 +111,7 @@ function statHeaderHtml(s: Summary, buckets: number[]): string {
   return `
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0 0"><tr>
       <td valign="bottom" style="padding-right:24px">
-        <div style="font-size:36px;font-weight:bold;color:${INK};line-height:1">${s.total}</div>
+        <div style="font-style:italic;font-size:36px;font-weight:bold;color:${INK};line-height:1">${s.total}</div>
         <div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:${MUTED};margin-top:3px;white-space:nowrap">New report${s.total === 1 ? '' : 's'}</div>
       </td>
       ${streamCells}
@@ -182,7 +185,7 @@ export function renderDigest(payload: DigestPayload, unsubUrl: string): Rendered
   <div style="max-width:560px;margin:0 auto;padding:24px 24px 28px">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px"><tr>
       <td bgcolor="${INK}" style="padding:20px 24px;border-radius:10px">
-        <div style="font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:${OCHRE}">The Last 48</div>
+        <div style="font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:${OCHRE}">DataDiver &#8226; The Last 48</div>
         <div style="font-style:italic;font-size:24px;color:${CREAM};margin-top:6px">${escapeHtml(dateLine)}</div>
         <div style="font-size:13px;color:${PAPERLINE};margin-top:5px">${escapeHtml(introLine)}</div>
       </td>
