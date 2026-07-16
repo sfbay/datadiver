@@ -27,7 +27,7 @@ export default defineConfig({
           // statically imports the helper from there, modulepreloading the
           // whole 1.7 MB GL engine for a three-line function. Pin it to its
           // own micro-chunk so nothing drags the whale.
-          if (id.includes('commonjsHelpers')) return 'cjs-helpers'
+          if (id.startsWith('\0commonjsHelpers')) return 'cjs-helpers'
           if (!id.includes('node_modules')) return
           if (id.includes('mapbox-gl') || id.includes('@mapbox')) return 'mapbox'
         },
