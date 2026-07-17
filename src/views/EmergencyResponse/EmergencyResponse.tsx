@@ -47,6 +47,9 @@ import BatteryTrendChart from '@/components/charts/BatteryTrendChart'
 import HorizontalBarChart from '@/components/charts/HorizontalBarChart'
 import { useEmergencyResponseData } from './useEmergencyResponseData'
 import ScannerFeedChips from '@/components/ui/ScannerFeedChips'
+import { RESPONSE_SECONDS, SAME_DAY, VALID_RESPONSE } from './soql'
+import { shouldShowTypicalDay } from './typicalDay'
+import { useTypicalDay } from './useTypicalDay'
 
 type ServiceFilter = 'all' | 'fire' | 'ems' | 'transport'
 
@@ -59,26 +62,6 @@ const SERVICE_LABELS: Record<ServiceFilter, string> = {
 
 type SidebarTab = 'neighborhoods' | 'patterns'
 type MapOverlay = 'response' | 'apot'
-
-// Socrata's SoQL on the Fire/EMS dispatch dataset doesn't expose
-// `date_diff_ss`. Compute response seconds via component decomposition:
-// (hh*3600 + mm*60 + ss) extracted from each timestamp, subtracted.
-const RESPONSE_SECONDS = (
-  '((date_extract_hh(on_scene_dttm) - date_extract_hh(received_dttm)) * 3600 + ' +
-  '(date_extract_mm(on_scene_dttm) - date_extract_mm(received_dttm)) * 60 + ' +
-  '(date_extract_ss(on_scene_dttm) - date_extract_ss(received_dttm)))'
-)
-
-// Same-day filter drops <0.5% of calls that cross midnight, but keeps the
-// component-decomposition arithmetic free of negative-diff edge cases.
-const SAME_DAY = (
-  'date_extract_y(on_scene_dttm) = date_extract_y(received_dttm) AND ' +
-  'date_extract_m(on_scene_dttm) = date_extract_m(received_dttm) AND ' +
-  'date_extract_d(on_scene_dttm) = date_extract_d(received_dttm)'
-)
-
-// Drop responses < 0s (data errors) or > 2 hours (stale dispatch / data noise)
-const VALID_RESPONSE = `${RESPONSE_SECONDS} > 0 AND ${RESPONSE_SECONDS} < 7200`
 
 export default function EmergencyResponse() {
   const { dateRange, timeOfDayFilter, comparisonMode, selectedIncident, setSelectedIncident, selectedNeighborhood, setSelectedNeighborhood } = useAppStore()
@@ -545,6 +528,7 @@ export default function EmergencyResponse() {
   const compStart = useMemo(() => resolveComparisonStart(comparisonMode, dateRange), [comparisonMode, dateRange])
   const comparison = useFireComparisonData(dateRange, whereClause, compStart, rawData, hitLimit)
   const compLabel = comparisonLabel(comparisonMode, dateRange)
+  const typicalDay = useTypicalDay(shouldShowTypicalDay(dateRange), serviceClause, dateRange.end)
 
   const chartTiles = useMemo((): ChartTileDef[] => {
     const tiles: ChartTileDef[] = []
@@ -651,40 +635,19 @@ export default function EmergencyResponse() {
           : undefined,
       },
       {
-        id: 'median',
-        label: 'Median',
-        shortLabel: 'Med',
-        value: formatDuration(stats.median),
-        color: responseTimeColor(stats.median),
-        delay: 80,
-        info: 'median',
-        defaultExpanded: true,
-        subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.median)} ${compLabel}` : undefined,
-        trend: comparison.deltas ? (comparison.deltas.median > 0 ? 'up' : comparison.deltas.median < 0 ? 'down' : 'neutral') : undefined,
-      },
-      {
-        id: '90th-pctl',
-        label: 'Slowest 10%',
-        shortLabel: '90th',
-        value: formatDuration(stats.p90),
-        color: responseTimeColor(stats.p90),
-        delay: 160,
-        info: '90th-pctl',
-        defaultExpanded: true,
-        subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.p90)} ${compLabel}` : undefined,
-        trend: comparison.deltas ? (comparison.deltas.p90 > 0 ? 'up' : comparison.deltas.p90 < 0 ? 'down' : 'neutral') : undefined,
-      },
-      {
         id: 'incidents',
         label: 'Incidents',
         shortLabel: 'Inc',
         value: formatNumber(selectedNhStats ? selectedNhStats.nh.totalIncidents : stats.total),
         color: '#5c9693',
-        delay: 240,
-        defaultExpanded: false,
+        delay: 80,
+        defaultExpanded: true,
         subtitle: selectedNhStats
           ? `${selectedNhStats.nh.neighborhood} · ${selectedNhStats.countSharePct.toFixed(1)}% of citywide`
-          : (comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined),
+          : [
+              comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : null,
+              typicalDay.line,
+            ].filter(Boolean).join(' · ') || undefined,
         trend: selectedNhStats
           ? undefined
           : (comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined),
@@ -697,6 +660,30 @@ export default function EmergencyResponse() {
               // member of the neighborhood-count distribution; it's the sum.
             }
           : undefined,
+      },
+      {
+        id: 'median',
+        label: 'Median',
+        shortLabel: 'Med',
+        value: formatDuration(stats.median),
+        color: responseTimeColor(stats.median),
+        delay: 160,
+        info: 'median',
+        defaultExpanded: true,
+        subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.median)} ${compLabel}` : undefined,
+        trend: comparison.deltas ? (comparison.deltas.median > 0 ? 'up' : comparison.deltas.median < 0 ? 'down' : 'neutral') : undefined,
+      },
+      {
+        id: '90th-pctl',
+        label: 'Slowest 10%',
+        shortLabel: '90th',
+        value: formatDuration(stats.p90),
+        color: responseTimeColor(stats.p90),
+        delay: 240,
+        info: '90th-pctl',
+        defaultExpanded: true,
+        subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.p90)} ${compLabel}` : undefined,
+        trend: comparison.deltas ? (comparison.deltas.p90 > 0 ? 'up' : comparison.deltas.p90 < 0 ? 'down' : 'neutral') : undefined,
       },
     ]
     if (stats.apotCount > 0) {
@@ -749,7 +736,7 @@ export default function EmergencyResponse() {
       })
     }
     return cards
-  }, [stats, comparison.deltas, comparison.suppressed, compLabel, comparisonMode, trend.cityWideYoY, isFireMode, fireInsights.casualties, fireInsights.priorYearCasualties, selectedNhStats])
+  }, [stats, comparison.deltas, comparison.suppressed, compLabel, comparisonMode, trend.cityWideYoY, isFireMode, fireInsights.casualties, fireInsights.priorYearCasualties, selectedNhStats, typicalDay.line])
 
   const handleMapReady = useCallback((map: mapboxgl.Map) => {
     setMapInstance(map)
@@ -887,7 +874,7 @@ export default function EmergencyResponse() {
 
             {/* Stat cards — top left */}
             {!isLoading && responseData.length > 0 && (
-              <CardTray viewId="emergencyResponse" cards={cardDefs} />
+              <CardTray viewId="emergencyResponseV2" cards={cardDefs} />
             )}
 
             {/* Histogram + Trend — bottom left */}
