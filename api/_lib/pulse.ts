@@ -1,5 +1,6 @@
 // api/_lib/pulse.ts — the digest's per-run Pulse context: per-neighborhood
-// z-scores for the three live streams + the Analysis Neighborhood polygons.
+// z-scores for the pulse signal streams (PULSE_SIGNAL_STREAMS below) + the
+// Analysis Neighborhood polygons.
 // Fetched ONCE per cron run (the fetchStreamEvents pattern) and shared
 // across subscriptions; each subscription then selects the neighborhoods
 // its pins overlap (src/lib/alerts/pulseDigest.ts).
@@ -9,14 +10,14 @@
 // section. Pulse is garnish, never the meal, and a partial read (two
 // streams of three) would claim a neighborhood picture we don't have.
 //
-// VOCABULARY: the 41 Analysis Neighborhoods for ALL THREE streams —
+// VOCABULARY: the 41 Analysis Neighborhoods for every signal stream —
 // including 311, which the CLIENT hook baselines on the finer
 // neighborhoods_sffind_boundaries vocabulary instead. The polygons the pins
 // overlap (properties.nhood) speak the 41-name vocabulary, so the server
 // groups 311 on analysis_neighborhood (column probed live 2026-07-16); a
 // sffind-keyed z could never join the geometry. See the PR E spec.
 import type { AnomalyResult, DatasetId } from '../../src/types/last48'
-import { ALERT_STREAMS, ALERT_STREAM_IDS, isLiveStream } from '../../src/lib/alerts/streams.js'
+import { ALERT_STREAMS } from '../../src/lib/alerts/streams.js'
 import { baselineWindow } from '../../src/hooks/anomalyBaselineWindow.js'
 import { bucketDailyCounts, computeAnomalies, type BaselineRow } from '../../src/lib/pulse/anomalyStats.js'
 import { sfLocalCutoff } from '../../src/utils/sfTime.js'
@@ -27,11 +28,20 @@ export interface PulseContext {
   boundaries: BoundaryCollection
 }
 
-/** GROUP BY column per live stream — the 41-name vocabulary everywhere
+/** Streams that can carry a pulse SIGNAL. 911-realtime is deliberately
+ *  EXCLUDED: gnap-fj3t is a rolling recent-window feed (probed live
+ *  2026-07-16 — 19 rows total older than 48h, max 2 per neighborhood
+ *  across the whole 84-day baseline window), so a 911 "baseline" would be
+ *  fabricated from stragglers, and any neighborhood clearing the
+ *  ≥5-window guard would email a wildly inflated z. Fire/EMS + 311 retain
+ *  full history. (The client hook shares the limitation — 911 volume
+ *  anomalies are structurally empty site-wide; see the PR E spec.) */
+const PULSE_SIGNAL_STREAMS: DatasetId[] = ['fire-ems-dispatch', '311-cases']
+
+/** GROUP BY column per signal stream — the 41-name vocabulary everywhere
  *  (see module note; NOT the registry's normalizer fields, which for 311
  *  carry sffind). */
 const NH_FIELD: Record<string, string> = {
-  '911-realtime': 'analysis_neighborhood',
   'fire-ems-dispatch': 'neighborhoods_analysis_boundaries',
   '311-cases': 'analysis_neighborhood',
 }
@@ -91,9 +101,8 @@ async function fetchStreamAnomalies(id: DatasetId, nowMs: number): Promise<Anoma
  *  the digest without the section; never defer a send for pulse. */
 export async function fetchPulseContext(nowMs: number): Promise<PulseContext | null> {
   try {
-    const liveIds = ALERT_STREAM_IDS.filter(isLiveStream) as DatasetId[]
     const boundariesP = fetchBoundaries()
-    const perStream = await Promise.all(liveIds.map((id) => fetchStreamAnomalies(id, nowMs)))
+    const perStream = await Promise.all(PULSE_SIGNAL_STREAMS.map((id) => fetchStreamAnomalies(id, nowMs)))
     const boundaries = await boundariesP
     return { anomalies: perStream.flat(), boundaries }
   } catch (err) {

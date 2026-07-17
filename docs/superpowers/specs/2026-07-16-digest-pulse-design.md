@@ -77,8 +77,18 @@ cron/confirm ─► fetchPulseContext(now)          [only if ≥1 due sub has pu
 - **Window:** always the standard live 48h window vs the 42×48h baseline (84 days of complete SF
   day-pairs via `baselineWindow`) — independent of the welcome's 24h live-event override. Pulse
   is a "right now" status, not a window report.
-- **Streams:** the three live streams (911, Fire/EMS, 311), regardless of which streams the
-  subscription follows — the section is about the *place*, and the toggle is its own opt-in.
+- **Streams:** Fire/EMS + 311 — regardless of which streams the subscription follows (the
+  section is about the *place*, and the toggle is its own opt-in). **911-realtime is
+  deliberately excluded** (amended 2026-07-16 during implementation): `gnap-fj3t` is a rolling
+  recent-window feed — probed live, 19 rows total older than 48h, max 2 per neighborhood
+  across the whole 84-day baseline window — so a 911 "baseline" would be fabricated from
+  stragglers, and any neighborhood clearing the ≥5-window guard would email a wildly inflated
+  z. The exclusion is explicit (`PULSE_SIGNAL_STREAMS` in `api/_lib/pulse.ts`), not an
+  accident of the guard. *Side discovery for the honesty backlog:* the client hook baselines
+  911 from the same feed, so the site's per-neighborhood 911 volume anomalies have always
+  been structurally empty (Pulse wire, Last 48 choropleth combine) — a possible future fix is
+  backing 911 baselines with the historical closed-calls dataset, which needs its own
+  comparability probing first.
 - **Neighborhood fields (server):** 911 `analysis_neighborhood` · Fire/EMS
   `neighborhoods_analysis_boundaries` · 311 `analysis_neighborhood` (NOT sffind — see ground
   truth). All queries `AND <field> IS NOT NULL`.

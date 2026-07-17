@@ -775,7 +775,8 @@ git commit -m "feat(alerts): filters.pulse opt-in — absent means ON, rides the
 
 ```ts
 // api/_lib/pulse.ts — the digest's per-run Pulse context: per-neighborhood
-// z-scores for the three live streams + the Analysis Neighborhood polygons.
+// z-scores for the pulse signal streams (PULSE_SIGNAL_STREAMS below) + the
+// Analysis Neighborhood polygons.
 // Fetched ONCE per cron run (the fetchStreamEvents pattern) and shared
 // across subscriptions; each subscription then selects the neighborhoods
 // its pins overlap (src/lib/alerts/pulseDigest.ts).
@@ -785,14 +786,14 @@ git commit -m "feat(alerts): filters.pulse opt-in — absent means ON, rides the
 // section. Pulse is garnish, never the meal, and a partial read (two
 // streams of three) would claim a neighborhood picture we don't have.
 //
-// VOCABULARY: the 41 Analysis Neighborhoods for ALL THREE streams —
+// VOCABULARY: the 41 Analysis Neighborhoods for every signal stream —
 // including 311, which the CLIENT hook baselines on the finer
 // neighborhoods_sffind_boundaries vocabulary instead. The polygons the pins
 // overlap (properties.nhood) speak the 41-name vocabulary, so the server
 // groups 311 on analysis_neighborhood (column probed live 2026-07-16); a
 // sffind-keyed z could never join the geometry. See the PR E spec.
 import type { AnomalyResult, DatasetId } from '../../src/types/last48'
-import { ALERT_STREAMS, ALERT_STREAM_IDS, isLiveStream } from '../../src/lib/alerts/streams.js'
+import { ALERT_STREAMS } from '../../src/lib/alerts/streams.js'
 import { baselineWindow } from '../../src/hooks/anomalyBaselineWindow.js'
 import { bucketDailyCounts, computeAnomalies, type BaselineRow } from '../../src/lib/pulse/anomalyStats.js'
 import { sfLocalCutoff } from '../../src/utils/sfTime.js'
@@ -803,11 +804,17 @@ export interface PulseContext {
   boundaries: BoundaryCollection
 }
 
-/** GROUP BY column per live stream — the 41-name vocabulary everywhere
+/** Streams that can carry a pulse SIGNAL. 911-realtime is deliberately
+ *  EXCLUDED (amended 2026-07-16): gnap-fj3t is a rolling recent-window
+ *  feed — probed live, 19 rows total older than 48h, max 2 per
+ *  neighborhood across the whole 84-day baseline window — so a 911
+ *  "baseline" would be fabricated from stragglers. See the spec. */
+const PULSE_SIGNAL_STREAMS: DatasetId[] = ['fire-ems-dispatch', '311-cases']
+
+/** GROUP BY column per signal stream — the 41-name vocabulary everywhere
  *  (see module note; NOT the registry's normalizer fields, which for 311
  *  carry sffind). */
 const NH_FIELD: Record<string, string> = {
-  '911-realtime': 'analysis_neighborhood',
   'fire-ems-dispatch': 'neighborhoods_analysis_boundaries',
   '311-cases': 'analysis_neighborhood',
 }
@@ -867,9 +874,8 @@ async function fetchStreamAnomalies(id: DatasetId, nowMs: number): Promise<Anoma
  *  the digest without the section; never defer a send for pulse. */
 export async function fetchPulseContext(nowMs: number): Promise<PulseContext | null> {
   try {
-    const liveIds = ALERT_STREAM_IDS.filter(isLiveStream) as DatasetId[]
     const boundariesP = fetchBoundaries()
-    const perStream = await Promise.all(liveIds.map((id) => fetchStreamAnomalies(id, nowMs)))
+    const perStream = await Promise.all(PULSE_SIGNAL_STREAMS.map((id) => fetchStreamAnomalies(id, nowMs)))
     const boundaries = await boundariesP
     return { anomalies: perStream.flat(), boundaries }
   } catch (err) {
@@ -890,7 +896,7 @@ Run:
 ```bash
 npx tsx -e "import('./api/_lib/pulse.js').catch(()=>import('./api/_lib/pulse.ts')).then(async (m) => { process.env.PUBLIC_BASE_URL='https://datadiver.jlabsf.org'; const ctx = await m.fetchPulseContext(Date.now()); if (!ctx) throw new Error('null ctx'); console.log('anomalies:', ctx.anomalies.length, 'features:', ctx.boundaries.features.length, 'sample:', JSON.stringify(ctx.anomalies.slice(0,2))) })"
 ```
-Expected: `anomalies:` ~100–123 (≤41 per stream × 3), `features: 41`, sample rows carry real neighborhood names and finite zScores. (If tsx path resolution fights the `.js` suffixes, an equivalent inline script via `npx tsx scripts/…` scratch file is fine — the point is one real fetch proving the queries and the math end-to-end before the pipeline consumes them.)
+Expected: `anomalies:` ~60–82 (≤41 per stream × 2 — 911 deliberately excluded, see PULSE_SIGNAL_STREAMS), `features: 41`, sample rows carry real neighborhood names and finite zScores. (If tsx path resolution fights the `.js` suffixes, an equivalent inline script via `npx tsx scripts/…` scratch file is fine — the point is one real fetch proving the queries and the math end-to-end before the pipeline consumes them.)
 
 - [ ] **Step 4: Commit**
 
