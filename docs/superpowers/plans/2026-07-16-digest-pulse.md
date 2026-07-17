@@ -1100,13 +1100,16 @@ import type { AnomalyResult } from '../src/types/last48.js'
 
 2. After the `releasedEvents` array, add:
 ```ts
-// Neighborhood pulse — mixed streams/magnitudes; the last two rows prove
-// the busy-only + threshold filters (they must NOT render).
+// Neighborhood pulse — mixed magnitudes across the two SIGNAL streams
+// (Fire/EMS + 311 only: 911 is excluded upstream by PULSE_SIGNAL_STREAMS in
+// api/_lib/pulse.ts, so fixtures must never fabricate a 911 signal the
+// production path cannot produce). The last two rows prove the threshold +
+// busy-only filters (they must NOT render).
 const pulseAnomalies: AnomalyResult[] = [
   { neighborhood: 'Mission', datasetId: '311-cases', count48h: 186, baselineMean: 90, baselineSd: 30, zScore: 3.2 },
-  { neighborhood: 'Castro/Upper Market', datasetId: '911-realtime', count48h: 41, baselineMean: 30, baselineSd: 5.5, zScore: 2.0 },
+  { neighborhood: 'Castro/Upper Market', datasetId: 'fire-ems-dispatch', count48h: 41, baselineMean: 30, baselineSd: 5.5, zScore: 2.0 },
   { neighborhood: 'Mission', datasetId: 'fire-ems-dispatch', count48h: 29, baselineMean: 24, baselineSd: 3.1, zScore: 1.61 },
-  { neighborhood: 'Mission', datasetId: '911-realtime', count48h: 55, baselineMean: 52, baselineSd: 6, zScore: 0.5 },
+  { neighborhood: 'Castro/Upper Market', datasetId: '311-cases', count48h: 55, baselineMean: 52, baselineSd: 6, zScore: 0.5 },
   { neighborhood: 'Noe Valley', datasetId: '311-cases', count48h: 12, baselineMean: 30, baselineSd: 6, zScore: -3 },
 ]
 const pulse = bucketPulse(pulseAnomalies, ['Mission', 'Castro/Upper Market', 'Noe Valley'], now)
