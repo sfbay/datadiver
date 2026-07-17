@@ -660,8 +660,11 @@ function HeroBand() {
         className={`hidden lg:block ${HERO_ART}`}
       />
 
+      {/* Copy column: fixed cap below lg (art hidden there); a PROPORTIONAL
+          50% cap once Dana appears, so lines wrap before the swirl instead
+          of relying on the mask to keep long lines legible over it. */}
       <div className="relative px-[clamp(20px,3vw,40px)] py-[clamp(24px,3vw,40px)]">
-        <div className="max-w-[38rem]">
+        <div className="max-w-[38rem] lg:max-w-[50%]">
           <div className="flex items-center gap-2.5 mb-4">
             <div className="h-px w-7 bg-terracotta-500/60" />
             <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-terracotta-500">
