@@ -129,6 +129,7 @@ export default function AlertsView() {
   const [email, setEmail] = useState('')
   const [streams, setStreams] = useState<AlertStreamId[]>(['911-realtime', 'fire-ems-dispatch'])
   const [categories, setCategories] = useState<string[]>([])
+  const [pulse, setPulse] = useState(true)
   const [radiusMiles, setRadiusMiles] = useState(0.5)
   const [locations, setLocations] = useState<AlertLocation[]>([])
   const [query, setQuery] = useState('')
@@ -194,7 +195,7 @@ export default function AlertsView() {
     const draft: SubscriptionDraft = {
       email: email.trim(),
       cadence: 'daily',
-      filters: { streams, categories },
+      filters: { streams, categories, pulse },
       radiusMiles,
       locations,
     }
@@ -449,6 +450,53 @@ export default function AlertsView() {
                     <div className="grid gap-2 sm:grid-cols-2">
                       {RELEASED_STREAM_OPTIONS.map(chip)}
                     </div>
+                    <div className="mt-4 mb-1.5 flex items-center gap-2">
+                      <span className="text-[9px] font-mono uppercase tracking-[0.22em] text-ink/45 dark:text-slate-400">
+                        ── Neighborhood pulse
+                      </span>
+                      <div className="flex-1 h-px bg-ink/[0.08] dark:bg-white/[0.06]" />
+                    </div>
+                    <p className="mb-2.5 text-[12.5px] leading-relaxed text-ink/60 dark:text-slate-400">
+                      A short read on how the neighborhoods around your pins are running —
+                      included when activity climbs well above its usual pace. Quiet
+                      neighborhoods say nothing.
+                    </p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => setPulse((p) => !p)}
+                        aria-pressed={pulse}
+                        className={`
+                          group relative flex items-start gap-2.5 rounded-[12px] border px-3.5 py-3 text-left
+                          transition-all duration-200
+                          ${pulse
+                            ? 'border-transparent shadow-sm'
+                            : 'border-ink/15 dark:border-white/[0.10] hover:border-ink/30 dark:hover:border-white/[0.20]'}
+                        `}
+                        style={pulse ? {
+                          backgroundColor: 'rgba(212, 164, 53, 0.10)',
+                          borderColor: '#e0bc5e',
+                        } : undefined}
+                      >
+                        <span
+                          className="mt-1 w-2.5 h-2.5 rounded-full flex-shrink-0 transition-transform"
+                          style={{
+                            backgroundColor: '#d4a435',
+                            boxShadow: pulse ? '0 0 0 3px rgba(212, 164, 53, 0.10)' : undefined,
+                            transform: pulse ? 'scale(1.1)' : undefined,
+                          }}
+                          aria-hidden
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className={`font-display italic text-[14px] leading-tight ${pulse ? 'text-ink dark:text-paper-100' : 'text-ink/75 dark:text-paper-100/80'}`}>
+                            Neighborhood pulse
+                          </p>
+                          <p className="mt-0.5 text-[9px] font-mono uppercase tracking-[0.14em] text-ink/45 dark:text-slate-400">
+                            busier than usual · nearby areas
+                          </p>
+                        </div>
+                      </button>
+                    </div>
                   </>
                 )
               })()}
@@ -526,6 +574,7 @@ export default function AlertsView() {
               categories={categories}
               radiusMiles={radiusMiles}
               locations={locations}
+              pulse={pulse}
             />
           </aside>
         </div>

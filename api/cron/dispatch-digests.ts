@@ -10,6 +10,7 @@ import { getActiveConfirmedSubscriptions, markDispatched, markChecked, pruneStal
 import { fetchStreamEvents } from '../_lib/socrata.js'
 import { sendDigestEmail } from '../_lib/email.js'
 import { buildSubscriptionDigest } from '../_lib/digest.js'
+import { fetchPulseContext } from '../_lib/pulse.js'
 
 const WINDOW_LABEL: Record<Cadence, string> = {
   hourly: 'past hour',
@@ -51,11 +52,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const uniqueStreams = [...new Set(due.flatMap((s) => s.filters.streams))]
   const fetched = due.length > 0 ? await fetchStreamEvents(uniqueStreams, now) : {}
 
+  // Pulse context once per run (the fetchStreamEvents pattern). null =
+  // nobody opted in, or the pulse path failed — every digest then sends
+  // without the section (never defers a send).
+  const pulseCtx =
+    due.some((s) => s.filters.pulse !== false) ? await fetchPulseContext(now) : null
+
   for (const sub of due) {
     try {
       const result = buildSubscriptionDigest(sub, fetched, now, {
         windowLabel: WINDOW_LABEL[sub.cadence],
         useWatermarks: true,
+        pulseCtx,
       })
       if (result.okStreams.length === 0) {
         // Every stream this subscription reads failed to fetch. Leave ALL

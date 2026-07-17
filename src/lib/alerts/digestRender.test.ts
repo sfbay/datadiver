@@ -4,6 +4,8 @@ import { summarize, busiestBuckets, bucketByDay, sfDayKey, sfDayLine } from './d
 import type { LocationDigest, DigestPayload } from './digestRender'
 import { mapAltText, renderDigest } from './digestRender'
 import type { ReleasedGroup, Summary } from './digestSummary.js'
+import { bucketPulse } from './pulseDigest'
+import type { AnomalyResult } from '@/types/last48'
 
 // Fixed assembly instant for every fixture below — pins the date line, the
 // day-header logic, and the late-report threshold to known values.
@@ -32,6 +34,7 @@ function locFrom(events: NormalizedEvent[], overrides: Partial<LocationDigest> =
     buckets: busiestBuckets(events),
     days: bucketByDay(events, NOW),
     released: [],
+    pulse: [],
     ...overrides,
   }
 }
@@ -168,6 +171,7 @@ describe('placeShort edge (coordinate-fallback labels)', () => {
         buckets: busiestBuckets(events),
         days: bucketByDay(events, NOW),
         released: [],
+        pulse: [],
       }],
     }
     const { subject } = renderDigest(payload, 'https://x.test/u')
@@ -193,6 +197,7 @@ function releasedPayload(released: ReleasedGroup[], byStream: Record<string, num
       buckets: new Array(12).fill(0),
       days: [],
       released,
+      pulse: [],
     }],
   }
 }
@@ -201,7 +206,7 @@ const releasedFixture: ReleasedGroup[] = [
   {
     streamId: 'traffic-crashes',
     heading: 'crash reports',
-    note: 'The city releases crash data in batches, roughly 4–6 weeks behind — these reports appeared in the latest release.',
+    note: 'The city releases serious traffic collision data in batches, roughly 4–6 weeks behind — these reports appeared in the latest release.',
     rows: [
       { id: 'traffic-crashes:1', dateLabel: 'May 14', datasetId: 'traffic-crashes',
         what: 'Vehicle-pedestrian crash — one person killed', location: 'Mission St & 16th St',
@@ -263,5 +268,60 @@ describe('released section', () => {
     expect(html).toContain('>Reports</div>')
     expect(html).toContain('>New</div>')
     expect(html).toContain('font-size:36px')
+  })
+})
+
+describe('neighborhood pulse section', () => {
+  // Same jargon bans the pulsePhrase test enforces, plus the house
+  // "periodic" ban — over the WHOLE rendered email.
+  const BANNED = [
+    'σ', 'sigma', 'z-score', 'z score', 'zscore', 'standard deviation',
+    'std dev', 'baseline', 'yoy', 'y-o-y', 'percentile', 'anomaly score',
+    'delta', 'periodic',
+  ]
+  const anomalies: AnomalyResult[] = [
+    { neighborhood: 'Mission', datasetId: '311-cases', count48h: 186, baselineMean: 90, baselineSd: 30, zScore: 3.2 },
+    { neighborhood: 'Mission', datasetId: 'fire-ems-dispatch', count48h: 41, baselineMean: 30, baselineSd: 5.5, zScore: 2.0 },
+  ]
+  const rows = bucketPulse(anomalies, ['Mission'], NOW)
+
+  it('renders ranked rows with dejargoned copy and absolute evidence links', () => {
+    const payload: DigestPayload = {
+      windowLabel: 'published since your last digest',
+      nowMs: NOW,
+      locations: [locFrom(todayEvents, { pulse: rows })],
+    }
+    const { html, text } = renderDigest(payload, 'https://u.example/unsub')
+    expect(html).toContain('NEIGHBORHOOD PULSE')
+    expect(html).toContain('311 reports in Mission')
+    expect(html).toContain('https://datadiver.jlabsf.org/live?nh=Mission&fill=anomaly&points=off')
+    expect(html).toContain('usual ≈ 90')
+    expect(text).toContain('NEIGHBORHOOD PULSE')
+    expect(text).toContain('311 reports in Mission')
+    const lcHtml = html.toLowerCase()
+    const lcText = text.toLowerCase()
+    for (const term of BANNED) {
+      expect(lcHtml, `"${term}" leaked into html`).not.toContain(term)
+      expect(lcText, `"${term}" leaked into text`).not.toContain(term)
+    }
+  })
+
+  it('escapes neighborhood names in html', () => {
+    const evil = [{ ...rows[0], neighborhood: 'Mission <b>&' }]
+    const { html } = renderDigest(
+      { windowLabel: 'w', nowMs: NOW, locations: [locFrom(todayEvents, { pulse: evil })] },
+      'https://u.example/unsub',
+    )
+    expect(html).toContain('Mission &lt;b&gt;&amp;')
+    expect(html).not.toContain('Mission <b>&')
+  })
+
+  it('omits the section entirely when pulse is empty', () => {
+    const { html, text } = renderDigest(
+      { windowLabel: 'w', nowMs: NOW, locations: [locFrom(todayEvents)] },
+      'https://u.example/unsub',
+    )
+    expect(html).not.toContain('NEIGHBORHOOD PULSE')
+    expect(text).not.toContain('NEIGHBORHOOD PULSE')
   })
 })

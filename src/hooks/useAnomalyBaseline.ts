@@ -16,7 +16,8 @@
 
 import { useEffect, useState } from 'react'
 import { fetchDataset } from '@/api/client'
-import { baselineWindow, sfDayIndex } from './anomalyBaselineWindow'
+import { baselineWindow } from './anomalyBaselineWindow'
+import { bucketDailyCounts, computeAnomalies, type BaselineRow } from '@/lib/pulse/anomalyStats'
 import type {
   AnomalyResult,
   DatasetId,
@@ -77,12 +78,6 @@ const NEIGHBORHOOD_FIELD: Record<DatasetId, string> = {
   '311-cases':          'neighborhoods_sffind_boundaries',
 }
 
-interface BaselineRow {
-  neighborhood: string
-  window_start: string  // a daily-truncated timestamp
-  cnt: string
-}
-
 async function fetchBaselineForDataset(datasetId: DatasetId): Promise<BaselineEntry> {
   const dateField = DATE_FIELD[datasetId]
   const nhField = NEIGHBORHOOD_FIELD[datasetId]
@@ -105,37 +100,7 @@ async function fetchBaselineForDataset(datasetId: DatasetId): Promise<BaselineEn
     { skipCache: true }
   )
 
-  // Bucket daily counts into 48h windows per neighborhood.
-  // 48h bucket = floor(daysSinceEpoch / 2) * 2 — neighbors days into pairs.
-  const byNeighborhood: Record<string, Record<string, number>> = {}
-  for (const r of rows) {
-    if (!r.neighborhood) continue
-    const days = sfDayIndex(r.window_start)
-    if (days === null) continue
-    const bucket = Math.floor(days / 2) * 2
-    const key = String(bucket)
-    if (!byNeighborhood[r.neighborhood]) byNeighborhood[r.neighborhood] = {}
-    byNeighborhood[r.neighborhood][key] = (byNeighborhood[r.neighborhood][key] ?? 0) + parseInt(r.cnt, 10)
-  }
-
-  // Convert to arrays of counts
-  const historicalCounts: Record<string, number[]> = {}
-  for (const [nh, buckets] of Object.entries(byNeighborhood)) {
-    historicalCounts[nh] = Object.values(buckets)
-  }
-
-  return { historicalCounts }
-}
-
-function mean(xs: number[]): number {
-  if (xs.length === 0) return 0
-  return xs.reduce((a, b) => a + b, 0) / xs.length
-}
-
-function stdDev(xs: number[], m: number): number {
-  if (xs.length < 2) return 0
-  const variance = xs.reduce((s, x) => s + (x - m) ** 2, 0) / (xs.length - 1)
-  return Math.sqrt(variance)
+  return { historicalCounts: bucketDailyCounts(rows) }
 }
 
 export interface UseAnomalyBaselineResult {
@@ -195,22 +160,7 @@ export function useAnomalyBaseline(opts: {
     for (const datasetId of opts.datasets) {
       const entry = baseline[datasetId]
       if (!entry) continue
-      for (const [nh, history] of Object.entries(entry.historicalCounts)) {
-        if (history.length < 5) continue  // not enough N for a defensible σ
-        const m = mean(history)
-        const sd = stdDev(history, m)
-        if (sd === 0) continue  // can't divide
-        const cur = currentCounts[datasetId][nh] ?? 0
-        const z = (cur - m) / sd
-        anomalies.push({
-          neighborhood: nh,
-          datasetId,
-          count48h: cur,
-          baselineMean: m,
-          baselineSd: sd,
-          zScore: z,
-        })
-      }
+      anomalies.push(...computeAnomalies(entry.historicalCounts, currentCounts[datasetId] ?? {}, datasetId))
     }
   }
 

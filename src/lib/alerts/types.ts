@@ -11,6 +11,11 @@ export type Cadence = 'hourly' | 'daily' | 'weekly'
 export interface SubscriptionFilters {
   streams: AlertStreamId[]
   categories: string[]
+  /** "Neighborhood pulse" email section opt-in. ABSENT MEANS TRUE —
+   *  default-ON for everyone, including rows stored before PR E
+   *  (Jesse, 2026-07-16). validateDraft and mapSubscriptionRow both
+   *  normalize to an explicit boolean; gates read `pulse !== false`. */
+  pulse?: boolean
 }
 
 export interface AlertLocation {

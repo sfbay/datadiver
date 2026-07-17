@@ -103,4 +103,24 @@ describe('validateDraft', () => {
     })
     expect(d).toBe('pick at least one valid stream')
   })
+
+  it('defaults pulse to true when absent (default-ON, incl. old clients)', () => {
+    const d = validateDraft(good())
+    if (typeof d === 'string') throw new Error(d)
+    expect(d.filters.pulse).toBe(true)
+  })
+
+  it('honors an explicit pulse: false', () => {
+    const b = { ...good(), filters: { ...good().filters, pulse: false } }
+    const d = validateDraft(b)
+    if (typeof d === 'string') throw new Error(d)
+    expect(d.filters.pulse).toBe(false)
+  })
+
+  it('coerces a non-boolean pulse to true (default-ON)', () => {
+    const b = { ...good(), filters: { ...good().filters, pulse: 'yes' } }
+    const d = validateDraft(b)
+    if (typeof d === 'string') throw new Error(d)
+    expect(d.filters.pulse).toBe(true)
+  })
 })

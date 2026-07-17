@@ -110,6 +110,8 @@ function mapSubscriptionRow(r: Record<string, any>): DueSubscription {
     filters: {
       streams: ((r.filters?.streams ?? []) as string[]) as AlertStreamId[],
       categories: (r.filters?.categories ?? []) as string[],
+      // Absent on pre-PR-E rows = opted in (default-ON).
+      pulse: typeof r.filters?.pulse === 'boolean' ? (r.filters.pulse as boolean) : true,
     },
     radiusMiles: Number(r.radius_miles),
     locations: (r.locations as Array<{ label: string | null; lat: number; lng: number }>).map((l) => ({
