@@ -153,7 +153,6 @@ function statHeaderHtml(s: Summary, buckets: number[]): string {
       .join(gapCell(12))
     return `
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0 0"><tr>
-      <td width="100%" style="font-size:0">&nbsp;</td>
       <td valign="bottom" style="padding-right:16px">
         <div style="font-style:italic;font-size:32px;font-weight:bold;color:${INK};line-height:1">${s.total}</div>
         <div style="font-family:${SANS};font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:${MUTED};margin-top:3px;white-space:nowrap">New reports</div>
@@ -165,6 +164,7 @@ function statHeaderHtml(s: Summary, buckets: number[]): string {
       <td width="1" bgcolor="${PAPERLINE}" style="font-size:0;line-height:0"><div style="width:1px;height:1px;font-size:0;line-height:0">&nbsp;</div></td>
       ${gapCell(14)}
       ${compactCells}
+      <td width="100%" style="font-size:0">&nbsp;</td>
     </tr></table>
     ${caption ? `<div style="font-family:${SANS};font-size:12px;color:${MUTED};margin-top:6px">${escapeHtml(caption)}</div>` : ''}
     ${barHtml(buckets)}`
