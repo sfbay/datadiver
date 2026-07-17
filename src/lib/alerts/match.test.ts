@@ -2,7 +2,8 @@
 import { describe, it, expect } from 'vitest'
 import type { NormalizedEvent } from '@/types/last48'
 import type { MatchableSubscription } from './types'
-import { haversineMiles, eventMatchesSubscription, isSubscriptionDue } from './match'
+import { haversineMiles, eventMatchesSubscription, isSubscriptionDue, releasedEventMatches } from './match'
+import type { AlertStreamId, AlertEvent } from './streams.js'
 
 const SF_CITY_HALL = { lat: 37.7793, lng: -122.4193 }
 const FERRY_BLDG = { lat: 37.7955, lng: -122.3937 }
@@ -120,5 +121,30 @@ describe('isSubscriptionDue', () => {
     const now = 30 * DAY
     expect(isSubscriptionDue({ cadence: 'weekly', lastSentAt: now - 6 * DAY, active: true }, now)).toBe(false)
     expect(isSubscriptionDue({ cadence: 'weekly', lastSentAt: now - 7 * DAY, active: true }, now)).toBe(true)
+  })
+})
+
+describe('releasedEventMatches', () => {
+  const sub = {
+    filters: { streams: ['traffic-crashes'] as AlertStreamId[], categories: ['shooting'] },
+    radiusMiles: 0.25,
+    locations: [{ lat: 37.7654, lng: -122.4197 }],
+  }
+  const crash = (over: Partial<AlertEvent> = {}): AlertEvent =>
+    ({ id: 'traffic-crashes:1', datasetId: 'traffic-crashes', timestamp: '', receivedAt: 0,
+       latitude: 37.7654, longitude: -122.4197, raw: {}, ...over }) as AlertEvent
+
+  it('matches in-radius events on a subscribed stream', () => {
+    expect(releasedEventMatches(crash(), sub)).toBe(true)
+  })
+  it('IGNORES the categories filter (911/Fire-only stays true)', () => {
+    // sub.categories = ['shooting'] would reject this via the live matcher;
+    // released matching must not consult categories at all.
+    expect(releasedEventMatches(crash(), sub)).toBe(true)
+  })
+  it('rejects off-stream, geo-less, and out-of-radius events', () => {
+    expect(releasedEventMatches(crash({ datasetId: 'business-openings' }), sub)).toBe(false)
+    expect(releasedEventMatches(crash({ latitude: undefined }), sub)).toBe(false)
+    expect(releasedEventMatches(crash({ latitude: 37.8, longitude: -122.5 }), sub)).toBe(false)
   })
 })

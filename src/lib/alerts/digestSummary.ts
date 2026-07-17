@@ -2,15 +2,15 @@
 // Pure shaping of a location's matched events into the dashboard email's
 // data: headline counts, a 12-bucket activity histogram, and time-of-day
 // blocks. Timezone-locked to SF (the cron runs UTC). Tested directly.
-import type { NormalizedEvent, DatasetId } from '@/types/last48'
+import { ALERT_STREAMS, ALERT_STREAM_IDS, type AlertEvent, type AlertStreamId } from './streams.js'
 import { classifySignificant } from './significance.js'
-import { humanizeCallType, streamLabelShort } from '../../utils/humanizeCivic.js'
+import { humanizeCallType } from '../../utils/humanizeCivic.js'
 
 const SF_TZ = 'America/Los_Angeles'
 
 export interface Summary {
   total: number
-  byStream: Record<DatasetId, number>
+  byStream: Record<string, number>
   significant: number
   busiestLabel: string | null
 }
@@ -19,7 +19,7 @@ export interface DigestRow {
   id: string
   clock: string
   streamLabel: string
-  datasetId: DatasetId
+  datasetId: AlertStreamId
   what: string
   /** Where it happened — the street-level block/intersection/address when the
    *  source publishes one, otherwise the neighborhood as a fallback. */
@@ -61,14 +61,12 @@ export function clockText(ms: number): string {
   return `${get('hour')}:${get('minute')} ${period}`
 }
 
-const EMPTY_BY_STREAM: Record<DatasetId, number> = {
-  '911-realtime': 0,
-  'fire-ems-dispatch': 0,
-  '311-cases': 0,
-}
+const EMPTY_BY_STREAM: Record<string, number> = Object.fromEntries(
+  ALERT_STREAM_IDS.map((id) => [id, 0]),
+)
 
 /** Event counts per two-hour SF-local bucket (length 12; index 0 = 0:00–1:59). */
-export function busiestBuckets(events: NormalizedEvent[]): number[] {
+export function busiestBuckets(events: AlertEvent[]): number[] {
   const buckets = new Array(12).fill(0)
   for (const e of events) buckets[Math.floor(sfHour(e.receivedAt) / 2)]++
   return buckets
@@ -101,8 +99,8 @@ function twoHourLabel(idx: number): string {
     : `${a.h} ${a.period}–${b.h} ${b.period}`
 }
 
-export function summarize(events: NormalizedEvent[]): Summary {
-  const byStream: Record<DatasetId, number> = { ...EMPTY_BY_STREAM }
+export function summarize(events: AlertEvent[]): Summary {
+  const byStream: Record<string, number> = { ...EMPTY_BY_STREAM }
   let significant = 0
   for (const e of events) {
     byStream[e.datasetId] = (byStream[e.datasetId] ?? 0) + 1
@@ -147,6 +145,16 @@ export function sfDayLine(ms: number): string {
   return `${get('weekday')}, ${AP_MONTH[month] ?? month} ${get('day')}`
 }
 
+/** 'May 14' / 'Jan. 14' — event-date label for released rows, AP month style. */
+export function sfMonthDay(ms: number): string {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: SF_TZ, month: 'long', day: 'numeric',
+  }).formatToParts(new Date(ms))
+  const get = (t: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === t)?.value ?? ''
+  const month = get('month')
+  return `${AP_MONTH[month] ?? month} ${get('day')}`
+}
+
 export interface DayGroup {
   dateKey: string
   /** 'WEDNESDAY, JULY 15' — day header for multi-day digests. */
@@ -159,7 +167,7 @@ const LATE_MS = 24 * 60 * 60 * 1000
 /** Rows grouped by the SF calendar day they OCCURRED (newest day first),
  *  then time-of-day blocks within each day. The staggered-timeline layout:
  *  sources publish behind real time, so a digest can honestly span days. */
-export function bucketByDay(events: NormalizedEvent[], nowMs: number): DayGroup[] {
+export function bucketByDay(events: AlertEvent[], nowMs: number): DayGroup[] {
   const ordered = [...events].sort((a, b) => b.receivedAt - a.receivedAt)
   const groups: DayGroup[] = []
   const byKey = new Map<string, DayGroup>()
@@ -181,7 +189,7 @@ export function bucketByDay(events: NormalizedEvent[], nowMs: number): DayGroup[
     g.blocks[bi].rows.push({
       id: e.id,
       clock: clockText(e.receivedAt),
-      streamLabel: streamLabelShort(e.datasetId),
+      streamLabel: ALERT_STREAMS[e.datasetId]?.labelShort ?? e.datasetId,
       datasetId: e.datasetId,
       what: humanizeCallType(e.callType) || e.headline || 'Incident',
       location: e.address ?? e.neighborhood ?? '',
@@ -203,4 +211,52 @@ const RADIUS_FRACTION: Record<string, string> = {
 /** "⅛ mi" / "½ mi" / "2 mi" — radius vocabulary for alt text + captions. */
 export function radiusLabelText(miles: number): string {
   return `${RADIUS_FRACTION[String(miles)] ?? String(miles)} mi`
+}
+
+export interface ReleasedRow {
+  id: string
+  /** Event DATE ('May 14') — released rows are weeks old; a clock time
+   *  would be a lie of precision the batch doesn't support. */
+  dateLabel: string
+  datasetId: AlertStreamId
+  what: string
+  location: string
+  significant: boolean
+  eventMs: number
+}
+
+export interface ReleasedGroup {
+  streamId: AlertStreamId
+  /** Registry labelLong, e.g. 'crash reports'. */
+  heading: string
+  /** Registry releasedNote — the honest framing line under the head. */
+  note: string
+  rows: ReleasedRow[]
+}
+
+/** Released-tier events grouped per stream (registry order), rows newest
+ *  event date first. Live events are ignored — they belong to bucketByDay;
+ *  mixing a May crash into yesterday's clock is exactly the dishonesty the
+ *  released section exists to avoid. */
+export function bucketReleased(events: AlertEvent[]): ReleasedGroup[] {
+  const groups: ReleasedGroup[] = []
+  for (const streamId of ALERT_STREAM_IDS) {
+    const cfg = ALERT_STREAMS[streamId]
+    if (cfg.tier !== 'released') continue
+    const rows = events
+      .filter((e) => e.datasetId === streamId)
+      .sort((a, b) => b.receivedAt - a.receivedAt)
+      .map((e): ReleasedRow => ({
+        id: e.id,
+        dateLabel: sfMonthDay(e.receivedAt),
+        datasetId: e.datasetId,
+        what: `${e.headline ?? (humanizeCallType(e.callType) || 'Report')}${e.callType ? ` (${e.callType.toLowerCase()})` : ''}`,
+        location: e.address ?? e.neighborhood ?? '',
+        significant: classifySignificant(e) != null,
+        eventMs: e.receivedAt,
+      }))
+    if (rows.length > 0)
+      groups.push({ streamId, heading: cfg.labelLong, note: cfg.releasedNote ?? '', rows })
+  }
+  return groups
 }

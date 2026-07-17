@@ -9,7 +9,10 @@ import {
   sfDayKey,
   sfDayLine,
   radiusLabelText,
+  bucketReleased,
+  sfMonthDay,
 } from './digestSummary'
+import type { AlertEvent } from './streams.js'
 
 // receivedAt must be a real epoch so the SF-timezone math is exercised.
 function ev(p: Partial<NormalizedEvent> & { receivedAt: number }): NormalizedEvent {
@@ -160,5 +163,46 @@ describe('radiusLabelText', () => {
     expect(radiusLabelText(0.125)).toBe('⅛ mi')
     expect(radiusLabelText(0.5)).toBe('½ mi')
     expect(radiusLabelText(2)).toBe('2 mi')
+  })
+})
+
+describe('sfMonthDay', () => {
+  it('AP month style: spelled Mar–Jul, abbreviated otherwise', () => {
+    expect(sfMonthDay(Date.parse('2026-05-14T19:00:00Z'))).toBe('May 14')
+    expect(sfMonthDay(Date.parse('2026-01-14T19:00:00Z'))).toBe('Jan. 14')
+  })
+})
+
+describe('bucketReleased', () => {
+  const now = Date.parse('2026-07-16T12:00:00Z')
+  const DAY = 24 * 3600_000
+  const crash = (id: string, ageDays: number): AlertEvent =>
+    ({ id: `traffic-crashes:${id}`, datasetId: 'traffic-crashes', timestamp: '',
+       receivedAt: now - ageDays * DAY, headline: 'Broadside crash — severe injury',
+       address: 'Mission St & 16th St', raw: { collision_severity: 'Injury (Severe)' } }) as AlertEvent
+  const biz = (id: string, ageDays: number): AlertEvent =>
+    ({ id: `business-openings:${id}`, datasetId: 'business-openings', timestamp: '',
+       receivedAt: now - ageDays * DAY, headline: 'New business — Blue Ramen',
+       callType: 'Food services', address: '455 Valencia St', raw: {} }) as AlertEvent
+
+  it('groups per released stream, rows newest event first', () => {
+    const groups = bucketReleased([crash('a', 50), crash('b', 40), biz('c', 3)])
+    expect(groups).toHaveLength(2)
+    const crashes = groups.find((g) => g.streamId === 'traffic-crashes')!
+    expect(crashes.rows.map((r) => r.id)).toEqual(['traffic-crashes:b', 'traffic-crashes:a'])
+    expect(crashes.heading).toBe('crash reports')
+    expect(crashes.note).toMatch(/batches/)
+  })
+  it('rows carry an event DATE label, significance, and sector parenthetical', () => {
+    const [g] = bucketReleased([biz('c', 3)])
+    expect(g.rows[0].dateLabel).toMatch(/^[A-Z]/) // "Jul 13" style
+    expect(g.rows[0].what).toBe('New business — Blue Ramen (food services)')
+    expect(g.rows[0].significant).toBe(false)
+    const [c] = bucketReleased([crash('a', 50)])
+    expect(c.rows[0].significant).toBe(true)
+  })
+  it('silently drops live events (they belong to bucketByDay)', () => {
+    const live = { id: '911-realtime:x', datasetId: '911-realtime', timestamp: '', receivedAt: now, raw: {} } as AlertEvent
+    expect(bucketReleased([live])).toHaveLength(0)
   })
 })

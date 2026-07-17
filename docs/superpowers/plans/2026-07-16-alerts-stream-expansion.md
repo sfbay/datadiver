@@ -1787,6 +1787,8 @@ git commit -m "feat(alerts): released-tier stream chips with honest delay copy; 
 
 ### Task 12: Preview fixtures + welcome variant + full verification
 
+> **Amended post-review:** fixture dots now significance-filtered (mirrors digest.ts), all coords verified ≤0.25mi of center, sector labels are real naicsSector outputs — the original fixture violated the plan's own fidelity constraints.
+
 **Files:**
 - Modify: `scripts/preview-digest.ts`
 
@@ -1807,6 +1809,7 @@ import {
 } from '../src/lib/alerts/digestSummary.js'
 import { renderDigest, mapAltText } from '../src/lib/alerts/digestRender.js'
 import { buildStaticMapUrl } from '../src/lib/alerts/staticMap.js'
+import { classifySignificant } from '../src/lib/alerts/significance.js'
 
 const now = Date.now()
 const H = 3600_000
@@ -1817,7 +1820,7 @@ const liveEvents: AlertEvent[] = [
   ev({ id: 'p1', datasetId: '911-realtime', receivedAt: now - 2 * H, callType: 'Suspicious person', address: '16th St & Church St', latitude: 37.7646, longitude: -122.4288, raw: {} }),
   ev({ id: 'p2', datasetId: '911-realtime', receivedAt: now - 5 * H, callType: 'Shots fired', address: 'Dolores St & 17th St', latitude: 37.7633, longitude: -122.4262, raw: {} }),
   ev({ id: 'p3', datasetId: '311-cases', receivedAt: now - 7 * H, callType: 'Garbage_and_debris', address: '3448 16th St', latitude: 37.7642, longitude: -122.4311, raw: {} }),
-  ev({ id: 'p4', datasetId: '311-cases', receivedAt: now - 11 * H, callType: 'Building_inspection', address: '372 Dolores St', latitude: 37.7614, longitude: -122.4257, raw: {} }),
+  ev({ id: 'p4', datasetId: '311-cases', receivedAt: now - 11 * H, callType: 'Building_inspection', address: '3600 18th St', latitude: 37.7622, longitude: -122.4274, raw: {} }),
   ev({ id: 'p5', datasetId: 'fire-ems-dispatch', receivedAt: now - 26 * H, callType: 'Medical incident', address: '17th St & Dolores St', latitude: 37.7631, longitude: -122.4262, raw: {} }),
   ev({ id: 'p6', datasetId: 'fire-ems-dispatch', receivedAt: now - 30 * H, callType: 'Structure fire', address: 'Church St & Market St', latitude: 37.7671, longitude: -122.4291, raw: {} }),
   ev({ id: 'p7', datasetId: '311-cases', receivedAt: now - 15 * H, callType: 'Graffiti', address: '200 Church St', latitude: 37.7659, longitude: -122.4289, raw: {} }),
@@ -1826,17 +1829,17 @@ const liveEvents: AlertEvent[] = [
 // Released tier — event dates weeks/days old, exactly as a real batch lands.
 const releasedEvents: AlertEvent[] = [
   ev({ id: 'traffic-crashes:212413', datasetId: 'traffic-crashes', receivedAt: now - 52 * D,
-       headline: 'Vehicle-pedestrian crash — one person killed', address: 'Mission St & 16th St',
-       latitude: 37.7654, longitude: -122.4197, raw: { collision_severity: 'Fatal', number_killed: '1' } }),
+       headline: 'Vehicle-pedestrian crash — one person killed', address: '16th St & Dolores St',
+       latitude: 37.7654, longitude: -122.4259, raw: { collision_severity: 'Fatal', number_killed: '1' } }),
   ev({ id: 'traffic-crashes:212319', datasetId: 'traffic-crashes', receivedAt: now - 47 * D,
-       headline: 'Broadside crash — 2 people injured', address: 'Dolores St & 18th St',
-       latitude: 37.7611, longitude: -122.4259, raw: { collision_severity: 'Injury (Other Visible)', number_killed: '0' } }),
+       headline: 'Broadside crash — 2 people injured', address: '18th St & Church St',
+       latitude: 37.7618, longitude: -122.4287, raw: { collision_severity: 'Injury (Other Visible)', number_killed: '0' } }),
   ev({ id: 'business-openings:1427086', datasetId: 'business-openings', receivedAt: now - 3 * D,
-       headline: 'New business — Ermelinda House Cleaning', callType: 'Administrative and support services',
-       address: '2060 Folsom St', latitude: 37.7644, longitude: -122.4154, raw: {} }),
+       headline: 'New business — Ermelinda House Cleaning', callType: 'Administrative and Support Services',
+       address: '3556 18th St', latitude: 37.7629, longitude: -122.4266, raw: {} }),
   ev({ id: 'business-openings:1427234', datasetId: 'business-openings', receivedAt: now - 6 * D,
-       headline: 'New business — Semillitas De Amor Childcare Center', callType: 'Social assistance',
-       address: '2185 Mission St', latitude: 37.7621, longitude: -122.4192, raw: {} }),
+       headline: 'New business — Semillitas De Amor Childcare Center', callType: 'Private Education and Health Services',
+       address: '3670 18th St', latitude: 37.7618, longitude: -122.4277, raw: {} }),
 ]
 
 const isWelcome = process.argv.includes('--welcome')
@@ -1846,7 +1849,7 @@ const token = (process.env.VITE_MAPBOX_TOKEN ?? '').replace(/"/g, '') // .env.lo
 const all = [...liveEvents, ...releasedEvents]
 const summary = summarize(all)
 const dots = all
-  .filter((e) => e.latitude != null && e.longitude != null)
+  .filter((e) => classifySignificant(e) && e.latitude != null && e.longitude != null)
   .map((e) => ({ lat: e.latitude as number, lng: e.longitude as number }))
 
 const payload = {

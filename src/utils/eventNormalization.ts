@@ -24,7 +24,7 @@ interface RawCoord {
  *   2. GeoJSON object { type: 'Point', coordinates: [lon, lat] }
  *      (911 Realtime / Historical use this for `intersection_point`)
  */
-function parsePoint(p: unknown): { lon: number; lat: number } | undefined {
+export function parsePoint(p: unknown): { lon: number; lat: number } | undefined {
   if (typeof p === 'string') {
     const match = p.match(/POINT\s*\(\s*(-?\d+\.?\d*)\s+(-?\d+\.?\d*)\s*\)/i)
     if (match) return { lon: parseFloat(match[1]), lat: parseFloat(match[2]) }
@@ -83,7 +83,7 @@ function parseTimestamp(s: unknown): { iso: string; ms: number } | null {
  * digest email readable; "\b[a-z]" only upcases word-initial letters so
  * "19th" stays "19th" (not "19Th").
  */
-function cleanStreetLabel(raw: unknown): string | undefined {
+export function cleanStreetLabel(raw: unknown): string | undefined {
   if (typeof raw !== 'string') return undefined
   const s = raw
     .split(',')[0] // drop ", SAN FRANCISCO, CA 94103" tail on 311 addresses

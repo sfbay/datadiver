@@ -19,6 +19,9 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   radius_miles  numeric NOT NULL DEFAULT 0.5,
   last_sent_at  timestamptz,
   last_event_ts bigint NOT NULL DEFAULT 0,
+  confirmed_at  timestamptz,
+  stream_watermarks jsonb NOT NULL DEFAULT '{}',
+  sent_event_ids jsonb NOT NULL DEFAULT '{}',
   active        boolean NOT NULL DEFAULT true,
   created_at    timestamptz NOT NULL DEFAULT now()
 );

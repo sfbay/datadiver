@@ -3,7 +3,7 @@
 // belong in this subscription's digest." Imported by the cron (authoritative
 // send decision) and, in Phase 2, by the builder's live preview, so the two
 // can never drift. classifySignificant is reused as-is.
-import type { NormalizedEvent } from '@/types/last48'
+import type { AlertEvent } from './streams.js'
 import type { Cadence, MatchableSubscription } from './types'
 import { classifySignificant } from './significance.js'
 
@@ -46,7 +46,7 @@ export function isSubscriptionDue(
 }
 
 export function eventMatchesSubscription(
-  event: NormalizedEvent,
+  event: AlertEvent,
   sub: MatchableSubscription,
   watermarkMs: number,
 ): boolean {
@@ -57,6 +57,19 @@ export function eventMatchesSubscription(
     const cat = classifySignificant(event)
     if (!cat || !sub.filters.categories.includes(cat.key)) return false
   }
+  const pt = { lat: event.latitude, lng: event.longitude }
+  return sub.locations.some(
+    (loc) => haversineMiles(pt, { lat: loc.lat, lng: loc.lng }) <= sub.radiusMiles,
+  )
+}
+
+/** Matching for released-tier streams: stream + geo + radius ONLY.
+ *  No watermark (sent-id memory owns dedup — see sentIds.ts) and no
+ *  categories filter (significance categories are a 911/Fire concept;
+ *  applying them here would silently blank the released section). */
+export function releasedEventMatches(event: AlertEvent, sub: MatchableSubscription): boolean {
+  if (!sub.filters.streams.includes(event.datasetId)) return false
+  if (event.latitude == null || event.longitude == null) return false
   const pt = { lat: event.latitude, lng: event.longitude }
   return sub.locations.some(
     (loc) => haversineMiles(pt, { lat: loc.lat, lng: loc.lng }) <= sub.radiusMiles,

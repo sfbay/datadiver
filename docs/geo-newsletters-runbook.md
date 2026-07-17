@@ -32,6 +32,18 @@ Run BEFORE merging the PR (additive; old code unaffected). Old in-flight confirm
 
 Dispatch now fetches each stream once per run with ASC `$offset` pagination (4×5,000 cap, logged if hit) and advances watermarks per stream; a failed stream defers, never discards.
 
+## Migration — July 2026 (b): released-tier sent-id memory (PR D)
+
+> **Executed in prod Neon 2026-07-16** (verified via information_schema — `subscriptions` now carries all 13 columns incl. `sent_event_ids`). Additive; pre-PR-D code ignores the column. Re-running is idempotent and safe.
+
+```sql
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS sent_event_ids jsonb NOT NULL DEFAULT '{}';
+```
+
+`db/schema.sql` now carries all three July columns (`confirmed_at`, `stream_watermarks`, `sent_event_ids`) in the `subscriptions` CREATE — the #115 migration had left the schema file behind; a fresh provision no longer needs the July migrations.
+
+The digest now carries five streams: three live (911, Fire/EMS, 311 — 48h windows, per-stream watermarks) and two released-tier (traffic crashes ~120d window, business openings ~90d — full-replace pipelines with no per-row publication signal, deduped by per-subscription `sent_event_ids`). Confirming a subscription sends a **first edition** immediately: trailing 24h of live streams + the released-tier catch-up; failures are non-fatal and self-heal into the first cron digest.
+
 ## Environment variables (Vercel dashboard → Project → Settings → Environment Variables)
 | Var | Example / note |
 |-----|----------------|

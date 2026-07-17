@@ -3,6 +3,7 @@ import type { NormalizedEvent } from '@/types/last48'
 import { summarize, busiestBuckets, bucketByDay, sfDayKey, sfDayLine } from './digestSummary'
 import type { LocationDigest, DigestPayload } from './digestRender'
 import { mapAltText, renderDigest } from './digestRender'
+import type { ReleasedGroup, Summary } from './digestSummary.js'
 
 // Fixed assembly instant for every fixture below — pins the date line, the
 // day-header logic, and the late-report threshold to known values.
@@ -30,6 +31,7 @@ function locFrom(events: NormalizedEvent[], overrides: Partial<LocationDigest> =
     summary: summarize(events),
     buckets: busiestBuckets(events),
     days: bucketByDay(events, NOW),
+    released: [],
     ...overrides,
   }
 }
@@ -165,9 +167,101 @@ describe('placeShort edge (coordinate-fallback labels)', () => {
         summary: summarize(events),
         buckets: busiestBuckets(events),
         days: bucketByDay(events, NOW),
+        released: [],
       }],
     }
     const { subject } = renderDigest(payload, 'https://x.test/u')
     expect(subject).toContain('near 37.764, -122.429')
+  })
+})
+
+function releasedPayload(released: ReleasedGroup[], byStream: Record<string, number>) {
+  const summary: Summary = {
+    total: Object.values(byStream).reduce((a, b) => a + b, 0),
+    byStream,
+    significant: 1,
+    busiestLabel: null,
+  }
+  return {
+    windowLabel: 'published since your last digest',
+    nowMs: Date.parse('2026-07-16T19:00:00Z'),
+    locations: [{
+      label: '77 Chula Lane',
+      mapUrl: null,
+      mapAlt: 'Map — 1 major incident within ¼ mi of 77 Chula Lane',
+      summary,
+      buckets: new Array(12).fill(0),
+      days: [],
+      released,
+    }],
+  }
+}
+
+const releasedFixture: ReleasedGroup[] = [
+  {
+    streamId: 'traffic-crashes',
+    heading: 'crash reports',
+    note: 'The city releases crash data in batches, roughly 4–6 weeks behind — these reports appeared in the latest release.',
+    rows: [
+      { id: 'traffic-crashes:1', dateLabel: 'May 14', datasetId: 'traffic-crashes',
+        what: 'Vehicle-pedestrian crash — one person killed', location: 'Mission St & 16th St',
+        significant: true, eventMs: 0 },
+    ],
+  },
+  {
+    streamId: 'business-openings',
+    heading: 'business openings',
+    note: 'Newly registered business locations near you, from city data — refreshed nightly.',
+    rows: [
+      { id: 'business-openings:2', dateLabel: 'Jul 13', datasetId: 'business-openings',
+        what: 'New business — Blue Ramen (food services)', location: '455 Valencia St',
+        significant: false, eventMs: 0 },
+    ],
+  },
+]
+
+describe('released section', () => {
+  const byStream = { 'traffic-crashes': 1, 'business-openings': 1 }
+  it('renders a Times-rule head, the framing note, and date-labeled rows in stream pigment', () => {
+    const { html, text } = renderDigest(releasedPayload(releasedFixture, byStream), 'https://u')
+    expect(html).toMatch(/CRASH REPORTS <span[^>]*>&#183; NEWLY RELEASED<\/span>/)
+    expect(html).toContain('appeared in the latest release')
+    expect(html).toContain('May 14')
+    expect(html).toContain('#963e30') // crash tag pigment
+    expect(html).toContain('#5c9693') // business tag pigment
+    expect(html).toContain('Vehicle-pedestrian crash')
+    expect(text).toContain('CRASH REPORTS · NEWLY RELEASED')
+    expect(text).toContain('[BUSINESS] New business — Blue Ramen')
+  })
+  it('reader-facing output never says "periodic"', () => {
+    const { html, text } = renderDigest(releasedPayload(releasedFixture, byStream), 'https://u')
+    expect(html).not.toMatch(/periodic/i)
+    expect(text).not.toMatch(/periodic/i)
+  })
+  it('released streams join the stat-header cells via byStream counts', () => {
+    const { html } = renderDigest(releasedPayload(releasedFixture, byStream), 'https://u')
+    expect(html).toContain('>CRASH</div>')
+    expect(html).toContain('>BUSINESS</div>')
+  })
+  it('four+ active streams render the compact single-line legend', () => {
+    const five = {
+      '911-realtime': 2, 'fire-ems-dispatch': 2, '311-cases': 3,
+      'traffic-crashes': 2, 'business-openings': 2,
+    }
+    const { html } = renderDigest(releasedPayload(releasedFixture, five), 'https://u')
+    for (const tag of ['911', 'FIRE/EMS', '311', 'CRASH', 'BUSINESS'])
+      expect(html).toContain(`>${tag}</div>`)
+    // Compact form drops the "Reports" row-head (the first legend field
+    // carries the definition) and steps the type down one size.
+    expect(html).toContain('>New reports</div>')
+    expect(html).not.toContain('>Reports</div>')
+    expect(html).toContain('font-size:32px')
+    expect(html).not.toContain('font-size:36px')
+  })
+  it('three or fewer streams keep the locked full-size header', () => {
+    const { html } = renderDigest(releasedPayload(releasedFixture, byStream), 'https://u')
+    expect(html).toContain('>Reports</div>')
+    expect(html).toContain('>New</div>')
+    expect(html).toContain('font-size:36px')
   })
 })
