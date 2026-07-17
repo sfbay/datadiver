@@ -254,6 +254,10 @@ describe('released section', () => {
     expect(html).not.toContain('<td width="1"')
     for (const tag of ['911', 'FIRE/EMS', '311', 'CRASH', 'BUSINESS'])
       expect(html).toContain(`>${tag}</div>`)
+    // Wrapped form drops the "Reports" row-head; the first legend field
+    // carries the definition instead.
+    expect(html).toContain('>New reports</div>')
+    expect(html).not.toContain('>Reports</div>')
   })
   it('three or fewer streams keep the locked single-row header', () => {
     const { html } = renderDigest(releasedPayload(releasedFixture, byStream), 'https://u')

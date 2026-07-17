@@ -125,15 +125,27 @@ function statHeaderHtml(s: Summary, buckets: number[]): string {
     })
     .join('<td width="20" style="font-size:0">&nbsp;</td>')
   const wrapStreams = activeIds.length > 3
-  const streamsInline = wrapStreams
-    ? ''
-    : `<td width="1" bgcolor="${PAPERLINE}" style="font-size:0;line-height:0">&nbsp;</td>
-      <td width="20" style="font-size:0">&nbsp;</td>
-      ${streamCells}`
-  const streamsRow = wrapStreams
-    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:16px 0 0"><tr>${streamCells}</tr></table>`
-    : ''
   const caption = s.busiestLabel ? `busiest ${s.busiestLabel}` : ''
+  // Wrapped form (4+ streams): no "Reports" row-head — the first legend
+  // field carries the definition ("NEW REPORTS"), right-aligned with
+  // SIGNIFICANT beside it, plates on their own row beneath (Jesse, round 4).
+  if (wrapStreams) {
+    return `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0 0"><tr>
+      <td width="100%" style="font-size:0">&nbsp;</td>
+      <td valign="bottom" style="padding-right:22px;text-align:right">
+        <div style="font-style:italic;font-size:36px;font-weight:bold;color:${INK};line-height:1">${s.total}</div>
+        <div style="font-family:${SANS};font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:${MUTED};margin-top:3px;white-space:nowrap">New reports</div>
+      </td>
+      <td valign="bottom" style="border-top:6px solid #963e30;padding:8px 0 0 0;text-align:right">
+        <div style="font-style:italic;font-size:36px;font-weight:bold;color:${INK};line-height:1">${s.significant}</div>
+        <div style="font-family:${SANS};font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#963e30;margin-top:3px;white-space:nowrap">Significant</div>
+      </td>
+    </tr></table>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:16px 0 0"><tr>${streamCells}</tr></table>
+    ${caption ? `<div style="font-family:${SANS};font-size:12px;color:${MUTED};margin-top:6px">${escapeHtml(caption)}</div>` : ''}
+    ${barHtml(buckets)}`
+  }
   return `
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0 0"><tr>
       <td valign="bottom" style="padding-right:34px">
@@ -149,9 +161,10 @@ function statHeaderHtml(s: Summary, buckets: number[]): string {
         <div style="font-style:italic;font-size:36px;font-weight:bold;color:${INK};line-height:1">${s.significant}</div>
         <div style="font-family:${SANS};font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#963e30;margin-top:3px;white-space:nowrap">Significant</div>
       </td>
-      ${streamsInline}
+      <td width="1" bgcolor="${PAPERLINE}" style="font-size:0;line-height:0">&nbsp;</td>
+      <td width="20" style="font-size:0">&nbsp;</td>
+      ${streamCells}
     </tr></table>
-    ${streamsRow}
     ${caption ? `<div style="font-family:${SANS};font-size:12px;color:${MUTED};margin-top:6px">${escapeHtml(caption)}</div>` : ''}
     ${barHtml(buckets)}`
 }
