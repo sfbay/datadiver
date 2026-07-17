@@ -82,7 +82,8 @@ function placeShort(label: string): string {
 
 /** Two voices only (Jesse, July 17 2026 — the third, ceremonial Times voice
  *  drifted and was retired): Georgia is the reading voice for everything,
- *  including the uppercase day/section heads (they inherit the body stack);
+ *  including the uppercase day/section heads (they inherit the body stack)
+ *  AND the brand eyebrow (Jesse's call — the masthead stays serif);
  *  Tahoma leads the label voice for small text — designed for small sizes,
  *  the email cousin of the app's mono micro-labels. */
 const SANS = "Tahoma,Verdana,'Segoe UI',Arial,sans-serif"
@@ -314,7 +315,7 @@ export function renderDigest(payload: DigestPayload, unsubUrl: string): Rendered
   <div style="max-width:560px;margin:0 auto;padding:24px 24px 28px">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px"><tr>
       <td bgcolor="${INK}" style="padding:20px 24px;border-radius:10px">
-        <div style="font-family:${SANS};font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:${OCHRE}">DataDiver &#8226; The Last 48</div>
+        <div style="font-family:Georgia,'Times New Roman',serif;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:${OCHRE}">DataDiver &#8226; The Last 48</div>
         <div style="font-style:italic;font-size:24px;color:${CREAM};margin-top:6px">${escapeHtml(dateLine)}</div>
         <div style="font-size:13px;color:${PAPERLINE};margin-top:5px">${escapeHtml(introLine)}</div>
       </td>
