@@ -106,11 +106,16 @@ function barHtml(buckets: number[]): string {
 }
 
 /** The true header: NEW + SIGNIFICANT lead as a pair, a hairline divider,
- *  then one pigment-ruled cell per non-zero stream. */
+ *  then one pigment-ruled cell per non-zero stream. With MORE than three
+ *  active streams the single row's min-content (~660px of nowrap columns)
+ *  exceeds the 560px email column — clients then eat the spacer cells (the
+ *  plates fuse into one continuous bar) or overflow horizontally. So four+
+ *  streams wrap the plates onto their own row; the Jesse-locked ≤3-stream
+ *  single-row layout is untouched. */
 function statHeaderHtml(s: Summary, buckets: number[]): string {
   const byStream = s.byStream as Record<string, number>
-  const streamCells = Object.keys(STREAM_META)
-    .filter((id) => byStream[id])
+  const activeIds = Object.keys(STREAM_META).filter((id) => byStream[id])
+  const streamCells = activeIds
     .map((id) => {
       const m = STREAM_META[id]
       return `<td valign="bottom" style="border-top:6px solid ${m.hex};padding:8px 12px 0 0">
@@ -119,6 +124,15 @@ function statHeaderHtml(s: Summary, buckets: number[]): string {
       </td>`
     })
     .join('<td width="20" style="font-size:0">&nbsp;</td>')
+  const wrapStreams = activeIds.length > 3
+  const streamsInline = wrapStreams
+    ? ''
+    : `<td width="1" bgcolor="${PAPERLINE}" style="font-size:0;line-height:0">&nbsp;</td>
+      <td width="20" style="font-size:0">&nbsp;</td>
+      ${streamCells}`
+  const streamsRow = wrapStreams
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:16px 0 0"><tr>${streamCells}</tr></table>`
+    : ''
   const caption = s.busiestLabel ? `busiest ${s.busiestLabel}` : ''
   return `
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0 0"><tr>
@@ -135,10 +149,9 @@ function statHeaderHtml(s: Summary, buckets: number[]): string {
         <div style="font-style:italic;font-size:36px;font-weight:bold;color:${INK};line-height:1">${s.significant}</div>
         <div style="font-family:${SANS};font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#963e30;margin-top:3px;white-space:nowrap">Significant</div>
       </td>
-      <td width="1" bgcolor="${PAPERLINE}" style="font-size:0;line-height:0">&nbsp;</td>
-      <td width="20" style="font-size:0">&nbsp;</td>
-      ${streamCells}
+      ${streamsInline}
     </tr></table>
+    ${streamsRow}
     ${caption ? `<div style="font-family:${SANS};font-size:12px;color:${MUTED};margin-top:6px">${escapeHtml(caption)}</div>` : ''}
     ${barHtml(buckets)}`
 }
