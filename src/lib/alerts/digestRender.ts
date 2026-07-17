@@ -131,30 +131,46 @@ function statHeaderHtml(s: Summary, buckets: number[]): string {
   const byStream = s.byStream as Record<string, number>
   const activeIds = Object.keys(STREAM_META).filter((id) => byStream[id])
   const caption = s.busiestLabel ? `busiest ${s.busiestLabel}` : ''
-  const streamCells = activeIds
-    .map((id) => {
-      const m = STREAM_META[id]
-      return `<td valign="bottom" style="border-top:5px solid ${m.hex};padding:7px 10px 0 0">
-        <div style="font-style:italic;font-size:20px;font-weight:bold;color:${INK};line-height:1">${byStream[id]}</div>
-        <div style="font-family:${SANS};font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:${m.hex};margin-top:3px;white-space:nowrap">${m.tag}</div>
-      </td>`
-    })
-    .join(gapCell(12))
+  // Two ROWS, not one (Jesse, round 3): figures share the bottom row edge
+  // and labels share the top of theirs, so the NEW<br>REPORTS two-liner
+  // can't push its figure out of line. Plates ride the figure cells; the
+  // hairline divider is two stacked 1px cells (no rowspan — Outlook).
+  const figStyle = (px: number) =>
+    `font-style:italic;font-size:${px}px;font-weight:bold;color:${INK};line-height:1`
+  const labStyle = (color: string) =>
+    `font-family:${SANS};font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:${color};white-space:nowrap`
+  const dividerCell = `<td width="1" bgcolor="${PAPERLINE}" style="font-size:0;line-height:0"><div style="width:1px;height:1px;font-size:0;line-height:0">&nbsp;</div></td>`
+  const figRow = [
+    `<td valign="bottom" style="padding-right:16px"><div style="${figStyle(32)}">${s.total}</div></td>`,
+    `<td valign="bottom" style="border-top:5px solid #963e30;padding:7px 14px 0 0"><div style="${figStyle(32)}">${s.significant}</div></td>`,
+    dividerCell,
+    gapCell(14),
+    activeIds
+      .map((id) => {
+        const m = STREAM_META[id]
+        return `<td valign="bottom" style="border-top:5px solid ${m.hex};padding:7px 10px 0 0"><div style="${figStyle(20)}">${byStream[id]}</div></td>`
+      })
+      .join(gapCell(12)),
+    `<td width="100%" style="font-size:0">&nbsp;</td>`,
+  ].join('')
+  const labRow = [
+    `<td valign="top" style="padding:3px 16px 0 0"><div style="${labStyle(MUTED)}">New<br>reports</div></td>`,
+    `<td valign="top" style="padding:3px 14px 0 0"><div style="${labStyle('#963e30')}">Significant</div></td>`,
+    dividerCell,
+    gapCell(14),
+    activeIds
+      .map((id) => {
+        const m = STREAM_META[id]
+        return `<td valign="top" style="padding:3px 10px 0 0"><div style="${labStyle(m.hex)}">${m.tag}</div></td>`
+      })
+      .join(gapCell(12)),
+    `<td width="100%" style="font-size:0">&nbsp;</td>`,
+  ].join('')
   return `
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0 0"><tr>
-      <td valign="bottom" style="padding-right:16px">
-        <div style="font-style:italic;font-size:32px;font-weight:bold;color:${INK};line-height:1">${s.total}</div>
-        <div style="font-family:${SANS};font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:${MUTED};margin-top:3px;white-space:nowrap">New<br>reports</div>
-      </td>
-      <td valign="bottom" style="border-top:5px solid #963e30;padding:7px 14px 0 0">
-        <div style="font-style:italic;font-size:32px;font-weight:bold;color:${INK};line-height:1">${s.significant}</div>
-        <div style="font-family:${SANS};font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#963e30;margin-top:3px;white-space:nowrap">Significant</div>
-      </td>
-      <td width="1" bgcolor="${PAPERLINE}" style="font-size:0;line-height:0"><div style="width:1px;height:1px;font-size:0;line-height:0">&nbsp;</div></td>
-      ${gapCell(14)}
-      ${streamCells}
-      <td width="100%" style="font-size:0">&nbsp;</td>
-    </tr></table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0 0">
+      <tr>${figRow}</tr>
+      <tr>${labRow}</tr>
+    </table>
     ${caption ? `<div style="font-family:${SANS};font-size:12px;color:${MUTED};margin-top:6px">${escapeHtml(caption)}</div>` : ''}
     ${barHtml(buckets)}`
 }
