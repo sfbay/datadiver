@@ -536,6 +536,34 @@ export default function About() {
           </Prose>
         </section>
 
+        {/* ── Support ────────────────────────────────────── */}
+        <section className="mb-12">
+          <SectionHead label="Support DataDiver" glow="#d4a435" />
+          <Prose>
+            <p>
+              DataDiver is free, carries no ads, and never sells your data. It runs on
+              public data, open-source tools, and a lot of evenings. If you like what
+              it does — if it has shown you something about San Francisco you didn&rsquo;t
+              know — you can help keep it diving with a small tip:
+            </p>
+            <p>
+              <a
+                href="https://ko-fi.com/jessegarnier"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-full border border-ochre-500/40 bg-ochre-500/[0.08] px-4 py-2 text-[13px] font-mono text-ink dark:text-paper-100 hover:border-ochre-500 hover:bg-ochre-500/[0.14] transition-colors"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-ochre-500" aria-hidden />
+                ko-fi.com/jessegarnier ↗
+              </a>
+            </p>
+            <p>
+              No pressure, and nothing sits behind a paywall — reading, sharing, and
+              sending corrections are support too.
+            </p>
+          </Prose>
+        </section>
+
         {/* ── Colophon ───────────────────────────────────── */}
         <section className="mb-8">
           <SectionHead label="Colophon" />

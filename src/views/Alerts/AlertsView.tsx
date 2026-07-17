@@ -7,21 +7,25 @@
 //   │ DAILY NEWSLETTER eyebrow · Fraunces italic display ·          │
 //   │ pull-quote margin note (future home of Dana art)              │
 //   └───────────────────────────────────────────────────────────────┘
-//   ┌─ 01 · PLACES YOU WATCH — full-width map station ─────────────┐
-//   │ chapter mark + bridge copy · address search · radius pills   │
+//   ┌─ ① WHERE TO WATCH — full-width map station ──────────────────┐
+//   │ step pill + headline · explainer rides right · search +      │
+//   │ radius aligned under the headline                             │
 //   │ hero-scale Mapbox (click to pin, circles render live)        │
 //   │ footer: dropped-pin chips with remove                         │
 //   └───────────────────────────────────────────────────────────────┘
-//   ┌─ ENTRY (left) ────────────┐  ┌─ SAMPLE (right) ──────────────┐
-//   │ 02 · Streams              │  │ LIVE PREVIEW                  │
-//   │ 03 · Only these kinds     │  │ real recent matched events —  │
-//   │ 04 · Your email           │  │ reacts as chips toggle        │
-//   │ [ Subscribe ▸ notch ]     │  │                               │
-//   └───────────────────────────┘  └───────────────────────────────┘
+//   ┌─ ② WHAT TO WATCH FOR — full-width, two panes ────────────────┐
+//   │ streams + sub-layers (only   │ LIVE PREVIEW pane — real      │
+//   │ these kinds · released ·     │ matched events, reacts as     │
+//   │ neighborhood pulse)          │ chips toggle                  │
+//   └───────────────────────────────────────────────────────────────┘
+//   ┌─ ③ WHERE TO SEND — full-width closer ────────────────────────┐
+//   │ email slip (50%) + Subscribe · fine print · error rail       │
+//   └───────────────────────────────────────────────────────────────┘
 //   ┌─ COLOPHON ────────────────────────────────────────────────────┐
 //
 // On narrow viewports everything stacks in reading order:
-// hero → map → entry → sample → colophon. The funnel is deliberate —
+// hero → map → streams (preview below) → email → colophon. The funnel
+// is deliberate —
 // pinning the map is play (zero commitment), streams/categories are
 // configuration, email is commitment, and by then the preview has
 // already shown the reader what they'll get.
@@ -223,7 +227,7 @@ export default function AlertsView() {
       <div className="mx-auto max-w-[1400px] px-[clamp(16px,3vw,48px)] pt-[clamp(20px,3vw,40px)] pb-16">
         <HeroBand />
 
-        {/* ─── 01 · PLACES YOU WATCH — full-width map station ──────────
+        {/* ─── ① WHERE TO WATCH — full-width map station ───────────────
             The map is the first question the page asks. Search + radius
             live here too: both are direct-manipulation controls whose
             feedback (pins, circles) renders on this very map. */}
@@ -235,27 +239,23 @@ export default function AlertsView() {
 
           {/* Header: chapter mark + bridge copy + search + radius */}
           <div className="relative px-[clamp(20px,3vw,32px)] pt-5 pb-4">
-            <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-4">
-              <div className="min-w-[260px] flex-1 max-w-[36rem]">
-                <div className="flex items-baseline gap-3">
-                  <span
-                    className="font-mono text-[11px] tabular-nums text-terracotta-500/85 font-bold tracking-wider"
-                    aria-hidden
-                  >
-                    01
-                  </span>
-                  <h2 className="font-display italic text-[19px] text-ink dark:text-paper-100">
-                    Places you watch
-                  </h2>
-                </div>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-ink/60 dark:text-slate-400">
-                  Click anywhere on the map to drop a pin — home, work, school, the
-                  corner you worry about. Each pin watches its own circle; your
-                  digest covers all of them.
-                </p>
+            {/* Row 1: step + headline, explainer riding to the right */}
+            <div className="flex flex-wrap items-center gap-x-10 gap-y-3">
+              <div className="flex flex-shrink-0 items-center gap-3.5">
+                <StepMark n={1} />
+                <h2 className="font-display italic text-[clamp(20px,2vw,24px)] text-ink dark:text-paper-100">
+                  Where to watch
+                </h2>
               </div>
+              <p className="min-w-[260px] flex-1 max-w-[44rem] text-[13px] leading-relaxed text-ink/60 dark:text-slate-400">
+                Click anywhere on the map to drop a pin — home, work, school, the
+                corner you worry about. Each pin watches its own circle; your
+                digest covers all of them.
+              </p>
+            </div>
 
-              <div className="flex flex-wrap items-center gap-3">
+            {/* Row 2: search + radius, aligned under the headline text */}
+            <div className="mt-4 sm:ml-[58px] flex flex-wrap items-center gap-3">
                 {/* Address search — anchors its results dropdown */}
                 <div className="relative w-[min(320px,72vw)]">
                   <div className="flex gap-2">
@@ -325,7 +325,6 @@ export default function AlertsView() {
                     ))}
                   </div>
                 </div>
-              </div>
             </div>
           </div>
 
@@ -373,23 +372,32 @@ export default function AlertsView() {
           </div>
         </section>
 
-        {/* ─── ENTRY + SAMPLE — side by side at desktop width so the
-            preview visibly reacts as chips toggle; stacks entry-then-
-            sample on narrow viewports. ─────────────────────────────── */}
-        <div className="mt-[clamp(20px,2.5vw,32px)] grid gap-[clamp(20px,2.5vw,32px)] lg:grid-cols-[minmax(0,1fr),minmax(0,1.08fr)]">
-          {/* ENTRY — what counts, and where to send it */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              submit()
-            }}
-            className="glass-card relative rounded-[28px] rounded-bl-none overflow-hidden glow-host self-start"
+        {/* ─── ② + ③ — full-width stations. The live preview is a pane
+            INSIDE ② so it reacts right beside the chips being toggled;
+            ③ closes the page at full width. One <form> spans both cards
+            so Enter in the email field still submits. ──────────────── */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            submit()
+          }}
+          className="mt-[clamp(20px,2.5vw,32px)] space-y-[clamp(20px,2.5vw,32px)]"
+        >
+          <section
+            className="glass-card relative rounded-[28px] rounded-bl-none overflow-hidden glow-host"
             style={{ '--glow': '#5c9693' } as CSSProperties}
           >
             <div className="glow-corner is-lg" style={{ opacity: 0.3 }} />
 
-            {/* 02 — Streams (identity chips) */}
-            <FormSection n={2} label="Streams" isFirst>
+            {/* ② — What to watch for: streams (identity chips) + the
+                only-these-kinds / released / pulse sub-layers on the left,
+                live preview pane on the right.
+                NB: track list uses underscores, not commas — a comma-
+                separated grid-template-columns is invalid CSS and
+                silently stacks. */}
+            <FormSection n={2} label="What to watch for" isFirst>
+              <div className="grid items-start gap-[clamp(20px,2.5vw,32px)] lg:grid-cols-[minmax(0,1.12fr)_minmax(0,1fr)]">
+                <div className="min-w-0">
               {(() => {
                 const chip = (s: (typeof LIVE_STREAM_OPTIONS)[number]) => {
                   const selected = streams.includes(s.id)
@@ -436,6 +444,45 @@ export default function AlertsView() {
                     <div className="grid gap-2 sm:grid-cols-3">
                       {LIVE_STREAM_OPTIONS.map(chip)}
                     </div>
+
+                    {/* Sub-layer: significance filters — narrows 911 + Fire & EMS
+                        only, so it lives right under the live chips it refines. */}
+                    <div className="mt-4 mb-1.5 flex items-center gap-2">
+                      <span className="text-[9px] font-mono uppercase tracking-[0.22em] text-ink/45 dark:text-slate-400">
+                        ── Only these kinds
+                      </span>
+                      <span className="text-[9px] font-mono uppercase tracking-[0.18em] text-ink/35 dark:text-slate-500">
+                        · optional
+                      </span>
+                      <div className="flex-1 h-px bg-ink/[0.08] dark:bg-white/[0.06]" />
+                    </div>
+                    <p className="mb-2.5 text-[12.5px] leading-relaxed text-ink/60 dark:text-slate-400">
+                      Leave these empty to get every event on your chosen streams — or
+                      narrow 911 and Fire &amp; EMS to just the kinds that matter to you.
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {CATEGORY_OPTIONS.map((c) => {
+                        const selected = categories.includes(c.key)
+                        return (
+                          <button
+                            key={c.key}
+                            type="button"
+                            onClick={() => setCategories((a) => toggle(a, c.key))}
+                            aria-pressed={selected}
+                            className={`
+                              rounded-full px-3 py-1.5 text-[11px] font-mono uppercase tracking-wider
+                              border transition-colors
+                              ${selected
+                                ? 'border-brick-500 bg-brick-500/12 text-brick-500'
+                                : 'border-ink/15 dark:border-white/[0.10] text-ink/55 dark:text-slate-400 hover:border-ink/25 dark:hover:border-white/[0.20]'}
+                            `}
+                          >
+                            {c.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+
                     <div className="mt-4 mb-1.5 flex items-center gap-2">
                       <span className="text-[9px] font-mono uppercase tracking-[0.22em] text-ink/45 dark:text-slate-400">
                         ── Released on a delay
@@ -500,41 +547,36 @@ export default function AlertsView() {
                   </>
                 )
               })()}
-            </FormSection>
+                </div>
 
-            {/* 03 — Categories (only when relevant streams selected) */}
-            <FormSection n={3} label="Only these kinds" optional>
-              <div className="flex flex-wrap gap-1.5">
-                {CATEGORY_OPTIONS.map((c) => {
-                  const selected = categories.includes(c.key)
-                  return (
-                    <button
-                      key={c.key}
-                      type="button"
-                      onClick={() => setCategories((a) => toggle(a, c.key))}
-                      aria-pressed={selected}
-                      className={`
-                        rounded-full px-3 py-1.5 text-[11px] font-mono uppercase tracking-wider
-                        border transition-colors
-                        ${selected
-                          ? 'border-brick-500 bg-brick-500/12 text-brick-500'
-                          : 'border-ink/15 dark:border-white/[0.10] text-ink/55 dark:text-slate-400 hover:border-ink/25 dark:hover:border-white/[0.20]'}
-                      `}
-                    >
-                      {c.label}
-                    </button>
-                  )
-                })}
+                {/* The reactive proof, in the same card as the controls it
+                    answers. Pane variant: inset frame, no glow — the parent
+                    card stays the single glowing surface. */}
+                <LivePreview
+                  variant="pane"
+                  email={email}
+                  streams={streams}
+                  categories={categories}
+                  radiusMiles={radiusMiles}
+                  locations={locations}
+                  pulse={pulse}
+                />
               </div>
-              <p className="mt-2 text-[10px] font-mono text-ink/40 dark:text-slate-500 italic leading-relaxed">
-                Leave empty to get every event on the chosen streams. Significance filters apply to 911 + Fire & EMS only.
-              </p>
             </FormSection>
+          </section>
 
-            {/* 04 — Email — the commitment, asked for last. Input + button
-                share the row: the act of typing and the act of committing sit
-                together, like a masthead subscription slip. */}
-            <FormSection n={4} label="Your email">
+          <section
+            className="glass-card relative rounded-[28px] rounded-bl-none overflow-hidden glow-host"
+            style={{ '--glow': '#5c9693' } as CSSProperties}
+          >
+            <div className="glow-corner is-lg" style={{ opacity: 0.3 }} />
+
+            {/* ③ — Email — the commitment, asked for last, closing the page
+                at full width. Input + button share the row: the act of typing
+                and the act of committing sit together, like a masthead
+                subscription slip. The input holds to half the card — a
+                slip-sized field, not a form-sized one. */}
+            <FormSection n={3} label="Where to send" isFirst>
               <div className="flex items-stretch gap-3">
                 <input
                   type="email"
@@ -542,7 +584,7 @@ export default function AlertsView() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   aria-label="Your email address"
-                  className="min-w-0 flex-1 rounded-md border border-ink/15 dark:border-white/[0.12] bg-paper-100/60 dark:bg-espresso-900/60 px-3.5 py-2.5 text-[15px] text-ink dark:text-paper-100 placeholder:text-ink/35 dark:placeholder:text-slate-500 focus:border-teal-500 focus:outline-none transition-colors"
+                  className="min-w-0 flex-1 max-w-[50%] rounded-md border border-ink/15 dark:border-white/[0.12] bg-paper-100/60 dark:bg-espresso-900/60 px-3.5 py-2.5 text-[15px] text-ink dark:text-paper-100 placeholder:text-ink/35 dark:placeholder:text-slate-500 focus:border-teal-500 focus:outline-none transition-colors"
                 />
                 <SubscribeButton
                   onClick={submit}
@@ -556,28 +598,15 @@ export default function AlertsView() {
                 First we email you a confirmation link — nothing starts until you click it.
                 Every digest includes a one-click unsubscribe, which also deletes your info.
               </p>
+              {/* Error rail */}
+              {errorMsg && (
+                <div className="mt-4 rounded-md border border-brick-500/30 bg-brick-500/[0.06] px-3.5 py-2.5">
+                  <p className="text-[12px] font-mono text-brick-500">{errorMsg}</p>
+                </div>
+              )}
             </FormSection>
-
-            {/* Error rail */}
-            {errorMsg && (
-              <div className="mx-6 mb-6 rounded-md border border-brick-500/30 bg-brick-500/[0.06] px-3.5 py-2.5">
-                <p className="text-[12px] font-mono text-brick-500">{errorMsg}</p>
-              </div>
-            )}
-          </form>
-
-          {/* SAMPLE — the editorial proof, reacting live to the entry card */}
-          <aside className="min-w-0">
-            <LivePreview
-              email={email}
-              streams={streams}
-              categories={categories}
-              radiusMiles={radiusMiles}
-              locations={locations}
-              pulse={pulse}
-            />
-          </aside>
-        </div>
+          </section>
+        </form>
 
         <Colophon />
       </div>
@@ -672,42 +701,44 @@ function HeroBand() {
   )
 }
 
-// ─── Numbered editorial section mark ─────────────────────────────────────────
+// ─── Numbered editorial step mark ────────────────────────────────────────────
+// The sequence pill is the page's wayfinding device (feedback from a real
+// first-time reader: the old 11px "01/02" mono marks were invisible, and the
+// page read as one undifferentiated wall). Three big numbered steps guide the
+// eye; everything else is a sub-layer. Numerals are bare (1, not 01) and set
+// in the same display italic as the labels so pill + label read as one voice.
+
+function StepMark({ n }: { n: number }) {
+  return (
+    <span
+      className="grid w-11 h-11 flex-shrink-0 place-items-center rounded-full bg-terracotta-500 text-white shadow-sm"
+      aria-hidden
+    >
+      <span className="font-display italic text-[22px] leading-none">{n}</span>
+    </span>
+  )
+}
 
 function FormSection({
   n,
   label,
   isFirst,
-  optional,
   children,
 }: {
   n: number
   label: string
   isFirst?: boolean
-  optional?: boolean
   children: React.ReactNode
 }) {
   return (
     <section
-      className={`relative px-6 py-5 ${isFirst ? '' : 'border-t border-ink/[0.06] dark:border-white/[0.04]'}`}
+      className={`relative px-6 py-6 ${isFirst ? '' : 'border-t border-ink/[0.06] dark:border-white/[0.04]'}`}
     >
-      <div className="flex items-baseline gap-3 mb-3">
-        <span
-          className="font-mono text-[11px] tabular-nums text-terracotta-500/85 font-bold tracking-wider"
-          aria-hidden
-        >
-          {String(n).padStart(2, '0')}
-        </span>
-        <div className="flex items-baseline gap-2">
-          <h2 className="font-display italic text-[15px] text-ink dark:text-paper-100">
-            {label}
-          </h2>
-          {optional && (
-            <span className="text-[9px] font-mono uppercase tracking-[0.18em] text-ink/40 dark:text-slate-500">
-              optional
-            </span>
-          )}
-        </div>
+      <div className="flex items-center gap-3.5 mb-4">
+        <StepMark n={n} />
+        <h2 className="font-display italic text-[clamp(20px,2vw,24px)] text-ink dark:text-paper-100">
+          {label}
+        </h2>
       </div>
       {children}
     </section>

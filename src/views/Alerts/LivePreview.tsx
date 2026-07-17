@@ -43,9 +43,12 @@ interface LivePreviewProps {
   radiusMiles: number
   locations: AlertLocation[]
   pulse: boolean
+  /** 'card' = standalone glass card (default); 'pane' = inset frame for
+      embedding inside a parent card — no glow, the parent card carries it. */
+  variant?: 'card' | 'pane'
 }
 
-export function LivePreview({ email, streams, categories, radiusMiles, locations, pulse }: LivePreviewProps) {
+export function LivePreview({ email, streams, categories, radiusMiles, locations, pulse, variant = 'card' }: LivePreviewProps) {
   // Always pull all three streams so the user can toggle without re-fetching.
   // The engine itself short-circuits per-stream when the enabledSet shrinks,
   // but for the preview we want every stream's events available so toggling
@@ -88,12 +91,18 @@ export function LivePreview({ email, streams, categories, radiusMiles, locations
   const isLoading = window48.isLoading && locations.length > 0 && streams.length > 0
   const liveSelected = streams.some(isLiveStream)
 
+  const isPane = variant === 'pane'
+
   return (
     <div
-      className="glass-card glow-host rounded-2xl overflow-hidden relative"
-      style={{ '--glow': '#b85a33' } as React.CSSProperties}
+      className={
+        isPane
+          ? 'relative min-w-0 rounded-2xl border border-ink/[0.08] dark:border-white/[0.06] bg-paper-100/45 dark:bg-espresso-900/35 overflow-hidden'
+          : 'glass-card glow-host rounded-2xl overflow-hidden relative'
+      }
+      style={isPane ? undefined : ({ '--glow': '#b85a33' } as React.CSSProperties)}
     >
-      <div className="glow-corner is-lg" style={{ opacity: 0.35 }} />
+      {!isPane && <div className="glow-corner is-lg" style={{ opacity: 0.35 }} />}
 
       {/* Eyebrow rule + label */}
       <div className="relative px-5 pt-4 pb-3 border-b border-ink/[0.06] dark:border-white/[0.04]">
