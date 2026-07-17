@@ -97,7 +97,7 @@ describe('renderDigest', () => {
     expect(html).toContain('The Last 48')
     expect(html).toContain(sfDayLine(NOW))
     expect(html).not.toContain('AT A GLANCE')
-    expect(html).toContain('>New reports</div>') // true stat header lead label
+    expect(html).toContain('>New<br>reports</div>') // true stat header lead label
     expect(html).toContain('>Significant</div>') // significant elevated to the top line
   })
 
@@ -256,14 +256,14 @@ describe('released section', () => {
     const { html } = renderDigest(releasedPayload(releasedFixture, five), 'https://u')
     for (const tag of ['911', 'FIRE/EMS', '311', 'CRASH', 'BUSINESS'])
       expect(html).toContain(`>${tag}</div>`)
-    expect(html).toContain('>New reports</div>')
+    expect(html).toContain('>New<br>reports</div>')
     expect(html).toContain('font-size:32px')
   })
   it('the compact legend is the ONLY header form — no "Reports" row-head at any stream count', () => {
     // July 17 2026: the full-size two-tier header was retired; a low
     // stream count must render the same compact legend, not resurrect it.
     const { html } = renderDigest(releasedPayload(releasedFixture, byStream), 'https://u')
-    expect(html).toContain('>New reports</div>')
+    expect(html).toContain('>New<br>reports</div>')
     expect(html).not.toContain('>Reports</div>')
     expect(html).toContain('font-size:32px')
     expect(html).not.toContain('font-size:36px')

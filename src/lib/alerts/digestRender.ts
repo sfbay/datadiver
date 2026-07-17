@@ -80,13 +80,12 @@ function placeShort(label: string): string {
   return /^-?\d+(\.\d+)?$/.test(first) ? label : first
 }
 
-/** Tahoma leads the label voice (designed for small sizes — the email cousin
- *  of the app's mono micro-labels); Georgia stays the reading voice. */
+/** Two voices only (Jesse, July 17 2026 — the third, ceremonial Times voice
+ *  drifted and was retired): Georgia is the reading voice for everything,
+ *  including the uppercase day/section heads (they inherit the body stack);
+ *  Tahoma leads the label voice for small text — designed for small sizes,
+ *  the email cousin of the app's mono micro-labels. */
 const SANS = "Tahoma,Verdana,'Segoe UI',Arial,sans-serif"
-
-/** Times for the two ceremonial voices — the brand eyebrow and the day
- *  headers (Jesse's call: the masthead wears newsprint, not UI). */
-const TIMES = "'Times New Roman',Times,serif"
 
 /** Display order for the heat strip: the civic day reads dawn to dawn, so
  *  the strip starts at 6 a.m. and wraps through the small hours. Buckets
@@ -145,7 +144,7 @@ function statHeaderHtml(s: Summary, buckets: number[]): string {
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0 0"><tr>
       <td valign="bottom" style="padding-right:16px">
         <div style="font-style:italic;font-size:32px;font-weight:bold;color:${INK};line-height:1">${s.total}</div>
-        <div style="font-family:${SANS};font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:${MUTED};margin-top:3px;white-space:nowrap">New reports</div>
+        <div style="font-family:${SANS};font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:${MUTED};margin-top:3px;white-space:nowrap">New<br>reports</div>
       </td>
       <td valign="bottom" style="border-top:5px solid #963e30;padding:7px 14px 0 0">
         <div style="font-style:italic;font-size:32px;font-weight:bold;color:${INK};line-height:1">${s.significant}</div>
@@ -195,7 +194,7 @@ function blockHtml(block: TimeBlock): string {
 
 function dayHtml(day: DayGroup, showHeader: boolean): string {
   const header = showHeader
-    ? `<div style="border-top:3px double ${PAPERLINE};margin-top:22px;padding-top:12px;font-family:${TIMES};font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:${INK};font-weight:bold">${escapeHtml(day.dayLabel)}</div>`
+    ? `<div style="border-top:3px double ${PAPERLINE};margin-top:22px;padding-top:12px;font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:${INK};font-weight:bold">${escapeHtml(day.dayLabel)}</div>`
     : ''
   return header + day.blocks.map(blockHtml).join('')
 }
@@ -221,7 +220,7 @@ function releasedGroupHtml(g: ReleasedGroup): string {
     ? `<div style="font-size:12.5px;color:${MUTED};font-style:italic;margin:8px 0 12px;line-height:1.5">${escapeHtml(g.note)}</div>`
     : ''
   return `
-    <div style="border-top:3px double ${PAPERLINE};margin-top:22px;padding-top:12px;font-family:${TIMES};font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:${INK};font-weight:bold">${escapeHtml(g.heading.toUpperCase())} <span style="color:${MUTED};font-weight:normal">&#183; NEWLY RELEASED</span></div>
+    <div style="border-top:3px double ${PAPERLINE};margin-top:22px;padding-top:12px;font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:${INK};font-weight:bold">${escapeHtml(g.heading.toUpperCase())} <span style="color:${MUTED};font-weight:normal">&#183; NEWLY RELEASED</span></div>
     ${note}${ROW_TABLE}${g.rows.map(releasedRowHtml).join('')}</table>`
 }
 
@@ -253,7 +252,7 @@ function pulseRowHtml(r: PulseRow): string {
 function pulseSectionHtml(rows: PulseRow[]): string {
   if (rows.length === 0) return ''
   return `
-    <div style="border-top:3px double ${PAPERLINE};margin-top:22px;padding-top:12px;font-family:${TIMES};font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:${INK};font-weight:bold">NEIGHBORHOOD PULSE</div>
+    <div style="border-top:3px double ${PAPERLINE};margin-top:22px;padding-top:12px;font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:${INK};font-weight:bold">NEIGHBORHOOD PULSE</div>
     <div style="font-size:12.5px;color:${MUTED};font-style:italic;margin:8px 0 12px;line-height:1.5">How neighborhoods around this spot compare with their usual pace.</div>
     ${ROW_TABLE}${rows.map(pulseRowHtml).join('')}</table>`
 }
@@ -299,7 +298,7 @@ export function renderDigest(payload: DigestPayload, unsubUrl: string): Rendered
   <div style="max-width:560px;margin:0 auto;padding:24px 24px 28px">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px"><tr>
       <td bgcolor="${INK}" style="padding:20px 24px;border-radius:10px">
-        <div style="font-family:${TIMES};font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:${OCHRE}">DataDiver &#8226; The Last 48</div>
+        <div style="font-family:${SANS};font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:${OCHRE}">DataDiver &#8226; The Last 48</div>
         <div style="font-style:italic;font-size:24px;color:${CREAM};margin-top:6px">${escapeHtml(dateLine)}</div>
         <div style="font-size:13px;color:${PAPERLINE};margin-top:5px">${escapeHtml(introLine)}</div>
       </td>
