@@ -18,6 +18,7 @@ import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { useFireHourlyPattern } from '@/hooks/useHourlyPatternFactory'
 import { useFireComparisonData } from '@/hooks/useComparisonDataFactory'
 import { useAppStore } from '@/stores/appStore'
+import { resolveComparisonStart, comparisonLabel } from '@/utils/comparisonMode'
 import type { FireEMSDispatch, FireDispatchNhStatsRow, FireDispatchCityStatsRow, FireDispatchHistogramRow } from '@/types/datasets'
 import { formatDelta } from '@/utils/time'
 import { formatDuration, formatNumber } from '@/utils/time'
@@ -80,7 +81,7 @@ const SAME_DAY = (
 const VALID_RESPONSE = `${RESPONSE_SECONDS} > 0 AND ${RESPONSE_SECONDS} < 7200`
 
 export default function EmergencyResponse() {
-  const { dateRange, timeOfDayFilter, comparisonPeriod, selectedIncident, setSelectedIncident, selectedNeighborhood, setSelectedNeighborhood } = useAppStore()
+  const { dateRange, timeOfDayFilter, comparisonMode, selectedIncident, setSelectedIncident, selectedNeighborhood, setSelectedNeighborhood } = useAppStore()
   const civicIndicators = useCivicIndicators()
   const [searchParams, setSearchParams] = useSearchParams()
   const [serviceFilter, setServiceFilter] = useState<ServiceFilter>('all')
@@ -541,8 +542,9 @@ export default function EmergencyResponse() {
   const hourlyPattern = useFireHourlyPattern(dateRange, serviceClause || undefined)
 
   // Comparison period data
-  const comparison = useFireComparisonData(dateRange, whereClause, comparisonPeriod, rawData, hitLimit)
-  const compLabel = comparisonPeriod ? `vs ${comparisonPeriod >= 360 ? '1yr' : `${comparisonPeriod}d`} ago` : ''
+  const compStart = useMemo(() => resolveComparisonStart(comparisonMode, dateRange), [comparisonMode, dateRange])
+  const comparison = useFireComparisonData(dateRange, whereClause, compStart, rawData, hitLimit)
+  const compLabel = comparisonLabel(comparisonMode, dateRange)
 
   const chartTiles = useMemo((): ChartTileDef[] => {
     const tiles: ChartTileDef[] = []
@@ -558,7 +560,7 @@ export default function EmergencyResponse() {
       })
     }
 
-    if (comparisonPeriod !== null && comparison.currentTrend.length > 0) {
+    if (comparisonMode !== null && comparison.currentTrend.length > 0) {
       tiles.push({
         id: 'daily-trend',
         label: `Daily Trend ${comparison.isLoading ? '(loading…)' : ''}`,
@@ -590,7 +592,7 @@ export default function EmergencyResponse() {
     }
 
     return tiles
-  }, [histogramData, comparisonPeriod, comparison.currentTrend, comparison.comparisonTrend, comparison.isLoading, isFireMode, fireInsights.batteryTrend])
+  }, [histogramData, comparisonMode, comparison.currentTrend, comparison.comparisonTrend, comparison.isLoading, isFireMode, fireInsights.batteryTrend])
 
   // Selected-neighborhood comparison context — when a neighborhood is
   // selected, derive the data needed to swap stat cards from citywide
@@ -623,7 +625,7 @@ export default function EmergencyResponse() {
       ? `${selectedNhStats.nh.neighborhood} · ${selectedNhStats.avgDeltaPct >= 0 ? '+' : ''}${selectedNhStats.avgDeltaPct.toFixed(0)}% from city`
       : (comparison.deltas
           ? `${formatDelta(comparison.deltas.avg)} ${compLabel}`
-          : (comparison.suppressed && comparisonPeriod ? 'Compare needs a narrower date range' : undefined))
+          : (comparison.suppressed && comparisonMode !== null ? 'Compare needs a narrower date range' : undefined))
     const avgTrend: 'up' | 'down' | 'neutral' | undefined = selectedNhStats
       ? (selectedNhStats.avgDeltaPct > 0 ? 'up' : selectedNhStats.avgDeltaPct < 0 ? 'down' : 'neutral')
       : (comparison.deltas ? (comparison.deltas.avg > 0 ? 'up' : comparison.deltas.avg < 0 ? 'down' : 'neutral') : undefined)
@@ -747,7 +749,7 @@ export default function EmergencyResponse() {
       })
     }
     return cards
-  }, [stats, comparison.deltas, comparison.suppressed, compLabel, comparisonPeriod, trend.cityWideYoY, isFireMode, fireInsights.casualties, fireInsights.priorYearCasualties, selectedNhStats])
+  }, [stats, comparison.deltas, comparison.suppressed, compLabel, comparisonMode, trend.cityWideYoY, isFireMode, fireInsights.casualties, fireInsights.priorYearCasualties, selectedNhStats])
 
   const handleMapReady = useCallback((map: mapboxgl.Map) => {
     setMapInstance(map)

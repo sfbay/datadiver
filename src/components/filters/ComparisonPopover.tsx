@@ -3,36 +3,40 @@
  *  pill bar (above the stat cards) — replaces the wide "vs Off / 30d /
  *  90d / 180d / 1yr" toggle that previously dominated the global header.
  *
- *  Same semantics as the legacy ComparisonToggle: drives Zustand
- *  comparisonPeriod, off = no comparison, the integer values map to
- *  days-ago for the prior-period query.
+ *  NOTE: this is a minimal rename shim onto the date-anchored ComparisonMode
+ *  model (Task 3) — a full rewrite of this component (real preset UI +
+ *  pinned-date picker) lands in Task 4. Don't extend it further here.
  */
 
 import { useState, useEffect, useRef } from 'react'
 import { useAppStore } from '@/stores/appStore'
+import type { ComparisonMode } from '@/utils/comparisonMode'
 
-const OPTIONS = [
+const OPTIONS: Array<{ label: string; value: ComparisonMode }> = [
   { label: 'Off', value: null },
-  { label: '30d', value: 30 },
-  { label: '90d', value: 90 },
-  { label: '180d', value: 180 },
-  { label: '1yr', value: 360 },
-] as const
+  { label: '30d', value: { kind: 'preset', preset: '30d' } },
+  { label: '90d', value: { kind: 'preset', preset: '90d' } },
+  { label: '180d', value: { kind: 'preset', preset: '180d' } },
+  { label: '1yr', value: { kind: 'preset', preset: '1yr' } },
+]
 
-function periodLabel(value: number | null): string | null {
-  switch (value) {
-    case null: return null
-    case 30: return '30d'
-    case 90: return '90d'
-    case 180: return '180d'
-    case 360: return '1yr'
-    default: return null
-  }
+function periodLabel(mode: ComparisonMode): string | null {
+  if (!mode) return null
+  if (mode.kind === 'date') return mode.start
+  return mode.preset
+}
+
+function sameMode(a: ComparisonMode, b: ComparisonMode): boolean {
+  if (a === null || b === null) return a === b
+  if (a.kind !== b.kind) return false
+  if (a.kind === 'preset' && b.kind === 'preset') return a.preset === b.preset
+  if (a.kind === 'date' && b.kind === 'date') return a.start === b.start
+  return false
 }
 
 export default function ComparisonPopover() {
-  const comparisonPeriod = useAppStore((s) => s.comparisonPeriod)
-  const setComparisonPeriod = useAppStore((s) => s.setComparisonPeriod)
+  const comparisonMode = useAppStore((s) => s.comparisonMode)
+  const setComparisonMode = useAppStore((s) => s.setComparisonMode)
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -46,7 +50,7 @@ export default function ComparisonPopover() {
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
 
-  const activeLabel = periodLabel(comparisonPeriod)
+  const activeLabel = periodLabel(comparisonMode)
   const isActive = activeLabel !== null
 
   return (
@@ -79,11 +83,11 @@ export default function ComparisonPopover() {
           shadow-xl shadow-black/40 p-1 space-y-0.5 z-50"
         >
           {OPTIONS.map((opt) => {
-            const selected = comparisonPeriod === opt.value
+            const selected = sameMode(comparisonMode, opt.value)
             return (
               <button
                 key={opt.label}
-                onClick={() => { setComparisonPeriod(opt.value); setOpen(false) }}
+                onClick={() => { setComparisonMode(opt.value); setOpen(false) }}
                 className={`w-full flex items-center justify-between px-2 py-1 rounded text-[10px] font-mono transition-colors ${
                   selected
                     ? 'bg-white/[0.08] text-white'

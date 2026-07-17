@@ -19,6 +19,7 @@ import { use311ComparisonData } from '@/hooks/useComparisonDataFactory'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useAppStore } from '@/stores/appStore'
+import { resolveComparisonStart, comparisonLabel } from '@/utils/comparisonMode'
 import type { Cases311Record, ServiceCategoryAggRow, NeighborhoodAggRow311 } from '@/types/datasets'
 import { diffHours, formatResolution, formatDelta, formatNumber, formatHour } from '@/utils/time'
 import { parseSfLocal } from '@/utils/sfTime'
@@ -64,7 +65,7 @@ const RESOLUTION_HOURS = (
 )
 
 export default function Cases311() {
-  const { dateRange, timeOfDayFilter, comparisonPeriod, selected311Case, setSelected311Case } = useAppStore()
+  const { dateRange, timeOfDayFilter, comparisonMode, selected311Case, setSelected311Case } = useAppStore()
   const civicIndicators = useCivicIndicators()
   const [searchParams, setSearchParams] = useSearchParams()
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('categories')
@@ -270,8 +271,9 @@ export default function Cases311() {
   const hourlyPattern = use311HourlyPattern(dateRange, extraWhere)
 
   // Comparison data
-  const comparison = use311ComparisonData(dateRange, whereClause, comparisonPeriod, rawData, hitLimit)
-  const compLabel = comparisonPeriod ? `vs ${comparisonPeriod >= 360 ? '1yr' : `${comparisonPeriod}d`} ago` : ''
+  const compStart = useMemo(() => resolveComparisonStart(comparisonMode, dateRange), [comparisonMode, dateRange])
+  const comparison = use311ComparisonData(dateRange, whereClause, compStart, rawData, hitLimit)
+  const compLabel = comparisonLabel(comparisonMode, dateRange)
 
   // Neighborhood boundaries for anomaly mode
   const { boundaries: neighborhoodBoundaries } = useNeighborhoodBoundaries()
@@ -379,7 +381,7 @@ export default function Cases311() {
         ),
       })
     }
-    if (comparisonPeriod !== null && comparison.currentTrend.length > 0) {
+    if (comparisonMode !== null && comparison.currentTrend.length > 0) {
       tiles.push({
         id: 'daily-trend',
         label: `Daily Trend${comparison.isLoading ? ' (loading…)' : ''}`,
@@ -398,7 +400,7 @@ export default function Cases311() {
       })
     }
     return tiles
-  }, [histogramData, comparisonPeriod, comparison.currentTrend, comparison.comparisonTrend, comparison.isLoading])
+  }, [histogramData, comparisonMode, comparison.currentTrend, comparison.comparisonTrend, comparison.isLoading])
 
   // Sidebar data
   const categoryEntries = useMemo(
@@ -680,7 +682,7 @@ export default function Cases311() {
       defaultExpanded: true,
       subtitle: comparison.deltas
         ? `${formatDelta(comparison.deltas.total)} ${compLabel}`
-        : (comparison.suppressed && comparisonPeriod ? 'Compare needs a narrower date range' : undefined),
+        : (comparison.suppressed && comparisonMode !== null ? 'Compare needs a narrower date range' : undefined),
       trend: comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined,
       yoyDelta: !comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null,
     },
@@ -716,7 +718,7 @@ export default function Cases311() {
       info: 'peak-hour',
       defaultExpanded: false,
     },
-  ], [stats, comparison.deltas, comparison.suppressed, compLabel, comparisonPeriod, trend.cityWideYoY])
+  ], [stats, comparison.deltas, comparison.suppressed, compLabel, comparisonMode, trend.cityWideYoY])
 
   useProgressScope()
 

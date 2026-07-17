@@ -19,6 +19,7 @@ import { useCrashComparisonData } from '@/hooks/useComparisonDataFactory'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useAppStore } from '@/stores/appStore'
+import { resolveComparisonStart, comparisonLabel } from '@/utils/comparisonMode'
 import type { TrafficCrashRecord, CrashModeAggRow, NeighborhoodAggRowCrashes, SpeedCameraRecord, RedLightCameraRecord, PavementConditionRecord } from '@/types/datasets'
 import { formatDelta, formatNumber, formatHour, formatDate } from '@/utils/time'
 import { parseSfLocal } from '@/utils/sfTime'
@@ -57,7 +58,7 @@ const SELECT_FIELDS = 'unique_id,collision_datetime,collision_severity,type_of_c
 const DUI_CODES = "'23152(a-g)','23153(a-g)'"
 
 export default function TrafficSafety() {
-  const { dateRange, timeOfDayFilter, comparisonPeriod, selectedCrash, setSelectedCrash } = useAppStore()
+  const { dateRange, timeOfDayFilter, comparisonMode, selectedCrash, setSelectedCrash } = useAppStore()
   const civicIndicators = useCivicIndicators()
   const [searchParams, setSearchParams] = useSearchParams()
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('modes')
@@ -308,8 +309,9 @@ export default function TrafficSafety() {
   }, [modeClause, selectedNeighborhood])
 
   const hourlyPattern = useCrashHourlyPattern(dateRange, extraWhere)
-  const comparison = useCrashComparisonData(dateRange, whereClause, comparisonPeriod, rawData, hitLimit)
-  const compLabel = comparisonPeriod ? `vs ${comparisonPeriod >= 360 ? '1yr' : `${comparisonPeriod}d`} ago` : ''
+  const compStart = useMemo(() => resolveComparisonStart(comparisonMode, dateRange), [comparisonMode, dateRange])
+  const comparison = useCrashComparisonData(dateRange, whereClause, compStart, rawData, hitLimit)
+  const compLabel = comparisonLabel(comparisonMode, dateRange)
   const { boundaries: neighborhoodBoundaries } = useNeighborhoodBoundaries()
   useMapCameraPresets(mapInstance, { selectedNeighborhood, neighborhoodBoundaries })
 
@@ -376,7 +378,7 @@ export default function TrafficSafety() {
     compLabel,
     cityWideYoY: trend.cityWideYoY,
     comparisonSuppressed: comparison.suppressed,
-    comparisonPeriod,
+    comparisonActive: comparisonMode !== null,
   })
 
   // Disclose the freshness clamp on the card carrying cityWideYoY ('total') —
@@ -413,7 +415,7 @@ export default function TrafficSafety() {
         render: () => <HorizontalBarChart data={modeBars} width={320} height={120} maxBars={6} />,
       })
     }
-    if (comparisonPeriod !== null && comparison.currentTrend.length > 0) {
+    if (comparisonMode !== null && comparison.currentTrend.length > 0) {
       tiles.push({
         id: 'daily-trend',
         label: `Daily Trend${comparison.isLoading ? ' (loading…)' : ''}`,
@@ -432,7 +434,7 @@ export default function TrafficSafety() {
       })
     }
     return tiles
-  }, [severityData, modeBars, comparisonPeriod, comparison.currentTrend, comparison.comparisonTrend, comparison.isLoading])
+  }, [severityData, modeBars, comparisonMode, comparison.currentTrend, comparison.comparisonTrend, comparison.isLoading])
 
   // Bind all layers (using extracted layer configs from mapLayers.ts)
   useMapLayer(mapInstance, 'crash-heatmap-data', heatmapGeojson, CRASH_HEATMAP_LAYERS)
