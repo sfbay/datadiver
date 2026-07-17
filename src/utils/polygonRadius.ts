@@ -62,7 +62,7 @@ function ringDistanceMiles(lng: number, lat: number, ring: Ring): number {
 
 function outerRings(geometry: BoundaryFeature['geometry']): Ring[] {
   if (geometry.type === 'Polygon') return [(geometry.coordinates as Ring[])[0]]
-  if (geometry.type === 'MultiPolygon') return (geometry.coordinates as Ring[][][]).map((poly) => poly[0])
+  if (geometry.type === 'MultiPolygon') return (geometry.coordinates as Ring[][]).map((poly) => poly[0])
   return []
 }
 
