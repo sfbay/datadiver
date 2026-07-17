@@ -6,6 +6,7 @@
 import type { Summary, TimeBlock, DigestRow, DayGroup, ReleasedGroup, ReleasedRow } from './digestSummary.js'
 import { sfDayKey, sfDayLine } from './digestSummary.js'
 import { ALERT_STREAMS } from './streams.js'
+import type { PulseRow } from './pulseDigest.js'
 
 export interface LocationDigest {
   label: string
@@ -16,6 +17,9 @@ export interface LocationDigest {
   days: DayGroup[]
   /** "Newly released" groups (released-tier streams) — [] when none. */
   released: ReleasedGroup[]
+  /** "Neighborhood pulse" rows — [] when opted out, unavailable, or
+   *  nothing elevated (the section renders nothing in every [] case). */
+  pulse: PulseRow[]
 }
 
 export interface DigestPayload {
@@ -243,6 +247,35 @@ function releasedGroupHtml(g: ReleasedGroup): string {
     ${note}${g.rows.map(releasedRowHtml).join('')}`
 }
 
+/** One pulse row: the ratio anchor in the clock slot, the stream tag in
+ *  the registry pigment, the phrase as the evidence link. Magnitude reads
+ *  as 1–3 chevrons — the glyph carries "how unusual," so the words never
+ *  say "unusually" (the pulsePhrase discipline). */
+function pulseRowHtml(r: PulseRow): string {
+  const m = STREAM_META[r.datasetId] ?? { tag: '', hex: MUTED }
+  const chevrons = '&#9650;'.repeat(r.magnitude)
+  const href = `${PUBLIC_LINK_BASE}${r.href}`
+  const ratio = r.ratioLabel ? escapeHtml(r.ratioLabel) : '&nbsp;'
+  return `<div style="margin:0 0 10px;line-height:1.45">
+    <span style="display:inline-block;width:64px;font-family:${SANS};color:${INK};font-size:12px;font-weight:bold">${ratio}</span>
+    <span style="font-family:${SANS};color:${m.hex};font-size:10px;letter-spacing:.08em">&#9679;&nbsp;${escapeHtml(m.tag)}</span>
+    <a href="${href}" style="color:${INK};text-decoration:none;font-size:16px">&nbsp;<span style="color:${m.hex};font-size:11px">${chevrons}</span> ${escapeHtml(r.subject)} in ${escapeHtml(r.neighborhood)}</a>
+    <span style="color:${MUTED};font-size:13px"> &#183; ${r.count48h} in the last 48h, ${escapeHtml(r.factLine)}</span>
+  </div>`
+}
+
+/** The "Neighborhood pulse" block: how nearby areas are running vs their
+ *  usual pace — busy-only, capped upstream (pulseDigest). Sits between the
+ *  stat header and the day groups: context first, then the incident list
+ *  it frames. Same double-rule head language as the other section heads. */
+function pulseSectionHtml(rows: PulseRow[]): string {
+  if (rows.length === 0) return ''
+  return `
+    <div style="border-top:3px double ${PAPERLINE};margin-top:22px;padding-top:12px;font-family:${TIMES};font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:${INK};font-weight:bold">NEIGHBORHOOD PULSE</div>
+    <div style="font-size:12.5px;color:${MUTED};font-style:italic;margin:8px 0 12px;line-height:1.5">How the neighborhoods around this spot are running, compared with their usual pace over the last two days.</div>
+    ${rows.map(pulseRowHtml).join('')}`
+}
+
 function locationHtml(loc: LocationDigest, showLabel: boolean, nowMs: number): string {
   const mapBlock = loc.mapUrl
     ? `<img src="${escapeHtml(loc.mapUrl)}" width="560" alt="${escapeHtml(loc.mapAlt)}" style="width:100%;max-width:560px;border:1px solid ${PAPERLINE};border-radius:8px;display:block">`
@@ -258,6 +291,7 @@ function locationHtml(loc: LocationDigest, showLabel: boolean, nowMs: number): s
     ${label}
     ${mapBlock}
     ${statHeaderHtml(loc.summary, loc.buckets)}
+    ${pulseSectionHtml(loc.pulse)}
     ${loc.days.map((d) => dayHtml(d, showDayHeaders)).join('')}
     ${loc.released.map(releasedGroupHtml).join('')}`
 }
@@ -334,7 +368,14 @@ function renderText(payload: DigestPayload, dateLine: string, introLine: string,
             .join('\n'),
         )
         .join('\n\n')
-      return `${head}${loc.mapAlt}\n${glance}\n\n${body}${releasedText ? `\n\n${releasedText}` : ''}`
+      const pulseText = loc.pulse.length
+        ? 'NEIGHBORHOOD PULSE\n' +
+          loc.pulse
+            .map((r) => `  ${r.ratioLabel ?? ''}  [${STREAM_META[r.datasetId]?.tag ?? ''}] ${r.subject} in ${r.neighborhood} — ${r.count48h} in the last 48h, ${r.factLine}`)
+            .join('\n') +
+          '\n\n'
+        : ''
+      return `${head}${loc.mapAlt}\n${glance}\n\n${pulseText}${body}${releasedText ? `\n\n${releasedText}` : ''}`
     })
     .join('\n\n')
   return `THE LAST 48 — ${dateLine}\n${introLine}\n\n${blocks}\n\nReports are grouped by the day they occurred; some arrive late as the city releases data.\nUnsubscribe: ${unsubUrl}\n${SENDER_IDENTITY}`

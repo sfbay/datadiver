@@ -87,6 +87,7 @@ export function buildSubscriptionDigest(
       buckets: busiestBuckets(liveIn),
       days: bucketByDay(liveIn, now),
       released: bucketReleased(releasedIn),
+      pulse: [], // threaded from the per-run pulse context in the pipeline task
     })
   }
 
