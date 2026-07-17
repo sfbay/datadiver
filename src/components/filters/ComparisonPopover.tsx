@@ -43,7 +43,8 @@ export default function ComparisonPopover() {
   const isActive = comparisonMode !== null
   const isMultiDay = dateRange.start !== dateRange.end
   const pinnedDate = comparisonMode?.kind === 'date' ? comparisonMode.start : ''
-  const today = new Date().toISOString().split('T')[0]
+  const now = new Date()
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 
   return (
     <div className="relative" ref={ref}>
