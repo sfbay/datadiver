@@ -5,7 +5,10 @@
 // a UTC-digit cutoff (started the window 7–8h late), no upper bound (the
 // baseline contained today's partial day AND the live 48h window itself),
 // and viewer-local day pairing.
-import { sfLocalCutoff } from '@/utils/sfTime'
+// Relative + no alias: this module (and anomalyStats.ts, which imports it)
+// bundles into the Vercel API functions, where '@/' value imports fail at
+// runtime even though the api tsconfig typechecks them.
+import { sfLocalCutoff } from '../utils/sfTime.js'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
