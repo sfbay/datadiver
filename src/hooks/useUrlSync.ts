@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useSearchParams, useLocation } from 'react-router-dom'
 import { useAppStore } from '@/stores/appStore'
+import { parseComparison, serializeComparison } from '@/utils/comparisonMode'
 
 // The Last 48 (/live) ignores the global date range + filters (fixed 48h
 // window), so its URL stays clean — no ?start/?end/&tod/&compare clutter.
@@ -24,7 +25,7 @@ export function useUrlSync() {
   const {
     dateRange, setDateRange,
     timeOfDayFilter, setTimeOfDayFilter,
-    comparisonPeriod, setComparisonPeriod,
+    comparisonMode, setComparisonMode,
   } = useAppStore()
   const initialized = useRef(false)
 
@@ -47,14 +48,10 @@ export function useUrlSync() {
       }
     }
 
-    // Comparison period
-    const compare = searchParams.get('compare')
-    if (compare !== null) {
-      const days = parseInt(compare, 10)
-      if (!isNaN(days) && days > 0) {
-        setComparisonPeriod(days)
-      }
-    }
+    // Comparison mode — accepts presets, pinned dates, and legacy numeric
+    // params (?compare=360 from old shared links → nearest preset).
+    const parsed = parseComparison(searchParams.get('compare'))
+    if (parsed) setComparisonMode(parsed)
 
     initialized.current = true
     // Only run on mount
@@ -91,13 +88,14 @@ export function useUrlSync() {
         next.delete('tod_end')
       }
 
-      if (comparisonPeriod !== null) {
-        next.set('compare', String(comparisonPeriod))
+      const compareParam = serializeComparison(comparisonMode)
+      if (compareParam !== null) {
+        next.set('compare', compareParam)
       } else {
         next.delete('compare')
       }
 
       return next
     }, { replace: true })
-  }, [dateRange.start, dateRange.end, timeOfDayFilter, comparisonPeriod, setSearchParams, dateless, skipSync])
+  }, [dateRange.start, dateRange.end, timeOfDayFilter, comparisonMode, setSearchParams, dateless, skipSync])
 }
