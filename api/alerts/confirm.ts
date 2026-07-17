@@ -4,6 +4,7 @@ import { signToken, verifyToken } from '../../src/lib/alerts/tokens.js'
 import { confirmSubscription, getConfirmedSubscription, markWelcomeSent } from '../_lib/db.js'
 import { fetchStreamEvents } from '../_lib/socrata.js'
 import { buildSubscriptionDigest } from '../_lib/digest.js'
+import { fetchPulseContext } from '../_lib/pulse.js'
 import { nextSentIds } from '../../src/lib/alerts/sentIds.js'
 import { isLiveStream } from '../../src/lib/alerts/streams.js'
 import { sendDigestEmail } from '../_lib/email.js'
@@ -78,9 +79,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         sub.filters.streams.filter(isLiveStream).map((s) => [s, 24 * 3600_000]),
       )
       const fetched = await fetchStreamEvents(sub.filters.streams, now, liveOverrides)
+      const pulseCtx = sub.filters.pulse !== false ? await fetchPulseContext(now) : null
       const result = buildSubscriptionDigest(sub, fetched, now, {
         windowLabel: 'your first edition — the last 24 hours',
         useWatermarks: false,
+        pulseCtx,
       })
       if (result.payload.locations.length > 0) {
         const unsubToken = signToken(

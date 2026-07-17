@@ -16,6 +16,9 @@ import {
 } from '../../src/lib/alerts/digestSummary.js'
 import { mapAltText, type DigestPayload, type LocationDigest } from '../../src/lib/alerts/digestRender.js'
 import type { StreamFetchResult } from './socrata.js'
+import { bucketPulse } from '../../src/lib/alerts/pulseDigest.js'
+import { neighborhoodsWithinRadius } from '../../src/utils/polygonRadius.js'
+import type { PulseContext } from './pulse.js'
 
 export interface SubscriptionDigestResult {
   payload: DigestPayload
@@ -33,7 +36,7 @@ export function buildSubscriptionDigest(
   sub: DueSubscription,
   fetched: Record<string, StreamFetchResult>,
   now: number,
-  opts: { windowLabel: string; useWatermarks: boolean },
+  opts: { windowLabel: string; useWatermarks: boolean; pulseCtx?: PulseContext | null },
 ): SubscriptionDigestResult {
   // Set-dedup defends grandfathered rows stored before validateDraft's dedup.
   const okStreams = [...new Set(sub.filters.streams)].filter((s) => fetched[s]?.ok)
@@ -70,6 +73,18 @@ export function buildSubscriptionDigest(
     const releasedIn = matchedReleased.filter(within)
     if (liveIn.length + releasedIn.length === 0) continue
 
+    // Neighborhood pulse — garnish on an event-driven send. Rows appear only
+    // on locations that already have matched events: a signal alone never
+    // creates a send, so quiet days still send nothing. Absent flag = ON.
+    const pulse =
+      sub.filters.pulse !== false && opts.pulseCtx
+        ? bucketPulse(
+            opts.pulseCtx.anomalies,
+            neighborhoodsWithinRadius(loc.lng, loc.lat, sub.radiusMiles, opts.pulseCtx.boundaries),
+            now,
+          )
+        : []
+
     // Map dots are SIGNIFICANT events only — severe crashes now qualify via
     // the significance crash branch; business openings never do.
     const all = [...liveIn, ...releasedIn]
@@ -87,7 +102,7 @@ export function buildSubscriptionDigest(
       buckets: busiestBuckets(liveIn),
       days: bucketByDay(liveIn, now),
       released: bucketReleased(releasedIn),
-      pulse: [], // threaded from the per-run pulse context in the pipeline task
+      pulse,
     })
   }
 
