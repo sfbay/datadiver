@@ -105,13 +105,21 @@ function barHtml(buckets: number[]): string {
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>${axis}</tr></table>`
 }
 
+/** A spacer cell whose gap CANNOT collapse. The header row's elastic
+ *  width="100%" cell is greedy under table auto-layout, which compresses
+ *  every other column to min-content — and a bare &nbsp; at font-size:0 has
+ *  min-content 0, so plain spacer tds silently vanish and the pigment
+ *  plates fuse into one continuous bar (Jesse's rounds 1/3/5 screenshots).
+ *  An inner div with an explicit width pins the min-content. */
+function gapCell(px: number): string {
+  return `<td width="${px}" style="font-size:0;line-height:0"><div style="width:${px}px;height:1px;font-size:0;line-height:0">&nbsp;</div></td>`
+}
+
 /** The true header: NEW + SIGNIFICANT lead as a pair, a hairline divider,
  *  then one pigment-ruled cell per non-zero stream. With MORE than three
- *  active streams the single row's min-content (~660px of nowrap columns)
- *  exceeds the 560px email column — clients then eat the spacer cells (the
- *  plates fuse into one continuous bar) or overflow horizontally. So four+
- *  streams wrap the plates onto their own row; the Jesse-locked ≤3-stream
- *  single-row layout is untouched. */
+ *  active streams the locked type sizes cannot fit seven legend fields in
+ *  the 560px column, so that form drops one size step (compact branch
+ *  below). */
 function statHeaderHtml(s: Summary, buckets: number[]): string {
   const byStream = s.byStream as Record<string, number>
   const activeIds = Object.keys(STREAM_META).filter((id) => byStream[id])
@@ -123,26 +131,41 @@ function statHeaderHtml(s: Summary, buckets: number[]): string {
         <div style="font-family:${SANS};font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:${m.hex};margin-top:3px;white-space:nowrap">${m.tag}</div>
       </td>`
     })
-    .join('<td width="20" style="font-size:0">&nbsp;</td>')
+    .join(gapCell(20))
   const wrapStreams = activeIds.length > 3
   const caption = s.busiestLabel ? `busiest ${s.busiestLabel}` : ''
-  // Wrapped form (4+ streams): no "Reports" row-head — the first legend
-  // field carries the definition ("NEW REPORTS"), right-aligned with
-  // SIGNIFICANT beside it, plates on their own row beneath (Jesse, round 4).
+  // Compact single-line form (4+ streams): the locked type sizes cannot fit
+  // seven legend fields in the 560px column, so the whole legend drops one
+  // size step (figures 32/20, labels 9px, tighter tracking + gaps) and the
+  // "Reports" row-head folds into the first legend field ("NEW REPORTS") —
+  // Jesse, rounds 4–5. The leading elastic cell right-aligns the row and is
+  // the graceful-degradation valve: it collapses first under width pressure,
+  // so the plates keep their gaps.
   if (wrapStreams) {
+    const compactCells = activeIds
+      .map((id) => {
+        const m = STREAM_META[id]
+        return `<td valign="bottom" style="border-top:5px solid ${m.hex};padding:7px 10px 0 0">
+        <div style="font-style:italic;font-size:20px;font-weight:bold;color:${INK};line-height:1">${byStream[id]}</div>
+        <div style="font-family:${SANS};font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:${m.hex};margin-top:3px;white-space:nowrap">${m.tag}</div>
+      </td>`
+      })
+      .join(gapCell(12))
     return `
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0 0"><tr>
       <td width="100%" style="font-size:0">&nbsp;</td>
-      <td valign="bottom" style="padding-right:22px;text-align:right">
-        <div style="font-style:italic;font-size:36px;font-weight:bold;color:${INK};line-height:1">${s.total}</div>
-        <div style="font-family:${SANS};font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:${MUTED};margin-top:3px;white-space:nowrap">New reports</div>
+      <td valign="bottom" style="padding-right:16px">
+        <div style="font-style:italic;font-size:32px;font-weight:bold;color:${INK};line-height:1">${s.total}</div>
+        <div style="font-family:${SANS};font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:${MUTED};margin-top:3px;white-space:nowrap">New reports</div>
       </td>
-      <td valign="bottom" style="border-top:6px solid #963e30;padding:8px 0 0 0;text-align:right">
-        <div style="font-style:italic;font-size:36px;font-weight:bold;color:${INK};line-height:1">${s.significant}</div>
-        <div style="font-family:${SANS};font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#963e30;margin-top:3px;white-space:nowrap">Significant</div>
+      <td valign="bottom" style="border-top:5px solid #963e30;padding:7px 14px 0 0">
+        <div style="font-style:italic;font-size:32px;font-weight:bold;color:${INK};line-height:1">${s.significant}</div>
+        <div style="font-family:${SANS};font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#963e30;margin-top:3px;white-space:nowrap">Significant</div>
       </td>
+      <td width="1" bgcolor="${PAPERLINE}" style="font-size:0;line-height:0"><div style="width:1px;height:1px;font-size:0;line-height:0">&nbsp;</div></td>
+      ${gapCell(14)}
+      ${compactCells}
     </tr></table>
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:16px 0 0"><tr>${streamCells}</tr></table>
     ${caption ? `<div style="font-family:${SANS};font-size:12px;color:${MUTED};margin-top:6px">${escapeHtml(caption)}</div>` : ''}
     ${barHtml(buckets)}`
   }
@@ -161,8 +184,8 @@ function statHeaderHtml(s: Summary, buckets: number[]): string {
         <div style="font-style:italic;font-size:36px;font-weight:bold;color:${INK};line-height:1">${s.significant}</div>
         <div style="font-family:${SANS};font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#963e30;margin-top:3px;white-space:nowrap">Significant</div>
       </td>
-      <td width="1" bgcolor="${PAPERLINE}" style="font-size:0;line-height:0">&nbsp;</td>
-      <td width="20" style="font-size:0">&nbsp;</td>
+      <td width="1" bgcolor="${PAPERLINE}" style="font-size:0;line-height:0"><div style="width:1px;height:1px;font-size:0;line-height:0">&nbsp;</div></td>
+      ${gapCell(20)}
       ${streamCells}
     </tr></table>
     ${caption ? `<div style="font-family:${SANS};font-size:12px;color:${MUTED};margin-top:6px">${escapeHtml(caption)}</div>` : ''}

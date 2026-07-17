@@ -243,24 +243,25 @@ describe('released section', () => {
     expect(html).toContain('>CRASH</div>')
     expect(html).toContain('>BUSINESS</div>')
   })
-  it('four+ active streams wrap the pigment plates onto their own row', () => {
+  it('four+ active streams render the compact single-line legend', () => {
     const five = {
       '911-realtime': 2, 'fire-ems-dispatch': 2, '311-cases': 3,
       'traffic-crashes': 2, 'business-openings': 2,
     }
     const { html } = renderDigest(releasedPayload(releasedFixture, five), 'https://u')
-    // The hairline divider cell exists only in the single-row form; its
-    // absence + all five tags present = the wrapped layout rendered.
-    expect(html).not.toContain('<td width="1"')
     for (const tag of ['911', 'FIRE/EMS', '311', 'CRASH', 'BUSINESS'])
       expect(html).toContain(`>${tag}</div>`)
-    // Wrapped form drops the "Reports" row-head; the first legend field
-    // carries the definition instead.
+    // Compact form drops the "Reports" row-head (the first legend field
+    // carries the definition) and steps the type down one size.
     expect(html).toContain('>New reports</div>')
     expect(html).not.toContain('>Reports</div>')
+    expect(html).toContain('font-size:32px')
+    expect(html).not.toContain('font-size:36px')
   })
-  it('three or fewer streams keep the locked single-row header', () => {
+  it('three or fewer streams keep the locked full-size header', () => {
     const { html } = renderDigest(releasedPayload(releasedFixture, byStream), 'https://u')
-    expect(html).toContain('<td width="1"')
+    expect(html).toContain('>Reports</div>')
+    expect(html).toContain('>New</div>')
+    expect(html).toContain('font-size:36px')
   })
 })
