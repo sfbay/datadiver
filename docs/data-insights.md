@@ -183,6 +183,44 @@ Nov 2025 (Proposition 50) reports **100 precinct rows for a ~500-precinct city**
 
 ---
 
+## 911 Realtime & Fire/EMS (live dispatch feeds)
+
+### 911 Realtime Is a Rolling Window — It Cannot Back a Baseline
+
+**Dataset:** `gnap-fj3t` — Law Enforcement Dispatched Calls for Service: Real-Time
+**Key fields:** `received_datetime`, `analysis_neighborhood`
+
+**Finding (July 16, 2026, probed live during the digest-pulse build):** the feed LOOKS
+historical — `MIN(received_datetime)` reaches back ~100 days — but it retains only the recent
+window plus stragglers. Counting rows older than 48 hours returned **19 rows total**, max 2 per
+neighborhood across an entire 84-day span. Any per-neighborhood "usual pace" computed from it is
+fabricated from those stragglers: the history arrays are so sparse that either nothing clears a
+minimum-sample guard (silent emptiness) or, worse, a neighborhood scrapes past the guard and
+produces a wildly inflated z-score with a tiny fake σ. A sample-size guard is not an honesty
+gate — the retention structure is the problem.
+
+**Consequences found:** the digest email's Neighborhood pulse **excludes 911 explicitly**
+(`PULSE_SIGNAL_STREAMS` in `src/lib/alerts/pulseDigest.ts`, PR #119, enforced at both the fetch
+and the row shaper); and the SITE's per-neighborhood 911 volume anomalies (`useAnomalyBaseline`
+over the same feed) have always been structurally empty — the Pulse wire has never produced a
+911 volume card and the Last 48 anomaly combine runs on k≤2 streams in practice. A future fix
+would back 911 baselines with the historical closed-calls dataset, which needs comparability
+probing first (closed-only calls may be a biased subset of the realtime feed).
+
+### Fire/EMS Encodes Missing Neighborhoods as the String 'None'
+
+**Dataset:** `nuek-vuh3` — key field `neighborhoods_analysis_boundaries`.
+
+`IS NOT NULL` does not filter missing neighborhoods here: 13K+ rows carry the literal string
+`'None'`, which then rides any GROUP BY as a 42nd "neighborhood" alongside the 41 Analysis
+Neighborhoods. Filter `AND neighborhoods_analysis_boundaries != 'None'`. (311's
+`analysis_neighborhood` uses real SQL NULLs — no sentinel.) Related vocabulary trap: 311's
+`neighborhoods_sffind_boundaries` is a DIFFERENT, finer vocabulary (~117 names, with historical
+ALL-CAPS/Title-Case duplicates) that cannot join the 41-name `nhood` polygon geometry — group on
+`analysis_neighborhood` when the result must meet a map.
+
+---
+
 ## General Patterns
 
 ### Floating SF-Local Timestamps (all DataSF datasets)
