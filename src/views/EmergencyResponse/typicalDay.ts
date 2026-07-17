@@ -17,6 +17,10 @@ export function meanDailyCount(rows: DailyCountRow[]): number | null {
   const counts = rows
     .map((r) => parseInt(r.count, 10))
     .filter((n) => Number.isFinite(n) && n >= 0)
+  // Mean is over OBSERVED days only — a day with zero rows doesn't appear in
+  // the GROUP BY result at all, so it's silently excluded rather than
+  // counted as 0. Fine for Fire/EMS (never a true zero day citywide); revisit
+  // before reusing this on a sparser dataset where zero days are real.
   if (counts.length < 14) return null
   return counts.reduce((a, b) => a + b, 0) / counts.length
 }

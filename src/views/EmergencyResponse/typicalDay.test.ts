@@ -24,7 +24,7 @@ describe('typicalDayLine', () => {
     expect(typicalDayLine(1234.6)).toBe('typical day ≈ 1,235 calls')
   })
   it('never uses statistical jargon', () => {
-    const BANNED = ['σ', 'sigma', 'z-score', 'standard deviation', 'baseline', 'yoy', 'percentile', 'anomaly']
+    const BANNED = ['σ', 'sigma', 'z-score', 'standard deviation', 'baseline', 'yoy', 'percentile', 'anomaly', 'periodic']
     const line = typicalDayLine(812).toLowerCase()
     for (const term of BANNED) expect(line).not.toContain(term)
   })

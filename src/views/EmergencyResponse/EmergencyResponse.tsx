@@ -101,23 +101,25 @@ export default function EmergencyResponse() {
     return ''
   }, [serviceFilter])
 
+  const todClause = useMemo(() => {
+    if (!timeOfDayFilter) return ''
+    const { startHour, endHour } = timeOfDayFilter
+    if (startHour <= endHour) {
+      return `date_extract_hh(received_dttm) >= ${startHour} AND date_extract_hh(received_dttm) <= ${endHour}`
+    }
+    // Wrap-around (e.g., 22-6)
+    return `(date_extract_hh(received_dttm) >= ${startHour} OR date_extract_hh(received_dttm) <= ${endHour})`
+  }, [timeOfDayFilter])
+
   const whereClause = useMemo(() => {
     const conditions: string[] = []
     conditions.push(`received_dttm >= '${dateRange.start}T00:00:00'`)
     conditions.push(`received_dttm <= '${dateRange.end}T23:59:59'`)
     conditions.push(`on_scene_dttm IS NOT NULL`)
     if (serviceClause) conditions.push(serviceClause)
-    if (timeOfDayFilter) {
-      const { startHour, endHour } = timeOfDayFilter
-      if (startHour <= endHour) {
-        conditions.push(`date_extract_hh(received_dttm) >= ${startHour} AND date_extract_hh(received_dttm) <= ${endHour}`)
-      } else {
-        // Wrap-around (e.g., 22-6)
-        conditions.push(`(date_extract_hh(received_dttm) >= ${startHour} OR date_extract_hh(received_dttm) <= ${endHour})`)
-      }
-    }
+    if (todClause) conditions.push(todClause)
     return conditions.join(' AND ')
-  }, [dateRange, serviceClause, timeOfDayFilter])
+  }, [dateRange, serviceClause, todClause])
 
   const freshness = useDataFreshness('fireEMSDispatch', 'received_dttm', dateRange)
 
@@ -528,7 +530,11 @@ export default function EmergencyResponse() {
   const compStart = useMemo(() => resolveComparisonStart(comparisonMode, dateRange), [comparisonMode, dateRange])
   const comparison = useFireComparisonData(dateRange, whereClause, compStart, rawData, hitLimit)
   const compLabel = comparisonLabel(comparisonMode, dateRange)
-  const typicalDay = useTypicalDay(shouldShowTypicalDay(dateRange), serviceClause, dateRange.end)
+  const typicalDay = useTypicalDay(
+    shouldShowTypicalDay(dateRange),
+    [serviceClause, todClause].filter(Boolean).join(' AND '),
+    dateRange.end
+  )
 
   const chartTiles = useMemo((): ChartTileDef[] => {
     const tiles: ChartTileDef[] = []

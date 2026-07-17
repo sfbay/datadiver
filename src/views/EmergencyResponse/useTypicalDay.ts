@@ -3,6 +3,10 @@
  *  stat cards' validity filter so the counts are apples-to-apples. The fetch
  *  itself is gated on `enabled` (range ≤ 7 days) — don't pay for a query the
  *  view won't render. Any failure → line: null (garnish, never the meal).
+ *  `extraClause` threads BOTH the service filter and the time-of-day filter
+ *  from the caller so the typical figure matches what the Incidents card
+ *  actually counts — a time-of-day-sliced count compared against an
+ *  all-hours typical figure would be apples-to-oranges.
  */
 import { useEffect, useState } from 'react'
 import { fetchDataset } from '@/api/client'
@@ -12,7 +16,7 @@ import { meanDailyCount, typicalDayLine, type DailyCountRow } from './typicalDay
 
 export function useTypicalDay(
   enabled: boolean,
-  serviceClause: string,
+  extraClause: string,
   rangeEnd: string
 ): { line: string | null } {
   const [line, setLine] = useState<string | null>(null)
@@ -29,7 +33,7 @@ export function useTypicalDay(
       'on_scene_dttm IS NOT NULL',
       SAME_DAY,
       VALID_RESPONSE,
-      ...(serviceClause ? [serviceClause] : []),
+      ...(extraClause ? [extraClause] : []),
     ].join(' AND ')
 
     fetchDataset<DailyCountRow>('fireEMSDispatch', {
@@ -47,7 +51,7 @@ export function useTypicalDay(
         if (!cancelled) setLine(null)
       })
     return () => { cancelled = true }
-  }, [enabled, serviceClause, rangeEnd])
+  }, [enabled, extraClause, rangeEnd])
 
   return { line }
 }
