@@ -281,7 +281,7 @@ describe('neighborhood pulse section', () => {
   ]
   const anomalies: AnomalyResult[] = [
     { neighborhood: 'Mission', datasetId: '311-cases', count48h: 186, baselineMean: 90, baselineSd: 30, zScore: 3.2 },
-    { neighborhood: 'Mission', datasetId: '911-realtime', count48h: 41, baselineMean: 30, baselineSd: 5.5, zScore: 2.0 },
+    { neighborhood: 'Mission', datasetId: 'fire-ems-dispatch', count48h: 41, baselineMean: 30, baselineSd: 5.5, zScore: 2.0 },
   ]
   const rows = bucketPulse(anomalies, ['Mission'], NOW)
 

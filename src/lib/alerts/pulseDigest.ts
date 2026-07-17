@@ -13,6 +13,15 @@ import type { AnomalyResult } from '../../types/last48.js'
 import type { AlertStreamId } from './streams.js'
 import { anomalyToWireItem, rankWire, type WireItem } from '../pulse/pulsePhrase.js'
 
+/** Streams that can carry a pulse SIGNAL — enforced HERE as well as at the
+ *  server fetch, so no caller can render a signal for a stream whose data
+ *  cannot back a baseline. 911-realtime is deliberately absent: gnap-fj3t
+ *  is a rolling recent-window feed (probed live 2026-07-16 — 19 rows older
+ *  than 48h across the whole 84-day baseline window), so a 911 "baseline"
+ *  would be fabricated from stragglers. api/_lib/pulse.ts imports this
+ *  list for its fetch loop — one source of truth. */
+export const PULSE_SIGNAL_STREAMS = ['fire-ems-dispatch', '311-cases'] as const
+
 export const PULSE_MAX_ROWS = 4
 
 export interface PulseRow {
@@ -50,7 +59,9 @@ export function bucketPulse(
   const byWireId = new Map<string, AnomalyResult>()
   const items: WireItem[] = []
   for (const a of anomalies) {
-    if (a.datasetId === 'combined' || !inArea.has(a.neighborhood)) continue
+    // The allow-list subsumes the old 'combined' guard.
+    if (!(PULSE_SIGNAL_STREAMS as readonly string[]).includes(a.datasetId)) continue
+    if (!inArea.has(a.neighborhood)) continue
     const item = anomalyToWireItem(a, { freshnessOk: false, computedAt: nowMs })
     if (!item || item.signalType !== 'rise') continue
     byWireId.set(item.id, a)

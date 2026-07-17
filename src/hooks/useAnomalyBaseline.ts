@@ -16,7 +16,7 @@
 
 import { useEffect, useState } from 'react'
 import { fetchDataset } from '@/api/client'
-import { baselineWindow, sfDayIndex } from './anomalyBaselineWindow'
+import { baselineWindow } from './anomalyBaselineWindow'
 import { bucketDailyCounts, computeAnomalies, type BaselineRow } from '@/lib/pulse/anomalyStats'
 import type {
   AnomalyResult,

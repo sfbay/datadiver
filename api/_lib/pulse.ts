@@ -7,8 +7,8 @@
 //
 // ALL-OR-NOTHING: any failure — a baseline query, a current-count query,
 // the boundaries asset — returns null and every digest sends WITHOUT the
-// section. Pulse is garnish, never the meal, and a partial read (two
-// streams of three) would claim a neighborhood picture we don't have.
+// section. Pulse is garnish, never the meal, and a partial read (one
+// stream of two) would claim a neighborhood picture we don't have.
 //
 // VOCABULARY: the 41 Analysis Neighborhoods for every signal stream —
 // including 311, which the CLIENT hook baselines on the finer
@@ -22,21 +22,13 @@ import { baselineWindow } from '../../src/hooks/anomalyBaselineWindow.js'
 import { bucketDailyCounts, computeAnomalies, type BaselineRow } from '../../src/lib/pulse/anomalyStats.js'
 import { sfLocalCutoff } from '../../src/utils/sfTime.js'
 import type { BoundaryCollection } from '../../src/utils/polygonRadius.js'
+// Shared allow-list — bucketPulse enforces the same exclusion downstream.
+import { PULSE_SIGNAL_STREAMS } from '../../src/lib/alerts/pulseDigest.js'
 
 export interface PulseContext {
   anomalies: AnomalyResult[]
   boundaries: BoundaryCollection
 }
-
-/** Streams that can carry a pulse SIGNAL. 911-realtime is deliberately
- *  EXCLUDED: gnap-fj3t is a rolling recent-window feed (probed live
- *  2026-07-16 — 19 rows total older than 48h, max 2 per neighborhood
- *  across the whole 84-day baseline window), so a 911 "baseline" would be
- *  fabricated from stragglers, and any neighborhood clearing the
- *  ≥5-window guard would email a wildly inflated z. Fire/EMS + 311 retain
- *  full history. (The client hook shares the limitation — 911 volume
- *  anomalies are structurally empty site-wide; see the PR E spec.) */
-const PULSE_SIGNAL_STREAMS: DatasetId[] = ['fire-ems-dispatch', '311-cases']
 
 /** GROUP BY column per signal stream — the 41-name vocabulary everywhere
  *  (see module note; NOT the registry's normalizer fields, which for 311

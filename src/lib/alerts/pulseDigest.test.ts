@@ -40,6 +40,9 @@ describe('bucketPulse', () => {
   it('skips combined-score rows', () => {
     expect(bucketPulse([anomaly({ datasetId: 'combined' as AnomalyResult['datasetId'] })], ['Mission'], NOW)).toEqual([])
   })
+  it('refuses non-signal streams: a 911 anomaly renders nothing', () => {
+    expect(bucketPulse([anomaly({ datasetId: '911-realtime', zScore: 3.0 })], ['Mission'], NOW)).toEqual([])
+  })
   it(`ranks by deviation and caps at ${PULSE_MAX_ROWS}`, () => {
     const many = [1.6, 1.7, 1.8, 2.4, 3.0, 2.0].map((z, i) =>
       anomaly({ zScore: z, neighborhood: `NH${i}`, count48h: 100 + i }),
