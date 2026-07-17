@@ -191,7 +191,7 @@ export const ALERT_STREAMS: Record<AlertStreamId, AlertStreamConfig> = {
     tag: 'BUSINESS',
     hex: '#5c9693',
     releasedNote:
-      'Newly registered business locations near you, from the city registry — refreshed nightly.',
+      'Newly registered business locations near you, from city data — refreshed nightly.',
     // Geo-tagged, currently-open, inside the SF box (the registry includes
     // out-of-town locations of SF-registered businesses).
     extraWhere:

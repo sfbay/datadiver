@@ -113,12 +113,12 @@ function statHeaderHtml(s: Summary, buckets: number[]): string {
     .filter((id) => byStream[id])
     .map((id) => {
       const m = STREAM_META[id]
-      return `<td valign="bottom" style="border-top:6px solid ${m.hex};padding:8px 18px 0 0">
+      return `<td valign="bottom" style="border-top:6px solid ${m.hex};padding:8px 12px 0 0">
         <div style="font-style:italic;font-size:22px;font-weight:bold;color:${INK};line-height:1">${byStream[id]}</div>
         <div style="font-family:${SANS};font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:${m.hex};margin-top:3px;white-space:nowrap">${m.tag}</div>
       </td>`
     })
-    .join('<td width="14" style="font-size:0">&nbsp;</td>')
+    .join('<td width="20" style="font-size:0">&nbsp;</td>')
   const caption = s.busiestLabel ? `busiest ${s.busiestLabel}` : ''
   return `
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0 0"><tr>
@@ -190,7 +190,7 @@ function releasedGroupHtml(g: ReleasedGroup): string {
     ? `<div style="font-size:12.5px;color:${MUTED};font-style:italic;margin:8px 0 12px;line-height:1.5">${escapeHtml(g.note)}</div>`
     : ''
   return `
-    <div style="border-top:3px double ${PAPERLINE};margin-top:22px;padding-top:12px;font-family:${TIMES};font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:${INK};font-weight:bold">NEWLY RELEASED &#183; ${escapeHtml(g.heading.toUpperCase())}</div>
+    <div style="border-top:3px double ${PAPERLINE};margin-top:22px;padding-top:12px;font-family:${TIMES};font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:${INK};font-weight:bold">${escapeHtml(g.heading.toUpperCase())} <span style="color:${MUTED};font-weight:normal">&#183; NEWLY RELEASED</span></div>
     ${note}${g.rows.map(releasedRowHtml).join('')}`
 }
 
@@ -279,7 +279,7 @@ function renderText(payload: DigestPayload, dateLine: string, introLine: string,
         .join('\n')
       const releasedText = loc.released
         .map((g) =>
-          `NEWLY RELEASED · ${g.heading.toUpperCase()}\n${g.note}\n` +
+          `${g.heading.toUpperCase()} · NEWLY RELEASED\n${g.note}\n` +
           g.rows
             .map((r) => `  ${r.dateLabel}  [${STREAM_META[r.datasetId]?.tag ?? ''}] ${r.what}${r.location ? ` · ${r.location}` : ''}`)
             .join('\n'),

@@ -211,7 +211,7 @@ const releasedFixture: ReleasedGroup[] = [
   {
     streamId: 'business-openings',
     heading: 'business openings',
-    note: 'Newly registered business locations near you, from the city registry — refreshed nightly.',
+    note: 'Newly registered business locations near you, from city data — refreshed nightly.',
     rows: [
       { id: 'business-openings:2', dateLabel: 'Jul 13', datasetId: 'business-openings',
         what: 'New business — Blue Ramen (food services)', location: '455 Valencia St',
@@ -224,13 +224,13 @@ describe('released section', () => {
   const byStream = { 'traffic-crashes': 1, 'business-openings': 1 }
   it('renders a Times-rule head, the framing note, and date-labeled rows in stream pigment', () => {
     const { html, text } = renderDigest(releasedPayload(releasedFixture, byStream), 'https://u')
-    expect(html).toContain('NEWLY RELEASED &#183; CRASH REPORTS')
+    expect(html).toMatch(/CRASH REPORTS <span[^>]*>&#183; NEWLY RELEASED<\/span>/)
     expect(html).toContain('appeared in the latest release')
     expect(html).toContain('May 14')
     expect(html).toContain('#963e30') // crash tag pigment
     expect(html).toContain('#5c9693') // business tag pigment
     expect(html).toContain('Vehicle-pedestrian crash')
-    expect(text).toContain('NEWLY RELEASED · CRASH REPORTS')
+    expect(text).toContain('CRASH REPORTS · NEWLY RELEASED')
     expect(text).toContain('[BUSINESS] New business — Blue Ramen')
   })
   it('reader-facing output never says "periodic"', () => {
