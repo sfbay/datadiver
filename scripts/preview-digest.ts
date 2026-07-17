@@ -60,10 +60,14 @@ const pulseAnomalies: AnomalyResult[] = [
 const pulse = bucketPulse(pulseAnomalies, ['Mission', 'Castro/Upper Market', 'Noe Valley'], now)
 
 const isWelcome = process.argv.includes('--welcome')
+// --live-only: render a ≤3-active-stream edition (911/Fire/311, no released
+// section) — the shape most real digests take, and the case the stat legend's
+// low-count rendering is judged on in design gates.
+const isLiveOnly = process.argv.includes('--live-only')
 const center = { lat: 37.7645, lng: -122.429 }
 const radiusMiles = 0.25
 const token = (process.env.VITE_MAPBOX_TOKEN ?? '').replace(/"/g, '') // .env.local double-quotes it
-const all = [...liveEvents, ...releasedEvents]
+const all = isLiveOnly ? [...liveEvents] : [...liveEvents, ...releasedEvents]
 const summary = summarize(all)
 const dots = all
   .filter((e) => classifySignificant(e) && e.latitude != null && e.longitude != null)
@@ -79,7 +83,7 @@ const payload = {
     summary,
     buckets: busiestBuckets(liveEvents),
     days: bucketByDay(liveEvents, now),
-    released: bucketReleased(releasedEvents),
+    released: isLiveOnly ? [] : bucketReleased(releasedEvents),
     pulse,
   }],
 }

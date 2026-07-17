@@ -97,7 +97,7 @@ describe('renderDigest', () => {
     expect(html).toContain('The Last 48')
     expect(html).toContain(sfDayLine(NOW))
     expect(html).not.toContain('AT A GLANCE')
-    expect(html).toContain('>New</div>') // true stat header lead label
+    expect(html).toContain('>New<br>reports</div>') // true stat header lead label
     expect(html).toContain('>Significant</div>') // significant elevated to the top line
   })
 
@@ -248,7 +248,7 @@ describe('released section', () => {
     expect(html).toContain('>CRASH</div>')
     expect(html).toContain('>BUSINESS</div>')
   })
-  it('four+ active streams render the compact single-line legend', () => {
+  it('five active streams render the compact single-line legend', () => {
     const five = {
       '911-realtime': 2, 'fire-ems-dispatch': 2, '311-cases': 3,
       'traffic-crashes': 2, 'business-openings': 2,
@@ -256,18 +256,17 @@ describe('released section', () => {
     const { html } = renderDigest(releasedPayload(releasedFixture, five), 'https://u')
     for (const tag of ['911', 'FIRE/EMS', '311', 'CRASH', 'BUSINESS'])
       expect(html).toContain(`>${tag}</div>`)
-    // Compact form drops the "Reports" row-head (the first legend field
-    // carries the definition) and steps the type down one size.
-    expect(html).toContain('>New reports</div>')
+    expect(html).toContain('>New<br>reports</div>')
+    expect(html).toContain('font-size:32px')
+  })
+  it('the compact legend is the ONLY header form — no "Reports" row-head at any stream count', () => {
+    // July 17 2026: the full-size two-tier header was retired; a low
+    // stream count must render the same compact legend, not resurrect it.
+    const { html } = renderDigest(releasedPayload(releasedFixture, byStream), 'https://u')
+    expect(html).toContain('>New<br>reports</div>')
     expect(html).not.toContain('>Reports</div>')
     expect(html).toContain('font-size:32px')
     expect(html).not.toContain('font-size:36px')
-  })
-  it('three or fewer streams keep the locked full-size header', () => {
-    const { html } = renderDigest(releasedPayload(releasedFixture, byStream), 'https://u')
-    expect(html).toContain('>Reports</div>')
-    expect(html).toContain('>New</div>')
-    expect(html).toContain('font-size:36px')
   })
 })
 
