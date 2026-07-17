@@ -9,7 +9,7 @@ import type { DueSubscription } from '../../src/lib/alerts/types'
 import { eventMatchesSubscription, releasedEventMatches, haversineMiles } from '../../src/lib/alerts/match.js'
 import { classifySignificant } from '../../src/lib/alerts/significance.js'
 import { watermarkFor } from '../../src/lib/alerts/watermarks.js'
-import { unseenEvents } from '../../src/lib/alerts/sentIds.js'
+import { unseenEvents, capReleasedPerStream } from '../../src/lib/alerts/sentIds.js'
 import { buildStaticMapUrl } from '../../src/lib/alerts/staticMap.js'
 import {
   summarize, busiestBuckets, bucketByDay, bucketReleased, radiusLabelText,
@@ -46,9 +46,15 @@ export function buildSubscriptionDigest(
   const matchedLive = liveEvents.filter((e) =>
     eventMatchesSubscription(e, sub, opts.useWatermarks ? watermarkFor(sub, e.datasetId) : 0),
   )
-  const matchedReleased = unseenEvents(
-    sub.sentEventIds,
-    releasedEvents.filter((e) => releasedEventMatches(e, sub)),
+  // Cap AFTER the unseen filter and BEFORE anything renders or records:
+  // sent-ids remember only what we actually send, so a dense corridor's
+  // 90–120d catch-up drips ~25/stream per edition instead of flooding the
+  // welcome email.
+  const matchedReleased = capReleasedPerStream(
+    unseenEvents(
+      sub.sentEventIds,
+      releasedEvents.filter((e) => releasedEventMatches(e, sub)),
+    ),
   )
 
   const token = process.env.MAPBOX_STATIC_TOKEN || ''

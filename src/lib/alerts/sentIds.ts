@@ -23,6 +23,28 @@ export function unseenEvents<E extends { id: string; datasetId: string }>(
   return events.filter((e) => !(e.id in (sent[e.datasetId] ?? {})))
 }
 
+export const RELEASED_CAP_PER_STREAM = 25
+
+/** Newest N released events per stream. The welcome edition's catch-up can
+ *  pull a dense corridor's whole 90–120d registry window into one first
+ *  email; capping keeps it sane, and because sent-ids record only what we
+ *  SEND, the overflow stays unseen and drips into subsequent digests. */
+export function capReleasedPerStream<E extends { datasetId: string; receivedAt: number }>(
+  events: E[],
+  cap: number = RELEASED_CAP_PER_STREAM,
+): E[] {
+  const byStream = new Map<string, E[]>()
+  for (const e of events) {
+    const arr = byStream.get(e.datasetId)
+    if (arr) arr.push(e)
+    else byStream.set(e.datasetId, [e])
+  }
+  const out: E[] = []
+  for (const arr of byStream.values())
+    out.push(...arr.sort((a, b) => b.receivedAt - a.receivedAt).slice(0, cap))
+  return out
+}
+
 /** The FULL map to persist after a send: prior ids merged with the newly
  *  matched released events, pruned to each stream's fetch window + grace
  *  (an id outside the window can never be fetched again, so remembering it

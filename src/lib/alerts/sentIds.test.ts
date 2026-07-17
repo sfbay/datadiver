@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { unseenEvents, nextSentIds, MAX_IDS_PER_STREAM, type SentIdMap } from './sentIds.js'
+import { unseenEvents, nextSentIds, capReleasedPerStream, MAX_IDS_PER_STREAM, type SentIdMap } from './sentIds.js'
 import type { AlertEvent } from './streams.js'
 
 const DAY = 24 * 3600_000
@@ -16,6 +16,24 @@ describe('unseenEvents', () => {
   })
   it('empty memory passes everything (new subscription)', () => {
     expect(unseenEvents({}, [crash('a', 1)])).toHaveLength(1)
+  })
+})
+
+describe('capReleasedPerStream', () => {
+  it('keeps the newest N per stream, other streams unaffected', () => {
+    const events = [
+      ...Array.from({ length: 30 }, (_, i) => crash(`c${i}`, i)),
+      { id: 'business-openings:b1', datasetId: 'business-openings', timestamp: '', receivedAt: now - DAY, raw: {} } as AlertEvent,
+    ]
+    const capped = capReleasedPerStream(events, 25)
+    const crashes = capped.filter((e) => e.datasetId === 'traffic-crashes')
+    expect(crashes).toHaveLength(25)
+    // newest survive: ages 0..24 kept, 25..29 dropped
+    expect(Math.max(...crashes.map((e) => now - e.receivedAt))).toBe(24 * DAY)
+    expect(capped.filter((e) => e.datasetId === 'business-openings')).toHaveLength(1)
+  })
+  it('is a no-op under the cap', () => {
+    expect(capReleasedPerStream([crash('a', 1), crash('b', 2)], 25)).toHaveLength(2)
   })
 })
 
