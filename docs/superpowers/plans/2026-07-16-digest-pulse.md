@@ -847,9 +847,13 @@ async function fetchStreamAnomalies(id: DatasetId, nowMs: number): Promise<Anoma
   const cfg = ALERT_STREAMS[id]
   const nhField = NH_FIELD[id]
   const { since, until } = baselineWindow(nowMs)
+  // Fire/EMS encodes "no neighborhood" as the literal string 'None' (13K+
+  // rows), which survives IS NOT NULL — filter the sentinel in both queries
+  // (a no-op for 311, which uses real SQL NULLs).
+  const nhFilter = `${nhField} IS NOT NULL AND ${nhField} != 'None'`
   const baselineRows = await fetchRows<BaselineRow>(cfg.socrataId, {
     $select: `${nhField} as neighborhood, date_trunc_ymd(${cfg.dateField}) as window_start, COUNT(*) as cnt`,
-    $where: `${cfg.dateField} >= '${since}' AND ${cfg.dateField} < '${until}' AND ${nhField} IS NOT NULL`,
+    $where: `${cfg.dateField} >= '${since}' AND ${cfg.dateField} < '${until}' AND ${nhFilter}`,
     $group: `${nhField}, date_trunc_ymd(${cfg.dateField})`,
     $limit: '50000',
   })
@@ -859,7 +863,7 @@ async function fetchStreamAnomalies(id: DatasetId, nowMs: number): Promise<Anoma
   // regardless of the welcome edition's 24h live override.
   const currentRows = await fetchRows<{ neighborhood?: string; cnt: string }>(cfg.socrataId, {
     $select: `${nhField} as neighborhood, COUNT(*) as cnt`,
-    $where: `${cfg.dateField} >= '${sfLocalCutoff(nowMs - 48 * HOUR)}' AND ${nhField} IS NOT NULL`,
+    $where: `${cfg.dateField} >= '${sfLocalCutoff(nowMs - 48 * HOUR)}' AND ${nhFilter}`,
     $group: nhField,
     $limit: '200',
   })
@@ -874,9 +878,12 @@ async function fetchStreamAnomalies(id: DatasetId, nowMs: number): Promise<Anoma
  *  the digest without the section; never defer a send for pulse. */
 export async function fetchPulseContext(nowMs: number): Promise<PulseContext | null> {
   try {
-    const boundariesP = fetchBoundaries()
-    const perStream = await Promise.all(PULSE_SIGNAL_STREAMS.map((id) => fetchStreamAnomalies(id, nowMs)))
-    const boundaries = await boundariesP
+    // One combined await so a fast stream failure can't leave the
+    // boundaries promise rejecting with no handler attached.
+    const [boundaries, perStream] = await Promise.all([
+      fetchBoundaries(),
+      Promise.all(PULSE_SIGNAL_STREAMS.map((id) => fetchStreamAnomalies(id, nowMs))),
+    ])
     return { anomalies: perStream.flat(), boundaries }
   } catch (err) {
     console.error('[pulse] context fetch failed — digests send without the pulse section', err)

@@ -89,9 +89,10 @@ cron/confirm ─► fetchPulseContext(now)          [only if ≥1 due sub has pu
   been structurally empty (Pulse wire, Last 48 choropleth combine) — a possible future fix is
   backing 911 baselines with the historical closed-calls dataset, which needs its own
   comparability probing first.
-- **Neighborhood fields (server):** 911 `analysis_neighborhood` · Fire/EMS
-  `neighborhoods_analysis_boundaries` · 311 `analysis_neighborhood` (NOT sffind — see ground
-  truth). All queries `AND <field> IS NOT NULL`.
+- **Neighborhood fields (server):** Fire/EMS `neighborhoods_analysis_boundaries` · 311
+  `analysis_neighborhood` (NOT sffind — see ground truth). All queries filter
+  `<field> IS NOT NULL AND <field> != 'None'` (Fire/EMS encodes missing neighborhoods as the
+  literal string `'None'`, which survives `IS NOT NULL`).
 - **Busy-only mechanics:** call `anomalyToWireItem(a, { freshnessOk: false, computedAt: now })` —
   with `freshnessOk: false` the function structurally suppresses every quiet item (quiet requires
   |z| ≥ 2 AND freshness); belt-and-suspenders filter `signalType === 'rise'` in `bucketPulse`.
