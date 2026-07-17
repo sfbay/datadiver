@@ -38,6 +38,10 @@ export function validateDraft(b: unknown): SubscriptionDraft | string {
   const categories = [...new Set(Array.isArray(f.categories) ? (f.categories as unknown[]) : [])]
   if (!categories.every((c) => SIGNIFICANCE_KEYS.includes(c as string))) return 'invalid category'
 
+  // Default ON: an absent flag (old clients, hand-rolled curl) opts in;
+  // only an explicit false opts out (Jesse, 2026-07-16).
+  const pulse = typeof f.pulse === 'boolean' ? f.pulse : true
+
   const radiusMiles = Number(o.radiusMiles)
   if (!ALERT_RADII.includes(radiusMiles)) return 'invalid radius'
 
@@ -60,7 +64,7 @@ export function validateDraft(b: unknown): SubscriptionDraft | string {
     email,
     name,
     cadence: 'daily',
-    filters: { streams: streams as AlertStreamId[], categories: categories as string[] },
+    filters: { streams: streams as AlertStreamId[], categories: categories as string[], pulse },
     radiusMiles,
     locations,
   }
