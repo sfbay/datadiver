@@ -8,22 +8,24 @@
 //   │ pull-quote margin note (future home of Dana art)              │
 //   └───────────────────────────────────────────────────────────────┘
 //   ┌─ ① WHERE TO WATCH — full-width map station ──────────────────┐
-//   │ step pill + bridge copy · address search · radius pills      │
+//   │ step pill + headline · explainer rides right · search +      │
+//   │ radius aligned under the headline                             │
 //   │ hero-scale Mapbox (click to pin, circles render live)        │
 //   │ footer: dropped-pin chips with remove                         │
 //   └───────────────────────────────────────────────────────────────┘
-//   ┌─ ENTRY (left) ────────────┐  ┌─ SAMPLE (right) ──────────────┐
-//   │ ② What to watch for       │  │ LIVE PREVIEW                  │
-//   │   sub-layers: only these  │  │ real recent matched events —  │
-//   │   kinds · released ·      │  │ reacts as chips toggle        │
-//   │   neighborhood pulse      │  │                               │
-//   │ ③ Where to send           │  │                               │
-//   │ [ Subscribe ▸ notch ]     │  │                               │
-//   └───────────────────────────┘  └───────────────────────────────┘
+//   ┌─ ② WHAT TO WATCH FOR — full-width, two panes ────────────────┐
+//   │ streams + sub-layers (only   │ LIVE PREVIEW pane — real      │
+//   │ these kinds · released ·     │ matched events, reacts as     │
+//   │ neighborhood pulse)          │ chips toggle                  │
+//   └───────────────────────────────────────────────────────────────┘
+//   ┌─ ③ WHERE TO SEND — full-width closer ────────────────────────┐
+//   │ email slip (50%) + Subscribe · fine print · error rail       │
+//   └───────────────────────────────────────────────────────────────┘
 //   ┌─ COLOPHON ────────────────────────────────────────────────────┐
 //
 // On narrow viewports everything stacks in reading order:
-// hero → map → entry → sample → colophon. The funnel is deliberate —
+// hero → map → streams (preview below) → email → colophon. The funnel
+// is deliberate —
 // pinning the map is play (zero commitment), streams/categories are
 // configuration, email is commitment, and by then the preview has
 // already shown the reader what they'll get.
@@ -237,22 +239,23 @@ export default function AlertsView() {
 
           {/* Header: chapter mark + bridge copy + search + radius */}
           <div className="relative px-[clamp(20px,3vw,32px)] pt-5 pb-4">
-            <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-4">
-              <div className="min-w-[260px] flex-1 max-w-[36rem]">
-                <div className="flex items-center gap-3.5">
-                  <StepMark n={1} />
-                  <h2 className="font-display italic text-[clamp(20px,2vw,24px)] text-ink dark:text-paper-100">
-                    Where to watch
-                  </h2>
-                </div>
-                <p className="mt-2 sm:ml-[58px] text-[13px] leading-relaxed text-ink/60 dark:text-slate-400">
-                  Click anywhere on the map to drop a pin — home, work, school, the
-                  corner you worry about. Each pin watches its own circle; your
-                  digest covers all of them.
-                </p>
+            {/* Row 1: step + headline, explainer riding to the right */}
+            <div className="flex flex-wrap items-center gap-x-10 gap-y-3">
+              <div className="flex flex-shrink-0 items-center gap-3.5">
+                <StepMark n={1} />
+                <h2 className="font-display italic text-[clamp(20px,2vw,24px)] text-ink dark:text-paper-100">
+                  Where to watch
+                </h2>
               </div>
+              <p className="min-w-[260px] flex-1 max-w-[44rem] text-[13px] leading-relaxed text-ink/60 dark:text-slate-400">
+                Click anywhere on the map to drop a pin — home, work, school, the
+                corner you worry about. Each pin watches its own circle; your
+                digest covers all of them.
+              </p>
+            </div>
 
-              <div className="flex flex-wrap items-center gap-3">
+            {/* Row 2: search + radius, aligned under the headline text */}
+            <div className="mt-4 sm:ml-[58px] flex flex-wrap items-center gap-3">
                 {/* Address search — anchors its results dropdown */}
                 <div className="relative w-[min(320px,72vw)]">
                   <div className="flex gap-2">
@@ -322,7 +325,6 @@ export default function AlertsView() {
                     ))}
                   </div>
                 </div>
-              </div>
             </div>
           </div>
 
@@ -370,26 +372,32 @@ export default function AlertsView() {
           </div>
         </section>
 
-        {/* ─── ENTRY + SAMPLE — side by side at desktop width so the
-            preview visibly reacts as chips toggle; stacks entry-then-
-            sample on narrow viewports. ─────────────────────────────── */}
-        {/* NB: track list uses underscores, not commas — a comma-separated
-            grid-template-columns is invalid CSS and silently stacks. */}
-        <div className="mt-[clamp(20px,2.5vw,32px)] grid gap-[clamp(20px,2.5vw,32px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)]">
-          {/* ENTRY — what counts, and where to send it */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              submit()
-            }}
-            className="glass-card relative rounded-[28px] rounded-bl-none overflow-hidden glow-host self-start"
+        {/* ─── ② + ③ — full-width stations. The live preview is a pane
+            INSIDE ② so it reacts right beside the chips being toggled;
+            ③ closes the page at full width. One <form> spans both cards
+            so Enter in the email field still submits. ──────────────── */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            submit()
+          }}
+          className="mt-[clamp(20px,2.5vw,32px)] space-y-[clamp(20px,2.5vw,32px)]"
+        >
+          <section
+            className="glass-card relative rounded-[28px] rounded-bl-none overflow-hidden glow-host"
             style={{ '--glow': '#5c9693' } as CSSProperties}
           >
             <div className="glow-corner is-lg" style={{ opacity: 0.3 }} />
 
             {/* ② — What to watch for: streams (identity chips) + the
-                only-these-kinds / released / pulse sub-layers */}
+                only-these-kinds / released / pulse sub-layers on the left,
+                live preview pane on the right.
+                NB: track list uses underscores, not commas — a comma-
+                separated grid-template-columns is invalid CSS and
+                silently stacks. */}
             <FormSection n={2} label="What to watch for" isFirst>
+              <div className="grid items-start gap-[clamp(20px,2.5vw,32px)] lg:grid-cols-[minmax(0,1.12fr)_minmax(0,1fr)]">
+                <div className="min-w-0">
               {(() => {
                 const chip = (s: (typeof LIVE_STREAM_OPTIONS)[number]) => {
                   const selected = streams.includes(s.id)
@@ -539,13 +547,36 @@ export default function AlertsView() {
                   </>
                 )
               })()}
-            </FormSection>
+                </div>
 
-            {/* ③ — Email — the commitment, asked for last. Input + button
-                share the row: the act of typing and the act of committing sit
-                together, like a masthead subscription slip. The input holds to
-                half the card — a slip-sized field, not a form-sized one. */}
-            <FormSection n={3} label="Where to send">
+                {/* The reactive proof, in the same card as the controls it
+                    answers. Pane variant: inset frame, no glow — the parent
+                    card stays the single glowing surface. */}
+                <LivePreview
+                  variant="pane"
+                  email={email}
+                  streams={streams}
+                  categories={categories}
+                  radiusMiles={radiusMiles}
+                  locations={locations}
+                  pulse={pulse}
+                />
+              </div>
+            </FormSection>
+          </section>
+
+          <section
+            className="glass-card relative rounded-[28px] rounded-bl-none overflow-hidden glow-host"
+            style={{ '--glow': '#5c9693' } as CSSProperties}
+          >
+            <div className="glow-corner is-lg" style={{ opacity: 0.3 }} />
+
+            {/* ③ — Email — the commitment, asked for last, closing the page
+                at full width. Input + button share the row: the act of typing
+                and the act of committing sit together, like a masthead
+                subscription slip. The input holds to half the card — a
+                slip-sized field, not a form-sized one. */}
+            <FormSection n={3} label="Where to send" isFirst>
               <div className="flex items-stretch gap-3">
                 <input
                   type="email"
@@ -567,28 +598,15 @@ export default function AlertsView() {
                 First we email you a confirmation link — nothing starts until you click it.
                 Every digest includes a one-click unsubscribe, which also deletes your info.
               </p>
+              {/* Error rail */}
+              {errorMsg && (
+                <div className="mt-4 rounded-md border border-brick-500/30 bg-brick-500/[0.06] px-3.5 py-2.5">
+                  <p className="text-[12px] font-mono text-brick-500">{errorMsg}</p>
+                </div>
+              )}
             </FormSection>
-
-            {/* Error rail */}
-            {errorMsg && (
-              <div className="mx-6 mb-6 rounded-md border border-brick-500/30 bg-brick-500/[0.06] px-3.5 py-2.5">
-                <p className="text-[12px] font-mono text-brick-500">{errorMsg}</p>
-              </div>
-            )}
-          </form>
-
-          {/* SAMPLE — the editorial proof, reacting live to the entry card */}
-          <aside className="min-w-0">
-            <LivePreview
-              email={email}
-              streams={streams}
-              categories={categories}
-              radiusMiles={radiusMiles}
-              locations={locations}
-              pulse={pulse}
-            />
-          </aside>
-        </div>
+          </section>
+        </form>
 
         <Colophon />
       </div>
