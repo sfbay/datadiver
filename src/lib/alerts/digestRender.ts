@@ -196,23 +196,37 @@ function statHeaderHtml(s: Summary, buckets: number[]): string {
     ${barHtml(buckets)}`
 }
 
+// Row lists are TABLES (design-gate round 3, Jesse): fixed label columns
+// hold their alignment — an inline-block slot can't (● FIRE/EMS overflows
+// 64px and pushes everything right) — and a wrapping row hangs inside its
+// own text cell instead of falling back to the page's left margin. The
+// nowrap label cells carry real content, so their min-content width
+// protects them from the elastic text column (the gapCell lesson).
+const ROW_TABLE = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">`
+/** Clock/date slot, then tag slot — shared by day + released rows so every
+ *  section's columns land on the same grid. Tag width fits ● FIRE/EMS. */
+const CLOCK_TD = `width="64" valign="top" style="padding:4px 8px 10px 0;white-space:nowrap;font-family:${SANS};color:${MUTED};font-size:11px;line-height:1.45"`
+function tagTd(hex: string): string {
+  return `width="78" valign="top" style="padding:5px 8px 10px 0;white-space:nowrap;font-family:${SANS};color:${hex};font-size:10px;letter-spacing:.08em;line-height:1.45"`
+}
+
 function rowHtml(r: DigestRow): string {
   const m = STREAM_META[r.datasetId] ?? { tag: r.streamLabel.toUpperCase(), hex: MUTED }
   const sig = r.significant ? '<span style="color:#963e30;font-weight:bold">&#9656; </span>' : ''
   const where = r.location ? ` <span style="color:${MUTED};font-size:13px">· ${escapeHtml(r.location)}</span>` : ''
   const late = r.late ? ` <span style="font-size:11px;color:#a8926a;font-style:italic">late report</span>` : ''
   const href = `${PUBLIC_LINK_BASE}/live?event=${encodeURIComponent(r.id)}`
-  return `<div style="margin:0 0 10px;line-height:1.45">
-    <span style="display:inline-block;width:64px;font-family:${SANS};color:${MUTED};font-size:11px">${escapeHtml(r.clock)}</span>
-    <span style="font-family:${SANS};color:${m.hex};font-size:10px;letter-spacing:.08em">&#9679;&nbsp;${escapeHtml(m.tag)}</span>
-    <a href="${href}" style="color:${INK};text-decoration:none;font-size:16px">&nbsp;${sig}${escapeHtml(r.what)}</a>${where}${late}
-  </div>`
+  return `<tr>
+    <td ${CLOCK_TD}>${escapeHtml(r.clock)}</td>
+    <td ${tagTd(m.hex)}>&#9679;&nbsp;${escapeHtml(m.tag)}</td>
+    <td valign="top" width="100%" style="padding:0 0 10px;line-height:1.45"><a href="${href}" style="color:${INK};text-decoration:none;font-size:16px">${sig}${escapeHtml(r.what)}</a>${where}${late}</td>
+  </tr>`
 }
 
 function blockHtml(block: TimeBlock): string {
   return `
     <div style="font-family:${SANS};font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#5c9693;margin:24px 0 10px">${escapeHtml(block.label)} <span style="color:${MUTED};letter-spacing:.06em">· ${escapeHtml(block.rangeLabel)}</span></div>
-    ${block.rows.map(rowHtml).join('')}`
+    ${ROW_TABLE}${block.rows.map(rowHtml).join('')}</table>`
 }
 
 function dayHtml(day: DayGroup, showHeader: boolean): string {
@@ -228,11 +242,11 @@ function releasedRowHtml(r: ReleasedRow): string {
   const where = r.location ? ` <span style="color:${MUTED};font-size:13px">· ${escapeHtml(r.location)}</span>` : ''
   // No deep link: released streams have no Last 48 presence, and a link
   // that lands nowhere is worse than none.
-  return `<div style="margin:0 0 10px;line-height:1.45">
-    <span style="display:inline-block;width:64px;font-family:${SANS};color:${MUTED};font-size:11px">${escapeHtml(r.dateLabel)}</span>
-    <span style="font-family:${SANS};color:${m.hex};font-size:10px;letter-spacing:.08em">&#9679;&nbsp;${escapeHtml(m.tag)}</span>
-    <span style="color:${INK};font-size:16px">&nbsp;${sig}${escapeHtml(r.what)}</span>${where}
-  </div>`
+  return `<tr>
+    <td ${CLOCK_TD}>${escapeHtml(r.dateLabel)}</td>
+    <td ${tagTd(m.hex)}>&#9679;&nbsp;${escapeHtml(m.tag)}</td>
+    <td valign="top" width="100%" style="padding:0 0 10px;line-height:1.45"><span style="color:${INK};font-size:16px">${sig}${escapeHtml(r.what)}</span>${where}</td>
+  </tr>`
 }
 
 /** The staggered-timeline section: released-tier events under their own
@@ -244,26 +258,28 @@ function releasedGroupHtml(g: ReleasedGroup): string {
     : ''
   return `
     <div style="border-top:3px double ${PAPERLINE};margin-top:22px;padding-top:12px;font-family:${TIMES};font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:${INK};font-weight:bold">${escapeHtml(g.heading.toUpperCase())} <span style="color:${MUTED};font-weight:normal">&#183; NEWLY RELEASED</span></div>
-    ${note}${g.rows.map(releasedRowHtml).join('')}`
+    ${note}${ROW_TABLE}${g.rows.map(releasedRowHtml).join('')}</table>`
 }
 
-/** One pulse row: stream tag in the leading 64px slot (the day rows'
- *  clock geometry, so left edges align), then chevrons + ratio + phrase as
- *  the evidence link. Magnitude reads as 1–3 chevrons — the glyph carries
+/** One pulse row: tag column (shared grid with the day rows), then
+ *  right-aligned chevrons and a ratio column — right-aligning the glyph
+ *  keeps the ≈N× figures vertically aligned while 1–3 chevrons grow
+ *  leftward — then the phrase as the evidence link. The glyph carries
  *  "how unusual," so the words never say "unusually" (the pulsePhrase
- *  discipline). Order per Jesse, design-gate round 2. */
+ *  discipline). Order per Jesse, design-gate rounds 2–3. */
 function pulseRowHtml(r: PulseRow): string {
   const m = STREAM_META[r.datasetId] ?? { tag: '', hex: MUTED }
   const chevrons = '&#9650;'.repeat(r.magnitude)
   const href = `${PUBLIC_LINK_BASE}${r.href}`
   const ratio = r.ratioLabel
-    ? `<span style="font-family:${SANS};font-size:12px;font-weight:bold;color:${INK}">${escapeHtml(r.ratioLabel)}</span> `
-    : ''
-  return `<div style="margin:0 0 10px;line-height:1.45">
-    <span style="display:inline-block;width:64px;font-family:${SANS};color:${m.hex};font-size:10px;letter-spacing:.08em">&#9679;&nbsp;${escapeHtml(m.tag)}</span>
-    <a href="${href}" style="color:${INK};text-decoration:none;font-size:16px"><span style="color:${m.hex};font-size:11px">${chevrons}</span> ${ratio}${escapeHtml(r.subject)} in ${escapeHtml(r.neighborhood)}</a>
-    <span style="color:${MUTED};font-size:13px"> &#183; ${r.count48h} in last 48h (${escapeHtml(r.factLine)})</span>
-  </div>`
+    ? `<span style="font-family:${SANS};font-size:12px;font-weight:bold;color:${INK}">${escapeHtml(r.ratioLabel)}</span>`
+    : '&nbsp;'
+  return `<tr>
+    <td ${tagTd(m.hex)}>&#9679;&nbsp;${escapeHtml(m.tag)}</td>
+    <td align="right" valign="top" style="padding:4px 6px 10px 0;white-space:nowrap;color:${m.hex};font-size:11px;line-height:1.45">${chevrons}</td>
+    <td valign="top" style="padding:3px 8px 10px 0;white-space:nowrap;line-height:1.45">${ratio}</td>
+    <td valign="top" width="100%" style="padding:0 0 10px;line-height:1.45"><a href="${href}" style="color:${INK};text-decoration:none;font-size:16px">${escapeHtml(r.subject)} in ${escapeHtml(r.neighborhood)}</a><span style="color:${MUTED};font-size:13px"> &#183; ${r.count48h} in last 48h (${escapeHtml(r.factLine)})</span></td>
+  </tr>`
 }
 
 /** The "Neighborhood pulse" block: how nearby areas are running vs their
@@ -275,7 +291,7 @@ function pulseSectionHtml(rows: PulseRow[]): string {
   return `
     <div style="border-top:3px double ${PAPERLINE};margin-top:22px;padding-top:12px;font-family:${TIMES};font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:${INK};font-weight:bold">NEIGHBORHOOD PULSE</div>
     <div style="font-size:12.5px;color:${MUTED};font-style:italic;margin:8px 0 12px;line-height:1.5">How neighborhoods around this spot compare with their usual pace.</div>
-    ${rows.map(pulseRowHtml).join('')}`
+    ${ROW_TABLE}${rows.map(pulseRowHtml).join('')}</table>`
 }
 
 function locationHtml(loc: LocationDigest, showLabel: boolean, nowMs: number): string {
