@@ -247,20 +247,22 @@ function releasedGroupHtml(g: ReleasedGroup): string {
     ${note}${g.rows.map(releasedRowHtml).join('')}`
 }
 
-/** One pulse row: the ratio anchor in the clock slot, the stream tag in
- *  the registry pigment, the phrase as the evidence link. Magnitude reads
- *  as 1–3 chevrons — the glyph carries "how unusual," so the words never
- *  say "unusually" (the pulsePhrase discipline). */
+/** One pulse row: stream tag in the leading 64px slot (the day rows'
+ *  clock geometry, so left edges align), then chevrons + ratio + phrase as
+ *  the evidence link. Magnitude reads as 1–3 chevrons — the glyph carries
+ *  "how unusual," so the words never say "unusually" (the pulsePhrase
+ *  discipline). Order per Jesse, design-gate round 2. */
 function pulseRowHtml(r: PulseRow): string {
   const m = STREAM_META[r.datasetId] ?? { tag: '', hex: MUTED }
   const chevrons = '&#9650;'.repeat(r.magnitude)
   const href = `${PUBLIC_LINK_BASE}${r.href}`
-  const ratio = r.ratioLabel ? escapeHtml(r.ratioLabel) : '&nbsp;'
+  const ratio = r.ratioLabel
+    ? `<span style="font-family:${SANS};font-size:12px;font-weight:bold;color:${INK}">${escapeHtml(r.ratioLabel)}</span> `
+    : ''
   return `<div style="margin:0 0 10px;line-height:1.45">
-    <span style="display:inline-block;width:64px;font-family:${SANS};color:${INK};font-size:12px;font-weight:bold">${ratio}</span>
-    <span style="font-family:${SANS};color:${m.hex};font-size:10px;letter-spacing:.08em">&#9679;&nbsp;${escapeHtml(m.tag)}</span>
-    <a href="${href}" style="color:${INK};text-decoration:none;font-size:16px">&nbsp;<span style="color:${m.hex};font-size:11px">${chevrons}</span> ${escapeHtml(r.subject)} in ${escapeHtml(r.neighborhood)}</a>
-    <span style="color:${MUTED};font-size:13px"> &#183; ${r.count48h} in the last 48h, ${escapeHtml(r.factLine)}</span>
+    <span style="display:inline-block;width:64px;font-family:${SANS};color:${m.hex};font-size:10px;letter-spacing:.08em">&#9679;&nbsp;${escapeHtml(m.tag)}</span>
+    <a href="${href}" style="color:${INK};text-decoration:none;font-size:16px"><span style="color:${m.hex};font-size:11px">${chevrons}</span> ${ratio}${escapeHtml(r.subject)} in ${escapeHtml(r.neighborhood)}</a>
+    <span style="color:${MUTED};font-size:13px"> &#183; ${r.count48h} in last 48h (${escapeHtml(r.factLine)})</span>
   </div>`
 }
 
@@ -272,7 +274,7 @@ function pulseSectionHtml(rows: PulseRow[]): string {
   if (rows.length === 0) return ''
   return `
     <div style="border-top:3px double ${PAPERLINE};margin-top:22px;padding-top:12px;font-family:${TIMES};font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:${INK};font-weight:bold">NEIGHBORHOOD PULSE</div>
-    <div style="font-size:12.5px;color:${MUTED};font-style:italic;margin:8px 0 12px;line-height:1.5">How the neighborhoods around this spot are running, compared with their usual pace over the last two days.</div>
+    <div style="font-size:12.5px;color:${MUTED};font-style:italic;margin:8px 0 12px;line-height:1.5">How neighborhoods around this spot compare with their usual pace.</div>
     ${rows.map(pulseRowHtml).join('')}`
 }
 
@@ -371,7 +373,7 @@ function renderText(payload: DigestPayload, dateLine: string, introLine: string,
       const pulseText = loc.pulse.length
         ? 'NEIGHBORHOOD PULSE\n' +
           loc.pulse
-            .map((r) => `  ${r.ratioLabel ?? ''}  [${STREAM_META[r.datasetId]?.tag ?? ''}] ${r.subject} in ${r.neighborhood} — ${r.count48h} in the last 48h, ${r.factLine}`)
+            .map((r) => `  [${STREAM_META[r.datasetId]?.tag ?? ''}] ${r.ratioLabel ? `${r.ratioLabel} ` : ''}${r.subject} in ${r.neighborhood} — ${r.count48h} in last 48h (${r.factLine})`)
             .join('\n') +
           '\n\n'
         : ''
