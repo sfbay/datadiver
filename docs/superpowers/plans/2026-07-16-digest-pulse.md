@@ -1389,6 +1389,12 @@ git commit -m "feat(alerts): builder Neighborhood pulse toggle + preview note + 
 
 1. **Final whole-branch review** (superpowers:requesting-code-review), most capable model.
 2. **Email design gate:** render `scripts/preview-digest.ts` (regular + `--welcome`), headless-Chrome layout self-check at 620px, publish to the SAME artifact URL, iterate with Jesse until approved. The pulse section's visual treatment (head, chevrons, ratio slot) is expected to move during rounds — that is the gate working.
+   *Outcome (2026-07-16, 4 rounds → GOLDEN):* rounds 2–4 reshaped the render beyond this plan's
+   Task 6 code blocks — row reorder (tag leads, chevrons+ratio join the phrase), tighter framing
+   note, then ALL row lists (pulse/day/released) became fixed-column tables (clock 64 / tag 78 /
+   right-aligned chevrons + aligned ratios / elastic text cell), and the crash releasedNote reads
+   "serious traffic collision data". `digestRender.ts` and `streams.ts` on the branch are
+   authoritative; rounds recorded in `.superpowers/sdd/progress.md`.
 3. **Merge on Jesse's explicit OK**, deploy, version-discriminator smoke (POST subscribe with `filters.pulse: false` + invalid radius — new code accepts the pulse key and rejects radius), prod cron QA next morning via the standing test subscription (default-ON → his digest gains the section).
 
 ## Verification summary

@@ -206,7 +206,7 @@ const releasedFixture: ReleasedGroup[] = [
   {
     streamId: 'traffic-crashes',
     heading: 'crash reports',
-    note: 'The city releases crash data in batches, roughly 4–6 weeks behind — these reports appeared in the latest release.',
+    note: 'The city releases serious traffic collision data in batches, roughly 4–6 weeks behind — these reports appeared in the latest release.',
     rows: [
       { id: 'traffic-crashes:1', dateLabel: 'May 14', datasetId: 'traffic-crashes',
         what: 'Vehicle-pedestrian crash — one person killed', location: 'Mission St & 16th St',

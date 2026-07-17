@@ -176,7 +176,7 @@ export const ALERT_STREAMS: Record<AlertStreamId, AlertStreamConfig> = {
     tag: 'CRASH',
     hex: '#963e30',
     releasedNote:
-      'The city releases crash data in batches, roughly 4–6 weeks behind — these reports appeared in the latest release.',
+      'The city releases serious traffic collision data in batches, roughly 4–6 weeks behind — these reports appeared in the latest release.',
     normalize: normalizeCrash,
   },
   'business-openings': {
