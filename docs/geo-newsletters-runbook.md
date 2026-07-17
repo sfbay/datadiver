@@ -44,6 +44,32 @@ ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS sent_event_ids jsonb NOT NULL
 
 The digest now carries five streams: three live (911, Fire/EMS, 311 — 48h windows, per-stream watermarks) and two released-tier (traffic crashes ~120d window, business openings ~90d — full-replace pipelines with no per-row publication signal, deduped by per-subscription `sent_event_ids`). Confirming a subscription sends a **first edition** immediately: trailing 24h of live streams + the released-tier catch-up; failures are non-fatal and self-heal into the first cron digest.
 
+## Neighborhood pulse (PR E — July 2026)
+
+- Digest emails carry a per-location "Neighborhood pulse" section: elevated
+  signals (busy-only) for the neighborhoods each pin's radius overlaps,
+  ranked, capped at 4 rows. Default ON for every subscription — a missing
+  `filters.pulse` means opted in, including all pre-PR-E rows; the builder
+  toggle stores `pulse: false` to opt out. No DB migration (rides the
+  `filters` jsonb).
+- Computed once per cron run in `api/_lib/pulse.ts`: 2 baseline GROUP BYs
+  (84 days of 48h pairs) + 2 current-48h COUNT queries (Fire/EMS + 311 —
+  911's realtime dataset is a rolling feed that cannot back a baseline and
+  is deliberately excluded; see PULSE_SIGNAL_STREAMS in api/_lib/pulse.ts)
+  against the 41-name Analysis Neighborhood vocabulary (311 groups on
+  `analysis_neighborhood`, NOT sffind), plus one fetch of our own
+  `/data/geo/sf-analysis-neighborhoods.geojson`. All-or-nothing: any
+  failure logs `[pulse]` and every digest sends without the section —
+  pulse never blocks or defers a send, and never creates a send by itself.
+- The welcome edition includes the section (same 48h signal window,
+  independent of the welcome's 24h live-event override).
+- Env: no new variables. Uses `PUBLIC_BASE_URL` (boundaries fetch) and the
+  optional `SOCRATA_APP_TOKEN`.
+- QA: subscribe with the toggle off → confirm welcome has no pulse section;
+  cron smoke as usual (`curl -H "Authorization: Bearer $CRON_SECRET"
+  …/api/cron/dispatch-digests`); evidence links land on
+  `/live?nh=…&fill=anomaly&points=off`.
+
 ## Environment variables (Vercel dashboard → Project → Settings → Environment Variables)
 | Var | Example / note |
 |-----|----------------|

@@ -42,9 +42,10 @@ interface LivePreviewProps {
   categories: string[]
   radiusMiles: number
   locations: AlertLocation[]
+  pulse: boolean
 }
 
-export function LivePreview({ email, streams, categories, radiusMiles, locations }: LivePreviewProps) {
+export function LivePreview({ email, streams, categories, radiusMiles, locations, pulse }: LivePreviewProps) {
   // Always pull all three streams so the user can toggle without re-fetching.
   // The engine itself short-circuits per-stream when the enabledSet shrinks,
   // but for the preview we want every stream's events available so toggling
@@ -160,6 +161,14 @@ export function LivePreview({ email, streams, categories, radiusMiles, locations
               <EventRow key={e.id} event={e} now={now} />
             ))}
           </ul>
+        )}
+
+        {pulse && locations.length > 0 && streams.length > 0 && (
+          <p className="mt-4 pt-3 border-t border-ink/[0.06] dark:border-white/[0.04] text-[12px] leading-relaxed text-ink/55 dark:text-slate-400">
+            <span style={{ color: '#d4a435' }} aria-hidden>▲ </span>
+            Your digest also carries a neighborhood pulse — flagged when areas
+            near your pins run busier than usual.
+          </p>
         )}
       </div>
 
