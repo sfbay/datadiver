@@ -642,7 +642,7 @@ function HeroBand() {
 
   return (
     <header
-      className="glass-card relative rounded-[28px] rounded-bl-none overflow-hidden glow-host lg:flex lg:items-center lg:min-h-[clamp(380px,38vw,560px)]"
+      className="glass-card relative rounded-[28px] rounded-bl-none overflow-hidden glow-host lg:flex lg:items-start lg:min-h-[clamp(380px,38vw,560px)]"
       style={{ '--glow': '#b85a33' } as CSSProperties}
     >
       <div className="glow-corner is-lg" style={{ opacity: 0.55 }} />
@@ -660,8 +660,11 @@ function HeroBand() {
         className={`hidden lg:block ${HERO_ART}`}
       />
 
+      {/* Copy column: fixed cap below lg (art hidden there); a PROPORTIONAL
+          50% cap once Dana appears, so lines wrap before the swirl instead
+          of relying on the mask to keep long lines legible over it. */}
       <div className="relative px-[clamp(20px,3vw,40px)] py-[clamp(24px,3vw,40px)]">
-        <div className="max-w-[34rem]">
+        <div className="max-w-[38rem] lg:max-w-[50%]">
           <div className="flex items-center gap-2.5 mb-4">
             <div className="h-px w-7 bg-terracotta-500/60" />
             <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-terracotta-500">
@@ -671,7 +674,7 @@ function HeroBand() {
 
           <h1
             className="font-display text-ink dark:text-paper-100 leading-[0.95]"
-            style={{ fontSize: 'clamp(2.25rem, 4vw + 0.5rem, 4.5rem)' }}
+            style={{ fontSize: 'clamp(2.75rem, 5vw + 0.5rem, 6rem)' }}
           >
             <em>Your block,</em>
             <br />
