@@ -34,7 +34,7 @@ Dispatch now fetches each stream once per run with ASC `$offset` pagination (4×
 
 ## Migration — July 2026 (b): released-tier sent-id memory (PR D)
 
-> **Status: run in prod Neon BEFORE merging PR D** (additive; old code ignores the column). Update this line with the executed date, per the deploy-state rule.
+> **Executed in prod Neon 2026-07-16** (verified via information_schema — `subscriptions` now carries all 13 columns incl. `sent_event_ids`). Additive; pre-PR-D code ignores the column. Re-running is idempotent and safe.
 
 ```sql
 ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS sent_event_ids jsonb NOT NULL DEFAULT '{}';
