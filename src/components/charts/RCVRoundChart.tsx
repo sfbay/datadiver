@@ -120,10 +120,18 @@ export default function RCVRoundChart({
   const prevRound = activeRound > 0 ? rcvData.rounds[activeRound - 1] : null
 
   const candidates = useMemo(() => {
+    // Keep prevRound's flagged eliminee(s) despite votes === 0: a round's
+    // own isEliminated flag describes NEXT round's removal, so the
+    // candidate whose votes were just redistributed INTO this round
+    // carries votes 0 + isEliminated false here — without this clause the
+    // row (and the flow ribbons' source anchor) never exists.
+    const justRedistributed = new Set(
+      (prevRound?.candidates ?? []).filter((c) => c.isEliminated).map((c) => c.name),
+    )
     return [...round.candidates]
-      .filter((c) => c.votes > 0 || c.isEliminated)
+      .filter((c) => c.votes > 0 || c.isEliminated || justRedistributed.has(c.name))
       .sort((a, b) => b.votes - a.votes)
-  }, [round])
+  }, [round, prevRound])
 
   const maxVotes = Math.max(...candidates.map((c) => c.votes), 1)
   const threshold = round.continuingTotal * 0.5
