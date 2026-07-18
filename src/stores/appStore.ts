@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { ViewId } from '@/types/datasets'
 import type { ComparisonMode } from '@/utils/comparisonMode'
+import { parseTypeScale, type TypeScale } from '@/stores/typeScale'
 
 interface AppState {
   /** Current active view */
@@ -14,6 +15,12 @@ interface AppState {
 
   /** Right context sidebar open state (per-view neighborhood ranking, patterns, etc.) */
   isContextSidebarOpen: boolean
+
+  /** Type-scale reading preference. 'large' applies a root font-size bump
+   *  (html[data-type-scale="large"] in index.css) plus the Pulse/About
+   *  rem conversions in this phase. String union so a future 'largest'
+   *  tier needs no migration. */
+  typeScale: TypeScale
 
   /** Global date range filter */
   dateRange: { start: string; end: string }
@@ -59,6 +66,7 @@ interface AppState {
   toggleDarkMode: () => void
   toggleSidebar: () => void
   toggleContextSidebar: () => void
+  setTypeScale: (scale: TypeScale) => void
   setDateRange: (start: string, end: string) => void
   setSelectedNeighborhood: (neighborhood: string | null) => void
   setTimeOfDayFilter: (filter: { startHour: number; endHour: number } | null) => void
@@ -83,6 +91,7 @@ export const useAppStore = create<AppState>((set) => ({
   isDarkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
   isSidebarOpen: localStorage.getItem('dd-sidebar') !== 'collapsed',
   isContextSidebarOpen: localStorage.getItem('dd-context-sidebar') !== 'collapsed',
+  typeScale: parseTypeScale(localStorage.getItem('dd-type-scale')),
   dateRange: {
     start: thirtyDaysAgo.toISOString().split('T')[0],
     end: now.toISOString().split('T')[0],
@@ -116,6 +125,11 @@ export const useAppStore = create<AppState>((set) => ({
     const next = !state.isContextSidebarOpen
     localStorage.setItem('dd-context-sidebar', next ? 'open' : 'collapsed')
     return { isContextSidebarOpen: next }
+  }),
+  setTypeScale: (scale) => set(() => {
+    localStorage.setItem('dd-type-scale', scale)
+    document.documentElement.setAttribute('data-type-scale', scale)
+    return { typeScale: scale }
   }),
   setDateRange: (start, end) => set({ dateRange: { start, end } }),
   setSelectedNeighborhood: (neighborhood) => set({ selectedNeighborhood: neighborhood }),

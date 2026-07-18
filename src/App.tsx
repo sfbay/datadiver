@@ -59,10 +59,15 @@ function LiveFeedsRedirect() {
 
 export default function App() {
   const isDarkMode = useAppStore((s) => s.isDarkMode)
+  const typeScale = useAppStore((s) => s.typeScale)
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDarkMode)
   }, [isDarkMode])
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-type-scale', typeScale)
+  }, [typeScale])
 
   // Warm the flagship view's chunks (Last48 + the mapbox chunk it pulls) once
   // the browser is idle — nav to /live stays instant without costing Home's

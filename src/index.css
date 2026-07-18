@@ -138,6 +138,17 @@ html {
   font-feature-settings: "cv11", "ss01";
 }
 
+/* Large Type Edition (Phase 1) — root-scale multiplier, applied via the
+   data-type-scale attribute that appStore's setTypeScale action + App.tsx's
+   useEffect set on <html> (mirrors the .dark class mechanism used for dark
+   mode). Conservative 118% on purpose — the component layer is still
+   mostly px outside Pulse/About (see docs/superpowers/specs/
+   2026-07-18-large-type-edition-design.md); Phase 2 raises the dormant
+   tokens.css --text-* floor so more of the app actually participates. */
+html[data-type-scale="large"] {
+  font-size: 118%;
+}
+
 body {
   margin: 0;
   background: var(--color-paper);
