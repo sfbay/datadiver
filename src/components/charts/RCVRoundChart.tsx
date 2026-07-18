@@ -132,8 +132,23 @@ export default function RCVRoundChart({
   const dividerSpace = eliminatedCount > 0 ? 20 : 0
   const svgHeight = (activeCount + eliminatedCount) * (barHeight + gap) + dividerSpace + 20
 
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+    const target = e.target as HTMLElement
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return
+    e.preventDefault()
+    setIsPlaying(false)
+    if (e.key === 'ArrowLeft') setActiveRound(Math.max(0, activeRound - 1))
+    else setActiveRound(Math.min(totalRounds - 1, activeRound + 1))
+  }, [activeRound, totalRounds, setActiveRound])
+
   return (
-    <div style={{ width }}>
+    <div
+      style={{ width }}
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      className="outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 rounded-xl"
+    >
       {/* Controls: [prev][play][next] [round bubbles] [R3/14] */}
       <div className="flex items-center gap-1.5 mb-3">
         {/* Transport controls */}
