@@ -340,7 +340,7 @@ export default function RCVRoundChart({
               y={10}
               fill="#d4a435"
               fontSize={8}
-              fontFamily="JetBrains Mono, monospace"
+              fontFamily="var(--font-mono)"
               opacity={0.6}
             >
               50%
@@ -352,7 +352,7 @@ export default function RCVRoundChart({
         {activeCandidates.map((c, i) => {
           const y = i * (barHeight + gap) + 16
           const barW = (c.votes / maxVotes) * chartWidth
-          const color = candidateColors.get(c.name) || '#64748b'
+          const color = candidateColors.get(c.name) || 'var(--color-slate-500)'
           const isWinner = c.name === rcvData.winner && activeRound === totalRounds - 1
           const displayName = toSentenceCase(c.name)
           // Check if this candidate gained votes from a transfer
@@ -365,7 +365,7 @@ export default function RCVRoundChart({
                 x={labelWidth - 4}
                 y={y + barHeight / 2 + 1}
                 textAnchor="end"
-                fill={isWinner ? '#e2e8f0' : '#94a3b8'}
+                fill={isWinner ? 'var(--color-slate-200)' : 'var(--color-slate-400)'}
                 fontSize={9}
                 fontWeight={isWinner ? 700 : 400}
                 fontFamily="Inter, system-ui, sans-serif"
@@ -407,7 +407,7 @@ export default function RCVRoundChart({
                   fill={color}
                   fontSize={8}
                   fontWeight={600}
-                  fontFamily="JetBrains Mono, monospace"
+                  fontFamily="var(--font-mono)"
                   dominantBaseline="middle"
                   opacity={0.9}
                 >
@@ -417,9 +417,9 @@ export default function RCVRoundChart({
               <text
                 x={labelWidth + barW + 4}
                 y={y + barHeight / 2 + 1}
-                fill="#94a3b8"
+                fill="var(--color-slate-400)"
                 fontSize={8}
-                fontFamily="JetBrains Mono, monospace"
+                fontFamily="var(--font-mono)"
                 dominantBaseline="middle"
               >
                 {c.votes.toLocaleString()}
@@ -436,15 +436,15 @@ export default function RCVRoundChart({
               y1={activeCount * (barHeight + gap) + 14}
               x2={width - 10}
               y2={activeCount * (barHeight + gap) + 14}
-              stroke="#334155"
+              stroke="var(--color-slate-700)"
               strokeWidth={0.5}
             />
             <text
               x={labelWidth}
               y={activeCount * (barHeight + gap) + 12}
-              fill="#475569"
+              fill="var(--color-slate-600)"
               fontSize={7}
-              fontFamily="JetBrains Mono, monospace"
+              fontFamily="var(--font-mono)"
             >
               ELIMINATED ({eliminatedCount})
             </text>
@@ -455,7 +455,7 @@ export default function RCVRoundChart({
         {eliminatedCandidates.map((c, i) => {
           const y = (activeCount) * (barHeight + gap) + dividerSpace + i * (barHeight + gap) + 8
           const barW = (c.votes / maxVotes) * chartWidth
-          const color = candidateColors.get(c.name) || '#64748b'
+          const color = candidateColors.get(c.name) || 'var(--color-slate-500)'
           const isJust = justEliminated?.names.includes(c.name) ?? false
           const displayName = toSentenceCase(c.name)
 
@@ -465,7 +465,7 @@ export default function RCVRoundChart({
                 x={labelWidth - 4}
                 y={y + barHeight / 2 + 1}
                 textAnchor="end"
-                fill={isJust ? '#b85545' : '#64748b'}
+                fill={isJust ? '#b85545' : 'var(--color-slate-500)'}
                 fontSize={9}
                 fontFamily="Inter, system-ui, sans-serif"
                 textDecoration="line-through"

@@ -90,7 +90,7 @@ export default function RCVSankey({
           x: padding.left + di * colWidth,
           y: yOffset,
           height: nodeH,
-          color: candidateColors.get(c.name) || '#64748b',
+          color: candidateColors.get(c.name) || 'var(--color-slate-500)',
           votes: c.votes,
           eliminated: c.isEliminated,
         }
@@ -114,7 +114,7 @@ export default function RCVSankey({
           x: padding.left + di * colWidth,
           y: height - padding.bottom - nodeH,
           height: nodeH,
-          color: '#475569',
+          color: 'var(--color-paper-500)',
           votes: exhausted,
           eliminated: false,
         }
@@ -192,7 +192,7 @@ export default function RCVSankey({
               source: sourceNode,
               target: exhaustedNode,
               value: exhaustedAmount,
-              color: '#475569',
+              color: 'var(--color-paper-500)',
             })
           }
         }
@@ -266,7 +266,7 @@ export default function RCVSankey({
                   x={node.x - 4}
                   y={node.y + node.height / 2}
                   textAnchor="end"
-                  fill={dimmed ? '#334155' : '#94a3b8'}
+                  fill={dimmed ? 'var(--color-slate-700)' : 'var(--color-slate-400)'}
                   fontSize={9}
                   fontFamily="Inter, system-ui, sans-serif"
                   dominantBaseline="middle"
@@ -287,9 +287,9 @@ export default function RCVSankey({
               key={label}
               x={10 + i * colWidth + 6}
               y={12}
-              fill="#64748b"
+              fill="var(--color-slate-500)"
               fontSize={9}
-              fontFamily="JetBrains Mono, monospace"
+              fontFamily="var(--font-mono)"
             >
               {label}
             </text>
@@ -300,7 +300,7 @@ export default function RCVSankey({
       {/* Hovered candidate info */}
       {hoveredCandidate && (
         <div className="absolute top-2 right-2 glass-card rounded-lg px-3 py-2 text-[10px] font-mono">
-          <span style={{ color: candidateColors.get(hoveredCandidate) || '#94a3b8' }}>
+          <span style={{ color: candidateColors.get(hoveredCandidate) || 'var(--color-slate-400)' }}>
             {hoveredCandidate}
           </span>
         </div>
