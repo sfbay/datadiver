@@ -700,8 +700,12 @@ export default function EmergencyResponse() {
         delay: 160,
         info: 'median',
         defaultExpanded: true,
-        subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.median)} ${compLabel}` : undefined,
-        trend: comparison.deltas ? (comparison.deltas.median > 0 ? 'up' : comparison.deltas.median < 0 ? 'down' : 'neutral') : undefined,
+        // Suppressed while a neighborhood is selected: the map sample (and
+        // thus comparison.currentStats) drills to the neighborhood while this
+        // tile's VALUE stays citywide — a delta across those two populations
+        // is a wrong number, not a comparison.
+        subtitle: !selectedNhStats && comparison.deltas ? `${formatDelta(comparison.deltas.median)} ${compLabel}` : undefined,
+        trend: !selectedNhStats && comparison.deltas ? (comparison.deltas.median > 0 ? 'up' : comparison.deltas.median < 0 ? 'down' : 'neutral') : undefined,
       },
       {
         id: '90th-pctl',
@@ -712,8 +716,9 @@ export default function EmergencyResponse() {
         delay: 240,
         info: '90th-pctl',
         defaultExpanded: true,
-        subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.p90)} ${compLabel}` : undefined,
-        trend: comparison.deltas ? (comparison.deltas.p90 > 0 ? 'up' : comparison.deltas.p90 < 0 ? 'down' : 'neutral') : undefined,
+        // Same cross-population suppression as Median (see comment there).
+        subtitle: !selectedNhStats && comparison.deltas ? `${formatDelta(comparison.deltas.p90)} ${compLabel}` : undefined,
+        trend: !selectedNhStats && comparison.deltas ? (comparison.deltas.p90 > 0 ? 'up' : comparison.deltas.p90 < 0 ? 'down' : 'neutral') : undefined,
       },
     ]
     if (stats.apotCount > 0) {
