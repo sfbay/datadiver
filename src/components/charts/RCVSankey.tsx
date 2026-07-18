@@ -9,6 +9,7 @@
  */
 import { useMemo, useState } from 'react'
 import type { RCVContest, RCVRound } from '@/types/elections'
+import { ribbonPath } from './rcvFlow'
 
 interface RCVSankeyProps {
   rcvData: RCVContest
@@ -208,15 +209,13 @@ export default function RCVSankey({
     return <p className="text-[10px] text-slate-500 font-mono">No RCV rounds to visualize</p>
   }
 
-  // Build SVG path for Sankey links (cubic bezier)
-  const linkPath = (link: SankeyLink): string => {
-    const x0 = link.source.x + 12
-    const y0 = link.source.y + link.source.height / 2
-    const x1 = link.target.x
-    const y1 = link.target.y + link.target.height / 2
-    const mx = (x0 + x1) / 2
-    return `M${x0},${y0} C${mx},${y0} ${mx},${y1} ${x1},${y1}`
-  }
+  // Build SVG path for Sankey links (cubic bezier) — shared with
+  // RCVRoundChart's per-round flow ribbons via rcvFlow.ts.
+  const linkPath = (link: SankeyLink): string =>
+    ribbonPath(
+      { x: link.source.x + 12, y: link.source.y + link.source.height / 2 },
+      { x: link.target.x, y: link.target.y + link.target.height / 2 },
+    )
 
   return (
     <div className="relative" style={{ width }}>
