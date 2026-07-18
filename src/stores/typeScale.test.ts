@@ -6,6 +6,10 @@ describe('parseTypeScale', () => {
     expect(parseTypeScale('large')).toBe('large')
   })
 
+  it('returns "xl" for the exact stored value "xl"', () => {
+    expect(parseTypeScale('xl')).toBe('xl')
+  })
+
   it('defaults to "default" for null (unset localStorage key)', () => {
     expect(parseTypeScale(null)).toBe('default')
   })
@@ -18,5 +22,6 @@ describe('parseTypeScale', () => {
     expect(parseTypeScale('largest')).toBe('default')
     expect(parseTypeScale('')).toBe('default')
     expect(parseTypeScale('true')).toBe('default')
+    expect(parseTypeScale(null)).toBe('default')
   })
 })

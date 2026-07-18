@@ -16,10 +16,10 @@ interface AppState {
   /** Right context sidebar open state (per-view neighborhood ranking, patterns, etc.) */
   isContextSidebarOpen: boolean
 
-  /** Type-scale reading preference. 'large' applies a root font-size bump
-   *  (html[data-type-scale="large"] in index.css) plus the Pulse/About
-   *  rem conversions in this phase. String union so a future 'largest'
-   *  tier needs no migration. */
+  /** Type-scale reading preference. 'large'/'xl' apply a root font-size
+   *  bump (html[data-type-scale="large"|"xl"] in index.css) plus the
+   *  Pulse/About rem conversions in this phase. String union so 'xl' —
+   *  added per Jesse's feedback — needed no migration. */
   typeScale: TypeScale
 
   /** Global date range filter */

@@ -5,6 +5,7 @@ import { useAppStore } from '@/stores/appStore'
 import { useUrlSync } from '@/hooks/useUrlSync'
 import DateRangePicker from '@/components/filters/DateRangePicker'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import type { TypeScale } from '@/stores/typeScale'
 
 // Earth-tone refactor — each nav item carries a pigment from the design
 // system palette (terracotta / ochre / moss / teal / brick / indigo / plum).
@@ -146,6 +147,22 @@ const NAV_ITEMS = [
     accentColor: '#a8926a', // paper-500 — the colophon/meta pigment
   },
 ] as const
+
+// Type-scale slider stops, in track order. Three stops per Jesse's
+// feedback that a plain large/default toggle wasn't enough runway — the
+// glyph sizes below are purely the segmented control's own "A" preview
+// glyph (not the same 118%/133% multiplier applied to the page); they
+// just need to read as a small→large progression at a glance.
+const TYPE_SCALE_STOPS: { value: TypeScale; label: string; glyphPx: number }[] = [
+  { value: 'default', label: 'Default', glyphPx: 11 },
+  { value: 'large', label: 'Large', glyphPx: 13 },
+  { value: 'xl', label: 'XL', glyphPx: 15 },
+]
+
+function nextTypeScale(current: TypeScale): TypeScale {
+  const idx = TYPE_SCALE_STOPS.findIndex((s) => s.value === current)
+  return TYPE_SCALE_STOPS[(idx + 1) % TYPE_SCALE_STOPS.length].value
+}
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
@@ -413,42 +430,84 @@ export default function AppShell({ children }: { children: ReactNode }) {
             )}
           </button>
 
-          {/* Type-scale toggle — sibling of dark mode, same icon-crossfade +
-              action-labeled idiom. 'A' glyphs of two sizes stand in for the
-              sun/moon SVGs (no stock "text size" icon in the existing set);
-              aria-pressed/aria-label added beyond the dark toggle's markup
-              since this control is itself an accessibility feature. */}
-          <button
-            onClick={() => setTypeScale(typeScale === 'large' ? 'default' : 'large')}
-            aria-pressed={typeScale === 'large'}
-            aria-label={typeScale === 'large' ? 'Switch to default type size' : 'Switch to large type'}
-            title={typeScale === 'large' ? 'Default type' : 'Large type'}
-            className={`
-              w-full flex items-center rounded-lg
-              text-slate-500 dark:text-slate-500
-              hover:bg-slate-50 dark:hover:bg-white/[0.03]
-              transition-all duration-200 text-sm
-              ${isSidebarOpen ? 'gap-3 px-3 py-2' : 'justify-center p-2.5'}
-            `}
-          >
-            <div className="relative w-5 h-5 flex items-center justify-center">
-              <span
-                className={`absolute font-mono font-bold text-[15px] leading-none transition-all duration-500 ${typeScale === 'large' ? 'rotate-0 scale-100' : 'rotate-90 scale-0'}`}
-                aria-hidden="true"
+          {/* Type-scale control — sibling of dark mode. Expanded rail: a
+              3-stop segmented radiogroup slider (Default / Large / XL)
+              with a sliding thumb, replacing the old 2-way toggle button
+              per Jesse's "make it a slide switch" feedback. Collapsed
+              rail: a single button that cycles through the three stops,
+              keeping the old crossfading-'A'-glyph idiom but generalized
+              to a size-changing glyph rather than two fixed sizes. */}
+          {isSidebarOpen ? (
+            <div className="px-3 py-2">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[13px] font-medium text-slate-500 dark:text-slate-500">Type</span>
+              </div>
+              <div
+                role="radiogroup"
+                aria-label="Type size"
+                className="relative flex rounded-lg bg-slate-100/70 dark:bg-white/[0.03] p-0.5"
               >
-                A
-              </span>
-              <span
-                className={`absolute font-mono font-bold text-[11px] leading-none transition-all duration-500 ${typeScale === 'large' ? '-rotate-90 scale-0' : 'rotate-0 scale-100'}`}
-                aria-hidden="true"
-              >
-                A
-              </span>
+                {/* Sliding active-segment thumb — neutral surface (house
+                    active-pill idiom, matches the nav's inactive→active
+                    hover surface bg-slate-50/white-0.03) rather than the
+                    date-preset chips' pigment-tinted glow: type size has
+                    no dataset pigment of its own, and CLAUDE.md's glow
+                    tiers hold the line on neutral chrome controls. */}
+                <div
+                  aria-hidden="true"
+                  className="absolute top-0.5 bottom-0.5 rounded-md bg-white dark:bg-white/[0.08] shadow-sm transition-all duration-200 ease-out"
+                  style={{
+                    width: `calc((100% - 4px) / ${TYPE_SCALE_STOPS.length})`,
+                    left: `calc(2px + ${TYPE_SCALE_STOPS.findIndex((s) => s.value === typeScale)} * (100% - 4px) / ${TYPE_SCALE_STOPS.length})`,
+                  }}
+                />
+                {TYPE_SCALE_STOPS.map((stop) => {
+                  const isActive = typeScale === stop.value
+                  return (
+                    <button
+                      key={stop.value}
+                      role="radio"
+                      aria-checked={isActive}
+                      aria-label={stop.label}
+                      title={stop.label}
+                      onClick={() => setTypeScale(stop.value)}
+                      className={`
+                        relative z-10 flex-1 py-1.5 rounded-md text-center
+                        font-mono font-semibold leading-none
+                        transition-colors duration-200
+                        ${isActive
+                          ? 'text-ochre-600 dark:text-ochre-400'
+                          : 'text-slate-500 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                        }
+                      `}
+                    >
+                      <span style={{ fontSize: stop.glyphPx }} aria-hidden="true">A</span>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
-            {isSidebarOpen && (
-              <span className="text-[13px] font-medium">{typeScale === 'large' ? 'Default Type' : 'Large Type'}</span>
-            )}
-          </button>
+          ) : (
+            <button
+              onClick={() => setTypeScale(nextTypeScale(typeScale))}
+              aria-label={`Type size: ${TYPE_SCALE_STOPS.find((s) => s.value === typeScale)?.label}. Click for ${TYPE_SCALE_STOPS.find((s) => s.value === nextTypeScale(typeScale))?.label}.`}
+              title={`Type size: ${TYPE_SCALE_STOPS.find((s) => s.value === typeScale)?.label}`}
+              className="
+                w-full flex items-center justify-center rounded-lg
+                text-slate-500 dark:text-slate-500
+                hover:bg-slate-50 dark:hover:bg-white/[0.03]
+                transition-all duration-200 text-sm p-2.5
+              "
+            >
+              <span
+                className="font-mono font-bold leading-none transition-all duration-300"
+                style={{ fontSize: TYPE_SCALE_STOPS.find((s) => s.value === typeScale)?.glyphPx }}
+                aria-hidden="true"
+              >
+                A
+              </span>
+            </button>
+          )}
 
           {/* Collapse / expand toggle */}
           <button
