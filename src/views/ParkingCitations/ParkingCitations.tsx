@@ -19,6 +19,7 @@ import { useCitationComparisonData } from '@/hooks/useComparisonDataFactory'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useAppStore } from '@/stores/appStore'
+import { resolveComparisonStart, comparisonLabel } from '@/utils/comparisonMode'
 import type { ParkingCitationRecord, ViolationTypeAggRow, NeighborhoodAggRowCitations } from '@/types/datasets'
 import { formatCurrency, formatDelta, formatNumber, formatHour } from '@/utils/time'
 import { parseSfLocal } from '@/utils/sfTime'
@@ -52,7 +53,7 @@ type SidebarTab = 'violations' | 'neighborhoods'
 const SELECT_FIELDS = 'citation_number,citation_issued_datetime,violation,violation_desc,citation_location,fine_amount,vehicle_plate_state,the_geom,analysis_neighborhood,supervisor_districts'
 
 export default function ParkingCitations() {
-  const { dateRange, timeOfDayFilter, comparisonPeriod, selectedCitation, setSelectedCitation } = useAppStore()
+  const { dateRange, timeOfDayFilter, comparisonMode, selectedCitation, setSelectedCitation } = useAppStore()
   const civicIndicators = useCivicIndicators()
   const [searchParams, setSearchParams] = useSearchParams()
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('violations')
@@ -249,8 +250,9 @@ export default function ParkingCitations() {
   const hourlyPattern = useCitationHourlyPattern(dateRange, extraWhere)
 
   // Comparison data
-  const comparison = useCitationComparisonData(dateRange, statsWhere, comparisonPeriod, rawData, hitLimit)
-  const compLabel = comparisonPeriod ? `vs ${comparisonPeriod >= 360 ? '1yr' : `${comparisonPeriod}d`} ago` : ''
+  const compStart = useMemo(() => resolveComparisonStart(comparisonMode, dateRange), [comparisonMode, dateRange])
+  const comparison = useCitationComparisonData(dateRange, statsWhere, compStart, rawData, hitLimit)
+  const compLabel = comparisonLabel(comparisonMode, dateRange)
 
   // Neighborhood boundaries for anomaly mode
   const { boundaries: neighborhoodBoundaries } = useNeighborhoodBoundaries()
@@ -391,7 +393,7 @@ export default function ParkingCitations() {
       })
     }
 
-    if (comparisonPeriod !== null && comparison.currentTrend.length > 0) {
+    if (comparisonMode !== null && comparison.currentTrend.length > 0) {
       tiles.push({
         id: 'daily-trend',
         label: `Daily Trend${comparison.isLoading ? ' (loading…)' : ''}`,
@@ -412,7 +414,7 @@ export default function ParkingCitations() {
 
     return tiles
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [histogramData, topViolationBars, sortByRevenue, comparisonPeriod, comparison.currentTrend, comparison.comparisonTrend, comparison.isLoading])
+  }, [histogramData, topViolationBars, sortByRevenue, comparisonMode, comparison.currentTrend, comparison.comparisonTrend, comparison.isLoading])
 
   const neighborhoodEntries = useMemo(() => {
     return neighborhoodRows
@@ -685,7 +687,7 @@ export default function ParkingCitations() {
       defaultExpanded: true,
       subtitle: comparison.deltas
         ? `${formatDelta(comparison.deltas.total)} ${compLabel}`
-        : (comparison.suppressed && comparisonPeriod ? 'Compare needs a narrower date range' : undefined),
+        : (comparison.suppressed && comparisonMode !== null ? 'Compare needs a narrower date range' : undefined),
       trend: comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined,
     },
     {
@@ -731,7 +733,7 @@ export default function ParkingCitations() {
       info: 'peak-hour',
       defaultExpanded: false,
     },
-  ], [totalRevenue, totalCount, stats, comparison.deltas, comparison.suppressed, compLabel, comparisonPeriod, trend.cityWideYoY])
+  ], [totalRevenue, totalCount, stats, comparison.deltas, comparison.suppressed, compLabel, comparisonMode, trend.cityWideYoY])
 
   useProgressScope()
 

@@ -1,38 +1,31 @@
-/** ComparisonPopover — compact "Compare vs ▾" pill that opens a small
- *  dropdown of prior-period comparison options. Lives in the CardTray's
- *  pill bar (above the stat cards) — replaces the wide "vs Off / 30d /
- *  90d / 180d / 1yr" toggle that previously dominated the global header.
+/** ComparisonPopover — "vs July 4, 2025 ▾" pill that opens a dropdown of
+ *  comparison presets resolved to concrete dates, plus a pinned-date picker.
+ *  Lives in the CardTray's pill bar.
  *
- *  Same semantics as the legacy ComparisonToggle: drives Zustand
- *  comparisonPeriod, off = no comparison, the integer values map to
- *  days-ago for the prior-period query.
+ *  Presets follow the global date range ('1yr' = same calendar day last
+ *  year, leap-aware); a picked date stays pinned when the range moves.
+ *  State: appStore.comparisonMode (URL: ?compare=1yr | ?compare=YYYY-MM-DD).
  */
 
 import { useState, useEffect, useRef } from 'react'
 import { useAppStore } from '@/stores/appStore'
+import {
+  type ComparisonPreset,
+  resolveComparisonRange, describeWindow, comparisonLabel,
+} from '@/utils/comparisonMode'
 
-const OPTIONS = [
-  { label: 'Off', value: null },
-  { label: '30d', value: 30 },
-  { label: '90d', value: 90 },
-  { label: '180d', value: 180 },
-  { label: '1yr', value: 360 },
-] as const
-
-function periodLabel(value: number | null): string | null {
-  switch (value) {
-    case null: return null
-    case 30: return '30d'
-    case 90: return '90d'
-    case 180: return '180d'
-    case 360: return '1yr'
-    default: return null
-  }
-}
+const PRESET_ROWS: Array<{ preset: ComparisonPreset; label: string; multiDayLabel?: string }> = [
+  { preset: 'prev', label: 'Previous day', multiDayLabel: 'Previous period' },
+  { preset: '30d', label: '30 days earlier' },
+  { preset: '90d', label: '90 days earlier' },
+  { preset: '180d', label: '180 days earlier' },
+  { preset: '1yr', label: 'Same day last year', multiDayLabel: 'Same dates last year' },
+]
 
 export default function ComparisonPopover() {
-  const comparisonPeriod = useAppStore((s) => s.comparisonPeriod)
-  const setComparisonPeriod = useAppStore((s) => s.setComparisonPeriod)
+  const comparisonMode = useAppStore((s) => s.comparisonMode)
+  const setComparisonMode = useAppStore((s) => s.setComparisonMode)
+  const dateRange = useAppStore((s) => s.dateRange)
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -46,22 +39,26 @@ export default function ComparisonPopover() {
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
 
-  const activeLabel = periodLabel(comparisonPeriod)
-  const isActive = activeLabel !== null
+  const activeLabel = comparisonLabel(comparisonMode, dateRange)
+  const isActive = comparisonMode !== null
+  const isMultiDay = dateRange.start !== dateRange.end
+  const pinnedDate = comparisonMode?.kind === 'date' ? comparisonMode.start : ''
+  const now = new Date()
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 
   return (
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
-        className={`flex items-center gap-1 px-2 py-1 rounded-full transition-all duration-150 cursor-pointer
+        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full transition-all duration-150 cursor-pointer
           ${isActive
-            ? 'bg-slate-800/80 dark:bg-white/[0.06] border border-white/[0.12] text-slate-700 dark:text-slate-200'
-            : 'bg-slate-900/50 dark:bg-white/[0.02] border border-white/[0.04] text-slate-500 hover:bg-slate-800/60 dark:hover:bg-white/[0.04] hover:border-white/[0.08]'
+            ? 'bg-ochre-500/15 border border-ochre-500/40 text-ochre-400 hover:bg-ochre-500/25'
+            : 'bg-slate-900/50 dark:bg-white/[0.02] border border-white/[0.04] text-slate-400 hover:bg-slate-800/60 dark:hover:bg-white/[0.04] hover:border-white/[0.08]'
           }`}
-        title={isActive ? `Currently comparing vs prior ${activeLabel}` : 'Compare against a prior period'}
+        title={isActive ? `Comparing ${activeLabel}` : 'Compare against another date'}
       >
-        <span className="text-[9px] font-mono whitespace-nowrap">
-          {isActive ? `vs ${activeLabel}` : 'Compare'}
+        <span className="text-[10px] font-mono whitespace-nowrap">
+          {isActive ? activeLabel : 'Compare'}
         </span>
         <svg
           width="8" height="8" viewBox="0 0 8 8"
@@ -74,27 +71,64 @@ export default function ComparisonPopover() {
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1.5 w-36 rounded-lg
+        <div className="absolute top-full left-0 mt-1.5 w-64 rounded-lg
           bg-slate-900/95 backdrop-blur-sm border border-white/[0.08]
           shadow-xl shadow-black/40 p-1 space-y-0.5 z-50"
         >
-          {OPTIONS.map((opt) => {
-            const selected = comparisonPeriod === opt.value
+          <button
+            onClick={() => { setComparisonMode(null); setOpen(false) }}
+            className={`w-full flex items-center justify-between px-2 py-1 rounded text-[10px] font-mono transition-colors ${
+              !isActive
+                ? 'bg-ochre-500/15 ring-1 ring-ochre-500/30 text-white'
+                : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200'
+            }`}
+          >
+            <span>Off</span>
+          </button>
+
+          {PRESET_ROWS.map(({ preset, label, multiDayLabel }) => {
+            const win = resolveComparisonRange({ kind: 'preset', preset }, dateRange)
+            const selected = comparisonMode?.kind === 'preset' && comparisonMode.preset === preset
             return (
               <button
-                key={opt.label}
-                onClick={() => { setComparisonPeriod(opt.value); setOpen(false) }}
-                className={`w-full flex items-center justify-between px-2 py-1 rounded text-[10px] font-mono transition-colors ${
+                key={preset}
+                onClick={() => { setComparisonMode({ kind: 'preset', preset }); setOpen(false) }}
+                className={`w-full flex items-center justify-between gap-2 px-2 py-1 rounded text-[10px] font-mono transition-colors ${
                   selected
-                    ? 'bg-white/[0.08] text-white'
+                    ? 'bg-ochre-500/15 ring-1 ring-ochre-500/30 text-white'
                     : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200'
                 }`}
               >
-                <span>{opt.label === 'Off' ? 'Off' : `vs prior ${opt.label}`}</span>
-                {selected && <span className="text-[9px] text-moss-400">✓</span>}
+                <span className="whitespace-nowrap">{isMultiDay && multiDayLabel ? multiDayLabel : label}</span>
+                <span className="text-[9px] text-slate-500 whitespace-nowrap">{win ? describeWindow(win) : ''}</span>
               </button>
             )
           })}
+
+          {/* Pinned date — a fact, not a relationship: stays put when the range moves */}
+          <div
+            className={`flex items-center justify-between gap-2 px-2 py-1 rounded text-[10px] font-mono ${
+              comparisonMode?.kind === 'date'
+                ? 'bg-ochre-500/15 ring-1 ring-ochre-500/30 text-white'
+                : 'text-slate-400'
+            }`}
+          >
+            <span className="whitespace-nowrap">Pick a date</span>
+            <input
+              type="date"
+              value={pinnedDate}
+              max={today}
+              onChange={(e) => {
+                if (e.target.value) {
+                  setComparisonMode({ kind: 'date', start: e.target.value })
+                  setOpen(false)
+                }
+              }}
+              className="bg-transparent text-[10px] font-mono text-slate-300 outline-none
+                [color-scheme:dark] cursor-pointer w-[110px]"
+              aria-label="Pinned comparison date"
+            />
+          </div>
         </div>
       )}
     </div>

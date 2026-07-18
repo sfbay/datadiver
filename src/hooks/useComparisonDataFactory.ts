@@ -10,7 +10,8 @@ import type {
   ParkingCitationRecord,
   DailyTrendPoint,
 } from '@/types/datasets'
-import { diffMinutes, diffHours, daysBeforeDate, groupByDay } from '@/utils/time'
+import { diffMinutes, diffHours, groupByDay } from '@/utils/time'
+import { addDays, rangeLengthDays } from '@/utils/comparisonMode'
 
 // ── Shared utility ────────────────────────────────────────────────
 
@@ -58,7 +59,7 @@ export function createComparisonDataHook<TRecord, TStats, TDeltas>(
   const hook = (
     dateRange: { start: string; end: string },
     whereClause: string,
-    comparisonDays: number | null,
+    compStart: string | null, // resolved comparison window start (YYYY-MM-DD)
     currentRecords: TRecord[],
     currentTruncated = false
   ): ComparisonResult<TStats, TDeltas> => {
@@ -66,7 +67,7 @@ export function createComparisonDataHook<TRecord, TStats, TDeltas>(
     const [isLoading, setIsLoading] = useState(false)
 
     useEffect(() => {
-      if (comparisonDays === null) {
+      if (compStart === null) {
         setCompRecords([])
         return
       }
@@ -74,8 +75,8 @@ export function createComparisonDataHook<TRecord, TStats, TDeltas>(
       let cancelled = false
       setIsLoading(true)
 
-      const compStart = daysBeforeDate(dateRange.start, comparisonDays)
-      const compEnd = daysBeforeDate(dateRange.end, comparisonDays)
+      // Comparison window = same length as the current range, starting at compStart.
+      const compEnd = addDays(compStart, rangeLengthDays(dateRange))
 
       // Replace the date range in whereClause with the comparison range
       const compWhere = whereClause
@@ -98,10 +99,10 @@ export function createComparisonDataHook<TRecord, TStats, TDeltas>(
         })
 
       return () => { cancelled = true }
-    }, [dateRange.start, dateRange.end, whereClause, comparisonDays])
+    }, [dateRange.start, dateRange.end, whereClause, compStart])
 
     return useMemo((): ComparisonResult<TStats, TDeltas> => {
-      if (comparisonDays === null) {
+      if (compStart === null) {
         return { currentStats: null, comparisonStats: null, deltas: null, currentTrend: [], comparisonTrend: [], isLoading: false, suppressed: false }
       }
 
@@ -128,7 +129,7 @@ export function createComparisonDataHook<TRecord, TStats, TDeltas>(
       const comparisonTrend = suppressed ? [] : buildTrend(compRecords)
 
       return { currentStats, comparisonStats, deltas, currentTrend, comparisonTrend, isLoading, suppressed }
-    }, [currentRecords, compRecords, comparisonDays, isLoading, currentTruncated])
+    }, [currentRecords, compRecords, compStart, isLoading, currentTruncated])
   }
 
   Object.defineProperty(hook, 'name', { value: name })

@@ -152,14 +152,6 @@ export default function CardTray({ viewId, cards, className = '', hideComparison
           have the default `pointer-events: auto` and remain interactive. */}
       {(minimizedCards.length > 0 || hiddenCards.length > 0 || hasExpanded) && (
         <div className="flex flex-wrap items-center gap-1.5 px-4 py-2 pointer-events-none">
-          {/* Comparison-period popover — relocated from the global header
-              so it lives next to the deltas it actually controls. */}
-          {!hideComparison && (
-            <div className="pointer-events-auto">
-              <ComparisonPopover />
-            </div>
-          )}
-
           {minimizedCards.map((card) => {
             const trendArrow = card.yoyDelta != null
               ? card.yoyDelta > 0 ? '↑' : card.yoyDelta < 0 ? '↓' : '→'
@@ -220,6 +212,16 @@ export default function CardTray({ viewId, cards, className = '', hideComparison
               </svg>
               <span className="text-[8px] font-mono text-slate-500">all</span>
             </button>
+          )}
+
+          {/* Comparison popover — to the RIGHT of the card pills + picker
+              (Jesse, July 2026): leading the bar buried it in the corner;
+              trailing the pills it reads as the row's action and sits
+              closer to the map's center line. */}
+          {!hideComparison && (
+            <div className="pointer-events-auto">
+              <ComparisonPopover />
+            </div>
           )}
 
           {/* Menu toggle for hidden cards */}

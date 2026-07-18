@@ -4,6 +4,7 @@ import { useDataset } from '@/hooks/useDataset'
 import { useDispatchHourlyPattern } from '@/hooks/useHourlyPatternFactory'
 import { useDispatchComparisonData } from '@/hooks/useComparisonDataFactory'
 import { useAppStore } from '@/stores/appStore'
+import { resolveComparisonStart, comparisonLabel } from '@/utils/comparisonMode'
 import type { DispatchCall, CallTypeAggRow, DispositionAggRow } from '@/types/datasets'
 import { diffMinutes, formatDuration, formatNumber, formatDelta } from '@/utils/time'
 import { SENSITIVITY_COLORS, DISPOSITION_LABELS } from '@/utils/colors'
@@ -36,7 +37,7 @@ const SENSITIVE_LABELS: Record<SensitiveFilter, string> = {
 const SELECT_FIELDS = 'cad_number,received_datetime,onscene_datetime,close_datetime,call_type_final_desc,disposition,sensitive_call,priority_final'
 
 export default function Dispatch911() {
-  const { dateRange, timeOfDayFilter, comparisonPeriod } = useAppStore()
+  const { dateRange, timeOfDayFilter, comparisonMode } = useAppStore()
   const [searchParams, setSearchParams] = useSearchParams()
 
   // View-local state synced to URL params
@@ -169,8 +170,9 @@ export default function Dispatch911() {
   const hourlyPattern = useDispatchHourlyPattern(dateRange, hourlyExtraClause)
 
   // Comparison data
-  const comparison = useDispatchComparisonData(dateRange, filterClause, comparisonPeriod, rawData, hitLimit)
-  const compLabel = comparisonPeriod ? `vs ${comparisonPeriod >= 360 ? '1yr' : `${comparisonPeriod}d`} ago` : ''
+  const compStart = useMemo(() => resolveComparisonStart(comparisonMode, dateRange), [comparisonMode, dateRange])
+  const comparison = useDispatchComparisonData(dateRange, filterClause, compStart, rawData, hitLimit)
+  const compLabel = comparisonLabel(comparisonMode, dateRange)
 
   // Compute stats from fetched records
   const stats = useMemo(() => {
@@ -359,7 +361,7 @@ export default function Dispatch911() {
                   delay={0}
                   subtitle={comparison.deltas
                     ? `${formatDelta(comparison.deltas.total)} ${compLabel}`
-                    : (comparison.suppressed && comparisonPeriod ? 'Compare needs a narrower date range' : undefined)}
+                    : (comparison.suppressed && comparisonMode !== null ? 'Compare needs a narrower date range' : undefined)}
                   trend={comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined}
                   yoyDelta={!comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null}
                 />
@@ -457,7 +459,7 @@ export default function Dispatch911() {
               </div>
 
               {/* Trend chart (when comparing) */}
-              {comparisonPeriod !== null && comparison.currentTrend.length > 0 && (
+              {comparisonMode !== null && comparison.currentTrend.length > 0 && (
                 <div className="glass-card rounded-xl p-4">
                   <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                     Daily Trend {comparison.isLoading && '(loading\u2026)'}

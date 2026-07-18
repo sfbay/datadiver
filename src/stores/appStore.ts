@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { ViewId } from '@/types/datasets'
+import type { ComparisonMode } from '@/utils/comparisonMode'
 
 interface AppState {
   /** Current active view */
@@ -23,8 +24,8 @@ interface AppState {
   /** Time-of-day hour filter (null = all hours) */
   timeOfDayFilter: { startHour: number; endHour: number } | null
 
-  /** Comparison period offset in days (null = off) */
-  comparisonPeriod: number | null
+  /** Comparison mode (null = off). Presets follow the date range; pinned dates stay put. */
+  comparisonMode: ComparisonMode
 
   /** Selected incident call_number for detail panel (null = closed) */
   selectedIncident: string | null
@@ -61,7 +62,7 @@ interface AppState {
   setDateRange: (start: string, end: string) => void
   setSelectedNeighborhood: (neighborhood: string | null) => void
   setTimeOfDayFilter: (filter: { startHour: number; endHour: number } | null) => void
-  setComparisonPeriod: (days: number | null) => void
+  setComparisonMode: (mode: ComparisonMode) => void
   setSelectedIncident: (callNumber: string | null) => void
   setSelected311Case: (id: string | null) => void
   setSelectedCrimeIncident: (id: string | null) => void
@@ -88,7 +89,7 @@ export const useAppStore = create<AppState>((set) => ({
   },
   selectedNeighborhood: null,
   timeOfDayFilter: null,
-  comparisonPeriod: null,
+  comparisonMode: null,
   selectedIncident: null,
   selected311Case: null,
   selectedCrimeIncident: null,
@@ -119,7 +120,7 @@ export const useAppStore = create<AppState>((set) => ({
   setDateRange: (start, end) => set({ dateRange: { start, end } }),
   setSelectedNeighborhood: (neighborhood) => set({ selectedNeighborhood: neighborhood }),
   setTimeOfDayFilter: (filter) => set({ timeOfDayFilter: filter }),
-  setComparisonPeriod: (days) => set({ comparisonPeriod: days }),
+  setComparisonMode: (mode) => set({ comparisonMode: mode }),
   setSelectedIncident: (callNumber) => set({ selectedIncident: callNumber }),
   setSelected311Case: (id) => set({ selected311Case: id }),
   setSelectedCrimeIncident: (id) => set({ selectedCrimeIncident: id }),

@@ -18,6 +18,7 @@ import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { useFireHourlyPattern } from '@/hooks/useHourlyPatternFactory'
 import { useFireComparisonData } from '@/hooks/useComparisonDataFactory'
 import { useAppStore } from '@/stores/appStore'
+import { resolveComparisonStart, resolveComparisonRange, comparisonLabel } from '@/utils/comparisonMode'
 import type { FireEMSDispatch, FireDispatchNhStatsRow, FireDispatchCityStatsRow, FireDispatchHistogramRow } from '@/types/datasets'
 import { formatDelta } from '@/utils/time'
 import { formatDuration, formatNumber } from '@/utils/time'
@@ -46,6 +47,10 @@ import BatteryTrendChart from '@/components/charts/BatteryTrendChart'
 import HorizontalBarChart from '@/components/charts/HorizontalBarChart'
 import { useEmergencyResponseData } from './useEmergencyResponseData'
 import ScannerFeedChips from '@/components/ui/ScannerFeedChips'
+import { RESPONSE_SECONDS, SAME_DAY, VALID_RESPONSE } from './soql'
+import { shouldShowTypicalDay } from './typicalDay'
+import { useTypicalDay } from './useTypicalDay'
+import { useCompCounts } from './useCompCounts'
 
 type ServiceFilter = 'all' | 'fire' | 'ems' | 'transport'
 
@@ -59,28 +64,8 @@ const SERVICE_LABELS: Record<ServiceFilter, string> = {
 type SidebarTab = 'neighborhoods' | 'patterns'
 type MapOverlay = 'response' | 'apot'
 
-// Socrata's SoQL on the Fire/EMS dispatch dataset doesn't expose
-// `date_diff_ss`. Compute response seconds via component decomposition:
-// (hh*3600 + mm*60 + ss) extracted from each timestamp, subtracted.
-const RESPONSE_SECONDS = (
-  '((date_extract_hh(on_scene_dttm) - date_extract_hh(received_dttm)) * 3600 + ' +
-  '(date_extract_mm(on_scene_dttm) - date_extract_mm(received_dttm)) * 60 + ' +
-  '(date_extract_ss(on_scene_dttm) - date_extract_ss(received_dttm)))'
-)
-
-// Same-day filter drops <0.5% of calls that cross midnight, but keeps the
-// component-decomposition arithmetic free of negative-diff edge cases.
-const SAME_DAY = (
-  'date_extract_y(on_scene_dttm) = date_extract_y(received_dttm) AND ' +
-  'date_extract_m(on_scene_dttm) = date_extract_m(received_dttm) AND ' +
-  'date_extract_d(on_scene_dttm) = date_extract_d(received_dttm)'
-)
-
-// Drop responses < 0s (data errors) or > 2 hours (stale dispatch / data noise)
-const VALID_RESPONSE = `${RESPONSE_SECONDS} > 0 AND ${RESPONSE_SECONDS} < 7200`
-
 export default function EmergencyResponse() {
-  const { dateRange, timeOfDayFilter, comparisonPeriod, selectedIncident, setSelectedIncident, selectedNeighborhood, setSelectedNeighborhood } = useAppStore()
+  const { dateRange, timeOfDayFilter, comparisonMode, selectedIncident, setSelectedIncident, selectedNeighborhood, setSelectedNeighborhood } = useAppStore()
   const civicIndicators = useCivicIndicators()
   const [searchParams, setSearchParams] = useSearchParams()
   const [serviceFilter, setServiceFilter] = useState<ServiceFilter>('all')
@@ -117,23 +102,25 @@ export default function EmergencyResponse() {
     return ''
   }, [serviceFilter])
 
+  const todClause = useMemo(() => {
+    if (!timeOfDayFilter) return ''
+    const { startHour, endHour } = timeOfDayFilter
+    if (startHour <= endHour) {
+      return `date_extract_hh(received_dttm) >= ${startHour} AND date_extract_hh(received_dttm) <= ${endHour}`
+    }
+    // Wrap-around (e.g., 22-6)
+    return `(date_extract_hh(received_dttm) >= ${startHour} OR date_extract_hh(received_dttm) <= ${endHour})`
+  }, [timeOfDayFilter])
+
   const whereClause = useMemo(() => {
     const conditions: string[] = []
     conditions.push(`received_dttm >= '${dateRange.start}T00:00:00'`)
     conditions.push(`received_dttm <= '${dateRange.end}T23:59:59'`)
     conditions.push(`on_scene_dttm IS NOT NULL`)
     if (serviceClause) conditions.push(serviceClause)
-    if (timeOfDayFilter) {
-      const { startHour, endHour } = timeOfDayFilter
-      if (startHour <= endHour) {
-        conditions.push(`date_extract_hh(received_dttm) >= ${startHour} AND date_extract_hh(received_dttm) <= ${endHour}`)
-      } else {
-        // Wrap-around (e.g., 22-6)
-        conditions.push(`(date_extract_hh(received_dttm) >= ${startHour} OR date_extract_hh(received_dttm) <= ${endHour})`)
-      }
-    }
+    if (todClause) conditions.push(todClause)
     return conditions.join(' AND ')
-  }, [dateRange, serviceClause, timeOfDayFilter])
+  }, [dateRange, serviceClause, todClause])
 
   const freshness = useDataFreshness('fireEMSDispatch', 'received_dttm', dateRange)
 
@@ -541,8 +528,16 @@ export default function EmergencyResponse() {
   const hourlyPattern = useFireHourlyPattern(dateRange, serviceClause || undefined)
 
   // Comparison period data
-  const comparison = useFireComparisonData(dateRange, whereClause, comparisonPeriod, rawData, hitLimit)
-  const compLabel = comparisonPeriod ? `vs ${comparisonPeriod >= 360 ? '1yr' : `${comparisonPeriod}d`} ago` : ''
+  const compStart = useMemo(() => resolveComparisonStart(comparisonMode, dateRange), [comparisonMode, dateRange])
+  const comparison = useFireComparisonData(dateRange, whereClause, compStart, rawData, hitLimit)
+  const compLabel = comparisonLabel(comparisonMode, dateRange)
+  const typicalDay = useTypicalDay(
+    shouldShowTypicalDay(dateRange),
+    [serviceClause, todClause].filter(Boolean).join(' AND '),
+    dateRange.end
+  )
+  const compRange = useMemo(() => resolveComparisonRange(comparisonMode, dateRange), [comparisonMode, dateRange])
+  const compCounts = useCompCounts(compRange, serviceClause, todClause)
 
   const chartTiles = useMemo((): ChartTileDef[] => {
     const tiles: ChartTileDef[] = []
@@ -558,7 +553,7 @@ export default function EmergencyResponse() {
       })
     }
 
-    if (comparisonPeriod !== null && comparison.currentTrend.length > 0) {
+    if (comparisonMode !== null && comparison.currentTrend.length > 0) {
       tiles.push({
         id: 'daily-trend',
         label: `Daily Trend ${comparison.isLoading ? '(loading…)' : ''}`,
@@ -590,7 +585,7 @@ export default function EmergencyResponse() {
     }
 
     return tiles
-  }, [histogramData, comparisonPeriod, comparison.currentTrend, comparison.comparisonTrend, comparison.isLoading, isFireMode, fireInsights.batteryTrend])
+  }, [histogramData, comparisonMode, comparison.currentTrend, comparison.comparisonTrend, comparison.isLoading, isFireMode, fireInsights.batteryTrend])
 
   // Selected-neighborhood comparison context — when a neighborhood is
   // selected, derive the data needed to swap stat cards from citywide
@@ -623,10 +618,22 @@ export default function EmergencyResponse() {
       ? `${selectedNhStats.nh.neighborhood} · ${selectedNhStats.avgDeltaPct >= 0 ? '+' : ''}${selectedNhStats.avgDeltaPct.toFixed(0)}% from city`
       : (comparison.deltas
           ? `${formatDelta(comparison.deltas.avg)} ${compLabel}`
-          : (comparison.suppressed && comparisonPeriod ? 'Compare needs a narrower date range' : undefined))
+          : (comparison.suppressed && comparisonMode !== null ? 'Compare needs a narrower date range' : undefined))
     const avgTrend: 'up' | 'down' | 'neutral' | undefined = selectedNhStats
       ? (selectedNhStats.avgDeltaPct > 0 ? 'up' : selectedNhStats.avgDeltaPct < 0 ? 'down' : 'neutral')
       : (comparison.deltas ? (comparison.deltas.avg > 0 ? 'up' : comparison.deltas.avg < 0 ? 'down' : 'neutral') : undefined)
+
+    // Incidents delta from server-true aggregates (both windows uncapped) —
+    // the % and the raw prior figure come from the same numbers and cannot
+    // disagree; immune to the 5K cap that suppresses the time-based deltas.
+    // The date is deliberately absent from this tile: the Compare pill and
+    // the sibling time tiles carry it, this tile carries the empiricals.
+    const cityCompPct = compCounts && compCounts.total > 0
+      ? ((stats.total - compCounts.total) / compCounts.total) * 100
+      : null
+    const typicalShort = typicalDay.mean != null
+      ? `typical ≈ ${formatNumber(Math.round(typicalDay.mean))}`
+      : null
 
     const cards: CardDef[] = [
       {
@@ -649,44 +656,32 @@ export default function EmergencyResponse() {
           : undefined,
       },
       {
-        id: 'median',
-        label: 'Median',
-        shortLabel: 'Med',
-        value: formatDuration(stats.median),
-        color: responseTimeColor(stats.median),
-        delay: 80,
-        info: 'median',
-        defaultExpanded: true,
-        subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.median)} ${compLabel}` : undefined,
-        trend: comparison.deltas ? (comparison.deltas.median > 0 ? 'up' : comparison.deltas.median < 0 ? 'down' : 'neutral') : undefined,
-      },
-      {
-        id: '90th-pctl',
-        label: 'Slowest 10%',
-        shortLabel: '90th',
-        value: formatDuration(stats.p90),
-        color: responseTimeColor(stats.p90),
-        delay: 160,
-        info: '90th-pctl',
-        defaultExpanded: true,
-        subtitle: comparison.deltas ? `${formatDelta(comparison.deltas.p90)} ${compLabel}` : undefined,
-        trend: comparison.deltas ? (comparison.deltas.p90 > 0 ? 'up' : comparison.deltas.p90 < 0 ? 'down' : 'neutral') : undefined,
-      },
-      {
         id: 'incidents',
         label: 'Incidents',
         shortLabel: 'Inc',
         value: formatNumber(selectedNhStats ? selectedNhStats.nh.totalIncidents : stats.total),
         color: '#5c9693',
-        delay: 240,
-        defaultExpanded: false,
+        delay: 80,
+        defaultExpanded: true,
         subtitle: selectedNhStats
-          ? `${selectedNhStats.nh.neighborhood} · ${selectedNhStats.countSharePct.toFixed(1)}% of citywide`
-          : (comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : undefined),
+          ? [
+              `${selectedNhStats.nh.neighborhood} · ${selectedNhStats.countSharePct.toFixed(1)}% of citywide`,
+              // 0 is honest here: a neighborhood absent from the comparison
+              // window's GROUP BY had zero valid calls that day.
+              compCounts ? `vs ${formatNumber(compCounts.byNeighborhood.get(selectedNhStats.nh.neighborhood) ?? 0)}` : null,
+            ].filter(Boolean).join(' · ')
+          : [
+              cityCompPct != null
+                ? `${formatDelta(cityCompPct)} vs ${formatNumber(compCounts!.total)}`
+                : (comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : null),
+              comparisonMode !== null ? typicalShort : typicalDay.line,
+            ].filter(Boolean).join(' · ') || undefined,
         trend: selectedNhStats
           ? undefined
+          : cityCompPct != null
+          ? (cityCompPct > 0 ? 'up' : cityCompPct < 0 ? 'down' : 'neutral')
           : (comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined),
-        yoyDelta: !selectedNhStats && !comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null,
+        yoyDelta: !selectedNhStats && !comparison.deltas && !compCounts && trend.cityWideYoY ? trend.cityWideYoY.pct : null,
         positionScale: selectedNhStats
           ? {
               value: selectedNhStats.nh.totalIncidents,
@@ -695,6 +690,35 @@ export default function EmergencyResponse() {
               // member of the neighborhood-count distribution; it's the sum.
             }
           : undefined,
+      },
+      {
+        id: 'median',
+        label: 'Median',
+        shortLabel: 'Med',
+        value: formatDuration(stats.median),
+        color: responseTimeColor(stats.median),
+        delay: 160,
+        info: 'median',
+        defaultExpanded: true,
+        // Suppressed while a neighborhood is selected: the map sample (and
+        // thus comparison.currentStats) drills to the neighborhood while this
+        // tile's VALUE stays citywide — a delta across those two populations
+        // is a wrong number, not a comparison.
+        subtitle: !selectedNhStats && comparison.deltas ? `${formatDelta(comparison.deltas.median)} ${compLabel}` : undefined,
+        trend: !selectedNhStats && comparison.deltas ? (comparison.deltas.median > 0 ? 'up' : comparison.deltas.median < 0 ? 'down' : 'neutral') : undefined,
+      },
+      {
+        id: '90th-pctl',
+        label: 'Slowest 10%',
+        shortLabel: '90th',
+        value: formatDuration(stats.p90),
+        color: responseTimeColor(stats.p90),
+        delay: 240,
+        info: '90th-pctl',
+        defaultExpanded: true,
+        // Same cross-population suppression as Median (see comment there).
+        subtitle: !selectedNhStats && comparison.deltas ? `${formatDelta(comparison.deltas.p90)} ${compLabel}` : undefined,
+        trend: !selectedNhStats && comparison.deltas ? (comparison.deltas.p90 > 0 ? 'up' : comparison.deltas.p90 < 0 ? 'down' : 'neutral') : undefined,
       },
     ]
     if (stats.apotCount > 0) {
@@ -747,7 +771,7 @@ export default function EmergencyResponse() {
       })
     }
     return cards
-  }, [stats, comparison.deltas, comparison.suppressed, compLabel, comparisonPeriod, trend.cityWideYoY, isFireMode, fireInsights.casualties, fireInsights.priorYearCasualties, selectedNhStats])
+  }, [stats, comparison.deltas, comparison.suppressed, compLabel, comparisonMode, trend.cityWideYoY, isFireMode, fireInsights.casualties, fireInsights.priorYearCasualties, selectedNhStats, typicalDay.line, typicalDay.mean, compCounts])
 
   const handleMapReady = useCallback((map: mapboxgl.Map) => {
     setMapInstance(map)
@@ -885,7 +909,7 @@ export default function EmergencyResponse() {
 
             {/* Stat cards — top left */}
             {!isLoading && responseData.length > 0 && (
-              <CardTray viewId="emergencyResponse" cards={cardDefs} />
+              <CardTray viewId="emergencyResponseV2" cards={cardDefs} />
             )}
 
             {/* Histogram + Trend — bottom left */}

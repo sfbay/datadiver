@@ -19,6 +19,7 @@ import { usePoliceComparisonData } from '@/hooks/useComparisonDataFactory'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useAppStore } from '@/stores/appStore'
+import { resolveComparisonStart, comparisonLabel } from '@/utils/comparisonMode'
 import type { PoliceIncident, IncidentCategoryAggRow, NeighborhoodAggRowPolice, ResolutionAggRow } from '@/types/datasets'
 import { formatDelta, formatNumber, formatHour } from '@/utils/time'
 import { coordsFromFields, extractCoordinates } from '@/utils/geo'
@@ -51,7 +52,7 @@ type SidebarTab = 'categories' | 'neighborhoods'
 const SELECT_FIELDS = 'incident_id,incident_number,cad_number,incident_datetime,report_datetime,incident_category,incident_subcategory,incident_description,resolution,intersection,analysis_neighborhood,police_district,latitude,longitude,point'
 
 export default function CrimeIncidents() {
-  const { dateRange, timeOfDayFilter, comparisonPeriod, selectedCrimeIncident, setSelectedCrimeIncident } = useAppStore()
+  const { dateRange, timeOfDayFilter, comparisonMode, selectedCrimeIncident, setSelectedCrimeIncident } = useAppStore()
   const civicIndicators = useCivicIndicators()
   const [searchParams, setSearchParams] = useSearchParams()
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('categories')
@@ -244,8 +245,9 @@ export default function CrimeIncidents() {
   const hourlyPattern = usePoliceHourlyPattern(dateRange, extraWhere)
 
   // Comparison data
-  const comparison = usePoliceComparisonData(dateRange, whereClause, comparisonPeriod, rawData, hitLimit)
-  const compLabel = comparisonPeriod ? `vs ${comparisonPeriod >= 360 ? '1yr' : `${comparisonPeriod}d`} ago` : ''
+  const compStart = useMemo(() => resolveComparisonStart(comparisonMode, dateRange), [comparisonMode, dateRange])
+  const comparison = usePoliceComparisonData(dateRange, whereClause, compStart, rawData, hitLimit)
+  const compLabel = comparisonLabel(comparisonMode, dateRange)
 
   // Neighborhood boundaries for anomaly mode
   const { boundaries: neighborhoodBoundaries } = useNeighborhoodBoundaries()
@@ -351,7 +353,7 @@ export default function CrimeIncidents() {
         defaultExpanded: true,
         subtitle: comparison.deltas
           ? `${formatDelta(comparison.deltas.total)} ${compLabel}`
-          : (comparison.suppressed && comparisonPeriod ? 'Compare needs a narrower date range' : undefined),
+          : (comparison.suppressed && comparisonMode !== null ? 'Compare needs a narrower date range' : undefined),
         trend: comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined,
         yoyDelta: !comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null,
       },
@@ -386,7 +388,7 @@ export default function CrimeIncidents() {
         defaultExpanded: false,
       },
     ]
-  }, [stats, totalCount, comparison.deltas, comparison.suppressed, compLabel, comparisonPeriod, trend.cityWideYoY])
+  }, [stats, totalCount, comparison.deltas, comparison.suppressed, compLabel, comparisonMode, trend.cityWideYoY])
 
   // Chart tray definitions (bottom-left overlay)
   const chartTiles = useMemo((): ChartTileDef[] => {
@@ -409,7 +411,7 @@ export default function CrimeIncidents() {
         ),
       })
     }
-    if (comparisonPeriod !== null && comparison.currentTrend.length > 0) {
+    if (comparisonMode !== null && comparison.currentTrend.length > 0) {
       tiles.push({
         id: 'daily-trend',
         label: `Daily Trend${comparison.isLoading ? ' (loading\u2026)' : ''}`,
@@ -428,7 +430,7 @@ export default function CrimeIncidents() {
       })
     }
     return tiles
-  }, [resolutionBarData, comparisonPeriod, comparison])
+  }, [resolutionBarData, comparisonMode, comparison])
 
   // Sidebar data
   const categoryEntries = useMemo(
