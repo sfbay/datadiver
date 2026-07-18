@@ -291,14 +291,20 @@ export default function RCVRoundChart({
         </span>
       </div>
 
-      {/* Elimination callout */}
-      {justEliminated && (
-        <div className="mb-2 px-2 py-1.5 rounded-lg bg-brick-500/10 border border-brick-500/20 animate-pulse">
+      {/* Elimination callout — a permanently-reserved, fixed-height slot so
+          the panel NEVER changes size (Jesse: click zones must not move; the
+          old 1.5s-flash banner grew the panel by ~52px each round). Content
+          is persistent for the whole viewed round (derived from the
+          synchronous transferResult, not the 1.5s justEliminated window,
+          which now gates only the ribbons/glow) — it's context worth
+          reading at leisure, not a flash. */}
+      <div className="mb-2 min-h-[52px] px-2 py-1.5 rounded-lg flex items-center border border-brick-500/20 bg-brick-500/10" style={{ opacity: transferResult.eliminatedNames.length > 0 ? 1 : 0, transition: 'opacity 0.3s' }}>
+        {transferResult.eliminatedNames.length > 0 && (
           <p className="text-[10px] font-mono text-brick-400">
             <span className="font-bold">
-              {justEliminated.isBatch
-                ? `${justEliminated.names.length} candidates eliminated together`
-                : `${toSentenceCase(justEliminated.names[0])} eliminated`}
+              {transferResult.isBatch
+                ? `${transferResult.eliminatedNames.length} candidates eliminated together`
+                : `${toSentenceCase(transferResult.eliminatedNames[0])} eliminated`}
             </span>
             {candidateTransfers.length > 0 && (
               <span className="text-brick-400/70">
@@ -316,8 +322,8 @@ export default function RCVRoundChart({
               </span>
             )}
           </p>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Bar chart — svgHeight is constant (roster-length derived), so no
           height transition is needed anymore; the panel never resizes. */}
