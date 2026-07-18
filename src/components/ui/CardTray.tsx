@@ -148,8 +148,11 @@ export default function CardTray({ viewId, cards, className = '', hideComparison
     <div ref={trayRef} className={`absolute top-0 left-0 right-0 z-10 flex flex-col pointer-events-none ${className}`}>
       {/* Minimized pills — flush top bar.
           Wrapper is `pointer-events-none` so empty space inside the bar does
-          not capture clicks meant for map markers below; children buttons
-          have the default `pointer-events: auto` and remain interactive. */}
+          not capture clicks meant for map markers below. pointer-events is an
+          INHERITED property, so every interactive child must explicitly opt
+          back in with `pointer-events-auto` — a child without it is silently
+          unclickable (shipped bug, July 2026: cards could be minimized but
+          pills couldn't re-expand them). */}
       {(minimizedCards.length > 0 || hiddenCards.length > 0 || hasExpanded) && (
         <div className="flex flex-wrap items-center gap-1.5 px-4 py-2 pointer-events-none">
           {minimizedCards.map((card) => {
@@ -164,7 +167,7 @@ export default function CardTray({ viewId, cards, className = '', hideComparison
               <button
                 key={card.id}
                 onClick={() => toggleCard(card.id)}
-                className="flex items-center gap-1.5 px-2 py-1 rounded-full
+                className="pointer-events-auto flex items-center gap-1.5 px-2 py-1 rounded-full
                   bg-slate-900/70 backdrop-blur-sm border border-white/[0.06]
                   hover:bg-slate-800/80 hover:border-white/[0.12]
                   transition-all duration-150 cursor-pointer group/pill"
@@ -201,7 +204,7 @@ export default function CardTray({ viewId, cards, className = '', hideComparison
           {hasExpanded && (
             <button
               onClick={minimizeAll}
-              className="flex items-center gap-1 px-2 py-1 rounded-full
+              className="pointer-events-auto flex items-center gap-1 px-2 py-1 rounded-full
                 bg-slate-900/50 border border-white/[0.04]
                 hover:bg-slate-800/60 hover:border-white/[0.08]
                 transition-all duration-150 cursor-pointer"
@@ -226,7 +229,7 @@ export default function CardTray({ viewId, cards, className = '', hideComparison
 
           {/* Menu toggle for hidden cards */}
           {hiddenCards.length > 0 && (
-            <div className="relative">
+            <div className="relative pointer-events-auto">
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
                 className="flex items-center gap-1 px-2 py-1 rounded-full
