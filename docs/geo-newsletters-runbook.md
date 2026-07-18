@@ -83,6 +83,11 @@ The digest now carries five streams: three live (911, Fire/EMS, 311 — 48h wind
 | `VITE_MAPBOX_TOKEN` | already set (used client-side for the picker + geocoding) |
 | `MAPBOX_STATIC_TOKEN` | Mapbox public token (`pk.*`) for the digest's static map hero. **Add as a PLAIN var, NOT Sensitive** — it's a public `pk.*` token (already shipped in the SPA bundle), so the Sensitive-type re-edit/empty-on-reopen footgun doesn't apply and you keep it readable. May reuse the same value as `VITE_MAPBOX_TOKEN`; kept separate so email map usage is attributable + rotatable without touching the app. If unset, digests simply omit the map image (text carries everything). |
 
+> NOTE: the **reply-to** on all sends is NOT an env var — it's the hardcoded `SUPPORT_EMAIL`
+> (`jesse@jlabsf.org`) exported from `src/lib/alerts/digestRender.ts` and imported by
+> `api/_lib/email.ts` (PR #125, July 2026). The same address is hardcoded in the digest footers,
+> `About.tsx`, and the Home hero mailto — changing it means `grep -r 'jesse@jlabsf.org'`.
+
 > NOTE (project history): the Vercel CLI `env add` has silently dropped values before — set these in the **dashboard** and confirm they're present. Missing `ALERTS_TOKEN_SECRET` / `CRON_SECRET` now fail fast with a clear 500 + logged error rather than misbehaving.
 
 > ⚠️ Dashboard gotchas for **Sensitive**-type vars (June 2026 outage): the edit box shows **EMPTY** when re-opened — that's write-only by design, not data loss, but **never re-save while the box is empty** (that wipes the value). The box renders spaces as underscore-like marks (whitespace visualization). `ALERTS_FROM_EMAIL` must be exactly `Name <email@domain>` — Resend validates strictly, and values pasted from rendered markdown can carry backticks or non-breaking spaces that fail the check while looking perfect. **Hand-type it.** Since PR #80, a rejected send returns 503 and logs the exact Resend error (`vercel logs <prod-url>` while re-submitting `/api/alerts/subscribe`), so env-value mistakes are diagnosable in one test request.
