@@ -36,7 +36,10 @@ export default function RCVRoundChart({
   const onRoundChangeRef = useRef(onRoundChange)
   onRoundChangeRef.current = onRoundChange
 
-  const activeRound = controlledRound ?? internalRound
+  const rawRound = controlledRound ?? internalRound
+  // Clamp: a controlled round can outlive a race switch (Elections never
+  // resets it), and an index past rounds.length crashes on .candidates.
+  const activeRound = Math.min(Math.max(rawRound, 0), totalRounds - 1)
   const setActiveRound = useCallback((r: number) => {
     setInternalRound(r)
     onRoundChangeRef.current?.(r)
@@ -365,7 +368,7 @@ export default function RCVRoundChart({
                 x={labelWidth - 4}
                 y={y + barHeight / 2 + 1}
                 textAnchor="end"
-                fill={isWinner ? 'var(--color-slate-200)' : 'var(--color-slate-400)'}
+                fill={isWinner ? 'var(--color-slate-700)' : 'var(--color-slate-400)'}
                 fontSize={9}
                 fontWeight={isWinner ? 700 : 400}
                 fontFamily="Inter, system-ui, sans-serif"
