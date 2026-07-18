@@ -9,7 +9,8 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import type { RCVContest } from '@/types/elections'
 import { toSentenceCase } from '@/utils/format'
-import { computeRoundTransfers, EXHAUSTED_SINK } from './rcvFlow'
+import { computeRoundTransfers, ribbonPath, EXHAUSTED_SINK } from './rcvFlow'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 
 interface RCVRoundChartProps {
   rcvData: RCVContest
@@ -40,6 +41,39 @@ export default function RCVRoundChart({
     setInternalRound(r)
     onRoundChangeRef.current?.(r)
   }, [])
+
+  const prefersReducedMotion = usePrefersReducedMotion()
+
+  // Backward steps SNAP — no reverse flow animation (votes don't
+  // "un-transfer" in RCV; a mirrored animation would teach something
+  // false). Track direction so the ribbon layer only renders forward.
+  const prevActiveRoundRef = useRef(activeRound)
+  const [stepDirection, setStepDirection] = useState<'forward' | 'backward' | 'none'>('none')
+  useEffect(() => {
+    const prev = prevActiveRoundRef.current
+    setStepDirection(activeRound > prev ? 'forward' : activeRound < prev ? 'backward' : 'none')
+    prevActiveRoundRef.current = activeRound
+  }, [activeRound])
+
+  // Ribbons start fully retracted (dashoffset = full length) then draw in
+  // over one rAF so the CSS transition actually fires (setting offset=0 in
+  // the same paint as offset=full would collapse to a no-op transition).
+  const [ribbonsDrawn, setRibbonsDrawn] = useState(false)
+  const showRibbons = !prefersReducedMotion && stepDirection === 'forward' && justEliminated !== null
+  useEffect(() => {
+    if (!showRibbons) { setRibbonsDrawn(false); return }
+    setRibbonsDrawn(false)
+    const raf = requestAnimationFrame(() => setRibbonsDrawn(true))
+    return () => cancelAnimationFrame(raf)
+  }, [showRibbons, activeRound])
+
+  // Longer than any realistic ribbon path in this chart's fixed coordinate
+  // space (width defaults to 380-400px; chartWidth is width-180, height
+  // bounded by candidate count) — used as strokeDasharray for the
+  // draw-in effect without a getTotalLength() DOM measurement pass per
+  // path. If a future redesign widens the chart substantially, re-check
+  // this bound (a path longer than it would render visibly truncated).
+  const RIBBON_DASH_LENGTH = 1200
 
   // Detect whose votes were just redistributed INTO the currently-viewed
   // round. The eliminated flag lives on the PREVIOUS round's entry — a
@@ -75,6 +109,9 @@ export default function RCVRoundChart({
         onRoundChangeRef.current?.(next)
         return next
       })
+    // 1500ms leaves ~500ms margin over the flow-ribbon sequence (800ms
+    // draw-in + a 500ms-delayed, 500ms bar-grow = 1000ms total) — re-check
+    // this margin if either duration changes.
     }, 1500)
     return () => { if (playTimer.current) clearInterval(playTimer.current) }
   }, [isPlaying, totalRounds])
@@ -137,6 +174,29 @@ export default function RCVRoundChart({
   const eliminatedCount = eliminatedCandidates.length
   const dividerSpace = eliminatedCount > 0 ? 20 : 0
   const svgHeight = (activeCount + eliminatedCount) * (barHeight + gap) + dividerSpace + 20
+
+  // Row positions for the ribbon layer, keyed by candidate name (or
+  // EXHAUSTED_SINK). Computed independently of the bar-rendering JSX below
+  // (which keeps its own inline y/barW math unchanged) so the ribbon block
+  // can look up any candidate's current on-screen row without re-deriving
+  // sort/index math or coupling to render order.
+  const barPositions = useMemo(() => {
+    const positions = new Map<string, { x: number; y: number; width: number; midY: number }>()
+    activeCandidates.forEach((c, i) => {
+      const y = i * (barHeight + gap) + 16
+      const w = (c.votes / maxVotes) * chartWidth
+      positions.set(c.name, { x: labelWidth, y, width: w, midY: y + barHeight / 2 })
+    })
+    eliminatedCandidates.forEach((c, i) => {
+      const y = activeCount * (barHeight + gap) + dividerSpace + i * (barHeight + gap) + 8
+      const w = (c.votes / maxVotes) * chartWidth
+      positions.set(c.name, { x: labelWidth, y, width: w, midY: y + barHeight / 2 })
+    })
+    // Exhausted sink — fixed corner position, doesn't participate in the
+    // bar layout at all (there's no "Exhausted" bar, just a small marker).
+    positions.set(EXHAUSTED_SINK, { x: width - 14, y: svgHeight - 10, width: 0, midY: svgHeight - 10 })
+    return positions
+  }, [activeCandidates, eliminatedCandidates, maxVotes, chartWidth, labelWidth, barHeight, gap, activeCount, dividerSpace, width, svgHeight])
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
@@ -331,7 +391,11 @@ export default function RCVRoundChart({
                 rx={3}
                 fill={color}
                 opacity={isWinner ? 0.95 : 0.75}
-                style={{ transition: 'width 0.5s ease-out, opacity 0.3s' }}
+                style={{
+                  transition: hasTransferGlow && showRibbons
+                    ? 'width 0.5s ease-out 0.5s, opacity 0.3s'
+                    : 'width 0.5s ease-out, opacity 0.3s',
+                }}
               />
               {/* Transfer amount badge */}
               {hasTransferGlow && transfer && (
@@ -419,6 +483,76 @@ export default function RCVRoundChart({
             </g>
           )
         })}
+
+        {/* Flow ribbons — vote redistribution motion. Forward-only (backward
+            steps snap to the target round's static state); reduced motion
+            skips this entirely, falling back to the existing text callout
+            above, which is unconditional. */}
+        {showRibbons && transferResult.transfers.length > 0 && (() => {
+          const sourcePoints = transferResult.eliminatedNames
+            .map((name) => barPositions.get(name))
+            .filter((p): p is NonNullable<typeof p> => p != null)
+          if (sourcePoints.length === 0) return null
+          // Merged-bundle source: a single anchor averaging every
+          // eliminated-this-round candidate's row. Degenerates to exactly
+          // that one candidate's edge in the (today, universal)
+          // single-elimination case — no isBatch branch needed here, only
+          // in the label (below).
+          const bundleSource = {
+            x: sourcePoints[0].x + sourcePoints[0].width,
+            y: sourcePoints.reduce((s, p) => s + p.midY, 0) / sourcePoints.length,
+          }
+          const maxAmount = Math.max(...transferResult.transfers.map((t) => t.amount), 1)
+          const sourceColor = candidateColors.get(transferResult.eliminatedNames[0]) || 'var(--color-slate-500)'
+          return (
+            <g opacity={0.55}>
+              {transferResult.transfers.map((t) => {
+                const target = barPositions.get(t.to)
+                if (!target) return null
+                const isExhausted = t.to === EXHAUSTED_SINK
+                return (
+                  <path
+                    key={t.to}
+                    d={ribbonPath(bundleSource, { x: target.x, y: target.midY })}
+                    fill="none"
+                    stroke={isExhausted ? 'var(--color-paper-500)' : sourceColor}
+                    strokeWidth={Math.max((t.amount / maxAmount) * 10, 1)}
+                    strokeOpacity={isExhausted ? 0.4 : 0.5}
+                    strokeDasharray={RIBBON_DASH_LENGTH}
+                    strokeDashoffset={ribbonsDrawn ? 0 : RIBBON_DASH_LENGTH}
+                    style={{ transition: 'stroke-dashoffset var(--dur-lingering) var(--ease-settle)' }}
+                  />
+                )
+              })}
+              {transferResult.transfers.some((t) => t.to === EXHAUSTED_SINK) && (
+                <g opacity={ribbonsDrawn ? 1 : 0} style={{ transition: 'opacity 0.3s' }}>
+                  <circle cx={width - 14} cy={svgHeight - 10} r={3} fill="var(--color-paper-500)" />
+                  <text
+                    x={width - 20}
+                    y={svgHeight - 16}
+                    textAnchor="end"
+                    fontSize={7}
+                    fill="var(--color-paper-500)"
+                    fontFamily="var(--font-mono)"
+                  >
+                    Exhausted
+                  </text>
+                </g>
+              )}
+              {justEliminated?.isBatch && (
+                <text
+                  x={bundleSource.x + 6}
+                  y={bundleSource.y - 6}
+                  fontSize={7}
+                  fill="var(--color-brick-400)"
+                  fontFamily="var(--font-mono)"
+                >
+                  {justEliminated.names.length} candidates eliminated together
+                </text>
+              )}
+            </g>
+          )
+        })()}
       </svg>
 
       {/* Exhausted + overvotes */}
