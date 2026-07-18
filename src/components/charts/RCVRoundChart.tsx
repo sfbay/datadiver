@@ -146,10 +146,16 @@ export default function RCVRoundChart({
   const maxVotes = Math.max(...roster.map((c) => votesByName.get(c.name) ?? 0), 1)
   const threshold = round.continuingTotal * 0.5
 
-  // Track cumulative eliminations
+  // Track cumulative eliminations — candidates whose votes are GONE in the
+  // viewed round. STRICT bound (i < activeRound): a round's own isEliminated
+  // flag describes who's removed entering the NEXT round (the same
+  // off-by-one shape as the transfer-attribution fix in rcvFlow.ts), so a
+  // candidate flagged in the viewed round still holds live votes here and
+  // must NOT be struck/dimmed yet — Jesse caught the strikethrough running
+  // one step ahead of the actual removal.
   const eliminatedByRound = useMemo(() => {
     const eliminated = new Set<string>()
-    for (let i = 0; i <= activeRound; i++) {
+    for (let i = 0; i < activeRound; i++) {
       for (const c of rcvData.rounds[i].candidates) {
         if (c.isEliminated) eliminated.add(c.name)
       }
