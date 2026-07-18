@@ -50,14 +50,14 @@ export default function ComparisonPopover() {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
-        className={`flex items-center gap-1 px-2 py-1 rounded-full transition-all duration-150 cursor-pointer
+        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full transition-all duration-150 cursor-pointer
           ${isActive
-            ? 'bg-slate-800/80 dark:bg-white/[0.06] border border-white/[0.12] text-slate-700 dark:text-slate-200'
-            : 'bg-slate-900/50 dark:bg-white/[0.02] border border-white/[0.04] text-slate-500 hover:bg-slate-800/60 dark:hover:bg-white/[0.04] hover:border-white/[0.08]'
+            ? 'bg-ochre-500/15 border border-ochre-500/40 text-ochre-400 hover:bg-ochre-500/25'
+            : 'bg-slate-900/50 dark:bg-white/[0.02] border border-white/[0.04] text-slate-400 hover:bg-slate-800/60 dark:hover:bg-white/[0.04] hover:border-white/[0.08]'
           }`}
         title={isActive ? `Comparing ${activeLabel}` : 'Compare against another date'}
       >
-        <span className="text-[9px] font-mono whitespace-nowrap">
+        <span className="text-[10px] font-mono whitespace-nowrap">
           {isActive ? activeLabel : 'Compare'}
         </span>
         <svg

@@ -74,7 +74,8 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
         </p>
         {subtitle && (
           <p
-            className={`relative text-[11px] mt-1.5 font-mono flex items-center gap-1 ${
+            title={subtitle}
+            className={`relative text-[11px] mt-1.5 font-mono flex items-center gap-1 max-w-[280px] ${
               trend === 'up'
                 ? 'text-brick-600 dark:text-brick-400'
                 : trend === 'down'
@@ -92,7 +93,10 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
                 <path d="M5 8 L8 4 L2 4 Z" fill="currentColor" />
               </svg>
             )}
-            <span>{subtitle}</span>
+            {/* One-line clamp — subtitles vary in richness across a card row;
+                truncating (full text on hover via title) keeps every tile the
+                same height instead of wrapping the row. */}
+            <span className="truncate">{subtitle}</span>
           </p>
         )}
         {yoyText && !subtitle && (
@@ -108,6 +112,13 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
             >
               {yoyText}
             </span>
+          </p>
+        )}
+        {/* Uniform tile height: reserve the subtitle line even when a card
+            has nothing to say there, so bare tiles match their siblings. */}
+        {!subtitle && !yoyText && (
+          <p className="relative text-[11px] mt-1.5 font-mono invisible select-none" aria-hidden>
+            ·
           </p>
         )}
         {positionScale ? (

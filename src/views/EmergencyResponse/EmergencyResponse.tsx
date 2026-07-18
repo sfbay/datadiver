@@ -18,7 +18,7 @@ import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { useFireHourlyPattern } from '@/hooks/useHourlyPatternFactory'
 import { useFireComparisonData } from '@/hooks/useComparisonDataFactory'
 import { useAppStore } from '@/stores/appStore'
-import { resolveComparisonStart, comparisonLabel } from '@/utils/comparisonMode'
+import { resolveComparisonStart, resolveComparisonRange, comparisonLabel } from '@/utils/comparisonMode'
 import type { FireEMSDispatch, FireDispatchNhStatsRow, FireDispatchCityStatsRow, FireDispatchHistogramRow } from '@/types/datasets'
 import { formatDelta } from '@/utils/time'
 import { formatDuration, formatNumber } from '@/utils/time'
@@ -50,6 +50,7 @@ import ScannerFeedChips from '@/components/ui/ScannerFeedChips'
 import { RESPONSE_SECONDS, SAME_DAY, VALID_RESPONSE } from './soql'
 import { shouldShowTypicalDay } from './typicalDay'
 import { useTypicalDay } from './useTypicalDay'
+import { useCompCounts } from './useCompCounts'
 
 type ServiceFilter = 'all' | 'fire' | 'ems' | 'transport'
 
@@ -535,6 +536,8 @@ export default function EmergencyResponse() {
     [serviceClause, todClause].filter(Boolean).join(' AND '),
     dateRange.end
   )
+  const compRange = useMemo(() => resolveComparisonRange(comparisonMode, dateRange), [comparisonMode, dateRange])
+  const compCounts = useCompCounts(compRange, serviceClause, todClause)
 
   const chartTiles = useMemo((): ChartTileDef[] => {
     const tiles: ChartTileDef[] = []
@@ -620,6 +623,18 @@ export default function EmergencyResponse() {
       ? (selectedNhStats.avgDeltaPct > 0 ? 'up' : selectedNhStats.avgDeltaPct < 0 ? 'down' : 'neutral')
       : (comparison.deltas ? (comparison.deltas.avg > 0 ? 'up' : comparison.deltas.avg < 0 ? 'down' : 'neutral') : undefined)
 
+    // Incidents delta from server-true aggregates (both windows uncapped) —
+    // the % and the raw prior figure come from the same numbers and cannot
+    // disagree; immune to the 5K cap that suppresses the time-based deltas.
+    // The date is deliberately absent from this tile: the Compare pill and
+    // the sibling time tiles carry it, this tile carries the empiricals.
+    const cityCompPct = compCounts && compCounts.total > 0
+      ? ((stats.total - compCounts.total) / compCounts.total) * 100
+      : null
+    const typicalShort = typicalDay.mean != null
+      ? `typical ≈ ${formatNumber(Math.round(typicalDay.mean))}`
+      : null
+
     const cards: CardDef[] = [
       {
         id: 'avg-response',
@@ -649,15 +664,24 @@ export default function EmergencyResponse() {
         delay: 80,
         defaultExpanded: true,
         subtitle: selectedNhStats
-          ? `${selectedNhStats.nh.neighborhood} · ${selectedNhStats.countSharePct.toFixed(1)}% of citywide`
+          ? [
+              `${selectedNhStats.nh.neighborhood} · ${selectedNhStats.countSharePct.toFixed(1)}% of citywide`,
+              // 0 is honest here: a neighborhood absent from the comparison
+              // window's GROUP BY had zero valid calls that day.
+              compCounts ? `vs ${formatNumber(compCounts.byNeighborhood.get(selectedNhStats.nh.neighborhood) ?? 0)}` : null,
+            ].filter(Boolean).join(' · ')
           : [
-              comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : null,
-              typicalDay.line,
+              cityCompPct != null
+                ? `${formatDelta(cityCompPct)} vs ${formatNumber(compCounts!.total)}`
+                : (comparison.deltas ? `${formatDelta(comparison.deltas.total)} ${compLabel}` : null),
+              comparisonMode !== null ? typicalShort : typicalDay.line,
             ].filter(Boolean).join(' · ') || undefined,
         trend: selectedNhStats
           ? undefined
+          : cityCompPct != null
+          ? (cityCompPct > 0 ? 'up' : cityCompPct < 0 ? 'down' : 'neutral')
           : (comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined),
-        yoyDelta: !selectedNhStats && !comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null,
+        yoyDelta: !selectedNhStats && !comparison.deltas && !compCounts && trend.cityWideYoY ? trend.cityWideYoY.pct : null,
         positionScale: selectedNhStats
           ? {
               value: selectedNhStats.nh.totalIncidents,
@@ -742,7 +766,7 @@ export default function EmergencyResponse() {
       })
     }
     return cards
-  }, [stats, comparison.deltas, comparison.suppressed, compLabel, comparisonMode, trend.cityWideYoY, isFireMode, fireInsights.casualties, fireInsights.priorYearCasualties, selectedNhStats, typicalDay.line])
+  }, [stats, comparison.deltas, comparison.suppressed, compLabel, comparisonMode, trend.cityWideYoY, isFireMode, fireInsights.casualties, fireInsights.priorYearCasualties, selectedNhStats, typicalDay.line, typicalDay.mean, compCounts])
 
   const handleMapReady = useCallback((map: mapboxgl.Map) => {
     setMapInstance(map)

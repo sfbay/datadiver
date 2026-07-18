@@ -18,12 +18,12 @@ export function useTypicalDay(
   enabled: boolean,
   extraClause: string,
   rangeEnd: string
-): { line: string | null } {
-  const [line, setLine] = useState<string | null>(null)
+): { line: string | null; mean: number | null } {
+  const [mean, setMean] = useState<number | null>(null)
 
   useEffect(() => {
     if (!enabled) {
-      setLine(null)
+      setMean(null)
       return
     }
     let cancelled = false
@@ -44,14 +44,13 @@ export function useTypicalDay(
     })
       .then((rows) => {
         if (cancelled) return
-        const mean = meanDailyCount(rows)
-        setLine(mean === null ? null : typicalDayLine(mean))
+        setMean(meanDailyCount(rows))
       })
       .catch(() => {
-        if (!cancelled) setLine(null)
+        if (!cancelled) setMean(null)
       })
     return () => { cancelled = true }
   }, [enabled, extraClause, rangeEnd])
 
-  return { line }
+  return { line: mean === null ? null : typicalDayLine(mean), mean }
 }
