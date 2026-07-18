@@ -148,6 +148,8 @@ export default function RCVRoundChart({
       tabIndex={0}
       onKeyDown={handleKeyDown}
       className="outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 rounded-xl"
+      role="group"
+      aria-label="Ranked-choice rounds. Use Left and Right arrow keys to step through rounds"
     >
       {/* Controls: [prev][play][next] [round bubbles] [R3/14] */}
       <div className="flex items-center gap-1.5 mb-3">
