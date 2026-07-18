@@ -224,7 +224,7 @@ Layer stack on map views, ascending (documented inline in `src/index.css` next t
 | MapView children container | `z-[2]` | Where view-specific stat-card overlays + `UnderlayLegend` live |
 | `<CardTray>` (stat cards + pill bar) | `z-10` | The visible stat card overlay |
 | `.mapboxgl-popup` (hover details) | `z-15` | Lifted above CardTray; raised from default by global rule in `index.css` |
-| Page header (compact title bar) | `z-20` | Each view's `<header>` was bumped from `z-10` in PR #23 so dropdowns opened from the header (UnderlayPicker, Compare popover) escape the ticker row's stacking context |
+| Page header (compact title bar) | `z-20` | Each view's `<header>` was bumped from `z-10` in PR #23 so dropdowns opened from the header (UnderlayPicker) escape the ticker row's stacking context (the Compare popover has since moved into CardTray's pill bar) |
 | Detail panels (`IncidentDetailPanel` etc.) | `z-30` | Slide-in panels above all map layers |
 | Modal overlays (`OmniSearch`, comic) | `z-50+` | Full-screen modal layer |
 
