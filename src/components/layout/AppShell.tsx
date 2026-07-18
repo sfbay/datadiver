@@ -150,7 +150,7 @@ const NAV_ITEMS = [
 export default function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
   const location = useLocation()
-  const { isDarkMode, toggleDarkMode, isSidebarOpen: deskRailOpen, toggleSidebar, dateRange } = useAppStore()
+  const { isDarkMode, toggleDarkMode, typeScale, setTypeScale, isSidebarOpen: deskRailOpen, toggleSidebar, dateRange } = useAppStore()
   useUrlSync()
 
   const [omniOpen, setOmniOpen] = useState(false)
@@ -410,6 +410,43 @@ export default function AppShell({ children }: { children: ReactNode }) {
             </div>
             {isSidebarOpen && (
               <span className="text-[13px] font-medium">{isDarkMode ? 'Light' : 'Dark'}</span>
+            )}
+          </button>
+
+          {/* Type-scale toggle — sibling of dark mode, same icon-crossfade +
+              action-labeled idiom. 'A' glyphs of two sizes stand in for the
+              sun/moon SVGs (no stock "text size" icon in the existing set);
+              aria-pressed/aria-label added beyond the dark toggle's markup
+              since this control is itself an accessibility feature. */}
+          <button
+            onClick={() => setTypeScale(typeScale === 'large' ? 'default' : 'large')}
+            aria-pressed={typeScale === 'large'}
+            aria-label={typeScale === 'large' ? 'Switch to default type size' : 'Switch to large type'}
+            title={typeScale === 'large' ? 'Default type' : 'Large type'}
+            className={`
+              w-full flex items-center rounded-lg
+              text-slate-500 dark:text-slate-500
+              hover:bg-slate-50 dark:hover:bg-white/[0.03]
+              transition-all duration-200 text-sm
+              ${isSidebarOpen ? 'gap-3 px-3 py-2' : 'justify-center p-2.5'}
+            `}
+          >
+            <div className="relative w-5 h-5 flex items-center justify-center">
+              <span
+                className={`absolute font-mono font-bold text-[15px] leading-none transition-all duration-500 ${typeScale === 'large' ? 'rotate-0 scale-100' : 'rotate-90 scale-0'}`}
+                aria-hidden="true"
+              >
+                A
+              </span>
+              <span
+                className={`absolute font-mono font-bold text-[11px] leading-none transition-all duration-500 ${typeScale === 'large' ? '-rotate-90 scale-0' : 'rotate-0 scale-100'}`}
+                aria-hidden="true"
+              >
+                A
+              </span>
+            </div>
+            {isSidebarOpen && (
+              <span className="text-[13px] font-medium">{typeScale === 'large' ? 'Default Type' : 'Large Type'}</span>
             )}
           </button>
 
