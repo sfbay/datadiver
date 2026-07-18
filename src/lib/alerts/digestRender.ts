@@ -39,6 +39,10 @@ export interface RenderedDigest {
 const PUBLIC_LINK_BASE = 'https://datadiver.jlabsf.org'
 const SENDER_IDENTITY = 'DataDiver — civic data for San Francisco · jlabsf.org'
 
+// Public support address — shown in every digest footer and set as the
+// reply-to on all alert sends (api/_lib/email.ts imports this).
+export const SUPPORT_EMAIL = 'jesse@jlabsf.org'
+
 function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
 }
@@ -326,6 +330,7 @@ export function renderDigest(payload: DigestPayload, unsubUrl: string): Rendered
       ${SENDER_IDENTITY}<br>
       Reports are grouped by the day they occurred; some arrive late as the city releases data.<br>
       You're receiving this because you subscribed to DataDiver alerts.<br>
+      Questions? Write <a href="mailto:${SUPPORT_EMAIL}" style="color:${MUTED}">${SUPPORT_EMAIL}</a> — or just reply to this email.<br>
       <a href="${escapeHtml(unsubUrl)}" style="color:${MUTED}">Unsubscribe</a> (one click — removes your data).
     </div>
   </div></body></html>`
@@ -376,5 +381,5 @@ function renderText(payload: DigestPayload, dateLine: string, introLine: string,
       return `${head}${loc.mapAlt}\n${glance}\n\n${pulseText}${body}${releasedText ? `\n\n${releasedText}` : ''}`
     })
     .join('\n\n')
-  return `THE LAST 48 — ${dateLine}\n${introLine}\n\n${blocks}\n\nReports are grouped by the day they occurred; some arrive late as the city releases data.\nUnsubscribe: ${unsubUrl}\n${SENDER_IDENTITY}`
+  return `THE LAST 48 — ${dateLine}\n${introLine}\n\n${blocks}\n\nReports are grouped by the day they occurred; some arrive late as the city releases data.\nQuestions? Write ${SUPPORT_EMAIL} — or just reply to this email.\nUnsubscribe: ${unsubUrl}\n${SENDER_IDENTITY}`
 }

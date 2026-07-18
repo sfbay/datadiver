@@ -1,6 +1,6 @@
 // api/_lib/email.ts — Resend wrapper + plain, CAN-SPAM-compliant templates.
 import { Resend } from 'resend'
-import { renderDigest, type DigestPayload } from '../../src/lib/alerts/digestRender.js'
+import { renderDigest, SUPPORT_EMAIL, type DigestPayload } from '../../src/lib/alerts/digestRender.js'
 
 let _resend: Resend | null = null
 function resend(): Resend {
@@ -50,6 +50,7 @@ export async function sendConfirmEmail(to: string, confirmToken: string): Promis
     <p style="font-size:13px;color:#7a6a52">If you didn't request this, ignore this email — nothing was activated.</p>`
   const { data, error } = await resend().emails.send({
     from: fromAddress(),
+    replyTo: SUPPORT_EMAIL,
     to,
     subject: 'Confirm your DataDiver alerts',
     html: shell('Confirm your alerts', body, SENDER_IDENTITY),
@@ -70,6 +71,7 @@ export async function sendDigestEmail(
 
   const { data, error } = await resend().emails.send({
     from: fromAddress(),
+    replyTo: SUPPORT_EMAIL,
     to,
     subject,
     html,
