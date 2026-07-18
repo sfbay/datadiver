@@ -9,6 +9,7 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import type { RCVContest } from '@/types/elections'
 import { toSentenceCase } from '@/utils/format'
+import { computeRoundTransfers, EXHAUSTED_SINK } from './rcvFlow'
 
 interface RCVRoundChartProps {
   rcvData: RCVContest
@@ -29,7 +30,7 @@ export default function RCVRoundChart({
   const totalRounds = rcvData.rounds.length
   const [internalRound, setInternalRound] = useState(totalRounds - 1)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [justEliminated, setJustEliminated] = useState<string | null>(null)
+  const [justEliminated, setJustEliminated] = useState<{ names: string[]; isBatch: boolean } | null>(null)
   const playTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const onRoundChangeRef = useRef(onRoundChange)
   onRoundChangeRef.current = onRoundChange
@@ -40,13 +41,17 @@ export default function RCVRoundChart({
     onRoundChangeRef.current?.(r)
   }, [])
 
-  // Detect which candidate was just eliminated this round
+  // Detect whose votes were just redistributed INTO the currently-viewed
+  // round. The eliminated flag lives on the PREVIOUS round's entry — a
+  // round's own flag describes who's eliminated starting NEXT round, not
+  // who was just redistributed to produce this round's totals. See
+  // rcvFlow.ts and the implementation plan's "Resolved ambiguities" §3.
   useEffect(() => {
     if (activeRound === 0) { setJustEliminated(null); return }
-    const round = rcvData.rounds[activeRound]
-    const eliminated = round.candidates.find((c) => c.isEliminated)
-    if (eliminated) {
-      setJustEliminated(eliminated.name)
+    const prev = rcvData.rounds[activeRound - 1]
+    const eliminated = prev.candidates.filter((c) => c.isEliminated)
+    if (eliminated.length > 0) {
+      setJustEliminated({ names: eliminated.map((c) => c.name), isBatch: eliminated.length > 1 })
       const timer = setTimeout(() => setJustEliminated(null), 1500)
       return () => clearTimeout(timer)
     } else {
@@ -97,29 +102,30 @@ export default function RCVRoundChart({
     return eliminated
   }, [rcvData.rounds, activeRound])
 
-  // Compute vote transfers: who gained votes this round from the eliminated candidate?
-  const voteTransfers = useMemo(() => {
-    if (!prevRound || activeRound === 0) return []
-    const transfers: { from: string; to: string; amount: number }[] = []
-    const eliminatedThisRound = round.candidates.find((c) => c.isEliminated)
-    if (!eliminatedThisRound) return transfers
-
-    for (const curr of round.candidates) {
-      if (curr.isEliminated) continue
-      const prev = prevRound.candidates.find((p) => p.name === curr.name)
-      if (prev && curr.votes > prev.votes) {
-        transfers.push({
-          from: eliminatedThisRound.name,
-          to: curr.name,
-          amount: curr.votes - prev.votes,
-        })
-      }
-    }
-    return transfers.sort((a, b) => b.amount - a.amount)
-  }, [round, prevRound, activeRound])
+  // Vote transfers for the currently-viewed round, derived from
+  // round-over-round deltas (see rcvFlow.ts — SF publishes no
+  // source→destination data). Includes an EXHAUSTED_SINK entry for the
+  // flow-ribbon layer; candidateTransfers strips it for the text callout
+  // and per-bar glow/badge, which only ever named candidates.
+  const transferResult = useMemo(
+    () => computeRoundTransfers(round, prevRound),
+    [round, prevRound],
+  )
+  const candidateTransfers = useMemo(
+    () => transferResult.transfers.filter((t) => t.to !== EXHAUSTED_SINK),
+    [transferResult],
+  )
 
   const activeCandidates = candidates.filter((c) => !eliminatedByRound.has(c.name))
-  const eliminatedCandidates = candidates.filter((c) => eliminatedByRound.has(c.name) && c.votes > 0)
+  // A candidate eliminated ENTERING this round has already zeroed out
+  // (c.votes === 0) by the time this round is displayed — but the ribbon
+  // needs a row to anchor its source point to for the ~1.5s justEliminated
+  // window. Keep their (zero-width) row visible for exactly that window;
+  // every other historically-eliminated candidate still requires votes > 0
+  // to avoid permanently rendering empty rows.
+  const eliminatedCandidates = candidates.filter(
+    (c) => eliminatedByRound.has(c.name) && (c.votes > 0 || (justEliminated?.names.includes(c.name) ?? false)),
+  )
 
   const barHeight = 18
   const gap = 5
@@ -223,20 +229,24 @@ export default function RCVRoundChart({
       {justEliminated && (
         <div className="mb-2 px-2 py-1.5 rounded-lg bg-brick-500/10 border border-brick-500/20 animate-pulse">
           <p className="text-[10px] font-mono text-brick-400">
-            <span className="font-bold">{toSentenceCase(justEliminated)}</span> eliminated
-            {voteTransfers.length > 0 && (
+            <span className="font-bold">
+              {justEliminated.isBatch
+                ? `${justEliminated.names.length} candidates eliminated together`
+                : `${toSentenceCase(justEliminated.names[0])} eliminated`}
+            </span>
+            {candidateTransfers.length > 0 && (
               <span className="text-brick-400/70">
                 {' — votes transfer to '}
-                {voteTransfers.slice(0, 3).map((t, i) => (
+                {candidateTransfers.slice(0, 3).map((t, i) => (
                   <span key={t.to}>
                     {i > 0 && ', '}
-                    <span style={{ color: candidateColors.get(t.to) || '#94a3b8' }}>
+                    <span style={{ color: candidateColors.get(t.to) || 'var(--color-slate-400)' }}>
                       {toSentenceCase(t.to.split(' ').pop() || t.to)}
                     </span>
                     <span className="text-brick-400/50"> (+{t.amount.toLocaleString()})</span>
                   </span>
                 ))}
-                {voteTransfers.length > 3 && <span className="text-brick-400/50"> + {voteTransfers.length - 3} more</span>}
+                {candidateTransfers.length > 3 && <span className="text-brick-400/50"> + {candidateTransfers.length - 3} more</span>}
               </span>
             )}
           </p>
@@ -284,7 +294,7 @@ export default function RCVRoundChart({
           const isWinner = c.name === rcvData.winner && activeRound === totalRounds - 1
           const displayName = toSentenceCase(c.name)
           // Check if this candidate gained votes from a transfer
-          const transfer = voteTransfers.find((t) => t.to === c.name)
+          const transfer = candidateTransfers.find((t) => t.to === c.name)
           const hasTransferGlow = transfer && justEliminated
 
           return (
@@ -380,7 +390,7 @@ export default function RCVRoundChart({
           const y = (activeCount) * (barHeight + gap) + dividerSpace + i * (barHeight + gap) + 8
           const barW = (c.votes / maxVotes) * chartWidth
           const color = candidateColors.get(c.name) || '#64748b'
-          const isJust = c.name === justEliminated
+          const isJust = justEliminated?.names.includes(c.name) ?? false
           const displayName = toSentenceCase(c.name)
 
           return (
