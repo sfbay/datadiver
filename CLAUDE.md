@@ -133,6 +133,10 @@ src/
 - **`useDraggableSheet` sheets render at FULL height + `translateY` (cheap GPU resize)**, so the browser's scrollport is the whole, mostly-off-screen sheet. `scrollIntoView` and `position:sticky bottom-0` MISBEHAVE — scroll a selected row into view with manual `getBoundingClientRect` math (see `FlowRail`), and know sticky footers only show when the sheet is expanded. The mobile sheet bg must match the content register (`paper-50 dark:bg-espresso-900`), not slate, or it seams against earth-tone content.
 - Touch: suppress Mapbox hover tooltips via `matchMedia('(hover:none)')` (NOT a width check — a tablet+mouse keeps hover). `eventFlyToOffset` is horizontal on all viewports — a panel's render and its camera offset are coupled; change both together. Full system: the `mobile-shell` memory + `docs/superpowers/specs/2026-06-15-targeted-mobile-shell-design.md`.
 
+### Large Type mode (Phase 1, July 2026)
+- `typeScale: 'default' | 'large'` in `appStore` (localStorage key `dd-type-scale`; pure parse in `src/stores/typeScale.ts` — a leaf module because appStore itself is unimportable under the node-only Vitest). Applied as `data-type-scale` on `<html>` via the setter AND an `App.tsx` effect (the dark-mode dual-application recipe); `html[data-type-scale="large"] { font-size: 118% }` in `index.css`; AppShell toggle sits beside the dark-mode button.
+- Phase 1 scope: only **Pulse** and **About** are fully rem-converted (exact N/16 swaps — default scale renders pixel-identical). The rest of the app is still `text-[Npx]`-heavy, so large type only partially reaches it. Phase 2 (activate the dormant `tokens.css` `--text-*` scale across dashboards with a disproportionate micro-label floor-raise + effective-width breakpoints) and Phase 3 (D3 SVG + Mapbox label text) are specced in `docs/superpowers/specs/2026-07-18-large-type-edition-design.md`.
+
 ### Loading States
 - **Progressive skeleton loading** — no full-screen blockers
 - Each component shows its own skeleton via `src/components/ui/Skeleton.tsx`
