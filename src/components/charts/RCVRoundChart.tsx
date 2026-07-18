@@ -119,21 +119,31 @@ export default function RCVRoundChart({
   const round = rcvData.rounds[activeRound]
   const prevRound = activeRound > 0 ? rcvData.rounds[activeRound - 1] : null
 
-  const candidates = useMemo(() => {
-    // Keep prevRound's flagged eliminee(s) despite votes === 0: a round's
-    // own isEliminated flag describes NEXT round's removal, so the
-    // candidate whose votes were just redistributed INTO this round
-    // carries votes 0 + isEliminated false here — without this clause the
-    // row (and the flow ribbons' source anchor) never exists.
-    const justRedistributed = new Set(
-      (prevRound?.candidates ?? []).filter((c) => c.isEliminated).map((c) => c.name),
-    )
-    return [...round.candidates]
-      .filter((c) => c.votes > 0 || c.isEliminated || justRedistributed.has(c.name))
+  // STABLE ROSTER (Jesse's feedback: re-sorting by vote count and moving
+  // candidates between "active" and "eliminated" sections every round made
+  // the panel resize and click targets shift underneath the user). Derived
+  // ONCE from round 1 and never touched again — every candidate gets
+  // exactly one permanent row for the life of the contest; only their bar
+  // width and elimination styling change round to round. Because the row
+  // always exists, the old justRedistributed keep-alive clause (which kept
+  // a just-eliminated candidate's row alive for exactly the 1.5s ribbon
+  // window) is no longer needed — the ribbon layer's anchor is
+  // structurally always present, eliminated or not.
+  const roster = useMemo(() => {
+    const round1 = rcvData.rounds[0]
+    return [...round1.candidates]
+      .filter((c) => c.votes > 0 || c.isEliminated)
       .sort((a, b) => b.votes - a.votes)
-  }, [round, prevRound])
+  }, [rcvData])
 
-  const maxVotes = Math.max(...candidates.map((c) => c.votes), 1)
+  // Current-round votes, keyed by name — the roster's ORDER is fixed, but
+  // each row's bar width still reflects the round being viewed.
+  const votesByName = useMemo(
+    () => new Map(round.candidates.map((c) => [c.name, c.votes])),
+    [round],
+  )
+
+  const maxVotes = Math.max(...roster.map((c) => votesByName.get(c.name) ?? 0), 1)
   const threshold = round.continuingTotal * 0.5
 
   // Track cumulative eliminations
@@ -166,50 +176,33 @@ export default function RCVRoundChart({
   const ribbonSequenceActive = !prefersReducedMotion && stepDirection === 'forward' && transferResult.eliminatedNames.length > 0
   const showRibbons = ribbonSequenceActive && justEliminated !== null
 
-  const activeCandidates = candidates.filter((c) => !eliminatedByRound.has(c.name))
-  // A candidate eliminated ENTERING this round has already zeroed out
-  // (c.votes === 0) by the time this round is displayed — but the ribbon
-  // needs a row to anchor its source point to for the ~1.5s justEliminated
-  // window. Keep their (zero-width) row visible for exactly that window;
-  // every other historically-eliminated candidate still requires votes > 0
-  // to avoid permanently rendering empty rows.
-  const eliminatedCandidates = candidates.filter(
-    (c) => eliminatedByRound.has(c.name) && (c.votes > 0 || (justEliminated?.names.includes(c.name) ?? false)),
-  )
-
   const barHeight = 18
   const gap = 5
   const labelWidth = 120
   const chartWidth = width - labelWidth - 60
 
-  // Dynamic height — fits all candidates, shrinks as they're eliminated
-  const activeCount = activeCandidates.length
-  const eliminatedCount = eliminatedCandidates.length
-  const dividerSpace = eliminatedCount > 0 ? 20 : 0
-  const svgHeight = (activeCount + eliminatedCount) * (barHeight + gap) + dividerSpace + 20
+  // CONSTANT height — derives from the roster length alone, never from how
+  // many candidates are currently active vs. eliminated. This is the whole
+  // point of the stable-roster rework: the panel never resizes and the
+  // transport bar/round bubbles above it never move as rounds advance.
+  const svgHeight = roster.length * (barHeight + gap) + 20
 
   // Row positions for the ribbon layer, keyed by candidate name (or
-  // EXHAUSTED_SINK). Computed independently of the bar-rendering JSX below
-  // (which keeps its own inline y/barW math unchanged) so the ribbon block
-  // can look up any candidate's current on-screen row without re-deriving
-  // sort/index math or coupling to render order.
+  // EXHAUSTED_SINK). One map over the fixed roster — no more separate
+  // active/eliminated position math, since every candidate has exactly one
+  // permanent row regardless of elimination state.
   const barPositions = useMemo(() => {
     const positions = new Map<string, { x: number; y: number; width: number; midY: number }>()
-    activeCandidates.forEach((c, i) => {
+    roster.forEach((c, i) => {
       const y = i * (barHeight + gap) + 16
-      const w = (c.votes / maxVotes) * chartWidth
-      positions.set(c.name, { x: labelWidth, y, width: w, midY: y + barHeight / 2 })
-    })
-    eliminatedCandidates.forEach((c, i) => {
-      const y = activeCount * (barHeight + gap) + dividerSpace + i * (barHeight + gap) + 8
-      const w = (c.votes / maxVotes) * chartWidth
+      const w = ((votesByName.get(c.name) ?? 0) / maxVotes) * chartWidth
       positions.set(c.name, { x: labelWidth, y, width: w, midY: y + barHeight / 2 })
     })
     // Exhausted sink — fixed corner position, doesn't participate in the
     // bar layout at all (there's no "Exhausted" bar, just a small marker).
     positions.set(EXHAUSTED_SINK, { x: width - 14, y: svgHeight - 10, width: 0, midY: svgHeight - 10 })
     return positions
-  }, [activeCandidates, eliminatedCandidates, maxVotes, chartWidth, labelWidth, barHeight, gap, activeCount, dividerSpace, width, svgHeight])
+  }, [roster, votesByName, maxVotes, chartWidth, labelWidth, barHeight, gap, width, svgHeight])
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
@@ -326,12 +319,12 @@ export default function RCVRoundChart({
         </div>
       )}
 
-      {/* Bar chart */}
+      {/* Bar chart — svgHeight is constant (roster-length derived), so no
+          height transition is needed anymore; the panel never resizes. */}
       <svg
         width={width}
         height={svgHeight}
         viewBox={`0 0 ${width} ${svgHeight}`}
-        style={{ transition: 'height 0.4s ease-out' }}
       >
         {/* 50% threshold */}
         {threshold > 0 && threshold <= maxVotes && (
@@ -359,27 +352,39 @@ export default function RCVRoundChart({
           </>
         )}
 
-        {/* Active candidates */}
-        {activeCandidates.map((c, i) => {
+        {/* Roster — one permanent row per candidate for the whole contest.
+            Elimination is a STYLING state (dimmed + line-through label,
+            zero-width bar once votes hit 0), never a change of row or
+            position — that's the whole fix for the "elements moving" complaint. */}
+        {roster.map((c, i) => {
           const y = i * (barHeight + gap) + 16
-          const barW = (c.votes / maxVotes) * chartWidth
+          const votes = votesByName.get(c.name) ?? 0
+          const barW = (votes / maxVotes) * chartWidth
           const color = candidateColors.get(c.name) || 'var(--color-slate-500)'
           const isWinner = c.name === rcvData.winner && activeRound === totalRounds - 1
+          const isEliminatedNow = eliminatedByRound.has(c.name)
+          const isJust = justEliminated?.names.includes(c.name) ?? false
           const displayName = toSentenceCase(c.name)
-          // Check if this candidate gained votes from a transfer
-          const transfer = candidateTransfers.find((t) => t.to === c.name)
+          // Check if this candidate gained votes from a transfer (never
+          // true for an eliminated row — eliminated candidates only lose).
+          const transfer = !isEliminatedNow ? candidateTransfers.find((t) => t.to === c.name) : undefined
           const hasTransferGlow = transfer && justEliminated
 
           return (
-            <g key={c.name}>
+            <g key={c.name} opacity={isEliminatedNow ? (isJust ? 0.6 : 0.25) : 1} style={{ transition: 'opacity 0.5s' }}>
               <text
                 x={labelWidth - 4}
                 y={y + barHeight / 2 + 1}
                 textAnchor="end"
-                fill={isWinner ? 'var(--color-slate-700)' : 'var(--color-slate-400)'}
+                fill={
+                  isEliminatedNow
+                    ? isJust ? '#b85545' : 'var(--color-slate-500)'
+                    : isWinner ? 'var(--color-slate-700)' : 'var(--color-slate-400)'
+                }
                 fontSize={9}
-                fontWeight={isWinner ? 700 : 400}
+                fontWeight={isWinner && !isEliminatedNow ? 700 : 400}
                 fontFamily="Inter, system-ui, sans-serif"
+                textDecoration={isEliminatedNow ? 'line-through' : undefined}
               >
                 {displayName.length > 18 ? displayName.slice(0, 17) + '…' : displayName}
               </text>
@@ -402,12 +407,12 @@ export default function RCVRoundChart({
                 width={barW}
                 height={barHeight}
                 rx={3}
-                fill={color}
-                opacity={isWinner ? 0.95 : 0.75}
+                fill={isEliminatedNow && isJust ? '#b85545' : color}
+                opacity={isEliminatedNow ? 0.4 : isWinner ? 0.95 : 0.75}
                 style={{
                   transition: transfer && ribbonSequenceActive
-                    ? 'width 0.5s ease-out 0.5s, opacity 0.3s'
-                    : 'width 0.5s ease-out, opacity 0.3s',
+                    ? 'width 0.5s ease-out 0.5s, opacity 0.3s, fill 0.3s'
+                    : 'width 0.4s ease-out, opacity 0.3s, fill 0.3s',
                 }}
               />
               {/* Transfer amount badge */}
@@ -425,74 +430,18 @@ export default function RCVRoundChart({
                   +{transfer.amount.toLocaleString()}
                 </text>
               )}
-              <text
-                x={labelWidth + barW + 4}
-                y={y + barHeight / 2 + 1}
-                fill="var(--color-slate-400)"
-                fontSize={8}
-                fontFamily="var(--font-mono)"
-                dominantBaseline="middle"
-              >
-                {c.votes.toLocaleString()}
-              </text>
-            </g>
-          )
-        })}
-
-        {/* Eliminated divider */}
-        {eliminatedCandidates.length > 0 && (
-          <>
-            <line
-              x1={labelWidth}
-              y1={activeCount * (barHeight + gap) + 14}
-              x2={width - 10}
-              y2={activeCount * (barHeight + gap) + 14}
-              stroke="var(--color-slate-700)"
-              strokeWidth={0.5}
-            />
-            <text
-              x={labelWidth}
-              y={activeCount * (barHeight + gap) + 12}
-              fill="var(--color-slate-600)"
-              fontSize={7}
-              fontFamily="var(--font-mono)"
-            >
-              ELIMINATED ({eliminatedCount})
-            </text>
-          </>
-        )}
-
-        {/* Eliminated candidates (faded, with strikethrough) */}
-        {eliminatedCandidates.map((c, i) => {
-          const y = (activeCount) * (barHeight + gap) + dividerSpace + i * (barHeight + gap) + 8
-          const barW = (c.votes / maxVotes) * chartWidth
-          const color = candidateColors.get(c.name) || 'var(--color-slate-500)'
-          const isJust = justEliminated?.names.includes(c.name) ?? false
-          const displayName = toSentenceCase(c.name)
-
-          return (
-            <g key={c.name} opacity={isJust ? 0.6 : 0.25} style={{ transition: 'opacity 0.5s' }}>
-              <text
-                x={labelWidth - 4}
-                y={y + barHeight / 2 + 1}
-                textAnchor="end"
-                fill={isJust ? '#b85545' : 'var(--color-slate-500)'}
-                fontSize={9}
-                fontFamily="Inter, system-ui, sans-serif"
-                textDecoration="line-through"
-              >
-                {displayName.length > 18 ? displayName.slice(0, 17) + '…' : displayName}
-              </text>
-              <rect
-                x={labelWidth}
-                y={y}
-                width={barW}
-                height={barHeight}
-                rx={3}
-                fill={isJust ? '#b85545' : color}
-                opacity={0.4}
-                style={{ transition: 'width 0.4s, fill 0.3s' }}
-              />
+              {!isEliminatedNow && (
+                <text
+                  x={labelWidth + barW + 4}
+                  y={y + barHeight / 2 + 1}
+                  fill="var(--color-slate-400)"
+                  fontSize={8}
+                  fontFamily="var(--font-mono)"
+                  dominantBaseline="middle"
+                >
+                  {votes.toLocaleString()}
+                </text>
+              )}
             </g>
           )
         })}

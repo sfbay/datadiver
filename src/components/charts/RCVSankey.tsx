@@ -10,6 +10,15 @@
 import { useMemo, useState } from 'react'
 import type { RCVContest, RCVRound } from '@/types/elections'
 import { ribbonPath } from './rcvFlow'
+import { toSentenceCase } from '@/utils/format'
+
+// Left gutter reserved for round-0 candidate labels — consistent with
+// RCVRoundChart's labelWidth idiom. Without this, labels were drawn
+// right-anchored at the panel/svg edge with no reserved space and got
+// clipped to their last 1-2 letters ("SAUTER" rendered as "R", "JAMIL" as
+// "IL" — diagnosed live 2026-07-18). Columns compress to make room; total
+// width stays fixed.
+const LABEL_GUTTER = 110
 
 interface RCVSankeyProps {
   rcvData: RCVContest
@@ -44,9 +53,11 @@ export default function RCVSankey({
 }: RCVSankeyProps) {
   const [hoveredCandidate, setHoveredCandidate] = useState<string | null>(null)
 
-  const { nodes, links, roundLabels, maxLinkValue } = useMemo(() => {
+  const { nodes, links, roundLabels, maxLinkValue, colWidth, gutterLeft } = useMemo(() => {
     const rounds = rcvData.rounds
-    if (rounds.length < 2) return { nodes: [], links: [], roundLabels: [], maxLinkValue: 1 }
+    if (rounds.length < 2) {
+      return { nodes: [], links: [], roundLabels: [], maxLinkValue: 1, colWidth: 0, gutterLeft: 0 }
+    }
 
     // Only show rounds where something meaningful happens (elimination)
     // Limit to 8 rounds max for readability
@@ -59,7 +70,7 @@ export default function RCVSankey({
     }
     const displayRounds = significantRounds.slice(0, 8)
 
-    const padding = { top: 20, bottom: 20, left: 10, right: 10 }
+    const padding = { top: 20, bottom: 20, left: 10 + LABEL_GUTTER, right: 10 }
     const colWidth = (width - padding.left - padding.right) / displayRounds.length
     const nodeWidth = 12
     const nodeGap = 4
@@ -202,7 +213,7 @@ export default function RCVSankey({
     const labels = displayRounds.map((ri) => `R${ri + 1}`)
     const maxLink = Math.max(...allLinks.map((l) => l.value), 1)
 
-    return { nodes: allNodes, links: allLinks, roundLabels: labels, maxLinkValue: maxLink }
+    return { nodes: allNodes, links: allLinks, roundLabels: labels, maxLinkValue: maxLink, colWidth, gutterLeft: padding.left }
   }, [rcvData, candidateColors, width, height])
 
   if (nodes.length === 0) {
@@ -272,29 +283,28 @@ export default function RCVSankey({
                   dominantBaseline="middle"
                   style={{ transition: 'fill 0.2s' }}
                 >
-                  {node.name.length > 12 ? node.name.split(' ').pop() : node.name}
+                  {toSentenceCase(node.name.split(' ').pop() || node.name)}
                 </text>
               )}
             </g>
           )
         })}
 
-        {/* Round labels */}
-        {roundLabels.map((label, i) => {
-          const colWidth = (width - 20) / roundLabels.length
-          return (
-            <text
-              key={label}
-              x={10 + i * colWidth + 6}
-              y={12}
-              fill="var(--color-slate-500)"
-              fontSize={9}
-              fontFamily="var(--font-mono)"
-            >
-              {label}
-            </text>
-          )
-        })}
+        {/* Round labels — share the SAME padding/colWidth the node columns
+            use (previously recomputed with a stale hardcoded 20px total
+            padding that predates the label gutter and ignored it). */}
+        {roundLabels.map((label, i) => (
+          <text
+            key={label}
+            x={gutterLeft + i * colWidth + 6}
+            y={12}
+            fill="var(--color-slate-500)"
+            fontSize={9}
+            fontFamily="var(--font-mono)"
+          >
+            {label}
+          </text>
+        ))}
       </svg>
 
       {/* Hovered candidate info */}
