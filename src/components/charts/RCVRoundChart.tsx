@@ -47,25 +47,20 @@ export default function RCVRoundChart({
   // Backward steps SNAP — no reverse flow animation (votes don't
   // "un-transfer" in RCV; a mirrored animation would teach something
   // false). Track direction so the ribbon layer only renders forward.
-  const prevActiveRoundRef = useRef(activeRound)
-  const [stepDirection, setStepDirection] = useState<'forward' | 'backward' | 'none'>('none')
-  useEffect(() => {
-    const prev = prevActiveRoundRef.current
-    setStepDirection(activeRound > prev ? 'forward' : activeRound < prev ? 'backward' : 'none')
-    prevActiveRoundRef.current = activeRound
-  }, [activeRound])
-
-  // Ribbons start fully retracted (dashoffset = full length) then draw in
-  // over one rAF so the CSS transition actually fires (setting offset=0 in
-  // the same paint as offset=full would collapse to a no-op transition).
-  const [ribbonsDrawn, setRibbonsDrawn] = useState(false)
-  const showRibbons = !prefersReducedMotion && stepDirection === 'forward' && justEliminated !== null
-  useEffect(() => {
-    if (!showRibbons) { setRibbonsDrawn(false); return }
-    setRibbonsDrawn(false)
-    const raf = requestAnimationFrame(() => setRibbonsDrawn(true))
-    return () => cancelAnimationFrame(raf)
-  }, [showRibbons, activeRound])
+  //
+  // Synchronous step tracking — direction must be correct on the very render
+  // where round-derived values (barW etc.) change; an effect-updated value
+  // lags one committed render and silently defeats the delayed width
+  // transition below (task review finding). React's "adjust state during
+  // render" pattern: the setState triggers an immediate re-render before
+  // commit, and the inline derivation keeps this render's value correct too.
+  const [lastStep, setLastStep] = useState<{ round: number; dir: 'forward' | 'backward' | 'none' }>({ round: activeRound, dir: 'none' })
+  if (activeRound !== lastStep.round) {
+    setLastStep({ round: activeRound, dir: activeRound > lastStep.round ? 'forward' : 'backward' })
+  }
+  const stepDirection = activeRound !== lastStep.round
+    ? (activeRound > lastStep.round ? 'forward' : 'backward')
+    : lastStep.dir
 
   // Longer than any realistic ribbon path in this chart's fixed coordinate
   // space (width defaults to 380-400px; chartWidth is width-180, height
@@ -73,6 +68,8 @@ export default function RCVRoundChart({
   // draw-in effect without a getTotalLength() DOM measurement pass per
   // path. If a future redesign widens the chart substantially, re-check
   // this bound (a path longer than it would render visibly truncated).
+  // Duplicated in index.css's @keyframes rcv-ribbon-draw — change one,
+  // change both.
   const RIBBON_DASH_LENGTH = 1200
 
   // Detect whose votes were just redistributed INTO the currently-viewed
@@ -152,6 +149,11 @@ export default function RCVRoundChart({
     () => transferResult.transfers.filter((t) => t.to !== EXHAUSTED_SINK),
     [transferResult],
   )
+
+  // Everything the width-transition and ribbon layer key off must be
+  // derivable synchronously in render — never from effect-lagged state.
+  const ribbonSequenceActive = !prefersReducedMotion && stepDirection === 'forward' && transferResult.eliminatedNames.length > 0
+  const showRibbons = ribbonSequenceActive && justEliminated !== null
 
   const activeCandidates = candidates.filter((c) => !eliminatedByRound.has(c.name))
   // A candidate eliminated ENTERING this round has already zeroed out
@@ -392,7 +394,7 @@ export default function RCVRoundChart({
                 fill={color}
                 opacity={isWinner ? 0.95 : 0.75}
                 style={{
-                  transition: hasTransferGlow && showRibbons
+                  transition: transfer && ribbonSequenceActive
                     ? 'width 0.5s ease-out 0.5s, opacity 0.3s'
                     : 'width 0.5s ease-out, opacity 0.3s',
                 }}
@@ -505,7 +507,7 @@ export default function RCVRoundChart({
           const maxAmount = Math.max(...transferResult.transfers.map((t) => t.amount), 1)
           const sourceColor = candidateColors.get(transferResult.eliminatedNames[0]) || 'var(--color-slate-500)'
           return (
-            <g opacity={0.55}>
+            <g key={activeRound} opacity={0.55}>
               {transferResult.transfers.map((t) => {
                 const target = barPositions.get(t.to)
                 if (!target) return null
@@ -519,13 +521,13 @@ export default function RCVRoundChart({
                     strokeWidth={Math.max((t.amount / maxAmount) * 10, 1)}
                     strokeOpacity={isExhausted ? 0.4 : 0.5}
                     strokeDasharray={RIBBON_DASH_LENGTH}
-                    strokeDashoffset={ribbonsDrawn ? 0 : RIBBON_DASH_LENGTH}
-                    style={{ transition: 'stroke-dashoffset var(--dur-lingering) var(--ease-settle)' }}
+                    strokeDashoffset={RIBBON_DASH_LENGTH}
+                    style={{ animation: 'rcv-ribbon-draw var(--dur-lingering) var(--ease-settle) forwards' }}
                   />
                 )
               })}
               {transferResult.transfers.some((t) => t.to === EXHAUSTED_SINK) && (
-                <g opacity={ribbonsDrawn ? 1 : 0} style={{ transition: 'opacity 0.3s' }}>
+                <g opacity={0} style={{ animation: 'rcv-fade-in 0.3s ease-out 0.3s forwards' }}>
                   <circle cx={width - 14} cy={svgHeight - 10} r={3} fill="var(--color-paper-500)" />
                   <text
                     x={width - 20}
