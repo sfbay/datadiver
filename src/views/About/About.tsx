@@ -162,8 +162,8 @@ export default function About() {
               This disclosure is intentionally specific: an AI system is a tool with a
               substantial role here, not an author. Errors remain the author&rsquo;s
               responsibility — and corrections are welcome at{' '}
-              <a href="mailto:jgarnier@sfsu.edu" className="underline decoration-slate-400/50 underline-offset-2 hover:text-ink dark:hover:text-white transition-colors">
-                jgarnier@sfsu.edu
+              <a href="mailto:jesse@jlabsf.org" className="underline decoration-slate-400/50 underline-offset-2 hover:text-ink dark:hover:text-white transition-colors">
+                jesse@jlabsf.org
               </a>.
             </p>
           </Prose>

@@ -340,11 +340,12 @@ export default function Home() {
             </p>
 
             <div className={`flex flex-col items-start gap-4 mt-6 md:flex-row md:items-center transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-              {/* Credit links to /about — top-line authorship is the author's
-                  alone (academic convention); Claude's role is disclosed in
-                  full on the About page. */}
-              <button
-                onClick={() => navigate('/about')}
+              {/* Credit is a mailto (support/questions channel) — top-line
+                  authorship is the author's alone (academic convention);
+                  Claude's role is disclosed in full on the About page,
+                  reachable via the nav. */}
+              <a
+                href="mailto:jesse@jlabsf.org?subject=%5BDataDiver%5D%20Inquiry"
                 className="text-[11px] font-mono text-slate-400/80 dark:text-slate-400/60 whitespace-nowrap text-left
                   hover:text-slate-600 dark:hover:text-slate-300 underline decoration-slate-400/30 underline-offset-2
                   decoration-dotted transition-colors"
@@ -354,7 +355,7 @@ export default function Home() {
                 Assoc. Prof. Jesse Garnier,
                 <br />
                 SF State Journalism
-              </button>
+              </a>
               {/* Health pill — inverse text on a solid moss fill. The
                   timestamp is when DataDiver last successfully pulled from
                   DataSF — NOT the data's own vintage, which varies per
