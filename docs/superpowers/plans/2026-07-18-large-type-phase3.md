@@ -141,7 +141,7 @@ Mechanical sweep over every flat (non-fit-constrained) chart text site. **Exclud
 | `src/components/charts/RCVRoundChart.tsx` (JSX) | 6 | 8, 9, 8, 8, 7, 7 |
 | `src/views/Neighborhood/CivicFingerprint.tsx` (JSX) | 1 | 7 |
 
-Total: 41 D3 sites + 9 JSX sites = **50**.
+Total: 43 D3 sites + 9 JSX sites = **52**.
 
 **Interfaces:**
 - Consumes: nothing.
@@ -163,7 +163,7 @@ Expected: `0`
 Run: `grep -rn "fontSize={" src/components/charts/ src/views/Neighborhood/CivicFingerprint.tsx | wc -l`
 Expected: `0`
 Run: `grep -rn "\.style('font-size'" src/ --include='*.tsx' | wc -l`
-Expected: `41`
+Expected: `43`
 Run: `npx tsc -b`
 Expected: clean.
 
@@ -660,7 +660,7 @@ At the end of `docs/superpowers/specs/2026-07-18-large-type-edition-design.md`:
   SCALE_FACTORS (1.18/1.33 — the spec's "~20–30% bump"). The CSS floor-raise
   is for reflowing HTML; px-fixed SVG layouts would clip under its extra
   boost.
-- **Real inventory: 50 flat sites + 2 fit-constrained files + 14 popup-HTML
+- **Real inventory: 52 flat sites + 2 fit-constrained files + 14 popup-HTML
   sites + 4 CSS sizes (3 tooltip + the `.mapboxgl-ctrl-attrib` credit line)**
   (the spec's "46" was the pre-Phase-2 grep; the RCV charts added JSX
   `fontSize` sites since).
