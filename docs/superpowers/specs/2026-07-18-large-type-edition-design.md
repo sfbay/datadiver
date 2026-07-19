@@ -151,3 +151,42 @@ treatment first:
   coherent whole-shell flip at 850px×xl, MapSidebar w-80↔w-60 at the effective 1024 boundary,
   13-view overflow walk clean. Known xl cosmetic: a D3 value label can clip its card edge
   (SVG layout is fixed while card padding grows) — Phase 3's job.
+
+## Phase 3 shipped amendments (July 18 2026)
+
+- **Rem-first replaced the planned JS helper.** The spec's "shared helper that
+  reads typeScale, explicit value threaded per chart" predates Phase 2's token
+  architecture. Shipped mechanism: SVG/HTML text sizes emit rem via INLINE
+  STYLE and the root % scales them live — no chart re-renders, no threading.
+  Style (not the SVG font-size attribute) because SVG 1.1's attribute grammar
+  excludes rem; inline style is plain CSS. JS threads the factor only where px
+  is mandatory or a fit constraint exists (Mapbox text-size; DorlingCartogram
+  circle-fit; HorizontalBarChart marquee measurement).
+- **Proportional, not floor-raised.** Chart/map text scales by exactly
+  SCALE_FACTORS (1.18/1.33 — the spec's "~20–30% bump"). The CSS floor-raise
+  is for reflowing HTML; px-fixed SVG layouts would clip under its extra
+  boost.
+- **Real inventory: 52 flat sites + 2 fit-constrained files + 14 popup-HTML
+  sites + 4 CSS sizes (3 tooltip + the `.mapboxgl-ctrl-attrib` credit line)**
+  (the spec's "46" was the pre-Phase-2 grep; the RCV charts added JSX
+  `fontSize` sites since).
+- **Mapbox architecture:** `["zoom"]` may only appear at the top level of
+  `interpolate`/`step`, so stock expressions can't be wrapped in `["*"]` —
+  `scaleTextSizeValue` rebuilds them with numeric OUTPUTS multiplied,
+  returning null (= leave at stock size) for unrecognized shapes. MapView
+  captures stock values per symbol layer at style.load — before app layers
+  mount — so re-applies never compound and never touch app-owned labels. The
+  neighborhood choropleth labels build from the same scaler at config time.
+- **MapLabelTuner text-size UI: skipped (YAGNI).** Legibility was QA'd
+  visually per theme; trims would be hand-edited under HMR first.
+- **Dorling formula floor realized as fit-coupling:** gates rise (r > 18f /
+  25f) and truncation budgets shrink (÷f) as glyphs grow, so labels never
+  overflow their circles; factor 1 is byte-identical to the legacy formulas.
+- **QA-found fourth fit-constrained chart:** DepartmentBars — its px margins
+  (180/70) and char-per-6.5px truncation were tuned for 9px mono; at xl the
+  grown labels clipped both SVG edges. Fixed by scaling margins ×factor and
+  dividing the char budget by it (factor 1 identical).
+- **Pre-existing, NOT fixed here (backlog):** charts with fixed `width` props
+  (CityBudget 700, Dispatch911 640/340) draw wider than their xl-shrunken
+  cards and truncate at the right edge — reproduces on main at xl; the fix is
+  responsive measured widths (ResizeObserver), out of Phase 3 scope.
