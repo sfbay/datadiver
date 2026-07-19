@@ -25,3 +25,13 @@ const VALID_SCALES: TypeScale[] = ['default', 'large', 'xl']
 export function parseTypeScale(raw: string | null): TypeScale {
   return VALID_SCALES.includes(raw as TypeScale) ? (raw as TypeScale) : 'default'
 }
+
+/** Root font-size multiplier per tier. MUST match the
+ *  html[data-type-scale] font-size rules in src/index.css
+ *  (large = 118%, xl = 133%) — typeScale.test.ts pins the values so
+ *  the CSS and JS can't drift silently. */
+export const SCALE_FACTORS: Record<TypeScale, number> = {
+  default: 1,
+  large: 1.18,
+  xl: 1.33,
+}

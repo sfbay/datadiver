@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { ViewId } from '@/types/datasets'
 import type { ComparisonMode } from '@/utils/comparisonMode'
 import { parseTypeScale, type TypeScale } from '@/stores/typeScale'
+import { syncViewportMode } from '@/hooks/effectiveViewport'
 
 interface AppState {
   /** Current active view */
@@ -134,6 +135,7 @@ export const useAppStore = create<AppState>((set) => ({
       // the preference just won't persist.
     }
     document.documentElement.setAttribute('data-type-scale', scale)
+    syncViewportMode() // scale change moves the effective breakpoint
     return { typeScale: scale }
   }),
   setDateRange: (start, end) => set({ dateRange: { start, end } }),
@@ -155,4 +157,7 @@ export const useAppStore = create<AppState>((set) => ({
 // imported synchronously before React's first render, so stored-large/xl
 // users never flash default-size text. App.tsx's effect re-applies it on
 // later state changes (the same dual-application recipe as dark mode).
+// syncViewportMode must follow: html[data-vp] (which the desk: CSS
+// variant styles against) depends on the type scale being stamped first.
 document.documentElement.setAttribute('data-type-scale', useAppStore.getState().typeScale)
+syncViewportMode()

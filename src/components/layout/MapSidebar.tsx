@@ -19,6 +19,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode, type ComponentPropsWithRef } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { effectiveViewportWidth } from '@/hooks/effectiveViewport'
 import { useDraggableSheet } from '@/hooks/useDraggableSheet'
 
 interface MapSidebarContextValue {
@@ -59,16 +60,23 @@ export default function MapSidebar({ children, width = 'default', scrollContaine
   const sheet = useDraggableSheet({ initial: 'glimpse', halfVh: 0.4 })
 
   // Track viewport width so compressed mode kicks in below the breakpoint.
-  // SSR-safe via initializer; updated on resize via listener.
+  // EFFECTIVE width (innerWidth ÷ type-scale factor): a large-type desktop
+  // fits less content per physical pixel, so density reduction must kick
+  // in earlier (e.g. 1024 × 1.18 ≈ 1208 physical px under 'large').
+  // SSR-safe via initializer; updated on resize AND on type-scale changes
+  // (setTypeScale writes the DOM attribute before the state commit, so
+  // the effect re-run reads the fresh scale).
+  const typeScale = useAppStore((s) => s.typeScale)
   const [isNarrow, setIsNarrow] = useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth < NARROW_BREAKPOINT : false,
+    typeof window !== 'undefined' ? effectiveViewportWidth() < NARROW_BREAKPOINT : false,
   )
 
   useEffect(() => {
-    const onResize = () => setIsNarrow(window.innerWidth < NARROW_BREAKPOINT)
+    const onResize = () => setIsNarrow(effectiveViewportWidth() < NARROW_BREAKPOINT)
+    onResize() // resync for the typeScale-change re-run
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
-  }, [])
+  }, [typeScale])
 
   const isCompressed = isOpen && isNarrow
 

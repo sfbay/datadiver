@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Suspense, lazy, useEffect } from 'react'
 import { useAppStore } from '@/stores/appStore'
+import { syncViewportMode } from '@/hooks/effectiveViewport'
 import AppShell from '@/components/layout/AppShell'
 import { RouteErrorBoundary } from '@/components/ui/ErrorBoundary'
 // Eager: ONLY the landing page. Every dataset view is route-split — including
@@ -67,7 +68,14 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-type-scale', typeScale)
+    syncViewportMode() // effective breakpoint moved with the scale
   }, [typeScale])
+
+  useEffect(() => {
+    const onResize = () => syncViewportMode()
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   // Warm the flagship view's chunks (Last48 + the mapbox chunk it pulls) once
   // the browser is idle — nav to /live stays instant without costing Home's
