@@ -76,7 +76,7 @@ export default function OwnerProfile() {
       <header className="flex-shrink-0 px-6 py-3 border-b border-slate-200/50 dark:border-white/[0.04]">
         <button
           onClick={() => navigate(-1)}
-          className="text-[10px] font-mono text-moss-500 hover:text-moss-400 transition-colors mb-2"
+          className="text-micro font-mono text-moss-500 hover:text-moss-400 transition-colors mb-2"
         >
           ← Back
         </button>
@@ -87,7 +87,7 @@ export default function OwnerProfile() {
             <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">
               {decoded}
             </h1>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-label text-slate-500 dark:text-slate-400 mt-1">
               Owner profile · {distinctBANs} business{distinctBANs === 1 ? '' : 'es'}
               {' · '}
               {locations.length} location{locations.length === 1 ? '' : 's'}
@@ -104,14 +104,14 @@ export default function OwnerProfile() {
 
               {sectorMix.length > 0 && (
                 <div className="glass-card rounded-xl p-4">
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-2">
+                  <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-2">
                     Sector mix
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {sectorMix.map((s) => (
                       <span
                         key={s.sector}
-                        className="text-[10px] font-mono px-2 py-1 rounded-full
+                        className="text-micro font-mono px-2 py-1 rounded-full
                           bg-teal-500/10 text-teal-400"
                       >
                         {s.sector} · {s.count}
@@ -122,7 +122,7 @@ export default function OwnerProfile() {
               )}
 
               <div className="glass-card rounded-xl p-4">
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-3">
+                <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-3">
                   Businesses ({distinctBANs})
                 </p>
                 <ul className="space-y-2">
@@ -149,7 +149,7 @@ export default function OwnerProfile() {
 function DisambiguationBanner() {
   return (
     <div className="rounded-lg p-3 bg-ochre-500/5 border border-ochre-500/15">
-      <p className="text-[10px] text-ochre-400/70 leading-relaxed">
+      <p className="text-micro text-ochre-400/70 leading-relaxed">
         <span className="font-semibold">Note:</span> owner names in the SF business registry are free-text.
         This page groups by exact match on <span className="font-mono">ownership_name</span> only —
         variants like <em>“Smith John”</em> vs <em>“John Smith LLC”</em> are <em>not</em> combined here.
@@ -182,7 +182,7 @@ function BanClusterRow({ cluster }: { cluster: { ban: string | null; primaryDba:
             <p className="text-[12px] text-slate-700 dark:text-slate-200 truncate">
               {cluster.primaryDba || 'Unknown'}
             </p>
-            <p className="text-[10px] text-slate-500 dark:text-slate-500 font-mono mt-0.5">
+            <p className="text-micro text-slate-500 dark:text-slate-500 font-mono mt-0.5">
               {cluster.locations.length} location{cluster.locations.length === 1 ? '' : 's'}
               {' · '}
               <span className="text-moss-400">{active} active</span>

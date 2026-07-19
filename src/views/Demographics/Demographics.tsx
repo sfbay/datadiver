@@ -325,12 +325,12 @@ export default function Demographics() {
               <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">
                 Demographics Explorer
               </h1>
-              <p className="text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
+              <p className="text-micro font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
                 U.S. Census Bureau &middot; ACS 5-Year Estimates
               </p>
             </div>
             {!isEmpty && (
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-plum-500/80 bg-plum-500/10 px-2 py-1 rounded-full">
+              <span className="inline-flex items-center gap-1.5 text-micro font-mono text-plum-500/80 bg-plum-500/10 px-2 py-1 rounded-full">
                 {neighborhoods.length} neighborhoods
               </span>
             )}
@@ -370,7 +370,7 @@ export default function Demographics() {
                       <button
                         key={mode}
                         onClick={() => setMapMode(mode)}
-                        className={`px-3 py-1.5 rounded-md text-[11px] font-medium transition-all duration-200 ${
+                        className={`px-3 py-1.5 rounded-md text-label font-medium transition-all duration-200 ${
                           mapMode === mode
                             ? 'bg-white/[0.1] text-white shadow-sm'
                             : 'text-slate-400 hover:text-slate-200'
@@ -385,11 +385,11 @@ export default function Demographics() {
                 {/* Color legend */}
                 {legendStops.length > 0 && activeConfig && (
                   <div className="absolute bottom-6 right-5 z-10 glass-card rounded-xl p-3">
-                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                    <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                       {activeConfig.shortLabel}
                     </p>
                     <div className="flex items-center gap-1">
-                      <span className="text-[9px] font-mono text-slate-400">
+                      <span className="text-nano font-mono text-slate-400">
                         {formatValue(legendStops[0].value, activeConfig.format)}
                       </span>
                       <div className="flex h-2.5 rounded-full overflow-hidden" style={{ width: 100 }}>
@@ -397,7 +397,7 @@ export default function Demographics() {
                           <div key={i} className="flex-1" style={{ backgroundColor: stop.color }} />
                         ))}
                       </div>
-                      <span className="text-[9px] font-mono text-slate-400">
+                      <span className="text-nano font-mono text-slate-400">
                         {formatValue(legendStops[legendStops.length - 1].value, activeConfig.format)}
                       </span>
                     </div>
@@ -410,7 +410,7 @@ export default function Demographics() {
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <p className="text-[12px] font-medium text-ink dark:text-white">{selectedNeighborhood}</p>
-                        <p className="text-[10px] font-mono text-slate-400">
+                        <p className="text-micro font-mono text-slate-400">
                           {(() => {
                             const n = neighborhoods.find(n => n.name === selectedNeighborhood)
                             if (!n || !activeConfig) return ''
@@ -439,7 +439,7 @@ export default function Demographics() {
                       <button
                         key={mode}
                         onClick={() => setMapMode(mode)}
-                        className={`px-3 py-1.5 rounded-md text-[11px] font-medium transition-all duration-200 ${
+                        className={`px-3 py-1.5 rounded-md text-label font-medium transition-all duration-200 ${
                           mapMode === mode
                             ? 'bg-white/[0.1] text-white shadow-sm'
                             : 'text-slate-400 hover:text-slate-200'
@@ -466,11 +466,11 @@ export default function Demographics() {
                 {/* Legend (same as choropleth) */}
                 {legendStops.length > 0 && activeConfig && (
                   <div className="absolute bottom-6 right-5 z-10 glass-card rounded-xl p-3">
-                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                    <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                       {activeConfig.shortLabel}
                     </p>
                     <div className="flex items-center gap-1">
-                      <span className="text-[9px] font-mono text-slate-400">
+                      <span className="text-nano font-mono text-slate-400">
                         {formatValue(legendStops[0].value, activeConfig.format)}
                       </span>
                       <div className="flex h-2.5 rounded-full overflow-hidden" style={{ width: 100 }}>
@@ -478,7 +478,7 @@ export default function Demographics() {
                           <div key={i} className="flex-1" style={{ backgroundColor: stop.color }} />
                         ))}
                       </div>
-                      <span className="text-[9px] font-mono text-slate-400">
+                      <span className="text-nano font-mono text-slate-400">
                         {formatValue(legendStops[legendStops.length - 1].value, activeConfig.format)}
                       </span>
                     </div>
@@ -496,13 +496,13 @@ export default function Demographics() {
             {/* Y-axis selector */}
             <div className="flex-shrink-0 px-4 pt-3 pb-2 border-b border-slate-200/50 dark:border-white/[0.04]">
               <div className="flex items-center gap-2">
-                <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 whitespace-nowrap">
+                <span className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 whitespace-nowrap">
                   Scatter Y
                 </span>
                 <select
                   value={scatterYMetric ?? ''}
                   onChange={e => setScatterYMetric(e.target.value || null)}
-                  className="flex-1 text-[11px] bg-slate-900 border border-white/[0.06] rounded-md px-2 py-1 text-slate-200 focus:outline-none focus:ring-1 focus:ring-plum-500/40"
+                  className="flex-1 text-label bg-slate-900 border border-white/[0.06] rounded-md px-2 py-1 text-slate-200 focus:outline-none focus:ring-1 focus:ring-plum-500/40"
                   style={{ colorScheme: 'dark' }}
                 >
                   <optgroup label="Civic Metrics">
@@ -529,7 +529,7 @@ export default function Demographics() {
                 <SkeletonChart width={380} height={260} />
               ) : civicLoading && !isCensusY ? (
                 <div className="flex items-center justify-center h-64">
-                  <p className="text-[11px] font-mono text-slate-500 animate-pulse">
+                  <p className="text-label font-mono text-slate-500 animate-pulse">
                     Loading civic metrics...
                   </p>
                 </div>
@@ -544,7 +544,7 @@ export default function Demographics() {
                 />
               ) : (
                 <div className="flex items-center justify-center h-64">
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-label text-slate-500">
                     {scatterYData.size === 0
                       ? 'Select a Y-axis metric to see correlations'
                       : 'Not enough data points for scatter plot'}
@@ -556,7 +556,7 @@ export default function Demographics() {
               {rankedNeighborhoods.length > 0 && activeConfig && (
                 <div className="mt-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
+                    <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
                       Ranked by {activeConfig.shortLabel}
                     </p>
                     <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
@@ -583,14 +583,14 @@ export default function Demographics() {
                           />
                           <div className="relative flex items-center justify-between">
                             <div className="flex items-center gap-2 min-w-0">
-                              <span className="text-[10px] font-mono text-slate-500 w-4 shrink-0">
+                              <span className="text-micro font-mono text-slate-500 w-4 shrink-0">
                                 {idx + 1}
                               </span>
                               <span className="text-[12px] font-medium text-slate-600 dark:text-slate-200 truncate">
                                 {n.name}
                               </span>
                             </div>
-                            <span className="text-[11px] font-mono text-slate-400 shrink-0 ml-2">
+                            <span className="text-label font-mono text-slate-400 shrink-0 ml-2">
                               {formatValue(value, activeConfig.format)}
                             </span>
                           </div>

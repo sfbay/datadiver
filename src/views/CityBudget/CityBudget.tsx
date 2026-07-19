@@ -72,7 +72,7 @@ export default function CityBudget() {
             <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none tracking-tight">
               City Budget
             </h1>
-            <p className="text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
+            <p className="text-micro font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
               SF Controller · {formatFiscalYear(fiscalYear)}
             </p>
           </div>
@@ -235,14 +235,14 @@ function BudgetOverview({ fiscalYear }: { fiscalYear: FiscalYear }) {
             <div className="flex flex-wrap gap-2.5">
               {cards.map((card) => (
                 <div key={card.id} className="glass-card rounded-xl px-4 py-3 min-w-[120px]">
-                  <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 mb-1.5 whitespace-nowrap">
+                  <p className="text-micro font-medium uppercase tracking-wider text-slate-400 mb-1.5 whitespace-nowrap">
                     {card.label}
                   </p>
                   <p className="text-2xl font-bold font-mono tracking-tight leading-none" style={{ color: card.color }}>
                     {card.value}
                   </p>
                   {card.subtitle && (
-                    <p className="text-[10px] font-mono text-slate-400 mt-1">{card.subtitle}</p>
+                    <p className="text-micro font-mono text-slate-400 mt-1">{card.subtitle}</p>
                   )}
                 </div>
               ))}
@@ -251,13 +251,13 @@ function BudgetOverview({ fiscalYear }: { fiscalYear: FiscalYear }) {
             {/* Department breakdown chart */}
             <div className="glass-card rounded-xl p-4">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500">
+                <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500">
                   Department Spending vs Budget
                 </p>
                 {selectedDepartment && (
                   <button
                     onClick={() => setSelectedDepartment(null)}
-                    className="text-[10px] font-mono text-slate-400 hover:text-ink dark:hover:text-white transition-colors"
+                    className="text-micro font-mono text-slate-400 hover:text-ink dark:hover:text-white transition-colors"
                   >
                     ← All departments
                   </button>
@@ -280,7 +280,7 @@ function BudgetOverview({ fiscalYear }: { fiscalYear: FiscalYear }) {
             {/* Spending trends chart */}
             <div className="glass-card rounded-xl p-4">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500">
+                <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500">
                   Spending Trends (FY2000–Present)
                 </p>
                 <div className="flex gap-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-md p-0.5">
@@ -288,7 +288,7 @@ function BudgetOverview({ fiscalYear }: { fiscalYear: FiscalYear }) {
                     <button
                       key={m}
                       onClick={() => setTrendMode(m)}
-                      className={`px-2 py-0.5 text-[10px] font-mono rounded transition-all
+                      className={`px-2 py-0.5 text-micro font-mono rounded transition-all
                         ${trendMode === m
                           ? 'bg-white dark:bg-white/10 text-ink dark:text-white shadow-sm'
                           : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
@@ -326,7 +326,7 @@ function BudgetOverview({ fiscalYear }: { fiscalYear: FiscalYear }) {
       {/* Right sidebar — department list */}
       <aside className="w-72 flex-shrink-0 border-l border-slate-200/50 dark:border-white/[0.04] bg-white/30 dark:bg-slate-900/30 overflow-y-auto">
         <div className="p-4">
-          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500 mb-3">
+          <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500 mb-3">
             Departments by Spending
           </p>
 
@@ -345,14 +345,14 @@ function BudgetOverview({ fiscalYear }: { fiscalYear: FiscalYear }) {
                     }`}
                 >
                   <div className="flex items-center justify-between mb-0.5">
-                    <span className={`text-[10px] truncate max-w-[160px] ${
+                    <span className={`text-micro truncate max-w-[160px] ${
                       selectedDepartment === dept.name
                         ? 'text-indigo-600 dark:text-indigo-400 font-medium'
                         : 'text-slate-600 dark:text-slate-400'
                     }`}>
                       {dept.name}
                     </span>
-                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-500 tabular-nums ml-2">
+                    <span className="text-micro font-mono text-slate-500 dark:text-slate-500 tabular-nums ml-2">
                       {formatBudgetAmount(dept.amount)}
                     </span>
                   </div>
@@ -841,7 +841,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
               <div className="flex flex-wrap gap-2.5">
                 {cards.map((card) => (
                   <div key={card.id} className="glass-card rounded-xl px-4 py-3 min-w-[120px]">
-                    <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 mb-1.5 whitespace-nowrap">
+                    <p className="text-micro font-medium uppercase tracking-wider text-slate-400 mb-1.5 whitespace-nowrap">
                       {card.label}
                     </p>
                     <p className="text-2xl font-bold font-mono tracking-tight leading-none" style={{ color: card.color }}>
@@ -851,12 +851,12 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                       card.subtitleAction ? (
                         <button
                           onClick={card.subtitleAction}
-                          className="text-[10px] font-mono text-slate-400 mt-1 hover:text-indigo-400 transition-colors underline decoration-dotted underline-offset-2 cursor-pointer"
+                          className="text-micro font-mono text-slate-400 mt-1 hover:text-indigo-400 transition-colors underline decoration-dotted underline-offset-2 cursor-pointer"
                         >
                           {card.subtitle}
                         </button>
                       ) : (
-                        <p className="text-[10px] font-mono text-slate-400 mt-1">{card.subtitle}</p>
+                        <p className="text-micro font-mono text-slate-400 mt-1">{card.subtitle}</p>
                       )
                     )}
                   </div>
@@ -864,7 +864,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
               </div>
               <button
                 onClick={handleExportCSV}
-                className="flex-shrink-0 ml-4 mt-1 flex items-center gap-1.5 text-[10px] font-mono text-slate-400 hover:text-ink dark:hover:text-white bg-slate-100/80 dark:bg-white/[0.04] rounded-md px-2.5 py-1.5 transition-colors"
+                className="flex-shrink-0 ml-4 mt-1 flex items-center gap-1.5 text-micro font-mono text-slate-400 hover:text-ink dark:hover:text-white bg-slate-100/80 dark:bg-white/[0.04] rounded-md px-2.5 py-1.5 transition-colors"
               >
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                   <path d="M6 1v7M3 5l3 3 3-3M2 10h8" />
@@ -907,7 +907,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                     timeline is a "where are you in the trend" indicator only. */}
                 {drilldown.dept && deptTimeline.data.length >= 2 && (
                   <div className="glass-card rounded-xl p-4">
-                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                    <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                       Spending Timeline — {drilldown.dept}
                     </p>
                     <SpendingTimeline data={deptTimeline.data} currentFY={fiscalYear} />
@@ -919,7 +919,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
 
                 {drilldown.category && !drilldown.dept && !drilldown.vendor && categoryTimeline.data.length >= 2 && (
                   <div className="glass-card rounded-xl p-4">
-                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                    <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                       Spending Timeline — {MEDIA_CATEGORIES[drilldown.category]?.label}
                     </p>
                     <SpendingTimeline
@@ -936,7 +936,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                 {/* Media mix for department drill-down */}
                 {drilldown.dept && (
                   <div className="glass-card rounded-xl p-4">
-                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-3">
+                    <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-3">
                       Media Mix — {drilldown.dept}
                     </p>
                     <div className="space-y-2">
@@ -949,12 +949,12 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                           <div className="flex items-center justify-between mb-0.5">
                             <div className="flex items-center gap-2">
                               <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: m.color }} />
-                              <span className="text-[10px] text-slate-600 dark:text-slate-300 group-hover:text-ink dark:group-hover:text-white transition-colors">
+                              <span className="text-micro text-slate-600 dark:text-slate-300 group-hover:text-ink dark:group-hover:text-white transition-colors">
                                 {m.label}
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-mono text-slate-500 tabular-nums">
+                              <span className="text-micro font-mono text-slate-500 tabular-nums">
                                 {formatBudgetAmount(m.total)}
                               </span>
                               <svg className="w-3 h-3 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -1005,14 +1005,14 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                     return (
                       <div className="glass-card rounded-xl p-4 border border-slate-200/30 dark:border-white/[0.06]">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60">
+                          <span className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60">
                             Resolution 240210 Compliance
                           </span>
-                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-500/10 text-slate-400">
+                          <span className="text-micro font-mono font-bold px-1.5 py-0.5 rounded bg-slate-500/10 text-slate-400">
                             N/A
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                        <p className="text-label text-slate-500 dark:text-slate-400 leading-relaxed">
                           {reason}
                         </p>
                       </div>
@@ -1028,17 +1028,17 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                     <div className="glass-card rounded-xl p-4 border" style={{ borderColor: cfg.color + '30' }}>
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60">
+                          <span className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60">
                             Compliance — {toSentenceCase(drilldown.dept)}
                           </span>
                           <span
-                            className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded"
+                            className="text-micro font-mono font-bold px-1.5 py-0.5 rounded"
                             style={{ color: cfg.color, backgroundColor: cfg.color + '15' }}
                           >
                             {cfg.icon} {deptCard.compliancePct.toFixed(0)}%
                           </span>
                         </div>
-                        <span className="text-[9px] font-mono text-slate-400/50">
+                        <span className="text-nano font-mono text-slate-400/50">
                           {deptCard.outletCount} outlet{deptCard.outletCount !== 1 ? 's' : ''}
                         </span>
                       </div>
@@ -1060,7 +1060,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                           style={{ left: '50%' }}
                         />
                       </div>
-                      <div className="flex items-center justify-between mt-1.5 text-[9px] font-mono">
+                      <div className="flex items-center justify-between mt-1.5 text-nano font-mono">
                         <span className="text-moss-400 tabular-nums">
                           {formatBudgetFull(deptEthnic)} community
                         </span>
@@ -1092,7 +1092,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
               <>
                 {/* Media mix breakdown */}
                 <div className="glass-card rounded-xl p-4">
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-3">
+                  <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-3">
                     Media Mix
                   </p>
                   <div className="space-y-2">
@@ -1105,12 +1105,12 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                         <div className="flex items-center justify-between mb-0.5">
                           <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: m.color }} />
-                            <span className="text-[10px] text-slate-600 dark:text-slate-300 group-hover:text-ink dark:group-hover:text-white transition-colors">
+                            <span className="text-micro text-slate-600 dark:text-slate-300 group-hover:text-ink dark:group-hover:text-white transition-colors">
                               {m.label}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-mono text-slate-500 tabular-nums">
+                            <span className="text-micro font-mono text-slate-500 tabular-nums">
                               {formatBudgetAmount(m.total)}
                             </span>
                             <svg className="w-3 h-3 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -1135,7 +1135,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
 
                 {/* Top ad vendors */}
                 <div className="glass-card rounded-xl p-4">
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-3">
+                  <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-3">
                     Top Advertising Vendors (color = media category)
                   </p>
                   <HorizontalBarChart
@@ -1156,7 +1156,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                     <div className="w-2 h-2 rounded-full bg-brick-500" />
                     <p className="text-xs font-semibold text-brick-400">P-Card Transparency</p>
                   </div>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
+                  <p className="text-label text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
                     These purchases are made via procurement cards (US Bank) and do not identify the specific platform or media outlet.
                     They may include Facebook/Instagram boosts, Google Ads, and other digital advertising that is nearly invisible in city financial data.
                   </p>
@@ -1165,7 +1165,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                       .filter((d) => d.pcard_total > 0)
                       .map((d) => (
                         <div key={d.department}>
-                          <div className="flex items-center justify-between text-[10px] mb-0.5">
+                          <div className="flex items-center justify-between text-micro mb-0.5">
                             <span className="text-slate-600 dark:text-slate-300 truncate max-w-[300px]">{d.department}</span>
                             <div className="flex items-center gap-2">
                               <span className="font-mono text-brick-400 tabular-nums">{formatBudgetAmount(d.pcard_total)}</span>
@@ -1202,7 +1202,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
       {/* Right sidebar — departments with three tab lenses */}
       <aside className="w-72 flex-shrink-0 border-l border-slate-200/50 dark:border-white/[0.04] bg-white/30 dark:bg-slate-900/30 overflow-y-auto">
         <div className="p-4">
-          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500 mb-2">
+          <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500 mb-2">
             Departments
           </p>
 
@@ -1217,7 +1217,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                 key={tab.key}
                 onClick={() => setRailTab(tab.key)}
                 title={tab.title}
-                className={`flex-1 py-1 text-[9px] font-mono tracking-wide rounded transition-colors ${
+                className={`flex-1 py-1 text-nano font-mono tracking-wide rounded transition-colors ${
                   railTab === tab.key
                     ? tab.activeClass
                     : 'text-slate-500 hover:text-slate-300'
@@ -1279,14 +1279,14 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                     className={`w-full text-left px-2 py-1.5 rounded-md transition-all duration-150 group ${hoverClass} ${dimClass}`}
                   >
                     <div className="flex items-center justify-between mb-0.5">
-                      <span className={`text-[10px] truncate max-w-[140px] ${
+                      <span className={`text-micro truncate max-w-[140px] ${
                         isActive
                           ? 'text-indigo-600 dark:text-indigo-400 font-medium'
                           : 'text-slate-600 dark:text-slate-400'
                       }`}>
                         {dept.department}
                       </span>
-                      <span className={`text-[10px] font-mono tabular-nums ml-2 ${primaryColor}`}>
+                      <span className={`text-micro font-mono tabular-nums ml-2 ${primaryColor}`}>
                         {primaryValue}
                       </span>
                     </div>
@@ -1460,7 +1460,7 @@ function AdBreadcrumb({
       {/* Back-link eyebrow — explicit "← Back to X" affordance */}
       <button
         onClick={backHandler}
-        className="group flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors mb-1.5"
+        className="group flex items-center gap-1.5 text-micro font-mono uppercase tracking-[0.18em] text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors mb-1.5"
       >
         <span className="transition-transform group-hover:-translate-x-0.5">←</span>
         <span>Back to {backLabel}</span>
@@ -1499,7 +1499,7 @@ function FilteredVendorList({
   return (
     <div className="glass-card rounded-xl p-4">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60">
+        <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60">
           {title}
         </p>
         <div className="flex gap-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-md p-0.5">
@@ -1507,7 +1507,7 @@ function FilteredVendorList({
             <button
               key={s}
               onClick={() => setSortBy(s)}
-              className={`px-2 py-0.5 text-[9px] font-mono rounded transition-all
+              className={`px-2 py-0.5 text-nano font-mono rounded transition-all
                 ${sortBy === s
                   ? 'bg-white dark:bg-white/10 text-ink dark:text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
@@ -1529,19 +1529,19 @@ function FilteredVendorList({
           >
             <div className="flex items-center justify-between mb-0.5">
               <div className="flex items-center gap-2 min-w-0">
-                <span className="text-[9px] font-mono text-slate-300 dark:text-slate-600 w-5 text-right flex-shrink-0">
+                <span className="text-nano font-mono text-slate-300 dark:text-slate-600 w-5 text-right flex-shrink-0">
                   {i + 1}
                 </span>
                 <div className="w-2 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: MEDIA_CATEGORIES[v.category].color }} />
-                <span className="text-[11px] text-slate-700 dark:text-slate-200 group-hover:text-ink dark:group-hover:text-white transition-colors truncate">
+                <span className="text-label text-slate-700 dark:text-slate-200 group-hover:text-ink dark:group-hover:text-white transition-colors truncate">
                   {toSentenceCase(v.vendor)}
                 </span>
               </div>
               <div className="flex items-center gap-3 flex-shrink-0 ml-3">
-                <span className="text-[9px] font-mono text-slate-400 tabular-nums">
+                <span className="text-nano font-mono text-slate-400 tabular-nums">
                   {v.payments} pmt{v.payments !== 1 ? 's' : ''}
                 </span>
-                <span className="text-[10px] font-mono text-ink dark:text-white tabular-nums font-medium">
+                <span className="text-micro font-mono text-ink dark:text-white tabular-nums font-medium">
                   {formatBudgetAmount(v.total)}
                 </span>
                 <svg className="w-3 h-3 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -1662,11 +1662,11 @@ function ComplianceDashboard({
       <div className="glass-card rounded-xl p-4 border border-slate-200/30 dark:border-white/[0.06] relative z-20">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60">
+            <span className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60">
               Resolution 240210 Compliance
             </span>
-            <span className="text-[9px] font-mono text-slate-400/40">·</span>
-            <span className="text-[9px] font-mono text-slate-400/60">
+            <span className="text-nano font-mono text-slate-400/40">·</span>
+            <span className="text-nano font-mono text-slate-400/60">
               {formatFiscalYear(fiscalYear)}
             </span>
           </div>
@@ -1718,13 +1718,13 @@ function ComplianceDashboard({
             >
               {/* ───── Row 1 (bar 1): meta + bar body ───── */}
               <div className="self-center">
-                <p className="text-[9px] font-mono uppercase tracking-[0.15em] text-slate-300 leading-snug">
+                <p className="text-nano font-mono uppercase tracking-[0.15em] text-slate-300 leading-snug">
                   All city ad-related spending
                 </p>
                 <p className="text-[8px] font-mono text-slate-500 leading-snug mt-0.5">
                   all vendor payments tied to advertising · {fyLabel}
                 </p>
-                <p className="text-[11px] font-mono font-semibold text-slate-200 tabular-nums mt-1">
+                <p className="text-label font-mono font-semibold text-slate-200 tabular-nums mt-1">
                   {formatBudgetFull(allLayersTotal)}
                 </p>
               </div>
@@ -1744,10 +1744,10 @@ function ComplianceDashboard({
                   >
                     {agencyPct > 8 && (
                       <>
-                        <span className="text-[11px] font-mono font-semibold text-plum-400 tabular-nums leading-tight">
+                        <span className="text-label font-mono font-semibold text-plum-400 tabular-nums leading-tight">
                           {formatBudgetFull(agencyTotal)}
                         </span>
-                        <span className="text-[9px] font-mono text-plum-400/70 leading-tight mt-0.5">
+                        <span className="text-nano font-mono text-plum-400/70 leading-tight mt-0.5">
                           agencies · {Math.round(agencyPct)}%
                         </span>
                       </>
@@ -1775,10 +1775,10 @@ function ComplianceDashboard({
                   >
                     {taggedPct > 6 && (
                       <>
-                        <span className="text-[11px] font-mono font-semibold text-indigo-400 tabular-nums leading-tight">
+                        <span className="text-label font-mono font-semibold text-indigo-400 tabular-nums leading-tight">
                           {formatBudgetFull(taggedTotal)}
                         </span>
-                        <span className="text-[9px] font-mono text-indigo-400/70 leading-tight mt-0.5">
+                        <span className="text-nano font-mono text-indigo-400/70 leading-tight mt-0.5">
                           direct · {Math.round(taggedPct)}%
                         </span>
                       </>
@@ -1839,13 +1839,13 @@ function ComplianceDashboard({
               {totalTaggedAdSpend > 0 ? (
                 <>
                   <div className="self-center">
-                    <p className="text-[9px] font-mono uppercase tracking-[0.15em] text-indigo-400 leading-snug">
+                    <p className="text-nano font-mono uppercase tracking-[0.15em] text-indigo-400 leading-snug">
                       Direct ad placements
                     </p>
                     <p className="text-[8px] font-mono text-slate-500 leading-snug mt-0.5">
                       {compliance.departmentCards.length} departments paid directly · {fyLabel}
                     </p>
-                    <p className="text-[11px] font-mono font-semibold text-indigo-400 tabular-nums mt-1">
+                    <p className="text-label font-mono font-semibold text-indigo-400 tabular-nums mt-1">
                       {formatBudgetFull(totalTaggedAdSpend)}
                     </p>
                   </div>
@@ -1864,10 +1864,10 @@ function ComplianceDashboard({
                     >
                       {legalWithinTagged > 12 && (
                         <>
-                          <span className="text-[11px] font-mono text-slate-300 tabular-nums leading-tight">
+                          <span className="text-label font-mono text-slate-300 tabular-nums leading-tight">
                             {formatBudgetFull(compliance.legalNoticeTotal)}
                           </span>
-                          <span className="text-[9px] font-mono text-slate-400/80 leading-tight mt-0.5">
+                          <span className="text-nano font-mono text-slate-400/80 leading-tight mt-0.5">
                             legal · excl.
                           </span>
                         </>
@@ -1885,10 +1885,10 @@ function ComplianceDashboard({
                       }}
                       title={`Discretionary advertising (subject to Resolution 240210): ${formatBudgetFull(compliance.totalDiscretionary)}`}
                     >
-                      <span className="text-[11px] font-mono font-semibold text-teal-100 tabular-nums leading-tight">
+                      <span className="text-label font-mono font-semibold text-teal-100 tabular-nums leading-tight">
                         {formatBudgetFull(compliance.totalDiscretionary)}
                       </span>
-                      <span className="text-[9px] font-mono text-teal-200/80 leading-tight mt-0.5">
+                      <span className="text-nano font-mono text-teal-200/80 leading-tight mt-0.5">
                         discretionary · {Math.round(discretionaryWithinTagged)}%
                       </span>
                     </div>
@@ -1946,13 +1946,13 @@ function ComplianceDashboard({
               {compliance.totalDiscretionary > 0 && (
                 <>
                   <div className="self-center">
-                    <p className="text-[9px] font-mono uppercase tracking-[0.15em] text-teal-300 leading-snug">
+                    <p className="text-nano font-mono uppercase tracking-[0.15em] text-teal-300 leading-snug">
                       Discretionary
                     </p>
                     <p className="text-[8px] font-mono text-slate-500 leading-snug mt-0.5">
                       target ≥ 50% to community media · {fyLabel}
                     </p>
-                    <p className="text-[11px] font-mono font-semibold text-teal-200 tabular-nums mt-1">
+                    <p className="text-label font-mono font-semibold text-teal-200 tabular-nums mt-1">
                       {formatBudgetFull(compliance.totalDiscretionary)}
                     </p>
                   </div>
@@ -1975,13 +1975,13 @@ function ComplianceDashboard({
                         className="absolute inset-y-0 flex items-center pl-2 pointer-events-none"
                         style={{ left: `${communityWithinDiscretionary}%` }}
                       >
-                        <span className="text-[11px] font-mono font-semibold text-moss-400 tabular-nums leading-tight whitespace-nowrap">
+                        <span className="text-label font-mono font-semibold text-moss-400 tabular-nums leading-tight whitespace-nowrap">
                           {formatBudgetFull(compliance.ethnicMediaSpend)} community
                         </span>
                       </div>
                     ) : (
                       <div className="absolute inset-y-0 left-0 flex items-center justify-center pointer-events-none" style={{ width: `${communityWithinDiscretionary}%` }}>
-                        <span className="text-[11px] font-mono font-semibold text-ink dark:text-white tabular-nums leading-tight">
+                        <span className="text-label font-mono font-semibold text-ink dark:text-white tabular-nums leading-tight">
                           {formatBudgetFull(compliance.ethnicMediaSpend)} community
                         </span>
                       </div>
@@ -2006,39 +2006,39 @@ function ComplianceDashboard({
         {/* Prominent dollar amounts */}
         <div className="grid grid-cols-3 gap-4 mt-3 mb-2">
           <div>
-            <p className="text-[9px] font-mono uppercase tracking-wider text-slate-400/60 mb-0.5">Community Media Spend</p>
+            <p className="text-nano font-mono uppercase tracking-wider text-slate-400/60 mb-0.5">Community Media Spend</p>
             <p className="text-lg font-bold font-mono tabular-nums text-moss-400">{formatBudgetFull(compliance.ethnicMediaSpend)}</p>
-            <p className="text-[10px] font-mono text-moss-400/90">
+            <p className="text-micro font-mono text-moss-400/90">
               across <span className="font-semibold">{compliance.outletCount}</span> {compliance.outletCount === 1 ? 'outlet' : 'outlets'}
             </p>
           </div>
           <div>
-            <p className="text-[9px] font-mono uppercase tracking-wider text-slate-400/60 mb-0.5">50% Target</p>
+            <p className="text-nano font-mono uppercase tracking-wider text-slate-400/60 mb-0.5">50% Target</p>
             <p className="text-lg font-bold font-mono tabular-nums text-ochre-500">{formatBudgetFull(compliance.totalDiscretionary * 0.5)}</p>
-            <p className="text-[9px] font-mono text-slate-400/60">of {formatBudgetFull(compliance.totalDiscretionary)} discretionary</p>
+            <p className="text-nano font-mono text-slate-400/60">of {formatBudgetFull(compliance.totalDiscretionary)} discretionary</p>
           </div>
           <div>
-            <p className="text-[9px] font-mono uppercase tracking-wider text-slate-400/60 mb-0.5">Shortfall</p>
+            <p className="text-nano font-mono uppercase tracking-wider text-slate-400/60 mb-0.5">Shortfall</p>
             {compliance.totalDiscretionary * 0.5 > compliance.ethnicMediaSpend ? (
               <>
                 <p className="text-lg font-bold font-mono tabular-nums text-brick-400">
                   {formatBudgetFull(compliance.totalDiscretionary * 0.5 - compliance.ethnicMediaSpend)}
                 </p>
-                <p className="text-[9px] font-mono text-brick-400/60">below 50% target</p>
+                <p className="text-nano font-mono text-brick-400/60">below 50% target</p>
               </>
             ) : (
               <>
                 <p className="text-lg font-bold font-mono tabular-nums text-moss-400">
                   +{formatBudgetFull(compliance.ethnicMediaSpend - compliance.totalDiscretionary * 0.5)}
                 </p>
-                <p className="text-[9px] font-mono text-moss-400/60">above 50% target</p>
+                <p className="text-nano font-mono text-moss-400/60">above 50% target</p>
               </>
             )}
           </div>
         </div>
 
         {/* Compliance % + methodology link */}
-        <div className="flex items-center justify-between text-[10px] font-mono border-t border-slate-200/30 dark:border-white/[0.04] pt-2">
+        <div className="flex items-center justify-between text-micro font-mono border-t border-slate-200/30 dark:border-white/[0.04] pt-2">
           <div className="flex items-center gap-3">
             <span style={{ color: barColor }} className="font-semibold text-sm tabular-nums">
               {pct.toFixed(1)}%
@@ -2057,7 +2057,7 @@ function ComplianceDashboard({
             />
           </div>
           {compliance.legalNoticeTotal > 0 && (
-            <span className="text-slate-400/60 text-[9px]">
+            <span className="text-slate-400/60 text-nano">
               {formatBudgetAmount(compliance.legalNoticeTotal)} legal notices excluded
             </span>
           )}
@@ -2074,10 +2074,10 @@ function ComplianceDashboard({
         return (
           <div className="glass-card rounded-xl p-4">
             <div className="flex items-baseline gap-2 mb-3">
-              <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60">
+              <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60">
                 Annual ad-spending composition
               </p>
-              <p className="text-[9px] font-mono text-slate-400">· {fyRangeLabel}</p>
+              <p className="text-nano font-mono text-slate-400">· {fyRangeLabel}</p>
             </div>
             <AdSpendCompositionChart
               data={compliance.trend}
@@ -2098,12 +2098,12 @@ function ComplianceDashboard({
       {/* ── Department Report Card ──────────────────── */}
       <div className="glass-card rounded-xl p-4">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60">
+          <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60">
             Department Report Card
           </p>
           <button
             onClick={handleExportDeptCSV}
-            className="flex items-center gap-1.5 text-[9px] font-mono text-slate-400 hover:text-ink dark:hover:text-white bg-slate-100/80 dark:bg-white/[0.04] rounded-md px-2 py-1 transition-colors"
+            className="flex items-center gap-1.5 text-nano font-mono text-slate-400 hover:text-ink dark:hover:text-white bg-slate-100/80 dark:bg-white/[0.04] rounded-md px-2 py-1 transition-colors"
           >
             <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
               <path d="M6 1v7M3 5l3 3 3-3M2 10h8" />
@@ -2130,21 +2130,21 @@ function ComplianceDashboard({
                 onClick={() => onDeptClick(card.department)}
                 className="w-full grid grid-cols-[1fr_80px_80px_60px_50px] gap-2 px-2 py-1.5 rounded-md hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-all group items-center"
               >
-                <span className="text-[10px] text-slate-600 dark:text-slate-300 group-hover:text-ink dark:group-hover:text-white transition-colors truncate text-left">
+                <span className="text-micro text-slate-600 dark:text-slate-300 group-hover:text-ink dark:group-hover:text-white transition-colors truncate text-left">
                   {card.department}
                 </span>
-                <span className="text-[10px] font-mono text-slate-500 tabular-nums text-right">
+                <span className="text-micro font-mono text-slate-500 tabular-nums text-right">
                   {formatBudgetAmount(card.ethnicMediaSpend)}
                 </span>
-                <span className="text-[10px] font-mono text-slate-500 tabular-nums text-right">
+                <span className="text-micro font-mono text-slate-500 tabular-nums text-right">
                   {formatBudgetAmount(card.discretionaryTotal)}
                 </span>
-                <span className="text-[10px] font-mono tabular-nums text-right font-medium" style={{ color: cfg.color }}>
+                <span className="text-micro font-mono tabular-nums text-right font-medium" style={{ color: cfg.color }}>
                   {card.status === 'none' ? '—' : `${card.compliancePct.toFixed(0)}%`}
                 </span>
                 <span className="flex items-center justify-center">
                   <span
-                    className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] ${cfg.bg}`}
+                    className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-micro ${cfg.bg}`}
                     style={{ color: cfg.color }}
                   >
                     {cfg.icon}
@@ -2166,7 +2166,7 @@ function ComplianceDashboard({
           onClick={onToggleMethodology}
           className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-50/50 dark:hover:bg-white/[0.01] transition-colors"
         >
-          <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+          <span className="text-micro font-medium text-slate-500 dark:text-slate-400">
             How is this calculated?
           </span>
           <svg
@@ -2179,7 +2179,7 @@ function ComplianceDashboard({
 
         {methodologyOpen && (
           <div className="px-4 pb-4 space-y-3 border-t border-slate-100 dark:border-white/[0.04] pt-3">
-            <div className="grid grid-cols-2 gap-4 text-[10px]">
+            <div className="grid grid-cols-2 gap-4 text-micro">
               <div>
                 <p className="font-mono uppercase tracking-wider text-slate-400/60 mb-1 text-[8px]">Numerator</p>
                 <p className="text-slate-600 dark:text-slate-300">
@@ -2191,7 +2191,7 @@ function ComplianceDashboard({
               <div>
                 <p className="font-mono uppercase tracking-wider text-slate-400/60 mb-1 text-[8px]">Denominator</p>
                 <p className="text-slate-600 dark:text-slate-300">
-                  All advertising spend (<code className="text-[9px]">sub_object = &apos;Advertising&apos;</code>) minus mandatory legal notices
+                  All advertising spend (<code className="text-nano">sub_object = &apos;Advertising&apos;</code>) minus mandatory legal notices
                 </p>
                 <p className="font-mono text-indigo-400 mt-0.5 tabular-nums">{formatBudgetFull(compliance.totalDiscretionary)}</p>
               </div>
@@ -2213,12 +2213,12 @@ function ComplianceDashboard({
                 </div>
                 <div className="space-y-1">
                   {compliance.exclusions.map((e) => (
-                    <div key={e.vendor} className="flex items-center justify-between text-[10px] px-2 py-1 rounded bg-slate-50 dark:bg-white/[0.02]">
+                    <div key={e.vendor} className="flex items-center justify-between text-micro px-2 py-1 rounded bg-slate-50 dark:bg-white/[0.02]">
                       <span className="text-slate-500">{toSentenceCase(e.vendor)}</span>
                       <span className="font-mono text-slate-400 tabular-nums">{formatBudgetFull(e.total)}</span>
                     </div>
                   ))}
-                  <p className="text-[9px] text-slate-400/60 mt-1">
+                  <p className="text-nano text-slate-400/60 mt-1">
                     Total excluded: {formatBudgetFull(compliance.legalNoticeTotal)}
                   </p>
                 </div>
@@ -2227,13 +2227,13 @@ function ComplianceDashboard({
 
             {/* P-card caveat */}
             {compliance.pcardTotal > 0 && (
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 bg-brick-500/5 rounded-md px-3 py-2">
+              <div className="text-micro text-slate-500 dark:text-slate-400 bg-brick-500/5 rounded-md px-3 py-2">
                 <strong className="text-brick-400">P-Card note:</strong> {formatBudgetFull(compliance.pcardTotal)} in procurement-card ad purchases are excluded from this calculation entirely — the outlet is untraceable, so the real community-media share could be higher or lower than shown.
               </div>
             )}
 
             {/* Resolution reference */}
-            <p className="text-[9px] text-slate-400/60">
+            <p className="text-nano text-slate-400/60">
               Per SF Board of Supervisors File No. 240210 (Dorsey/Preston): city departments should spend ≥ 50% of discretionary ad budgets with locally owned ethnic and community journalism outlets.
             </p>
           </div>
