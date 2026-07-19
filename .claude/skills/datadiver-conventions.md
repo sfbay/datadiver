@@ -155,8 +155,18 @@ When adding map-view comparison UX, prefer the **neighborhood comparison framing
 
 Inspired by Jesse's 2000-era LiquidEx, translated to modern controls in PR #25. When working on Home or any new hero-like section:
 
-- Prefer `clamp(min, vw-formula, max)` over breakpoint-based size classes (`md:` / `lg:` / `xl:`).
-- Prefer `grid-cols-[repeat(auto-fit,minmax(N,1fr))]` over `md:grid-cols-X lg:grid-cols-Y`.
+- Prefer `clamp(min, vw-formula, max)` over breakpoint-based size classes (`desk:` / `lg:` / `xl:`).
+- Prefer `grid-cols-[repeat(auto-fit,minmax(N,1fr))]` over `desk:grid-cols-X lg:grid-cols-Y`.
+
+## Type tokens & breakpoints (Large Type Phase 2, July 2026)
+
+- Micro type is TOKENS, never arbitrary px: `text-nano` (9px) / `text-micro` (10px) /
+  `text-label` (11px) — defined in the `@theme` block of `src/index.css`, floor-raised under
+  `html[data-type-scale]`. Writing `text-[9px]`-style classes reintroduces px-frozen debt.
+- **`md:` is banned in app code — write `desk:`** (attribute variant off `html[data-vp]`,
+  stamped from EFFECTIVE viewport width = innerWidth ÷ type-scale factor). JS side:
+  `useIsMobile()` / `effectiveViewportWidth()`. Rationale + mechanics: CLAUDE.md →
+  Mobile/responsive.
 - Hero `min-height: clamp(0px, 30vw, 600px)` is a beautiful trick — natural content height wins at narrow widths, kicks in only at wide widths.
 - The proportion control modern CSS adds over 2000 is `min`/`max` bounds; `clamp` is the spiritual successor to raw `width="N%"` with the guards that 2000 couldn't have.
 

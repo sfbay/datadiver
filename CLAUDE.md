@@ -249,7 +249,7 @@ Patterns in use on `src/views/Home/Home.tsx`:
 - **Visualizations grid**: `grid-cols-[repeat(auto-fit,minmax(460px,1fr))]`. Cards reflow 1 → 2 → 3 → 4 columns smoothly.
 - **Explorations grid**: `grid-cols-[repeat(auto-fit,minmax(220px,1fr))]`. Same pattern, tighter minmax.
 
-When adding new sections to Home, prefer `clamp` + `auto-fit` over breakpoint-based classes (`md:`, `lg:`, `xl:`). The whole point of liquid is *no* breakpoints.
+When adding new sections to Home, prefer `clamp` + `auto-fit` over breakpoint-based classes (`desk:`, `lg:`, `xl:`). The whole point of liquid is *no* breakpoints.
 
 ### Neighborhood-vs-citywide comparison framing
 
