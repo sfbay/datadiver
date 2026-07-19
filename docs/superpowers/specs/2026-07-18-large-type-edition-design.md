@@ -124,3 +124,30 @@ treatment first:
   radiogroup slider** (three ascending "A" stops, sliding thumb) in the expanded rail; the
   collapsed rail gets a cycle button. Phase 2's `[data-type-scale]` token-floor overrides must
   now cover BOTH large and xl tiers.
+
+## Phase 2 shipped amendments (July 18 2026)
+
+- **`--text-nano` (9px) added** — the audit's 9px population (366 sites) had no token, and the
+  pixel-identical rule forbids rounding to micro. The activated trio is nano/micro/label; the
+  swept population included the 112 `text-[11px]` sites (Jesse's call — activates the label
+  floor-raise). `--text-caption`/`--text-small` were NOT wired (YAGNI — nothing maps to them yet;
+  12px+ sites remain a follow-up sweep).
+- **Token home moved**: micro/label deleted from tokens.css — Tailwind v4 only generates `text-*`
+  utilities from `--text-*` inside `@theme` (index.css), and one definition site prevents drift.
+  No `--text-*--line-height` companions (utilities must emit font-size only, like the arbitrary
+  classes they replaced). Floor-raise is ONE shared large+xl block; xl's extra size comes from
+  the larger root %.
+- **Breakpoints went FULL-spec** (Jesse chose the bigger job over MapSidebar-only): JS is the
+  single source of truth. `effectiveViewportWidth()` + `syncViewportMode()` stamp
+  `html[data-vp="mobile"|"desk"]`; a `desk:` `@custom-variant` (the `dark:` mechanism) replaced
+  every `md:` class repo-wide, so CSS and JS flip together at effective 768 — the spec's original
+  "synthetic bump in useIsMobile" alone would have desynced JS from the `md:` CSS paired on the
+  same shell elements. `sm:/lg:/xl:/2xl:` (≈48 cosmetic sites) stay physical-px by design.
+- **Header wrap fix**: the 8 map-view compact headers gained `flex-wrap` (+ eyebrow `truncate`) —
+  at xl the control cluster otherwise squeezed the min-w-0 title column into word-per-line
+  stacking. Default renders the same single row.
+- QA'd live per the render-feature browser gate: computed-size probes exact at all three tiers
+  (9/10/11 → 11.8/12.98/14.16 → 13.3/14.63/15.96), default breakpoint parity at exactly 768,
+  coherent whole-shell flip at 850px×xl, MapSidebar w-80↔w-60 at the effective 1024 boundary,
+  13-view overflow walk clean. Known xl cosmetic: a D3 value label can clip its card edge
+  (SVG layout is fixed while card padding grows) — Phase 3's job.
