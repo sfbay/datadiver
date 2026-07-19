@@ -75,7 +75,7 @@ export default function WireCard({ item }: { item: WireItem }) {
           />
         )}
 
-        <p className="mt-1.5 font-mono text-[10px] leading-tight text-paper-600 dark:text-paper-500">
+        <p className="mt-1.5 font-mono text-[0.625rem] leading-tight text-paper-600 dark:text-paper-500">
           <span className="text-paper-500 dark:text-paper-600">{item.context}</span>
           {item.factLine && <> · {item.factLine}</>}
         </p>
@@ -91,7 +91,7 @@ export default function WireCard({ item }: { item: WireItem }) {
         style={hasPlace ? { backgroundColor: color } : undefined}
       >
         <span
-          className={`font-mono text-[13px] font-bold tracking-[0.06em] uppercase text-center leading-[1.28]
+          className={`font-mono text-[0.8125rem] font-bold tracking-[0.06em] uppercase text-center leading-[1.28]
                       ${hasPlace ? 'text-paper-50' : 'text-paper-700 dark:text-paper-400'}`}
         >
           {stubLabel}

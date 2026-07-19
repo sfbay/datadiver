@@ -5,6 +5,7 @@ import { useAppStore } from '@/stores/appStore'
 import { useUrlSync } from '@/hooks/useUrlSync'
 import DateRangePicker from '@/components/filters/DateRangePicker'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import type { TypeScale } from '@/stores/typeScale'
 
 // Earth-tone refactor — each nav item carries a pigment from the design
 // system palette (terracotta / ochre / moss / teal / brick / indigo / plum).
@@ -147,10 +148,26 @@ const NAV_ITEMS = [
   },
 ] as const
 
+// Type-scale slider stops, in track order. Three stops per Jesse's
+// feedback that a plain large/default toggle wasn't enough runway — the
+// glyph sizes below are purely the segmented control's own "A" preview
+// glyph (not the same 118%/133% multiplier applied to the page); they
+// just need to read as a small→large progression at a glance.
+const TYPE_SCALE_STOPS: { value: TypeScale; label: string; glyphPx: number }[] = [
+  { value: 'default', label: 'Default', glyphPx: 11 },
+  { value: 'large', label: 'Large', glyphPx: 13 },
+  { value: 'xl', label: 'XL', glyphPx: 15 },
+]
+
+function nextTypeScale(current: TypeScale): TypeScale {
+  const idx = TYPE_SCALE_STOPS.findIndex((s) => s.value === current)
+  return TYPE_SCALE_STOPS[(idx + 1) % TYPE_SCALE_STOPS.length].value
+}
+
 export default function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
   const location = useLocation()
-  const { isDarkMode, toggleDarkMode, isSidebarOpen: deskRailOpen, toggleSidebar, dateRange } = useAppStore()
+  const { isDarkMode, toggleDarkMode, typeScale, setTypeScale, isSidebarOpen: deskRailOpen, toggleSidebar, dateRange } = useAppStore()
   useUrlSync()
 
   const [omniOpen, setOmniOpen] = useState(false)
@@ -412,6 +429,85 @@ export default function AppShell({ children }: { children: ReactNode }) {
               <span className="text-[13px] font-medium">{isDarkMode ? 'Light' : 'Dark'}</span>
             )}
           </button>
+
+          {/* Type-scale control — sibling of dark mode. Expanded rail: a
+              3-stop segmented radiogroup slider (Default / Large / XL)
+              with a sliding thumb, replacing the old 2-way toggle button
+              per Jesse's "make it a slide switch" feedback. Collapsed
+              rail: a single button that cycles through the three stops,
+              keeping the old crossfading-'A'-glyph idiom but generalized
+              to a size-changing glyph rather than two fixed sizes. */}
+          {isSidebarOpen ? (
+            <div className="px-3 py-2">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[13px] font-medium text-slate-500 dark:text-slate-500">Type</span>
+              </div>
+              <div
+                role="radiogroup"
+                aria-label="Type size"
+                className="relative flex rounded-lg bg-slate-100/70 dark:bg-white/[0.03] p-0.5"
+              >
+                {/* Sliding active-segment thumb — neutral surface (house
+                    active-pill idiom, matches the nav's inactive→active
+                    hover surface bg-slate-50/white-0.03) rather than the
+                    date-preset chips' pigment-tinted glow: type size has
+                    no dataset pigment of its own, and CLAUDE.md's glow
+                    tiers hold the line on neutral chrome controls. */}
+                <div
+                  aria-hidden="true"
+                  className="absolute top-0.5 bottom-0.5 rounded-md bg-white dark:bg-white/[0.08] shadow-sm transition-all duration-200 ease-out"
+                  style={{
+                    width: `calc((100% - 4px) / ${TYPE_SCALE_STOPS.length})`,
+                    left: `calc(2px + ${TYPE_SCALE_STOPS.findIndex((s) => s.value === typeScale)} * (100% - 4px) / ${TYPE_SCALE_STOPS.length})`,
+                  }}
+                />
+                {TYPE_SCALE_STOPS.map((stop) => {
+                  const isActive = typeScale === stop.value
+                  return (
+                    <button
+                      key={stop.value}
+                      role="radio"
+                      aria-checked={isActive}
+                      aria-label={stop.label}
+                      title={stop.label}
+                      onClick={() => setTypeScale(stop.value)}
+                      className={`
+                        relative z-10 flex-1 py-1.5 rounded-md text-center
+                        font-mono font-semibold leading-none
+                        transition-colors duration-200
+                        ${isActive
+                          ? 'text-ochre-600 dark:text-ochre-400'
+                          : 'text-slate-500 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                        }
+                      `}
+                    >
+                      <span style={{ fontSize: stop.glyphPx }} aria-hidden="true">A</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setTypeScale(nextTypeScale(typeScale))}
+              aria-label={`Type size: ${TYPE_SCALE_STOPS.find((s) => s.value === typeScale)?.label}. Click for ${TYPE_SCALE_STOPS.find((s) => s.value === nextTypeScale(typeScale))?.label}.`}
+              title={`Type size: ${TYPE_SCALE_STOPS.find((s) => s.value === typeScale)?.label}`}
+              className="
+                w-full flex items-center justify-center rounded-lg
+                text-slate-500 dark:text-slate-500
+                hover:bg-slate-50 dark:hover:bg-white/[0.03]
+                transition-all duration-200 text-sm p-2.5
+              "
+            >
+              <span
+                className="font-mono font-bold leading-none transition-all duration-300"
+                style={{ fontSize: TYPE_SCALE_STOPS.find((s) => s.value === typeScale)?.glyphPx }}
+                aria-hidden="true"
+              >
+                A
+              </span>
+            </button>
+          )}
 
           {/* Collapse / expand toggle */}
           <button

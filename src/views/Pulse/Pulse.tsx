@@ -73,12 +73,12 @@ export default function Pulse() {
   return (
     <div className="h-full overflow-y-auto bg-paper-50 dark:bg-espresso-950">
       <div
-        className="mx-auto max-w-[1180px] py-[clamp(28px,4vw,56px)]"
+        className="mx-auto max-w-[73.75rem] py-[clamp(28px,4vw,56px)]"
         style={{ paddingInline: 'clamp(20px,4vw,48px)' }}
       >
         {/* ── Masthead ───────────────────────────────────────────── */}
         <header className="mb-6">
-          <p className="font-mono text-[11px] tracking-[0.25em] uppercase text-terracotta-600 dark:text-terracotta-400 mb-3">
+          <p className="font-mono text-[0.6875rem] tracking-[0.25em] uppercase text-terracotta-600 dark:text-terracotta-400 mb-3">
             <span className="text-paper-600">──</span> The Pulse
             {updatedAt !== null && (
               <span className="normal-case tracking-normal text-paper-500 dark:text-paper-600">
@@ -98,7 +98,7 @@ export default function Pulse() {
           </p>
 
           {/* colour legend — colour means the feed; shape means the signal */}
-          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[10px] text-paper-600 dark:text-paper-500">
+          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[0.625rem] text-paper-600 dark:text-paper-500">
             <span className="text-paper-500 dark:text-paper-600">color = feed</span>
             {[
               ['#b85a33', '911'],
@@ -148,7 +148,7 @@ export default function Pulse() {
               ))}
             </div>
             {filteredTotal > MAX_VISIBLE && (
-              <p className="mt-4 font-mono text-[10px] text-paper-500 dark:text-paper-600">
+              <p className="mt-4 font-mono text-[0.625rem] text-paper-500 dark:text-paper-600">
                 Showing the {MAX_VISIBLE} strongest of {filteredTotal} signals.
               </p>
             )}
@@ -156,7 +156,7 @@ export default function Pulse() {
         )}
 
         {/* ── Footer note ────────────────────────────────────────── */}
-        <p className="mt-8 font-mono text-[10px] leading-relaxed text-paper-500 dark:text-paper-600 max-w-[70ch]">
+        <p className="mt-8 font-mono text-[0.625rem] leading-relaxed text-paper-500 dark:text-paper-600 max-w-[70ch]">
           Watching 911, Fire&nbsp;/&nbsp;EMS, and 311 across San Francisco's 41 neighborhoods, plus
           citywide trends. "Stands out" compares the last two days to the same stretch in recent
           weeks and a year ago — never on data a department hasn't published yet.{' '}
@@ -175,7 +175,7 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
     <button
       type="button"
       onClick={onClick}
-      className={`flex-shrink-0 rounded-full px-3 py-1 pointer-coarse:px-3.5 pointer-coarse:py-2 font-mono text-[11px] tracking-wide whitespace-nowrap transition-colors ${
+      className={`flex-shrink-0 rounded-full px-3 py-1 pointer-coarse:px-3.5 pointer-coarse:py-2 font-mono text-[0.6875rem] tracking-wide whitespace-nowrap transition-colors ${
         active
           ? 'bg-terracotta-600 text-paper-50 dark:bg-terracotta-500'
           : 'bg-paper-200/50 dark:bg-espresso-800/60 text-paper-700 dark:text-paper-400 hover:bg-paper-200 dark:hover:bg-espresso-800'
@@ -220,7 +220,7 @@ function EmptyWire({ place, onShowAll }: { place: string | null; onShowAll: () =
         <button
           type="button"
           onClick={onShowAll}
-          className="mt-5 rounded-full px-4 py-1.5 font-mono text-[11px] tracking-wide
+          className="mt-5 rounded-full px-4 py-1.5 font-mono text-[0.6875rem] tracking-wide
                      bg-terracotta-600 text-paper-50 dark:bg-terracotta-500 hover:bg-terracotta-700
                      dark:hover:bg-terracotta-600 transition-colors"
         >

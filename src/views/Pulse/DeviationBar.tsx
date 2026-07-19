@@ -46,7 +46,7 @@ export default function DeviationBar({
         className="absolute top-[calc(50%-10px)] h-5 w-0 border-l-2 border-dotted border-paper-500 dark:border-paper-400"
         style={{ left: `${USUAL_PCT}%` }}
       >
-        <span className="absolute left-1/2 -translate-x-1/2 -top-[11px] font-mono text-[8px] whitespace-nowrap text-paper-500 dark:text-paper-600">
+        <span className="absolute left-1/2 -translate-x-1/2 -top-[11px] font-mono text-[0.5rem] whitespace-nowrap text-paper-500 dark:text-paper-600">
           {tickLabel}
         </span>
       </div>

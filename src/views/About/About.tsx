@@ -20,7 +20,7 @@ function SectionHead({ label, glow = PAPER }: { label: string; glow?: string }) 
       style={{ '--glow': glow } as CSSProperties}
     >
       <div className="glow-corner is-sm" />
-      <p className="relative text-[10px] font-mono uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400">
+      <p className="relative text-[0.625rem] font-mono uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400">
         {label}
       </p>
       <div className="relative flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
@@ -30,7 +30,7 @@ function SectionHead({ label, glow = PAPER }: { label: string; glow?: string }) 
 
 function Prose({ children }: { children: ReactNode }) {
   return (
-    <div className="space-y-4 text-[15px] leading-relaxed text-slate-600 dark:text-slate-300 max-w-[760px]">
+    <div className="space-y-4 text-[0.9375rem] leading-relaxed text-slate-600 dark:text-slate-300 max-w-[760px]">
       {children}
     </div>
   )
@@ -40,8 +40,8 @@ function Prose({ children }: { children: ReactNode }) {
 function Finding({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="glass-card rounded-xl px-5 py-4">
-      <h3 className="font-display italic text-[17px] text-ink dark:text-white mb-2">{title}</h3>
-      <div className="space-y-2 text-[14px] leading-relaxed text-slate-600 dark:text-slate-300">
+      <h3 className="font-display italic text-[1.0625rem] text-ink dark:text-white mb-2">{title}</h3>
+      <div className="space-y-2 text-[0.875rem] leading-relaxed text-slate-600 dark:text-slate-300">
         {children}
       </div>
     </div>
@@ -118,7 +118,7 @@ export default function About() {
       <div className="max-w-[1100px] mx-auto px-[clamp(16px,3vw,64px)] py-10">
         {/* ── Header ─────────────────────────────────────── */}
         <header className="mb-12">
-          <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400 mb-3">
+          <p className="text-[0.625rem] font-mono uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400 mb-3">
             ── About
           </p>
           <h1 className="font-display italic text-ink dark:text-white tracking-tight leading-[1.05] mb-5"
@@ -172,15 +172,15 @@ export default function About() {
         {/* ── Stack ──────────────────────────────────────── */}
         <section className="mb-12">
           <SectionHead label="Stack & Toolset" glow="#5c9693" />
-          <div className="glass-card rounded-xl overflow-hidden max-w-[860px]">
+          <div className="glass-card rounded-xl overflow-hidden max-w-[53.75rem]">
             <table className="w-full text-left">
               <tbody>
                 {STACK.map((row, i) => (
                   <tr key={row.area} className={i > 0 ? 'border-t border-slate-200/50 dark:border-white/[0.04]' : ''}>
-                    <td className="px-5 py-3 align-top whitespace-nowrap text-[11px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 w-[140px]">
+                    <td className="px-5 py-3 align-top whitespace-nowrap text-[0.6875rem] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 w-[140px]">
                       {row.area}
                     </td>
-                    <td className="px-5 py-3 text-[14px] leading-relaxed text-slate-600 dark:text-slate-300">
+                    <td className="px-5 py-3 text-[0.875rem] leading-relaxed text-slate-600 dark:text-slate-300">
                       {row.tools}
                     </td>
                   </tr>
@@ -217,24 +217,24 @@ export default function About() {
             <table className="w-full text-left min-w-[680px]">
               <thead>
                 <tr className="border-b-2 border-slate-300/50 dark:border-white/[0.08]">
-                  <th className="px-4 py-2.5 text-[10px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Dataset</th>
-                  <th className="px-4 py-2.5 text-[10px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Source ID</th>
-                  <th className="px-4 py-2.5 text-[10px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Date field</th>
-                  <th className="px-4 py-2.5 text-[10px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Known limitations</th>
+                  <th className="px-4 py-2.5 text-[0.625rem] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Dataset</th>
+                  <th className="px-4 py-2.5 text-[0.625rem] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Source ID</th>
+                  <th className="px-4 py-2.5 text-[0.625rem] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Date field</th>
+                  <th className="px-4 py-2.5 text-[0.625rem] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Known limitations</th>
                 </tr>
               </thead>
               <tbody>
                 {SOURCES.map((s) => (
                   <tr key={s.id} className="border-t border-slate-200/40 dark:border-white/[0.03]">
-                    <td className="px-4 py-2.5 text-[13px] text-slate-700 dark:text-slate-200">{s.name}</td>
-                    <td className="px-4 py-2.5 text-[12px] font-mono text-slate-500 dark:text-slate-400">
+                    <td className="px-4 py-2.5 text-[0.8125rem] text-slate-700 dark:text-slate-200">{s.name}</td>
+                    <td className="px-4 py-2.5 text-[0.75rem] font-mono text-slate-500 dark:text-slate-400">
                       <a href={s.url ?? `https://data.sfgov.org/d/${s.id}`} target="_blank" rel="noopener noreferrer"
                          className="hover:text-ink dark:hover:text-white underline decoration-slate-400/30 underline-offset-2 transition-colors">
                         {s.id}
                       </a>
                     </td>
-                    <td className="px-4 py-2.5 text-[12px] font-mono text-slate-500 dark:text-slate-400">{s.dateField ?? '—'}</td>
-                    <td className="px-4 py-2.5 text-[12px] text-slate-500 dark:text-slate-400">{s.note ?? ''}</td>
+                    <td className="px-4 py-2.5 text-[0.75rem] font-mono text-slate-500 dark:text-slate-400">{s.dateField ?? '—'}</td>
+                    <td className="px-4 py-2.5 text-[0.75rem] text-slate-500 dark:text-slate-400">{s.note ?? ''}</td>
                   </tr>
                 ))}
               </tbody>
@@ -252,16 +252,16 @@ export default function About() {
               because anyone analyzing the same data will hit the same traps.
             </p>
           </Prose>
-          <div className="grid gap-4 max-w-[860px]">
+          <div className="grid gap-4 max-w-[53.75rem]">
             <Finding title="Traffic crash data has two lags, and the second is invisible">
               <p>
-                The TransBASE crash dataset (<span className="font-mono text-[12px]">ubvf-ztfx</span>) publishes
+                The TransBASE crash dataset (<span className="font-mono text-[0.75rem]">ubvf-ztfx</span>) publishes
                 roughly 4–6 weeks behind, but fatality coding trails further: deaths initially
                 filed as injuries are upgraded only after certification under the federal
                 died-within-30-days rule, so recent months systematically revise upward. In
                 June 2026 we verified this against Walk SF&rsquo;s pedestrian-fatality count:
                 a death that occurred April 13 appeared in the data at the exact intersection
-                and time — coded as <span className="font-mono text-[12px]">Injury (Complaint of Pain)</span>,
+                and time — coded as <span className="font-mono text-[0.75rem]">Injury (Complaint of Pain)</span>,
                 killed: 0. Our Vision Zero figures therefore anchor both year-over-year windows
                 to the data&rsquo;s real coverage date and carry an explicit caveat.
               </p>
@@ -269,8 +269,8 @@ export default function About() {
                 Related matching gotchas, for anyone cross-referencing news reports: overnight
                 crashes shift calendar days; police code locations to the nearest major cross
                 street (an alley address becomes the nearest arterial); and the severity value
-                is the exact string <span className="font-mono text-[12px]">Injury (Severe)</span> —
-                a plausible-looking <span className="font-mono text-[12px]">'Severe Injury'</span> matches
+                is the exact string <span className="font-mono text-[0.75rem]">Injury (Severe)</span> —
+                a plausible-looking <span className="font-mono text-[0.75rem]">'Severe Injury'</span> matches
                 nothing and silently undercounts by ~90%.
               </p>
             </Finding>
@@ -332,9 +332,9 @@ export default function About() {
                 rows and totaling them client-side produces biased per-entity figures — the
                 sample over-represents whatever sorted first. Every total, average, and
                 ranking on this site is computed server-side with{' '}
-                <span className="font-mono text-[12px]">GROUP BY</span> /{' '}
-                <span className="font-mono text-[12px]">SUM()</span> /{' '}
-                <span className="font-mono text-[12px]">COUNT()</span>; row-level fetches are
+                <span className="font-mono text-[0.75rem]">GROUP BY</span> /{' '}
+                <span className="font-mono text-[0.75rem]">SUM()</span> /{' '}
+                <span className="font-mono text-[0.75rem]">COUNT()</span>; row-level fetches are
                 used only to place dots on maps.
               </p>
               <p>
@@ -451,18 +451,18 @@ export default function About() {
               history: the same feed&rsquo;s counts over 42 non-overlapping two-day windows
               spanning the previous 12 weeks, summarized as a mean and standard deviation.
               A card enters the wire when the current window runs at least{' '}
-              <span className="font-mono text-[13px]">1.5</span> standard deviations above
+              <span className="font-mono text-[0.8125rem]">1.5</span> standard deviations above
               that history; the tile&rsquo;s chevrons step up around{' '}
-              <span className="font-mono text-[13px]">2</span> and{' '}
-              <span className="font-mono text-[13px]">2.6</span>. Citywide trend cards
+              <span className="font-mono text-[0.8125rem]">2</span> and{' '}
+              <span className="font-mono text-[0.8125rem]">2.6</span>. Citywide trend cards
               appear when a period runs at least{' '}
-              <span className="font-mono text-[13px]">10%</span> above or below the same
+              <span className="font-mono text-[0.8125rem]">10%</span> above or below the same
               period a year earlier. Ranking on the page follows the same signal strength.
             </p>
             <p>
               <strong className="text-ink dark:text-white">The quiet rule.</strong>{' '}
               &ldquo;Unusually quiet&rdquo; claims carry a stricter double test: at least{' '}
-              <span className="font-mono text-[13px]">2</span> standard deviations{' '}
+              <span className="font-mono text-[0.8125rem]">2</span> standard deviations{' '}
               <em>below</em> usual, and only on a feed confirmed to be publishing
               current data. A stream that is merely behind on publishing looks identical
               to a quiet one — so when freshness can&rsquo;t be confirmed, we say nothing
@@ -496,8 +496,8 @@ export default function About() {
             <p>
               <span className="text-ink dark:text-white font-semibold">Detection.</span>{' '}
               City advertising spend hides in three places in the vendor payments data
-              (<span className="font-mono text-[12px]">n9pm-xkyq</span>):{' '}
-              <em>tagged</em> spend (<span className="font-mono text-[12px]">sub_object = 'Advertising'</span>),{' '}
+              (<span className="font-mono text-[0.75rem]">n9pm-xkyq</span>):{' '}
+              <em>tagged</em> spend (<span className="font-mono text-[0.75rem]">sub_object = 'Advertising'</span>),{' '}
               <em>agency-routed</em> spend (payments to known media-buying agencies whose
               line items are not tagged as advertising), and <em>P-card</em> purchases
               (procurement-card rows where the actual outlet is invisible — almost certainly
@@ -551,7 +551,7 @@ export default function About() {
                 href="https://ko-fi.com/jessegarnier"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-full border border-ochre-500/40 bg-ochre-500/[0.08] px-4 py-2 text-[13px] font-mono text-ink dark:text-paper-100 hover:border-ochre-500 hover:bg-ochre-500/[0.14] transition-colors"
+                className="inline-flex items-center gap-2 rounded-full border border-ochre-500/40 bg-ochre-500/[0.08] px-4 py-2 text-[0.8125rem] font-mono text-ink dark:text-paper-100 hover:border-ochre-500 hover:bg-ochre-500/[0.14] transition-colors"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-ochre-500" aria-hidden />
                 ko-fi.com/jessegarnier ↗
@@ -575,7 +575,7 @@ export default function About() {
               the data-diving harbor seal, is the project&rsquo;s mascot and conscience.
               DataDiver is a living project; this page is updated as methods evolve.
             </p>
-            <p className="text-[12px] font-mono text-slate-500 dark:text-slate-400 pt-2">
+            <p className="text-[0.75rem] font-mono text-slate-500 dark:text-slate-400 pt-2">
               Development and Design by Assoc. Prof. Jesse Garnier, SF State Journalism ·
               built with Claude · data from DataSF
             </p>
