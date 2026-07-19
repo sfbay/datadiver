@@ -120,21 +120,21 @@ export default function CrimeDetailPanel() {
       {detail && (
         <>
           {/* Header */}
-          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-1">
+          <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-1">
             Incident #{detail.incidentNumber}
           </p>
           <p className="text-sm font-semibold text-ink dark:text-white mb-0.5">
             {detail.category}
           </p>
           {detail.subcategory && (
-            <p className="text-[10px] text-slate-600 dark:text-slate-300 font-mono mb-1">
+            <p className="text-micro text-slate-600 dark:text-slate-300 font-mono mb-1">
               {detail.subcategory}
             </p>
           )}
 
           {/* Resolution badge */}
           <div className="mb-3">
-            <span className={`inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full ${
+            <span className={`inline-flex items-center gap-1 text-micro font-mono px-2 py-0.5 rounded-full ${
               isOpen
                 ? 'bg-teal-500/10 text-teal-500'
                 : detail.resolution.includes('Arrest') ? 'bg-brick-500/10 text-brick-500'
@@ -149,22 +149,22 @@ export default function CrimeDetailPanel() {
 
           {/* Description */}
           {detail.description && (
-            <p className="text-[10px] text-slate-700 dark:text-slate-300 leading-relaxed mb-3">
+            <p className="text-micro text-slate-700 dark:text-slate-300 leading-relaxed mb-3">
               {detail.description}
             </p>
           )}
 
           {/* Location */}
           <div className="mb-4">
-            <p className="text-[10px] text-slate-700 dark:text-slate-300">{detail.intersection}</p>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400">
+            <p className="text-micro text-slate-700 dark:text-slate-300">{detail.intersection}</p>
+            <p className="text-micro text-slate-500 dark:text-slate-400">
               {detail.neighborhood} &middot; {detail.policeDistrict} District
             </p>
           </div>
 
           {/* Police Timeline */}
           <div className="flex items-center gap-2 mb-3">
-            <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+            <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
               Incident Timeline
             </p>
             <div className="flex-1 h-[1px] bg-slate-200 dark:bg-white/[0.08]" />
@@ -181,7 +181,7 @@ export default function CrimeDetailPanel() {
               <>
                 {/* Date header */}
                 {firstTime && (
-                  <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400 mb-2">
+                  <p className="text-micro font-mono text-slate-500 dark:text-slate-400 mb-2">
                     {firstTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                   </p>
                 )}
@@ -209,17 +209,17 @@ export default function CrimeDetailPanel() {
                         </div>
                         <div className="flex-1 pb-1 -mt-0.5">
                           <div className="flex items-baseline justify-between">
-                            <p className={`text-[11px] font-medium ${ts ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400 dark:text-slate-600'}`}>
+                            <p className={`text-label font-medium ${ts ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400 dark:text-slate-600'}`}>
                               {step.label}
                             </p>
                             {timeStr && (
-                              <p className="text-[10px] font-mono text-slate-700 dark:text-slate-300 tabular-nums">
+                              <p className="text-micro font-mono text-slate-700 dark:text-slate-300 tabular-nums">
                                 {timeStr}
                               </p>
                             )}
                           </div>
                           {elapsed !== null && elapsed > 0 && (
-                            <p className="text-[9px] font-mono text-brick-500/70">
+                            <p className="text-nano font-mono text-brick-500/70">
                               +{elapsed < 1 ? `${Math.round(elapsed * 60)}min` : formatResolution(elapsed)}
                             </p>
                           )}
@@ -236,7 +236,7 @@ export default function CrimeDetailPanel() {
           {reportLag !== null && reportLag > 0 && (
             <div className="mt-2 pt-2 border-t border-slate-200 dark:border-white/[0.08]">
               <div className="flex items-baseline justify-between">
-                <p className="text-[10px] font-mono uppercase tracking-wider text-slate-600 dark:text-slate-300">Incident→Report</p>
+                <p className="text-micro font-mono uppercase tracking-wider text-slate-600 dark:text-slate-300">Incident→Report</p>
                 <p className="text-sm font-bold font-mono text-brick-500">
                   {formatResolution(reportLag)}
                 </p>
@@ -247,14 +247,14 @@ export default function CrimeDetailPanel() {
           {/* 911 Dispatch Cross-Reference */}
           <div className="mt-4">
             <div className="flex items-center gap-2 mb-3">
-              <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+              <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
                 911 Dispatch
               </p>
               <div className="flex-1 h-[1px] bg-slate-200 dark:bg-white/[0.08]" />
             </div>
 
             {!detail.cadNumber && (
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 italic">
+              <p className="text-micro text-slate-500 dark:text-slate-400 italic">
                 No linked 911 call (report-only)
               </p>
             )}
@@ -262,12 +262,12 @@ export default function CrimeDetailPanel() {
             {detail.cadNumber && dispatchLoading && (
               <div className="flex items-center gap-2 py-2">
                 <div className="w-3 h-3 border border-plum-400 border-t-transparent rounded-full animate-spin" />
-                <span className="text-[10px] text-slate-400 font-mono">Loading dispatch record...</span>
+                <span className="text-micro text-slate-400 font-mono">Loading dispatch record...</span>
               </div>
             )}
 
             {detail.cadNumber && !dispatchLoading && dispatchError && !dispatch && (
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 italic">
+              <p className="text-micro text-slate-500 dark:text-slate-400 italic">
                 No matching dispatch record
               </p>
             )}
@@ -277,28 +277,28 @@ export default function CrimeDetailPanel() {
                 {/* Dispatch info */}
                 <div className="space-y-1.5">
                   <div className="flex items-baseline justify-between">
-                    <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Original Call</p>
-                    <p className="text-[10px] text-slate-700 dark:text-slate-300 text-right max-w-[60%] truncate">
+                    <p className="text-nano font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Original Call</p>
+                    <p className="text-micro text-slate-700 dark:text-slate-300 text-right max-w-[60%] truncate">
                       {dispatch.call_type_original_desc || dispatch.call_type_original || 'Unknown'}
                     </p>
                   </div>
                   {dispatch.call_type_final_desc !== dispatch.call_type_original_desc && (
                     <div className="flex items-baseline justify-between">
-                      <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Final Call</p>
-                      <p className="text-[10px] text-slate-700 dark:text-slate-300 text-right max-w-[60%] truncate">
+                      <p className="text-nano font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Final Call</p>
+                      <p className="text-micro text-slate-700 dark:text-slate-300 text-right max-w-[60%] truncate">
                         {dispatch.call_type_final_desc || dispatch.call_type_final || 'Unknown'}
                       </p>
                     </div>
                   )}
                   <div className="flex items-baseline justify-between">
-                    <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Priority</p>
-                    <p className="text-[10px] text-slate-700 dark:text-slate-300">
+                    <p className="text-nano font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Priority</p>
+                    <p className="text-micro text-slate-700 dark:text-slate-300">
                       {dispatch.priority_final || dispatch.priority_original || 'Unknown'}
                     </p>
                   </div>
                   <div className="flex items-baseline justify-between">
-                    <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Disposition</p>
-                    <p className="text-[10px] text-slate-700 dark:text-slate-300">
+                    <p className="text-nano font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Disposition</p>
+                    <p className="text-micro text-slate-700 dark:text-slate-300">
                       {DISPOSITION_LABELS[dispatch.disposition] || dispatch.disposition || 'Unknown'}
                     </p>
                   </div>
@@ -316,7 +316,7 @@ export default function CrimeDetailPanel() {
                     return (
                       <>
                         {dispFirstTime && (
-                          <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400 mb-2">
+                          <p className="text-micro font-mono text-slate-500 dark:text-slate-400 mb-2">
                             {dispFirstTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                           </p>
                         )}
@@ -344,17 +344,17 @@ export default function CrimeDetailPanel() {
                           </div>
                           <div className="flex-1 pb-1 -mt-0.5">
                             <div className="flex items-baseline justify-between">
-                              <p className={`text-[11px] font-medium ${ts ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400 dark:text-slate-600'}`}>
+                              <p className={`text-label font-medium ${ts ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400 dark:text-slate-600'}`}>
                                 {step.label}
                               </p>
                               {timeStr && (
-                                <p className="text-[10px] font-mono text-slate-700 dark:text-slate-300 tabular-nums">
+                                <p className="text-micro font-mono text-slate-700 dark:text-slate-300 tabular-nums">
                                   {timeStr}
                                 </p>
                               )}
                             </div>
                             {elapsed !== null && elapsed > 0 && (
-                              <p className="text-[9px] font-mono text-plum-500/70">
+                              <p className="text-nano font-mono text-plum-500/70">
                                 +{elapsed < 1 ? `${Math.round(elapsed * 60)}min` : formatResolution(elapsed)}
                               </p>
                             )}
@@ -372,7 +372,7 @@ export default function CrimeDetailPanel() {
                 {dispatch.received_datetime && detail.timestamps.report && (
                   <div className="pt-2 border-t border-slate-200 dark:border-white/[0.08]">
                     <div className="flex items-baseline justify-between">
-                      <p className="text-[10px] font-mono uppercase tracking-wider text-slate-600 dark:text-slate-300">911 Call→Report</p>
+                      <p className="text-micro font-mono uppercase tracking-wider text-slate-600 dark:text-slate-300">911 Call→Report</p>
                       <p className="text-sm font-bold font-mono text-plum-500">
                         {(() => {
                           const lag = diffHours(dispatch.received_datetime, detail.timestamps.report!)
@@ -390,8 +390,8 @@ export default function CrimeDetailPanel() {
           {detail.cadNumber && (
             <div className="mt-3 pt-2 border-t border-slate-200 dark:border-white/[0.08]">
               <div className="flex items-baseline justify-between">
-                <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">CAD #</p>
-                <p className="text-[10px] font-mono text-slate-700 dark:text-slate-300">{detail.cadNumber}</p>
+                <p className="text-nano font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">CAD #</p>
+                <p className="text-micro font-mono text-slate-700 dark:text-slate-300">{detail.cadNumber}</p>
               </div>
             </div>
           )}

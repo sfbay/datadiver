@@ -114,21 +114,21 @@ export default function CaseDetailPanel() {
       {detail && (
         <>
           {/* Header info */}
-          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-1">
+          <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-1">
             Case #{detail.requestId}
           </p>
           <p className="text-sm font-semibold text-ink dark:text-white mb-0.5">
             {detail.serviceName}
           </p>
           {detail.serviceSubtype && (
-            <p className="text-[10px] text-slate-600 dark:text-slate-300 font-mono mb-1">
+            <p className="text-micro text-slate-600 dark:text-slate-300 font-mono mb-1">
               {detail.serviceSubtype}
             </p>
           )}
 
           {/* Status badge */}
           <div className="mb-3">
-            <span className={`inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full ${
+            <span className={`inline-flex items-center gap-1 text-micro font-mono px-2 py-0.5 rounded-full ${
               isOpen
                 ? 'bg-ochre-500/10 text-ochre-500'
                 : 'bg-moss-500/10 text-moss-500'
@@ -140,8 +140,8 @@ export default function CaseDetailPanel() {
 
           {/* Location */}
           <div className="mb-4">
-            <p className="text-[10px] text-slate-700 dark:text-slate-300">{detail.address}</p>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400">
+            <p className="text-micro text-slate-700 dark:text-slate-300">{detail.address}</p>
+            <p className="text-micro text-slate-500 dark:text-slate-400">
               {detail.neighborhood} &middot; District {detail.district}
             </p>
           </div>
@@ -149,10 +149,10 @@ export default function CaseDetailPanel() {
           {/* Filed date/time */}
           {detail.timestamps.requested && (
             <div className="mb-4">
-              <p className="text-[10px] font-mono text-slate-600 dark:text-slate-300">
+              <p className="text-micro font-mono text-slate-600 dark:text-slate-300">
                 {formatDate(detail.timestamps.requested, 'long')}
               </p>
-              <p className="text-[10px] font-mono text-slate-800 dark:text-slate-200 font-semibold">
+              <p className="text-micro font-mono text-slate-800 dark:text-slate-200 font-semibold">
                 {new Date(detail.timestamps.requested).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
               </p>
             </div>
@@ -160,7 +160,7 @@ export default function CaseDetailPanel() {
 
           {/* Case Timeline */}
           <div className="flex items-center gap-2 mb-3">
-            <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+            <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
               Case Timeline
             </p>
             <div className="flex-1 h-[1px] bg-slate-200 dark:bg-white/[0.08]" />
@@ -188,17 +188,17 @@ export default function CaseDetailPanel() {
                   {/* Content */}
                   <div className="flex-1 pb-1 -mt-0.5">
                     <div className="flex items-baseline justify-between">
-                      <p className={`text-[11px] font-medium ${ts ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400 dark:text-slate-600'}`}>
+                      <p className={`text-label font-medium ${ts ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400 dark:text-slate-600'}`}>
                         {step.label}
                       </p>
                       {time && (
-                        <p className="text-[10px] font-mono text-slate-700 dark:text-slate-300 tabular-nums">
+                        <p className="text-micro font-mono text-slate-700 dark:text-slate-300 tabular-nums">
                           {formatDate(time, 'short')}
                         </p>
                       )}
                     </div>
                     {elapsed !== null && elapsed > 0 && (
-                      <p className="text-[9px] font-mono text-moss-500/70">
+                      <p className="text-nano font-mono text-moss-500/70">
                         +{formatResolution(elapsed)}
                       </p>
                     )}
@@ -212,7 +212,7 @@ export default function CaseDetailPanel() {
           {resolutionHours !== null && resolutionHours > 0 && (
             <div className="mt-3 pt-2 border-t border-slate-200 dark:border-white/[0.08]">
               <div className="flex items-baseline justify-between">
-                <p className="text-[10px] font-mono uppercase tracking-wider text-slate-600 dark:text-slate-300">Total Resolution</p>
+                <p className="text-micro font-mono uppercase tracking-wider text-slate-600 dark:text-slate-300">Total Resolution</p>
                 <p className="text-sm font-bold font-mono text-moss-500">
                   {formatResolution(resolutionHours)}
                 </p>
@@ -224,17 +224,17 @@ export default function CaseDetailPanel() {
           <div className="mt-3 pt-2 border-t border-slate-200 dark:border-white/[0.08] space-y-1.5">
             {detail.serviceDetails && (
               <div>
-                <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Details</p>
-                <p className="text-[10px] text-slate-700 dark:text-slate-300 leading-relaxed">{detail.serviceDetails}</p>
+                <p className="text-nano font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Details</p>
+                <p className="text-micro text-slate-700 dark:text-slate-300 leading-relaxed">{detail.serviceDetails}</p>
               </div>
             )}
             <div className="flex items-baseline justify-between">
-              <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Source</p>
-              <p className="text-[10px] text-slate-700 dark:text-slate-300">{detail.source}</p>
+              <p className="text-nano font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Source</p>
+              <p className="text-micro text-slate-700 dark:text-slate-300">{detail.source}</p>
             </div>
             <div className="flex items-baseline justify-between">
-              <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Agency</p>
-              <p className="text-[10px] text-slate-700 dark:text-slate-300">{detail.agency}</p>
+              <p className="text-nano font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Agency</p>
+              <p className="text-micro text-slate-700 dark:text-slate-300">{detail.agency}</p>
             </div>
             {(() => {
               // Classify up front: Cloudinary/direct images embed inline;
@@ -246,12 +246,12 @@ export default function CaseDetailPanel() {
               if (media.kind === 'link') {
                 return (
                   <div className="mt-2">
-                    <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Attached Media</p>
+                    <p className="text-nano font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Attached Media</p>
                     <a
                       href={media.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 rounded-lg px-3 py-2.5 ring-1 ring-slate-200/50 dark:ring-white/10 hover:ring-moss-500/40 transition-all text-[11px] font-mono text-moss-500"
+                      className="flex items-center gap-2 rounded-lg px-3 py-2.5 ring-1 ring-slate-200/50 dark:ring-white/10 hover:ring-moss-500/40 transition-all text-label font-mono text-moss-500"
                     >
                       <span aria-hidden>📎</span>
                       View photo on SF’s 311 portal →
@@ -262,7 +262,7 @@ export default function CaseDetailPanel() {
 
               return (
                 <div className="mt-2">
-                  <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Attached Image</p>
+                  <p className="text-nano font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Attached Image</p>
                   <a
                     href={media.url}
                     target="_blank"
@@ -281,7 +281,7 @@ export default function CaseDetailPanel() {
                         if (fallback) fallback.style.display = ''
                       }}
                     />
-                    <span className="text-[10px] font-mono text-moss-500 px-2 py-1.5 block" style={{ display: 'none' }}>
+                    <span className="text-micro font-mono text-moss-500 px-2 py-1.5 block" style={{ display: 'none' }}>
                       View attached media →
                     </span>
                   </a>

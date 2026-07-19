@@ -154,13 +154,13 @@ export default function MeterDetailPanel() {
       {detail && (
         <>
           {/* Header */}
-          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-1">
+          <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-1">
             Meter {detail.postId}
           </p>
           <p className="text-sm font-semibold text-ink dark:text-white mb-0.5">
             {detail.streetAddress}
           </p>
-          <p className="text-[10px] text-slate-500 dark:text-slate-400">
+          <p className="text-micro text-slate-500 dark:text-slate-400">
             {detail.neighborhood} &middot; District {detail.district}
           </p>
 
@@ -168,14 +168,14 @@ export default function MeterDetailPanel() {
           <div className="flex items-center gap-1.5 mt-2 mb-3">
             {capInfo && (
               <span
-                className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full"
+                className="inline-flex items-center gap-1 text-micro font-mono px-2 py-0.5 rounded-full"
                 style={{ backgroundColor: capInfo.color + '18', color: capInfo.color }}
               >
                 <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: capInfo.color }} />
                 {detail.capColor} &middot; {capInfo.label}
               </span>
             )}
-            <span className={`inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full ${
+            <span className={`inline-flex items-center gap-1 text-micro font-mono px-2 py-0.5 rounded-full ${
               detail.active
                 ? 'bg-moss-500/10 text-moss-500'
                 : 'bg-slate-500/10 text-slate-400'
@@ -187,24 +187,24 @@ export default function MeterDetailPanel() {
 
           {/* Meter hardware section */}
           <div className="flex items-center gap-2 mb-2">
-            <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+            <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
               Hardware
             </p>
             <div className="flex-1 h-[1px] bg-slate-200 dark:bg-white/[0.08]" />
           </div>
           <div className="space-y-1.5 mb-4">
             <div className="flex items-baseline justify-between">
-              <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Type</p>
-              <p className="text-[10px] text-slate-700 dark:text-slate-300">{detail.meterType}</p>
+              <p className="text-nano font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Type</p>
+              <p className="text-micro text-slate-700 dark:text-slate-300">{detail.meterType}</p>
             </div>
             <div className="flex items-baseline justify-between">
-              <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Location</p>
-              <p className="text-[10px] text-slate-700 dark:text-slate-300">{detail.onOffStreet === 'ON' ? 'On-Street' : detail.onOffStreet === 'OFF' ? 'Off-Street' : detail.onOffStreet}</p>
+              <p className="text-nano font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Location</p>
+              <p className="text-micro text-slate-700 dark:text-slate-300">{detail.onOffStreet === 'ON' ? 'On-Street' : detail.onOffStreet === 'OFF' ? 'Off-Street' : detail.onOffStreet}</p>
             </div>
             {detail.vendor && (
               <div className="flex items-baseline justify-between">
-                <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Vendor</p>
-                <p className="text-[10px] text-slate-700 dark:text-slate-300">{detail.vendor}{detail.model ? ` ${detail.model}` : ''}</p>
+                <p className="text-nano font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Vendor</p>
+                <p className="text-micro text-slate-700 dark:text-slate-300">{detail.vendor}{detail.model ? ` ${detail.model}` : ''}</p>
               </div>
             )}
           </div>
@@ -213,7 +213,7 @@ export default function MeterDetailPanel() {
           {txStats && (
             <>
               <div className="flex items-center gap-2 mb-2">
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
                   {formatDate(dateRange.start, 'short')} – {formatDate(dateRange.end, 'short')}
                 </p>
                 <div className="flex-1 h-[1px] bg-slate-200 dark:bg-white/[0.08]" />
@@ -221,17 +221,17 @@ export default function MeterDetailPanel() {
               <div className="grid grid-cols-3 gap-2 mb-4">
                 <div className="text-center">
                   <p className="text-sm font-bold font-mono text-teal-400">{formatCurrency(txStats.total)}</p>
-                  <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500">Revenue</p>
+                  <p className="text-nano font-mono uppercase tracking-wider text-slate-500">Revenue</p>
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-bold font-mono text-moss-400">{formatNumber(txStats.count)}</p>
-                  <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500">Sessions</p>
+                  <p className="text-nano font-mono uppercase tracking-wider text-slate-500">Sessions</p>
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-bold font-mono text-ochre-500">
                     {txStats.avgDuration > 0 ? formatDuration(txStats.avgDuration) : '—'}
                   </p>
-                  <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500">Avg Dur</p>
+                  <p className="text-nano font-mono uppercase tracking-wider text-slate-500">Avg Dur</p>
                 </div>
               </div>
             </>
@@ -241,7 +241,7 @@ export default function MeterDetailPanel() {
           {transactions.length > 0 && (
             <>
               <div className="flex items-center gap-2 mb-2">
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
                   Recent Sessions
                 </p>
                 <div className="flex-1 h-[1px] bg-slate-200 dark:bg-white/[0.08]" />
@@ -253,16 +253,16 @@ export default function MeterDetailPanel() {
                     className="flex items-center justify-between py-1.5 px-2 rounded-md bg-slate-50 dark:bg-white/[0.02]"
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="text-[10px] font-mono text-slate-700 dark:text-slate-300 tabular-nums">
+                      <p className="text-micro font-mono text-slate-700 dark:text-slate-300 tabular-nums">
                         {formatDate(tx.sessionStart, 'short')}{' '}
                         {new Date(tx.sessionStart).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                       </p>
-                      <p className="text-[9px] text-slate-500 dark:text-slate-500">
+                      <p className="text-nano text-slate-500 dark:text-slate-500">
                         {tx.paymentType === 'COIN' ? 'Coin' : tx.paymentType === 'CREDIT CARD' ? 'Card' : tx.paymentType === 'SMRT' ? 'App' : tx.paymentType}
                         {tx.durationMinutes ? ` · ${formatDuration(tx.durationMinutes)}` : ''}
                       </p>
                     </div>
-                    <span className="text-[11px] font-mono font-semibold text-teal-400 ml-2 tabular-nums">
+                    <span className="text-label font-mono font-semibold text-teal-400 ml-2 tabular-nums">
                       {formatCurrency(tx.amount)}
                     </span>
                   </div>
@@ -273,7 +273,7 @@ export default function MeterDetailPanel() {
 
           {transactions.length === 0 && !isLoading && (
             <div className="text-center py-3">
-              <p className="text-[10px] text-slate-500">No transactions in selected period</p>
+              <p className="text-micro text-slate-500">No transactions in selected period</p>
             </div>
           )}
         </>

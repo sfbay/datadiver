@@ -104,20 +104,20 @@ export default function CrashDetailPanel() {
     >
       {detail && (
         <>
-          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-1">
+          <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-1">
             Crash #{detail.uniqueId}
           </p>
 
           {/* Severity badge */}
           <div className="flex items-center gap-2 mb-2">
             <span
-              className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full text-white"
+              className="inline-flex items-center gap-1 text-micro font-mono px-2 py-0.5 rounded-full text-white"
               style={{ backgroundColor: severityColor }}
             >
               {detail.severity}
             </span>
             <span
-              className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full"
+              className="inline-flex items-center gap-1 text-micro font-mono px-2 py-0.5 rounded-full"
               style={{ backgroundColor: modeColor + '20', color: modeColor }}
             >
               {detail.mode}
@@ -132,13 +132,13 @@ export default function CrashDetailPanel() {
           {/* Casualties */}
           <div className="flex gap-3 mb-3 p-2 rounded-lg bg-brick-500/5">
             <div>
-              <p className="text-[9px] font-mono uppercase tracking-wider text-brick-400">Killed</p>
+              <p className="text-nano font-mono uppercase tracking-wider text-brick-400">Killed</p>
               <p className="text-lg font-bold font-mono" style={{ color: detail.killed > 0 ? '#6f2b20' : '#64748b' }}>
                 {detail.killed}
               </p>
             </div>
             <div>
-              <p className="text-[9px] font-mono uppercase tracking-wider text-ochre-500">Injured</p>
+              <p className="text-nano font-mono uppercase tracking-wider text-ochre-500">Injured</p>
               <p className="text-lg font-bold font-mono" style={{ color: detail.injured > 0 ? '#d4a435' : '#64748b' }}>
                 {detail.injured}
               </p>
@@ -148,10 +148,10 @@ export default function CrashDetailPanel() {
           {/* Date/time */}
           {detail.collisionDatetime && (
             <div className="mb-3">
-              <p className="text-[10px] font-mono text-slate-600 dark:text-slate-300">
+              <p className="text-micro font-mono text-slate-600 dark:text-slate-300">
                 {formatDate(detail.collisionDatetime, 'long')}
               </p>
-              <p className="text-[10px] font-mono text-slate-800 dark:text-slate-200 font-semibold">
+              <p className="text-micro font-mono text-slate-800 dark:text-slate-200 font-semibold">
                 {new Date(detail.collisionDatetime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
               </p>
             </div>
@@ -159,17 +159,17 @@ export default function CrashDetailPanel() {
 
           {/* Location */}
           <div className="mb-3">
-            <p className="text-[10px] text-slate-700 dark:text-slate-300">
+            <p className="text-micro text-slate-700 dark:text-slate-300">
               {detail.primaryRd}{detail.secondaryRd ? ` at ${detail.secondaryRd}` : ''}
             </p>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400">
+            <p className="text-micro text-slate-500 dark:text-slate-400">
               {detail.neighborhood} &middot; {detail.policeDistrict} &middot; District {detail.supervisorDistrict}
             </p>
           </div>
 
           {/* Conditions section */}
           <div className="flex items-center gap-2 mb-2">
-            <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+            <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
               Conditions
             </p>
             <div className="flex-1 h-[1px] bg-slate-200 dark:bg-white/[0.08]" />
@@ -183,8 +183,8 @@ export default function CrashDetailPanel() {
               ['Lighting', detail.lighting],
             ].map(([label, value]) => (
               <div key={label} className="flex items-baseline justify-between">
-                <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">{label}</p>
-                <p className="text-[10px] text-slate-700 dark:text-slate-300">{value}</p>
+                <p className="text-nano font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">{label}</p>
+                <p className="text-micro text-slate-700 dark:text-slate-300">{value}</p>
               </div>
             ))}
           </div>
@@ -193,8 +193,8 @@ export default function CrashDetailPanel() {
           {detail.pedAction && detail.mode.includes('Ped') && (
             <div className="pt-2 border-t border-slate-200 dark:border-white/[0.08]">
               <div className="flex items-baseline justify-between">
-                <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Ped Action</p>
-                <p className="text-[10px] text-slate-700 dark:text-slate-300">{detail.pedAction}</p>
+                <p className="text-nano font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Ped Action</p>
+                <p className="text-micro text-slate-700 dark:text-slate-300">{detail.pedAction}</p>
               </div>
             </div>
           )}
