@@ -93,8 +93,8 @@ export default function ChainMap({ locations, height = 280 }: ChainMapProps) {
       : `<span style="color:#b85545;font-weight:600">Closed ${props.endYear}</span>`
     return `
       <div class="tooltip-value">${props.dbaName}</div>
-      <div style="margin-top:4px;font-size:10px">${status}</div>
-      <div style="color:#94a3b8;font-size:10px;margin-top:2px">${props.address}</div>
+      <div style="margin-top:4px;font-size:0.625rem">${status}</div>
+      <div style="color:#94a3b8;font-size:0.625rem;margin-top:2px">${props.address}</div>
     `
   })
 

@@ -580,7 +580,7 @@ export default function CrimeIncidents() {
     const timeStr = dt
       ? dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
       : null
-    const linked = props.cadNumber ? '<span style="color:#8b6282;font-size:9px;margin-left:4px">911 LINKED</span>' : ''
+    const linked = props.cadNumber ? '<span style="color:#8b6282;font-size:0.5625rem;margin-left:4px">911 LINKED</span>' : ''
     return `
       ${dateStr ? `<div style="color:#e2e8f0">${dateStr} · ${timeStr}${linked}</div>` : ''}
       <div class="tooltip-label" style="margin-top:6px">Category</div>

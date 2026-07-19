@@ -1,6 +1,8 @@
 import { useRef, useEffect, useState } from 'react'
 import * as d3 from 'd3'
 import { useAppStore } from '@/stores/appStore'
+import { dorlingLabel } from './dorlingLabel'
+import { SCALE_FACTORS } from '@/stores/typeScale'
 
 interface DorlingCartogramDatum {
   name: string
@@ -37,6 +39,7 @@ export default function DorlingCartogram({
 }: DorlingCartogramProps) {
   const svgRef = useRef<SVGSVGElement>(null)
   const isDarkMode = useAppStore((s) => s.isDarkMode)
+  const typeScale = useAppStore((s) => s.typeScale)
   const [tooltip, setTooltip] = useState<TooltipState | null>(null)
   const [hoveredName, setHoveredName] = useState<string | null>(null)
 
@@ -99,6 +102,7 @@ export default function DorlingCartogram({
     const strokeColor = isDarkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)'
     const labelColor = isDarkMode ? '#f1f5f9' : '#1e293b'
     const subLabelColor = isDarkMode ? '#cbd5e1' : '#475569'
+    const labelFactor = SCALE_FACTORS[typeScale]
 
     const g = svg.append('g')
 
@@ -124,33 +128,33 @@ export default function DorlingCartogram({
       .ease(d3.easeCubicOut)
       .attr('opacity', 0.9)
 
-    // Name label (only when radius > 18px)
+    // Name label (only when the scaled label still fits the circle)
     circleGroups
-      .filter((d) => d.r > 18)
+      .filter((d) => dorlingLabel(d.r, labelFactor).showName)
       .append('text')
       .attr('text-anchor', 'middle')
-      .attr('dominant-baseline', (d) => (d.r > 25 ? 'auto' : 'middle'))
-      .attr('dy', (d) => (d.r > 25 ? '-0.2em' : '0'))
+      .attr('dominant-baseline', (d) => (dorlingLabel(d.r, labelFactor).showPop ? 'auto' : 'middle'))
+      .attr('dy', (d) => (dorlingLabel(d.r, labelFactor).showPop ? '-0.2em' : '0'))
       .attr('fill', labelColor)
-      .attr('font-size', (d) => Math.min(11, d.r * 0.42) + 'px')
+      .style('font-size', (d) => dorlingLabel(d.r, labelFactor).nameFontRem)
       .attr('font-family', 'Inter, sans-serif')
       .attr('font-weight', '600')
       .attr('pointer-events', 'none')
       .text((d) => {
-        // Truncate long names to fit
-        const maxChars = Math.floor(d.r * 0.38)
+        // Truncate long names to fit — budget shrinks as the root scale grows
+        const maxChars = dorlingLabel(d.r, labelFactor).nameMaxChars
         return d.name.length > maxChars ? d.name.slice(0, maxChars - 1) + '…' : d.name
       })
 
-    // Population sub-label (only when radius > 25px)
+    // Population sub-label (only when radius fits both labels at this scale)
     circleGroups
-      .filter((d) => d.r > 25)
+      .filter((d) => dorlingLabel(d.r, labelFactor).showPop)
       .append('text')
       .attr('text-anchor', 'middle')
       .attr('dominant-baseline', 'hanging')
       .attr('dy', '0.4em')
       .attr('fill', subLabelColor)
-      .attr('font-size', (d) => Math.min(9, d.r * 0.3) + 'px')
+      .style('font-size', (d) => dorlingLabel(d.r, labelFactor).popFontRem)
       .attr('font-family', '"JetBrains Mono", monospace')
       .attr('pointer-events', 'none')
       .text((d) => {
@@ -212,7 +216,7 @@ export default function DorlingCartogram({
     return () => {
       simulation.stop()
     }
-  }, [data, colorScale, width, height, isDarkMode, onHover, onSelect])
+  }, [data, colorScale, width, height, isDarkMode, onHover, onSelect, typeScale])
 
   // Re-highlight hovered circle when hoveredName changes from outside
   // (internal state is sufficient — no external highlight needed beyond the tooltip)

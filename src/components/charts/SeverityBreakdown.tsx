@@ -70,7 +70,7 @@ export default function SeverityBreakdown({ data, width = 260, height = 120 }: S
       .attr('dy', '0.35em')
       .attr('text-anchor', 'end')
       .attr('fill', labelColor)
-      .attr('font-size', '9px')
+      .style('font-size', '0.5625rem')
       .attr('font-family', '"JetBrains Mono", monospace')
       .text((d) => d.severity.length > 14 ? d.severity.slice(0, 13) + '\u2026' : d.severity)
       .append('title')
@@ -84,7 +84,7 @@ export default function SeverityBreakdown({ data, width = 260, height = 120 }: S
       .attr('y', (d) => (y(d.severity) ?? 0) + barHeight / 2)
       .attr('dy', '0.35em')
       .attr('fill', valueColor)
-      .attr('font-size', '9px')
+      .style('font-size', '0.5625rem')
       .attr('font-family', '"JetBrains Mono", monospace')
       .text((d) => d.count.toLocaleString())
 

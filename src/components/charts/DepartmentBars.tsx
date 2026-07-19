@@ -3,6 +3,7 @@
 import { useRef, useEffect } from 'react'
 import * as d3 from 'd3'
 import { useAppStore } from '@/stores/appStore'
+import { SCALE_FACTORS } from '@/stores/typeScale'
 import { formatBudgetAmount } from '@/utils/fiscalYear'
 import type { BudgetVsActualRow } from '@/types/budget'
 
@@ -25,6 +26,7 @@ export default function DepartmentBars({
 }: DepartmentBarsProps) {
   const svgRef = useRef<SVGSVGElement>(null)
   const isDarkMode = useAppStore((s) => s.isDarkMode)
+  const typeScale = useAppStore((s) => s.typeScale)
 
   useEffect(() => {
     if (!svgRef.current || data.length === 0) return
@@ -33,7 +35,11 @@ export default function DepartmentBars({
     svg.selectAll('*').remove()
 
     const sliced = data.slice(0, maxBars)
-    const margin = { top: 8, right: 70, bottom: 8, left: 180 }
+    // Text scales with the root % (Large Type) while SVG layout is px —
+    // grow the label margins by the same factor so grown text still fits.
+    // Factor 1 reproduces the legacy 70/180 exactly.
+    const f = SCALE_FACTORS[typeScale]
+    const margin = { top: 8, right: Math.round(70 * f), bottom: 8, left: Math.round(180 * f) }
     const w = width - margin.left - margin.right
     const barHeight = 20
     const barGap = 3
@@ -94,7 +100,7 @@ export default function DepartmentBars({
 
     // Department labels (left)
     const labelColor = isDarkMode ? '#94a3b8' : '#64748b'
-    const maxChars = Math.floor(margin.left / 6.5)
+    const maxChars = Math.floor(margin.left / (6.5 * f))
     const clipId = `dept-clip-${Math.random().toString(36).slice(2, 8)}`
 
     // Department labels (drawn in the SVG root, not inside the translated group)
@@ -107,7 +113,7 @@ export default function DepartmentBars({
       .attr('dy', '0.35em')
       .attr('text-anchor', 'end')
       .attr('fill', (d) => (selectedDepartment === d.department ? (isDarkMode ? '#fff' : '#0f172a') : labelColor))
-      .attr('font-size', '9px')
+      .style('font-size', '0.5625rem')
       .attr('font-family', '"JetBrains Mono", monospace')
       .attr('cursor', 'pointer')
       .text((d) => d.department.length > maxChars ? d.department.slice(0, maxChars - 1) + '…' : d.department)
@@ -125,7 +131,7 @@ export default function DepartmentBars({
       .attr('y', (d) => (y(d.department) ?? 0) + y.bandwidth() / 2)
       .attr('dy', '0.35em')
       .attr('fill', valueColor)
-      .attr('font-size', '9px')
+      .style('font-size', '0.5625rem')
       .attr('font-family', '"JetBrains Mono", monospace')
       .text((d) => {
         const amt = formatBudgetAmount(d.spending_total)
@@ -135,7 +141,7 @@ export default function DepartmentBars({
         return `${amt} ${sign}${pct.toFixed(0)}%`
       })
 
-  }, [data, width, height, maxBars, isDarkMode, onSelectDepartment, selectedDepartment])
+  }, [data, width, height, maxBars, isDarkMode, onSelectDepartment, selectedDepartment, typeScale])
 
   return <svg ref={svgRef} className="w-full" />
 }

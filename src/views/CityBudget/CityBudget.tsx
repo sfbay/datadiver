@@ -1827,7 +1827,7 @@ function ComplianceDashboard({
                     left: `${(conn1Left + conn1Right) / 2}%`,
                     top: '42%',
                     transform: 'translate(-50%, -50%)',
-                    fontSize: '12px',
+                    fontSize: '0.75rem',
                     letterSpacing: '0.3em',
                   }}
                 >
@@ -1930,7 +1930,7 @@ function ComplianceDashboard({
                     left: `${(conn2Left + conn2Right) / 2}%`,
                     top: '42%',
                     transform: 'translate(-50%, -50%)',
-                    fontSize: '12px',
+                    fontSize: '0.75rem',
                     letterSpacing: '0.3em',
                   }}
                 >

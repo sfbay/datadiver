@@ -3,8 +3,10 @@ import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { SF_CENTER, SF_DEFAULT_ZOOM, SF_DEFAULT_PITCH, SF_DEFAULT_BEARING } from '@/utils/geo'
 import { useAppStore } from '@/stores/appStore'
+import { SCALE_FACTORS } from '@/stores/typeScale'
 import MapLabelTuner from './MapLabelTuner'
 import { classifyLabelLayer, type LabelGroup } from './labelGroups'
+import { scaleTextSizeValue } from './labelTextSize'
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN || ''
 
@@ -120,6 +122,36 @@ function softenBasemapLabels(map: mapboxgl.Map, dark: boolean) {
   }
 }
 
+/** Stock `text-size` per basemap symbol layer, captured at style.load BEFORE
+ *  any scaling (and before app layers mount — useMapLayer adds those on later
+ *  ticks), so re-applies never compound a factor onto an already-scaled value
+ *  and never touch app-owned symbol layers like nh-choropleth-labels. */
+function collectStockTextSizes(map: mapboxgl.Map): Map<string, unknown> {
+  const cache = new Map<string, unknown>()
+  for (const layer of map.getStyle().layers || []) {
+    if (layer.type !== 'symbol') continue
+    const layout = (layer as mapboxgl.SymbolLayer).layout
+    if (!layout || layout['text-field'] === undefined) continue
+    // undefined text-size means the Mapbox default (16px)
+    cache.set(layer.id, map.getLayoutProperty(layer.id, 'text-size') ?? 16)
+  }
+  return cache
+}
+
+/** Large Type participation for basemap labels: rewrite each cached stock
+ *  text-size with its numeric outputs × factor. Factor 1 restores stock. */
+function applyLabelTextScale(map: mapboxgl.Map, cache: Map<string, unknown>, factor: number) {
+  for (const [id, orig] of cache) {
+    const scaled = scaleTextSizeValue(orig, factor)
+    if (scaled === null) continue
+    try {
+      map.setLayoutProperty(id, 'text-size', scaled as number | mapboxgl.Expression)
+    } catch (_err) {
+      // Some composite basemap layers reject layout edits — skip them.
+    }
+  }
+}
+
 export interface MapHandle {
   getMap: () => mapboxgl.Map | null
 }
@@ -146,6 +178,8 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
   const mapRef = useRef<mapboxgl.Map | null>(null)
   const [isReady, setIsReady] = useState(false)
   const isDarkMode = useAppStore((s) => s.isDarkMode)
+  const typeScale = useAppStore((s) => s.typeScale)
+  const labelSizeCache = useRef<Map<string, unknown>>(new Map())
   const onMapReadyRef = useRef(onMapReady)
   onMapReadyRef.current = onMapReady
 
@@ -194,6 +228,8 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
     const handleStyleLoad = () => {
       applyTerrainAndFog(map, useAppStore.getState().isDarkMode)
       softenBasemapLabels(map, useAppStore.getState().isDarkMode)
+      labelSizeCache.current = collectStockTextSizes(map)
+      applyLabelTextScale(map, labelSizeCache.current, SCALE_FACTORS[useAppStore.getState().typeScale])
     }
     map.on('style.load', handleStyleLoad)
     if (map.isStyleLoaded()) handleStyleLoad()
@@ -210,6 +246,15 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Re-scale basemap labels when the Large Type tier changes mid-session.
+  // If the style is still loading, skip — handleStyleLoad reads the live
+  // typeScale when it fires, so the current factor lands either way.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !map.isStyleLoaded()) return
+    applyLabelTextScale(map, labelSizeCache.current, SCALE_FACTORS[typeScale])
+  }, [typeScale])
 
   // Update style on theme change. CRITICAL: skip the no-op first run
   // when isReady transitions false → true with the same isDarkMode that

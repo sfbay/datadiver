@@ -34,6 +34,7 @@ export default function HorizontalBarChart({
 }: HorizontalBarChartProps) {
   const svgRef = useRef<SVGSVGElement>(null)
   const isDarkMode = useAppStore((s) => s.isDarkMode)
+  const typeScale = useAppStore((s) => s.typeScale)
 
   useEffect(() => {
     if (!svgRef.current || data.length === 0) return
@@ -146,7 +147,7 @@ export default function HorizontalBarChart({
         .attr('dy', '0.35em')
         .attr('text-anchor', 'end')
         .attr('fill', labelColor)
-        .attr('font-size', '9px')
+        .style('font-size', '0.5625rem')
         .attr('font-family', '"JetBrains Mono", monospace')
         .attr('cursor', isTruncated ? 'default' : null)
         .text(displayText)
@@ -159,7 +160,7 @@ export default function HorizontalBarChart({
         let overflow = 0
         const measureEl = labelG.append('text')
           .attr('x', -9999).attr('y', -9999)
-          .attr('font-size', '9px')
+          .style('font-size', '0.5625rem')
           .attr('font-family', '"JetBrains Mono", monospace')
           .text(d.label)
         const fullWidth = (measureEl.node()?.getComputedTextLength() ?? 0) + 4
@@ -221,12 +222,12 @@ export default function HorizontalBarChart({
       .attr('dy', '0.35em')
       .attr('text-anchor', (d) => d.value > scaleCap ? 'end' : 'start')
       .attr('fill', (d) => d.value > scaleCap ? '#fff' : valueColor)
-      .attr('font-size', '9px')
+      .style('font-size', '0.5625rem')
       .attr('font-weight', (d) => d.value > scaleCap ? '600' : '400')
       .attr('font-family', '"JetBrains Mono", monospace')
       .text((d) => valueFormatter(d.value))
 
-  }, [data, width, height, maxBars, valueFormatter, isDarkMode, labelWidth, capPercentile, onBarClick])
+  }, [data, width, height, maxBars, valueFormatter, isDarkMode, labelWidth, capPercentile, onBarClick, typeScale])
 
   return <svg ref={svgRef} className="w-full" />
 }

@@ -210,7 +210,7 @@ body {
   font-family: var(--font-sans) !important;
 }
 .mapboxgl-ctrl-attrib {
-  font-size: 9px !important;
+  font-size: 0.5625rem !important;
   opacity: 0.5;
 }
 .mapboxgl-ctrl-attrib a {
@@ -484,7 +484,7 @@ body {
   padding: 10px 12px;
   color: #1e140d;  /* ink-900 */
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 0.6875rem;
   line-height: 1.5;
   box-shadow: 0 8px 32px rgba(58, 42, 30, 0.18);
 }
@@ -492,14 +492,14 @@ body {
   border-top-color: rgba(251, 246, 234, 0.94);
 }
 .datadiver-tooltip .tooltip-label {
-  font-size: 9px;
+  font-size: 0.5625rem;
   text-transform: uppercase;
   letter-spacing: 0.15em;
   color: #7a5f42;  /* ink-500 */
   margin-bottom: 2px;
 }
 .datadiver-tooltip .tooltip-value {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: #1e140d;  /* ink-900 */
 }

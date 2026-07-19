@@ -81,7 +81,7 @@ export default function ContributionTimeline({ data, width = 400, height = 160, 
       .call(xAxis)
     xAxisG.selectAll('text')
       .attr('fill', isDark ? '#94a3b8' : '#64748b')
-      .attr('font-size', '8px')
+      .style('font-size', '0.5rem')
       .attr('font-family', "'JetBrains Mono', monospace")
     xAxisG.selectAll('.domain, .tick line').attr('stroke', isDark ? '#1e293b' : '#e2e8f0')
 
@@ -96,7 +96,7 @@ export default function ContributionTimeline({ data, width = 400, height = 160, 
       .attr('y', 20)
       .attr('text-anchor', 'middle')
       .attr('fill', isDark ? '#64748b' : '#94a3b8')
-      .attr('font-size', '7px')
+      .style('font-size', '0.4375rem')
       .attr('font-family', "'JetBrains Mono', monospace")
       .text(d => d.getFullYear().toString())
 
@@ -113,7 +113,7 @@ export default function ContributionTimeline({ data, width = 400, height = 160, 
       .call(yAxis)
     yAxisG.selectAll('text')
       .attr('fill', isDark ? '#94a3b8' : '#64748b')
-      .attr('font-size', '8px')
+      .style('font-size', '0.5rem')
       .attr('font-family', "'JetBrains Mono', monospace")
     yAxisG.selectAll('.domain, .tick line').attr('stroke', isDark ? '#1e293b' : '#e2e8f0')
   }, [data, width, height, accentColor, isDark])

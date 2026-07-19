@@ -511,7 +511,7 @@ export default function TrafficSafety() {
     return `
       <div class="tooltip-label">High Injury Network</div>
       <div class="tooltip-value" style="color:#8b6282">${props.street_name || props.full_street_name || 'Street segment'}</div>
-      <div style="color:#94a3b8;font-size:10px;margin-top:4px">Vision Zero priority corridor</div>
+      <div style="color:#94a3b8;font-size:0.625rem;margin-top:4px">Vision Zero priority corridor</div>
     `
   })
 

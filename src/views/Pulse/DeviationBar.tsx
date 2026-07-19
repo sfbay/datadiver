@@ -34,7 +34,7 @@ export default function DeviationBar({
   const pingDelay = ((Math.abs(ratio) * 997) % 4).toFixed(2)
 
   return (
-    <div className="relative h-[22px] mt-2.5 mb-0.5" aria-hidden>
+    <div className="relative h-[1.375rem] mt-2.5 mb-0.5" aria-hidden>
       <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-2 rounded-full bg-paper-200 dark:bg-espresso-800" />
       <div
         className="absolute top-1/2 -translate-y-1/2 h-2 rounded-full"
@@ -43,10 +43,10 @@ export default function DeviationBar({
       {/* Usual tick — dotted, so the REFERENCE reads as construction lines
           while the solid marker below owns "this is the reading". */}
       <div
-        className="absolute top-[calc(50%-10px)] h-5 w-0 border-l-2 border-dotted border-paper-500 dark:border-paper-400"
+        className="absolute top-[calc(50%-0.625rem)] h-5 w-0 border-l-2 border-dotted border-paper-500 dark:border-paper-400"
         style={{ left: `${USUAL_PCT}%` }}
       >
-        <span className="absolute left-1/2 -translate-x-1/2 -top-[11px] font-mono text-[0.5rem] whitespace-nowrap text-paper-500 dark:text-paper-600">
+        <span className="absolute left-1/2 -translate-x-1/2 -top-[0.6875rem] font-mono text-[0.5rem] whitespace-nowrap text-paper-500 dark:text-paper-600">
           {tickLabel}
         </span>
       </div>

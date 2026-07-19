@@ -113,7 +113,7 @@ export default function TrendChart({ current, comparison, width = 260, height = 
       .call((g) => g.select('.domain').remove())
       .selectAll('text')
       .attr('fill', textColor)
-      .attr('font-size', '8px')
+      .style('font-size', '0.5rem')
       .attr('font-family', '"JetBrains Mono", monospace')
 
     // X axis (show a few date labels)
@@ -134,7 +134,7 @@ export default function TrendChart({ current, comparison, width = 260, height = 
       .call((g) => g.select('.domain').remove())
       .selectAll('text')
       .attr('fill', textColor)
-      .attr('font-size', '8px')
+      .style('font-size', '0.5rem')
       .attr('font-family', '"JetBrains Mono", monospace')
 
   }, [current, comparison, metric, width, height, isDarkMode, accentColor])

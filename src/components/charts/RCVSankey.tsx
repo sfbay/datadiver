@@ -278,10 +278,9 @@ export default function RCVSankey({
                   y={node.y + node.height / 2}
                   textAnchor="end"
                   fill={dimmed ? 'var(--color-slate-700)' : 'var(--color-slate-400)'}
-                  fontSize={9}
                   fontFamily="Inter, system-ui, sans-serif"
                   dominantBaseline="middle"
-                  style={{ transition: 'fill 0.2s' }}
+                  style={{ fontSize: '0.5625rem', transition: 'fill 0.2s' }}
                 >
                   {toSentenceCase(node.name.split(' ').pop() || node.name)}
                 </text>
@@ -299,8 +298,8 @@ export default function RCVSankey({
             x={gutterLeft + i * colWidth + 6}
             y={12}
             fill="var(--color-slate-500)"
-            fontSize={9}
             fontFamily="var(--font-mono)"
+            style={{ fontSize: '0.5625rem' }}
           >
             {label}
           </text>

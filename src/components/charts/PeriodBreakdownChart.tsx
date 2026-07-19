@@ -110,7 +110,7 @@ export default function PeriodBreakdownChart({
       .call(g => g.select('.domain').remove())
       .selectAll('text')
       .attr('fill', textColor)
-      .attr('font-size', '8px')
+      .style('font-size', '0.5rem')
       .attr('font-family', '"JetBrains Mono", monospace')
 
     // X axis — show subset of labels to avoid crowding
@@ -129,7 +129,7 @@ export default function PeriodBreakdownChart({
       .call(g => g.select('.domain').remove())
       .selectAll('text')
       .attr('fill', textColor)
-      .attr('font-size', '8px')
+      .style('font-size', '0.5rem')
       .attr('font-family', '"JetBrains Mono", monospace')
 
   }, [current, priorYear, granularity, width, height, accentColor, isDarkMode])

@@ -63,7 +63,7 @@ export default function BatteryTrendChart({ data, width = 320, height = 140 }: P
       .attr('y', d => y(d.count) - 4)
       .attr('text-anchor', 'middle')
       .attr('fill', '#d4a435')
-      .attr('font-size', '9px')
+      .style('font-size', '0.5625rem')
       .attr('font-family', "'JetBrains Mono', monospace")
       .attr('opacity', 0)
       .text(d => d.count)
@@ -79,7 +79,7 @@ export default function BatteryTrendChart({ data, width = 320, height = 140 }: P
       .call(g => g.select('.domain').remove())
       .selectAll('text')
       .attr('fill', 'rgba(148,163,184,0.6)')
-      .attr('font-size', '8px')
+      .style('font-size', '0.5rem')
       .attr('font-family', "'JetBrains Mono', monospace")
 
     // Y-axis (count)
@@ -91,7 +91,7 @@ export default function BatteryTrendChart({ data, width = 320, height = 140 }: P
         .attr('stroke-dasharray', '2,2'))
       .selectAll('text')
       .attr('fill', 'rgba(148,163,184,0.5)')
-      .attr('font-size', '8px')
+      .style('font-size', '0.5rem')
       .attr('font-family', "'JetBrains Mono', monospace")
   }, [data, width, height])
 
