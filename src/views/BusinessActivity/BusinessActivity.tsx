@@ -591,9 +591,9 @@ export default function BusinessActivity() {
       : 'Active'
     return `
       <div class="tooltip-value">${props.dbaName || 'Unknown'}</div>
-      <div style="color:${statusColor};font-weight:600;font-size:10px;margin-top:4px">${statusLabel}</div>
-      <div style="color:#94a3b8;font-size:10px;margin-top:2px">${props.sector || 'Uncategorized'}</div>
-      <div style="color:#64748b;font-size:9px;margin-top:6px;font-style:italic">Click for details</div>
+      <div style="color:${statusColor};font-weight:600;font-size:0.625rem;margin-top:4px">${statusLabel}</div>
+      <div style="color:#94a3b8;font-size:0.625rem;margin-top:2px">${props.sector || 'Uncategorized'}</div>
+      <div style="color:#64748b;font-size:0.5625rem;margin-top:6px;font-style:italic">Click for details</div>
     `
   })
 

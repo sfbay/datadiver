@@ -39,7 +39,7 @@ export default function SignalGlyph({
 
   if (type === 'live') {
     return (
-      <span className="relative inline-flex items-center justify-center" style={{ width: size, height: size }} aria-hidden>
+      <span className="relative inline-flex items-center justify-center" style={{ width: `${size / 16}rem`, height: `${size / 16}rem` }} aria-hidden>
         <span className="absolute w-2.5 h-2.5 rounded-full animate-ping" style={{ backgroundColor: c, opacity: 0.45 }} />
         <span className="relative w-2 h-2 rounded-full" style={{ backgroundColor: c }} />
       </span>
@@ -48,7 +48,7 @@ export default function SignalGlyph({
 
   if (type === 'milestone') {
     return (
-      <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
+      <svg viewBox="0 0 24 24" style={{ width: `${size / 16}rem`, height: `${size / 16}rem` }} aria-hidden>
         <rect x="7" y="7" width="10" height="10" transform="rotate(45 12 12)" fill={c} />
       </svg>
     )
@@ -61,7 +61,7 @@ export default function SignalGlyph({
   const startY = (24 - stackH) / 2
 
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
+    <svg viewBox="0 0 24 24" style={{ width: `${size / 16}rem`, height: `${size / 16}rem` }} aria-hidden>
       {Array.from({ length: magnitude }).map((_, i) => {
         const y = startY + i * gap
         const d = up ? `M5 ${y + chevH} L12 ${y} L19 ${y + chevH}` : `M5 ${y} L12 ${y + chevH} L19 ${y}`

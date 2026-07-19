@@ -294,8 +294,8 @@ export default function Neighborhood() {
     if (!profile) return `<div class="tooltip-value">${props.nhood}</div>`
     const zColor = profile.compositeZScore > 1 ? '#b85545' : profile.compositeZScore < -1 ? '#5c9693' : '#94a3b8'
     return `
-      <div class="tooltip-value" style="font-size:13px">${props.nhood}</div>
-      <div style="display:flex;gap:12px;margin-top:6px;font-size:10px;font-family:Space Mono,monospace">
+      <div class="tooltip-value" style="font-size:0.8125rem">${props.nhood}</div>
+      <div style="display:flex;gap:12px;margin-top:6px;font-size:0.625rem;font-family:Space Mono,monospace">
         <span style="color:#94a3b8">${profile.totalEvents.toLocaleString()} events</span>
         <span style="color:${zColor}">${profile.compositeZScore >= 0 ? '+' : ''}${profile.compositeZScore.toFixed(1)}σ</span>
         ${profile.anomalyCount > 0 ? `<span style="color:#e8c06b">${profile.anomalyCount} anomal${profile.anomalyCount === 1 ? 'y' : 'ies'}</span>` : ''}
@@ -309,8 +309,8 @@ export default function Neighborhood() {
     const color = domainConfig?.color || '#94a3b8'
     return `
       <div class="tooltip-value" style="color:${color}">${props.label}</div>
-      ${props.detail ? `<div style="color:#94a3b8;font-size:10px;margin-top:2px">${props.detail}</div>` : ''}
-      ${props.value ? `<div style="color:${color};font-size:11px;font-weight:600;margin-top:2px">${props.value}</div>` : ''}
+      ${props.detail ? `<div style="color:#94a3b8;font-size:0.625rem;margin-top:2px">${props.detail}</div>` : ''}
+      ${props.value ? `<div style="color:${color};font-size:0.6875rem;font-weight:600;margin-top:2px">${props.value}</div>` : ''}
     `
   }, [])
 

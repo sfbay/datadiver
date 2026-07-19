@@ -266,7 +266,7 @@ export default function Elections() {
       <div class="tooltip-label">Precinct ${props.label}</div>
       <div class="tooltip-value">${nhood}</div>
       ${leaderLine}
-      <div style="color:#a8926a;font-size:10px;margin-top:4px">${turnoutLine}</div>
+      <div style="color:#a8926a;font-size:0.625rem;margin-top:4px">${turnoutLine}</div>
     `
   })
 
