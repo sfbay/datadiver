@@ -600,13 +600,13 @@ export default function TrafficSafety() {
         {/* items-start on mobile so the title can wrap on the left while the
             controls flow from the top-right (no empty well); md restores the
             centered single row. */}
-        <div className="flex items-start justify-between gap-3 desk:items-center">
-          <div className="flex items-center gap-4 min-w-0">
+        <div className="flex flex-wrap items-start justify-between gap-3 desk:items-center">
+          <div className="flex flex-wrap items-center gap-4 min-w-0">
             <div className="min-w-0">
               <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">
                 Traffic Safety
               </h1>
-              <p className="hidden sm:block text-micro font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
+              <p className="hidden sm:block truncate text-micro font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
                 Vision Zero &middot; Crash & Speed Analysis
               </p>
             </div>
