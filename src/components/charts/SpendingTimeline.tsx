@@ -145,13 +145,13 @@ export default function SpendingTimeline({
       .attr('transform', `translate(0,${h})`)
       .call(d3.axisBottom(x).ticks(6).tickFormat((d) => `'${String(d).slice(-2)}`))
       .call((g) => g.select('.domain').attr('stroke', axisColor))
-      .call((g) => g.selectAll('.tick text').attr('fill', axisColor).attr('font-size', '8px').attr('font-family', '"JetBrains Mono", monospace'))
+      .call((g) => g.selectAll('.tick text').attr('fill', axisColor).style('font-size', '0.5rem').attr('font-family', '"JetBrains Mono", monospace'))
       .call((g) => g.selectAll('.tick line').attr('stroke', axisColor))
 
     g.append('g')
       .call(d3.axisLeft(y).ticks(4).tickFormat((d) => formatBudgetAmount(d as number)))
       .call((g) => g.select('.domain').remove())
-      .call((g) => g.selectAll('.tick text').attr('fill', axisColor).attr('font-size', '8px').attr('font-family', '"JetBrains Mono", monospace'))
+      .call((g) => g.selectAll('.tick text').attr('fill', axisColor).style('font-size', '0.5rem').attr('font-family', '"JetBrains Mono", monospace'))
       .call((g) => g.selectAll('.tick line').remove())
 
   }, [points, currentFY, isDarkMode, color, height])

@@ -95,7 +95,7 @@ export default function FundingSourcesChart({ data, width = 300, height }: Props
       .attr('dy', '0.35em')
       .attr('text-anchor', 'end')
       .attr('fill', isDark ? '#cbd5e1' : '#475569')
-      .attr('font-size', '11px')
+      .style('font-size', '0.6875rem')
       .text(d => d.label)
 
     g.selectAll('text.value')
@@ -105,7 +105,7 @@ export default function FundingSourcesChart({ data, width = 300, height }: Props
       .attr('y', (_, i) => y(i)! + y.bandwidth() / 2)
       .attr('dy', '0.35em')
       .attr('fill', isDark ? '#94a3b8' : '#64748b')
-      .attr('font-size', '10px')
+      .style('font-size', '0.625rem')
       .attr('font-family', "'JetBrains Mono', monospace")
       .text(d => formatCurrency(d.value))
   }, [data, width, computedHeight, isDark, innerW, margin.left, margin.top])

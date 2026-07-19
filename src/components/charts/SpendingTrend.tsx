@@ -120,13 +120,13 @@ export default function SpendingTrend({
       .attr('transform', `translate(0,${h})`)
       .call(d3.axisBottom(x).ticks(8).tickFormat((d) => `'${String(d).slice(-2)}`))
       .call((g) => g.select('.domain').attr('stroke', axisColor))
-      .call((g) => g.selectAll('.tick text').attr('fill', axisColor).attr('font-size', '9px').attr('font-family', '"JetBrains Mono", monospace'))
+      .call((g) => g.selectAll('.tick text').attr('fill', axisColor).style('font-size', '0.5625rem').attr('font-family', '"JetBrains Mono", monospace'))
       .call((g) => g.selectAll('.tick line').attr('stroke', axisColor))
 
     g.append('g')
       .call(d3.axisLeft(y).ticks(5).tickFormat((d) => mode === 'percent' ? `${d}%` : formatBudgetAmount(d as number)))
       .call((g) => g.select('.domain').remove())
-      .call((g) => g.selectAll('.tick text').attr('fill', axisColor).attr('font-size', '9px').attr('font-family', '"JetBrains Mono", monospace'))
+      .call((g) => g.selectAll('.tick text').attr('fill', axisColor).style('font-size', '0.5625rem').attr('font-family', '"JetBrains Mono", monospace'))
       .call((g) => g.selectAll('.tick line').remove())
 
     // Lines
@@ -184,7 +184,7 @@ export default function SpendingTrend({
         .attr('x', 12).attr('y', yPos + 4)
         .attr('dy', '0.35em')
         .attr('fill', isHighlighted ? (isDarkMode ? '#e2e8f0' : '#334155') : (isDarkMode ? '#475569' : '#94a3b8'))
-        .attr('font-size', '8px')
+        .style('font-size', '0.5rem')
         .attr('font-family', '"JetBrains Mono", monospace')
         .text(s.department.length > 18 ? s.department.slice(0, 17) + '…' : s.department)
         .append('title')

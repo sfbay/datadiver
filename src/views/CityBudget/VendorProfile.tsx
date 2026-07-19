@@ -775,7 +775,7 @@ function PaymentHeatgrid({ data }: { data: MonthlySpendRow[] }) {
       .attr('y', marginTop - 6)
       .attr('text-anchor', 'middle')
       .attr('fill', labelColor)
-      .attr('font-size', '7px')
+      .style('font-size', '0.4375rem')
       .attr('font-family', '"JetBrains Mono", monospace')
       .text((d) => d)
 
@@ -788,7 +788,7 @@ function PaymentHeatgrid({ data }: { data: MonthlySpendRow[] }) {
       .attr('dy', '0.35em')
       .attr('text-anchor', 'end')
       .attr('fill', labelColor)
-      .attr('font-size', '7px')
+      .style('font-size', '0.4375rem')
       .attr('font-family', '"JetBrains Mono", monospace')
       .text((d) => `'${d.slice(-2)}`)
 

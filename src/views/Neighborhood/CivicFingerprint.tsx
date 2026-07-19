@@ -182,9 +182,9 @@ export default function CivicFingerprint({
           textAnchor="middle"
           dominantBaseline="central"
           fill={DOMAINS[i].color}
-          fontSize={7}
           fontFamily="Space Mono, monospace"
           opacity={0.8}
+          style={{ fontSize: '0.4375rem' }}
         >
           {DOMAINS[i].short}
         </text>

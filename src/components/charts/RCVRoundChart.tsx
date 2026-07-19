@@ -358,9 +358,9 @@ export default function RCVRoundChart({
               x={labelWidth + (threshold / maxVotes) * chartWidth + 3}
               y={10}
               fill="#d4a435"
-              fontSize={8}
               fontFamily="var(--font-mono)"
               opacity={0.6}
+              style={{ fontSize: '0.5rem' }}
             >
               50%
             </text>
@@ -396,10 +396,10 @@ export default function RCVRoundChart({
                     ? isJust ? '#b85545' : 'var(--color-slate-500)'
                     : isWinner ? 'var(--color-slate-700)' : 'var(--color-slate-400)'
                 }
-                fontSize={9}
                 fontWeight={isWinner && !isEliminatedNow ? 700 : 400}
                 fontFamily="Inter, system-ui, sans-serif"
                 textDecoration={isEliminatedNow ? 'line-through' : undefined}
+                style={{ fontSize: '0.5625rem' }}
               >
                 {displayName.length > 18 ? displayName.slice(0, 17) + '…' : displayName}
               </text>
@@ -465,11 +465,11 @@ export default function RCVRoundChart({
                   x={labelWidth + barW + 30}
                   y={y + barHeight / 2 + 1}
                   fill={color}
-                  fontSize={8}
                   fontWeight={600}
                   fontFamily="var(--font-mono)"
                   dominantBaseline="middle"
                   opacity={0.9}
+                  style={{ fontSize: '0.5rem' }}
                 >
                   +{transfer.amount.toLocaleString()}
                 </text>
@@ -479,9 +479,9 @@ export default function RCVRoundChart({
                   x={labelWidth + barW + 4}
                   y={y + barHeight / 2 + 1}
                   fill="var(--color-slate-400)"
-                  fontSize={8}
                   fontFamily="var(--font-mono)"
                   dominantBaseline="middle"
+                  style={{ fontSize: '0.5rem' }}
                 >
                   {votes.toLocaleString()}
                 </text>
@@ -537,9 +537,9 @@ export default function RCVRoundChart({
                     x={width - 20}
                     y={svgHeight - 16}
                     textAnchor="end"
-                    fontSize={7}
                     fill="var(--color-paper-500)"
                     fontFamily="var(--font-mono)"
+                    style={{ fontSize: '0.4375rem' }}
                   >
                     Exhausted
                   </text>
@@ -549,9 +549,9 @@ export default function RCVRoundChart({
                 <text
                   x={bundleSource.x + 6}
                   y={bundleSource.y - 6}
-                  fontSize={7}
                   fill="var(--color-brick-400)"
                   fontFamily="var(--font-mono)"
+                  style={{ fontSize: '0.4375rem' }}
                 >
                   {justEliminated.names.length} candidates eliminated together
                 </text>

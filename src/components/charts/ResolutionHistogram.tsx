@@ -78,7 +78,7 @@ export default function ResolutionHistogram({ data, width = 300, height = 120 }:
       .call((g) => g.select('.domain').remove())
       .selectAll('text')
       .attr('fill', isDarkMode ? '#94a3b8' : '#64748b')
-      .attr('font-size', '9px')
+      .style('font-size', '0.5625rem')
       .attr('font-family', '"JetBrains Mono", monospace')
 
   }, [data, width, height, isDarkMode])

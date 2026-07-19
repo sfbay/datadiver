@@ -196,7 +196,7 @@ export default function CorrelationScatter({
       .call((g) => g.select('.domain').attr('stroke', gridColor))
       .selectAll('text')
       .attr('fill', axisMuted)
-      .attr('font-size', '9px')
+      .style('font-size', '0.5625rem')
       .attr('font-family', '"JetBrains Mono", monospace')
 
     g.selectAll('.grid-x .tick line, .grid-y .tick line')
@@ -212,7 +212,7 @@ export default function CorrelationScatter({
       .call((g) => g.select('.domain').attr('stroke', gridColor))
       .selectAll('text')
       .attr('fill', axisMuted)
-      .attr('font-size', '9px')
+      .style('font-size', '0.5625rem')
       .attr('font-family', '"JetBrains Mono", monospace')
 
     // Axis labels
@@ -221,7 +221,7 @@ export default function CorrelationScatter({
       .attr('y', h + 36)
       .attr('text-anchor', 'middle')
       .attr('fill', axisColor)
-      .attr('font-size', '10px')
+      .style('font-size', '0.625rem')
       .attr('font-family', "'Inter', sans-serif")
       .text(xLabel)
 
@@ -231,7 +231,7 @@ export default function CorrelationScatter({
       .attr('y', -42)
       .attr('text-anchor', 'middle')
       .attr('fill', axisColor)
-      .attr('font-size', '10px')
+      .style('font-size', '0.625rem')
       .attr('font-family', "'Inter', sans-serif")
       .text(yLabel)
 

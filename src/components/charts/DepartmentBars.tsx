@@ -107,7 +107,7 @@ export default function DepartmentBars({
       .attr('dy', '0.35em')
       .attr('text-anchor', 'end')
       .attr('fill', (d) => (selectedDepartment === d.department ? (isDarkMode ? '#fff' : '#0f172a') : labelColor))
-      .attr('font-size', '9px')
+      .style('font-size', '0.5625rem')
       .attr('font-family', '"JetBrains Mono", monospace')
       .attr('cursor', 'pointer')
       .text((d) => d.department.length > maxChars ? d.department.slice(0, maxChars - 1) + '…' : d.department)
@@ -125,7 +125,7 @@ export default function DepartmentBars({
       .attr('y', (d) => (y(d.department) ?? 0) + y.bandwidth() / 2)
       .attr('dy', '0.35em')
       .attr('fill', valueColor)
-      .attr('font-size', '9px')
+      .style('font-size', '0.5625rem')
       .attr('font-family', '"JetBrains Mono", monospace')
       .text((d) => {
         const amt = formatBudgetAmount(d.spending_total)

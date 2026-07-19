@@ -81,7 +81,7 @@ export default function HourlyHeatgrid({ grid, width = 240, height = 160 }: Hour
         .attr('dy', '0.35em')
         .attr('text-anchor', 'end')
         .attr('fill', textColor)
-        .attr('font-size', '8px')
+        .style('font-size', '0.5rem')
         .attr('font-family', '"JetBrains Mono", monospace')
         .text(DAY_LABELS[dow].charAt(0))
     }
@@ -93,7 +93,7 @@ export default function HourlyHeatgrid({ grid, width = 240, height = 160 }: Hour
         .attr('y', -4)
         .attr('text-anchor', 'middle')
         .attr('fill', textColor)
-        .attr('font-size', '8px')
+        .style('font-size', '0.5rem')
         .attr('font-family', '"JetBrains Mono", monospace')
         .text(formatHour(h))
     }
