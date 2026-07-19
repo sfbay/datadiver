@@ -72,7 +72,7 @@ export default function AmbientToggle({ on, disabled, activePaceId, onToggle, on
             ? 'Auto-tour starts once events finish loading'
             : 'Auto — a slow orbit touring the freshest events. Any input stops it.'
         }
-        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-mono uppercase tracking-wider transition-all duration-200 ${
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-label font-mono uppercase tracking-wider transition-all duration-200 ${
           on && !disabled
             ? 'bg-moss-500/20 text-moss-600 dark:text-moss-400 ring-1 ring-moss-500/40' // actively touring → green/live
             : disabled
@@ -131,9 +131,9 @@ export default function AmbientToggle({ on, disabled, activePaceId, onToggle, on
       {menuOpen && (
         <div
           role="menu"
-          className="absolute right-0 top-full mt-1.5 z-50 min-w-[180px] rounded-lg bg-paper-50/95 dark:bg-espresso-900/95 backdrop-blur-lg border border-paper-200/50 dark:border-espresso-800 shadow-xl shadow-black/20 p-2"
+          className="absolute right-0 top-full mt-1.5 z-50 min-w-[11.25rem] rounded-lg bg-paper-50/95 dark:bg-espresso-900/95 backdrop-blur-lg border border-paper-200/50 dark:border-espresso-800 shadow-xl shadow-black/20 p-2"
         >
-          <div className="px-2 pb-1 text-[9px] font-mono uppercase tracking-[0.2em] text-paper-500/70 dark:text-paper-600">
+          <div className="px-2 pb-1 text-nano font-mono uppercase tracking-[0.2em] text-paper-500/70 dark:text-paper-600">
             Auto-tour pace
           </div>
           {Object.values(PACE_PRESETS).map((preset) => {

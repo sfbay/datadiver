@@ -729,24 +729,24 @@ export default function Cases311() {
         {/* items-start on mobile so the title can wrap on the left while the
             controls flow from the top-right (no empty well); md restores the
             centered single row. */}
-        <div className="flex items-start justify-between gap-3 md:items-center">
-          <div className="flex items-center gap-4 min-w-0">
+        <div className="flex flex-wrap items-start justify-between gap-3 desk:items-center">
+          <div className="flex flex-wrap items-center gap-4 min-w-0">
             <div className="min-w-0">
               <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">
                 311 Cases
               </h1>
-              <p className="hidden sm:block text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
+              <p className="hidden sm:block truncate text-micro font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
                 SF311 &middot; Civic Complaint Analysis
               </p>
             </div>
             {!isLoading && caseData.length > 0 && (
               <div className="flex items-center gap-1.5 flex-shrink-0">
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-moss-500/80 bg-moss-500/10 px-2 py-1 rounded-full">
+                <span className="inline-flex items-center gap-1.5 text-micro font-mono text-moss-500/80 bg-moss-500/10 px-2 py-1 rounded-full">
                   <span className="w-1 h-1 rounded-full bg-moss-500 pulse-live" />
                   {formatNumber(caseData.length)} records
                 </span>
                 {hitLimit && totalCount !== null && (
-                  <span className="text-[10px] font-mono text-ochre-500/80 bg-ochre-500/10 px-2 py-1 rounded-full">
+                  <span className="text-micro font-mono text-ochre-500/80 bg-ochre-500/10 px-2 py-1 rounded-full">
                     map shows {formatNumber(caseData.length)} of {formatNumber(totalCount)}
                   </span>
                 )}
@@ -793,7 +793,7 @@ export default function Cases311() {
       {!hourlyPattern.isLoading && hourlyPattern.hourTotals.some((t) => t > 0) && (
         <div className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-2 bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl z-10">
           <div className="flex items-center gap-3">
-            <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 whitespace-nowrap">
+            <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 whitespace-nowrap">
               Time of Day
             </p>
             <div className="flex-1">
@@ -839,19 +839,19 @@ export default function Cases311() {
             {/* Anomaly legend */}
             {mapMode === 'anomaly' && neighborhoodAnomalies.size > 0 && (
               <div className="absolute bottom-6 right-5 z-10 glass-card rounded-xl p-3">
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                   Complaint Anomaly
                 </p>
                 <div className="flex items-center gap-1">
-                  <span className="text-[9px] font-mono text-teal-500">−2σ</span>
+                  <span className="text-nano font-mono text-teal-500">−2σ</span>
                   <div className="flex h-2.5 rounded-full overflow-hidden" style={{ width: 100 }}>
                     {['#3f7573', '#8bb5b2', '#e2e8f0', '#e8c06b', '#b85545', '#6f2b20'].map((c, i) => (
                       <div key={i} className="flex-1" style={{ backgroundColor: c }} />
                     ))}
                   </div>
-                  <span className="text-[9px] font-mono text-brick-400">+3σ</span>
+                  <span className="text-nano font-mono text-brick-400">+3σ</span>
                 </div>
-                <p className="text-[9px] text-slate-500 mt-1">below avg → above avg</p>
+                <p className="text-nano text-slate-500 mt-1">below avg → above avg</p>
               </div>
             )}
 
@@ -868,7 +868,7 @@ export default function Cases311() {
               <button
                 key={key}
                 onClick={() => setSidebarTab(key)}
-                className={`flex-1 py-2.5 text-[10px] font-mono uppercase tracking-[0.15em] transition-all duration-200 ${
+                className={`flex-1 py-2.5 text-micro font-mono uppercase tracking-[0.15em] transition-all duration-200 ${
                   sidebarTab === key
                     ? 'text-ink dark:text-white border-b-2 border-moss-500'
                     : 'text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400'
@@ -883,7 +883,7 @@ export default function Cases311() {
             {sidebarTab === 'categories' && (
               <>
                 <div className="flex items-center gap-2 mb-4">
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
+                  <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
                     Service Categories
                   </p>
                   <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
@@ -899,7 +899,7 @@ export default function Cases311() {
             {sidebarTab === 'neighborhoods' && (
               <>
                 <div className="flex items-center gap-2 mb-4">
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
+                  <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
                     By Neighborhood
                   </p>
                   <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
@@ -908,7 +908,7 @@ export default function Cases311() {
                 {selectedNeighborhood && (
                   <button
                     onClick={() => setSelectedNeighborhood(null)}
-                    className="mb-3 text-[10px] font-mono text-moss-500 hover:text-moss-400 transition-colors"
+                    className="mb-3 text-micro font-mono text-moss-500 hover:text-moss-400 transition-colors"
                   >
                     ← Clear filter: {selectedNeighborhood}
                   </button>
@@ -931,7 +931,7 @@ export default function Cases311() {
                 {!hourlyPattern.isLoading && hourlyPattern.grid.some((row) => row.some((v) => v > 0)) && (
                   <div className="mb-4">
                     <HourlyHeatgrid grid={hourlyPattern.grid} width={264} height={160} />
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-mono">
+                    <p className="text-micro text-slate-400 dark:text-slate-500 mt-2 font-mono">
                       Peak: <span className="text-moss-500">{formatHour(hourlyPattern.peakHour)}</span>
                       {' · '}Quiet: <span className="text-slate-500">{formatHour(hourlyPattern.quietestHour)}</span>
                     </p>
@@ -940,7 +940,7 @@ export default function Cases311() {
 
                 {!trend.isLoading && trend.currentPeriods.length > 0 && (
                   <div className="mb-4">
-                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 mb-2">
+                    <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 mb-2">
                       Volume Trend
                     </p>
                     <PeriodBreakdownChart
@@ -980,7 +980,7 @@ export default function Cases311() {
                             <p className="text-[12px] font-medium text-ink dark:text-slate-200 truncate leading-tight">
                               {ns.neighborhood}
                             </p>
-                            <p className="text-[10px] text-slate-400 dark:text-slate-600 font-mono italic">
+                            <p className="text-micro text-slate-400 dark:text-slate-600 font-mono italic">
                               {(() => {
                                 const nhTrend = trend.neighborhoodMap.get(ns.neighborhood)
                                 if (nhTrend?.priorYearCount) {

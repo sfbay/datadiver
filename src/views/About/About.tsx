@@ -30,7 +30,7 @@ function SectionHead({ label, glow = PAPER }: { label: string; glow?: string }) 
 
 function Prose({ children }: { children: ReactNode }) {
   return (
-    <div className="space-y-4 text-[0.9375rem] leading-relaxed text-slate-600 dark:text-slate-300 max-w-[760px]">
+    <div className="space-y-4 text-[0.9375rem] leading-relaxed text-slate-600 dark:text-slate-300 max-w-[47.5rem]">
       {children}
     </div>
   )
@@ -177,7 +177,7 @@ export default function About() {
               <tbody>
                 {STACK.map((row, i) => (
                   <tr key={row.area} className={i > 0 ? 'border-t border-slate-200/50 dark:border-white/[0.04]' : ''}>
-                    <td className="px-5 py-3 align-top whitespace-nowrap text-[0.6875rem] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 w-[140px]">
+                    <td className="px-5 py-3 align-top whitespace-nowrap text-[0.6875rem] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 w-[8.75rem]">
                       {row.area}
                     </td>
                     <td className="px-5 py-3 text-[0.875rem] leading-relaxed text-slate-600 dark:text-slate-300">
@@ -214,7 +214,7 @@ export default function About() {
             </p>
           </Prose>
           <div className="glass-card rounded-xl overflow-x-auto">
-            <table className="w-full text-left min-w-[680px]">
+            <table className="w-full text-left min-w-[42.5rem]">
               <thead>
                 <tr className="border-b-2 border-slate-300/50 dark:border-white/[0.08]">
                   <th className="px-4 py-2.5 text-[0.625rem] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Dataset</th>

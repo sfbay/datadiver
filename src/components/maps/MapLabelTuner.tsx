@@ -146,22 +146,22 @@ export default function MapLabelTuner({ map }: { map: mapboxgl.Map }) {
 
   return (
     <div
-      className="absolute top-16 right-2 z-[60] w-[264px] max-h-[80vh] overflow-y-auto
+      className="absolute top-16 right-2 z-[60] w-[16.5rem] max-h-[80vh] overflow-y-auto
         rounded-xl bg-slate-900/92 backdrop-blur-md border border-ochre-500/30
         shadow-xl shadow-black/50 text-slate-200 pointer-events-auto select-none"
     >
       <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 sticky top-0 bg-slate-900/95 backdrop-blur-md">
-        <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-ochre-400">
+        <div className="text-micro font-mono uppercase tracking-[0.18em] text-ochre-400">
           label tuner · <span className={mode === 'dark' ? 'text-indigo-300' : 'text-ochre-300'}>{mode}</span>
         </div>
-        <button onClick={() => setOpen((o) => !o)} className="text-[10px] font-mono text-slate-400 hover:text-white">
+        <button onClick={() => setOpen((o) => !o)} className="text-micro font-mono text-slate-400 hover:text-white">
           {open ? '– hide' : '+ show'}
         </button>
       </div>
 
       {open && (
         <div className="p-3 space-y-3">
-          <p className="text-[9px] leading-relaxed font-mono text-slate-400">
+          <p className="text-nano leading-relaxed font-mono text-slate-400">
             Toggle the app's Light/Dark to tune each mode; settings persist per theme.
             <br />Enable a color to override the stock (theme-dependent) value.
           </p>
@@ -171,7 +171,7 @@ export default function MapLabelTuner({ map }: { map: mapboxgl.Map }) {
             return (
               <div key={g} className="rounded-lg bg-white/[0.04] border border-white/10 p-2.5 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono font-semibold text-slate-100">{GROUP_LABEL[g]}</span>
+                  <span className="text-micro font-mono font-semibold text-slate-100">{GROUP_LABEL[g]}</span>
                   <span className="text-[8px] font-mono text-slate-500">{counts[g]} layers</span>
                 </div>
 
@@ -201,7 +201,7 @@ export default function MapLabelTuner({ map }: { map: mapboxgl.Map }) {
             <div className="text-[8px] font-mono uppercase tracking-[0.2em] text-ochre-500/70 mb-1">
               readout — paste to bake
             </div>
-            <pre className="text-[9px] leading-snug font-mono text-moss-300 whitespace-pre-wrap">{readout}</pre>
+            <pre className="text-nano leading-snug font-mono text-moss-300 whitespace-pre-wrap">{readout}</pre>
           </div>
         </div>
       )}
@@ -218,7 +218,7 @@ function Slider({ label, min, max, step, value, onChange }: {
 }) {
   return (
     <label className="block">
-      <div className="flex items-center justify-between text-[9px] font-mono text-slate-400 mb-0.5">
+      <div className="flex items-center justify-between text-nano font-mono text-slate-400 mb-0.5">
         <span>{label}</span>
         <span className="text-slate-200 tabular-nums">{value}</span>
       </div>
@@ -233,7 +233,7 @@ function ColorRow({ label, on, color, onToggle, onColor }: {
   label: string; on: boolean; color: string; onToggle: (on: boolean) => void; onColor: (c: string) => void
 }) {
   return (
-    <div className="flex items-center gap-2 text-[9px] font-mono text-slate-400">
+    <div className="flex items-center gap-2 text-nano font-mono text-slate-400">
       <input type="checkbox" checked={on} onChange={(e) => onToggle(e.target.checked)}
         className="accent-ochre-500 cursor-pointer" />
       <span className="flex-1">{label}</span>

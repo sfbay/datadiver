@@ -45,7 +45,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     return (
       <div className="h-full overflow-y-auto grid place-items-center px-[clamp(16px,3vw,48px)]">
         <div
-          className="glass-card relative rounded-[28px] rounded-bl-none overflow-hidden glow-host max-w-[560px] w-full"
+          className="glass-card relative rounded-[28px] rounded-bl-none overflow-hidden glow-host max-w-[35rem] w-full"
           style={{ '--glow': '#963e30' } as CSSProperties}
         >
           <div className="glow-corner is-lg" style={{ opacity: 0.45 }} />
@@ -53,7 +53,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <div className="relative px-[clamp(24px,4vw,44px)] py-[clamp(28px,4vw,44px)]">
             <div className="flex items-center gap-2.5 mb-5">
               <div className="h-px w-7 bg-brick-500/60" />
-              <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-brick-500">
+              <p className="text-micro font-mono uppercase tracking-[0.25em] text-brick-500">
                 Something broke
               </p>
             </div>

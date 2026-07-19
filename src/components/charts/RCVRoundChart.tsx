@@ -295,7 +295,7 @@ export default function RCVRoundChart({
           ))}
         </div>
 
-        <span className="text-[10px] font-mono text-slate-500 tabular-nums flex-shrink-0">
+        <span className="text-micro font-mono text-slate-500 tabular-nums flex-shrink-0">
           R{activeRound + 1}/{totalRounds}
         </span>
       </div>
@@ -309,7 +309,7 @@ export default function RCVRoundChart({
           reading at leisure, not a flash. */}
       <div className="mb-2 min-h-[52px] px-2 py-1.5 rounded-lg flex items-center border border-brick-500/20 bg-brick-500/10" style={{ opacity: transferResult.eliminatedNames.length > 0 ? 1 : 0, transition: 'opacity 0.3s' }}>
         {transferResult.eliminatedNames.length > 0 && (
-          <p className="text-[10px] font-mono text-brick-400">
+          <p className="text-micro font-mono text-brick-400">
             <span className="font-bold">
               {transferResult.isBatch
                 ? `${transferResult.eliminatedNames.length} candidates eliminated together`
@@ -564,12 +564,12 @@ export default function RCVRoundChart({
       {/* Exhausted + overvotes */}
       <div className="flex gap-4 mt-1">
         {round.exhausted > 0 && (
-          <p className="text-[9px] font-mono text-slate-500">
+          <p className="text-nano font-mono text-slate-500">
             Exhausted: {round.exhausted.toLocaleString()}
           </p>
         )}
         {round.overvotes > 0 && (
-          <p className="text-[9px] font-mono text-slate-500">
+          <p className="text-nano font-mono text-slate-500">
             Overvotes: {round.overvotes.toLocaleString()}
           </p>
         )}

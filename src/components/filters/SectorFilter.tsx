@@ -88,7 +88,7 @@ export default function SectorFilter({ categories, selected, onChange, zScores }
       {/* Select all */}
       <button
         onClick={selectAll}
-        className={`w-full text-left px-2 py-1 rounded text-[10px] font-mono transition-colors
+        className={`w-full text-left px-2 py-1 rounded text-micro font-mono transition-colors
           ${allSelected ? 'text-moss-400' : 'text-slate-500 hover:text-slate-300'}`}
       >
         {allSelected ? '✓ All sectors' : 'Show all sectors'}
@@ -121,10 +121,10 @@ export default function SectorFilter({ categories, selected, onChange, zScores }
                 onClick={() => toggle('Uncategorized')}
                 className="flex-1 flex items-center justify-between cursor-pointer"
               >
-                <span className="text-[10px] text-slate-400 italic">
+                <span className="text-micro text-slate-400 italic">
                   Uncategorized
                 </span>
-                <span className="text-[9px] font-mono text-slate-500 tabular-nums">
+                <span className="text-nano font-mono text-slate-500 tabular-nums">
                   {uncategorized.count.toLocaleString()}
                 </span>
               </button>
@@ -166,18 +166,18 @@ export default function SectorFilter({ categories, selected, onChange, zScores }
           </button>
           {showExplainer && (
             <div className="mx-2 mt-1 p-2 rounded-md bg-ochre-500/5 border border-ochre-500/10">
-              <p className="text-[9px] text-ochre-400/60 leading-relaxed">
+              <p className="text-nano text-ochre-400/60 leading-relaxed">
                 New business registrations often lack industry (NAICS) codes — codes are assigned later or not at all.
                 This means most recent openings appear as "Uncategorized" while closures (older, established businesses) almost always have codes.
                 Individual sectors may appear to be declining when the overall trend is growth.
               </p>
-              <p className="text-[9px] text-ochre-400/60 leading-relaxed mt-1.5">
+              <p className="text-nano text-ochre-400/60 leading-relaxed mt-1.5">
                 Sectors are grouped from each business's self-reported NAICS code into the
                 standard federal categories. DataSF stopped publishing a pre-labeled sector,
                 so codes that don't match a known sector are shown as Uncategorized rather
                 than guessed.
               </p>
-              <p className="text-[9px] text-ochre-400/60 leading-relaxed mt-1.5">
+              <p className="text-nano text-ochre-400/60 leading-relaxed mt-1.5">
                 The health bars below compare each sector's closure rate against the same window in each of its own prior five years.
                 Green = fewer closures than typical. Red = more closures than typical. This normalizes for the data bias.
               </p>
@@ -252,10 +252,10 @@ export default function SectorFilter({ categories, selected, onChange, zScores }
                 onClick={() => toggle(entry.sector)}
                 className="flex-1 flex items-center justify-between cursor-pointer min-w-0"
               >
-                <span className="text-[10px] text-slate-300 truncate mr-2">
+                <span className="text-micro text-slate-300 truncate mr-2">
                   {entry.sector}
                 </span>
-                <span className="text-[9px] font-mono text-slate-500 tabular-nums flex-shrink-0">
+                <span className="text-nano font-mono text-slate-500 tabular-nums flex-shrink-0">
                   {entry.closures.toLocaleString()} closed
                 </span>
               </button>

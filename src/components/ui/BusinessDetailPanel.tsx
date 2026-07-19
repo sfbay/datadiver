@@ -133,31 +133,31 @@ export default function BusinessDetailPanel() {
         <>
           <div>
             <p className="text-[13px] font-semibold text-ink dark:text-slate-100">{detail.name}</p>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400">{detail.owner}</p>
+            <p className="text-micro text-slate-500 dark:text-slate-400">{detail.owner}</p>
           </div>
 
           <div className="space-y-2 mt-3">
             {detail.ban && (
-              <div className="flex justify-between items-baseline gap-3 md:block">
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 shrink-0">Business Account #</p>
-                <p className="text-[11px] font-mono text-slate-700 dark:text-slate-300 tabular-nums text-right md:text-left">{detail.ban}</p>
+              <div className="flex justify-between items-baseline gap-3 desk:block">
+                <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 shrink-0">Business Account #</p>
+                <p className="text-label font-mono text-slate-700 dark:text-slate-300 tabular-nums text-right desk:text-left">{detail.ban}</p>
               </div>
             )}
-            <div className="flex justify-between items-baseline gap-3 md:block">
-              <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 shrink-0">Sector</p>
-              <p className="text-[11px] text-slate-700 dark:text-slate-300 text-right md:text-left">{detail.sector}</p>
+            <div className="flex justify-between items-baseline gap-3 desk:block">
+              <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 shrink-0">Sector</p>
+              <p className="text-label text-slate-700 dark:text-slate-300 text-right desk:text-left">{detail.sector}</p>
             </div>
             {detail.licenseCode && (
-              <div className="flex justify-between items-baseline gap-3 md:block">
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 shrink-0">License</p>
-                <p className="text-[11px] text-slate-700 dark:text-slate-300 text-right md:text-left">{detail.licenseCode}</p>
+              <div className="flex justify-between items-baseline gap-3 desk:block">
+                <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 shrink-0">License</p>
+                <p className="text-label text-slate-700 dark:text-slate-300 text-right desk:text-left">{detail.licenseCode}</p>
               </div>
             )}
             <div>
-              <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500">Address</p>
-              <p className="text-[11px] text-slate-700 dark:text-slate-300">{detail.address}</p>
+              <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500">Address</p>
+              <p className="text-label text-slate-700 dark:text-slate-300">{detail.address}</p>
               {(detail.corridor || detail.cbd || detail.supervisorDistrict) && (
-                <p className="text-[10px] text-slate-500 dark:text-slate-500 mt-0.5">
+                <p className="text-micro text-slate-500 dark:text-slate-500 mt-0.5">
                   {[
                     detail.corridor && `${detail.corridor} corridor`,
                     detail.cbd,
@@ -167,15 +167,15 @@ export default function BusinessDetailPanel() {
               )}
             </div>
             {detail.mailingAddress && (
-              <div className="flex justify-between items-baseline gap-3 md:block">
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 shrink-0">Mailing</p>
-                <p className="text-[11px] text-slate-700 dark:text-slate-300 text-right md:text-left">{detail.mailingAddress}</p>
+              <div className="flex justify-between items-baseline gap-3 desk:block">
+                <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 shrink-0">Mailing</p>
+                <p className="text-label text-slate-700 dark:text-slate-300 text-right desk:text-left">{detail.mailingAddress}</p>
               </div>
             )}
             <div className="flex gap-4">
               <div>
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500">Status</p>
-                <p className={`text-[11px] font-semibold ${
+                <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500">Status</p>
+                <p className={`text-label font-semibold ${
                   detail.status === 'Active' ? 'text-moss-400'
                     : detail.status === 'Forced closure' ? 'text-ochre-500'
                     : 'text-brick-400'
@@ -184,19 +184,19 @@ export default function BusinessDetailPanel() {
                 </p>
               </div>
               <div>
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500">Duration</p>
-                <p className="text-[11px] text-slate-700 dark:text-slate-300">{detail.duration}</p>
+                <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500">Duration</p>
+                <p className="text-label text-slate-700 dark:text-slate-300">{detail.duration}</p>
               </div>
             </div>
             <div className="flex gap-4">
               <div>
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500">Opened</p>
-                <p className="text-[11px] text-slate-700 dark:text-slate-300">{formatDate(detail.openedDate)}</p>
+                <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500">Opened</p>
+                <p className="text-label text-slate-700 dark:text-slate-300">{formatDate(detail.openedDate)}</p>
               </div>
               {detail.closedDate && (
                 <div>
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500">Closed</p>
-                  <p className="text-[11px] text-slate-700 dark:text-slate-300">{formatDate(detail.closedDate)}</p>
+                  <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500">Closed</p>
+                  <p className="text-label text-slate-700 dark:text-slate-300">{formatDate(detail.closedDate)}</p>
                 </div>
               )}
             </div>
@@ -224,8 +224,8 @@ export default function BusinessDetailPanel() {
                 resolves to a real link when the Restaurants view (PR 5) ships. */}
             {detail.isFoodBusiness && (
               <div className="mt-1 pt-2 border-t border-slate-200/40 dark:border-white/[0.04]">
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500">Health inspections</p>
-                <p className="text-[10px] text-slate-400 dark:text-slate-500 italic mt-0.5">
+                <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500">Health inspections</p>
+                <p className="text-micro text-slate-400 dark:text-slate-500 italic mt-0.5">
                   Restaurant inspection data coming with the Restaurants view
                 </p>
               </div>

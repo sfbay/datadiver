@@ -95,20 +95,20 @@ export default function IncidentDetailPanel() {
       {detail && (
         <>
           {/* Header info */}
-          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-1">
+          <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-1">
             Incident #{detail.callNumber}
           </p>
           <p className="text-sm font-semibold text-ink dark:text-white mb-0.5">
             {detail.callType}
           </p>
-          <p className="text-[10px] text-slate-600 dark:text-slate-300 font-mono mb-3">
+          <p className="text-micro text-slate-600 dark:text-slate-300 font-mono mb-3">
             {detail.callTypeGroup} &middot; Priority {detail.priority}
           </p>
 
           {/* Location */}
           <div className="mb-4">
-            <p className="text-[10px] text-slate-700 dark:text-slate-300">{detail.address}</p>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400">
+            <p className="text-micro text-slate-700 dark:text-slate-300">{detail.address}</p>
+            <p className="text-micro text-slate-500 dark:text-slate-400">
               {detail.neighborhood} &middot; District {detail.district}
             </p>
           </div>
@@ -116,10 +116,10 @@ export default function IncidentDetailPanel() {
           {/* Date/Time */}
           {detail.timestamps.received && (
             <div className="mb-4">
-              <p className="text-[10px] font-mono text-slate-600 dark:text-slate-300">
+              <p className="text-micro font-mono text-slate-600 dark:text-slate-300">
                 {formatDate(detail.timestamps.received, 'long')}
               </p>
-              <p className="text-[10px] font-mono text-slate-800 dark:text-slate-200 font-semibold">
+              <p className="text-micro font-mono text-slate-800 dark:text-slate-200 font-semibold">
                 {new Date(detail.timestamps.received).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' })}
               </p>
             </div>
@@ -127,7 +127,7 @@ export default function IncidentDetailPanel() {
 
           {/* Response Timeline */}
           <div className="flex items-center gap-2 mb-3">
-            <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+            <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
               Response Timeline
             </p>
             <div className="flex-1 h-[1px] bg-slate-200 dark:bg-white/[0.08]" />
@@ -155,17 +155,17 @@ export default function IncidentDetailPanel() {
                   {/* Content */}
                   <div className="flex-1 pb-1 -mt-0.5">
                     <div className="flex items-baseline justify-between">
-                      <p className={`text-[11px] font-medium ${ts ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400 dark:text-slate-600'}`}>
+                      <p className={`text-label font-medium ${ts ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400 dark:text-slate-600'}`}>
                         {step.label}
                       </p>
                       {time && (
-                        <p className="text-[10px] font-mono text-slate-700 dark:text-slate-300 tabular-nums">
+                        <p className="text-micro font-mono text-slate-700 dark:text-slate-300 tabular-nums">
                           {time.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' })}
                         </p>
                       )}
                     </div>
                     {elapsed !== null && elapsed > 0 && (
-                      <p className="text-[9px] font-mono text-signal-amber/70">
+                      <p className="text-nano font-mono text-signal-amber/70">
                         +{formatDuration(elapsed)}
                       </p>
                     )}
@@ -179,7 +179,7 @@ export default function IncidentDetailPanel() {
           {detail.timestamps.received && detail.timestamps.onScene && (
             <div className="mt-3 pt-2 border-t border-slate-200 dark:border-white/[0.08]">
               <div className="flex items-baseline justify-between">
-                <p className="text-[10px] font-mono uppercase tracking-wider text-slate-600 dark:text-slate-300">Total to Scene</p>
+                <p className="text-micro font-mono uppercase tracking-wider text-slate-600 dark:text-slate-300">Total to Scene</p>
                 <p className="text-sm font-bold font-mono text-signal-amber">
                   {formatDuration(diffMinutes(detail.timestamps.received, detail.timestamps.onScene) || 0)}
                 </p>
@@ -203,12 +203,12 @@ export default function IncidentDetailPanel() {
               {/* Section 1: Fire Outcome */}
               <div className="mt-3 pt-2 border-t border-slate-200 dark:border-white/[0.08]">
                 <div className="flex items-center gap-2 mb-2">
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-brick-400">
+                  <p className="text-nano font-mono uppercase tracking-[0.2em] text-brick-400">
                     Fire Outcome
                   </p>
                   <div className="flex-1 h-[1px] bg-slate-200 dark:bg-white/[0.08]" />
                 </div>
-                <div className="space-y-1.5 text-[10px]">
+                <div className="space-y-1.5 text-micro">
                   {fireIncident.primary_situation && (
                     <div className="flex justify-between">
                       <span className="text-slate-500 dark:text-slate-400">Situation</span>
@@ -255,12 +255,12 @@ export default function IncidentDetailPanel() {
               {(fireIncident.ignition_cause || fireIncident.area_of_fire_origin || fireIncident.heat_source) && (
                 <div className="mt-3 pt-2 border-t border-slate-200/50 dark:border-white/[0.04]">
                   <div className="flex items-center gap-2 mb-2">
-                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-signal-amber">
+                    <p className="text-nano font-mono uppercase tracking-[0.2em] text-signal-amber">
                       Cause &amp; Origin
                     </p>
                     <div className="flex-1 h-[1px] bg-slate-200 dark:bg-white/[0.08]" />
                   </div>
-                  <div className="space-y-1.5 text-[10px]">
+                  <div className="space-y-1.5 text-micro">
                     {fireIncident.ignition_cause && (
                       <div className="flex justify-between">
                         <span className="text-slate-500 dark:text-slate-400">Cause</span>
@@ -301,12 +301,12 @@ export default function IncidentDetailPanel() {
               {(fireIncident.detectors_present || fireIncident.automatic_extinguishing_system_present) && (
                 <div className="mt-3 pt-2 border-t border-slate-200/50 dark:border-white/[0.04]">
                   <div className="flex items-center gap-2 mb-2">
-                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-signal-blue">
+                    <p className="text-nano font-mono uppercase tracking-[0.2em] text-signal-blue">
                       Detection &amp; Protection
                     </p>
                     <div className="flex-1 h-[1px] bg-slate-200 dark:bg-white/[0.08]" />
                   </div>
-                  <div className="space-y-1.5 text-[10px]">
+                  <div className="space-y-1.5 text-micro">
                     {fireIncident.detectors_present && (
                       <div className="flex justify-between">
                         <span className="text-slate-500 dark:text-slate-400">Detectors</span>
@@ -337,7 +337,7 @@ export default function IncidentDetailPanel() {
 
           {!fireIncident && !fireLoading && selectedIncident && detail && (
             <div className="mt-3 pt-2 border-t border-slate-200 dark:border-white/[0.08]">
-              <p className="text-[9px] font-mono text-slate-500 dark:text-slate-600 italic">
+              <p className="text-nano font-mono text-slate-500 dark:text-slate-600 italic">
                 No fire report on file
               </p>
             </div>

@@ -97,7 +97,7 @@ export default function ChainProfile() {
       <header className="flex-shrink-0 px-6 py-3 border-b border-slate-200/50 dark:border-white/[0.04]">
         <button
           onClick={() => navigate(-1)}
-          className="text-[10px] font-mono text-moss-500 hover:text-moss-400 transition-colors mb-2"
+          className="text-micro font-mono text-moss-500 hover:text-moss-400 transition-colors mb-2"
         >
           ← Back
         </button>
@@ -108,7 +108,7 @@ export default function ChainProfile() {
             <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">
               {primaryName}
             </h1>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-label text-slate-500 dark:text-slate-400 mt-1">
               Chain · BAN <span className="font-mono">{ban}</span>
               {' · '}
               <span className="text-slate-700 dark:text-slate-300">{locations.length}</span> location{locations.length !== 1 ? 's' : ''}
@@ -138,14 +138,14 @@ export default function ChainProfile() {
 
               {sectorMix.length > 0 && (
                 <div className="glass-card rounded-xl p-4">
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-2">
+                  <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-2">
                     Sector mix
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {sectorMix.map((s) => (
                       <span
                         key={s.sector}
-                        className="text-[10px] font-mono px-2 py-1 rounded-full
+                        className="text-micro font-mono px-2 py-1 rounded-full
                           bg-teal-500/10 text-teal-400"
                       >
                         {s.sector} · {s.count}
@@ -156,7 +156,7 @@ export default function ChainProfile() {
               )}
 
               <div className="glass-card rounded-xl p-4">
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-3">
+                <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-3">
                   All locations ({locations.length})
                 </p>
                 <ul className="space-y-1">
@@ -172,12 +172,12 @@ export default function ChainProfile() {
                             <p className="text-[12px] text-slate-700 dark:text-slate-200 truncate group-hover:text-slate-50">
                               {l.dba_name || 'Unknown'}
                             </p>
-                            <p className="text-[10px] text-slate-500 dark:text-slate-500 font-mono mt-0.5 truncate">
+                            <p className="text-micro text-slate-500 dark:text-slate-500 font-mono mt-0.5 truncate">
                               {l.full_business_address}
                               {l.business_corridor && ` · ${l.business_corridor}`}
                             </p>
                           </div>
-                          <p className="text-[10px] font-mono tabular-nums text-slate-500 flex-shrink-0">
+                          <p className="text-micro font-mono tabular-nums text-slate-500 flex-shrink-0">
                             {l.dba_start_date?.split('T')[0]?.slice(0, 4)}
                             {l.dba_end_date
                               ? <span className="text-brick-400"> – {l.dba_end_date.split('T')[0].slice(0, 4)}</span>

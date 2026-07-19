@@ -147,7 +147,7 @@ export default function TrendChart({ current, comparison, width = 260, height = 
           <button
             key={key}
             onClick={() => setMetric(key)}
-            className={`px-2 py-0.5 rounded text-[9px] font-mono font-medium transition-all ${
+            className={`px-2 py-0.5 rounded text-nano font-mono font-medium transition-all ${
               metric === key
                 ? 'bg-signal-blue/15 text-signal-blue'
                 : 'text-slate-400 dark:text-slate-600 hover:text-slate-500'

@@ -233,7 +233,7 @@ export default function VendorExplorer({ fiscalYear }: { fiscalYear: FiscalYear 
         <div className="flex-shrink-0 px-6 pt-5 pb-2 animate-[fadeSlideIn_200ms_ease-out_both]">
           <button
             onClick={() => selectVendor(null)}
-            className="group flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors mb-1.5"
+            className="group flex items-center gap-1.5 text-micro font-mono uppercase tracking-[0.18em] text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors mb-1.5"
           >
             <span className="transition-transform group-hover:-translate-x-0.5">←</span>
             <span>Back to Vendor Explorer</span>
@@ -326,7 +326,7 @@ export default function VendorExplorer({ fiscalYear }: { fiscalYear: FiscalYear 
           </select>
 
           {/* Show departed toggle */}
-          <label className="flex items-center gap-1.5 text-[10px] font-mono text-slate-400 dark:text-slate-500 cursor-pointer select-none ml-1">
+          <label className="flex items-center gap-1.5 text-micro font-mono text-slate-400 dark:text-slate-500 cursor-pointer select-none ml-1">
             <input
               type="checkbox"
               checked={showDeparted}
@@ -338,7 +338,7 @@ export default function VendorExplorer({ fiscalYear }: { fiscalYear: FiscalYear 
 
           {/* Sensitivity slider */}
           <div className="flex items-center gap-1.5 ml-2">
-            <span className="text-[9px] font-mono text-slate-400 dark:text-slate-500">Flags</span>
+            <span className="text-nano font-mono text-slate-400 dark:text-slate-500">Flags</span>
             <input
               type="range"
               min={0}
@@ -404,14 +404,14 @@ export default function VendorExplorer({ fiscalYear }: { fiscalYear: FiscalYear 
             <div className="flex items-center gap-4 py-2 mb-1">
               <div className="flex items-center gap-1.5">
                 <div className="w-4 h-2.5 rounded-sm" style={{ backgroundColor: ACCENT, opacity: 0.7 }} />
-                <span className="text-[9px] font-mono text-slate-400">Current FY</span>
+                <span className="text-nano font-mono text-slate-400">Current FY</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div
                   className="w-4 h-2.5 rounded-sm border border-dashed"
                   style={{ borderColor: ACCENT, opacity: 0.4 }}
                 />
-                <span className="text-[9px] font-mono text-slate-400">Prior FY</span>
+                <span className="text-nano font-mono text-slate-400">Prior FY</span>
               </div>
             </div>
 
@@ -439,7 +439,7 @@ export default function VendorExplorer({ fiscalYear }: { fiscalYear: FiscalYear 
             )}
 
             {/* Footer stats */}
-            <div className="py-3 text-[10px] font-mono text-slate-400/60 dark:text-slate-500/60">
+            <div className="py-3 text-micro font-mono text-slate-400/60 dark:text-slate-500/60">
               Showing {filtered.length === 500 ? 'top 500' : filtered.length} vendor{filtered.length !== 1 ? 's' : ''}
               {landscape.totalVendorCount !== null && landscape.totalVendorCount > filtered.length && (
                 <> of {landscape.totalVendorCount.toLocaleString()}</>
@@ -504,9 +504,9 @@ function VendorBarRow({
             NEW
           </span>
         ) : item.isDeparted ? (
-          <span className="text-[9px] font-mono text-slate-400 dark:text-slate-600">✕</span>
+          <span className="text-nano font-mono text-slate-400 dark:text-slate-600">✕</span>
         ) : rank ? (
-          <span className="text-[9px] font-mono text-slate-400/40 dark:text-slate-600/60 tabular-nums">
+          <span className="text-nano font-mono text-slate-400/40 dark:text-slate-600/60 tabular-nums">
             {rank}
           </span>
         ) : null}
@@ -514,7 +514,7 @@ function VendorBarRow({
 
       {/* Vendor name */}
       <div
-        className={`w-48 flex-shrink-0 truncate text-[11px] font-mono
+        className={`w-48 flex-shrink-0 truncate text-label font-mono
           ${item.isDeparted
             ? 'text-slate-400 dark:text-slate-600 line-through'
             : 'text-slate-600 dark:text-slate-300 group-hover:text-ink dark:group-hover:text-white'
@@ -574,7 +574,7 @@ function VendorBarRow({
 
       {/* YoY delta badge */}
       <span
-        className={`text-[10px] font-mono tabular-nums flex-shrink-0 w-12 text-right
+        className={`text-micro font-mono tabular-nums flex-shrink-0 w-12 text-right
           ${item.yoyDelta === null
             ? 'text-slate-400 dark:text-slate-500'
             : item.yoyDelta > 0
@@ -689,7 +689,7 @@ function FYScrubber({
         </button>
 
         {/* Year display */}
-        <span className="text-sm font-mono font-semibold text-ink dark:text-white tabular-nums min-w-[80px] text-center">
+        <span className="text-sm font-mono font-semibold text-ink dark:text-white tabular-nums min-w-[5rem] text-center">
           {formatFiscalYear(currentFY)}
         </span>
 
@@ -708,7 +708,7 @@ function FYScrubber({
         {isAnimating && !isPlaying && (
           <button
             onClick={onReset}
-            className="text-[10px] font-mono text-slate-400 hover:text-ink dark:hover:text-white transition-colors ml-1"
+            className="text-micro font-mono text-slate-400 hover:text-ink dark:hover:text-white transition-colors ml-1"
           >
             Reset
           </button>
@@ -716,7 +716,7 @@ function FYScrubber({
 
         {/* Playing indicator */}
         {isPlaying && (
-          <span className="text-[9px] font-mono text-indigo-400 animate-pulse ml-auto">
+          <span className="text-nano font-mono text-indigo-400 animate-pulse ml-auto">
             {currentFY - minFY + 1} / {maxFY - minFY + 1}
           </span>
         )}

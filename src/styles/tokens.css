@@ -137,8 +137,10 @@
   --text-body:    1rem;
   --text-small:   0.875rem;
   --text-caption: 0.75rem;
-  --text-label:   0.6875rem;
-  --text-micro:   0.625rem;
+  /* --text-label / --text-micro (plus the new --text-nano) live in the
+     @theme block of src/index.css — Tailwind v4 only generates text-*
+     utilities from the --text-* namespace INSIDE @theme, and a single
+     definition site prevents value drift. Large Type Phase 2. */
 
   --leading-tight:   1.05;
   --leading-snug:    1.2;

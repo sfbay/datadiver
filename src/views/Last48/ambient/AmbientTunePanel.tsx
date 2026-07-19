@@ -44,7 +44,7 @@ export default function AmbientTunePanel({ values, onChange, onReset }: Props) {
   return (
     <div
       data-ambient-toggle
-      className="absolute bottom-4 left-4 z-30 w-56 rounded-lg bg-espresso-950/90 backdrop-blur-md border border-espresso-700 p-3 font-mono text-[10px] text-paper-400 shadow-xl shadow-black/30"
+      className="absolute bottom-4 left-4 z-30 w-56 rounded-lg bg-espresso-950/90 backdrop-blur-md border border-espresso-700 p-3 font-mono text-micro text-paper-400 shadow-xl shadow-black/30"
     >
       <div className="flex items-center justify-between mb-2">
         <span className="tracking-[0.2em] text-paper-500">── TUNE</span>
@@ -59,14 +59,14 @@ export default function AmbientTunePanel({ values, onChange, onReset }: Props) {
                 })
                 .catch(() => {})
             }}
-            className="px-1.5 py-0.5 rounded border border-teal-500/40 text-teal-500 hover:bg-teal-500/10 text-[9px] tracking-wider"
+            className="px-1.5 py-0.5 rounded border border-teal-500/40 text-teal-500 hover:bg-teal-500/10 text-nano tracking-wider"
           >
             {copied ? 'COPIED' : 'COPY'}
           </button>
           <button
             onClick={onReset}
             title="Back to the active preset's values"
-            className="px-1.5 py-0.5 rounded border border-paper-500/30 hover:bg-paper-500/10 text-[9px] tracking-wider"
+            className="px-1.5 py-0.5 rounded border border-paper-500/30 hover:bg-paper-500/10 text-nano tracking-wider"
           >
             RESET
           </button>

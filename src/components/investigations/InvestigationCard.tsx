@@ -148,7 +148,7 @@ export function InvestigationCard({
         </h3>
 
         {/* Subtitle */}
-        <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
+        <p className="text-micro font-mono text-slate-500 dark:text-slate-400">
           {subtitle}
         </p>
       </div>
@@ -195,10 +195,10 @@ export function ErrorState({ error }: { error: string }) {
         <circle cx="9" cy="9" r="7" />
         <path d="M9 5v4M9 12v.01" strokeLinecap="round" />
       </svg>
-      <p className="text-[10px] font-mono text-slate-500">
+      <p className="text-micro font-mono text-slate-500">
         This view didn’t load
       </p>
-      <p className="text-[9px] text-slate-600 max-w-[14rem]">
+      <p className="text-nano text-slate-600 max-w-[14rem]">
         Hover for details, or click Explore for the full dataset.
       </p>
     </div>

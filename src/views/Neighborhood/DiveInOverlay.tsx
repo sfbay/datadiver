@@ -23,7 +23,7 @@ export default function DiveInOverlay({ loadedDomains, loading }: DiveInOverlayP
   return (
     <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
       <div className="glass-card rounded-2xl px-6 py-5 shadow-2xl max-w-xs">
-        <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-slate-400 mb-3">
+        <p className="text-micro font-mono uppercase tracking-[0.2em] text-slate-400 mb-3">
           {allDone ? 'Portrait complete' : 'Building data portrait'}
         </p>
         <div className="space-y-2">
@@ -38,7 +38,7 @@ export default function DiveInOverlay({ loadedDomains, loading }: DiveInOverlayP
                   style={{ backgroundColor: done ? color : `${color}40` }}
                 />
                 <span
-                  className={`text-[11px] font-mono transition-colors duration-300 ${done ? 'text-slate-300' : 'text-slate-500'}`}
+                  className={`text-label font-mono transition-colors duration-300 ${done ? 'text-slate-300' : 'text-slate-500'}`}
                 >
                   {done ? label.replace('...', ' \u2713') : label}
                 </span>

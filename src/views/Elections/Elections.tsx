@@ -467,18 +467,18 @@ export default function Elections() {
               <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">
                 Elections
               </h1>
-              <p className="text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
+              <p className="text-micro font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
                 SF Dept of Elections &middot; Results &amp; RCV
               </p>
             </div>
             {!isLoading && displayResults && (
               <div className="flex items-center gap-1.5">
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-indigo-500/80 bg-indigo-500/10 px-2 py-1 rounded-full">
+                <span className="inline-flex items-center gap-1.5 text-micro font-mono text-indigo-500/80 bg-indigo-500/10 px-2 py-1 rounded-full">
                   <span className="w-1 h-1 rounded-full bg-indigo-500" />
                   {displayResults.races.length} races
                 </span>
                 {displayResults.races.filter((r) => r.isRCV).length > 0 && (
-                  <span className="text-[10px] font-mono text-indigo-500/80 bg-indigo-400/10 px-2 py-1 rounded-full">
+                  <span className="text-micro font-mono text-indigo-500/80 bg-indigo-400/10 px-2 py-1 rounded-full">
                     {displayResults.races.filter((r) => r.isRCV).length} RCV
                   </span>
                 )}
@@ -554,21 +554,21 @@ export default function Elections() {
       {timeMachineActive && (
         <div className="flex-shrink-0 px-6 py-1.5 bg-ochre-500/10 border-b border-ochre-500/20 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-ochre-500 animate-pulse" />
-          <p className="text-[10px] font-mono text-ochre-600 dark:text-ochre-500">
+          <p className="text-micro font-mono text-ochre-600 dark:text-ochre-500">
             TIME MACHINE — {displayElectionLabel}
           </p>
           {mapMode === 'results' && displayRace && (
-            <span className="text-[10px] font-mono text-slate-500">
+            <span className="text-micro font-mono text-slate-500">
               · {toSentenceCase(displayRace.title)}
             </span>
           )}
           {paintBundle?.era === 'prec_2012' && (
-            <span className="text-[10px] font-mono text-slate-500 italic">
+            <span className="text-micro font-mono text-slate-500 italic">
               · boundaries as drawn for this election era
             </span>
           )}
           {timeline.isLoading && (
-            <span className="text-[10px] font-mono text-slate-500 ml-auto">Loading…</span>
+            <span className="text-micro font-mono text-slate-500 ml-auto">Loading…</span>
           )}
         </div>
       )}
@@ -628,17 +628,17 @@ export default function Elections() {
             {!isLoading && !timeMachineActive && activeRace?.isRCV && rcvData && (
               <div className="absolute bottom-6 left-5 z-10 glass-card rounded-xl p-4" style={{ maxWidth: rcvViewMode === 'sankey' ? 648 : 448 }}>
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-500">
+                  <span className="text-nano font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-500">
                     RCV
                   </span>
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 flex-1">
+                  <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 flex-1">
                     {rcvData.totalRounds} Rounds &middot; Winner: {rcvData.winner.split(' ').pop()}
                   </p>
                   {/* View toggle */}
                   <div className="flex items-center gap-0.5 bg-slate-800/60 rounded-md p-0.5">
                     <button
                       onClick={() => setRcvViewMode('rounds')}
-                      className={`px-2 py-0.5 rounded text-[9px] font-mono transition-all ${
+                      className={`px-2 py-0.5 rounded text-nano font-mono transition-all ${
                         rcvViewMode === 'rounds'
                           ? 'bg-ochre-500/20 text-ochre-400'
                           : 'text-slate-500 hover:text-slate-300'
@@ -648,7 +648,7 @@ export default function Elections() {
                     </button>
                     <button
                       onClick={() => setRcvViewMode('sankey')}
-                      className={`px-2 py-0.5 rounded text-[9px] font-mono transition-all ${
+                      className={`px-2 py-0.5 rounded text-nano font-mono transition-all ${
                         rcvViewMode === 'sankey'
                           ? 'bg-ochre-500/20 text-ochre-400'
                           : 'text-slate-500 hover:text-slate-300'
@@ -722,7 +722,7 @@ export default function Elections() {
               <button
                 key={key}
                 onClick={() => setSidebarTab(key)}
-                className={`flex-1 py-2.5 text-[10px] font-mono uppercase tracking-[0.15em] transition-all duration-200 ${
+                className={`flex-1 py-2.5 text-micro font-mono uppercase tracking-[0.15em] transition-all duration-200 ${
                   sidebarTab === key
                     ? 'text-ink dark:text-white border-b-2 border-ochre-500'
                     : 'text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400'
@@ -742,7 +742,7 @@ export default function Elections() {
                     <button
                       key={filter}
                       onClick={() => setRaceFilter(filter)}
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-mono transition-all ${
+                      className={`px-2.5 py-1 rounded-full text-micro font-mono transition-all ${
                         raceFilter === filter
                           ? 'bg-ochre-500/15 text-ink dark:text-paper-100 border border-transparent'
                           : 'text-slate-400 hover:text-slate-300 border border-transparent hover:border-slate-700'
@@ -775,7 +775,7 @@ export default function Elections() {
                               {race.title.toLowerCase()}
                             </p>
                             {race.isRCV && (
-                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-500 flex-shrink-0">
+                              <span className="text-nano font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-500 flex-shrink-0">
                                 RCV
                               </span>
                             )}
@@ -818,7 +818,7 @@ export default function Elections() {
                             <Link
                               to={`/campaign-finance?search=${encodeURIComponent(winner.name.split(',')[0])}`}
                               onClick={(e) => e.stopPropagation()}
-                              className="block mt-1.5 text-[9px] font-mono text-indigo-500/70 hover:text-indigo-500 transition-colors"
+                              className="block mt-1.5 text-nano font-mono text-indigo-500/70 hover:text-indigo-500 transition-colors"
                             >
                               See who funded this campaign →
                             </Link>
@@ -847,7 +847,7 @@ export default function Elections() {
 
           {/* Data source attribution + 1996 SFSU nod */}
           <div className="flex-shrink-0 px-4 py-3 border-t border-slate-200/50 dark:border-white/[0.04]">
-            <p className="text-[9px] text-slate-400 dark:text-slate-600">
+            <p className="text-nano text-slate-400 dark:text-slate-600">
               Source: SF Dept of Elections &middot; sfelections.org
               {electionMeta && (
                 <> &middot; {electionMeta.type.charAt(0).toUpperCase() + electionMeta.type.slice(1)} election</>

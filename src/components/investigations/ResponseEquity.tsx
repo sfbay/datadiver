@@ -64,7 +64,7 @@ export default function ResponseEquity() {
                 <div key={entry.name} className="flex items-center gap-2">
                   {/* Label */}
                   <span
-                    className="text-[9px] font-mono text-right flex-shrink-0 truncate"
+                    className="text-nano font-mono text-right flex-shrink-0 truncate"
                     style={{ width: 72, color: labelColor }}
                     title={entry.name}
                   >
@@ -103,7 +103,7 @@ export default function ResponseEquity() {
             <span className="text-[12px] font-mono font-bold" style={{ color: '#d17566' }}>
               {data.gapMultiplier.toFixed(1)}×
             </span>{' '}
-            <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
+            <span className="text-micro font-mono text-slate-500 dark:text-slate-400">
               slower — the gap between fastest and slowest neighborhoods
             </span>
           </div>

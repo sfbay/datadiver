@@ -18,7 +18,7 @@ function GradientRow({ gradient, left, right }: { gradient: string; left: string
   return (
     <div>
       <div className="h-2 w-36 rounded-full" style={{ background: gradient }} />
-      <div className="flex justify-between mt-1 text-[9px] font-mono text-slate-400/70 dark:text-slate-500">
+      <div className="flex justify-between mt-1 text-nano font-mono text-slate-400/70 dark:text-slate-500">
         <span>{left}</span>
         <span>{right}</span>
       </div>
@@ -34,7 +34,7 @@ export default function PrecinctLegend({
 }: PrecinctLegendProps) {
   return (
     <div className="absolute bottom-6 right-5 z-10 glass-card rounded-xl p-3">
-      <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+      <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
         {mode === 'turnout' ? 'Turnout' : mode === 'margin' ? 'Margin of victory' : race?.title ?? 'Results'}
       </p>
       {mode === 'turnout' && (
@@ -53,12 +53,12 @@ export default function PrecinctLegend({
               className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
               style={{ backgroundColor: candidateColors.get(focusedCandidate) || '#a8926a' }}
             />
-            <span className="text-[10px] text-ink dark:text-slate-200 truncate max-w-[130px] font-medium">
+            <span className="text-micro text-ink dark:text-slate-200 truncate max-w-[8.125rem] font-medium">
               {toSentenceCase(focusedCandidate)}
             </span>
             <button
               onClick={() => onFocusCandidate(null)}
-              className="ml-auto text-[10px] font-mono text-slate-400 hover:text-slate-200 cursor-pointer transition-colors"
+              className="ml-auto text-micro font-mono text-slate-400 hover:text-slate-200 cursor-pointer transition-colors"
               aria-label="Clear candidate focus"
             >
               ✕
@@ -71,7 +71,7 @@ export default function PrecinctLegend({
               right={`strongest ${Math.round(focusExtent[1] * 100)}%`}
             />
           </div>
-          <p className="text-[9px] text-slate-400/70 dark:text-slate-500 italic mt-2">
+          <p className="text-nano text-slate-400/70 dark:text-slate-500 italic mt-2">
             Where their support ran
           </p>
         </>
@@ -89,16 +89,16 @@ export default function PrecinctLegend({
                   className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
                   style={{ backgroundColor: candidateColors.get(c.name) || '#a8926a' }}
                 />
-                <span className="text-[10px] text-slate-400 truncate max-w-[120px]">
+                <span className="text-micro text-slate-400 truncate max-w-[7.5rem]">
                   {toSentenceCase(c.name.split(',')[0])}
                 </span>
-                <span className="text-[10px] font-mono text-slate-500 ml-auto">
+                <span className="text-micro font-mono text-slate-500 ml-auto">
                   {(c.percentage * 100).toFixed(1)}%
                 </span>
               </button>
             ))}
           </div>
-          <p className="text-[9px] text-slate-400/70 dark:text-slate-500 italic mt-2">
+          <p className="text-nano text-slate-400/70 dark:text-slate-500 italic mt-2">
             Click a candidate to map their support
           </p>
         </>

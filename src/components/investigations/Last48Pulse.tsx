@@ -63,7 +63,7 @@ export default function Last48Pulse() {
                   style={{ backgroundColor: PIGMENTS[id] }}
                   aria-hidden
                 />
-                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 w-24">
+                <span className="text-micro font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 w-24">
                   {LABELS[id]}
                 </span>
                 <span
@@ -72,7 +72,7 @@ export default function Last48Pulse() {
                 >
                   {data.counts[id].toLocaleString()}
                 </span>
-                <span className="text-[9px] font-mono text-slate-500 dark:text-slate-500 tabular-nums ml-auto">
+                <span className="text-nano font-mono text-slate-500 dark:text-slate-500 tabular-nums ml-auto">
                   {(data.counts[id] / 48).toFixed(0)}/hr
                 </span>
               </div>
@@ -80,7 +80,7 @@ export default function Last48Pulse() {
           </div>
 
           {/* Provenance — seeded counts are last-visit truth, not live. */}
-          <p className="text-[9px] font-mono text-slate-500 dark:text-slate-500">
+          <p className="text-nano font-mono text-slate-500 dark:text-slate-500">
             {data.isLive
               ? 'Counted live from DataSF just now'
               : 'As of your last visit — refreshing…'}

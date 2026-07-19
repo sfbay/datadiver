@@ -63,11 +63,11 @@ function ResultRow({
         <span className="block text-[13px] text-ink dark:text-slate-200 truncate">
           {result.label}
         </span>
-        <span className="block text-[10px] font-mono text-slate-500 dark:text-slate-400 truncate mt-0.5">
+        <span className="block text-micro font-mono text-slate-500 dark:text-slate-400 truncate mt-0.5">
           {result.sublabel}
         </span>
       </span>
-      <span className="text-[9px] font-mono text-slate-500 dark:text-slate-400 uppercase shrink-0 tracking-wider">
+      <span className="text-nano font-mono text-slate-500 dark:text-slate-400 uppercase shrink-0 tracking-wider">
         {result.category}
       </span>
     </button>
@@ -114,7 +114,7 @@ function SearchBar({ query, setQuery, inputRef, cyclePlaceholder = false, size =
         placeholder={placeholder}
         className="flex-1 bg-transparent text-[13px] font-mono text-ink dark:text-slate-200 placeholder:text-slate-500 dark:placeholder:text-slate-500 outline-none min-w-0"
       />
-      <span className="shrink-0 text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-200/70 dark:bg-white/[0.06] px-1.5 py-0.5 rounded">
+      <span className="shrink-0 text-micro font-mono text-slate-500 dark:text-slate-400 bg-slate-200/70 dark:bg-white/[0.06] px-1.5 py-0.5 rounded">
         ⌘K
       </span>
     </div>

@@ -51,11 +51,11 @@ export default function BusinessSearch() {
           <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">
             Business Search
           </h1>
-          <p className="text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500">
+          <p className="text-micro font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500">
             Registered Businesses · Drill-Down
           </p>
         </div>
-        <p className="text-[11px] text-slate-500 dark:text-slate-500">
+        <p className="text-label text-slate-500 dark:text-slate-500">
           Search by business name, owner, address, or BAN. Click any result to see the full profile —
           chain locations, mailing address, license, and source-of-truth deep links.
         </p>
@@ -122,7 +122,7 @@ export default function BusinessSearch() {
           {corridor && (
             <button
               onClick={() => setParam('corridor', null)}
-              className="text-[10px] font-mono px-2 py-1 rounded-full
+              className="text-micro font-mono px-2 py-1 rounded-full
                 bg-moss-500/10 text-moss-400 hover:bg-moss-500/15 transition-colors"
             >
               Corridor: {corridor} ✕
@@ -136,7 +136,7 @@ export default function BusinessSearch() {
         <div className="px-6 py-4 max-w-4xl mx-auto">
           {/* Status line */}
           {(query || status !== 'all' || minTenureYears) && (
-            <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500 mb-3">
+            <p className="text-micro font-mono uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500 mb-3">
               {isLoading
                 ? 'Searching…'
                 : totalCount !== null
@@ -176,7 +176,7 @@ export default function BusinessSearch() {
                 <BusinessRow key={r.uniqueid} result={r} />
               ))}
               {totalCount !== null && totalCount > results.length && (
-                <p className="text-[10px] font-mono text-slate-500 text-center mt-4">
+                <p className="text-micro font-mono text-slate-500 text-center mt-4">
                   Showing {results.length} of {totalCount.toLocaleString()} matches.
                   Refine the search or filters to narrow further.
                 </p>
@@ -190,7 +190,7 @@ export default function BusinessSearch() {
               <p className="text-[12px] text-slate-500 font-mono">
                 No businesses match “{query}”
               </p>
-              <p className="text-[10px] text-slate-600 mt-2">
+              <p className="text-micro text-slate-600 mt-2">
                 Try a different spelling, or remove filters.
               </p>
             </div>
@@ -212,7 +212,7 @@ interface FilterPillProps {
 
 function FilterPill({ label, value, options, onChange }: FilterPillProps) {
   return (
-    <label className="flex items-center gap-1.5 text-[10px] font-mono">
+    <label className="flex items-center gap-1.5 text-micro font-mono">
       <span className="uppercase tracking-[0.15em] text-slate-400 dark:text-slate-600">
         {label}
       </span>
@@ -244,17 +244,17 @@ function FeaturedLanding() {
         <p className="font-display italic text-[18px] text-slate-400 dark:text-slate-400 mb-1">
           Search 136,000+ SF businesses by name, owner, address, or BAN.
         </p>
-        <p className="text-[11px] text-slate-500 leading-relaxed">
+        <p className="text-label text-slate-500 leading-relaxed">
           Or start with one of these — curated views into the registry.
         </p>
       </div>
 
       {error && (
-        <p className="text-[11px] text-brick-400">Featured collections failed to load: {error}</p>
+        <p className="text-label text-brick-400">Featured collections failed to load: {error}</p>
       )}
 
       {isLoading && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 desk:grid-cols-3 gap-3">
           {Array.from({ length: 3 }, (_, i) => (
             <div key={i} className="glass-card rounded-xl p-4 space-y-2">
               <Skeleton className="h-3 w-1/2" />
@@ -265,7 +265,7 @@ function FeaturedLanding() {
       )}
 
       {!isLoading && !error && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 desk:grid-cols-3 gap-3">
           <FeaturedCard
             title="SF's old guard"
             subtitle="Oldest active businesses"
@@ -282,7 +282,7 @@ function FeaturedLanding() {
             accent="#b85545"
           >
             {recentClosures.length === 0 && (
-              <p className="text-[10px] text-slate-500 italic px-2 py-1">
+              <p className="text-micro text-slate-500 italic px-2 py-1">
                 No notable long-tenure closures in the last 365 days.
               </p>
             )}
@@ -322,7 +322,7 @@ function FeaturedCard({
           {title}
         </p>
       </div>
-      <p className="text-[9px] font-mono uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500 mb-3">
+      <p className="text-nano font-mono uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500 mb-3">
         {subtitle}
       </p>
       <ul className="space-y-1">{children}</ul>
@@ -341,10 +341,10 @@ function FeaturedBusinessRow({
         to={`/business/${encodeURIComponent(business.uniqueid)}`}
         className="block px-2 py-1.5 -mx-2 rounded-md hover:bg-white/[0.04] transition-colors group"
       >
-        <p className="text-[11px] text-slate-700 dark:text-slate-200 truncate">
+        <p className="text-label text-slate-700 dark:text-slate-200 truncate">
           {business.dbaName}
         </p>
-        <p className="text-[9px] text-slate-500 font-mono mt-0.5">
+        <p className="text-nano text-slate-500 font-mono mt-0.5">
           {showStartYear && <>since {startYear} · </>}
           {showAge && <>{business.ageYears}y · </>}
           {business.sector}
@@ -363,14 +363,14 @@ function FeaturedChainRow({ chain }: { chain: FeaturedChain }) {
         className="block px-2 py-1.5 -mx-2 rounded-md hover:bg-white/[0.04] transition-colors"
       >
         <div className="flex items-baseline justify-between gap-2">
-          <p className="text-[11px] text-slate-700 dark:text-slate-200 truncate min-w-0">
+          <p className="text-label text-slate-700 dark:text-slate-200 truncate min-w-0">
             {chain.primaryDba}
           </p>
-          <p className="text-[10px] font-mono text-teal-400 flex-shrink-0">
+          <p className="text-micro font-mono text-teal-400 flex-shrink-0">
             {chain.locationCount} locations
           </p>
         </div>
-        <p className="text-[9px] text-slate-500 font-mono mt-0.5">
+        <p className="text-nano text-slate-500 font-mono mt-0.5">
           BAN {chain.ban}
         </p>
       </Link>

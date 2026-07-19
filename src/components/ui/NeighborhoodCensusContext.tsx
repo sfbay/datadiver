@@ -71,7 +71,7 @@ function ComparisonBar({ label, value, cityAvg, maxValue, formatFn, higherIsBett
 
   return (
     <div className="space-y-0.5">
-      <div className="flex items-center justify-between text-[11px]">
+      <div className="flex items-center justify-between text-label">
         <span className="text-slate-400">{label}</span>
         <span className="text-slate-300 font-mono">{formatFn(value)}</span>
       </div>
@@ -88,7 +88,7 @@ function ComparisonBar({ label, value, cityAvg, maxValue, formatFn, higherIsBett
           title={`City avg: ${formatFn(cityAvg)}`}
         />
       </div>
-      <div className="text-[10px] text-slate-500">
+      <div className="text-micro text-slate-500">
         City avg: {formatFn(cityAvg)}
       </div>
     </div>
@@ -133,7 +133,7 @@ export default function NeighborhoodCensusContext({
       {isOpen && (
         <div className="px-3 pb-3 space-y-3">
           {censusData == null ? (
-            <p className="text-[11px] text-slate-500 italic">No Census data available for {neighborhood}.</p>
+            <p className="text-label text-slate-500 italic">No Census data available for {neighborhood}.</p>
           ) : (
             <>
               {/* Population row */}
@@ -141,11 +141,11 @@ export default function NeighborhoodCensusContext({
                 <div className="text-xl font-bold font-mono text-slate-100 leading-none">
                   {formatNumber(censusData.population)}
                 </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">Population</div>
+                <div className="text-micro text-slate-500 mt-0.5">Population</div>
 
                 {/* Per-capita line — de-emphasized */}
                 {civicCount != null && censusData.population > 0 && (
-                  <div className="text-[11px] text-slate-500 mt-1">
+                  <div className="text-label text-slate-500 mt-1">
                     {civicCount.toLocaleString()} {civicLabel} &nbsp;/&nbsp;
                     10K res. ={' '}
                     <span className="font-mono text-slate-400">
@@ -207,7 +207,7 @@ export default function NeighborhoodCensusContext({
                 <>
                   <div className="border-t border-white/8" />
                   <div className="space-y-3">
-                    <div className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+                    <div className="text-micro font-semibold uppercase tracking-widest text-slate-500">
                       vs. City Average
                     </div>
 

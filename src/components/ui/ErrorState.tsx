@@ -23,7 +23,7 @@ export function ErrorState({ message, onRetry, what, className = '' }: ErrorStat
     >
       <div className="flex items-center gap-2 mb-1.5">
         <div className="h-px w-5 bg-brick-500/60" aria-hidden />
-        <p className="text-[9px] font-mono uppercase tracking-[0.22em] text-brick-500">
+        <p className="text-nano font-mono uppercase tracking-[0.22em] text-brick-500">
           Couldn’t load{what ? ` ${what}` : ''}
         </p>
       </div>
@@ -34,7 +34,7 @@ export function ErrorState({ message, onRetry, what, className = '' }: ErrorStat
         <button
           type="button"
           onClick={onRetry}
-          className="mt-2.5 inline-flex items-center gap-1.5 rounded-md border border-brick-500/35 px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-brick-500 hover:bg-brick-500/10 transition-colors"
+          className="mt-2.5 inline-flex items-center gap-1.5 rounded-md border border-brick-500/35 px-3 py-1.5 text-micro font-mono uppercase tracking-wider text-brick-500 hover:bg-brick-500/10 transition-colors"
         >
           <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
             <path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 1.5v3h-3" />

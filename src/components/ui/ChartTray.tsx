@@ -140,7 +140,7 @@ export default function ChartTray({ viewId, tiles, className = '' }: ChartTrayPr
                 className="w-1.5 h-1.5 rounded-full flex-shrink-0 opacity-60"
                 style={{ backgroundColor: tile.color || '#94a3b8' }}
               />
-              <span className="text-[9px] font-mono text-slate-400 group-hover/pill:text-slate-300 whitespace-nowrap">
+              <span className="text-nano font-mono text-slate-400 group-hover/pill:text-slate-300 whitespace-nowrap">
                 {tile.shortLabel || tile.label}
               </span>
               <svg className="w-2.5 h-2.5 text-slate-500 group-hover/pill:text-slate-300" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -201,7 +201,7 @@ export default function ChartTray({ viewId, tiles, className = '' }: ChartTrayPr
                         className="w-2 h-2 rounded-full flex-shrink-0"
                         style={{ backgroundColor: tile.color || '#94a3b8' }}
                       />
-                      <span className="text-[10px] text-slate-400">{tile.label}</span>
+                      <span className="text-micro text-slate-400">{tile.label}</span>
                     </button>
                   ))}
                 </div>
@@ -222,7 +222,7 @@ export default function ChartTray({ viewId, tiles, className = '' }: ChartTrayPr
           {expandedTiles.map((tile) => (
             <div key={tile.id} className="group/tile relative pointer-events-auto">
               <div className="glass-card rounded-xl p-3">
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                   {tile.label}
                 </p>
                 {tile.render()}

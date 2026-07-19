@@ -175,7 +175,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const [navDrawerOpen, setNavDrawerOpen] = useState(false)
   // "isSidebarOpen" below means "show the expanded nav": always true on mobile
   // (the off-canvas drawer shows the full nav), otherwise the persisted desktop
-  // rail flag. The desktop rail WIDTH still keys off deskRailOpen (md:-gated).
+  // rail flag. The desktop rail WIDTH still keys off deskRailOpen (desk:-gated).
   const isSidebarOpen = isMobile || deskRailOpen
   const go = (path: string) => { navigate(path); if (isMobile) setNavDrawerOpen(false) }
 
@@ -195,7 +195,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
     <div className="flex h-screen overflow-hidden bg-paper dark:bg-slate-950 noise-bg">
       {/* Mobile top bar — reclaims the permanent rail's footprint and hosts the
           drawer trigger. Hidden at md+ where the in-flow rail returns. */}
-      <div className="md:hidden fixed top-0 inset-x-0 h-12 z-40 flex items-center gap-2.5 px-3
+      <div className="desk:hidden fixed top-0 inset-x-0 h-12 z-40 flex items-center gap-2.5 px-3
         bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-white/[0.06]">
         <button
           onClick={() => setNavDrawerOpen(true)}
@@ -213,7 +213,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         />
         <div className="flex items-baseline gap-2 min-w-0">
           <span className="font-display italic text-base text-ink dark:text-white leading-none tracking-tight shrink-0">DataDiver</span>
-          <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 truncate">
+          <span className="text-micro font-mono text-slate-500 dark:text-slate-400 truncate">
             Bring civic data to life, instantly
           </span>
         </div>
@@ -222,7 +222,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
       {/* Drawer backdrop (mobile only) */}
       {navDrawerOpen && (
         <div
-          className="md:hidden fixed inset-0 z-[44] bg-black/50 backdrop-blur-sm"
+          className="desk:hidden fixed inset-0 z-[44] bg-black/50 backdrop-blur-sm"
           onClick={() => setNavDrawerOpen(false)}
           aria-hidden="true"
         />
@@ -234,14 +234,14 @@ export default function AppShell({ children }: { children: ReactNode }) {
         aria-modal={isMobile ? true : undefined}
         className={`
           flex flex-col
-          fixed md:relative inset-y-0 left-0
-          z-[45] md:z-20
-          w-64 ${deskRailOpen ? 'md:w-64' : 'md:w-[52px]'}
-          ${navDrawerOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0
-          bg-white/95 md:bg-white/50 dark:bg-slate-900/95 md:dark:bg-slate-900/50
+          fixed desk:relative inset-y-0 left-0
+          z-[45] desk:z-20
+          w-64 ${deskRailOpen ? 'desk:w-64' : 'desk:w-[52px]'}
+          ${navDrawerOpen ? 'translate-x-0' : '-translate-x-full'} desk:translate-x-0
+          bg-white/95 desk:bg-white/50 dark:bg-slate-900/95 desk:dark:bg-slate-900/50
           backdrop-blur-xl
           border-r border-slate-200/50 dark:border-white/[0.04]
-          transition-transform md:transition-all duration-300 md:duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]
+          transition-transform desk:transition-all duration-300 desk:duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]
         `}
       >
         {/* Drawer-pull collapse toggle — vertically centered on the right
@@ -251,7 +251,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             in the direction the sidebar will move when clicked. */}
         <button
           onClick={toggleSidebar}
-          className="hidden md:flex absolute top-1/2 -translate-y-1/2 z-30
+          className="hidden desk:flex absolute top-1/2 -translate-y-1/2 z-30
             -right-3.5 w-7 h-14 items-center justify-center
             rounded-lg
             bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl
@@ -302,7 +302,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
               <span className="font-display text-xl italic text-ink dark:text-white leading-none tracking-tight">
                 DataDiver
               </span>
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono uppercase tracking-widest mt-0.5">
+              <span className="text-micro text-slate-400 dark:text-slate-500 font-mono uppercase tracking-widest mt-0.5">
                 SF Open Data
               </span>
             </div>
@@ -334,7 +334,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         {/* Navigation */}
         <nav className={`flex-1 py-4 space-y-0.5 overflow-y-auto ${isSidebarOpen ? 'px-3' : 'px-1.5'}`}>
           {isSidebarOpen && (
-            <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 px-2 mb-2">
+            <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 px-2 mb-2">
               Visualizations
             </p>
           )}
@@ -361,7 +361,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
                 {/* Accent indicator */}
                 <div className={`
                   relative flex-shrink-0 flex items-center justify-center
-                  rounded-md text-[10px] font-mono font-bold tracking-wider
+                  rounded-md text-micro font-mono font-bold tracking-wider
                   transition-all duration-200
                   ${isSidebarOpen ? 'w-8 h-8' : 'w-7 h-7'}
                   ${isActive
@@ -385,7 +385,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
                       ${isActive ? 'text-ink dark:text-white' : 'text-slate-700 dark:text-slate-300'}`}>
                       {item.label}
                     </span>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                    <span className="text-label text-slate-500 dark:text-slate-400 truncate">
                       {item.description}
                     </span>
                   </div>
@@ -409,18 +409,16 @@ export default function AppShell({ children }: { children: ReactNode }) {
           >
             <div className="relative w-5 h-5 flex items-center justify-center">
               <svg
-                className={`w-4 h-4 transition-all duration-500 ${isDarkMode ? 'rotate-0 scale-100' : 'rotate-90 scale-0'}`}
+                className={`absolute w-4 h-4 transition-all duration-500 ${isDarkMode ? 'rotate-0 scale-100' : 'rotate-90 scale-0'}`}
                 viewBox="0 0 20 20"
                 fill="currentColor"
-                style={{ position: 'absolute' }}
               >
                 <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" />
               </svg>
               <svg
-                className={`w-4 h-4 transition-all duration-500 ${isDarkMode ? '-rotate-90 scale-0' : 'rotate-0 scale-100'}`}
+                className={`absolute w-4 h-4 transition-all duration-500 ${isDarkMode ? '-rotate-90 scale-0' : 'rotate-0 scale-100'}`}
                 viewBox="0 0 20 20"
                 fill="currentColor"
-                style={{ position: 'absolute' }}
               >
                 <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
               </svg>
@@ -513,7 +511,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
           <button
             onClick={toggleSidebar}
             className={`
-              hidden md:flex w-full items-center rounded-lg
+              hidden desk:flex w-full items-center rounded-lg
               text-slate-400 dark:text-slate-600
               hover:text-slate-600 dark:hover:text-slate-400
               hover:bg-slate-50 dark:hover:bg-white/[0.03]
@@ -543,7 +541,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-hidden relative pt-12 md:pt-0">
+      <main className="flex-1 overflow-hidden relative pt-12 desk:pt-0">
         {children}
       </main>
 

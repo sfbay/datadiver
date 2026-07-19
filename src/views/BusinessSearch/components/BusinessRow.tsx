@@ -47,7 +47,7 @@ export default function BusinessRow({ result }: BusinessRowProps) {
               {result.dbaName}
             </h3>
             <span
-              className="text-[9px] font-mono uppercase tracking-[0.15em] px-1.5 py-0.5 rounded-full"
+              className="text-nano font-mono uppercase tracking-[0.15em] px-1.5 py-0.5 rounded-full"
               style={{
                 color: statusColor,
                 backgroundColor: `${statusColor}1A`,
@@ -56,31 +56,31 @@ export default function BusinessRow({ result }: BusinessRowProps) {
               {statusLabel}
             </span>
             {result.ageYears >= 10 && (
-              <span className="text-[9px] font-mono text-ochre-500 bg-ochre-500/10 px-1.5 py-0.5 rounded-full">
+              <span className="text-nano font-mono text-ochre-500 bg-ochre-500/10 px-1.5 py-0.5 rounded-full">
                 {result.ageYears}y
               </span>
             )}
           </div>
           {result.ownershipName && (
-            <p className="text-[11px] text-slate-500 dark:text-slate-500 mt-0.5 truncate">
+            <p className="text-label text-slate-500 dark:text-slate-500 mt-0.5 truncate">
               {result.ownershipName}
             </p>
           )}
-          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-1 truncate">
+          <p className="text-micro text-slate-400 dark:text-slate-500 font-mono mt-1 truncate">
             {result.sector} · {result.address || 'Unknown address'}
             {result.corridor && ` · ${result.corridor}`}
           </p>
         </div>
 
         <div className="flex-shrink-0 text-right">
-          <p className="text-[9px] font-mono uppercase tracking-wider text-slate-400 dark:text-slate-600">
+          <p className="text-nano font-mono uppercase tracking-wider text-slate-400 dark:text-slate-600">
             since
           </p>
-          <p className="text-[11px] font-mono tabular-nums text-slate-600 dark:text-slate-300">
+          <p className="text-label font-mono tabular-nums text-slate-600 dark:text-slate-300">
             {formatStartYear(result.startDate)}
           </p>
           {result.certificateNumber && (
-            <p className="text-[9px] font-mono text-slate-400 dark:text-slate-600 mt-0.5">
+            <p className="text-nano font-mono text-slate-400 dark:text-slate-600 mt-0.5">
               BAN {result.certificateNumber}
             </p>
           )}

@@ -101,7 +101,7 @@ export default function ChainMap({ locations, height = 280 }: ChainMapProps) {
   if (points.length === 0) {
     return (
       <div
-        className="glass-card rounded-xl flex items-center justify-center text-[11px] text-slate-500"
+        className="glass-card rounded-xl flex items-center justify-center text-label text-slate-500"
         style={{ height }}
       >
         No mapped locations available

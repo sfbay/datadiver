@@ -253,24 +253,24 @@ export default function Dispatch911() {
         {/* items-start on mobile so the title can wrap on the left while the
             controls flow from the top-right (no empty well); md restores the
             centered single row. */}
-        <div className="flex items-start justify-between gap-3 md:items-center">
-          <div className="flex items-center gap-4 min-w-0">
+        <div className="flex flex-wrap items-start justify-between gap-3 desk:items-center">
+          <div className="flex flex-wrap items-center gap-4 min-w-0">
             <div className="min-w-0">
               <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">
                 911 Dispatch Analysis
               </h1>
-              <p className="hidden sm:block text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
+              <p className="hidden sm:block truncate text-micro font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
                 SFPD · Law Enforcement Dispatch
               </p>
             </div>
             {!isLoading && rawData.length > 0 && (
               <div className="flex items-center gap-1.5 flex-shrink-0">
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-signal-emerald/80 bg-signal-emerald/10 px-2 py-1 rounded-full">
+                <span className="inline-flex items-center gap-1.5 text-micro font-mono text-signal-emerald/80 bg-signal-emerald/10 px-2 py-1 rounded-full">
                   <span className="w-1 h-1 rounded-full bg-signal-emerald pulse-live" />
                   {formatNumber(rawData.length)} records
                 </span>
                 {hitLimit && totalCount !== null && (
-                  <span className="text-[10px] font-mono text-ochre-500/80 bg-ochre-500/10 px-2 py-1 rounded-full">
+                  <span className="text-micro font-mono text-ochre-500/80 bg-ochre-500/10 px-2 py-1 rounded-full">
                     of {formatNumber(totalCount)} total
                   </span>
                 )}
@@ -306,7 +306,7 @@ export default function Dispatch911() {
       {!hourlyPattern.isLoading && hourlyPattern.hourTotals.some((t) => t > 0) && (
         <div className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-2 bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl z-10">
           <div className="flex items-center gap-3">
-            <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 whitespace-nowrap">
+            <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 whitespace-nowrap">
               Time of Day
             </p>
             <div className="flex-1">
@@ -325,7 +325,7 @@ export default function Dispatch911() {
             <div className="max-w-4xl space-y-6">
               <div className="flex gap-2.5 flex-wrap">
                 {Array.from({ length: 5 }, (_, i) => (
-                  <div key={i} className="glass-card rounded-xl px-4 py-3 min-w-[120px] animate-pulse" style={{ animationDelay: `${i * 60}ms` }}>
+                  <div key={i} className="glass-card rounded-xl px-4 py-3 min-w-[7.5rem] animate-pulse" style={{ animationDelay: `${i * 60}ms` }}>
                     <Skeleton className="h-2.5 w-16 mb-3" />
                     <Skeleton className="h-6 w-20" />
                   </div>
@@ -390,7 +390,7 @@ export default function Dispatch911() {
               {/* Hourly heatgrid — hero size */}
               <div className="glass-card rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60">
+                  <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60">
                     Call Volume by Hour & Day<InfoTip term="heatgrid" size={10} />
                   </p>
                   <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
@@ -400,7 +400,7 @@ export default function Dispatch911() {
                 ) : (
                   <>
                     <div className="overflow-x-auto"><HourlyHeatgrid grid={hourlyPattern.grid} width={640} height={240} /></div>
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-3 font-mono">
+                    <p className="text-micro text-slate-400 dark:text-slate-500 mt-3 font-mono">
                       Click a cell to filter by that hour. Peak:{' '}
                       <span className="text-signal-amber">{hourlyPattern.peakHour}:00</span>
                       {' · '}Quietest:{' '}
@@ -413,7 +413,7 @@ export default function Dispatch911() {
               {/* Period trend breakdown */}
               {!trend.isLoading && trend.currentPeriods.length > 0 && (
                 <div className="glass-card rounded-xl p-4">
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                  <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                     Volume Trend<InfoTip term="period-trend" size={10} />
                   </p>
                   <div className="overflow-x-auto">
@@ -430,10 +430,10 @@ export default function Dispatch911() {
               )}
 
               {/* Response histogram + Disposition breakdown side by side */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 desk:grid-cols-2 gap-4">
                 {histogramData.length > 0 && (
                   <div className="glass-card rounded-xl p-4">
-                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                    <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                       Response Time Distribution
                     </p>
                     <div className="overflow-x-auto"><ResponseHistogram data={histogramData} width={340} height={140} /></div>
@@ -442,7 +442,7 @@ export default function Dispatch911() {
 
                 {dispositionData.length > 0 && (
                   <div className="glass-card rounded-xl p-4">
-                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                    <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                       Disposition Breakdown
                     </p>
                     <div className="overflow-x-auto">
@@ -461,7 +461,7 @@ export default function Dispatch911() {
               {/* Trend chart (when comparing) */}
               {comparisonMode !== null && comparison.currentTrend.length > 0 && (
                 <div className="glass-card rounded-xl p-4">
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                  <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                     Daily Trend {comparison.isLoading && '(loading\u2026)'}
                   </p>
                   <div className="overflow-x-auto">
@@ -495,12 +495,12 @@ export default function Dispatch911() {
         <MapSidebar>
           <div className="p-4">
             <div className="flex items-center gap-2 mb-4">
-              <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
+              <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
                 Call Types
               </p>
               <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
               {selectedCallTypes.size > 0 && (
-                <span className="text-[10px] font-mono text-plum-500">
+                <span className="text-micro font-mono text-plum-500">
                   {selectedCallTypes.size} selected
                 </span>
               )}

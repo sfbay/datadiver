@@ -19,7 +19,7 @@ export function Skeleton({ className = '', style }: SkeletonProps) {
 export function SkeletonStatCard({ delay = 0 }: { delay?: number }) {
   return (
     <div
-      className="glass-card rounded-xl px-4 py-3 min-w-[120px] animate-pulse"
+      className="glass-card rounded-xl px-4 py-3 min-w-[7.5rem] animate-pulse"
       style={{ animationDelay: `${delay}ms` }}
     >
       <Skeleton className="h-2.5 w-16 mb-3" />
@@ -103,7 +103,7 @@ export function MapLoadingIndicator({ label = 'Loading data', color = '#94a3b8' 
         className="w-3 h-3 border-2 border-t-transparent rounded-full animate-spin"
         style={{ borderColor: `${color}40`, borderTopColor: 'transparent', borderRightColor: color }}
       />
-      <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 dark:text-slate-500">
+      <span className="text-micro font-mono uppercase tracking-wider text-slate-400 dark:text-slate-500">
         {label}
       </span>
     </div>
@@ -169,7 +169,7 @@ export function MapScanOverlay({ color = '#5c9693', label = 'Scanning' }: { colo
           className="w-1.5 h-1.5 rounded-full animate-pulse"
           style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}80` }}
         />
-        <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-slate-400 dark:text-slate-500">
+        <span className="text-micro font-mono uppercase tracking-[0.25em] text-slate-400 dark:text-slate-500">
           {label}
         </span>
       </div>
@@ -203,7 +203,7 @@ export function MapProgressBar({ color = '#5c9693' }: { color?: string }) {
       {/* Label */}
       {active && total > 0 && (
         <div className="absolute top-1.5 right-2 flex items-center gap-1.5">
-          <span className="text-[9px] font-mono tabular-nums text-slate-400 dark:text-slate-500">
+          <span className="text-nano font-mono tabular-nums text-slate-400 dark:text-slate-500">
             {completed}/{total}
           </span>
         </div>

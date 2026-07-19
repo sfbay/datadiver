@@ -353,7 +353,7 @@ export default function Last48() {
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <div className="flex items-center gap-4 min-w-0">
             <div className="min-w-0">
-              <div className="font-mono text-[10px] tracking-widest text-paper-500 dark:text-paper-600">
+              <div className="font-mono text-micro tracking-widest text-paper-500 dark:text-paper-600">
                 LIVE
               </div>
               {/* paper-100 (warm cream) vs sibling-standard text-white — intentional earth-tone purity */}
@@ -363,12 +363,12 @@ export default function Last48() {
               {/* Editorial subtitle — supplementary; the LIVE eyebrow + h1 carry
                   identity. Hidden below sm so it can't collapse to a one-word-per-line
                   column when the header is narrow (the only unprotected text line). */}
-              <p className="hidden sm:block font-mono text-[10px] text-paper-500 dark:text-paper-600 mt-0.5">
+              <p className="hidden sm:block font-mono text-micro text-paper-500 dark:text-paper-600 mt-0.5">
                 48 hours of civic data, updated continuously via official and public APIs
               </p>
             </div>
             {!window48.isLoading && window48.events.length > 0 && (
-              <span className="inline-flex flex-shrink-0 items-center gap-1.5 text-[10px] font-mono text-moss-500/80 bg-moss-500/10 px-2 py-1 rounded-full whitespace-nowrap">
+              <span className="inline-flex flex-shrink-0 items-center gap-1.5 text-micro font-mono text-moss-500/80 bg-moss-500/10 px-2 py-1 rounded-full whitespace-nowrap">
                 <span className="w-1 h-1 rounded-full bg-moss-500 pulse-live" />
                 {window48.events.length.toLocaleString()} events
               </span>
@@ -448,7 +448,7 @@ export default function Last48() {
 
       {/* Scanner launcher strip — desktop only; on mobile the bottom sheet would
           cover it, so the scanner links live in the rail's footer instead. */}
-      <div className="hidden md:block">
+      <div className="hidden desk:block">
         <ScannerStrip />
       </div>
     </div>

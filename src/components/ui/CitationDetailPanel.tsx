@@ -86,21 +86,21 @@ export default function CitationDetailPanel() {
     >
       {detail && (
         <>
-          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-1">
+          <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-1">
             Citation #{detail.citationNumber}
           </p>
           <p className="text-sm font-semibold text-ink dark:text-white mb-0.5">
             {detail.violationDesc}
           </p>
           {detail.violation && (
-            <p className="text-[10px] text-slate-600 dark:text-slate-300 font-mono mb-2">
+            <p className="text-micro text-slate-600 dark:text-slate-300 font-mono mb-2">
               Code: {detail.violation}
             </p>
           )}
 
           {/* Fine amount — prominent */}
           <div className="mb-3 p-2 rounded-lg bg-terracotta-500/10">
-            <p className="text-[9px] font-mono uppercase tracking-wider text-terracotta-500">Fine</p>
+            <p className="text-nano font-mono uppercase tracking-wider text-terracotta-500">Fine</p>
             <p className="text-xl font-bold font-mono text-terracotta-500">
               {formatCurrency(detail.fineAmount)}
             </p>
@@ -108,8 +108,8 @@ export default function CitationDetailPanel() {
 
           {/* Location */}
           <div className="mb-3">
-            <p className="text-[10px] text-slate-700 dark:text-slate-300">{detail.location}</p>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400">
+            <p className="text-micro text-slate-700 dark:text-slate-300">{detail.location}</p>
+            <p className="text-micro text-slate-500 dark:text-slate-400">
               {detail.neighborhood} &middot; District {detail.district}
             </p>
           </div>
@@ -117,13 +117,13 @@ export default function CitationDetailPanel() {
           {/* Issued date/time */}
           {detail.issuedDatetime && (
             <div className="mb-3">
-              <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-0.5">
+              <p className="text-nano font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-0.5">
                 Issued
               </p>
-              <p className="text-[10px] font-mono text-slate-600 dark:text-slate-300">
+              <p className="text-micro font-mono text-slate-600 dark:text-slate-300">
                 {formatDate(detail.issuedDatetime, 'long')}
               </p>
-              <p className="text-[10px] font-mono text-slate-800 dark:text-slate-200 font-semibold">
+              <p className="text-micro font-mono text-slate-800 dark:text-slate-200 font-semibold">
                 {new Date(detail.issuedDatetime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
               </p>
             </div>
@@ -132,10 +132,10 @@ export default function CitationDetailPanel() {
           {/* Plate state */}
           <div className="pt-2 border-t border-slate-200 dark:border-white/[0.08]">
             <div className="flex items-center justify-between">
-              <p className="text-[9px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <p className="text-nano font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 Plate State
               </p>
-              <span className={`inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full ${
+              <span className={`inline-flex items-center gap-1 text-micro font-mono px-2 py-0.5 rounded-full ${
                 isOutOfState
                   ? 'bg-teal-500/10 text-teal-500'
                   : 'bg-slate-100 dark:bg-white/[0.04] text-slate-500'

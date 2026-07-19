@@ -65,7 +65,7 @@ export default function ServiceCategoryFilter({ categories, selected, onChange }
       <div className="flex flex-wrap gap-1">
         <button
           onClick={handleSelectAll}
-          className={`px-2 py-1 rounded-md text-[10px] font-mono font-medium transition-all duration-150 ${
+          className={`px-2 py-1 rounded-md text-micro font-mono font-medium transition-all duration-150 ${
             allSelected
               ? 'bg-moss-500/15 text-moss-500'
               : 'bg-slate-100 dark:bg-white/[0.04] text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-white/[0.08]'
@@ -77,7 +77,7 @@ export default function ServiceCategoryFilter({ categories, selected, onChange }
           <button
             key={groupName}
             onClick={() => handleGroup(groupName)}
-            className={`px-2 py-1 rounded-md text-[10px] font-mono font-medium transition-all duration-150 ${
+            className={`px-2 py-1 rounded-md text-micro font-mono font-medium transition-all duration-150 ${
               isGroupActive(groupName)
                 ? 'bg-moss-500/15 text-moss-500'
                 : 'bg-slate-100 dark:bg-white/[0.04] text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-white/[0.08]'
@@ -147,13 +147,13 @@ export default function ServiceCategoryFilter({ categories, selected, onChange }
               {/* Label (click to toggle) */}
               <button
                 onClick={() => handleToggle(entry.serviceName)}
-                className="relative flex-1 min-w-0 text-[11px] text-ink dark:text-slate-300 truncate leading-tight cursor-pointer text-left"
+                className="relative flex-1 min-w-0 text-label text-ink dark:text-slate-300 truncate leading-tight cursor-pointer text-left"
               >
                 {entry.serviceName}
               </button>
 
               {/* Count badge */}
-              <span className="relative text-[10px] font-mono text-slate-400 dark:text-slate-500 tabular-nums flex-shrink-0">
+              <span className="relative text-micro font-mono text-slate-400 dark:text-slate-500 tabular-nums flex-shrink-0">
                 {entry.count.toLocaleString()}
               </span>
             </div>

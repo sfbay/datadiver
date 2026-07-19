@@ -59,7 +59,7 @@ export default function Last48NeighborhoodPeek({ neighborhood, anomalies, events
         {/* Eyebrow — tier phrase, not a σ; the precise combined value rides
             the title attribute for the hover-for-machinery reader. */}
         <div
-          className="font-mono text-[10px] tracking-widest text-paper-600 dark:text-paper-500"
+          className="font-mono text-micro tracking-widest text-paper-600 dark:text-paper-500"
           title={`combined score ${overallZ >= 0 ? '+' : ''}${overallZ.toFixed(1)}σ`}
         >
           ── NEIGHBORHOOD SIGNAL <span className="uppercase" style={{ color: devColor(overallZ) }}>{overall.short}</span>
@@ -68,7 +68,7 @@ export default function Last48NeighborhoodPeek({ neighborhood, anomalies, events
         {/* Headline */}
         <div>
           <h2 className="font-display text-xl text-paper-900 dark:text-white leading-tight">{neighborhood}</h2>
-          <p className="font-mono text-[11px] text-paper-700 dark:text-paper-400 mt-1 italic">
+          <p className="font-mono text-label text-paper-700 dark:text-paper-400 mt-1 italic">
             {summaryLine}
           </p>
         </div>
@@ -76,10 +76,10 @@ export default function Last48NeighborhoodPeek({ neighborhood, anomalies, events
         {/* Per-stream breakdown — the concrete comparison each stream's data
             can back: this window's count vs the rounded usual. */}
         <section>
-          <h3 className="font-mono text-[10px] tracking-wider text-paper-600 dark:text-paper-500 mb-2">
+          <h3 className="font-mono text-micro tracking-wider text-paper-600 dark:text-paper-500 mb-2">
             BY STREAM · THIS 48H VS USUAL
           </h3>
-          <ul className="flex flex-col gap-1.5 font-mono text-[10px]">
+          <ul className="flex flex-col gap-1.5 font-mono text-micro">
             {anomalies.map((a) => {
               const widthPct = Math.min(100, (Math.abs(a.zScore) / maxAbsZ) * 100)
               const label = a.datasetId === 'combined' ? 'combined' : DATASET_LABELS[a.datasetId as DatasetId] ?? a.datasetId
@@ -112,10 +112,10 @@ export default function Last48NeighborhoodPeek({ neighborhood, anomalies, events
 
         {/* Top contributing events */}
         <section>
-          <h3 className="font-mono text-[10px] tracking-wider text-paper-600 dark:text-paper-500 mb-2">
+          <h3 className="font-mono text-micro tracking-wider text-paper-600 dark:text-paper-500 mb-2">
             TOP CONTRIBUTING EVENTS
           </h3>
-          <ul className="flex flex-col gap-1 font-mono text-[10px]">
+          <ul className="flex flex-col gap-1 font-mono text-micro">
             {topEvents.map((ev) => (
               <li key={ev.id} className="flex items-baseline gap-2 border-b border-paper-200/40 dark:border-espresso-800 pb-1">
                 <span className="text-paper-500 dark:text-paper-600 tabular-nums">
@@ -138,7 +138,7 @@ export default function Last48NeighborhoodPeek({ neighborhood, anomalies, events
         >
           See {neighborhood} across SF →
         </a>
-        <p className="text-[10px] text-paper-500 dark:text-paper-600 mt-1 italic leading-snug">
+        <p className="text-micro text-paper-500 dark:text-paper-600 mt-1 italic leading-snug">
           Switch to a neighborhood-focused view across all DataDiver tools.
         </p>
       </div>

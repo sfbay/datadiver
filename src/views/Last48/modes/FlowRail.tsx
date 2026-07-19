@@ -169,30 +169,30 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
           context that used to live in a single italic line. */}
       <div className="sticky top-0 z-10 px-3 pt-3 pb-2.5 flex-shrink-0 bg-paper-50 dark:bg-espresso-900 border-b border-paper-200/50 dark:border-espresso-800">
         <div className="flex items-center gap-2 px-1">
-          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-paper-500/60 dark:text-paper-600">
+          <p className="text-nano font-mono uppercase tracking-[0.2em] text-paper-500/60 dark:text-paper-600">
             Latest Events
           </p>
           <div className="flex-1 h-[1px] bg-paper-200/30 dark:bg-white/[0.04]" />
         </div>
         <div className="flex flex-wrap gap-1.5 mt-2">
           <div className="rounded-md bg-paper-100/50 dark:bg-espresso-800/40 pl-2.5 pr-4 py-1.5 flex items-center">
-            <p className="font-display italic text-[24px] md:text-[30px] leading-none tabular-nums text-paper-900 dark:text-paper-100">
+            <p className="font-display italic text-[24px] desk:text-[30px] leading-none tabular-nums text-paper-900 dark:text-paper-100">
               {events.length.toLocaleString()}
             </p>
           </div>
-          <div className="rounded-md bg-paper-100/50 dark:bg-espresso-800/40 px-2 py-1.5 flex items-baseline gap-1.5 md:block">
+          <div className="rounded-md bg-paper-100/50 dark:bg-espresso-800/40 px-2 py-1.5 flex items-baseline gap-1.5 desk:block">
             <p className="font-mono text-[8px] text-paper-500/70 dark:text-paper-600 uppercase tracking-[0.15em]">
               window
             </p>
-            <p className="font-mono text-[24px] md:text-[12px] font-semibold text-paper-800 dark:text-paper-200 tabular-nums leading-none md:mt-1">
+            <p className="font-mono text-[24px] desk:text-[12px] font-semibold text-paper-800 dark:text-paper-200 tabular-nums leading-none desk:mt-1">
               48 hrs
             </p>
           </div>
-          <div className="rounded-md bg-paper-100/50 dark:bg-espresso-800/40 px-2 py-1.5 flex items-baseline gap-1.5 md:block">
+          <div className="rounded-md bg-paper-100/50 dark:bg-espresso-800/40 px-2 py-1.5 flex items-baseline gap-1.5 desk:block">
             <p className="font-mono text-[8px] text-paper-500/70 dark:text-paper-600 uppercase tracking-[0.15em]">
               no gps
             </p>
-            <p className="font-mono text-[24px] md:text-[12px] font-semibold text-paper-800 dark:text-paper-200 tabular-nums leading-none md:mt-1">
+            <p className="font-mono text-[24px] desk:text-[12px] font-semibold text-paper-800 dark:text-paper-200 tabular-nums leading-none desk:mt-1">
               {withheldCount.toLocaleString()}
             </p>
           </div>
@@ -258,11 +258,11 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
                   <p className="text-[12px] font-medium text-paper-900 dark:text-paper-200 leading-tight line-clamp-2">
                     {formatHeadline(ev.headline ?? meta.label)}
                   </p>
-                  <p className="text-[10px] text-paper-500 dark:text-paper-600 font-mono italic mt-0.5 truncate">
+                  <p className="text-micro text-paper-500 dark:text-paper-600 font-mono italic mt-0.5 truncate">
                     {subtitleBits.join(' · ')}
                   </p>
                 </div>
-                <span className="text-[10px] font-mono text-paper-600 dark:text-paper-400 whitespace-nowrap tabular-nums flex-shrink-0 mt-[2px]">
+                <span className="text-micro font-mono text-paper-600 dark:text-paper-400 whitespace-nowrap tabular-nums flex-shrink-0 mt-[2px]">
                   {formatApTime(ev.receivedAt)}
                 </span>
               </div>
@@ -278,7 +278,7 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
               <Fragment key={`row-${ev.id}`}>
                 <div className="flex items-center gap-2 my-2 px-3">
                   <div className="flex-1 h-[1px] bg-paper-200/30 dark:bg-white/[0.04]" />
-                  <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-paper-500/60 dark:text-paper-600 italic">
+                  <span className="text-nano font-mono uppercase tracking-[0.2em] text-paper-500/60 dark:text-paper-600 italic">
                     selected &middot; older
                   </span>
                   <div className="flex-1 h-[1px] bg-paper-200/30 dark:bg-white/[0.04]" />
@@ -291,7 +291,7 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
         })}
 
         {events.length === 0 && (
-          <div className="text-paper-500 dark:text-paper-600 text-center italic py-6 text-[11px]">
+          <div className="text-paper-500 dark:text-paper-600 text-center italic py-6 text-label">
             no events in window yet
           </div>
         )}
@@ -300,7 +300,7 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
       {/* Scanner footer — mobile only (the desktop bottom ScannerStrip is hidden
           on phones, where the sheet would cover it). sticky bottom-0 pins it to
           the bottom of the rail when the sheet is expanded. */}
-      <div className="md:hidden sticky bottom-0 z-10 flex items-center gap-3 px-3 py-2.5 bg-paper-50 dark:bg-espresso-900 border-t border-paper-200/50 dark:border-espresso-800 font-mono text-[11px] text-paper-700 dark:text-paper-400">
+      <div className="desk:hidden sticky bottom-0 z-10 flex items-center gap-3 px-3 py-2.5 bg-paper-50 dark:bg-espresso-900 border-t border-paper-200/50 dark:border-espresso-800 font-mono text-label text-paper-700 dark:text-paper-400">
         <span className="text-ochre-600 dark:text-ochre-500" aria-hidden>📡</span>
         <span className="tracking-wider">SCANNER</span>
         <div className="ml-auto flex items-center gap-2">

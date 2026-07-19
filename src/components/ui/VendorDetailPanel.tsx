@@ -111,12 +111,12 @@ export default function VendorDetailPanel({ vendor, onClose, inline }: VendorDet
                 {toSentenceCase(vendor ?? '')}
               </h3>
               {nonProfit && (
-                <span className="inline-flex items-center text-[9px] font-mono bg-moss-500/10 text-moss-500 px-1.5 py-0.5 rounded-full">
+                <span className="inline-flex items-center text-nano font-mono bg-moss-500/10 text-moss-500 px-1.5 py-0.5 rounded-full">
                   Nonprofit
                 </span>
               )}
             </div>
-            <p className="text-[10px] font-mono text-slate-400 mt-0.5">
+            <p className="text-micro font-mono text-slate-400 mt-0.5">
               {formatBudgetFull(totalPaid)} total · {yearData.length} fiscal years
             </p>
           </div>
@@ -124,12 +124,12 @@ export default function VendorDetailPanel({ vendor, onClose, inline }: VendorDet
           {/* Payment history by year */}
           {yearData.length > 0 && (
             <div>
-              <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+              <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                 Payment History
               </p>
               <div className="space-y-1">
                 {yearData.map((r) => (
-                  <div key={r.fiscal_year} className="flex items-center justify-between text-[10px]">
+                  <div key={r.fiscal_year} className="flex items-center justify-between text-micro">
                     <span className="font-mono text-slate-500">FY{r.fiscal_year}</span>
                     <div className="flex items-center gap-2">
                       <span className="text-slate-400">{r.payment_count} pmts</span>
@@ -146,7 +146,7 @@ export default function VendorDetailPanel({ vendor, onClose, inline }: VendorDet
           {/* Department breakdown */}
           {deptData.length > 0 && (
             <div>
-              <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+              <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                 Departments
               </p>
               <div className="space-y-1.5">
@@ -154,8 +154,8 @@ export default function VendorDetailPanel({ vendor, onClose, inline }: VendorDet
                   const amount = parseFloat(r.total_paid) || 0
                   return (
                     <div key={r.department}>
-                      <div className="flex justify-between text-[10px] mb-0.5">
-                        <span className="text-slate-600 dark:text-slate-300 truncate max-w-[180px]">{r.department}</span>
+                      <div className="flex justify-between text-micro mb-0.5">
+                        <span className="text-slate-600 dark:text-slate-300 truncate max-w-[11.25rem]">{r.department}</span>
                         <span className="font-mono text-slate-500 tabular-nums ml-2">{formatBudgetAmount(amount)}</span>
                       </div>
                       <div className="h-1 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
@@ -174,19 +174,19 @@ export default function VendorDetailPanel({ vendor, onClose, inline }: VendorDet
           {/* Contract cross-reference */}
           {contractData.length > 0 && (
             <div>
-              <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+              <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                 Contracts
               </p>
               <div className="space-y-2">
                 {contractData.map((r) => (
                   <div key={r.contract_number} className="glass-card rounded-lg p-2">
-                    <p className="text-[10px] font-mono text-teal-500">{r.contract_number}</p>
+                    <p className="text-micro font-mono text-teal-500">{r.contract_number}</p>
                     {r.contract_title && (
-                      <p className="text-[10px] text-slate-600 dark:text-slate-300 mt-0.5 line-clamp-2">
+                      <p className="text-micro text-slate-600 dark:text-slate-300 mt-0.5 line-clamp-2">
                         {r.contract_title}
                       </p>
                     )}
-                    <p className="text-[9px] text-slate-400 mt-0.5">
+                    <p className="text-nano text-slate-400 mt-0.5">
                       {r.department} · {formatBudgetAmount(parseFloat(r.total_paid) || 0)}
                     </p>
                   </div>
@@ -204,7 +204,7 @@ export default function VendorDetailPanel({ vendor, onClose, inline }: VendorDet
     return (
       <div className="p-5">
         <div className="flex items-center justify-between mb-4">
-          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60">Vendor Detail</p>
+          <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60">Vendor Detail</p>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-200 transition-colors" title="Close">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
               <path d="M3 3l8 8M11 3l-8 8" />

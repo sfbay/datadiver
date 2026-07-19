@@ -49,7 +49,7 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
     <div
       ref={ref}
       className={`
-        relative min-w-[120px]
+        relative min-w-[7.5rem]
         transition-all duration-700
         ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}
       `}
@@ -62,7 +62,7 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
         style={{ '--glow': color } as CSSProperties}
       >
         <div className="glow-corner" />
-        <p className="relative text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 whitespace-nowrap flex items-center">
+        <p className="relative text-label font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 whitespace-nowrap flex items-center">
           {label}
           {info && <InfoTip term={info} size={11} />}
         </p>
@@ -75,7 +75,7 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
         {subtitle && (
           <p
             title={subtitle}
-            className={`relative text-[11px] mt-1.5 font-mono flex items-center gap-1 max-w-[280px] ${
+            className={`relative text-label mt-1.5 font-mono flex items-center gap-1 max-w-[17.5rem] ${
               trend === 'up'
                 ? 'text-brick-600 dark:text-brick-400'
                 : trend === 'down'
@@ -100,7 +100,7 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
           </p>
         )}
         {yoyText && !subtitle && (
-          <p className="relative text-[11px] mt-1.5 font-mono flex items-center gap-1">
+          <p className="relative text-label mt-1.5 font-mono flex items-center gap-1">
             <span
               className={
                 yoyDelta! > 0
@@ -117,7 +117,7 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
         {/* Uniform tile height: reserve the subtitle line even when a card
             has nothing to say there, so bare tiles match their siblings. */}
         {!subtitle && !yoyText && (
-          <p className="relative text-[11px] mt-1.5 font-mono invisible select-none" aria-hidden>
+          <p className="relative text-label mt-1.5 font-mono invisible select-none" aria-hidden>
             ·
           </p>
         )}
@@ -154,7 +154,7 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
             className="w-2 h-2 rounded-full"
             style={{ backgroundColor: zScoreDot }}
           />
-          <div className="hidden group-hover:block absolute top-full right-0 mt-1 w-48 px-2.5 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/[0.08] shadow-xl text-[11px] leading-relaxed text-slate-600 dark:text-slate-300" style={{ zIndex: 999 }}>
+          <div className="hidden group-hover:block absolute top-full right-0 mt-1 w-48 px-2.5 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/[0.08] shadow-xl text-label leading-relaxed text-slate-600 dark:text-slate-300" style={{ zIndex: 999 }}>
             <span className="font-mono font-semibold" style={{ color: zScoreDot }}>{zScore! >= 0 ? '+' : ''}{zScore!.toFixed(1)}σ</span>
             {' — '}This value is {Math.abs(zScore!) > 2 ? 'very ' : ''}{zScore! > 0 ? 'high' : 'low'} compared to the 12-month average for this area.
           </div>

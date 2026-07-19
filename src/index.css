@@ -3,6 +3,16 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Effective-width desktop variant (Large Type Phase 2). Replaces the old
+   min-width breakpoint variant in app code: html[data-vp] is stamped by
+   syncViewportMode() from EFFECTIVE viewport width (innerWidth ÷
+   type-scale factor), so a large-type reader on a 900px window correctly
+   gets the mobile shell (900 ÷ 1.18 < 768). Media queries can't read
+   attributes — this attribute-driven variant is how CSS follows the JS
+   source of truth. Do not reintroduce that old breakpoint variant in
+   app code. */
+@custom-variant desk (&:where(html[data-vp="desk"] *));
+
 @theme {
   /* Earth-tone refactor — names preserved so existing Tailwind classes
      (text-signal-red, bg-paper, bg-slate-950, etc.) continue to compile;
@@ -127,6 +137,15 @@
   --font-display: "Fraunces Variable", "Roboto Serif Variable", Georgia, serif;
   --font-sans: "Roboto Serif Variable", Georgia, serif;
   --font-mono: "Space Mono", "Fira Code", monospace;
+
+  /* Large Type Phase 2 — micro-type scale (moved from tokens.css; the
+     floor-raise overrides live next to the html[data-type-scale] rules
+     further down). Deliberately NO --text-*--line-height companions:
+     these utilities must emit font-size only, exactly like the
+     text-[Npx] arbitrary classes they replace. */
+  --text-nano:  0.5625rem;  /* 9px  at default root — new stop; no 9px token existed */
+  --text-micro: 0.625rem;   /* 10px at default root */
+  --text-label: 0.6875rem;  /* 11px at default root */
 }
 
 /* Base */
@@ -155,6 +174,22 @@ html[data-type-scale="large"] {
 
 html[data-type-scale="xl"] {
   font-size: 133%;
+}
+
+/* Phase 2 floor-raise: the micro-type tokens rise DISPROPORTIONATELY
+   under large type — 9–11px Space Mono labels are what "unreadable"
+   means for a large-type reader, while body/display already ride the
+   root %. Values are base-rem, so the root multiplier compounds:
+   micro = 0.6875rem × 118% ≈ 13.0px (large), × 133% ≈ 14.6px (xl).
+   ONE shared block covers both tiers (spec amendment requirement) —
+   xl's extra size comes from its larger root %. Utilities compile to
+   font-size: var(--text-*), and html[data-type-scale] (0,1,1) beats
+   the @theme-emitted :root (0,1,0), so the override cascades. */
+html[data-type-scale="large"],
+html[data-type-scale="xl"] {
+  --text-nano:  0.625rem;   /* 9px sites  → ~11.8px large / ~13.3px xl */
+  --text-micro: 0.6875rem;  /* 10px sites → ~13.0px large / ~14.6px xl */
+  --text-label: 0.75rem;    /* 11px sites → ~14.2px large / ~16.0px xl */
 }
 
 body {

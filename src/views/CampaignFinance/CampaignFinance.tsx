@@ -138,12 +138,12 @@ export default function CampaignFinance() {
                   </button>
                 )}
               </div>
-              <p className="text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
+              <p className="text-micro font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
                 SF Ethics Commission · {cycleName}
               </p>
             </div>
             {!cfData.isLoading && cfData.stats && (
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-teal-500/80 bg-teal-500/10 px-2 py-1 rounded-full">
+              <span className="inline-flex items-center gap-1.5 text-micro font-mono text-teal-500/80 bg-teal-500/10 px-2 py-1 rounded-full">
                 <span className="w-1 h-1 rounded-full bg-teal-500 pulse-live" />
                 {cfData.topRecipients.length} filers
               </span>
@@ -156,7 +156,7 @@ export default function CampaignFinance() {
                 <button
                   key={e.date}
                   onClick={() => setDateRange(e.start, e.end)}
-                  className={`px-2.5 py-1 rounded-md text-[10px] font-mono transition-all duration-200 ${
+                  className={`px-2.5 py-1 rounded-md text-micro font-mono transition-all duration-200 ${
                     effectiveRange.start === e.start && effectiveRange.end === e.end
                       ? 'bg-white dark:bg-white/[0.08] text-ink dark:text-white shadow-sm'
                       : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
@@ -180,7 +180,7 @@ export default function CampaignFinance() {
             <div className="max-w-4xl space-y-6">
               <div className="flex gap-2.5 flex-wrap">
                 {Array.from({ length: 4 }, (_, i) => (
-                  <div key={i} className="glass-card rounded-xl px-4 py-3 min-w-[140px] animate-pulse" style={{ animationDelay: `${i * 60}ms` }}>
+                  <div key={i} className="glass-card rounded-xl px-4 py-3 min-w-[8.75rem] animate-pulse" style={{ animationDelay: `${i * 60}ms` }}>
                     <Skeleton className="h-2.5 w-16 mb-3" />
                     <Skeleton className="h-6 w-24" />
                   </div>
@@ -247,12 +247,12 @@ export default function CampaignFinance() {
                   <div>
                     <button
                       onClick={handleBack}
-                      className="text-slate-400 hover:text-ink dark:hover:text-white transition-colors text-[10px] font-mono mb-1"
+                      className="text-slate-400 hover:text-ink dark:hover:text-white transition-colors text-micro font-mono mb-1"
                     >
                       ← Overview
                     </button>
                     <h2 className="text-lg font-semibold text-ink dark:text-white">{selectedEntity.filerName}</h2>
-                    <p className="text-[10px] font-mono text-slate-400">
+                    <p className="text-micro font-mono text-slate-400">
                       {selectedEntity.filerType} · {formatCurrency(selectedEntity.total)} raised
                     </p>
                   </div>
@@ -272,10 +272,10 @@ export default function CampaignFinance() {
                       />
 
                       {/* Entity charts */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 desk:grid-cols-2 gap-4">
                         {timelineData.length > 0 && (
                           <div className="glass-card rounded-xl p-4">
-                            <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                            <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                               Contribution Timeline
                             </p>
                             <ContributionTimeline data={timelineData} width={340} height={140} />
@@ -283,7 +283,7 @@ export default function CampaignFinance() {
                         )}
                         {sourceData.length > 0 && (
                           <div className="glass-card rounded-xl p-4">
-                            <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                            <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                               Funding Sources
                             </p>
                             <FundingSourcesChart data={sourceData} width={300} />
@@ -294,13 +294,13 @@ export default function CampaignFinance() {
                       {/* Spending categories */}
                       {detail.spendingCategories.length > 0 && (
                         <div className="glass-card rounded-xl p-4">
-                          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                          <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                             Spending Categories
                           </p>
                           <div className="space-y-1.5">
                             {detail.spendingCategories.map((cat, i) => (
                               <div key={i} className="flex items-center gap-2">
-                                <span className={`text-[10px] w-40 truncate ${cat.category === 'Uncoded / Pass-through' ? 'text-ochre-500/70 italic' : 'text-slate-600 dark:text-slate-300'}`}>{cat.category}</span>
+                                <span className={`text-micro w-40 truncate ${cat.category === 'Uncoded / Pass-through' ? 'text-ochre-500/70 italic' : 'text-slate-600 dark:text-slate-300'}`}>{cat.category}</span>
                                 <div className="flex-1 h-3 bg-slate-200/50 dark:bg-slate-800/50 rounded-sm overflow-hidden">
                                   <div
                                     className="h-full rounded-sm bg-ochre-500/60"
@@ -309,7 +309,7 @@ export default function CampaignFinance() {
                                     }}
                                   />
                                 </div>
-                                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 w-16 text-right">
+                                <span className="text-micro font-mono text-slate-500 dark:text-slate-400 w-16 text-right">
                                   {formatCurrency(cat.total)}
                                 </span>
                               </div>
@@ -327,7 +327,7 @@ export default function CampaignFinance() {
                 <>
                   {/* Top Recipients hero chart */}
                   <div className="glass-card rounded-xl p-4">
-                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                    <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                       Top Recipients
                     </p>
                     <TopRecipientsChart
@@ -338,10 +338,10 @@ export default function CampaignFinance() {
                   </div>
 
                   {/* Timeline + Funding Sources side by side */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 desk:grid-cols-2 gap-4">
                     {timelineData.length > 0 && (
                       <div className="glass-card rounded-xl p-4">
-                        <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                        <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                           Contribution Timeline
                         </p>
                         <ContributionTimeline data={timelineData} width={340} height={140} />
@@ -349,7 +349,7 @@ export default function CampaignFinance() {
                     )}
                     {sourceData.length > 0 && (
                       <div className="glass-card rounded-xl p-4">
-                        <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                        <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                           Funding Sources
                         </p>
                         <FundingSourcesChart data={sourceData} width={300} />
@@ -393,7 +393,7 @@ export default function CampaignFinance() {
                 {/* Candidates section */}
                 {candidates.length > 0 && (
                   <>
-                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                    <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                       Candidates ({candidates.length})
                     </p>
                     <div className="space-y-0.5 mb-4">
@@ -413,7 +413,7 @@ export default function CampaignFinance() {
                 {/* Measures section */}
                 {measures.length > 0 && (
                   <>
-                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                    <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                       Ballot Measures ({measures.length})
                     </p>
                     <div className="space-y-0.5 mb-4">
@@ -433,7 +433,7 @@ export default function CampaignFinance() {
                 {/* Committees section */}
                 {committees.length > 0 && (
                   <>
-                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                    <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                       Committees ({committees.length})
                     </p>
                     <div className="space-y-0.5 mb-4">
@@ -455,11 +455,11 @@ export default function CampaignFinance() {
             {/* Donor Geography placeholder */}
             {!cfData.isLoading && cfData.donorGeo.length > 0 && (
               <div className="mt-4">
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                   Donor Geography
                 </p>
                 <div className="glass-card rounded-xl overflow-hidden" style={{ height: 200 }}>
-                  <div className="h-full flex items-center justify-center text-[10px] text-slate-500">
+                  <div className="h-full flex items-center justify-center text-micro text-slate-500">
                     Donor map — requires sf-zipcodes.geojson
                   </div>
                 </div>
@@ -501,10 +501,10 @@ function FilerRow({
       }`}
     >
       <div className="flex justify-between items-baseline mb-1">
-        <span className="text-[11px] text-slate-700 dark:text-slate-200 font-medium truncate max-w-[78%]">
+        <span className="text-label text-slate-700 dark:text-slate-200 font-medium truncate max-w-[78%]">
           {filer.filer_name}
         </span>
-        <span className="text-[10px] font-mono text-slate-400">
+        <span className="text-micro font-mono text-slate-400">
           {formatCurrency(total)}
         </span>
       </div>

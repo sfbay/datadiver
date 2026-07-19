@@ -74,10 +74,10 @@ export default function BallotMeasureExplorer({ measures }: BallotMeasureExplore
     <div>
       {/* Summary */}
       <div className="flex items-center gap-3 mb-3">
-        <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60">
+        <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60">
           {filtered.length} Measures
         </p>
-        <span className="text-[9px] font-mono text-moss-500">
+        <span className="text-nano font-mono text-moss-500">
           {passRate}% passed
         </span>
       </div>
@@ -86,7 +86,7 @@ export default function BallotMeasureExplorer({ measures }: BallotMeasureExplore
       <div className="flex flex-wrap gap-1 mb-3">
         <button
           onClick={() => setSelectedTopic(null)}
-          className={`px-2 py-0.5 rounded-full text-[9px] font-mono transition-all ${
+          className={`px-2 py-0.5 rounded-full text-nano font-mono transition-all ${
             !selectedTopic
               ? 'bg-ochre-500/15 text-ink dark:text-paper-100 border border-transparent'
               : 'text-slate-500 hover:text-slate-300 border border-transparent'
@@ -98,7 +98,7 @@ export default function BallotMeasureExplorer({ measures }: BallotMeasureExplore
           <button
             key={topic}
             onClick={() => setSelectedTopic(selectedTopic === topic ? null : topic)}
-            className={`px-2 py-0.5 rounded-full text-[9px] font-mono transition-all ${
+            className={`px-2 py-0.5 rounded-full text-nano font-mono transition-all ${
               selectedTopic === topic
                 ? 'bg-ochre-500/15 text-ink dark:text-paper-100 border border-transparent'
                 : 'text-slate-500 hover:text-slate-300 border border-transparent'
@@ -136,17 +136,17 @@ export default function BallotMeasureExplorer({ measures }: BallotMeasureExplore
               className="group py-1.5 px-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.04] transition-colors"
             >
               <div className="flex items-center gap-2">
-                <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                <span className={`text-micro font-mono font-bold px-1.5 py-0.5 rounded ${
                   m.passed
                     ? 'bg-moss-500/20 text-moss-400'
                     : 'bg-brick-500/20 text-brick-400'
                 }`}>
                   {m.passed ? 'PASS' : 'FAIL'}
                 </span>
-                <span className="text-[10px] font-mono text-slate-500">{year}</span>
-                <span className="text-[10px] font-mono text-indigo-500">{m.letter}</span>
+                <span className="text-micro font-mono text-slate-500">{year}</span>
+                <span className="text-micro font-mono text-indigo-500">{m.letter}</span>
               </div>
-              <p className="text-[11px] text-slate-700 dark:text-slate-300 mt-0.5 leading-tight">
+              <p className="text-label text-slate-700 dark:text-slate-300 mt-0.5 leading-tight">
                 {m.title}
               </p>
               {/* Yes % bar */}
@@ -160,7 +160,7 @@ export default function BallotMeasureExplorer({ measures }: BallotMeasureExplore
                     }}
                   />
                 </div>
-                <span className="text-[9px] font-mono text-slate-500 tabular-nums">
+                <span className="text-nano font-mono text-slate-500 tabular-nums">
                   {(m.yesPct * 100).toFixed(1)}%
                 </span>
               </div>
@@ -168,7 +168,7 @@ export default function BallotMeasureExplorer({ measures }: BallotMeasureExplore
           )
         })}
         {filtered.length > 200 && (
-          <p className="text-[9px] font-mono text-slate-500 text-center py-2">
+          <p className="text-nano font-mono text-slate-500 text-center py-2">
             Showing 200 of {filtered.length} measures
           </p>
         )}

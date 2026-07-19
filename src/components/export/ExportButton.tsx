@@ -130,7 +130,7 @@ export default function ExportButton({ targetSelector, filename = 'datadiver-exp
       disabled={isExporting}
       className="
         inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg
-        text-[11px] font-mono font-medium uppercase tracking-wider
+        text-label font-mono font-medium uppercase tracking-wider
         bg-white/80 dark:bg-white/[0.06]
         border border-slate-200/80 dark:border-white/[0.08]
         text-slate-500 dark:text-slate-400

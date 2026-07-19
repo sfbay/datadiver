@@ -33,7 +33,7 @@ export default function StreamProgressBar({ initialLoadedByDataset, enabled, col
       />
       {active && total > 0 && (
         <div className="absolute top-1.5 right-2">
-          <span className="text-[9px] font-mono tabular-nums text-paper-500 dark:text-paper-600">
+          <span className="text-nano font-mono tabular-nums text-paper-500 dark:text-paper-600">
             {completed} / {total}
           </span>
         </div>

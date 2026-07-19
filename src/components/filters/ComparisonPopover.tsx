@@ -57,7 +57,7 @@ export default function ComparisonPopover() {
           }`}
         title={isActive ? `Comparing ${activeLabel}` : 'Compare against another date'}
       >
-        <span className="text-[10px] font-mono whitespace-nowrap">
+        <span className="text-micro font-mono whitespace-nowrap">
           {isActive ? activeLabel : 'Compare'}
         </span>
         <svg
@@ -77,7 +77,7 @@ export default function ComparisonPopover() {
         >
           <button
             onClick={() => { setComparisonMode(null); setOpen(false) }}
-            className={`w-full flex items-center justify-between px-2 py-1 rounded text-[10px] font-mono transition-colors ${
+            className={`w-full flex items-center justify-between px-2 py-1 rounded text-micro font-mono transition-colors ${
               !isActive
                 ? 'bg-ochre-500/15 ring-1 ring-ochre-500/30 text-white'
                 : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200'
@@ -93,21 +93,21 @@ export default function ComparisonPopover() {
               <button
                 key={preset}
                 onClick={() => { setComparisonMode({ kind: 'preset', preset }); setOpen(false) }}
-                className={`w-full flex items-center justify-between gap-2 px-2 py-1 rounded text-[10px] font-mono transition-colors ${
+                className={`w-full flex items-center justify-between gap-2 px-2 py-1 rounded text-micro font-mono transition-colors ${
                   selected
                     ? 'bg-ochre-500/15 ring-1 ring-ochre-500/30 text-white'
                     : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200'
                 }`}
               >
                 <span className="whitespace-nowrap">{isMultiDay && multiDayLabel ? multiDayLabel : label}</span>
-                <span className="text-[9px] text-slate-500 whitespace-nowrap">{win ? describeWindow(win) : ''}</span>
+                <span className="text-nano text-slate-500 whitespace-nowrap">{win ? describeWindow(win) : ''}</span>
               </button>
             )
           })}
 
           {/* Pinned date — a fact, not a relationship: stays put when the range moves */}
           <div
-            className={`flex items-center justify-between gap-2 px-2 py-1 rounded text-[10px] font-mono ${
+            className={`flex items-center justify-between gap-2 px-2 py-1 rounded text-micro font-mono ${
               comparisonMode?.kind === 'date'
                 ? 'bg-ochre-500/15 ring-1 ring-ochre-500/30 text-white'
                 : 'text-slate-400'
@@ -124,8 +124,8 @@ export default function ComparisonPopover() {
                   setOpen(false)
                 }
               }}
-              className="bg-transparent text-[10px] font-mono text-slate-300 outline-none
-                [color-scheme:dark] cursor-pointer w-[110px]"
+              className="bg-transparent text-micro font-mono text-slate-300 outline-none
+                [color-scheme:dark] cursor-pointer w-[6.875rem]"
               aria-label="Pinned comparison date"
             />
           </div>

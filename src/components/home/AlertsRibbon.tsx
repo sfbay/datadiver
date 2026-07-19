@@ -68,10 +68,10 @@ export default function AlertsRibbon({ mounted }: AlertsRibbonProps) {
                   animation: 'pulse 2.5s ease-in-out infinite',
                 }}
               />
-              <p className="text-[10px] font-mono uppercase tracking-[0.22em] text-terracotta-500">
+              <p className="text-micro font-mono uppercase tracking-[0.22em] text-terracotta-500">
                 Daily Newsletter
               </p>
-              <span className="text-[9px] font-mono uppercase tracking-[0.22em] px-1.5 py-0.5 rounded bg-terracotta-500/12 text-terracotta-500">
+              <span className="text-nano font-mono uppercase tracking-[0.22em] px-1.5 py-0.5 rounded bg-terracotta-500/12 text-terracotta-500">
                 New
               </span>
               <div className="flex-1 h-px bg-ink/[0.08] dark:bg-white/[0.06]" />
@@ -99,7 +99,7 @@ export default function AlertsRibbon({ mounted }: AlertsRibbonProps) {
               {STREAMS.map((s) => (
                 <span
                   key={s.label}
-                  className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider text-ink/55 dark:text-slate-400"
+                  className="inline-flex items-center gap-1.5 text-label font-mono uppercase tracking-wider text-ink/55 dark:text-slate-400"
                 >
                   <span
                     className="w-1.5 h-1.5 rounded-full"
@@ -110,7 +110,7 @@ export default function AlertsRibbon({ mounted }: AlertsRibbonProps) {
                 </span>
               ))}
               <span className="text-ink/30 dark:text-slate-600" aria-hidden>·</span>
-              <span className="text-[11px] font-mono text-ink/40 dark:text-slate-500 italic">
+              <span className="text-label font-mono text-ink/40 dark:text-slate-500 italic">
                 Double opt-in, one-click unsubscribe.
               </span>
             </div>
@@ -122,7 +122,7 @@ export default function AlertsRibbon({ mounted }: AlertsRibbonProps) {
               <p className="font-display italic text-[18px] text-ink dark:text-paper-100 leading-tight">
                 Set up alerts
               </p>
-              <p className="text-[10px] font-mono uppercase tracking-[0.22em] text-ink/45 dark:text-slate-500">
+              <p className="text-micro font-mono uppercase tracking-[0.22em] text-ink/45 dark:text-slate-500">
                 ~60 seconds
               </p>
             </div>

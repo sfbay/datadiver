@@ -119,10 +119,10 @@ export default function ExternalResourcesCard({
 
   return (
     <div className="glass-card rounded-xl p-4">
-      <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-1">
+      <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-1">
         External Resources
       </p>
-      <p className="text-[10px] text-slate-500 dark:text-slate-500 leading-relaxed mb-3">
+      <p className="text-micro text-slate-500 dark:text-slate-500 leading-relaxed mb-3">
         Open registries where current contact info, ownership filings, and litigation are kept.
         DataDiver doesn&rsquo;t mirror these — they&rsquo;re authoritative when you need to verify or reach someone.
       </p>
@@ -156,13 +156,13 @@ function ResourceSection({ title, links }: { title: string; links: ResourceLink[
               className="block px-2 py-1.5 -mx-2 rounded-md
                 hover:bg-white/[0.04] transition-colors group"
             >
-              <p className="text-[11px] text-moss-400 group-hover:text-moss-400 transition-colors flex items-center gap-1">
+              <p className="text-label text-moss-400 group-hover:text-moss-400 transition-colors flex items-center gap-1">
                 {link.label}
                 <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.4" className="opacity-60">
                   <path d="M3 7l4-4M3 3h4v4" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </p>
-              <p className="text-[9px] text-slate-500 dark:text-slate-600 mt-0.5">
+              <p className="text-nano text-slate-500 dark:text-slate-600 mt-0.5">
                 {link.description}
               </p>
             </a>

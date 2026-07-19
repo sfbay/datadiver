@@ -600,24 +600,24 @@ export default function TrafficSafety() {
         {/* items-start on mobile so the title can wrap on the left while the
             controls flow from the top-right (no empty well); md restores the
             centered single row. */}
-        <div className="flex items-start justify-between gap-3 md:items-center">
-          <div className="flex items-center gap-4 min-w-0">
+        <div className="flex flex-wrap items-start justify-between gap-3 desk:items-center">
+          <div className="flex flex-wrap items-center gap-4 min-w-0">
             <div className="min-w-0">
               <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">
                 Traffic Safety
               </h1>
-              <p className="hidden sm:block text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
+              <p className="hidden sm:block truncate text-micro font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
                 Vision Zero &middot; Crash & Speed Analysis
               </p>
             </div>
             {!isLoading && crashData.length > 0 && (
               <div className="flex items-center gap-1.5 flex-shrink-0">
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-brick-500/80 bg-brick-500/10 px-2 py-1 rounded-full">
+                <span className="inline-flex items-center gap-1.5 text-micro font-mono text-brick-500/80 bg-brick-500/10 px-2 py-1 rounded-full">
                   <span className="w-1 h-1 rounded-full bg-brick-500 pulse-live" />
                   {formatNumber(crashData.length)} records
                 </span>
                 {hitLimit && totalCount !== null && (
-                  <span className="text-[10px] font-mono text-ochre-500/80 bg-ochre-500/10 px-2 py-1 rounded-full">
+                  <span className="text-micro font-mono text-ochre-500/80 bg-ochre-500/10 px-2 py-1 rounded-full">
                     of {formatNumber(totalCount)} total
                   </span>
                 )}
@@ -654,7 +654,7 @@ export default function TrafficSafety() {
                   key={ov.key}
                   onClick={() => toggleOverlay(ov.key)}
                   title={ov.title}
-                  className={`px-2 py-1.5 rounded-md text-[10px] font-mono font-bold transition-all duration-200 ${
+                  className={`px-2 py-1.5 rounded-md text-micro font-mono font-bold transition-all duration-200 ${
                     activeOverlays.has(ov.key)
                       ? 'bg-white dark:bg-white/[0.08] shadow-sm'
                       : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
@@ -688,7 +688,7 @@ export default function TrafficSafety() {
       {!hourlyPattern.isLoading && hourlyPattern.hourTotals.some((t: number) => t > 0) && (
         <div className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-2 bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl z-10">
           <div className="flex items-center gap-3">
-            <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 whitespace-nowrap">
+            <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 whitespace-nowrap">
               Time of Day
             </p>
             <div className="flex-1">
@@ -734,19 +734,19 @@ export default function TrafficSafety() {
             {/* Anomaly legend */}
             {mapMode === 'anomaly' && neighborhoodAnomalies.size > 0 && (
               <div className="absolute bottom-6 right-5 z-10 glass-card rounded-xl p-3">
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                   Crash Anomaly<InfoTip term="anomaly-map" size={10} />
                 </p>
                 <div className="flex items-center gap-1">
-                  <span className="text-[9px] font-mono text-teal-500">−2σ</span>
+                  <span className="text-nano font-mono text-teal-500">−2σ</span>
                   <div className="flex h-2.5 rounded-full overflow-hidden" style={{ width: 100 }}>
                     {['#3f7573', '#8bb5b2', '#e2e8f0', '#e8c06b', '#b85545', '#6f2b20'].map((c, i) => (
                       <div key={i} className="flex-1" style={{ backgroundColor: c }} />
                     ))}
                   </div>
-                  <span className="text-[9px] font-mono text-brick-400">+3σ</span>
+                  <span className="text-nano font-mono text-brick-400">+3σ</span>
                 </div>
-                <p className="text-[9px] text-slate-500 mt-1">below avg → above avg</p>
+                <p className="text-nano text-slate-500 mt-1">below avg → above avg</p>
               </div>
             )}
 
@@ -761,7 +761,7 @@ export default function TrafficSafety() {
               <button
                 key={key}
                 onClick={() => setSidebarTab(key)}
-                className={`flex-1 py-2.5 text-[10px] font-mono uppercase tracking-[0.15em] transition-all duration-200 ${
+                className={`flex-1 py-2.5 text-micro font-mono uppercase tracking-[0.15em] transition-all duration-200 ${
                   sidebarTab === key
                     ? 'text-ink dark:text-white border-b-2 border-brick-500'
                     : 'text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400'
@@ -776,7 +776,7 @@ export default function TrafficSafety() {
             {sidebarTab === 'modes' && (
               <>
                 <div className="flex items-center gap-2 mb-4">
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
+                  <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
                     Collision Modes
                   </p>
                   <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
@@ -792,7 +792,7 @@ export default function TrafficSafety() {
             {sidebarTab === 'neighborhoods' && (
               <>
                 <div className="flex items-center gap-2 mb-4">
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
+                  <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
                     By Neighborhood
                   </p>
                   <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
@@ -801,7 +801,7 @@ export default function TrafficSafety() {
                 {selectedNeighborhood && (
                   <button
                     onClick={() => setSelectedNeighborhood(null)}
-                    className="mb-3 text-[10px] font-mono text-brick-500 hover:text-brick-400 transition-colors"
+                    className="mb-3 text-micro font-mono text-brick-500 hover:text-brick-400 transition-colors"
                   >
                     ← Clear filter: {selectedNeighborhood}
                   </button>
@@ -823,7 +823,7 @@ export default function TrafficSafety() {
                 {!hourlyPattern.isLoading && hourlyPattern.grid.some((row: number[]) => row.some((v: number) => v > 0)) && (
                   <div className="mb-4">
                     <HourlyHeatgrid grid={hourlyPattern.grid} width={264} height={160} />
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-mono">
+                    <p className="text-micro text-slate-400 dark:text-slate-500 mt-2 font-mono">
                       Peak: <span className="text-brick-500">{formatHour(hourlyPattern.peakHour)}</span>
                       {' · '}Quiet: <span className="text-slate-500">{formatHour(hourlyPattern.quietestHour)}</span>
                     </p>
@@ -832,7 +832,7 @@ export default function TrafficSafety() {
 
                 {!trend.isLoading && trend.currentPeriods.length > 0 && (
                   <div className="mb-4">
-                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 mb-2">
+                    <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 mb-2">
                       Volume Trend
                     </p>
                     <PeriodBreakdownChart
@@ -873,7 +873,7 @@ export default function TrafficSafety() {
                             <p className="text-[12px] font-medium text-ink dark:text-slate-200 truncate leading-tight">
                               {ns.neighborhood}
                             </p>
-                            <p className="text-[10px] text-slate-400 dark:text-slate-600 font-mono italic">
+                            <p className="text-micro text-slate-400 dark:text-slate-600 font-mono italic">
                               {ns.crashCount.toLocaleString()} crashes
                               {ns.totalInjured > 0 && <span className="text-ochre-500"> · {ns.totalInjured} injured</span>}
                               {ns.totalKilled > 0 && <span className="text-brick-400"> · {ns.totalKilled} killed</span>}

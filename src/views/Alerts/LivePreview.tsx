@@ -114,14 +114,14 @@ export function LivePreview({ email, streams, categories, radiusMiles, locations
               animation: 'pulse 2.5s ease-in-out infinite',
             }}
           />
-          <span className="text-[9px] font-mono uppercase tracking-[0.22em] text-terracotta-500">
+          <span className="text-nano font-mono uppercase tracking-[0.22em] text-terracotta-500">
             Preview · Today's edition
           </span>
           <div className="flex-1 h-px bg-ink/[0.08] dark:bg-white/[0.06]" />
         </div>
 
         {/* Mock email envelope: From / To / Subject */}
-        <div className="space-y-0.5 font-mono text-[10px] text-ink/55 dark:text-slate-400 tabular-nums">
+        <div className="space-y-0.5 font-mono text-micro text-ink/55 dark:text-slate-400 tabular-nums">
           <p>
             <span className="inline-block w-12 opacity-60">FROM</span>
             <span>DataDiver Alerts &lt;alerts@jlabsf.org&gt;</span>
@@ -182,7 +182,7 @@ export function LivePreview({ email, streams, categories, radiusMiles, locations
       </div>
 
       {/* Footer rule — keeps the kraft-paper edge */}
-      <div className="relative px-5 py-2.5 border-t border-ink/[0.06] dark:border-white/[0.04] flex items-center justify-between text-[9px] font-mono uppercase tracking-wider text-ink/45 dark:text-slate-500">
+      <div className="relative px-5 py-2.5 border-t border-ink/[0.06] dark:border-white/[0.04] flex items-center justify-between text-nano font-mono uppercase tracking-wider text-ink/45 dark:text-slate-500">
         <span>{matched.length > 0 ? `${matched.length} match${matched.length === 1 ? '' : 'es'} · last 24h` : 'Showing what arrived in the last 24h'}</span>
         <span>The Last 48 · jlabsf.org</span>
       </div>
@@ -248,7 +248,7 @@ function EventRow({ event, now }: { event: NormalizedEvent; now: number }) {
         <p className="font-display italic text-[14px] leading-tight text-ink dark:text-paper-100 truncate">
           {title}
         </p>
-        <p className="mt-0.5 text-[10px] font-mono text-ink/55 dark:text-slate-400 tabular-nums">
+        <p className="mt-0.5 text-micro font-mono text-ink/55 dark:text-slate-400 tabular-nums">
           <span style={{ color: pigment.eyebrow }}>{humanizeStreamName(event.datasetId)}</span>
           {where && <> · {where}</>}
           {' · '}
@@ -265,7 +265,7 @@ function EmptyPrompt({ line1, line2 }: { line1: string; line2: string }) {
       <p className="font-display italic text-[15px] text-ink/75 dark:text-paper-100/85 leading-tight">
         {line1}
       </p>
-      <p className="text-[11px] font-mono text-ink/50 dark:text-slate-400">{line2}</p>
+      <p className="text-label font-mono text-ink/50 dark:text-slate-400">{line2}</p>
     </div>
   )
 }
@@ -292,7 +292,7 @@ function QuietDayMessage({ locationLabel }: { locationLabel: string }) {
       <p className="font-display italic text-[15px] text-ink/85 dark:text-paper-100/90 leading-snug">
         No matches in the last 24 hours.
       </p>
-      <p className="text-[11px] font-mono text-ink/55 dark:text-slate-400 leading-relaxed">
+      <p className="text-label font-mono text-ink/55 dark:text-slate-400 leading-relaxed">
         Most blocks have quiet days. <span className="text-ink/75 dark:text-paper-100/85">{locationLabel}</span> seems to be having one today. <br />
         The Last 48 sends nothing when this is the case.
       </p>

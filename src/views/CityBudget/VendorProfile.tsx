@@ -109,7 +109,7 @@ export default function VendorProfile({ vendor, fiscalYear, onBack: _onBack }: V
           <div className="flex items-center justify-between mb-1">
             <div>
               {metrics?.isNonprofit && (
-                <span className="text-[9px] font-mono font-semibold bg-moss-500/10 text-moss-500 px-1.5 py-0.5 rounded-full">
+                <span className="text-nano font-mono font-semibold bg-moss-500/10 text-moss-500 px-1.5 py-0.5 rounded-full">
                   Nonprofit
                 </span>
               )}
@@ -118,7 +118,7 @@ export default function VendorProfile({ vendor, fiscalYear, onBack: _onBack }: V
           </div>
 
           {metrics && (
-            <p className="text-[10px] font-mono text-slate-400 dark:text-slate-500">
+            <p className="text-micro font-mono text-slate-400 dark:text-slate-500">
               {formatBudgetFull(metrics.lifetimeTotal)} lifetime · {metrics.fiscalYears} fiscal years · {metrics.contractCount} contract{metrics.contractCount !== 1 ? 's' : ''}
             </p>
           )}
@@ -134,33 +134,33 @@ export default function VendorProfile({ vendor, fiscalYear, onBack: _onBack }: V
 
             return (
               <div className="flex items-center gap-3 mt-2 flex-wrap">
-                <span className="text-[9px] font-mono text-slate-500" title="First fiscal year with payments">
+                <span className="text-nano font-mono text-slate-500" title="First fiscal year with payments">
                   Since <span className="text-slate-300">FY{firstFY}</span>
                 </span>
-                <span className="text-[9px] font-mono text-slate-600">·</span>
-                <span className="text-[9px] font-mono text-slate-500" title="Distinct departments paying this vendor">
+                <span className="text-nano font-mono text-slate-600">·</span>
+                <span className="text-nano font-mono text-slate-500" title="Distinct departments paying this vendor">
                   <span className="text-slate-300">{deptCount}</span> dept{deptCount !== 1 ? 's' : ''}
                 </span>
-                <span className="text-[9px] font-mono text-slate-600">·</span>
-                <span className="text-[9px] font-mono text-slate-500" title="Total individual voucher payments">
+                <span className="text-nano font-mono text-slate-600">·</span>
+                <span className="text-nano font-mono text-slate-500" title="Total individual voucher payments">
                   <span className="text-slate-300">{totalPayments.toLocaleString()}</span> payments
                 </span>
-                <span className="text-[9px] font-mono text-slate-600">·</span>
-                <span className="text-[9px] font-mono text-slate-500" title="Average payment amount">
+                <span className="text-nano font-mono text-slate-600">·</span>
+                <span className="text-nano font-mono text-slate-500" title="Average payment amount">
                   avg <span className="text-slate-300">{formatBudgetAmount(avgPayment)}</span>
                 </span>
                 {activeContracts > 0 && (
                   <>
-                    <span className="text-[9px] font-mono text-slate-600">·</span>
-                    <span className="text-[9px] font-mono text-slate-500" title="Contracts not yet expired">
+                    <span className="text-nano font-mono text-slate-600">·</span>
+                    <span className="text-nano font-mono text-slate-500" title="Contracts not yet expired">
                       <span className="text-slate-300">{activeContracts}</span> active contract{activeContracts !== 1 ? 's' : ''}
                     </span>
                   </>
                 )}
                 {soleSourceCount > 0 && (
                   <>
-                    <span className="text-[9px] font-mono text-slate-600">·</span>
-                    <span className="text-[9px] font-mono text-ochre-500/80" title="Contracts awarded without competitive bidding">
+                    <span className="text-nano font-mono text-slate-600">·</span>
+                    <span className="text-nano font-mono text-ochre-500/80" title="Contracts awarded without competitive bidding">
                       {soleSourceCount} sole source
                     </span>
                   </>
@@ -235,7 +235,7 @@ export default function VendorProfile({ vendor, fiscalYear, onBack: _onBack }: V
             <div className="space-y-4">
               {/* Spending Timeline */}
               <div className="glass-card rounded-xl p-4">
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500 mb-3">
+                <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500 mb-3">
                   Spending Timeline
                 </p>
                 <SpendingTimeline data={profile.yearData} currentFY={fiscalYear} />
@@ -266,7 +266,7 @@ export default function VendorProfile({ vendor, fiscalYear, onBack: _onBack }: V
               {/* Spending Categories */}
               {profile.categoryData.length > 0 && (
                 <div className="glass-card rounded-xl p-4">
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500 mb-3">
+                  <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500 mb-3">
                     Spending Categories
                   </p>
                   <CategoryBreakdown data={profile.categoryData} />
@@ -279,7 +279,7 @@ export default function VendorProfile({ vendor, fiscalYear, onBack: _onBack }: V
               {/* Department Breakdown */}
               {profile.deptData.length > 0 && (
                 <div className="glass-card rounded-xl p-4">
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500 mb-3">
+                  <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500 mb-3">
                     Department Breakdown
                   </p>
                   <DepartmentBreakdown
@@ -296,7 +296,7 @@ export default function VendorProfile({ vendor, fiscalYear, onBack: _onBack }: V
               {/* Contract Inventory */}
               {profile.contractData.length > 0 && (
                 <div className="glass-card rounded-xl p-4">
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500 mb-3">
+                  <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500 mb-3">
                     Contract Inventory
                   </p>
                   <ContractInventory
@@ -317,7 +317,7 @@ export default function VendorProfile({ vendor, fiscalYear, onBack: _onBack }: V
               {/* If no contracts found via supplierContracts, note it */}
               {profile.contractData.length === 0 && !profile.isLoading && (
                 <div className="glass-card rounded-xl p-4">
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500 mb-2">
+                  <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500 mb-2">
                     Contract Inventory
                   </p>
                   <p className="text-xs text-slate-400 font-mono">
@@ -331,7 +331,7 @@ export default function VendorProfile({ vendor, fiscalYear, onBack: _onBack }: V
           {/* Payment Pattern Heatgrid */}
           {monthlySpend.data.length > 0 && (
             <div className="glass-card rounded-xl p-4 max-w-6xl mt-6">
-              <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500 mb-3">
+              <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500 mb-3">
                 Payment Pattern (monthly)
               </p>
               <PaymentHeatgrid data={monthlySpend.data} />
@@ -342,13 +342,13 @@ export default function VendorProfile({ vendor, fiscalYear, onBack: _onBack }: V
           <div ref={paymentsRef} className="glass-card rounded-xl p-4 max-w-6xl mt-6">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500">
+                <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-500">
                   {deptFilter ? 'Filtered Payments' : 'Recent Payments'}
                 </p>
                 {deptFilter && (
                   <button
                     onClick={clearFilter}
-                    className="text-[9px] font-mono text-indigo-400 hover:text-indigo-400 transition-colors flex items-center gap-1"
+                    className="text-nano font-mono text-indigo-400 hover:text-indigo-400 transition-colors flex items-center gap-1"
                   >
                     {activeFilterLabel} ✕
                   </button>
@@ -357,7 +357,7 @@ export default function VendorProfile({ vendor, fiscalYear, onBack: _onBack }: V
               <button
                 onClick={handleExportCSV}
                 disabled={payments.payments.length === 0}
-                className="flex items-center gap-1.5 text-[10px] font-mono text-slate-400 hover:text-ink dark:hover:text-white bg-slate-100/80 dark:bg-white/[0.04] rounded-md px-2.5 py-1.5 transition-colors disabled:opacity-30"
+                className="flex items-center gap-1.5 text-micro font-mono text-slate-400 hover:text-ink dark:hover:text-white bg-slate-100/80 dark:bg-white/[0.04] rounded-md px-2.5 py-1.5 transition-colors disabled:opacity-30"
               >
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                   <path d="M6 1v7M3 5l3 3 3-3M2 10h8" />
@@ -370,7 +370,7 @@ export default function VendorProfile({ vendor, fiscalYear, onBack: _onBack }: V
               <button
                 onClick={payments.loadMore}
                 disabled={payments.isLoading}
-                className="w-full mt-2 py-2 text-[10px] font-mono text-indigo-400 hover:text-indigo-400 bg-indigo-500/5 hover:bg-indigo-500/10 rounded-lg transition-colors disabled:opacity-50"
+                className="w-full mt-2 py-2 text-micro font-mono text-indigo-400 hover:text-indigo-400 bg-indigo-500/5 hover:bg-indigo-500/10 rounded-lg transition-colors disabled:opacity-50"
               >
                 {payments.isLoading ? 'Loading…' : 'Load more payments'}
               </button>
@@ -378,7 +378,7 @@ export default function VendorProfile({ vendor, fiscalYear, onBack: _onBack }: V
           </div>
 
           {/* Source */}
-          <p className="text-[9px] font-mono text-slate-400/60 dark:text-slate-600 mt-6">
+          <p className="text-nano font-mono text-slate-400/60 dark:text-slate-600 mt-6">
             Source: SF Controller — Vendor Payments (<span className="tabular-nums">n9pm-xkyq</span>)
             {profile.contractData.length > 0 && (
               <> · Supplier Contracts (<span className="tabular-nums">cqi5-hm2d</span>)</>
@@ -409,7 +409,7 @@ function MetricCard({
 }) {
   return (
     <div className="glass-card rounded-lg px-3 py-2.5">
-      <p className="text-[9px] font-mono uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
+      <p className="text-nano font-mono uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
         {label}
       </p>
       <p
@@ -419,7 +419,7 @@ function MetricCard({
         {value}
       </p>
       {subtitle && (
-        <p className="text-[9px] font-mono text-slate-400 mt-0.5">{subtitle}</p>
+        <p className="text-nano font-mono text-slate-400 mt-0.5">{subtitle}</p>
       )}
     </div>
   )
@@ -460,14 +460,14 @@ function DepartmentBreakdown({
             title={onClickDept ? `Filter payments to ${r.department}` : r.department}
           >
             <div className="flex items-center justify-between mb-0.5">
-              <span className={`text-[10px] truncate max-w-[200px] ${isActive ? 'text-indigo-400' : 'text-slate-600 dark:text-slate-300'}`}>
+              <span className={`text-micro truncate max-w-[12.5rem] ${isActive ? 'text-indigo-400' : 'text-slate-600 dark:text-slate-300'}`}>
                 {r.department}
               </span>
               <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                <span className="text-[9px] font-mono text-slate-400 tabular-nums">
+                <span className="text-nano font-mono text-slate-400 tabular-nums">
                   {pct.toFixed(0)}%
                 </span>
-                <span className="text-[10px] font-mono text-ink dark:text-white tabular-nums">
+                <span className="text-micro font-mono text-ink dark:text-white tabular-nums">
                   {formatBudgetAmount(amount)}
                 </span>
               </div>
@@ -525,14 +525,14 @@ function CategoryBreakdown({
         return (
           <div key={character}>
             <div className="flex items-center justify-between mb-0.5">
-              <span className="text-[10px] text-slate-600 dark:text-slate-300 truncate max-w-[200px]" title={character}>
+              <span className="text-micro text-slate-600 dark:text-slate-300 truncate max-w-[12.5rem]" title={character}>
                 {character}
               </span>
               <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                <span className="text-[9px] font-mono text-slate-400 tabular-nums">
+                <span className="text-nano font-mono text-slate-400 tabular-nums">
                   {pct.toFixed(0)}%
                 </span>
-                <span className="text-[10px] font-mono text-ink dark:text-white tabular-nums">
+                <span className="text-micro font-mono text-ink dark:text-white tabular-nums">
                   {formatBudgetAmount(total)}
                 </span>
               </div>
@@ -541,10 +541,10 @@ function CategoryBreakdown({
               <div className="ml-2 space-y-0.5 mt-0.5">
                 {objects.slice(0, 3).map((obj) => (
                   <div key={obj.name} className="flex items-center justify-between">
-                    <span className="text-[9px] text-slate-400 dark:text-slate-500 truncate max-w-[180px]">
+                    <span className="text-nano text-slate-400 dark:text-slate-500 truncate max-w-[11.25rem]">
                       {obj.name}
                     </span>
-                    <span className="text-[9px] font-mono text-slate-400 tabular-nums ml-2">
+                    <span className="text-nano font-mono text-slate-400 tabular-nums ml-2">
                       {formatBudgetAmount(obj.total)}
                     </span>
                   </div>
@@ -586,7 +586,7 @@ function ContractInventory({ contracts, activeContract, onClickContract }: {
             title={onClickContract ? `Filter payments to ${c.department} (${c.contract_no})` : undefined}
           >
             <div className="flex items-center justify-between mb-1">
-              <span className={`text-[10px] font-mono ${isActiveContract ? 'text-indigo-400' : 'text-indigo-400'}`}>{c.contract_no}</span>
+              <span className={`text-micro font-mono ${isActiveContract ? 'text-indigo-400' : 'text-indigo-400'}`}>{c.contract_no}</span>
               <div className="flex items-center gap-1">
                 {isSoleSource && (
                   <span className="text-[7px] font-mono font-bold bg-ochre-500/10 text-ochre-500 px-1 py-0.5 rounded">
@@ -612,7 +612,7 @@ function ContractInventory({ contracts, activeContract, onClickContract }: {
             </div>
 
             {c.contract_title && (
-              <p className="text-[10px] text-slate-600 dark:text-slate-300 line-clamp-2 mb-1">
+              <p className="text-micro text-slate-600 dark:text-slate-300 line-clamp-2 mb-1">
                 {c.contract_title}
               </p>
             )}
@@ -641,7 +641,7 @@ function ContractInventory({ contracts, activeContract, onClickContract }: {
               </div>
             )}
 
-            <p className="text-[9px] text-slate-400">
+            <p className="text-nano text-slate-400">
               {c.department}
               {c.term_end_date && (
                 <> · Expires {new Date(c.term_end_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</>
@@ -669,7 +669,7 @@ function PaymentTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-[10px] font-mono">
+      <table className="w-full text-micro font-mono">
         <thead>
           <tr className="text-slate-400 dark:text-slate-500 border-b border-slate-200/50 dark:border-white/[0.04]">
             <th className="text-left py-1.5 pr-3 font-medium">FY</th>
@@ -693,10 +693,10 @@ function PaymentTable({
                   ? new Date(p.vouchers_paid_distribution_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })
                   : '—'}
               </td>
-              <td className="py-1.5 pr-3 text-slate-600 dark:text-slate-300 truncate max-w-[160px]" title={p.department}>
+              <td className="py-1.5 pr-3 text-slate-600 dark:text-slate-300 truncate max-w-[10rem]" title={p.department}>
                 {p.department}
               </td>
-              <td className="py-1.5 pr-3 text-slate-400 truncate max-w-[140px]" title={p.sub_object}>
+              <td className="py-1.5 pr-3 text-slate-400 truncate max-w-[8.75rem]" title={p.sub_object}>
                 {p.sub_object}
               </td>
               <td className="py-1.5 pr-3 text-right text-ink dark:text-white tabular-nums">

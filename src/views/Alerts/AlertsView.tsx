@@ -247,7 +247,7 @@ export default function AlertsView() {
                   Where to watch
                 </h2>
               </div>
-              <p className="min-w-[260px] flex-1 max-w-[44rem] text-[13px] leading-relaxed text-ink/60 dark:text-slate-400">
+              <p className="min-w-[16.25rem] flex-1 max-w-[44rem] text-[13px] leading-relaxed text-ink/60 dark:text-slate-400">
                 Click anywhere on the map to drop a pin — home, work, school, the
                 corner you worry about. Each pin watches its own circle; your
                 digest covers all of them.
@@ -303,7 +303,7 @@ export default function AlertsView() {
                 {/* Radius — lives with the map because its feedback (the
                     circles) renders here. */}
                 <div className="flex items-center gap-2.5">
-                  <span className="text-[9px] font-mono uppercase tracking-[0.18em] text-ink/45 dark:text-slate-500">
+                  <span className="text-nano font-mono uppercase tracking-[0.18em] text-ink/45 dark:text-slate-500">
                     Radius
                   </span>
                   <div className="inline-flex rounded-md border border-ink/15 dark:border-white/[0.12] overflow-hidden">
@@ -339,7 +339,7 @@ export default function AlertsView() {
           <div className="relative px-[clamp(20px,3vw,32px)] py-3 border-t border-ink/[0.06] dark:border-white/[0.04]">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               {locations.length === 0 ? (
-                <p className="text-[11px] font-mono text-ink/45 dark:text-slate-500 italic">
+                <p className="text-label font-mono text-ink/45 dark:text-slate-500 italic">
                   No pins yet — click the map, or search an address above.
                 </p>
               ) : (
@@ -350,13 +350,13 @@ export default function AlertsView() {
                       className="flex items-center gap-2 rounded-full border border-ink/[0.10] dark:border-white/[0.08] bg-paper-100/50 dark:bg-espresso-900/40 pl-3 pr-1.5 py-1.5"
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-terracotta-500 flex-shrink-0" aria-hidden />
-                      <span className="max-w-[240px] truncate text-[12px] text-ink dark:text-paper-100">
+                      <span className="max-w-[15rem] truncate text-[12px] text-ink dark:text-paper-100">
                         {l.label || `${l.lat.toFixed(4)}, ${l.lng.toFixed(4)}`}
                       </span>
                       <button
                         type="button"
                         onClick={() => setLocations((a) => a.filter((_, j) => j !== i))}
-                        className="grid place-items-center w-5 h-5 rounded-full text-[11px] leading-none text-ink/40 dark:text-slate-500 hover:text-brick-500 hover:bg-brick-500/[0.08] transition-colors"
+                        className="grid place-items-center w-5 h-5 rounded-full text-label leading-none text-ink/40 dark:text-slate-500 hover:text-brick-500 hover:bg-brick-500/[0.08] transition-colors"
                         aria-label={`Remove ${l.label || 'pin'}`}
                       >
                         ×
@@ -365,7 +365,7 @@ export default function AlertsView() {
                   ))}
                 </ul>
               )}
-              <span className="ml-auto text-[9px] font-mono uppercase tracking-wider text-ink/45 dark:text-slate-500 tabular-nums whitespace-nowrap">
+              <span className="ml-auto text-nano font-mono uppercase tracking-wider text-ink/45 dark:text-slate-500 tabular-nums whitespace-nowrap">
                 {locations.length} {locations.length === 1 ? 'pin' : 'pins'} · {radiusLabel(radiusMiles)} mi each
               </span>
             </div>
@@ -432,7 +432,7 @@ export default function AlertsView() {
                         <p className={`font-display italic text-[14px] leading-tight ${selected ? 'text-ink dark:text-paper-100' : 'text-ink/75 dark:text-paper-100/80'}`}>
                           {s.label}
                         </p>
-                        <p className="mt-0.5 text-[9px] font-mono uppercase tracking-[0.14em] text-ink/45 dark:text-slate-400">
+                        <p className="mt-0.5 text-nano font-mono uppercase tracking-[0.14em] text-ink/45 dark:text-slate-400">
                           {s.sublabel}
                         </p>
                       </div>
@@ -448,10 +448,10 @@ export default function AlertsView() {
                     {/* Sub-layer: significance filters — narrows 911 + Fire & EMS
                         only, so it lives right under the live chips it refines. */}
                     <div className="mt-4 mb-1.5 flex items-center gap-2">
-                      <span className="text-[9px] font-mono uppercase tracking-[0.22em] text-ink/45 dark:text-slate-400">
+                      <span className="text-nano font-mono uppercase tracking-[0.22em] text-ink/45 dark:text-slate-400">
                         ── Only these kinds
                       </span>
-                      <span className="text-[9px] font-mono uppercase tracking-[0.18em] text-ink/35 dark:text-slate-500">
+                      <span className="text-nano font-mono uppercase tracking-[0.18em] text-ink/35 dark:text-slate-500">
                         · optional
                       </span>
                       <div className="flex-1 h-px bg-ink/[0.08] dark:bg-white/[0.06]" />
@@ -470,7 +470,7 @@ export default function AlertsView() {
                             onClick={() => setCategories((a) => toggle(a, c.key))}
                             aria-pressed={selected}
                             className={`
-                              rounded-full px-3 py-1.5 text-[11px] font-mono uppercase tracking-wider
+                              rounded-full px-3 py-1.5 text-label font-mono uppercase tracking-wider
                               border transition-colors
                               ${selected
                                 ? 'border-brick-500 bg-brick-500/12 text-brick-500'
@@ -484,7 +484,7 @@ export default function AlertsView() {
                     </div>
 
                     <div className="mt-4 mb-1.5 flex items-center gap-2">
-                      <span className="text-[9px] font-mono uppercase tracking-[0.22em] text-ink/45 dark:text-slate-400">
+                      <span className="text-nano font-mono uppercase tracking-[0.22em] text-ink/45 dark:text-slate-400">
                         ── Released on a delay
                       </span>
                       <div className="flex-1 h-px bg-ink/[0.08] dark:bg-white/[0.06]" />
@@ -498,7 +498,7 @@ export default function AlertsView() {
                       {RELEASED_STREAM_OPTIONS.map(chip)}
                     </div>
                     <div className="mt-4 mb-1.5 flex items-center gap-2">
-                      <span className="text-[9px] font-mono uppercase tracking-[0.22em] text-ink/45 dark:text-slate-400">
+                      <span className="text-nano font-mono uppercase tracking-[0.22em] text-ink/45 dark:text-slate-400">
                         ── Neighborhood pulse
                       </span>
                       <div className="flex-1 h-px bg-ink/[0.08] dark:bg-white/[0.06]" />
@@ -538,7 +538,7 @@ export default function AlertsView() {
                           <p className={`font-display italic text-[14px] leading-tight ${pulse ? 'text-ink dark:text-paper-100' : 'text-ink/75 dark:text-paper-100/80'}`}>
                             Neighborhood pulse
                           </p>
-                          <p className="mt-0.5 text-[9px] font-mono uppercase tracking-[0.14em] text-ink/45 dark:text-slate-400">
+                          <p className="mt-0.5 text-nano font-mono uppercase tracking-[0.14em] text-ink/45 dark:text-slate-400">
                             busier than usual · nearby areas
                           </p>
                         </div>
@@ -667,7 +667,7 @@ function HeroBand() {
         <div className="max-w-[38rem] lg:max-w-[50%]">
           <div className="flex items-center gap-2.5 mb-4">
             <div className="h-px w-7 bg-terracotta-500/60" />
-            <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-terracotta-500">
+            <p className="text-micro font-mono uppercase tracking-[0.25em] text-terracotta-500">
               Daily Newsletter · The Last 48
             </p>
           </div>
@@ -694,7 +694,7 @@ function HeroBand() {
               “Most blocks have quiet days. We never fill an inbox just to prove we’re
               working — silence is the signal that nothing matched.”
             </p>
-            <p className="mt-2 text-[9px] font-mono uppercase tracking-[0.22em] text-ink/40 dark:text-slate-500">
+            <p className="mt-2 text-nano font-mono uppercase tracking-[0.22em] text-ink/40 dark:text-slate-500">
               ── Editor’s note
             </p>
           </aside>
@@ -791,7 +791,7 @@ function Colophon() {
   return (
     <footer className="mt-12 pt-6 border-t border-ink/[0.06] dark:border-white/[0.04]">
       <div className="grid gap-3 sm:grid-cols-[1fr,auto] items-baseline">
-        <p className="text-[10px] font-mono text-ink/45 dark:text-slate-500 leading-relaxed max-w-[40rem]">
+        <p className="text-micro font-mono text-ink/45 dark:text-slate-500 leading-relaxed max-w-[40rem]">
           DataDiver Alerts is a free public-interest service. The matcher
           running in your browser right now is the same code that decides
           what the daily digest sends — there is no separate preview pipeline
@@ -805,7 +805,7 @@ function Colophon() {
           </a>{' '}
           via the Socrata SODA API.
         </p>
-        <p className="text-[9px] font-mono uppercase tracking-[0.22em] text-ink/40 dark:text-slate-500">
+        <p className="text-nano font-mono uppercase tracking-[0.22em] text-ink/40 dark:text-slate-500">
           DataDiver · jlabsf.org
         </p>
       </div>
@@ -818,7 +818,7 @@ function Colophon() {
 function ConfirmationScreen({ email }: { email: string }) {
   return (
     <div className="h-full overflow-y-auto">
-      <div className="mx-auto max-w-[640px] px-[clamp(16px,3vw,48px)] pt-[clamp(48px,8vw,120px)]">
+      <div className="mx-auto max-w-[40rem] px-[clamp(16px,3vw,48px)] pt-[clamp(48px,8vw,120px)]">
         <div
           className="glass-card relative rounded-[28px] rounded-bl-none overflow-hidden glow-host"
           style={{ '--glow': '#7a9954' } as CSSProperties}
@@ -828,7 +828,7 @@ function ConfirmationScreen({ email }: { email: string }) {
           <div className="relative px-[clamp(24px,4vw,48px)] py-[clamp(28px,4vw,52px)]">
             <div className="flex items-center gap-2.5 mb-5">
               <div className="h-px w-7 bg-moss-500/60" />
-              <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-moss-500">
+              <p className="text-micro font-mono uppercase tracking-[0.25em] text-moss-500">
                 One more step
               </p>
             </div>

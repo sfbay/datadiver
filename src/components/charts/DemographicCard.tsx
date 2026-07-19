@@ -148,7 +148,7 @@ export default function DemographicCard({
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-xs font-medium text-slate-600 dark:text-slate-200 truncate">{config.shortLabel}</span>
           {isActive && (
-            <span className="flex items-center gap-1 text-[10px] text-plum-500 font-mono shrink-0">
+            <span className="flex items-center gap-1 text-micro text-plum-500 font-mono shrink-0">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-plum-400" />
               active
             </span>
@@ -175,7 +175,7 @@ export default function DemographicCard({
         ) : (
           <span className="font-mono text-lg text-slate-500">—</span>
         )}
-        <span className="ml-2 text-[10px] text-slate-500 font-mono">SF · ACS 2019–2023</span>
+        <span className="ml-2 text-micro text-slate-500 font-mono">SF · ACS 2019–2023</span>
       </div>
 
       {/* SparkBars — neighborhood distribution */}
@@ -193,10 +193,10 @@ export default function DemographicCard({
           {/* High / low labels */}
           {highNeighborhood && lowNeighborhood && (
             <div className="flex justify-between mt-1">
-              <span className="text-[9px] text-slate-500 truncate max-w-[45%]" title={highNeighborhood.name}>
+              <span className="text-nano text-slate-500 truncate max-w-[45%]" title={highNeighborhood.name}>
                 ▲ {highNeighborhood.name.replace(' ', '\u00A0')}
               </span>
-              <span className="text-[9px] text-slate-500 truncate max-w-[45%] text-right" title={lowNeighborhood.name}>
+              <span className="text-nano text-slate-500 truncate max-w-[45%] text-right" title={lowNeighborhood.name}>
                 {lowNeighborhood.name.replace(' ', '\u00A0')} ▼
               </span>
             </div>

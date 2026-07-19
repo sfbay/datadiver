@@ -487,25 +487,25 @@ export default function ParkingRevenue() {
         {/* items-start on mobile so the title can wrap on the left while the
             controls flow from the top-right (no empty well); md restores the
             centered single row. */}
-        <div className="flex items-start justify-between gap-3 md:items-center">
-          <div className="flex items-center gap-4 min-w-0">
+        <div className="flex flex-wrap items-start justify-between gap-3 desk:items-center">
+          <div className="flex flex-wrap items-center gap-4 min-w-0">
             <div className="min-w-0">
               <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">
                 Parking Revenue
               </h1>
-              <p className="hidden sm:block text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
+              <p className="hidden sm:block truncate text-micro font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
                 SFMTA &middot; Meter Revenue Patterns
               </p>
             </div>
             {/* Transactions count hidden on mobile — it's also in the map's stat
                 overlay (Txns), so the header doesn't need to carry it on a phone. */}
             {!isLoading && serverStats && (
-              <span className="hidden sm:inline-flex flex-shrink-0 items-center gap-1.5 text-[10px] font-mono text-signal-blue/80 bg-signal-blue/10 px-2 py-1 rounded-full">
+              <span className="hidden sm:inline-flex flex-shrink-0 items-center gap-1.5 text-micro font-mono text-signal-blue/80 bg-signal-blue/10 px-2 py-1 rounded-full">
                 {formatNumber(serverStats.totalTransactions)} transactions
               </span>
             )}
             {metersLoading && (
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-slate-400">
+              <span className="inline-flex items-center gap-1.5 text-micro font-mono text-slate-400">
                 <span className="w-3 h-3 border border-slate-400 border-t-transparent rounded-full animate-spin" />
                 Loading meters...
               </span>
@@ -577,7 +577,7 @@ export default function ParkingRevenue() {
         <MapSidebar>
           <div className="p-4">
             <div className="flex items-center gap-2 mb-3">
-              <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">Payment Methods</p>
+              <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">Payment Methods</p>
               <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
             </div>
             {paymentBreakdown.length === 0 && (isLoading || !serverStats) && <SkeletonBreakdownList count={4} />}
@@ -590,7 +590,7 @@ export default function ParkingRevenue() {
                     <div className="flex justify-between items-baseline mb-1">
                       <span className="text-[12px] font-medium text-ink dark:text-slate-200">{label}</span>
                       <div className="flex items-baseline gap-2">
-                        <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">{entry.pct.toFixed(0)}%</span>
+                        <span className="text-micro font-mono text-slate-400 dark:text-slate-500">{entry.pct.toFixed(0)}%</span>
                         <span className="text-[12px] font-mono font-semibold tabular-nums" style={{ color }}>{formatCurrency(entry.amount)}</span>
                       </div>
                     </div>
@@ -605,7 +605,7 @@ export default function ParkingRevenue() {
             {!trend.isLoading && trend.currentPeriods.length > 0 && (
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-2">
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">Volume Trend</p>
+                  <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">Volume Trend</p>
                   <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
                 </div>
                 <PeriodBreakdownChart
@@ -620,14 +620,14 @@ export default function ParkingRevenue() {
             )}
 
             <div className="flex items-center gap-2 mb-3">
-              <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">Top Neighborhoods</p>
+              <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">Top Neighborhoods</p>
               <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
             </div>
 
             {selectedNeighborhood && (
               <button
                 onClick={() => setSelectedNeighborhood(null)}
-                className="mb-3 text-[10px] font-mono text-teal-500 hover:text-teal-500 transition-colors"
+                className="mb-3 text-micro font-mono text-teal-500 hover:text-teal-500 transition-colors"
               >
                 {'\u2190'} Clear: {selectedNeighborhood}
               </button>
@@ -665,7 +665,7 @@ export default function ParkingRevenue() {
                     <div className="absolute inset-y-0 left-0 rounded-lg bg-signal-blue/[0.05] bar-grow" style={{ width: `${barWidth}%` }} />
                     <div className="relative flex items-center justify-between">
                       <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <span className="text-[10px] font-mono text-slate-400/40 dark:text-slate-700 w-4 text-right tabular-nums">{i + 1}</span>
+                        <span className="text-micro font-mono text-slate-400/40 dark:text-slate-700 w-4 text-right tabular-nums">{i + 1}</span>
                         <p className="text-[12px] font-medium text-ink dark:text-slate-200 truncate">{ns.name}</p>
                       </div>
                       <span className="text-[12px] font-mono font-semibold text-signal-blue ml-2 whitespace-nowrap tabular-nums">{formatCurrency(ns.revenue)}</span>

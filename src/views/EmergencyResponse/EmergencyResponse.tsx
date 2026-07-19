@@ -427,7 +427,7 @@ export default function EmergencyResponse() {
     const casualties = []
     if (injuries > 0) casualties.push(`${injuries} injured`)
     if (fatalities > 0) casualties.push(`${fatalities} fatal`)
-    return `<div class="font-mono text-[10px]">
+    return `<div class="font-mono text-micro">
       <div class="font-semibold text-brick-400 mb-1">Fire with Casualties</div>
       <div>${props.situation}</div>
       <div class="text-brick-400">${casualties.join(', ')}</div>
@@ -439,7 +439,7 @@ export default function EmergencyResponse() {
 
   // Battery fire tooltip
   useMapTooltip(mapInstance, 'fire-battery-points', (props) => {
-    return `<div class="font-mono text-[10px]">
+    return `<div class="font-mono text-micro">
       <div class="font-semibold text-ochre-500 mb-1">Battery Fire</div>
       <div>${props.factor || props.situation}</div>
       ${props.origin ? `<div>Origin: ${props.origin}</div>` : ''}
@@ -791,13 +791,13 @@ export default function EmergencyResponse() {
         {/* items-start on mobile so the title can wrap on the left while the
             controls flow from the top-right (no empty well); md restores the
             centered single row. */}
-        <div className="flex items-start justify-between gap-3 md:items-center">
-          <div className="flex items-center gap-4 min-w-0">
+        <div className="flex flex-wrap items-start justify-between gap-3 desk:items-center">
+          <div className="flex flex-wrap items-center gap-4 min-w-0">
             <div className="min-w-0">
               <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">
                 Emergency Response
               </h1>
-              <p className="hidden sm:block text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
+              <p className="hidden sm:block truncate text-micro font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
                 SFFD &middot; Fire &amp; EMS Dispatch
               </p>
             </div>
@@ -805,12 +805,12 @@ export default function EmergencyResponse() {
                 the map's stat overlay, so the header doesn't need it on a phone. */}
             {!isLoading && responseData.length > 0 && (
               <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-signal-emerald/80 bg-signal-emerald/10 px-2 py-1 rounded-full">
+                <span className="inline-flex items-center gap-1.5 text-micro font-mono text-signal-emerald/80 bg-signal-emerald/10 px-2 py-1 rounded-full">
                   <span className="w-1 h-1 rounded-full bg-signal-emerald pulse-live" />
                   {formatNumber(responseData.length)} records
                 </span>
                 {hitLimit && totalCount !== null && (
-                  <span className="text-[10px] font-mono text-ochre-500/80 bg-ochre-500/10 px-2 py-1 rounded-full">
+                  <span className="text-micro font-mono text-ochre-500/80 bg-ochre-500/10 px-2 py-1 rounded-full">
                     of {formatNumber(totalCount)} total
                   </span>
                 )}
@@ -874,7 +874,7 @@ export default function EmergencyResponse() {
       {!hourlyPattern.isLoading && hourlyPattern.hourTotals.some((t) => t > 0) && (
         <div className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-2 bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl z-10">
           <div className="flex items-center gap-3">
-            <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 whitespace-nowrap">
+            <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 whitespace-nowrap">
               Time of Day
             </p>
             <div className="flex-1">
@@ -935,7 +935,7 @@ export default function EmergencyResponse() {
               <button
                 key={key}
                 onClick={() => setSidebarTab(key)}
-                className={`flex-1 py-2.5 text-[10px] font-mono uppercase tracking-[0.15em] transition-all duration-200 ${
+                className={`flex-1 py-2.5 text-micro font-mono uppercase tracking-[0.15em] transition-all duration-200 ${
                   sidebarTab === key
                     ? 'text-ink dark:text-white border-b-2 border-signal-blue'
                     : 'text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400'
@@ -950,7 +950,7 @@ export default function EmergencyResponse() {
             {sidebarTab === 'neighborhoods' && (
               <>
                 <div className="flex items-center gap-2 mb-4">
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
+                  <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
                     By Neighborhood
                   </p>
                   <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
@@ -960,7 +960,7 @@ export default function EmergencyResponse() {
                   <>
                     <button
                       onClick={() => setSelectedNeighborhood(null)}
-                      className="mb-3 text-[10px] font-mono text-teal-500 hover:text-teal-500 transition-colors"
+                      className="mb-3 text-micro font-mono text-teal-500 hover:text-teal-500 transition-colors"
                     >
                       {'\u2190'} Clear: {selectedNeighborhood}
                     </button>
@@ -1007,7 +1007,7 @@ export default function EmergencyResponse() {
                             <p className="text-[12px] font-medium text-ink dark:text-slate-200 truncate leading-tight">
                               {ns.neighborhood}
                             </p>
-                            <p className="text-[10px] text-slate-400 dark:text-slate-600 font-mono italic">
+                            <p className="text-micro text-slate-400 dark:text-slate-600 font-mono italic">
                               {(() => {
                                 const nhTrend = trend.neighborhoodMap.get(ns.neighborhood)
                                 if (!nhTrend || !nhTrend.priorYearCount) return null
@@ -1064,7 +1064,7 @@ export default function EmergencyResponse() {
             {sidebarTab === 'patterns' && (
               <>
                 <div className="flex items-center gap-2 mb-4">
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
+                  <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
                     Call Volume by Hour &amp; Day
                   </p>
                   <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
@@ -1075,7 +1075,7 @@ export default function EmergencyResponse() {
                 ) : (
                   <>
                     <HourlyHeatgrid grid={hourlyPattern.grid} width={232} height={150} />
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-3 font-mono">
+                    <p className="text-micro text-slate-400 dark:text-slate-500 mt-3 font-mono">
                       Click a cell to filter by that hour. Peak hour:{' '}
                       <span className="text-signal-amber">{hourlyPattern.peakHour}:00</span>
                     </p>
@@ -1086,7 +1086,7 @@ export default function EmergencyResponse() {
                 {!trend.isLoading && trend.currentPeriods.length > 0 && (
                   <div className="mt-5">
                     <div className="flex items-center gap-2 mb-3">
-                      <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
+                      <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
                         Volume Trend
                       </p>
                       <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
@@ -1106,7 +1106,7 @@ export default function EmergencyResponse() {
                 {isFireMode && !fireInsights.isLoading && (fireInsights.causes.length > 0 || fireInsights.propertyTypes.length > 0) && (
                   <div className="mt-5">
                     <div className="flex items-center gap-2 mb-3">
-                      <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-brick-400/80">
+                      <p className="text-nano font-mono uppercase tracking-[0.2em] text-brick-400/80">
                         Fire Insights
                       </p>
                       <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
@@ -1115,7 +1115,7 @@ export default function EmergencyResponse() {
                     {/* Top Causes */}
                     {fireInsights.causes.length > 0 && (
                       <div className="mb-4">
-                        <p className="text-[9px] font-mono uppercase tracking-[0.15em] text-slate-500 dark:text-slate-600 mb-2">
+                        <p className="text-nano font-mono uppercase tracking-[0.15em] text-slate-500 dark:text-slate-600 mb-2">
                           Top Causes
                         </p>
                         <HorizontalBarChart
@@ -1130,7 +1130,7 @@ export default function EmergencyResponse() {
                     {/* Property Types */}
                     {fireInsights.propertyTypes.length > 0 && (
                       <div className="mb-4">
-                        <p className="text-[9px] font-mono uppercase tracking-[0.15em] text-slate-500 dark:text-slate-600 mb-2">
+                        <p className="text-nano font-mono uppercase tracking-[0.15em] text-slate-500 dark:text-slate-600 mb-2">
                           Property Types
                         </p>
                         <HorizontalBarChart
@@ -1145,7 +1145,7 @@ export default function EmergencyResponse() {
                     {/* Detection Rate */}
                     {fireInsights.detectionStats && (
                       <div>
-                        <p className="text-[9px] font-mono uppercase tracking-[0.15em] text-slate-500 dark:text-slate-600 mb-2">
+                        <p className="text-nano font-mono uppercase tracking-[0.15em] text-slate-500 dark:text-slate-600 mb-2">
                           Detection Rate
                         </p>
                         <div className="flex gap-2">

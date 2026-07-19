@@ -36,7 +36,7 @@ function fmt(n: number): string {
 function YoYBadge({ pct }: { pct: number }) {
   const positive = pct > 0
   return (
-    <span className={`text-[10px] font-mono tabular-nums ${positive ? 'text-brick-400' : pct < 0 ? 'text-moss-400' : 'text-slate-500'}`}>
+    <span className={`text-micro font-mono tabular-nums ${positive ? 'text-brick-400' : pct < 0 ? 'text-moss-400' : 'text-slate-500'}`}>
       {positive ? '+' : ''}{pct.toFixed(0)}%
     </span>
   )
@@ -98,7 +98,7 @@ function MetricRow({
             className={`w-1.5 h-1.5 rounded-full flex-shrink-0 transition-all ${dimmed ? 'ring-1 ring-current' : ''}`}
             style={{ backgroundColor: dimmed ? 'transparent' : color, color }}
           />
-          <span className="text-[11px] text-slate-300 truncate">{label}</span>
+          <span className="text-label text-slate-300 truncate">{label}</span>
         </button>
         <div className="flex items-center gap-2.5 flex-shrink-0">
           <span className="text-[12px] font-mono text-slate-300 tabular-nums">{fmt(metric.count)}</span>
@@ -110,7 +110,7 @@ function MetricRow({
                 e.stopPropagation()
                 navigate(`${DOMAIN_ROUTES[domainKey]}?neighborhood=${encodeURIComponent(neighborhood)}`)
               }}
-              className="opacity-0 group-hover:opacity-100 text-[10px] text-slate-600 hover:text-slate-300 transition-all ml-0.5"
+              className="opacity-0 group-hover:opacity-100 text-micro text-slate-600 hover:text-slate-300 transition-all ml-0.5"
               title={`Open ${label} view`}
             >
               →
@@ -144,7 +144,7 @@ function ProfileView({ profile, onDiveIn, isDiveInActive, isDiveInLoading, visib
         <button
           onClick={onDiveIn}
           disabled={isDiveInLoading}
-          className="w-full py-2.5 rounded-xl glass-card text-[11px] font-mono uppercase tracking-wider text-plum-500 hover:text-plum-400 hover:bg-plum-500/10 transition-all duration-200 flex items-center justify-center gap-2"
+          className="w-full py-2.5 rounded-xl glass-card text-label font-mono uppercase tracking-wider text-plum-500 hover:text-plum-400 hover:bg-plum-500/10 transition-all duration-200 flex items-center justify-center gap-2"
         >
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <path d="M6 2v8M3 7l3 3 3-3" />
@@ -154,14 +154,14 @@ function ProfileView({ profile, onDiveIn, isDiveInActive, isDiveInLoading, visib
       )}
       {isDiveInActive && (
         <div className="text-center py-1">
-          <span className="text-[9px] font-mono text-plum-500/60 uppercase tracking-wider">Data portrait active on map</span>
+          <span className="text-nano font-mono text-plum-500/60 uppercase tracking-wider">Data portrait active on map</span>
         </div>
       )}
 
       {/* Civic Fingerprint — the hero */}
       <div className="flex flex-col items-center py-3">
         <CivicFingerprint profile={profile} size={140} showLabels />
-        <p className="text-[9px] font-mono text-slate-500 mt-2 tracking-wider uppercase">
+        <p className="text-nano font-mono text-slate-500 mt-2 tracking-wider uppercase">
           Civic Fingerprint
         </p>
       </div>
@@ -188,7 +188,7 @@ function ProfileView({ profile, onDiveIn, isDiveInActive, isDiveInLoading, visib
 
       {/* Safety section */}
       <div>
-        <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 mb-1.5 px-1">
+        <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 mb-1.5 px-1">
           Safety
         </p>
         <div className="space-y-0.5">
@@ -200,7 +200,7 @@ function ProfileView({ profile, onDiveIn, isDiveInActive, isDiveInLoading, visib
 
       {/* Quality of Life section */}
       <div>
-        <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 mb-1.5 px-1">
+        <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 mb-1.5 px-1">
           Quality of Life
         </p>
         <div className="space-y-0.5">
@@ -265,17 +265,18 @@ export default function NeighborhoodSidebar({
 
   return (
     <>
-      {/* Inline w-[300px] aside at md+, draggable bottom sheet on phones. Kept
-          inline (not <MapSidebar>) so the sticky header + scroll list survive —
-          MapSidebar's single-scroll-container model would flatten them. The
-          sheetStyle (height + translateY) attaches only below md; the md:
-          classes own the inline-aside layout. */}
+      {/* Inline w-[18.75rem] aside at the desktop breakpoint, draggable bottom
+          sheet on phones. Kept inline (not <MapSidebar>) so the sticky
+          header + scroll list survive — MapSidebar's single-scroll-container
+          model would flatten them. The sheetStyle (height + translateY)
+          attaches only below the mobile breakpoint; the desk: classes
+          cancel the sheet chrome on desktop. */}
       <aside
         style={isMobile ? sheet.sheetStyle : undefined}
         className={`flex flex-col overflow-hidden bg-slate-900
           fixed inset-x-0 bottom-0 z-30 rounded-t-2xl border-t border-white/10 shadow-[0_-8px_30px_rgba(0,0,0,0.18)]
-          md:static md:h-full md:w-[300px] md:flex-shrink-0
-          md:bg-black/20 md:rounded-none md:border-t-0 md:border-l md:border-white/[0.06] md:shadow-none`}
+          desk:static desk:h-full desk:w-[18.75rem] desk:flex-shrink-0
+          desk:bg-black/20 desk:rounded-none desk:border-t-0 desk:border-l desk:border-white/[0.06] desk:shadow-none`}
       >
         {/* Mobile drag handle — ↕ resize (peek / half / full), tap to cycle */}
         {isMobile && (
@@ -290,7 +291,7 @@ export default function NeighborhoodSidebar({
       {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-white/[0.04]">
         <div className="flex items-center justify-between mb-1">
-          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500">
+          <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500">
             {compareMode
               ? `Comparing ${compareSet.length} of 3`
               : selectedNeighborhood
@@ -301,7 +302,7 @@ export default function NeighborhoodSidebar({
             {compareMode && (
               <button
                 onClick={onToggleCompare}
-                className="text-[9px] font-mono text-plum-500 hover:text-plum-400 transition-colors"
+                className="text-nano font-mono text-plum-500 hover:text-plum-400 transition-colors"
               >
                 Exit compare
               </button>
@@ -309,7 +310,7 @@ export default function NeighborhoodSidebar({
             {!compareMode && selectedNeighborhood && (
               <button
                 onClick={() => onSelectNeighborhood(null)}
-                className="text-[9px] font-mono text-plum-500 hover:text-plum-400 transition-colors"
+                className="text-nano font-mono text-plum-500 hover:text-plum-400 transition-colors"
               >
                 All neighborhoods
               </button>
@@ -331,7 +332,7 @@ export default function NeighborhoodSidebar({
               <button
                 key={key}
                 onClick={() => setSortKey(key)}
-                className={`text-[9px] font-mono px-2 py-0.5 rounded-full transition-all duration-200 ${
+                className={`text-nano font-mono px-2 py-0.5 rounded-full transition-all duration-200 ${
                   sortKey === key
                     ? 'bg-plum-500/20 text-plum-400 ring-1 ring-plum-500/20'
                     : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]'
@@ -343,7 +344,7 @@ export default function NeighborhoodSidebar({
             {/* Compare toggle */}
             <button
               onClick={onToggleCompare}
-              className={`text-[9px] font-mono px-2 py-0.5 rounded-full transition-all duration-200 ml-auto ${
+              className={`text-nano font-mono px-2 py-0.5 rounded-full transition-all duration-200 ml-auto ${
                 compareMode
                   ? 'bg-plum-500/30 text-plum-400 ring-1 ring-plum-500/30'
                   : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]'
@@ -365,13 +366,13 @@ export default function NeighborhoodSidebar({
             {/* 3rd neighborhood picker — above comparison so it's always visible */}
             {compareSet.length < 3 && (
               <div className="mb-3 pb-3 border-b border-white/[0.04]">
-                <p className="text-[9px] font-mono text-slate-500 uppercase tracking-wider mb-2 px-1">Add 3rd neighborhood</p>
+                <p className="text-nano font-mono text-slate-500 uppercase tracking-wider mb-2 px-1">Add 3rd neighborhood</p>
                 <div className="space-y-0.5 max-h-32 overflow-y-auto">
                   {sorted.filter((p) => !compareSet.includes(p.name)).slice(0, 12).map((profile) => (
                     <button
                       key={profile.name}
                       onClick={() => onAddToCompare(profile.name)}
-                      className="w-full text-left py-1.5 px-2 rounded-md text-[11px] text-slate-400 hover:text-white hover:bg-white/[0.04] transition-colors truncate"
+                      className="w-full text-left py-1.5 px-2 rounded-md text-label text-slate-400 hover:text-white hover:bg-white/[0.04] transition-colors truncate"
                     >
                       + {profile.name}
                     </button>
@@ -403,7 +404,7 @@ export default function NeighborhoodSidebar({
                   <div className="flex items-center gap-2.5">
                     {/* Numbered circle indicator or empty circle */}
                     <div
-                      className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[9px] font-mono font-bold transition-all ${
+                      className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-nano font-mono font-bold transition-all ${
                         isSelected ? 'text-white' : 'border border-white/20 text-slate-600'
                       }`}
                       style={isSelected ? { backgroundColor: SLOT_COLORS[slotIndex].hex } : undefined}
@@ -415,7 +416,7 @@ export default function NeighborhoodSidebar({
                       <p className="text-[12px] font-medium text-slate-200 truncate leading-tight group-hover:text-white transition-colors">
                         {profile.name}
                       </p>
-                      <p className="text-[10px] text-slate-500 font-mono italic">
+                      <p className="text-micro text-slate-500 font-mono italic">
                         {fmt(profile.totalEvents)} events
                         {profile.anomalyCount > 0 && (
                           <span className="text-ochre-500/80">
@@ -427,7 +428,7 @@ export default function NeighborhoodSidebar({
                     {/* Z-score */}
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <ZDot z={profile.compositeZScore} />
-                      <span className="text-[10px] font-mono text-slate-500 tabular-nums">
+                      <span className="text-micro font-mono text-slate-500 tabular-nums">
                         {profile.compositeZScore >= 0 ? '+' : ''}{profile.compositeZScore.toFixed(1)}σ
                       </span>
                     </div>
@@ -462,7 +463,7 @@ export default function NeighborhoodSidebar({
                     <p className="text-[12px] font-medium text-slate-200 truncate leading-tight group-hover:text-white transition-colors">
                       {profile.name}
                     </p>
-                    <p className="text-[10px] text-slate-500 font-mono italic">
+                    <p className="text-micro text-slate-500 font-mono italic">
                       {fmt(profile.totalEvents)} events
                       {profile.anomalyCount > 0 && (
                         <span className="text-ochre-500/80">
@@ -474,7 +475,7 @@ export default function NeighborhoodSidebar({
                   {/* Z-score */}
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     <ZDot z={profile.compositeZScore} />
-                    <span className="text-[10px] font-mono text-slate-500 tabular-nums">
+                    <span className="text-micro font-mono text-slate-500 tabular-nums">
                       {profile.compositeZScore >= 0 ? '+' : ''}{profile.compositeZScore.toFixed(1)}σ
                     </span>
                   </div>

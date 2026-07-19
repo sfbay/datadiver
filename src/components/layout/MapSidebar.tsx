@@ -19,6 +19,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode, type ComponentPropsWithRef } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { effectiveViewportWidth } from '@/hooks/effectiveViewport'
 import { useDraggableSheet } from '@/hooks/useDraggableSheet'
 
 interface MapSidebarContextValue {
@@ -40,7 +41,7 @@ type MapSidebarWidth = 'default' | 'lean'
 
 interface MapSidebarProps {
   children: ReactNode
-  /** Open-width variant. 'default' = 320px (w-80). 'lean' = 260px (w-[260px]) for map-hero-forward views like The Last 48. */
+  /** Open-width variant. 'default' = 320px (w-80). 'lean' = 260px (w-[16.25rem]) for map-hero-forward views like The Last 48. */
   width?: MapSidebarWidth
   /** Props spread onto the inner scroll <div>. Required if children need the
    *  scrolling element to be a listbox (role + aria-activedescendant must sit
@@ -59,23 +60,30 @@ export default function MapSidebar({ children, width = 'default', scrollContaine
   const sheet = useDraggableSheet({ initial: 'glimpse', halfVh: 0.4 })
 
   // Track viewport width so compressed mode kicks in below the breakpoint.
-  // SSR-safe via initializer; updated on resize via listener.
+  // EFFECTIVE width (innerWidth ÷ type-scale factor): a large-type desktop
+  // fits less content per physical pixel, so density reduction must kick
+  // in earlier (e.g. 1024 × 1.18 ≈ 1208 physical px under 'large').
+  // SSR-safe via initializer; updated on resize AND on type-scale changes
+  // (setTypeScale writes the DOM attribute before the state commit, so
+  // the effect re-run reads the fresh scale).
+  const typeScale = useAppStore((s) => s.typeScale)
   const [isNarrow, setIsNarrow] = useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth < NARROW_BREAKPOINT : false,
+    typeof window !== 'undefined' ? effectiveViewportWidth() < NARROW_BREAKPOINT : false,
   )
 
   useEffect(() => {
-    const onResize = () => setIsNarrow(window.innerWidth < NARROW_BREAKPOINT)
+    const onResize = () => setIsNarrow(effectiveViewportWidth() < NARROW_BREAKPOINT)
+    onResize() // resync for the typeScale-change re-run
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
-  }, [])
+  }, [typeScale])
 
   const isCompressed = isOpen && isNarrow
 
   // 320px full / 240px compressed / 36px collapsed-stub
   // lean variant: 260px full (map-hero-forward views), still 240px compressed
   const widthClass = isOpen
-    ? (isNarrow ? 'w-60' : (width === 'lean' ? 'w-[260px]' : 'w-80'))
+    ? (isNarrow ? 'w-60' : (width === 'lean' ? 'w-[16.25rem]' : 'w-80'))
     : 'w-9'
 
   // Below md the sidebar is a bottom sheet: a slim handle peeks at the bottom

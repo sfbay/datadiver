@@ -63,7 +63,7 @@ export default function BusinessProfile() {
       <header className="flex-shrink-0 px-6 py-3 border-b border-slate-200/50 dark:border-white/[0.04]">
         <button
           onClick={() => navigate(-1)}
-          className="text-[10px] font-mono text-moss-500 hover:text-moss-400 transition-colors mb-2"
+          className="text-micro font-mono text-moss-500 hover:text-moss-400 transition-colors mb-2"
         >
           ← Back
         </button>
@@ -82,7 +82,7 @@ export default function BusinessProfile() {
               {business.dba_name || 'Unknown'}
             </h1>
             <StatusPill status={statusFor(business)} />
-            <span className="text-[10px] font-mono text-slate-500 dark:text-slate-500">
+            <span className="text-micro font-mono text-slate-500 dark:text-slate-500">
               {business.ownership_name || 'Unknown owner'}
               {business.certificate_number && (
                 <> · BAN <span className="text-slate-700 dark:text-slate-300">{business.certificate_number}</span></>
@@ -140,7 +140,7 @@ export default function BusinessProfile() {
 function StatusPill({ status }: { status: { label: string; color: string } }) {
   return (
     <span
-      className="text-[9px] font-mono uppercase tracking-[0.15em] px-1.5 py-0.5 rounded-full"
+      className="text-nano font-mono uppercase tracking-[0.15em] px-1.5 py-0.5 rounded-full"
       style={{ color: status.color, backgroundColor: `${status.color}1A` }}
     >
       {status.label}
@@ -159,7 +159,7 @@ function IdentityCard({ record }: { record: BusinessLocationRecord }) {
 
   return (
     <div className="glass-card rounded-xl p-4">
-      <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-3">
+      <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-3">
         Identity
       </p>
       <dl className="grid grid-cols-[120px_1fr] gap-y-2 text-[12px]">
@@ -196,22 +196,22 @@ function LifecycleCard({ record }: { record: BusinessLocationRecord }) {
   const status = statusFor(record)
   return (
     <div className="glass-card rounded-xl p-4">
-      <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-3">
+      <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-3">
         Lifecycle
       </p>
       <div className="grid grid-cols-3 gap-3 text-[12px]">
         <div>
-          <p className="text-[9px] uppercase tracking-wider text-slate-500 mb-0.5">Opened</p>
+          <p className="text-nano uppercase tracking-wider text-slate-500 mb-0.5">Opened</p>
           <p className="text-slate-700 dark:text-slate-300 font-mono">{formatDate(record.dba_start_date)}</p>
         </div>
         {record.dba_end_date && (
           <div>
-            <p className="text-[9px] uppercase tracking-wider text-slate-500 mb-0.5">Closed</p>
+            <p className="text-nano uppercase tracking-wider text-slate-500 mb-0.5">Closed</p>
             <p className="text-slate-700 dark:text-slate-300 font-mono">{formatDate(record.dba_end_date)}</p>
           </div>
         )}
         <div>
-          <p className="text-[9px] uppercase tracking-wider text-slate-500 mb-0.5">Tenure</p>
+          <p className="text-nano uppercase tracking-wider text-slate-500 mb-0.5">Tenure</p>
           <p className="font-semibold" style={{ color: status.color }}>
             {computeDuration(record.dba_start_date, record.dba_end_date)}
           </p>
@@ -226,19 +226,19 @@ function ChainCard({ ban, primaryDba, locations }: { ban: string | null; primary
   return (
     <div className="glass-card rounded-xl p-4">
       <div className="flex items-baseline justify-between mb-2">
-        <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
+        <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
           Other locations of this business
         </p>
         {ban && (
           <Link
             to={`/business/chain/${encodeURIComponent(ban)}`}
-            className="text-[10px] font-mono text-moss-500 hover:text-moss-400 transition-colors"
+            className="text-micro font-mono text-moss-500 hover:text-moss-400 transition-colors"
           >
             View full chain →
           </Link>
         )}
       </div>
-      <p className="text-[10px] text-slate-500 mb-3">
+      <p className="text-micro text-slate-500 mb-3">
         {primaryDba && <span className="text-slate-300">{primaryDba} </span>}
         operates from {locations.length + 1} locations under the same Business Account Number.
         <span className="text-moss-400"> {active + (locations.find((l) => !l.dba_end_date) ? 0 : 1)} active.</span>
@@ -250,10 +250,10 @@ function ChainCard({ ban, primaryDba, locations }: { ban: string | null; primary
               to={`/business/${encodeURIComponent(l.uniqueid)}`}
               className="block px-2 py-1.5 -mx-2 rounded-md hover:bg-white/[0.04] transition-colors"
             >
-              <p className="text-[11px] text-slate-700 dark:text-slate-200 truncate">
+              <p className="text-label text-slate-700 dark:text-slate-200 truncate">
                 {l.dba_name || 'Unknown'}
               </p>
-              <p className="text-[9px] text-slate-500 font-mono truncate">
+              <p className="text-nano text-slate-500 font-mono truncate">
                 {l.full_business_address}
                 {l.dba_end_date ? <span className="text-brick-400"> · closed {l.dba_end_date.split('T')[0].slice(0, 4)}</span> : ''}
               </p>
@@ -261,7 +261,7 @@ function ChainCard({ ban, primaryDba, locations }: { ban: string | null; primary
           </li>
         ))}
         {locations.length > 8 && (
-          <li className="text-[10px] text-slate-500 italic px-2">
+          <li className="text-micro text-slate-500 italic px-2">
             …and {locations.length - 8} more — see the chain profile.
           </li>
         )}
@@ -274,19 +274,19 @@ function OwnerOtherCard({ ownerName, businesses }: { ownerName: string | undefin
   return (
     <div className="glass-card rounded-xl p-4">
       <div className="flex items-baseline justify-between mb-2">
-        <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
+        <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
           Same owner, different businesses
         </p>
         {ownerName && (
           <Link
             to={`/business/owner/${encodeURIComponent(ownerName)}`}
-            className="text-[10px] font-mono text-moss-500 hover:text-moss-400 transition-colors"
+            className="text-micro font-mono text-moss-500 hover:text-moss-400 transition-colors"
           >
             View owner →
           </Link>
         )}
       </div>
-      <p className="text-[10px] text-slate-500 italic mb-3">
+      <p className="text-micro text-slate-500 italic mb-3">
         Free-text owner-name match (different BAN). May include unrelated entities with similar names — verify before reporting.
       </p>
       <ul className="space-y-1">
@@ -296,15 +296,15 @@ function OwnerOtherCard({ ownerName, businesses }: { ownerName: string | undefin
               to={`/business/${encodeURIComponent(b.uniqueid)}`}
               className="block px-2 py-1.5 -mx-2 rounded-md hover:bg-white/[0.04] transition-colors"
             >
-              <p className="text-[11px] text-slate-700 dark:text-slate-200 truncate">{b.dba_name || 'Unknown'}</p>
-              <p className="text-[9px] text-slate-500 font-mono truncate">
+              <p className="text-label text-slate-700 dark:text-slate-200 truncate">{b.dba_name || 'Unknown'}</p>
+              <p className="text-nano text-slate-500 font-mono truncate">
                 {naicsSector(b.self_reported_naics_code)} · {b.full_business_address}
               </p>
             </Link>
           </li>
         ))}
         {businesses.length > 6 && (
-          <li className="text-[10px] text-slate-500 italic px-2">
+          <li className="text-micro text-slate-500 italic px-2">
             …and {businesses.length - 6} more — see the owner profile.
           </li>
         )}
@@ -316,10 +316,10 @@ function OwnerOtherCard({ ownerName, businesses }: { ownerName: string | undefin
 function AddressNeighborsCard({ address, neighbors }: { address: string | undefined; neighbors: BusinessLocationRecord[] }) {
   return (
     <div className="glass-card rounded-xl p-4">
-      <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-1">
+      <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-1">
         At this address (turnover history)
       </p>
-      <p className="text-[10px] text-slate-500 mb-3">
+      <p className="text-micro text-slate-500 mb-3">
         Other businesses that have operated at <span className="text-slate-300">{address}</span>.
         High turnover at one address can be a story.
       </p>
@@ -330,8 +330,8 @@ function AddressNeighborsCard({ address, neighbors }: { address: string | undefi
               to={`/business/${encodeURIComponent(n.uniqueid)}`}
               className="block px-2 py-1.5 -mx-2 rounded-md hover:bg-white/[0.04] transition-colors"
             >
-              <p className="text-[11px] text-slate-700 dark:text-slate-200 truncate">{n.dba_name || 'Unknown'}</p>
-              <p className="text-[9px] text-slate-500 font-mono truncate">
+              <p className="text-label text-slate-700 dark:text-slate-200 truncate">{n.dba_name || 'Unknown'}</p>
+              <p className="text-nano text-slate-500 font-mono truncate">
                 {naicsSector(n.self_reported_naics_code)} ·{' '}
                 {n.dba_start_date?.split('T')[0]?.slice(0, 4)}
                 {n.dba_end_date ? `–${n.dba_end_date.split('T')[0].slice(0, 4)}` : '–open'}
@@ -340,7 +340,7 @@ function AddressNeighborsCard({ address, neighbors }: { address: string | undefi
           </li>
         ))}
         {neighbors.length > 6 && (
-          <li className="text-[10px] text-slate-500 italic px-2">
+          <li className="text-micro text-slate-500 italic px-2">
             …and {neighbors.length - 6} more.
           </li>
         )}
@@ -354,10 +354,10 @@ function AddressNeighborsCard({ address, neighbors }: { address: string | undefi
 function Row({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
   return (
     <>
-      <dt className="text-[9px] font-mono uppercase tracking-[0.18em] text-slate-500 dark:text-slate-600 self-center">
+      <dt className="text-nano font-mono uppercase tracking-[0.18em] text-slate-500 dark:text-slate-600 self-center">
         {label}
       </dt>
-      <dd className={muted ? 'text-[11px] text-slate-500 dark:text-slate-500' : 'text-slate-700 dark:text-slate-300'}>
+      <dd className={muted ? 'text-label text-slate-500 dark:text-slate-500' : 'text-slate-700 dark:text-slate-300'}>
         {value}
       </dd>
     </>

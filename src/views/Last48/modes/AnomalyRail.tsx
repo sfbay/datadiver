@@ -47,13 +47,13 @@ export default function AnomalyRail({ combinedAnomalies, selectedNeighborhood, o
       scrollContainerProps={{ className: 'px-2 py-2 flex flex-col gap-1' }}
     >
       <div className="sticky top-0 z-10 px-3 pt-3 pb-2 border-b border-paper-200/40 dark:border-espresso-800 flex-shrink-0 bg-paper-50/95 dark:bg-espresso-950/95 backdrop-blur-sm">
-        <h2 className="font-mono text-[10px] tracking-widest text-paper-600 dark:text-paper-500">
+        <h2 className="font-mono text-micro tracking-widest text-paper-600 dark:text-paper-500">
           STANDS OUT
         </h2>
-        <p className="font-mono text-[9px] text-paper-500 dark:text-paper-600 mt-0.5">
+        <p className="font-mono text-nano text-paper-500 dark:text-paper-600 mt-0.5">
           vs a typical 48h · recent weeks
         </p>
-        <p className="font-mono text-[9px] text-paper-500 dark:text-paper-600 mt-0.5">
+        <p className="font-mono text-nano text-paper-500 dark:text-paper-600 mt-0.5">
           {notable.length > 0
             ? `${notable.length} stand out · ${checkedCount} checked`
             : `0 stand out · ${checkedCount} checked`}
@@ -61,7 +61,7 @@ export default function AnomalyRail({ combinedAnomalies, selectedNeighborhood, o
       </div>
 
       {visible.length === 0 && (
-        <div className="text-paper-500 dark:text-paper-600 text-center italic py-6 text-[10px]">
+        <div className="text-paper-500 dark:text-paper-600 text-center italic py-6 text-micro">
           baseline still loading…
         </div>
       )}
@@ -82,7 +82,7 @@ export default function AnomalyRail({ combinedAnomalies, selectedNeighborhood, o
             onClick={() => onSelect(nh)}
             aria-label={`${nh}, ${dev.spoken}`}
             className={`
-              text-left px-2 py-1.5 rounded font-mono text-[10px] flex items-center justify-between gap-2
+              text-left px-2 py-1.5 rounded font-mono text-micro flex items-center justify-between gap-2
               ${isSel
                 ? 'bg-ochre-500/20 ring-1 ring-ochre-500'
                 : 'hover:bg-paper-200/40 dark:hover:bg-espresso-800/60'}
@@ -98,7 +98,7 @@ export default function AnomalyRail({ combinedAnomalies, selectedNeighborhood, o
               {!dev.near && (
                 <SignalGlyph type={dev.signalType} magnitude={dev.magnitude} size={12} color={color} />
               )}
-              <span className="text-[9px]" style={{ color }}>
+              <span className="text-nano" style={{ color }}>
                 {dev.short}
               </span>
             </span>
