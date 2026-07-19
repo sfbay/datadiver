@@ -259,7 +259,7 @@ export default function Last48EventCard({ event, onClose }: Props) {
               </div>
 
               {/* AP-style date + time on a single subdued line below the headline */}
-              <p className="font-mono text-[11px] text-paper-600 dark:text-paper-500 mt-1.5 tabular-nums">
+              <p className="font-mono text-label text-paper-600 dark:text-paper-500 mt-1.5 tabular-nums">
                 {/* Mobile: weekday abbr only (disambiguates the day within 48h) so
                     the card can sit ~half-width; desktop keeps the full AP date. */}
                 <span className="md:hidden">{formatApWeekday(event.receivedAt)}</span>
@@ -271,7 +271,7 @@ export default function Last48EventCard({ event, onClose }: Props) {
             {/* ── Eyebrow: dataset label + state pill ──────────────── */}
             <div className="flex items-center gap-2 mb-2">
               <span
-                className="font-mono text-[9px] tracking-[0.18em] uppercase"
+                className="font-mono text-nano tracking-[0.18em] uppercase"
                 style={{ color: meta.color }}
               >
                 ── {meta.label}
@@ -316,7 +316,7 @@ export default function Last48EventCard({ event, onClose }: Props) {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
-                    className="mt-2 mb-3 flex items-center gap-2 rounded-md px-3 py-2.5 ring-1 ring-paper-300/20 dark:ring-espresso-700/60 hover:ring-moss-500/40 transition-all font-mono text-[11px] tracking-wider text-moss-500"
+                    className="mt-2 mb-3 flex items-center gap-2 rounded-md px-3 py-2.5 ring-1 ring-paper-300/20 dark:ring-espresso-700/60 hover:ring-moss-500/40 transition-all font-mono text-label tracking-wider text-moss-500"
                   >
                     <span aria-hidden>📎</span>
                     View photo on SF’s 311 portal →
@@ -346,7 +346,7 @@ export default function Last48EventCard({ event, onClose }: Props) {
                     }}
                   />
                   <span
-                    className="font-mono text-[10px] tracking-wider text-moss-500 px-2 py-1.5 block"
+                    className="font-mono text-micro tracking-wider text-moss-500 px-2 py-1.5 block"
                     style={{ display: 'none' }}
                   >
                     View attached media →
@@ -358,7 +358,7 @@ export default function Last48EventCard({ event, onClose }: Props) {
             {/* ── Priority (911 only) ───────────────────────────────── */}
             {event.datasetId === '911-realtime' && event.priority && (
               <div className="mt-3 flex justify-between items-baseline gap-3 md:block">
-                <div className="font-mono text-[10px] tracking-widest text-paper-500 dark:text-paper-600 shrink-0">PRIORITY</div>
+                <div className="font-mono text-micro tracking-widest text-paper-500 dark:text-paper-600 shrink-0">PRIORITY</div>
                 <div className={`font-mono text-[12px] text-right md:text-left md:mt-0.5 ${event.priority === 'A' ? 'text-indigo-600 dark:text-indigo-300 font-semibold' : 'text-paper-800 dark:text-paper-300'}`}>
                   {event.priority}
                   {event.priority === 'A' && ' — life-threatening'}
@@ -368,9 +368,9 @@ export default function Last48EventCard({ event, onClose }: Props) {
 
             {/* ── Location ─────────────────────────────────────────── */}
             <div className="mt-3 mb-3 flex justify-between items-baseline gap-3 md:block">
-              <div className="font-mono text-[10px] tracking-widest text-paper-500 dark:text-paper-600 shrink-0">LOCATION</div>
+              <div className="font-mono text-micro tracking-widest text-paper-500 dark:text-paper-600 shrink-0">LOCATION</div>
               {(event.longitude != null && event.latitude != null) ? (
-                <div className="font-mono text-[11px] text-paper-800 dark:text-paper-300 text-right md:text-left md:mt-0.5">
+                <div className="font-mono text-label text-paper-800 dark:text-paper-300 text-right md:text-left md:mt-0.5">
                   {event.neighborhood ?? 'SF'}
                   {/* coords: desktop only — not human-actionable, and the map shows position */}
                   <span className="hidden md:inline text-paper-600 dark:text-paper-700">
@@ -379,7 +379,7 @@ export default function Last48EventCard({ event, onClose }: Props) {
                   </span>
                 </div>
               ) : (
-                <div className="font-mono text-[11px] italic text-paper-500 dark:text-paper-600 text-right md:text-left md:mt-0.5">
+                <div className="font-mono text-label italic text-paper-500 dark:text-paper-600 text-right md:text-left md:mt-0.5">
                   Suppressed; sensitive call
                 </div>
               )}
@@ -398,7 +398,7 @@ export default function Last48EventCard({ event, onClose }: Props) {
                 <ul className="mb-3 flex flex-col gap-1.5">
                   {populated.map(([label, value]) => (
                     <li key={label} className="flex justify-between items-baseline gap-3">
-                      <span className="font-mono uppercase tracking-[0.14em] text-[9px] text-paper-600 dark:text-paper-600 shrink-0 pt-0.5">
+                      <span className="font-mono uppercase tracking-[0.14em] text-nano text-paper-600 dark:text-paper-600 shrink-0 pt-0.5">
                         {label}
                       </span>
                       <span className="font-mono text-[13px] text-paper-900 dark:text-paper-100 tabular-nums text-right truncate leading-tight">
@@ -421,12 +421,12 @@ export default function Last48EventCard({ event, onClose }: Props) {
               <>
                 <Link
                   to={explore.to}
-                  className="block font-mono text-[11px] tracking-wider text-ochre-500 hover:text-ochre-400 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ochre-500"
+                  className="block font-mono text-label tracking-wider text-ochre-500 hover:text-ochre-400 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ochre-500"
                   onClick={onClose}
                 >
                   {explore.label} →
                 </Link>
-                <p className="hidden md:block font-display italic text-[10px] text-paper-500 dark:text-paper-600 mt-0.5">
+                <p className="hidden md:block font-display italic text-micro text-paper-500 dark:text-paper-600 mt-0.5">
                   {explore.caption}
                 </p>
               </>

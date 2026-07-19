@@ -65,7 +65,7 @@ export default function NeighborhoodElectionPanel({
       glowColor={ACCENT}
     >
       <div className="pr-6">
-        <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-1">
+        <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-1">
           Neighborhood
         </p>
         <h3 className="text-lg font-display italic text-ink dark:text-white mb-4">
@@ -75,7 +75,7 @@ export default function NeighborhoodElectionPanel({
         {row ? (
           <>
             <div className="mb-4">
-              <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-1">
+              <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-1">
                 Turnout here
               </p>
               <p className="text-lg font-mono font-bold" style={{ color: turnoutColor(row.turnout) }}>
@@ -88,7 +88,7 @@ export default function NeighborhoodElectionPanel({
                 width={120}
                 color={turnoutColor(row.turnout)}
               />
-              <p className="text-[10px] text-slate-500 mt-1">
+              <p className="text-micro text-slate-500 mt-1">
                 {row.ballots.toLocaleString()} of {row.registered.toLocaleString()} registered
                 {citywideTurnout !== null && ` · citywide ${(citywideTurnout * 100).toFixed(1)}%`}
               </p>
@@ -96,7 +96,7 @@ export default function NeighborhoodElectionPanel({
 
             {race && topHere.length > 0 && (
               <>
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
                   {toSentenceCase(race.title)} — here
                 </p>
                 <div className="space-y-1.5 mb-2">
@@ -106,17 +106,17 @@ export default function NeighborhoodElectionPanel({
                         className="w-2 h-2 rounded-full flex-shrink-0"
                         style={{ backgroundColor: candidateColors.get(c.name) || '#a8926a' }}
                       />
-                      <span className="text-[10px] truncate flex-1 text-ink dark:text-slate-300">
+                      <span className="text-micro truncate flex-1 text-ink dark:text-slate-300">
                         {toSentenceCase(c.name)}
                       </span>
-                      <span className="text-[10px] font-mono text-slate-500">
+                      <span className="text-micro font-mono text-slate-500">
                         {(c.share * 100).toFixed(1)}%
                       </span>
                     </div>
                   ))}
                 </div>
                 {topHere[0] && (
-                  <p className="text-[10px] text-slate-500 italic">
+                  <p className="text-micro text-slate-500 italic">
                     {toSentenceCase(topHere[0].name.split('/')[0].trim())} took {sharePhrase(topHere[0].share)} here.
                   </p>
                 )}
@@ -125,7 +125,7 @@ export default function NeighborhoodElectionPanel({
           </>
         ) : (
           !isLoading && (
-            <p className="text-[11px] text-slate-500">
+            <p className="text-label text-slate-500">
               No certified neighborhood figures for this election.
             </p>
           )

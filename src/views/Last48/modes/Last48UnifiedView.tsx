@@ -358,7 +358,7 @@ export default function Last48UnifiedView({
           {/* isLoading gate REMOVED — events paint per-stream as they arrive.
               The StreamProgressBar (Task 6.3) replaces this inline pill. */}
           {fill === 'anomaly' && anomalyLoading && (
-            <div className="absolute top-10 left-3 font-mono text-[10px] text-paper-500 bg-espresso-900/70 px-2 py-1 rounded">
+            <div className="absolute top-10 left-3 font-mono text-micro text-paper-500 bg-espresso-900/70 px-2 py-1 rounded">
               computing 12-week baseline…
             </div>
           )}
@@ -459,13 +459,13 @@ function Last48FailureBanner({
     <div className="pointer-events-none absolute inset-x-0 bottom-6 z-30 flex justify-center px-6">
       <div className="pointer-events-auto flex items-center gap-3 rounded-xl bg-espresso-900/90 dark:bg-espresso-900/90 px-4 py-2.5 ring-1 ring-brick-500/40 shadow-xl shadow-espresso-950/30 backdrop-blur-sm">
         <span className="inline-block w-1.5 h-1.5 rounded-full bg-brick-500" aria-hidden />
-        <span className="font-mono text-[11px] text-paper-200">
+        <span className="font-mono text-label text-paper-200">
           Couldn’t load {names}
         </span>
         <button
           type="button"
           onClick={onRetry}
-          className="font-mono text-[11px] tracking-wider text-ochre-400 hover:text-ochre-300 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ochre-500 rounded px-1"
+          className="font-mono text-label tracking-wider text-ochre-400 hover:text-ochre-300 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ochre-500 rounded px-1"
         >
           Retry →
         </button>

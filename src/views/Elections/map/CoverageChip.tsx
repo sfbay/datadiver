@@ -31,7 +31,7 @@ export default function CoverageChip({ turnout, geometryCount }: CoverageChipPro
     <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
       <Link
         to="/about#elections"
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-200/60 dark:border-white/[0.08] text-[10px] font-mono text-slate-500 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-500 transition-colors"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-200/60 dark:border-white/[0.08] text-micro font-mono text-slate-500 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-500 transition-colors"
       >
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#a8926a" strokeWidth="1.5">
           <circle cx="6" cy="6" r="4.5" />

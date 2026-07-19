@@ -46,7 +46,7 @@ export default function NeighborhoodsSidebarContent({
   return (
     <>
       <div className="flex items-center gap-2 mb-4">
-        <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
+        <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
           {rows.length} Neighborhoods
         </p>
         <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
@@ -55,7 +55,7 @@ export default function NeighborhoodsSidebarContent({
       {selectedNeighborhood && (
         <button
           onClick={() => setSelectedNeighborhood(null)}
-          className="mb-3 text-[10px] font-mono text-indigo-500 hover:text-indigo-400 transition-colors"
+          className="mb-3 text-micro font-mono text-indigo-500 hover:text-indigo-400 transition-colors"
         >
           ← Clear: {file ? displayNhood(selectedNeighborhood, file.scheme) : selectedNeighborhood}
         </button>
@@ -78,7 +78,7 @@ export default function NeighborhoodsSidebarContent({
                 <p className="text-[12px] font-medium text-ink dark:text-slate-200 leading-tight flex-1 truncate">
                   {file ? displayNhood(r.name, file.scheme) : r.name}
                 </p>
-                <span className="text-[10px] font-mono" style={{ color: turnoutColor(r.turnout) }}>
+                <span className="text-micro font-mono" style={{ color: turnoutColor(r.turnout) }}>
                   {(r.turnout * 100).toFixed(0)}%
                 </span>
               </div>

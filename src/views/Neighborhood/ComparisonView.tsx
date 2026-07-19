@@ -34,7 +34,7 @@ function DomainBars({
   return (
     <div className="mb-3">
       <div className="flex items-center justify-between mb-1.5 px-0.5">
-        <span className="text-[10px] font-mono" style={{ color: domain.color }}>
+        <span className="text-micro font-mono" style={{ color: domain.color }}>
           {domain.label}
         </span>
         <button
@@ -42,7 +42,7 @@ function DomainBars({
             const primary = profiles[0]
             if (primary) navigate(`${DOMAIN_ROUTES[domain.key]}?neighborhood=${encodeURIComponent(primary.name)}`)
           }}
-          className="text-[9px] font-mono text-slate-600 hover:text-slate-400 transition-colors"
+          className="text-nano font-mono text-slate-600 hover:text-slate-400 transition-colors"
           title={`Open ${domain.label} view`}
         >
           →
@@ -62,7 +62,7 @@ function DomainBars({
                   style={{ width: `${widthPct}%`, backgroundColor: slot.hex }}
                 />
               </div>
-              <span className="text-[9px] font-mono tabular-nums w-10 text-right" style={{ color: slot.hex }}>
+              <span className="text-nano font-mono tabular-nums w-10 text-right" style={{ color: slot.hex }}>
                 {fmt(metric.count)}
               </span>
             </div>
@@ -98,7 +98,7 @@ export default function ComparisonView({ profiles, onRemove, onFocus }: Comparis
               />
               <button
                 onClick={() => onFocus?.(p.name)}
-                className="text-[11px] text-slate-300 truncate hover:text-white transition-colors text-left"
+                className="text-label text-slate-300 truncate hover:text-white transition-colors text-left"
                 title={`Zoom to ${p.name}`}
               >
                 {p.name}
@@ -106,14 +106,14 @@ export default function ComparisonView({ profiles, onRemove, onFocus }: Comparis
             </div>
             <button
               onClick={() => onRemove(p.name)}
-              className="text-[9px] text-slate-600 hover:text-slate-400 transition-colors flex-shrink-0 ml-2"
+              className="text-nano text-slate-600 hover:text-slate-400 transition-colors flex-shrink-0 ml-2"
             >
               ✕
             </button>
           </div>
         ))}
         {profiles.length < 3 && (
-          <p className="text-[9px] font-mono text-slate-600 italic px-1 mt-1">
+          <p className="text-nano font-mono text-slate-600 italic px-1 mt-1">
             Click a neighborhood to add ({3 - profiles.length} remaining)
           </p>
         )}
@@ -148,7 +148,7 @@ export default function ComparisonView({ profiles, onRemove, onFocus }: Comparis
 
       {/* Domain comparison bars */}
       <div>
-        <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 mb-2 px-0.5">
+        <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 mb-2 px-0.5">
           Safety
         </p>
         <DomainBars domain={DOMAINS[0]} profiles={profiles} />
@@ -157,7 +157,7 @@ export default function ComparisonView({ profiles, onRemove, onFocus }: Comparis
       </div>
 
       <div>
-        <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 mb-2 px-0.5">
+        <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 mb-2 px-0.5">
           Quality of Life
         </p>
         <DomainBars domain={DOMAINS[2]} profiles={profiles} />
@@ -167,7 +167,7 @@ export default function ComparisonView({ profiles, onRemove, onFocus }: Comparis
       {/* Summary z-scores */}
       <div className="flex items-center justify-center gap-4 pt-2 border-t border-white/[0.04]">
         {profiles.map((p, i) => (
-          <span key={p.name} className="text-[10px] font-mono tabular-nums" style={{ color: SLOT_COLORS[i].hex }}>
+          <span key={p.name} className="text-micro font-mono tabular-nums" style={{ color: SLOT_COLORS[i].hex }}>
             {p.compositeZScore >= 0 ? '+' : ''}{p.compositeZScore.toFixed(1)}σ
           </span>
         ))}

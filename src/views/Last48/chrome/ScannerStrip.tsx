@@ -15,14 +15,14 @@ export default function ScannerStrip() {
       <div className="border-t border-paper-300/40 dark:border-espresso-700 mx-[clamp(16px,3vw,64px)]" />
       <div className="border-t border-paper-300/20 dark:border-espresso-800 mx-[clamp(16px,3vw,64px)] mt-px" />
 
-      <div className="h-12 px-[clamp(16px,3vw,64px)] flex items-center gap-3 font-mono text-[11px] text-paper-700 dark:text-paper-400 bg-paper-50/20 dark:bg-espresso-900/30">
+      <div className="h-12 px-[clamp(16px,3vw,64px)] flex items-center gap-3 font-mono text-label text-paper-700 dark:text-paper-400 bg-paper-50/20 dark:bg-espresso-900/30">
         <span className="text-ochre-600 dark:text-ochre-500" aria-hidden>
           📡
         </span>
         <span className="tracking-wider">SCANNER</span>
         <span className="text-paper-500">·</span>
         <span className="hidden sm:inline truncate">Live dispatch audio</span>
-        <span className="hidden sm:inline text-[9px] text-paper-500">
+        <span className="hidden sm:inline text-nano text-paper-500">
           via{' '}
           <a
             href={FEED_SOURCES.broadcastify.aboutUrl}

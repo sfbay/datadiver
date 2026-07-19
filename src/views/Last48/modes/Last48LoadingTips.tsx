@@ -153,7 +153,7 @@ export default function Last48LoadingTips() {
         {/* Rule-leading eyebrow (── LABEL) — mono, uppercase, tracked. */}
         <div className="mb-2 flex items-center justify-center gap-2">
           <span className={`h-px w-5 ${ruleClass}`} />
-          <span className={`font-mono text-[10px] uppercase tracking-[0.25em] ${accentClass}`}>
+          <span className={`font-mono text-micro uppercase tracking-[0.25em] ${accentClass}`}>
             {eyebrow}
           </span>
         </div>

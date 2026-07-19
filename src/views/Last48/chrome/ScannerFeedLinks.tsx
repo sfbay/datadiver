@@ -27,7 +27,7 @@ export default function ScannerFeedLinks() {
           target="_blank"
           rel="noopener noreferrer"
           title={feed.description}
-          className={`px-3 py-1 rounded border text-[10px] tracking-wider transition-colors ${classes}`}
+          className={`px-3 py-1 rounded border text-micro tracking-wider transition-colors ${classes}`}
         >
           ▶ {label} →
         </a>

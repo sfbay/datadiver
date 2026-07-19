@@ -306,7 +306,7 @@ function SuperChip({
           aria-hidden
         />
         <span
-          className="font-mono text-[10px] tracking-[0.18em] uppercase text-paper-700 dark:text-paper-300"
+          className="font-mono text-micro tracking-[0.18em] uppercase text-paper-700 dark:text-paper-300"
           style={isActive ? { color: pigment } : undefined}
         >
           {label}
@@ -333,12 +333,12 @@ function SuperChip({
               >
                 {count.toLocaleString()}
               </span>
-              <span className="hidden md:inline font-mono text-[10px] text-paper-500 dark:text-paper-500 tabular-nums whitespace-nowrap">
+              <span className="hidden md:inline font-mono text-micro text-paper-500 dark:text-paper-500 tabular-nums whitespace-nowrap">
                 {perHour}/hr
               </span>
             </>
           ) : (
-            <span className="animate-pulse font-mono text-[10px] text-paper-500 dark:text-paper-600">
+            <span className="animate-pulse font-mono text-micro text-paper-500 dark:text-paper-600">
               loading…
             </span>
           )}
@@ -359,7 +359,7 @@ function SuperChip({
       {/* ── Row 3: twin freshness indicators ───────────────────────────── */}
       {/* Twin freshness — hidden on the lean mobile chip (the sparkline's hatch
           already encodes event lag); returns at md+. */}
-      <div className="hidden md:flex items-center gap-3 mt-2 font-mono text-[9px] tracking-wider text-paper-600 dark:text-paper-500">
+      <div className="hidden md:flex items-center gap-3 mt-2 font-mono text-nano tracking-wider text-paper-600 dark:text-paper-500">
         <span className="flex items-center gap-1.5" title="Data refresh lag — how long since the source publisher last updated rows">
           <span
             className="inline-block w-1.5 h-1.5 rounded-full transition-colors"

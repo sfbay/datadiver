@@ -83,7 +83,7 @@ export default function PrecinctDetailPanel({
           </h3>
         )}
         {parentNhood && parentNhood !== 'NA' && (
-          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mt-1 mb-4">
+          <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mt-1 mb-4">
             Precinct {label}
           </p>
         )}
@@ -91,7 +91,7 @@ export default function PrecinctDetailPanel({
         {/* Turnout is the hero: big number + a two-part voted/didn't bar */}
         {row && (
           <div className="mb-5">
-            <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-1">
+            <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-1">
               Turnout
             </p>
             <p
@@ -110,7 +110,7 @@ export default function PrecinctDetailPanel({
               />
               <div className="h-full flex-1 bg-slate-300/40 dark:bg-white/[0.08]" />
             </div>
-            <p className="text-[10px] text-slate-500 mt-1.5">
+            <p className="text-micro text-slate-500 mt-1.5">
               <span className="font-mono tabular-nums text-ink dark:text-slate-300">
                 {row.ballots.toLocaleString()}
               </span>{' '}
@@ -124,16 +124,16 @@ export default function PrecinctDetailPanel({
         )}
 
         {turnout && !row && (
-          <p className="text-[11px] text-slate-500">No results reported for this precinct in this election.</p>
+          <p className="text-label text-slate-500">No results reported for this precinct in this election.</p>
         )}
 
         {row && race && (
           <>
-            <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+            <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
               {toSentenceCase(race.title)}
             </p>
             {raceLoading && !raceRow && (
-              <p className="text-[10px] text-slate-500">Loading votes…</p>
+              <p className="text-micro text-slate-500">Loading votes…</p>
             )}
             <div className="space-y-1.5">
               {candidates.map((c) => {
@@ -169,7 +169,7 @@ export default function PrecinctDetailPanel({
                       <span className="text-[13px] font-mono tabular-nums text-ink dark:text-slate-300">
                         {(c.share * 100).toFixed(1)}%
                       </span>
-                      <span className="text-[10px] font-mono tabular-nums text-slate-500 w-12 text-right">
+                      <span className="text-micro font-mono tabular-nums text-slate-500 w-12 text-right">
                         {c.votes.toLocaleString()}
                       </span>
                     </div>
@@ -184,13 +184,13 @@ export default function PrecinctDetailPanel({
               })}
             </div>
             {race.isRCV && (
-              <p className="text-[9px] font-mono text-indigo-500 mt-2">First choices — Ranked Choice Voting</p>
+              <p className="text-nano font-mono text-indigo-500 mt-2">First choices — Ranked Choice Voting</p>
             )}
           </>
         )}
 
         {turnout && turnout.suppressed.registered > 0 && (
-          <p className="text-[9px] text-slate-400/80 dark:text-slate-500 italic mt-4 pt-3 border-t border-slate-200/50 dark:border-white/[0.06]">
+          <p className="text-nano text-slate-400/80 dark:text-slate-500 italic mt-4 pt-3 border-t border-slate-200/50 dark:border-white/[0.06]">
             S.F. withholds a few tiny precincts for ballot secrecy —{' '}
             {turnout.suppressed.registered.toLocaleString()} voters in this election are counted
             citywide but not shown per precinct.

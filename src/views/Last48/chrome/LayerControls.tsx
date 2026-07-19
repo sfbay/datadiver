@@ -104,7 +104,7 @@ export default function LayerControls({
           onClick={() => setMenuOpen(v => !v)}
           aria-haspopup="menu"
           aria-expanded={menuOpen}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-mono uppercase tracking-wider bg-paper-100/40 dark:bg-espresso-900/40 text-paper-600 dark:text-paper-400 hover:text-paper-800 dark:hover:text-paper-200 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-label font-mono uppercase tracking-wider bg-paper-100/40 dark:bg-espresso-900/40 text-paper-600 dark:text-paper-400 hover:text-paper-800 dark:hover:text-paper-200 transition-colors"
         >
           {/* Stacked-layers icon */}
           <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" aria-hidden>
@@ -137,7 +137,7 @@ export default function LayerControls({
             />
 
             <div className="my-1.5 mx-1 h-px bg-paper-200/40 dark:bg-espresso-800" />
-            <div className="px-2 pb-1 text-[9px] font-mono uppercase tracking-[0.2em] text-paper-500/70 dark:text-paper-600">
+            <div className="px-2 pb-1 text-nano font-mono uppercase tracking-[0.2em] text-paper-500/70 dark:text-paper-600">
               Demographic underlay
             </div>
 
@@ -158,7 +158,7 @@ export default function LayerControls({
           the control toggles the dots, so "dots" reads clearer). */}
       <button
         onClick={() => onPointsToggle(!pointsOn)}
-        className={`px-3 py-1.5 rounded-md text-[11px] font-mono uppercase tracking-wider transition-all duration-200 ${
+        className={`px-3 py-1.5 rounded-md text-label font-mono uppercase tracking-wider transition-all duration-200 ${
           pointsOn
             ? 'bg-paper-200 dark:bg-espresso-800 text-ink dark:text-paper-100'
             : 'text-paper-500 dark:text-paper-600 hover:text-paper-300'

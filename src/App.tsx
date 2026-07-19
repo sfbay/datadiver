@@ -41,7 +41,7 @@ function RouteFallback() {
     <div className="h-full grid place-items-center">
       <div className="flex items-center gap-2.5 rounded-full border border-ink/[0.08] dark:border-white/[0.08] bg-paper-100/70 dark:bg-espresso-800/70 px-4 py-2">
         <span className="w-2 h-2 rounded-full bg-terracotta-500 animate-pulse" aria-hidden />
-        <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-ink/55 dark:text-slate-400">
+        <span className="text-micro font-mono uppercase tracking-[0.2em] text-ink/55 dark:text-slate-400">
           Loading view
         </span>
       </div>

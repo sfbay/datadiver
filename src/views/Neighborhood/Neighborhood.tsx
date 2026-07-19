@@ -382,13 +382,13 @@ export default function Neighborhood() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-                    <span className="text-[9px] font-mono uppercase tracking-wider" style={{ color }}>
+                    <span className="text-nano font-mono uppercase tracking-wider" style={{ color }}>
                       {domainConfig?.label}
                     </span>
                   </div>
                   <p className="text-[13px] font-medium text-ink dark:text-white leading-tight">{selectedPoint.label}</p>
                   {selectedPoint.detail && (
-                    <p className="text-[10px] text-slate-400 font-mono italic mt-1">{selectedPoint.detail}</p>
+                    <p className="text-micro text-slate-400 font-mono italic mt-1">{selectedPoint.detail}</p>
                   )}
                   {selectedPoint.value && (
                     <p className="text-[12px] font-mono font-semibold mt-1" style={{ color }}>
@@ -406,7 +406,7 @@ export default function Neighborhood() {
               {domainConfig && selectedNeighborhood && (
                 <button
                   onClick={() => navigate(`${DOMAIN_ROUTES[selectedPoint.domain]}?neighborhood=${encodeURIComponent(selectedNeighborhood)}`)}
-                  className="mt-2 text-[9px] font-mono hover:brightness-125 transition-all"
+                  className="mt-2 text-nano font-mono hover:brightness-125 transition-all"
                   style={{ color }}
                 >
                   Open in {domainConfig.label} →
@@ -421,7 +421,7 @@ export default function Neighborhood() {
           <h1 className="text-[28px] font-display italic text-white drop-shadow-lg leading-none">
             Neighborhoods
           </h1>
-          <p className="text-[11px] font-mono text-slate-400/80 mt-1">
+          <p className="text-label font-mono text-slate-400/80 mt-1">
             Cross-dataset civic pulse across {profiles.length} neighborhoods
           </p>
         </div>
