@@ -127,7 +127,12 @@ export const useAppStore = create<AppState>((set) => ({
     return { isContextSidebarOpen: next }
   }),
   setTypeScale: (scale) => set(() => {
-    localStorage.setItem('dd-type-scale', scale)
+    try {
+      localStorage.setItem('dd-type-scale', scale)
+    } catch {
+      // Private-mode / quota failures must not block the in-session toggle;
+      // the preference just won't persist.
+    }
     document.documentElement.setAttribute('data-type-scale', scale)
     return { typeScale: scale }
   }),
@@ -145,3 +150,9 @@ export const useAppStore = create<AppState>((set) => ({
   setLoading: (loading) => set({ isLoading: loading }),
   setError: (error) => set({ error }),
 }))
+
+// Apply the persisted type scale at module eval — the store module is
+// imported synchronously before React's first render, so stored-large/xl
+// users never flash default-size text. App.tsx's effect re-applies it on
+// later state changes (the same dual-application recipe as dark mode).
+document.documentElement.setAttribute('data-type-scale', useAppStore.getState().typeScale)
