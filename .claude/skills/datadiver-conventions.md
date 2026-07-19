@@ -158,11 +158,12 @@ Inspired by Jesse's 2000-era LiquidEx, translated to modern controls in PR #25. 
 - Prefer `clamp(min, vw-formula, max)` over breakpoint-based size classes (`desk:` / `lg:` / `xl:`).
 - Prefer `grid-cols-[repeat(auto-fit,minmax(N,1fr))]` over `desk:grid-cols-X lg:grid-cols-Y`.
 
-## Type tokens & breakpoints (Large Type Phase 2, July 2026)
+## Type tokens & breakpoints (Large Type Phases 2–3, July 2026)
 
 - Micro type is TOKENS, never arbitrary px: `text-nano` (9px) / `text-micro` (10px) /
   `text-label` (11px) — defined in the `@theme` block of `src/index.css`, floor-raised under
   `html[data-type-scale]`. Writing `text-[9px]`-style classes reintroduces px-frozen debt.
+- Chart/map/tooltip text (what CSS classes can't reach) is REM VIA INLINE STYLE — D3 `.style('font-size', '0.5625rem')`, JSX `style={{ fontSize }}` — NEVER the SVG `font-size` attribute (SVG 1.1 grammar predates rem) and never new hardcoded px. Fit-constrained charts (Dorling, HorizontalBar marquee, DepartmentBars margins) thread `SCALE_FACTORS` — see CLAUDE.md → Large Type Phase 3.
 - **`md:` is banned in app code — write `desk:`** (attribute variant off `html[data-vp]`,
   stamped from EFFECTIVE viewport width = innerWidth ÷ type-scale factor). JS side:
   `useIsMobile()` / `effectiveViewportWidth()`. Rationale + mechanics: CLAUDE.md →
