@@ -145,7 +145,7 @@ Total: 43 D3 sites + 9 JSX sites = **52**.
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: after this task, `.attr('font-size'` survives ONLY in `DorlingCartogram.tsx` (2) and `HorizontalBarChart.tsx` (4) — Task 3's acceptance baseline.
+- Produces: after this task, `.attr('font-size'` survives ONLY in `DorlingCartogram.tsx` (2) and `HorizontalBarChart.tsx` (3) — Task 3's acceptance baseline.
 
 **Substitution rules (apply the Global Constraints conversion table):**
 1. `.attr('font-size', '<N>px')` → `.style('font-size', '<rem>')` — including sites inside `.call((g) => …)` chains; the rest of the chain is untouched.
@@ -335,7 +335,7 @@ Effect dep array: append `typeScale` → `}, [data, colorScale, width, height, i
 - [ ] **Step 6: HorizontalBarChart — rem sites + re-measure on toggle**
 
 In `src/components/charts/HorizontalBarChart.tsx`:
-- Convert all 4 `.attr('font-size', '9px')` sites (including the off-screen `measureEl`) to `.style('font-size', '0.5625rem')`. The marquee measurement (`getComputedTextLength`) resolves the rendered size at call time, so measuring in rem is automatically correct at the current scale.
+- Convert all 3 `.attr('font-size', '9px')` sites (including the off-screen `measureEl`) to `.style('font-size', '0.5625rem')`. The marquee measurement (`getComputedTextLength`) resolves the rendered size at call time, so measuring in rem is automatically correct at the current scale.
 - Add a `typeScale` subscription so a live toggle re-renders and re-measures (import `useAppStore` from `@/stores/appStore` if the file doesn't already use it; add `const typeScale = useAppStore((s) => s.typeScale)` and append `typeScale` to the effect dep array at ~line 229).
 
 - [ ] **Step 7: Verify + commit**
