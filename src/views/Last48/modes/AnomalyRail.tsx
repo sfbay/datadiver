@@ -46,7 +46,7 @@ export default function AnomalyRail({ combinedAnomalies, selectedNeighborhood, o
       width="lean"
       scrollContainerProps={{ className: 'px-2 py-2 flex flex-col gap-1' }}
     >
-      <div className="sticky top-0 z-10 px-3 pt-3 pb-2 border-b border-paper-200/40 dark:border-espresso-800 flex-shrink-0 bg-paper-50/95 dark:bg-espresso-950/95 backdrop-blur-sm">
+      <div className="sticky top-0 z-10 px-3 pt-3 pb-2 border-b border-paper-200/40 dark:border-transparent flex-shrink-0 bg-paper-50/95 dark:bg-espresso-950/95 backdrop-blur-sm">
         <h2 className="font-mono text-micro tracking-widest text-paper-600 dark:text-paper-500">
           STANDS OUT
         </h2>
@@ -125,7 +125,7 @@ export default function AnomalyRail({ combinedAnomalies, selectedNeighborhood, o
       {/* Methodology footer — flex-shrink-0 so it stays pinned at the bottom.
           Dejargoned: the full machinery (thresholds, σ) is named on the one
           page allowed to — /about#whats-unusual. */}
-      <div className="sticky bottom-0 z-10 px-3 py-2 border-t border-paper-200/40 dark:border-espresso-800 flex-shrink-0 bg-paper-50/95 dark:bg-espresso-950/95 backdrop-blur-sm font-mono text-[8px] leading-snug text-paper-500 dark:text-paper-600">
+      <div className="sticky bottom-0 z-10 px-3 py-2 border-t border-paper-200/40 dark:border-transparent flex-shrink-0 bg-paper-50/95 dark:bg-espresso-950/95 backdrop-blur-sm font-mono text-[8px] leading-snug text-paper-500 dark:text-paper-600">
         Compares this 48h with 42 typical two-day stretches over the trailing
         12 weeks, combined across streams. Full method:{' '}
         <Link to="/about#whats-unusual" className="underline decoration-dotted hover:text-paper-700 dark:hover:text-paper-400">

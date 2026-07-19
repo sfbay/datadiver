@@ -11,9 +11,10 @@ export default function ScannerStrip() {
 
   return (
     <>
-      {/* Double-rule top edge — newspaper-style section break */}
-      <div className="border-t border-paper-300/40 dark:border-espresso-700 mx-[clamp(16px,3vw,64px)]" />
-      <div className="border-t border-paper-300/20 dark:border-espresso-800 mx-[clamp(16px,3vw,64px)] mt-px" />
+      {/* Double-rule top edge — newspaper-style section break (light mode
+          only; dark mode lets the register shift carry the seam) */}
+      <div className="border-t border-paper-300/40 dark:border-transparent mx-[clamp(16px,3vw,64px)]" />
+      <div className="border-t border-paper-300/20 dark:border-transparent mx-[clamp(16px,3vw,64px)] mt-px" />
 
       <div className="h-12 px-[clamp(16px,3vw,64px)] flex items-center gap-3 font-mono text-label text-paper-700 dark:text-paper-400 bg-paper-50/20 dark:bg-espresso-900/30">
         <span className="text-ochre-600 dark:text-ochre-500" aria-hidden>
