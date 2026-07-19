@@ -14,11 +14,12 @@ import { useNeighborhoodPortrait } from './useNeighborhoodPortrait'
 import DiveInOverlay from './DiveInOverlay'
 import NeighborhoodSidebar from './NeighborhoodSidebar'
 import {
-  NEIGHBORHOOD_CHOROPLETH_LAYERS,
+  neighborhoodChoroplethLayers,
   NEIGHBORHOOD_SELECTION_LAYERS,
   buildZScoreColorExpression,
   makeSlotLayers,
 } from './neighborhoodMapLayers'
+import { SCALE_FACTORS } from '@/stores/typeScale'
 import { DOMAINS, SLOT_COLORS, DOMAIN_ROUTES } from './types'
 import type { MetricDomain } from './types'
 import type { PortraitPoint } from './useNeighborhoodPortrait'
@@ -182,7 +183,9 @@ export default function Neighborhood() {
   }, [mapInstance, selectedNeighborhood, compareMode])
 
   // Map layers
-  useMapLayer(mapInstance, 'nh-boundaries', boundaries, NEIGHBORHOOD_CHOROPLETH_LAYERS)
+  const typeScale = useAppStore((s) => s.typeScale)
+  const choroplethLayers = useMemo(() => neighborhoodChoroplethLayers(SCALE_FACTORS[typeScale]), [typeScale])
+  useMapLayer(mapInstance, 'nh-boundaries', boundaries, choroplethLayers)
   useMapLayer(mapInstance, 'nh-boundaries', boundaries, NEIGHBORHOOD_SELECTION_LAYERS)
 
   // Comparison slot layers

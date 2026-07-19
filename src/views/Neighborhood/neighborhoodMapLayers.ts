@@ -1,44 +1,54 @@
 /** Mapbox layer configs for neighborhood choropleth + selection highlight */
 
 import type mapboxgl from 'mapbox-gl'
+import { scaleTextSizeValue } from '@/components/maps/labelTextSize'
 
-export const NEIGHBORHOOD_CHOROPLETH_LAYERS: mapboxgl.AnyLayer[] = [
-  {
-    id: 'nh-choropleth-fill',
-    type: 'fill',
-    source: 'nh-boundaries',
-    paint: {
-      'fill-color': '#64748b', // set dynamically via buildZScoreColorExpression
-      'fill-opacity': 0.3,
-    },
-  } as mapboxgl.AnyLayer,
-  {
-    id: 'nh-choropleth-outline',
-    type: 'line',
-    source: 'nh-boundaries',
-    paint: {
-      'line-color': 'rgba(255,255,255,0.2)',
-      'line-width': ['interpolate', ['linear'], ['zoom'], 10, 1, 14, 2],
-    },
-  } as mapboxgl.AnyLayer,
-  {
-    id: 'nh-choropleth-labels',
-    type: 'symbol',
-    source: 'nh-boundaries',
-    layout: {
-      'text-field': ['get', 'nhood'],
-      'text-size': ['interpolate', ['linear'], ['zoom'], 10, 0, 12, 9, 14, 12],
-      'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
-      'text-anchor': 'center',
-      'text-allow-overlap': false,
-    },
-    paint: {
-      'text-color': ['interpolate', ['linear'], ['zoom'], 10, 'rgba(255,255,255,0)', 12, 'rgba(255,255,255,0.5)', 14, 'rgba(255,255,255,0.7)'],
-      'text-halo-color': 'rgba(0,0,0,0.7)',
-      'text-halo-width': 1.2,
-    },
-  } as mapboxgl.AnyLayer,
-]
+/** Stock label sizing — outputs are scaled by the Large Type factor; the 0 at
+ *  zoom 10 stays 0 at every factor, preserving the fade-in behavior. */
+const NH_LABEL_TEXT_SIZE = ['interpolate', ['linear'], ['zoom'], 10, 0, 12, 9, 14, 12]
+
+/** Mapbox layer configs for the neighborhood choropleth. `textFactor` is
+ *  SCALE_FACTORS[typeScale] — Mapbox text-size is px-only, so map labels are
+ *  the one text surface the root-% rem mechanism can't reach (Phase 3). */
+export function neighborhoodChoroplethLayers(textFactor: number): mapboxgl.AnyLayer[] {
+  return [
+    {
+      id: 'nh-choropleth-fill',
+      type: 'fill',
+      source: 'nh-boundaries',
+      paint: {
+        'fill-color': '#64748b', // set dynamically via buildZScoreColorExpression
+        'fill-opacity': 0.3,
+      },
+    } as mapboxgl.AnyLayer,
+    {
+      id: 'nh-choropleth-outline',
+      type: 'line',
+      source: 'nh-boundaries',
+      paint: {
+        'line-color': 'rgba(255,255,255,0.2)',
+        'line-width': ['interpolate', ['linear'], ['zoom'], 10, 1, 14, 2],
+      },
+    } as mapboxgl.AnyLayer,
+    {
+      id: 'nh-choropleth-labels',
+      type: 'symbol',
+      source: 'nh-boundaries',
+      layout: {
+        'text-field': ['get', 'nhood'],
+        'text-size': scaleTextSizeValue(NH_LABEL_TEXT_SIZE, textFactor),
+        'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+        'text-anchor': 'center',
+        'text-allow-overlap': false,
+      },
+      paint: {
+        'text-color': ['interpolate', ['linear'], ['zoom'], 10, 'rgba(255,255,255,0)', 12, 'rgba(255,255,255,0.5)', 14, 'rgba(255,255,255,0.7)'],
+        'text-halo-color': 'rgba(0,0,0,0.7)',
+        'text-halo-width': 1.2,
+      },
+    } as mapboxgl.AnyLayer,
+  ]
+}
 
 export const NEIGHBORHOOD_SELECTION_LAYERS: mapboxgl.AnyLayer[] = [
   // Dim layer — darkens everything NOT selected
