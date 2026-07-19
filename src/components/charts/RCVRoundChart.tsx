@@ -185,7 +185,10 @@ export default function RCVRoundChart({
   const barHeight = 18
   const gap = 5
   const labelWidth = 120
-  const chartWidth = width - labelWidth - 60
+  // Right gutter holds the count label ("14,056") and the "+N" transfer
+  // badge past the longest bar — 60 crowded them against the panel edge
+  // (Jesse's screenshot); 76 gives the right side room to breathe.
+  const chartWidth = width - labelWidth - 76
 
   // CONSTANT height — derives from the roster length alone, never from how
   // many candidates are currently active vs. eliminated. This is the whole
@@ -427,6 +430,35 @@ export default function RCVRoundChart({
                     : 'width 0.4s ease-out, opacity 0.3s, fill 0.3s',
                 }}
               />
+              {/* Transfer segment — the growth region arrives wearing the
+                  DONOR's color, then fades to reveal the recipient's own
+                  color on the (already grown) bar beneath: the crossfade IS
+                  the adoption moment (Jesse: "the growth should at first
+                  appear as the donated color then change to the adopted
+                  color"). Keyed per round so consecutive steps restart the
+                  animation; gated on showRibbons so reduced-motion and
+                  backward steps skip it entirely. */}
+              {showRibbons && transfer && (() => {
+                const prevVotes = prevRound?.candidates.find((p) => p.name === c.name)?.votes ?? votes
+                const prevW = (prevVotes / maxVotes) * chartWidth
+                const deltaW = barW - prevW
+                if (deltaW < 0.5) return null
+                const donorColor = transferResult.isBatch
+                  ? 'var(--color-slate-500)'
+                  : candidateColors.get(transferResult.eliminatedNames[0]) || 'var(--color-slate-500)'
+                return (
+                  <rect
+                    key={`seg-${activeRound}`}
+                    x={labelWidth + prevW}
+                    y={y}
+                    width={deltaW}
+                    height={barHeight}
+                    rx={3}
+                    fill={donorColor}
+                    style={{ animation: 'rcv-transfer-adopt 1.1s ease-in-out 0.35s both' }}
+                  />
+                )
+              })()}
               {/* Transfer amount badge */}
               {hasTransferGlow && transfer && (
                 <text

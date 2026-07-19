@@ -495,6 +495,16 @@ body {
   from { opacity: 0; }
   to { opacity: 1; }
 }
+/* Transfer segment: the recipient bar's growth region appears in the
+   DONOR's color, holds, then fades out to reveal the recipient's own
+   color on the grown bar beneath — the crossfade is the "adoption"
+   moment. Opacity-only so no per-pair fill parameterization is needed. */
+@keyframes rcv-transfer-adopt {
+  0% { opacity: 0; }
+  18% { opacity: 0.95; }
+  60% { opacity: 0.95; }
+  100% { opacity: 0; }
+}
 
 /* ================================================================
    CORNER GLOW — the unifying treatment
