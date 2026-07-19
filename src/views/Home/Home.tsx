@@ -291,14 +291,14 @@ export default function Home() {
           {/* Gradient overlay — stronger on left for text, fades to transparent on right */}
           <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/60 via-45% to-transparent dark:from-slate-950/95 dark:via-slate-950/60 dark:via-45% dark:to-transparent" />
           {/* Extra overlay on narrow screens where text and Dana overlap */}
-          <div className="absolute inset-0 bg-white/50 dark:bg-slate-950/50 md:hidden" />
+          <div className="absolute inset-0 bg-white/50 dark:bg-slate-950/50 desk:hidden" />
 
           {/* Text content — left side on desktop, full width with overlay on mobile.
               Cap at 640px on ultrawide so the headline + body never stretch into
               uncomfortable line lengths. The hero card itself keeps growing with
               the viewport (revealing more of the bg illustration on the right);
               only the text panel inside it caps. */}
-          <div className="relative py-6 px-8 md:py-8 md:px-14 md:max-w-[min(50%,640px)]">
+          <div className="relative py-6 px-8 desk:py-8 desk:px-14 desk:max-w-[min(50%,640px)]">
             <div className={`transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
               <div className="flex items-center gap-2.5 mb-6">
                 <div className="h-[1px] w-8 bg-signal-blue/60" />
@@ -339,7 +339,7 @@ export default function Home() {
               flow to turn public data into public insight.
             </p>
 
-            <div className={`flex flex-col items-start gap-4 mt-6 md:flex-row md:items-center transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+            <div className={`flex flex-col items-start gap-4 mt-6 desk:flex-row desk:items-center transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
               {/* Credit is a mailto (support/questions channel) — top-line
                   authorship is the author's alone (academic convention);
                   Claude's role is disclosed in full on the About page,
@@ -364,7 +364,7 @@ export default function Home() {
                   Clicking it opens The Last 48 — "Live" IS that view. */}
               <button
                 onClick={() => navigate('/live')}
-                className={`inline-flex items-center gap-2 md:ml-5 pl-2.5 pr-3.5 py-1.5 rounded-full
+                className={`inline-flex items-center gap-2 desk:ml-5 pl-2.5 pr-3.5 py-1.5 rounded-full
                   text-micro font-mono uppercase tracking-wider whitespace-nowrap text-[#f5ecd9]
                   shadow-sm cursor-pointer transition-[filter] hover:brightness-110
                   ${indicators.error ? 'bg-[#b58620]' : 'bg-[#5c7a3d]'}`}
@@ -384,7 +384,7 @@ export default function Home() {
         {/* Mobile-only: the Explorations relocated under the hero as a swipeable
             rail (the desktop Explorations section below is hidden on mobile), so
             dataset discovery is immediate. Last 48 first. */}
-        <div className="md:hidden mb-12">
+        <div className="desk:hidden mb-12">
           <p className="text-micro font-mono uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400 mb-3">
             Explorations
           </p>
@@ -677,7 +677,7 @@ export default function Home() {
 
         {/* Explorations — desktop only; on mobile these cards are relocated to
             the swipeable rail under the hero. */}
-        <section className="relative z-10 hidden md:block">
+        <section className="relative z-10 hidden desk:block">
           <div
             className={`glow-host flex items-center gap-2.5 mb-6 py-1 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100' : 'opacity-0'}`}
             style={{ '--glow': '#5c9693' } as CSSProperties}

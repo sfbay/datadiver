@@ -175,7 +175,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const [navDrawerOpen, setNavDrawerOpen] = useState(false)
   // "isSidebarOpen" below means "show the expanded nav": always true on mobile
   // (the off-canvas drawer shows the full nav), otherwise the persisted desktop
-  // rail flag. The desktop rail WIDTH still keys off deskRailOpen (md:-gated).
+  // rail flag. The desktop rail WIDTH still keys off deskRailOpen (desk:-gated).
   const isSidebarOpen = isMobile || deskRailOpen
   const go = (path: string) => { navigate(path); if (isMobile) setNavDrawerOpen(false) }
 
@@ -195,7 +195,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
     <div className="flex h-screen overflow-hidden bg-paper dark:bg-slate-950 noise-bg">
       {/* Mobile top bar — reclaims the permanent rail's footprint and hosts the
           drawer trigger. Hidden at md+ where the in-flow rail returns. */}
-      <div className="md:hidden fixed top-0 inset-x-0 h-12 z-40 flex items-center gap-2.5 px-3
+      <div className="desk:hidden fixed top-0 inset-x-0 h-12 z-40 flex items-center gap-2.5 px-3
         bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-white/[0.06]">
         <button
           onClick={() => setNavDrawerOpen(true)}
@@ -222,7 +222,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
       {/* Drawer backdrop (mobile only) */}
       {navDrawerOpen && (
         <div
-          className="md:hidden fixed inset-0 z-[44] bg-black/50 backdrop-blur-sm"
+          className="desk:hidden fixed inset-0 z-[44] bg-black/50 backdrop-blur-sm"
           onClick={() => setNavDrawerOpen(false)}
           aria-hidden="true"
         />
@@ -234,14 +234,14 @@ export default function AppShell({ children }: { children: ReactNode }) {
         aria-modal={isMobile ? true : undefined}
         className={`
           flex flex-col
-          fixed md:relative inset-y-0 left-0
-          z-[45] md:z-20
-          w-64 ${deskRailOpen ? 'md:w-64' : 'md:w-[52px]'}
-          ${navDrawerOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0
-          bg-white/95 md:bg-white/50 dark:bg-slate-900/95 md:dark:bg-slate-900/50
+          fixed desk:relative inset-y-0 left-0
+          z-[45] desk:z-20
+          w-64 ${deskRailOpen ? 'desk:w-64' : 'desk:w-[52px]'}
+          ${navDrawerOpen ? 'translate-x-0' : '-translate-x-full'} desk:translate-x-0
+          bg-white/95 desk:bg-white/50 dark:bg-slate-900/95 desk:dark:bg-slate-900/50
           backdrop-blur-xl
           border-r border-slate-200/50 dark:border-white/[0.04]
-          transition-transform md:transition-all duration-300 md:duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]
+          transition-transform desk:transition-all duration-300 desk:duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]
         `}
       >
         {/* Drawer-pull collapse toggle — vertically centered on the right
@@ -251,7 +251,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             in the direction the sidebar will move when clicked. */}
         <button
           onClick={toggleSidebar}
-          className="hidden md:flex absolute top-1/2 -translate-y-1/2 z-30
+          className="hidden desk:flex absolute top-1/2 -translate-y-1/2 z-30
             -right-3.5 w-7 h-14 items-center justify-center
             rounded-lg
             bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl
@@ -511,7 +511,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
           <button
             onClick={toggleSidebar}
             className={`
-              hidden md:flex w-full items-center rounded-lg
+              hidden desk:flex w-full items-center rounded-lg
               text-slate-400 dark:text-slate-600
               hover:text-slate-600 dark:hover:text-slate-400
               hover:bg-slate-50 dark:hover:bg-white/[0.03]
@@ -541,7 +541,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-hidden relative pt-12 md:pt-0">
+      <main className="flex-1 overflow-hidden relative pt-12 desk:pt-0">
         {children}
       </main>
 

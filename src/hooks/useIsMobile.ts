@@ -10,7 +10,7 @@ import { effectiveViewportWidth, MOBILE_BREAKPOINT } from '@/hooks/effectiveView
  *  by syncViewportMode from the SAME effective width), so JS and CSS
  *  flip together — including when large type shrinks the effective
  *  viewport (e.g. a 900px window under 'large' is mobile: 900 ÷ 1.18 ≈
- *  763 < 768). Do NOT reintroduce md: media-query checks here. */
+ *  763 < 768). Do NOT reintroduce a raw min-width media-query check here. */
 export function useIsMobile(): boolean {
   const typeScale = useAppStore((s) => s.typeScale)
   const [isMobile, setIsMobile] = useState(() => isMobileViewport())

@@ -117,7 +117,7 @@ export default function DetailPanelShell({
   return (
     <div
       ref={panelRef}
-      className={`absolute top-5 right-5 z-30 ${widthClass} ${mobileCompact ? 'max-w-[54vw] md:max-w-[calc(100vw-2.5rem)]' : 'max-w-[calc(100vw-2.5rem)]'} max-h-[80vh] animate-in fade-in slide-in-from-right-4`}
+      className={`absolute top-5 right-5 z-30 ${widthClass} ${mobileCompact ? 'max-w-[54vw] desk:max-w-[calc(100vw-2.5rem)]' : 'max-w-[calc(100vw-2.5rem)]'} max-h-[80vh] animate-in fade-in slide-in-from-right-4`}
     >
       {/* Inner glow-host wrapper — keeps the corner-glow clip + isolation on a
           separate element so it doesn't fight the outer div's positioning (the

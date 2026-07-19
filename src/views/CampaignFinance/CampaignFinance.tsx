@@ -272,7 +272,7 @@ export default function CampaignFinance() {
                       />
 
                       {/* Entity charts */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 desk:grid-cols-2 gap-4">
                         {timelineData.length > 0 && (
                           <div className="glass-card rounded-xl p-4">
                             <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
@@ -338,7 +338,7 @@ export default function CampaignFinance() {
                   </div>
 
                   {/* Timeline + Funding Sources side by side */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 desk:grid-cols-2 gap-4">
                     {timelineData.length > 0 && (
                       <div className="glass-card rounded-xl p-4">
                         <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">

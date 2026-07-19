@@ -253,7 +253,7 @@ export default function Dispatch911() {
         {/* items-start on mobile so the title can wrap on the left while the
             controls flow from the top-right (no empty well); md restores the
             centered single row. */}
-        <div className="flex items-start justify-between gap-3 md:items-center">
+        <div className="flex items-start justify-between gap-3 desk:items-center">
           <div className="flex items-center gap-4 min-w-0">
             <div className="min-w-0">
               <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">
@@ -430,7 +430,7 @@ export default function Dispatch911() {
               )}
 
               {/* Response histogram + Disposition breakdown side by side */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 desk:grid-cols-2 gap-4">
                 {histogramData.length > 0 && (
                   <div className="glass-card rounded-xl p-4">
                     <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">

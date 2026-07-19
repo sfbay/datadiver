@@ -3,6 +3,16 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Effective-width desktop variant (Large Type Phase 2). Replaces the old
+   min-width breakpoint variant in app code: html[data-vp] is stamped by
+   syncViewportMode() from EFFECTIVE viewport width (innerWidth ÷
+   type-scale factor), so a large-type reader on a 900px window correctly
+   gets the mobile shell (900 ÷ 1.18 < 768). Media queries can't read
+   attributes — this attribute-driven variant is how CSS follows the JS
+   source of truth. Do not reintroduce that old breakpoint variant in
+   app code. */
+@custom-variant desk (&:where(html[data-vp="desk"] *));
+
 @theme {
   /* Earth-tone refactor — names preserved so existing Tailwind classes
      (text-signal-red, bg-paper, bg-slate-950, etc.) continue to compile;

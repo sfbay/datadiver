@@ -448,7 +448,7 @@ export default function Last48() {
 
       {/* Scanner launcher strip — desktop only; on mobile the bottom sheet would
           cover it, so the scanner links live in the rail's footer instead. */}
-      <div className="hidden md:block">
+      <div className="hidden desk:block">
         <ScannerStrip />
       </div>
     </div>

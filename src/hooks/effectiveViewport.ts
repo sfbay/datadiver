@@ -9,7 +9,7 @@ import { SCALE_FACTORS, parseTypeScale } from '@/stores/typeScale'
 /** The mobile-shell boundary, in EFFECTIVE px. Replaces the old
  *  matchMedia('(max-width: 767px)') check — CSS-side equivalents use the
  *  desk: custom variant (html[data-vp], stamped by syncViewportMode), not
- *  md: media queries, so JS and CSS key off this single number. */
+ *  a raw min-width media query, so JS and CSS key off this single number. */
 export const MOBILE_BREAKPOINT = 768
 
 /** innerWidth divided by the active type-scale factor. Large type shrinks

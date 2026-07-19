@@ -262,8 +262,8 @@ export default function Last48EventCard({ event, onClose }: Props) {
               <p className="font-mono text-label text-paper-600 dark:text-paper-500 mt-1.5 tabular-nums">
                 {/* Mobile: weekday abbr only (disambiguates the day within 48h) so
                     the card can sit ~half-width; desktop keeps the full AP date. */}
-                <span className="md:hidden">{formatApWeekday(event.receivedAt)}</span>
-                <span className="hidden md:inline">{formatApDate(event.receivedAt)}</span>
+                <span className="desk:hidden">{formatApWeekday(event.receivedAt)}</span>
+                <span className="hidden desk:inline">{formatApDate(event.receivedAt)}</span>
                 {' · '}{formatApTime(event.receivedAt)} PT
               </p>
             </div>
@@ -357,9 +357,9 @@ export default function Last48EventCard({ event, onClose }: Props) {
 
             {/* ── Priority (911 only) ───────────────────────────────── */}
             {event.datasetId === '911-realtime' && event.priority && (
-              <div className="mt-3 flex justify-between items-baseline gap-3 md:block">
+              <div className="mt-3 flex justify-between items-baseline gap-3 desk:block">
                 <div className="font-mono text-micro tracking-widest text-paper-500 dark:text-paper-600 shrink-0">PRIORITY</div>
-                <div className={`font-mono text-[12px] text-right md:text-left md:mt-0.5 ${event.priority === 'A' ? 'text-indigo-600 dark:text-indigo-300 font-semibold' : 'text-paper-800 dark:text-paper-300'}`}>
+                <div className={`font-mono text-[12px] text-right desk:text-left desk:mt-0.5 ${event.priority === 'A' ? 'text-indigo-600 dark:text-indigo-300 font-semibold' : 'text-paper-800 dark:text-paper-300'}`}>
                   {event.priority}
                   {event.priority === 'A' && ' — life-threatening'}
                 </div>
@@ -367,19 +367,19 @@ export default function Last48EventCard({ event, onClose }: Props) {
             )}
 
             {/* ── Location ─────────────────────────────────────────── */}
-            <div className="mt-3 mb-3 flex justify-between items-baseline gap-3 md:block">
+            <div className="mt-3 mb-3 flex justify-between items-baseline gap-3 desk:block">
               <div className="font-mono text-micro tracking-widest text-paper-500 dark:text-paper-600 shrink-0">LOCATION</div>
               {(event.longitude != null && event.latitude != null) ? (
-                <div className="font-mono text-label text-paper-800 dark:text-paper-300 text-right md:text-left md:mt-0.5">
+                <div className="font-mono text-label text-paper-800 dark:text-paper-300 text-right desk:text-left desk:mt-0.5">
                   {event.neighborhood ?? 'SF'}
                   {/* coords: desktop only — not human-actionable, and the map shows position */}
-                  <span className="hidden md:inline text-paper-600 dark:text-paper-700">
+                  <span className="hidden desk:inline text-paper-600 dark:text-paper-700">
                     {' · '}
                     {event.latitude.toFixed(4)}, {event.longitude.toFixed(4)}
                   </span>
                 </div>
               ) : (
-                <div className="font-mono text-label italic text-paper-500 dark:text-paper-600 text-right md:text-left md:mt-0.5">
+                <div className="font-mono text-label italic text-paper-500 dark:text-paper-600 text-right desk:text-left desk:mt-0.5">
                   Suppressed; sensitive call
                 </div>
               )}
@@ -426,7 +426,7 @@ export default function Last48EventCard({ event, onClose }: Props) {
                 >
                   {explore.label} →
                 </Link>
-                <p className="hidden md:block font-display italic text-micro text-paper-500 dark:text-paper-600 mt-0.5">
+                <p className="hidden desk:block font-display italic text-micro text-paper-500 dark:text-paper-600 mt-0.5">
                   {explore.caption}
                 </p>
               </>

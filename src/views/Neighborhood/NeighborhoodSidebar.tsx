@@ -265,17 +265,18 @@ export default function NeighborhoodSidebar({
 
   return (
     <>
-      {/* Inline w-[300px] aside at md+, draggable bottom sheet on phones. Kept
-          inline (not <MapSidebar>) so the sticky header + scroll list survive —
-          MapSidebar's single-scroll-container model would flatten them. The
-          sheetStyle (height + translateY) attaches only below md; the md:
-          classes own the inline-aside layout. */}
+      {/* Inline w-[300px] aside at the desktop breakpoint, draggable bottom
+          sheet on phones. Kept inline (not <MapSidebar>) so the sticky
+          header + scroll list survive — MapSidebar's single-scroll-container
+          model would flatten them. The sheetStyle (height + translateY)
+          attaches only below the mobile breakpoint; the desk: classes
+          cancel the sheet chrome on desktop. */}
       <aside
         style={isMobile ? sheet.sheetStyle : undefined}
         className={`flex flex-col overflow-hidden bg-slate-900
           fixed inset-x-0 bottom-0 z-30 rounded-t-2xl border-t border-white/10 shadow-[0_-8px_30px_rgba(0,0,0,0.18)]
-          md:static md:h-full md:w-[300px] md:flex-shrink-0
-          md:bg-black/20 md:rounded-none md:border-t-0 md:border-l md:border-white/[0.06] md:shadow-none`}
+          desk:static desk:h-full desk:w-[300px] desk:flex-shrink-0
+          desk:bg-black/20 desk:rounded-none desk:border-t-0 desk:border-l desk:border-white/[0.06] desk:shadow-none`}
       >
         {/* Mobile drag handle — ↕ resize (peek / half / full), tap to cycle */}
         {isMobile && (

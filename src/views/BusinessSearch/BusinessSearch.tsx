@@ -254,7 +254,7 @@ function FeaturedLanding() {
       )}
 
       {isLoading && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 desk:grid-cols-3 gap-3">
           {Array.from({ length: 3 }, (_, i) => (
             <div key={i} className="glass-card rounded-xl p-4 space-y-2">
               <Skeleton className="h-3 w-1/2" />
@@ -265,7 +265,7 @@ function FeaturedLanding() {
       )}
 
       {!isLoading && !error && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 desk:grid-cols-3 gap-3">
           <FeaturedCard
             title="SF's old guard"
             subtitle="Oldest active businesses"

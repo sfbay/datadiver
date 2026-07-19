@@ -708,7 +708,7 @@ export default function CrimeIncidents() {
         {/* items-start on mobile so the title can wrap on the left while the
             controls flow from the top-right (no empty well); md restores the
             centered single row. */}
-        <div className="flex items-start justify-between gap-3 md:items-center">
+        <div className="flex items-start justify-between gap-3 desk:items-center">
           <div className="flex items-center gap-4 min-w-0">
             <div className="min-w-0">
               <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">

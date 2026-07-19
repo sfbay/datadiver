@@ -138,19 +138,19 @@ export default function BusinessDetailPanel() {
 
           <div className="space-y-2 mt-3">
             {detail.ban && (
-              <div className="flex justify-between items-baseline gap-3 md:block">
+              <div className="flex justify-between items-baseline gap-3 desk:block">
                 <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 shrink-0">Business Account #</p>
-                <p className="text-label font-mono text-slate-700 dark:text-slate-300 tabular-nums text-right md:text-left">{detail.ban}</p>
+                <p className="text-label font-mono text-slate-700 dark:text-slate-300 tabular-nums text-right desk:text-left">{detail.ban}</p>
               </div>
             )}
-            <div className="flex justify-between items-baseline gap-3 md:block">
+            <div className="flex justify-between items-baseline gap-3 desk:block">
               <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 shrink-0">Sector</p>
-              <p className="text-label text-slate-700 dark:text-slate-300 text-right md:text-left">{detail.sector}</p>
+              <p className="text-label text-slate-700 dark:text-slate-300 text-right desk:text-left">{detail.sector}</p>
             </div>
             {detail.licenseCode && (
-              <div className="flex justify-between items-baseline gap-3 md:block">
+              <div className="flex justify-between items-baseline gap-3 desk:block">
                 <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 shrink-0">License</p>
-                <p className="text-label text-slate-700 dark:text-slate-300 text-right md:text-left">{detail.licenseCode}</p>
+                <p className="text-label text-slate-700 dark:text-slate-300 text-right desk:text-left">{detail.licenseCode}</p>
               </div>
             )}
             <div>
@@ -167,9 +167,9 @@ export default function BusinessDetailPanel() {
               )}
             </div>
             {detail.mailingAddress && (
-              <div className="flex justify-between items-baseline gap-3 md:block">
+              <div className="flex justify-between items-baseline gap-3 desk:block">
                 <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 shrink-0">Mailing</p>
-                <p className="text-label text-slate-700 dark:text-slate-300 text-right md:text-left">{detail.mailingAddress}</p>
+                <p className="text-label text-slate-700 dark:text-slate-300 text-right desk:text-left">{detail.mailingAddress}</p>
               </div>
             )}
             <div className="flex gap-4">
