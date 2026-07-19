@@ -346,7 +346,7 @@ export default function Last48() {
           eyebrow + italic display h1 + descriptive subtitle. The right
           cluster now hosts Phase 5's LayerControls (FLOW toggle + base-fill
           picker) in place of the retired ModeToggle, followed by ExportButton. */}
-      <header className="flex-shrink-0 border-b border-paper-200/40 dark:border-espresso-700 px-[clamp(16px,3vw,64px)] py-3 bg-paper-50/50 dark:bg-espresso-950/50 backdrop-blur-xl z-20">
+      <header className="flex-shrink-0 border-b border-paper-200/40 dark:border-transparent px-[clamp(16px,3vw,64px)] py-3 bg-paper-50/50 dark:bg-espresso-950/50 backdrop-blur-xl z-20">
         {/* flex-wrap: on a phone the control cluster reflows below the masthead
             instead of overflowing the viewport (the cluster is wider than a
             375px phone on its own). */}
@@ -396,7 +396,7 @@ export default function Last48() {
       </header>
 
       {/* Cross-view ticker — signals from other datasets */}
-      <div className="flex-shrink-0 border-b border-paper-200/40 dark:border-espresso-800 px-[clamp(16px,3vw,64px)] py-1 bg-paper-50/30 dark:bg-espresso-950/30 backdrop-blur-xl z-10">
+      <div className="flex-shrink-0 border-b border-paper-200/40 dark:border-transparent px-[clamp(16px,3vw,64px)] py-1 bg-paper-50/30 dark:bg-espresso-950/30 backdrop-blur-xl z-10">
         <CivicTicker
           items={heartbeat}
           size="compact"
@@ -406,7 +406,7 @@ export default function Last48() {
 
       {/* Super-chip row — unified per-dataset control:
           toggle + count + per-hour rate + 48h sparkline + twin freshness dots */}
-      <div className="px-[clamp(16px,3vw,64px)] py-3 border-b border-paper-200/40 dark:border-espresso-700">
+      <div className="px-[clamp(16px,3vw,64px)] py-3 border-b border-paper-200/40 dark:border-transparent">
         <DatasetSuperChips
           enabled={datasets}
           onToggle={toggleDataset}
