@@ -9,6 +9,16 @@
  */
 import { useMemo, useState } from 'react'
 import type { RCVContest, RCVRound } from '@/types/elections'
+import { ribbonPath } from './rcvFlow'
+import { toSentenceCase } from '@/utils/format'
+
+// Left gutter reserved for round-0 candidate labels — consistent with
+// RCVRoundChart's labelWidth idiom. Without this, labels were drawn
+// right-anchored at the panel/svg edge with no reserved space and got
+// clipped to their last 1-2 letters ("SAUTER" rendered as "R", "JAMIL" as
+// "IL" — diagnosed live 2026-07-18). Columns compress to make room; total
+// width stays fixed.
+const LABEL_GUTTER = 110
 
 interface RCVSankeyProps {
   rcvData: RCVContest
@@ -43,9 +53,11 @@ export default function RCVSankey({
 }: RCVSankeyProps) {
   const [hoveredCandidate, setHoveredCandidate] = useState<string | null>(null)
 
-  const { nodes, links, roundLabels, maxLinkValue } = useMemo(() => {
+  const { nodes, links, roundLabels, maxLinkValue, colWidth, gutterLeft } = useMemo(() => {
     const rounds = rcvData.rounds
-    if (rounds.length < 2) return { nodes: [], links: [], roundLabels: [], maxLinkValue: 1 }
+    if (rounds.length < 2) {
+      return { nodes: [], links: [], roundLabels: [], maxLinkValue: 1, colWidth: 0, gutterLeft: 0 }
+    }
 
     // Only show rounds where something meaningful happens (elimination)
     // Limit to 8 rounds max for readability
@@ -58,7 +70,7 @@ export default function RCVSankey({
     }
     const displayRounds = significantRounds.slice(0, 8)
 
-    const padding = { top: 20, bottom: 20, left: 10, right: 10 }
+    const padding = { top: 20, bottom: 20, left: 10 + LABEL_GUTTER, right: 10 }
     const colWidth = (width - padding.left - padding.right) / displayRounds.length
     const nodeWidth = 12
     const nodeGap = 4
@@ -89,7 +101,7 @@ export default function RCVSankey({
           x: padding.left + di * colWidth,
           y: yOffset,
           height: nodeH,
-          color: candidateColors.get(c.name) || '#64748b',
+          color: candidateColors.get(c.name) || 'var(--color-slate-500)',
           votes: c.votes,
           eliminated: c.isEliminated,
         }
@@ -113,7 +125,7 @@ export default function RCVSankey({
           x: padding.left + di * colWidth,
           y: height - padding.bottom - nodeH,
           height: nodeH,
-          color: '#475569',
+          color: 'var(--color-paper-500)',
           votes: exhausted,
           eliminated: false,
         }
@@ -191,7 +203,7 @@ export default function RCVSankey({
               source: sourceNode,
               target: exhaustedNode,
               value: exhaustedAmount,
-              color: '#475569',
+              color: 'var(--color-paper-500)',
             })
           }
         }
@@ -201,22 +213,20 @@ export default function RCVSankey({
     const labels = displayRounds.map((ri) => `R${ri + 1}`)
     const maxLink = Math.max(...allLinks.map((l) => l.value), 1)
 
-    return { nodes: allNodes, links: allLinks, roundLabels: labels, maxLinkValue: maxLink }
+    return { nodes: allNodes, links: allLinks, roundLabels: labels, maxLinkValue: maxLink, colWidth, gutterLeft: padding.left }
   }, [rcvData, candidateColors, width, height])
 
   if (nodes.length === 0) {
     return <p className="text-[10px] text-slate-500 font-mono">No RCV rounds to visualize</p>
   }
 
-  // Build SVG path for Sankey links (cubic bezier)
-  const linkPath = (link: SankeyLink): string => {
-    const x0 = link.source.x + 12
-    const y0 = link.source.y + link.source.height / 2
-    const x1 = link.target.x
-    const y1 = link.target.y + link.target.height / 2
-    const mx = (x0 + x1) / 2
-    return `M${x0},${y0} C${mx},${y0} ${mx},${y1} ${x1},${y1}`
-  }
+  // Build SVG path for Sankey links (cubic bezier) — shared with
+  // RCVRoundChart's per-round flow ribbons via rcvFlow.ts.
+  const linkPath = (link: SankeyLink): string =>
+    ribbonPath(
+      { x: link.source.x + 12, y: link.source.y + link.source.height / 2 },
+      { x: link.target.x, y: link.target.y + link.target.height / 2 },
+    )
 
   return (
     <div className="relative" style={{ width }}>
@@ -267,41 +277,40 @@ export default function RCVSankey({
                   x={node.x - 4}
                   y={node.y + node.height / 2}
                   textAnchor="end"
-                  fill={dimmed ? '#334155' : '#94a3b8'}
+                  fill={dimmed ? 'var(--color-slate-700)' : 'var(--color-slate-400)'}
                   fontSize={9}
                   fontFamily="Inter, system-ui, sans-serif"
                   dominantBaseline="middle"
                   style={{ transition: 'fill 0.2s' }}
                 >
-                  {node.name.length > 12 ? node.name.split(' ').pop() : node.name}
+                  {toSentenceCase(node.name.split(' ').pop() || node.name)}
                 </text>
               )}
             </g>
           )
         })}
 
-        {/* Round labels */}
-        {roundLabels.map((label, i) => {
-          const colWidth = (width - 20) / roundLabels.length
-          return (
-            <text
-              key={label}
-              x={10 + i * colWidth + 6}
-              y={12}
-              fill="#64748b"
-              fontSize={9}
-              fontFamily="JetBrains Mono, monospace"
-            >
-              {label}
-            </text>
-          )
-        })}
+        {/* Round labels — share the SAME padding/colWidth the node columns
+            use (previously recomputed with a stale hardcoded 20px total
+            padding that predates the label gutter and ignored it). */}
+        {roundLabels.map((label, i) => (
+          <text
+            key={label}
+            x={gutterLeft + i * colWidth + 6}
+            y={12}
+            fill="var(--color-slate-500)"
+            fontSize={9}
+            fontFamily="var(--font-mono)"
+          >
+            {label}
+          </text>
+        ))}
       </svg>
 
       {/* Hovered candidate info */}
       {hoveredCandidate && (
         <div className="absolute top-2 right-2 glass-card rounded-lg px-3 py-2 text-[10px] font-mono">
-          <span style={{ color: candidateColors.get(hoveredCandidate) || '#94a3b8' }}>
+          <span style={{ color: candidateColors.get(hoveredCandidate) || 'var(--color-slate-400)' }}>
             {hoveredCandidate}
           </span>
         </div>
