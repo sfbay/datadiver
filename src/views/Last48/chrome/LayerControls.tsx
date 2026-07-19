@@ -120,7 +120,7 @@ export default function LayerControls({
         {menuOpen && (
           <div
             role="menu"
-            className="absolute right-0 top-full mt-1.5 z-50 min-w-[220px] rounded-lg bg-paper-50/95 dark:bg-espresso-900/95 backdrop-blur-lg border border-paper-200/50 dark:border-espresso-800 shadow-xl shadow-black/20 p-2"
+            className="absolute right-0 top-full mt-1.5 z-50 min-w-[13.75rem] rounded-lg bg-paper-50/95 dark:bg-espresso-900/95 backdrop-blur-lg border border-paper-200/50 dark:border-espresso-800 shadow-xl shadow-black/20 p-2"
           >
             <MenuItem
               active={isCurrent('none')}

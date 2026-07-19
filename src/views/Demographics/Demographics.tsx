@@ -492,7 +492,7 @@ export default function Demographics() {
           </div>
 
           {/* Right panel: Scatter plot */}
-          <div className="w-[420px] flex-shrink-0 border-l border-slate-200/50 dark:border-white/[0.04] bg-white/50 dark:bg-slate-900/30 backdrop-blur-xl flex flex-col overflow-hidden">
+          <div className="w-[26.25rem] flex-shrink-0 border-l border-slate-200/50 dark:border-white/[0.04] bg-white/50 dark:bg-slate-900/30 backdrop-blur-xl flex flex-col overflow-hidden">
             {/* Y-axis selector */}
             <div className="flex-shrink-0 px-4 pt-3 pb-2 border-b border-slate-200/50 dark:border-white/[0.04]">
               <div className="flex items-center gap-2">

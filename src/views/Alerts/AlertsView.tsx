@@ -247,7 +247,7 @@ export default function AlertsView() {
                   Where to watch
                 </h2>
               </div>
-              <p className="min-w-[260px] flex-1 max-w-[44rem] text-[13px] leading-relaxed text-ink/60 dark:text-slate-400">
+              <p className="min-w-[16.25rem] flex-1 max-w-[44rem] text-[13px] leading-relaxed text-ink/60 dark:text-slate-400">
                 Click anywhere on the map to drop a pin — home, work, school, the
                 corner you worry about. Each pin watches its own circle; your
                 digest covers all of them.
@@ -350,7 +350,7 @@ export default function AlertsView() {
                       className="flex items-center gap-2 rounded-full border border-ink/[0.10] dark:border-white/[0.08] bg-paper-100/50 dark:bg-espresso-900/40 pl-3 pr-1.5 py-1.5"
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-terracotta-500 flex-shrink-0" aria-hidden />
-                      <span className="max-w-[240px] truncate text-[12px] text-ink dark:text-paper-100">
+                      <span className="max-w-[15rem] truncate text-[12px] text-ink dark:text-paper-100">
                         {l.label || `${l.lat.toFixed(4)}, ${l.lng.toFixed(4)}`}
                       </span>
                       <button
@@ -818,7 +818,7 @@ function Colophon() {
 function ConfirmationScreen({ email }: { email: string }) {
   return (
     <div className="h-full overflow-y-auto">
-      <div className="mx-auto max-w-[640px] px-[clamp(16px,3vw,48px)] pt-[clamp(48px,8vw,120px)]">
+      <div className="mx-auto max-w-[40rem] px-[clamp(16px,3vw,48px)] pt-[clamp(48px,8vw,120px)]">
         <div
           className="glass-card relative rounded-[28px] rounded-bl-none overflow-hidden glow-host"
           style={{ '--glow': '#7a9954' } as CSSProperties}

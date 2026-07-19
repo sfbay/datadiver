@@ -689,7 +689,7 @@ function FYScrubber({
         </button>
 
         {/* Year display */}
-        <span className="text-sm font-mono font-semibold text-ink dark:text-white tabular-nums min-w-[80px] text-center">
+        <span className="text-sm font-mono font-semibold text-ink dark:text-white tabular-nums min-w-[5rem] text-center">
           {formatFiscalYear(currentFY)}
         </span>
 

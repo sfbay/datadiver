@@ -58,7 +58,7 @@ export default function TickerCard({ item }: TickerCardProps) {
     <button
       onClick={handleClick}
       className="
-        group glow-host flex-shrink-0 w-[220px]
+        group glow-host flex-shrink-0 w-[13.75rem]
         glass-card rounded-xl
         cursor-pointer select-none
         transition-all duration-300 ease-out

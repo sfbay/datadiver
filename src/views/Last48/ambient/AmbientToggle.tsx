@@ -131,7 +131,7 @@ export default function AmbientToggle({ on, disabled, activePaceId, onToggle, on
       {menuOpen && (
         <div
           role="menu"
-          className="absolute right-0 top-full mt-1.5 z-50 min-w-[180px] rounded-lg bg-paper-50/95 dark:bg-espresso-900/95 backdrop-blur-lg border border-paper-200/50 dark:border-espresso-800 shadow-xl shadow-black/20 p-2"
+          className="absolute right-0 top-full mt-1.5 z-50 min-w-[11.25rem] rounded-lg bg-paper-50/95 dark:bg-espresso-900/95 backdrop-blur-lg border border-paper-200/50 dark:border-espresso-800 shadow-xl shadow-black/20 p-2"
         >
           <div className="px-2 pb-1 text-nano font-mono uppercase tracking-[0.2em] text-paper-500/70 dark:text-paper-600">
             Auto-tour pace

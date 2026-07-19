@@ -125,7 +125,7 @@ export default function ComparisonPopover() {
                 }
               }}
               className="bg-transparent text-micro font-mono text-slate-300 outline-none
-                [color-scheme:dark] cursor-pointer w-[110px]"
+                [color-scheme:dark] cursor-pointer w-[6.875rem]"
               aria-label="Pinned comparison date"
             />
           </div>

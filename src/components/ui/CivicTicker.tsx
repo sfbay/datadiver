@@ -348,7 +348,7 @@ function TickerSkeleton({ size }: { size: TickerSize }) {
         </div>
         <div className="flex gap-4">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="w-[220px] h-[160px] rounded-xl bg-slate-200/50 dark:bg-slate-800/50 animate-pulse flex-shrink-0" />
+            <div key={i} className="w-[13.75rem] h-[160px] rounded-xl bg-slate-200/50 dark:bg-slate-800/50 animate-pulse flex-shrink-0" />
           ))}
         </div>
       </div>

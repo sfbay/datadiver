@@ -49,7 +49,7 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
     <div
       ref={ref}
       className={`
-        relative min-w-[120px]
+        relative min-w-[7.5rem]
         transition-all duration-700
         ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}
       `}
@@ -75,7 +75,7 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
         {subtitle && (
           <p
             title={subtitle}
-            className={`relative text-label mt-1.5 font-mono flex items-center gap-1 max-w-[280px] ${
+            className={`relative text-label mt-1.5 font-mono flex items-center gap-1 max-w-[17.5rem] ${
               trend === 'up'
                 ? 'text-brick-600 dark:text-brick-400'
                 : trend === 'down'

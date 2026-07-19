@@ -208,7 +208,7 @@ function BudgetOverview({ fiscalYear }: { fiscalYear: FiscalYear }) {
           <div className="max-w-4xl space-y-6">
             <div className="flex gap-2.5 flex-wrap">
               {Array.from({ length: 4 }, (_, i) => (
-                <div key={i} className="glass-card rounded-xl px-4 py-3 min-w-[140px] animate-pulse" style={{ animationDelay: `${i * 60}ms` }}>
+                <div key={i} className="glass-card rounded-xl px-4 py-3 min-w-[8.75rem] animate-pulse" style={{ animationDelay: `${i * 60}ms` }}>
                   <Skeleton className="h-2.5 w-16 mb-3" />
                   <Skeleton className="h-6 w-24" />
                 </div>
@@ -234,7 +234,7 @@ function BudgetOverview({ fiscalYear }: { fiscalYear: FiscalYear }) {
             {/* Stat cards — inline for chart-centric view (not absolute overlay) */}
             <div className="flex flex-wrap gap-2.5">
               {cards.map((card) => (
-                <div key={card.id} className="glass-card rounded-xl px-4 py-3 min-w-[120px]">
+                <div key={card.id} className="glass-card rounded-xl px-4 py-3 min-w-[7.5rem]">
                   <p className="text-micro font-medium uppercase tracking-wider text-slate-400 mb-1.5 whitespace-nowrap">
                     {card.label}
                   </p>
@@ -345,7 +345,7 @@ function BudgetOverview({ fiscalYear }: { fiscalYear: FiscalYear }) {
                     }`}
                 >
                   <div className="flex items-center justify-between mb-0.5">
-                    <span className={`text-micro truncate max-w-[160px] ${
+                    <span className={`text-micro truncate max-w-[10rem] ${
                       selectedDepartment === dept.name
                         ? 'text-indigo-600 dark:text-indigo-400 font-medium'
                         : 'text-slate-600 dark:text-slate-400'
@@ -813,7 +813,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
           <div className="max-w-4xl space-y-6">
             <div className="flex gap-2.5 flex-wrap">
               {Array.from({ length: 4 }, (_, i) => (
-                <div key={i} className="glass-card rounded-xl px-4 py-3 min-w-[140px] animate-pulse" style={{ animationDelay: `${i * 60}ms` }}>
+                <div key={i} className="glass-card rounded-xl px-4 py-3 min-w-[8.75rem] animate-pulse" style={{ animationDelay: `${i * 60}ms` }}>
                   <Skeleton className="h-2.5 w-16 mb-3" />
                   <Skeleton className="h-6 w-24" />
                 </div>
@@ -840,7 +840,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
             <div className="flex items-start justify-between">
               <div className="flex flex-wrap gap-2.5">
                 {cards.map((card) => (
-                  <div key={card.id} className="glass-card rounded-xl px-4 py-3 min-w-[120px]">
+                  <div key={card.id} className="glass-card rounded-xl px-4 py-3 min-w-[7.5rem]">
                     <p className="text-micro font-medium uppercase tracking-wider text-slate-400 mb-1.5 whitespace-nowrap">
                       {card.label}
                     </p>
@@ -1166,7 +1166,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                       .map((d) => (
                         <div key={d.department}>
                           <div className="flex items-center justify-between text-micro mb-0.5">
-                            <span className="text-slate-600 dark:text-slate-300 truncate max-w-[300px]">{d.department}</span>
+                            <span className="text-slate-600 dark:text-slate-300 truncate max-w-[18.75rem]">{d.department}</span>
                             <div className="flex items-center gap-2">
                               <span className="font-mono text-brick-400 tabular-nums">{formatBudgetAmount(d.pcard_total)}</span>
                               <span className="font-mono text-slate-400 tabular-nums">
@@ -1279,7 +1279,7 @@ function AdvertisingTab({ fiscalYear }: { fiscalYear: FiscalYear }) {
                     className={`w-full text-left px-2 py-1.5 rounded-md transition-all duration-150 group ${hoverClass} ${dimClass}`}
                   >
                     <div className="flex items-center justify-between mb-0.5">
-                      <span className={`text-micro truncate max-w-[140px] ${
+                      <span className={`text-micro truncate max-w-[8.75rem] ${
                         isActive
                           ? 'text-indigo-600 dark:text-indigo-400 font-medium'
                           : 'text-slate-600 dark:text-slate-400'

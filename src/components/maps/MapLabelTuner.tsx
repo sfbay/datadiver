@@ -146,7 +146,7 @@ export default function MapLabelTuner({ map }: { map: mapboxgl.Map }) {
 
   return (
     <div
-      className="absolute top-16 right-2 z-[60] w-[264px] max-h-[80vh] overflow-y-auto
+      className="absolute top-16 right-2 z-[60] w-[16.5rem] max-h-[80vh] overflow-y-auto
         rounded-xl bg-slate-900/92 backdrop-blur-md border border-ochre-500/30
         shadow-xl shadow-black/50 text-slate-200 pointer-events-auto select-none"
     >

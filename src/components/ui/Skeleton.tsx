@@ -19,7 +19,7 @@ export function Skeleton({ className = '', style }: SkeletonProps) {
 export function SkeletonStatCard({ delay = 0 }: { delay?: number }) {
   return (
     <div
-      className="glass-card rounded-xl px-4 py-3 min-w-[120px] animate-pulse"
+      className="glass-card rounded-xl px-4 py-3 min-w-[7.5rem] animate-pulse"
       style={{ animationDelay: `${delay}ms` }}
     >
       <Skeleton className="h-2.5 w-16 mb-3" />

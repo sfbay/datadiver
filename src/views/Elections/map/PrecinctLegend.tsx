@@ -53,7 +53,7 @@ export default function PrecinctLegend({
               className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
               style={{ backgroundColor: candidateColors.get(focusedCandidate) || '#a8926a' }}
             />
-            <span className="text-micro text-ink dark:text-slate-200 truncate max-w-[130px] font-medium">
+            <span className="text-micro text-ink dark:text-slate-200 truncate max-w-[8.125rem] font-medium">
               {toSentenceCase(focusedCandidate)}
             </span>
             <button
@@ -89,7 +89,7 @@ export default function PrecinctLegend({
                   className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
                   style={{ backgroundColor: candidateColors.get(c.name) || '#a8926a' }}
                 />
-                <span className="text-micro text-slate-400 truncate max-w-[120px]">
+                <span className="text-micro text-slate-400 truncate max-w-[7.5rem]">
                   {toSentenceCase(c.name.split(',')[0])}
                 </span>
                 <span className="text-micro font-mono text-slate-500 ml-auto">

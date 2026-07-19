@@ -265,7 +265,7 @@ export default function NeighborhoodSidebar({
 
   return (
     <>
-      {/* Inline w-[300px] aside at the desktop breakpoint, draggable bottom
+      {/* Inline w-[18.75rem] aside at the desktop breakpoint, draggable bottom
           sheet on phones. Kept inline (not <MapSidebar>) so the sticky
           header + scroll list survive — MapSidebar's single-scroll-container
           model would flatten them. The sheetStyle (height + translateY)
@@ -275,7 +275,7 @@ export default function NeighborhoodSidebar({
         style={isMobile ? sheet.sheetStyle : undefined}
         className={`flex flex-col overflow-hidden bg-slate-900
           fixed inset-x-0 bottom-0 z-30 rounded-t-2xl border-t border-white/10 shadow-[0_-8px_30px_rgba(0,0,0,0.18)]
-          desk:static desk:h-full desk:w-[300px] desk:flex-shrink-0
+          desk:static desk:h-full desk:w-[18.75rem] desk:flex-shrink-0
           desk:bg-black/20 desk:rounded-none desk:border-t-0 desk:border-l desk:border-white/[0.06] desk:shadow-none`}
       >
         {/* Mobile drag handle — ↕ resize (peek / half / full), tap to cycle */}

@@ -155,7 +155,7 @@ export default function VendorDetailPanel({ vendor, onClose, inline }: VendorDet
                   return (
                     <div key={r.department}>
                       <div className="flex justify-between text-micro mb-0.5">
-                        <span className="text-slate-600 dark:text-slate-300 truncate max-w-[180px]">{r.department}</span>
+                        <span className="text-slate-600 dark:text-slate-300 truncate max-w-[11.25rem]">{r.department}</span>
                         <span className="font-mono text-slate-500 tabular-nums ml-2">{formatBudgetAmount(amount)}</span>
                       </div>
                       <div className="h-1 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">

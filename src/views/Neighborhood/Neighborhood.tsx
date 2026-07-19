@@ -377,7 +377,7 @@ export default function Neighborhood() {
           const domainConfig = DOMAINS.find((d) => d.key === selectedPoint.domain)
           const color = domainConfig?.color || '#94a3b8'
           return (
-            <div className="absolute bottom-20 left-4 z-20 glass-card rounded-xl px-4 py-3 max-w-[280px] animate-in fade-in slide-in-from-bottom-2 duration-200">
+            <div className="absolute bottom-20 left-4 z-20 glass-card rounded-xl px-4 py-3 max-w-[17.5rem] animate-in fade-in slide-in-from-bottom-2 duration-200">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-1">

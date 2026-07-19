@@ -393,7 +393,7 @@ export default function Home() {
               {[...VISUALIZATIONS]
                 .sort((a, b) => (a.path === '/live' ? -1 : b.path === '/live' ? 1 : 0))
                 .map((viz) => (
-                  <div key={viz.path} className="w-[215px] shrink-0 snap-start">
+                  <div key={viz.path} className="w-[13.4375rem] shrink-0 snap-start">
                     <VizCard
                       title={viz.title}
                       subtitle={viz.subtitle}

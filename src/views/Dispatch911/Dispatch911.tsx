@@ -325,7 +325,7 @@ export default function Dispatch911() {
             <div className="max-w-4xl space-y-6">
               <div className="flex gap-2.5 flex-wrap">
                 {Array.from({ length: 5 }, (_, i) => (
-                  <div key={i} className="glass-card rounded-xl px-4 py-3 min-w-[120px] animate-pulse" style={{ animationDelay: `${i * 60}ms` }}>
+                  <div key={i} className="glass-card rounded-xl px-4 py-3 min-w-[7.5rem] animate-pulse" style={{ animationDelay: `${i * 60}ms` }}>
                     <Skeleton className="h-2.5 w-16 mb-3" />
                     <Skeleton className="h-6 w-20" />
                   </div>

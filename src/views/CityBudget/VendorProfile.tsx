@@ -460,7 +460,7 @@ function DepartmentBreakdown({
             title={onClickDept ? `Filter payments to ${r.department}` : r.department}
           >
             <div className="flex items-center justify-between mb-0.5">
-              <span className={`text-micro truncate max-w-[200px] ${isActive ? 'text-indigo-400' : 'text-slate-600 dark:text-slate-300'}`}>
+              <span className={`text-micro truncate max-w-[12.5rem] ${isActive ? 'text-indigo-400' : 'text-slate-600 dark:text-slate-300'}`}>
                 {r.department}
               </span>
               <div className="flex items-center gap-2 flex-shrink-0 ml-2">
@@ -525,7 +525,7 @@ function CategoryBreakdown({
         return (
           <div key={character}>
             <div className="flex items-center justify-between mb-0.5">
-              <span className="text-micro text-slate-600 dark:text-slate-300 truncate max-w-[200px]" title={character}>
+              <span className="text-micro text-slate-600 dark:text-slate-300 truncate max-w-[12.5rem]" title={character}>
                 {character}
               </span>
               <div className="flex items-center gap-2 flex-shrink-0 ml-2">
@@ -541,7 +541,7 @@ function CategoryBreakdown({
               <div className="ml-2 space-y-0.5 mt-0.5">
                 {objects.slice(0, 3).map((obj) => (
                   <div key={obj.name} className="flex items-center justify-between">
-                    <span className="text-nano text-slate-400 dark:text-slate-500 truncate max-w-[180px]">
+                    <span className="text-nano text-slate-400 dark:text-slate-500 truncate max-w-[11.25rem]">
                       {obj.name}
                     </span>
                     <span className="text-nano font-mono text-slate-400 tabular-nums ml-2">
@@ -693,10 +693,10 @@ function PaymentTable({
                   ? new Date(p.vouchers_paid_distribution_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })
                   : '—'}
               </td>
-              <td className="py-1.5 pr-3 text-slate-600 dark:text-slate-300 truncate max-w-[160px]" title={p.department}>
+              <td className="py-1.5 pr-3 text-slate-600 dark:text-slate-300 truncate max-w-[10rem]" title={p.department}>
                 {p.department}
               </td>
-              <td className="py-1.5 pr-3 text-slate-400 truncate max-w-[140px]" title={p.sub_object}>
+              <td className="py-1.5 pr-3 text-slate-400 truncate max-w-[8.75rem]" title={p.sub_object}>
                 {p.sub_object}
               </td>
               <td className="py-1.5 pr-3 text-right text-ink dark:text-white tabular-nums">

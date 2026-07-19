@@ -45,7 +45,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     return (
       <div className="h-full overflow-y-auto grid place-items-center px-[clamp(16px,3vw,48px)]">
         <div
-          className="glass-card relative rounded-[28px] rounded-bl-none overflow-hidden glow-host max-w-[560px] w-full"
+          className="glass-card relative rounded-[28px] rounded-bl-none overflow-hidden glow-host max-w-[35rem] w-full"
           style={{ '--glow': '#963e30' } as CSSProperties}
         >
           <div className="glow-corner is-lg" style={{ opacity: 0.45 }} />

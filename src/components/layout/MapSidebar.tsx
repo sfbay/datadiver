@@ -41,7 +41,7 @@ type MapSidebarWidth = 'default' | 'lean'
 
 interface MapSidebarProps {
   children: ReactNode
-  /** Open-width variant. 'default' = 320px (w-80). 'lean' = 260px (w-[260px]) for map-hero-forward views like The Last 48. */
+  /** Open-width variant. 'default' = 320px (w-80). 'lean' = 260px (w-[16.25rem]) for map-hero-forward views like The Last 48. */
   width?: MapSidebarWidth
   /** Props spread onto the inner scroll <div>. Required if children need the
    *  scrolling element to be a listbox (role + aria-activedescendant must sit
@@ -83,7 +83,7 @@ export default function MapSidebar({ children, width = 'default', scrollContaine
   // 320px full / 240px compressed / 36px collapsed-stub
   // lean variant: 260px full (map-hero-forward views), still 240px compressed
   const widthClass = isOpen
-    ? (isNarrow ? 'w-60' : (width === 'lean' ? 'w-[260px]' : 'w-80'))
+    ? (isNarrow ? 'w-60' : (width === 'lean' ? 'w-[16.25rem]' : 'w-80'))
     : 'w-9'
 
   // Below md the sidebar is a bottom sheet: a slim handle peeks at the bottom
