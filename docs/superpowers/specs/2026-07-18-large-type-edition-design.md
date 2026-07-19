@@ -116,3 +116,11 @@ treatment first:
   scales slightly less than body; acceptable and arguably desirable.
 - Sequencing with the concurrent RCV animation work: both touch Elections-adjacent files.
   **RCV merges first; large-type rebases over it.**
+
+## Shipped amendments (July 18 2026, PR #126)
+
+- **Phase 1.5 — `xl` tier added** per Jesse ("Large may not be large enough"): union is
+  `'default' | 'large' | 'xl'`, xl = 133%. The toggle became a **Default/Large/XL segmented
+  radiogroup slider** (three ascending "A" stops, sliding thumb) in the expanded rail; the
+  collapsed rail gets a cycle button. Phase 2's `[data-type-scale]` token-floor overrides must
+  now cover BOTH large and xl tiers.

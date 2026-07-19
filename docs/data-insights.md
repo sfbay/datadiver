@@ -181,6 +181,33 @@ Nov 2025 (Proposition 50) reports **100 precinct rows for a ~500-precinct city**
 
 **Rule:** the URL slug is a remote-only concern — emit round files named by the race id the frontend fetches, match slugs to races by exact id first (full-array pass) with a full-title fallback only, and pin the contract with a test (`rcvFiles.test.ts`: every `isRCV` race has a file or is an explicit known-missing; every file's internal `raceId` equals its filename).
 
+### RCV `isEliminated` describes the NEXT round's removal — every derivation must pick a side
+
+**Finding (July 18 2026, bit three separate derivations in one day):** in SF's round tables, a
+candidate flagged `isEliminated` on round N was eliminated *based on* round N's standings — their
+votes redistribute **into round N+1**, and on round N they still hold live votes. So a round's own
+flag describes the future, while its vote deltas describe the past. Three independent pieces of
+display code each read the flag from the wrong side: (1) transfer attribution credited round N's
+deltas to round N's flagged candidate (wrong — they belong to round N−1's; the shipping "+N from X"
+callouts named the wrong person in production); (2) a base row filter (`votes > 0 || isEliminated`)
+dropped the just-redistributed candidate (votes 0, flag on the *previous* round), silently killing
+the flow-ribbon anchor; (3) the strikethrough styling accumulated flags through the *current* round,
+crossing out candidates one round before their votes were actually gone.
+
+**Proof method:** conservation of votes — for every consecutive round pair, each continuing
+candidate's gain + the exhausted-ballot delta + overvote drift sums **exactly** to the *previous*
+round's flagged eliminee's total (verified on all 9 Nov 2024 RCV races; all rounds are single
+eliminations, so attribution is exact, not approximate). The official "Transfer" column is each
+candidate's own net round-over-round delta — it carries **no source→destination information**;
+delta derivation is the ceiling of SF's published data (true paths would need CVR ballot images).
+
+**Rule:** any code touching `isEliminated` must explicitly choose flag-round vs. removal-round
+semantics. Transfers INTO round N come from round N−1's flags (`computeRoundTransfers` in
+`src/components/charts/rcvFlow.ts`, pinned by `rcvFlow.test.ts` conservation fixtures);
+"visually eliminated" styling uses a strict bound (flagged in a round *before* the viewed one).
+Batch eliminations (multiple flags in one round) are legal under SF's rules but absent from all
+shipped data — code the aggregate-attribution guard, never claim per-source precision for a batch.
+
 ---
 
 ## 911 Realtime & Fire/EMS (live dispatch feeds)

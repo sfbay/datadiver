@@ -115,3 +115,17 @@ in them — new motion on inconsistent chrome would spotlight the debt.
 - New shared helper (e.g. `src/components/charts/rcvFlow.ts`) — ribbon path + transfer math
 - `src/views/Elections/Elections.tsx` — keyboard scoping; minor chrome palette cleanup
 - New test file(s) for the above
+
+## Shipped amendments (July 18 2026, PR #127 — Jesse's live-review rounds)
+
+- **Stable roster replaced the two-section layout**: one permanent row per candidate (round-1
+  vote order) for the whole contest; bars drain in place; elimination is styling (dim + strike +
+  zero width), not relocation; panel size is constant — click zones never move. The spec's
+  "eliminated section" no longer exists.
+- **Transfer segments** joined the ribbons: each recipient's growth region appears as a block in
+  the ELIMINATED candidate's pigment, holds, then fades to reveal the recipient's color on the
+  grown bar beneath (opacity-only crossfade = the adoption moment).
+- The elimination callout is a **persistent fixed-height slot** (whole-round visibility, derived
+  from the synchronous transferResult) — the 1.5s window gates only ribbons/glow.
+- Strikethrough uses removal-round semantics (strict bound), not flag-round — see
+  data-insights.md → Elections → RCV `isEliminated`.
