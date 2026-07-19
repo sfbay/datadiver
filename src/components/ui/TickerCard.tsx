@@ -81,7 +81,7 @@ export default function TickerCard({ item }: TickerCardProps) {
             }}
           />
           <span
-            className="text-[9px] font-mono uppercase tracking-[0.2em] font-semibold"
+            className="text-nano font-mono uppercase tracking-[0.2em] font-semibold"
             style={{ color: accent }}
           >
             {CATEGORY_LABELS[item.category] ?? item.category}
@@ -102,7 +102,7 @@ export default function TickerCard({ item }: TickerCardProps) {
           )}
           {deltaText && (
             <span
-              className="text-[11px] font-mono font-semibold px-1.5 py-0.5 rounded-md"
+              className="text-label font-mono font-semibold px-1.5 py-0.5 rounded-md"
               style={{
                 color: severityColor,
                 backgroundColor: severityColor + '15',
@@ -127,7 +127,7 @@ export default function TickerCard({ item }: TickerCardProps) {
         )}
 
         {/* Source label */}
-        <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400 tracking-wide truncate text-left mt-auto">
+        <p className="text-micro font-mono text-slate-500 dark:text-slate-400 tracking-wide truncate text-left mt-auto">
           {item.source.label}
         </p>
       </div>

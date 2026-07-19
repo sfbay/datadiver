@@ -174,7 +174,7 @@ export default function CardTray({ viewId, cards, className = '', hideComparison
                 title={`${card.label}: ${card.value} — click to expand`}
               >
                 {trendArrow && (
-                  <span className="text-[9px] font-mono font-bold" style={{ color: trendColor ?? undefined }}>
+                  <span className="text-nano font-mono font-bold" style={{ color: trendColor ?? undefined }}>
                     {trendArrow}
                   </span>
                 )}
@@ -190,10 +190,10 @@ export default function CardTray({ viewId, cards, className = '', hideComparison
                     style={{ backgroundColor: card.color }}
                   />
                 )}
-                <span className="text-[9px] font-mono text-slate-400 group-hover/pill:text-slate-300 whitespace-nowrap">
+                <span className="text-nano font-mono text-slate-400 group-hover/pill:text-slate-300 whitespace-nowrap">
                   {card.shortLabel || card.label}
                 </span>
-                <span className="text-[9px] font-mono font-semibold text-slate-300 tabular-nums">
+                <span className="text-nano font-mono font-semibold text-slate-300 tabular-nums">
                   {card.value}
                 </span>
               </button>
@@ -262,7 +262,7 @@ export default function CardTray({ viewId, cards, className = '', hideComparison
                         className="w-2 h-2 rounded-full flex-shrink-0"
                         style={{ backgroundColor: card.color }}
                       />
-                      <span className="text-[10px] text-slate-400">{card.label}</span>
+                      <span className="text-micro text-slate-400">{card.label}</span>
                     </button>
                   ))}
                 </div>

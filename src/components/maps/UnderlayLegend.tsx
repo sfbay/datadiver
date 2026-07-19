@@ -88,14 +88,14 @@ export default function UnderlayLegend({
         bg-white/85 dark:bg-slate-900/80
         ring-1 ring-slate-200/60 dark:ring-white/[0.08]
         shadow-md shadow-slate-900/10 dark:shadow-black/40">
-        <p className="text-[9px] font-mono uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 mb-1.5 whitespace-nowrap">
+        <p className="text-nano font-mono uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 mb-1.5 whitespace-nowrap">
           {config.shortLabel ?? config.label}
         </p>
         <div
           className="h-2 w-32 rounded-full mb-1 ring-1 ring-slate-300/40 dark:ring-white/[0.06]"
           style={{ background: gradient }}
         />
-        <div className="flex justify-between text-[9px] font-mono text-slate-600 dark:text-slate-300 tabular-nums">
+        <div className="flex justify-between text-nano font-mono text-slate-600 dark:text-slate-300 tabular-nums">
           <span>{formatValue(min, config.format)}</span>
           <span>{formatValue(max, config.format)}</span>
         </div>

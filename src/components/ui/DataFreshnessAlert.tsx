@@ -61,7 +61,7 @@ export default function DataFreshnessAlert({
             )}
 
             {hasGeoGap && (
-              <p className="text-[10px] text-slate-500 dark:text-slate-600 mb-3 font-mono">
+              <p className="text-micro text-slate-500 dark:text-slate-600 mb-3 font-mono">
                 Map data ends {formatDate(latestGeoDate)}.
                 Stats available through {formatDate(latestDate)}.
               </p>
@@ -85,7 +85,7 @@ export default function DataFreshnessAlert({
         {onDismiss && (
           <button
             onClick={onDismiss}
-            className="block mx-auto mt-2 text-[10px] font-mono text-slate-400 hover:text-slate-300 underline underline-offset-2"
+            className="block mx-auto mt-2 text-micro font-mono text-slate-400 hover:text-slate-300 underline underline-offset-2"
           >
             Keep current range anyway
           </button>

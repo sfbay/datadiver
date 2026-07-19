@@ -54,7 +54,7 @@ export default function VizCard({
     >
       <div className="glow-corner is-lg" />
       <div
-        className="relative text-[10px] font-mono font-bold tracking-wider mb-1.5"
+        className="relative text-micro font-mono font-bold tracking-wider mb-1.5"
         style={{ color: accentColor, opacity: 0.95 }}
       >
         {badge}
@@ -62,7 +62,7 @@ export default function VizCard({
       <h3 className="relative font-display italic font-medium text-[15px] text-ink dark:text-slate-200 leading-tight mb-1">
         {title}
       </h3>
-      <p className="relative text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
+      <p className="relative text-micro font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
         {subtitle}
       </p>
 

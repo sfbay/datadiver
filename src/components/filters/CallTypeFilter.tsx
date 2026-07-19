@@ -56,7 +56,7 @@ export default function CallTypeFilter({ callTypes, selected, onChange }: CallTy
       <div className="flex gap-1">
         <button
           onClick={handleSelectAll}
-          className={`px-2 py-1 rounded-md text-[10px] font-mono font-medium transition-all duration-150 ${
+          className={`px-2 py-1 rounded-md text-micro font-mono font-medium transition-all duration-150 ${
             allSelected
               ? 'bg-signal-blue/15 text-signal-blue'
               : 'bg-slate-100 dark:bg-white/[0.04] text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-white/[0.08]'
@@ -66,7 +66,7 @@ export default function CallTypeFilter({ callTypes, selected, onChange }: CallTy
         </button>
         <button
           onClick={handleSensitiveOnly}
-          className={`px-2 py-1 rounded-md text-[10px] font-mono font-medium transition-all duration-150 flex items-center gap-1 ${
+          className={`px-2 py-1 rounded-md text-micro font-mono font-medium transition-all duration-150 flex items-center gap-1 ${
             !allSelected && callTypes.filter((c) => c.isSensitive).every((c) => selected.has(c.callType)) && selected.size === callTypes.filter((c) => c.isSensitive).length
               ? 'bg-plum-500/15 text-plum-500'
               : 'bg-slate-100 dark:bg-white/[0.04] text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-white/[0.08]'
@@ -147,13 +147,13 @@ export default function CallTypeFilter({ callTypes, selected, onChange }: CallTy
                     <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
                   </svg>
                 )}
-                <span className="text-[11px] text-ink dark:text-slate-300 truncate leading-tight">
+                <span className="text-label text-ink dark:text-slate-300 truncate leading-tight">
                   {toTitleCase(entry.callType)}
                 </span>
               </button>
 
               {/* Count badge */}
-              <span className="relative text-[10px] font-mono text-slate-400 dark:text-slate-500 tabular-nums flex-shrink-0">
+              <span className="relative text-micro font-mono text-slate-400 dark:text-slate-500 tabular-nums flex-shrink-0">
                 {entry.count.toLocaleString()}
               </span>
             </div>

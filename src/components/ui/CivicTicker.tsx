@@ -150,12 +150,12 @@ function HeroTicker({ items, lastUpdated, className = '' }: Omit<CivicTickerProp
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-moss-400 opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-moss-500" />
           </span>
-          <span className="text-[10px] font-mono uppercase tracking-[0.25em] font-bold text-moss-500">
+          <span className="text-micro font-mono uppercase tracking-[0.25em] font-bold text-moss-500">
             Live Civic Data
           </span>
         </div>
         {lastUpdated && (
-          <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">
+          <span className="text-micro font-mono text-slate-400 dark:text-slate-500">
             Updated {timeAgo(lastUpdated)}
           </span>
         )}
@@ -232,7 +232,7 @@ function StandardTicker({ items, className = '', onItemClick }: Omit<CivicTicker
               </span>
               {delta && (
                 <span
-                  className="text-[11px] font-mono font-semibold"
+                  className="text-label font-mono font-semibold"
                   style={{ color: deltaColor }}
                 >
                   {delta}
@@ -312,17 +312,17 @@ function CompactTicker({ items, className = '', onItemClick }: Omit<CivicTickerP
                   (body, medium, ink/paper) + subdued context (mono italic).
                   Heartbeat events put the call type in `headline` and the
                   "neighborhood · time ago" in `detail`. */}
-              <span className="text-[11px] font-medium text-ink dark:text-paper-200 whitespace-nowrap">
+              <span className="text-label font-medium text-ink dark:text-paper-200 whitespace-nowrap">
                 {item.headline}
               </span>
               {item.detail && (
-                <span className="text-[10px] font-mono italic text-paper-500 dark:text-paper-600 whitespace-nowrap">
+                <span className="text-micro font-mono italic text-paper-500 dark:text-paper-600 whitespace-nowrap">
                   {item.detail}
                 </span>
               )}
               {delta && (
                 <span
-                  className="text-[10px] font-mono font-bold"
+                  className="text-micro font-mono font-bold"
                   style={{ color: deltaColor }}
                 >
                   {delta}

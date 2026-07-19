@@ -148,7 +148,7 @@ export default function TimeOfDayFilter({ hourTotals }: TimeOfDayFilterProps) {
       {/* Drag hint */}
       <div className="h-3 relative">
         {dragPreview && dragPreview.start !== dragPreview.end && (
-          <span className="absolute left-1/2 -translate-x-1/2 top-0 text-[9px] font-mono text-ochre-500/80 animate-pulse">
+          <span className="absolute left-1/2 -translate-x-1/2 top-0 text-nano font-mono text-ochre-500/80 animate-pulse">
             {formatHour(dragPreview.start)} – {formatHour(dragPreview.end)}
           </span>
         )}
@@ -161,7 +161,7 @@ export default function TimeOfDayFilter({ hourTotals }: TimeOfDayFilterProps) {
             key={preset.label}
             onClick={() => handlePreset(preset.start, preset.end)}
             className={`
-              px-2 py-1 rounded-md text-[10px] font-mono font-medium transition-all duration-150
+              px-2 py-1 rounded-md text-micro font-mono font-medium transition-all duration-150
               ${isPresetActive(preset)
                 ? 'bg-signal-amber/20 text-signal-amber'
                 : 'bg-slate-100 dark:bg-white/[0.04] text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-white/[0.08]'

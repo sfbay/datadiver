@@ -213,7 +213,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         />
         <div className="flex items-baseline gap-2 min-w-0">
           <span className="font-display italic text-base text-ink dark:text-white leading-none tracking-tight shrink-0">DataDiver</span>
-          <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 truncate">
+          <span className="text-micro font-mono text-slate-500 dark:text-slate-400 truncate">
             Bring civic data to life, instantly
           </span>
         </div>
@@ -302,7 +302,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
               <span className="font-display text-xl italic text-ink dark:text-white leading-none tracking-tight">
                 DataDiver
               </span>
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono uppercase tracking-widest mt-0.5">
+              <span className="text-micro text-slate-400 dark:text-slate-500 font-mono uppercase tracking-widest mt-0.5">
                 SF Open Data
               </span>
             </div>
@@ -334,7 +334,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         {/* Navigation */}
         <nav className={`flex-1 py-4 space-y-0.5 overflow-y-auto ${isSidebarOpen ? 'px-3' : 'px-1.5'}`}>
           {isSidebarOpen && (
-            <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 px-2 mb-2">
+            <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 px-2 mb-2">
               Visualizations
             </p>
           )}
@@ -361,7 +361,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
                 {/* Accent indicator */}
                 <div className={`
                   relative flex-shrink-0 flex items-center justify-center
-                  rounded-md text-[10px] font-mono font-bold tracking-wider
+                  rounded-md text-micro font-mono font-bold tracking-wider
                   transition-all duration-200
                   ${isSidebarOpen ? 'w-8 h-8' : 'w-7 h-7'}
                   ${isActive
@@ -385,7 +385,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
                       ${isActive ? 'text-ink dark:text-white' : 'text-slate-700 dark:text-slate-300'}`}>
                       {item.label}
                     </span>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                    <span className="text-label text-slate-500 dark:text-slate-400 truncate">
                       {item.description}
                     </span>
                   </div>

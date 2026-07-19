@@ -13,7 +13,7 @@ interface DataSourceLineProps {
 
 export default function DataSourceLine({ dataset, source, id, caveats, vintage, dataAsOf, recordCount, className = '' }: DataSourceLineProps) {
   return (
-    <div className={`text-[10px] text-slate-500 dark:text-slate-500 ${className}`}>
+    <div className={`text-micro text-slate-500 dark:text-slate-500 ${className}`}>
       <span>{dataset}</span>
       {vintage && <span> ({vintage})</span>}
       <span> · {source}</span>

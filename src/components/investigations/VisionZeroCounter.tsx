@@ -52,7 +52,7 @@ export default function VisionZeroCounter() {
               >
                 {data.killed}
               </span>
-              <div className="text-[9px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-1">
+              <div className="text-nano font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-1">
                 killed
               </div>
             </div>
@@ -60,7 +60,7 @@ export default function VisionZeroCounter() {
               <span className="text-[18px] font-mono font-bold tabular-nums leading-none text-ink dark:text-paper-200">
                 {data.severelyInjured}
               </span>
-              <div className="text-[9px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-1">
+              <div className="text-nano font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-1">
                 severely injured
               </div>
             </div>
@@ -68,14 +68,14 @@ export default function VisionZeroCounter() {
               <span className="text-[18px] font-mono font-bold tabular-nums leading-none text-ink dark:text-paper-200">
                 {data.crashes}
               </span>
-              <div className="text-[9px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-1">
+              <div className="text-nano font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-1">
                 crashes
               </div>
             </div>
           </div>
 
           {/* ── YoY, matched windows ─────────────────────────────── */}
-          <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
+          <div className="text-micro font-mono text-slate-500 dark:text-slate-400">
             {Math.abs(data.yoyPct) < 2 ? (
               `About the same as ${data.year - 1} over the same months`
             ) : data.yoyPct > 0 ? (
@@ -99,7 +99,7 @@ export default function VisionZeroCounter() {
               publish (~4-6 wks) AND fatality coding (longer — deaths are
               upgraded from injury records after certification, so recent
               months revise upward). See docs/data-insights.md. ─────── */}
-          <p className="text-[9px] font-mono text-slate-500 dark:text-slate-500">
+          <p className="text-nano font-mono text-slate-500 dark:text-slate-500">
             Reports lag 4–6 weeks; fatality coding longer — recent months revise
             upward · data through {formatApDate(data.dataThrough)}
           </p>

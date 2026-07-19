@@ -107,7 +107,7 @@ export default function ElectionTimeline({
           <button
             key={s}
             onClick={() => onSpeedChange(s)}
-            className={`px-1.5 py-0.5 rounded text-[9px] font-mono transition-all ${
+            className={`px-1.5 py-0.5 rounded text-nano font-mono transition-all ${
               speed === s
                 ? 'bg-indigo-500/20 text-indigo-500'
                 : 'text-slate-500 hover:text-slate-300'
@@ -119,7 +119,7 @@ export default function ElectionTimeline({
       </div>
 
       {/* Election label */}
-      <p className="text-[10px] font-mono text-slate-500 flex-shrink-0 max-w-[140px] truncate">
+      <p className="text-micro font-mono text-slate-500 flex-shrink-0 max-w-[140px] truncate">
         {active?.type === 'general' ? 'General' : active?.type === 'primary' ? 'Primary' : active?.type || ''}
       </p>
     </div>

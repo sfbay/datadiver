@@ -53,7 +53,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <div className="relative px-[clamp(24px,4vw,44px)] py-[clamp(28px,4vw,44px)]">
             <div className="flex items-center gap-2.5 mb-5">
               <div className="h-px w-7 bg-brick-500/60" />
-              <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-brick-500">
+              <p className="text-micro font-mono uppercase tracking-[0.25em] text-brick-500">
                 Something broke
               </p>
             </div>

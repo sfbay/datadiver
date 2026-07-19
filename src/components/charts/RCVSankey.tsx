@@ -217,7 +217,7 @@ export default function RCVSankey({
   }, [rcvData, candidateColors, width, height])
 
   if (nodes.length === 0) {
-    return <p className="text-[10px] text-slate-500 font-mono">No RCV rounds to visualize</p>
+    return <p className="text-micro text-slate-500 font-mono">No RCV rounds to visualize</p>
   }
 
   // Build SVG path for Sankey links (cubic bezier) — shared with
@@ -309,7 +309,7 @@ export default function RCVSankey({
 
       {/* Hovered candidate info */}
       {hoveredCandidate && (
-        <div className="absolute top-2 right-2 glass-card rounded-lg px-3 py-2 text-[10px] font-mono">
+        <div className="absolute top-2 right-2 glass-card rounded-lg px-3 py-2 text-micro font-mono">
           <span style={{ color: candidateColors.get(hoveredCandidate) || 'var(--color-slate-400)' }}>
             {hoveredCandidate}
           </span>

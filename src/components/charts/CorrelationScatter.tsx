@@ -334,7 +334,7 @@ export default function CorrelationScatter({
             bg-slate-900/95 border-slate-700 text-slate-200
           `}>
             <div className="font-medium font-display mb-0.5">{tooltip.name}</div>
-            <div className="font-mono text-[10px] space-y-0.5">
+            <div className="font-mono text-micro space-y-0.5">
               <div>
                 <span className="text-slate-400">{xLabel}: </span>
                 <span>{formatTooltipValue(tooltip.xVal, xLabel)}</span>
@@ -351,7 +351,7 @@ export default function CorrelationScatter({
       {/* Pearson r display */}
       {data.length >= 2 && (
         <div className={`
-          mt-1 px-2 flex items-center gap-2 text-[10px] font-mono
+          mt-1 px-2 flex items-center gap-2 text-micro font-mono
           ${isDark ? 'text-slate-400' : 'text-slate-500'}
         `}>
           <span

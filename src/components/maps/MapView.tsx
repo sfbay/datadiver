@@ -307,7 +307,7 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
       {debugCam && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[5] px-3 py-2 rounded-lg
           bg-slate-900/85 backdrop-blur-sm border border-moss-500/30
-          text-[10px] font-mono text-moss-400 leading-relaxed
+          text-micro font-mono text-moss-400 leading-relaxed
           shadow-lg shadow-black/40 pointer-events-none">
           <div className="text-[8px] uppercase tracking-[0.2em] text-moss-500/70 mb-1">
             map camera (debug)
@@ -322,7 +322,7 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
             <span className="text-slate-400">center</span>
             <span>[{debugCam.center[0].toFixed(4)}, {debugCam.center[1].toFixed(4)}]</span>
           </div>
-          <div className="mt-2 pt-2 border-t border-moss-500/15 text-[9px] text-moss-400/70">
+          <div className="mt-2 pt-2 border-t border-moss-500/15 text-nano text-moss-400/70">
             paste-ready:<br />
             <span className="text-ochre-400">SF_DEFAULT_PITCH = {Math.round(debugCam.pitch * 10) / 10}</span><br />
             <span className="text-ochre-400">SF_DEFAULT_BEARING = {Math.round(debugCam.bearing * 10) / 10}</span><br />

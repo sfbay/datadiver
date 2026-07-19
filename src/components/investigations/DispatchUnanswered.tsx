@@ -39,7 +39,7 @@ export default function DispatchUnanswered() {
             </span>
 
             {/* YoY line */}
-            <div className="mt-1 text-[10px] font-mono text-slate-500 dark:text-slate-400">
+            <div className="mt-1 text-micro font-mono text-slate-500 dark:text-slate-400">
               {Math.abs(data.yoyPct) < 2 ? (
                 'About the same as last year'
               ) : data.yoyPct > 0 ? (
@@ -113,7 +113,7 @@ export default function DispatchUnanswered() {
                   >
                     {Math.round(outcome.pct)}%
                   </span>
-                  <span className="text-[9px] font-mono text-slate-500 dark:text-slate-400 leading-tight">
+                  <span className="text-nano font-mono text-slate-500 dark:text-slate-400 leading-tight">
                     {outcome.label}
                   </span>
                 </div>

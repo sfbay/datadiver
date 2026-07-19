@@ -187,7 +187,7 @@ export default function DateRangePicker() {
         <p className="text-sm font-mono font-semibold text-ink dark:text-white tracking-tight">
           {formatDisplay(dateRange.start, dateRange.end)}
         </p>
-        <span className="text-[9px] font-mono text-slate-400/60 dark:text-slate-600">
+        <span className="text-nano font-mono text-slate-400/60 dark:text-slate-600">
           {rangeDays}d
         </span>
       </div>
@@ -204,7 +204,7 @@ export default function DateRangePicker() {
               key={preset.label}
               onClick={() => applyPreset(preset)}
               className={`
-                flex-1 py-1 rounded-md text-[9px] font-mono font-medium
+                flex-1 py-1 rounded-md text-nano font-mono font-medium
                 transition-all duration-150
                 ${isActive
                   ? 'glow-host border border-[#b85a33]/40 bg-[#b85a33]/[0.18] text-[#b85a33] dark:text-[#d47149]'
@@ -222,7 +222,7 @@ export default function DateRangePicker() {
       {/* Custom range toggle */}
       <button
         onClick={() => setIsCustomOpen(!isCustomOpen)}
-        className="w-full text-center py-0.5 text-[9px] font-mono text-slate-400/60 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 transition-colors"
+        className="w-full text-center py-0.5 text-nano font-mono text-slate-400/60 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 transition-colors"
       >
         {isCustomOpen ? 'close' : 'custom range'}
       </button>
@@ -241,7 +241,7 @@ export default function DateRangePicker() {
                 max={localEnd}
                 onChange={(e) => setLocalStart(e.target.value)}
                 className="
-                  w-full px-2 py-1 rounded-md text-[10px] font-mono
+                  w-full px-2 py-1 rounded-md text-micro font-mono
                   bg-white dark:bg-white/[0.04]
                   border border-slate-200/80 dark:border-white/[0.08]
                   text-ink dark:text-slate-200
@@ -260,7 +260,7 @@ export default function DateRangePicker() {
                 min={localStart}
                 onChange={(e) => setLocalEnd(e.target.value)}
                 className="
-                  w-full px-2 py-1 rounded-md text-[10px] font-mono
+                  w-full px-2 py-1 rounded-md text-micro font-mono
                   bg-white dark:bg-white/[0.04]
                   border border-slate-200/80 dark:border-white/[0.08]
                   text-ink dark:text-slate-200
@@ -274,7 +274,7 @@ export default function DateRangePicker() {
             onClick={handleApply}
             disabled={!localStart || !localEnd || localStart > localEnd}
             className="
-              w-full py-1 rounded-md text-[10px] font-mono font-medium
+              w-full py-1 rounded-md text-micro font-mono font-medium
               bg-signal-blue text-white
               hover:bg-signal-blue/90
               disabled:opacity-40 disabled:cursor-not-allowed

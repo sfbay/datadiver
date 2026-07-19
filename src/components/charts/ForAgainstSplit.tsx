@@ -51,18 +51,18 @@ export default function ForAgainstSplit({
           {formatCurrency(directContribTotal + supportTotal)}
         </p>
         {directContribTotal > 0 && (
-          <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-1">
+          <p className="text-micro text-slate-500 dark:text-slate-400 mb-1">
             {formatCurrency(directContribTotal)} direct + {formatCurrency(supportTotal)} IE
           </p>
         )}
 
-        <p className="text-[9px] font-mono uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500 mb-2 mt-4">
+        <p className="text-nano font-mono uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500 mb-2 mt-4">
           Top Funders
         </p>
         <div className="space-y-1.5">
           {supportFunders.map((f, i) => (
             <div key={i}>
-              <div className="flex justify-between text-[10px] mb-0.5">
+              <div className="flex justify-between text-micro mb-0.5">
                 <span className="text-slate-600 dark:text-slate-300 truncate max-w-[60%]">{f.name}</span>
                 <span className="font-mono text-slate-500 dark:text-slate-400">{formatCurrency(f.amount)}</span>
               </div>
@@ -70,7 +70,7 @@ export default function ForAgainstSplit({
             </div>
           ))}
           {supportFunders.length === 0 && (
-            <p className="text-[10px] text-slate-400 dark:text-slate-500 italic">No direct contributions found</p>
+            <p className="text-micro text-slate-400 dark:text-slate-500 italic">No direct contributions found</p>
           )}
         </div>
       </div>
@@ -84,13 +84,13 @@ export default function ForAgainstSplit({
           {formatCurrency(opposeTotal)}
         </p>
 
-        <p className="text-[9px] font-mono uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500 mb-2 mt-4">
+        <p className="text-nano font-mono uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500 mb-2 mt-4">
           Top Funders
         </p>
         <div className="space-y-1.5">
           {opposeFunders.map((f, i) => (
             <div key={i}>
-              <div className="flex justify-between text-[10px] mb-0.5">
+              <div className="flex justify-between text-micro mb-0.5">
                 <span className="text-slate-600 dark:text-slate-300 truncate max-w-[60%]">{f.name}</span>
                 <span className="font-mono text-slate-500 dark:text-slate-400">{formatCurrency(f.amount)}</span>
               </div>
@@ -98,7 +98,7 @@ export default function ForAgainstSplit({
             </div>
           ))}
           {opposeFunders.length === 0 && (
-            <p className="text-[10px] text-slate-400 dark:text-slate-500 italic">No opposing expenditures on record</p>
+            <p className="text-micro text-slate-400 dark:text-slate-500 italic">No opposing expenditures on record</p>
           )}
         </div>
       </div>

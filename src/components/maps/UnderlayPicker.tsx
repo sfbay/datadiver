@@ -105,7 +105,7 @@ export default function UnderlayPicker({ presets, activeVariable, onSelect }: Un
       <button
         onClick={() => { setOpen(prev => !prev); if (open) { setShowMore(false); setSubPickerGroup(null) } }}
         title={activeConfig ? `Demographic underlay: ${activeConfig.label}` : 'Add a demographic underlay'}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-mono uppercase tracking-wider transition-all duration-200 ${
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-label font-mono uppercase tracking-wider transition-all duration-200 ${
           activeVariable
             ? 'bg-plum-500/15 text-plum-400 dark:text-plum-400 ring-1 ring-plum-500/30'
             : open
@@ -142,7 +142,7 @@ export default function UnderlayPicker({ presets, activeVariable, onSelect }: Un
       {open && (
         <div className="absolute top-full right-0 mt-1.5 w-52 bg-slate-900/95 backdrop-blur-lg border border-white/10 rounded-lg p-2 shadow-xl z-50">
           {/* Header */}
-          <div className="text-[9px] font-semibold uppercase tracking-widest text-slate-400 mb-1.5 px-0.5">
+          <div className="text-nano font-semibold uppercase tracking-widest text-slate-400 mb-1.5 px-0.5">
             Demographic Underlay
           </div>
 
@@ -191,7 +191,7 @@ export default function UnderlayPicker({ presets, activeVariable, onSelect }: Un
                         <button
                           key={sub.key}
                           onClick={() => handleSubPickerClick(sub.key)}
-                          className={`w-full flex items-center gap-2 px-2 py-1 rounded text-left text-[11px] transition-colors ${
+                          className={`w-full flex items-center gap-2 px-2 py-1 rounded text-left text-label transition-colors ${
                             activeVariable === sub.key
                               ? 'bg-plum-600/25 text-plum-400'
                               : 'text-slate-400 hover:bg-white/5 hover:text-slate-300'
@@ -220,7 +220,7 @@ export default function UnderlayPicker({ presets, activeVariable, onSelect }: Un
           {activeVariable !== null && (
             <button
               onClick={() => { onSelect(null); setSubPickerGroup(null); setOpen(false) }}
-              className="w-full flex items-center gap-2 px-2 py-1 mt-1 rounded text-left text-[11px] text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-colors border-t border-white/5 pt-1.5"
+              className="w-full flex items-center gap-2 px-2 py-1 mt-1 rounded text-left text-label text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-colors border-t border-white/5 pt-1.5"
             >
               <span className="flex-shrink-0 w-2.5 h-2.5" />
               None
@@ -230,7 +230,7 @@ export default function UnderlayPicker({ presets, activeVariable, onSelect }: Un
           {/* More variables expander */}
           <button
             onClick={() => { setShowMore(prev => !prev); setSubPickerGroup(null) }}
-            className="w-full flex items-center justify-between px-2 py-1.5 mt-1 rounded text-[11px] text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-colors border-t border-white/5 pt-1.5"
+            className="w-full flex items-center justify-between px-2 py-1.5 mt-1 rounded text-label text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-colors border-t border-white/5 pt-1.5"
           >
             <span>More variables</span>
             <svg
@@ -249,7 +249,7 @@ export default function UnderlayPicker({ presets, activeVariable, onSelect }: Un
                 if (vars.length === 0) return null
                 return (
                   <div key={cat}>
-                    <div className="text-[9px] font-semibold uppercase tracking-widest text-slate-500 px-1 mb-0.5">
+                    <div className="text-nano font-semibold uppercase tracking-widest text-slate-500 px-1 mb-0.5">
                       {CATEGORY_LABELS[cat]}
                     </div>
                     <div className="space-y-0.5">
@@ -270,7 +270,7 @@ export default function UnderlayPicker({ presets, activeVariable, onSelect }: Un
                                   handleMoreVariable(config)
                                 }
                               }}
-                              className={`w-full flex items-center gap-2 px-2 py-1 rounded text-left text-[11px] transition-colors ${
+                              className={`w-full flex items-center gap-2 px-2 py-1 rounded text-left text-label transition-colors ${
                                 isActive
                                   ? 'bg-plum-600/25 text-plum-400'
                                   : presetKeys.has(config.key)
@@ -307,7 +307,7 @@ export default function UnderlayPicker({ presets, activeVariable, onSelect }: Un
                                       handleSubPickerClick(sub.key)
                                       setShowMore(false)
                                     }}
-                                    className={`w-full flex items-center gap-2 px-2 py-1 rounded text-left text-[11px] transition-colors ${
+                                    className={`w-full flex items-center gap-2 px-2 py-1 rounded text-left text-label transition-colors ${
                                       activeVariable === sub.key
                                         ? 'bg-plum-600/25 text-plum-400'
                                         : 'text-slate-400 hover:bg-white/5 hover:text-slate-300'

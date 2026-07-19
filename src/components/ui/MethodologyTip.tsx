@@ -22,7 +22,7 @@ export default function MethodologyTip({ formula, inputs, exclusions, note, clas
     <span className={`inline-block relative ${className}`} style={{ zIndex: open ? 999 : 'auto' }}>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="text-[9px] font-mono text-slate-400 hover:text-teal-500 dark:hover:text-teal-500 transition-colors underline decoration-dotted underline-offset-2"
+        className="text-nano font-mono text-slate-400 hover:text-teal-500 dark:hover:text-teal-500 transition-colors underline decoration-dotted underline-offset-2"
       >
         How is this calculated?
       </button>
@@ -32,7 +32,7 @@ export default function MethodologyTip({ formula, inputs, exclusions, note, clas
           <div className="space-y-2">
             <div>
               <p className="text-[8px] font-mono uppercase tracking-wider text-slate-400/60 mb-0.5">Formula</p>
-              <p className="text-[10px] font-mono text-slate-600 dark:text-slate-300">{formula}</p>
+              <p className="text-micro font-mono text-slate-600 dark:text-slate-300">{formula}</p>
             </div>
 
             {inputs && inputs.length > 0 && (
@@ -40,7 +40,7 @@ export default function MethodologyTip({ formula, inputs, exclusions, note, clas
                 <p className="text-[8px] font-mono uppercase tracking-wider text-slate-400/60 mb-0.5">Inputs</p>
                 <div className="space-y-0.5">
                   {inputs.map((inp) => (
-                    <div key={inp.label} className="flex items-center justify-between text-[10px]">
+                    <div key={inp.label} className="flex items-center justify-between text-micro">
                       <span className="text-slate-500">{inp.label}</span>
                       <span className="font-mono text-slate-600 dark:text-slate-300 tabular-nums">{inp.value}</span>
                     </div>
@@ -54,7 +54,7 @@ export default function MethodologyTip({ formula, inputs, exclusions, note, clas
                 <p className="text-[8px] font-mono uppercase tracking-wider text-slate-400/60 mb-0.5">Exclusions</p>
                 <div className="space-y-0.5">
                   {exclusions.map((ex) => (
-                    <div key={ex.label} className="text-[10px]">
+                    <div key={ex.label} className="text-micro">
                       <span className="text-slate-500">{ex.label}</span>
                       <span className="text-slate-400/60"> — {ex.reason}</span>
                     </div>
@@ -64,7 +64,7 @@ export default function MethodologyTip({ formula, inputs, exclusions, note, clas
             )}
 
             {note && (
-              <p className="text-[9px] text-slate-400/70 italic">{note}</p>
+              <p className="text-nano text-slate-400/70 italic">{note}</p>
             )}
           </div>
 

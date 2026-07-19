@@ -89,7 +89,7 @@ export default function InfoTip({ term, text, size = 12 }: InfoTipProps) {
             bg-white dark:bg-slate-800
             border border-slate-200 dark:border-white/[0.08]
             shadow-xl shadow-black/10 dark:shadow-black/40
-            text-[11px] leading-relaxed text-slate-600 dark:text-slate-300
+            text-label leading-relaxed text-slate-600 dark:text-slate-300
             normal-case tracking-normal whitespace-normal font-normal font-sans
             animate-in fade-in duration-150 pointer-events-auto"
           style={{
