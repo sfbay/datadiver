@@ -22,7 +22,7 @@ import { SkeletonStatCards, SkeletonSidebarRows } from '@/components/ui/Skeleton
 import { ACCENT, buildCandidateColorMap, turnoutColor } from '@/utils/electionColors'
 import type { Race } from '@/types/elections'
 import RCVRoundChart from '@/components/charts/RCVRoundChart'
-import RCVSankey from '@/components/charts/RCVSankey'
+import RCVComposition from '@/components/charts/RCVComposition'
 import ElectionTimeline from '@/components/filters/ElectionTimeline'
 import { useElectionTimeline } from '@/hooks/useElectionTimeline'
 import BallotMeasureExplorer from '@/components/charts/BallotMeasureExplorer'
@@ -64,7 +64,8 @@ export default function Elections() {
   const [raceFilter, setRaceFilter] = useState<RaceFilter>('all')
   const mapHandleRef = useRef<MapHandle>(null)
 
-  const [rcvViewMode, setRcvViewMode] = useState<'rounds' | 'sankey'>('rounds')
+  const [rcvViewMode, setRcvViewMode] = useState<'rounds' | 'flow'>('rounds')
+  const [rcvCollapsed, setRcvCollapsed] = useState(false)
   const [rcvActiveRound, setRcvActiveRound] = useState<number | undefined>(undefined)
   const [timeMachineActive, setTimeMachineActive] = useState(false)
 
@@ -156,6 +157,14 @@ export default function Elections() {
   // RCV data for the active race
   const rcvSlug = activeRace?.isRCV ? activeRace.id : null
   const { data: rcvData } = useRCVRounds(activeElection, rcvSlug)
+
+  // Each contest opens on round 1 — clear the controlled round when the
+  // race (or election) changes, or the previous contest's position leaks
+  // through the `controlledRound ?? internalRound` fallback and the new
+  // chart opens mid-story (clamped to ITS final round, pre-fix behavior).
+  useEffect(() => {
+    setRcvActiveRound(undefined)
+  }, [activeElection, rcvSlug])
 
   // ── Ballot measures ────────────────────────────────────────────────
   const { data: ballotMeasures } = useBallotPropositions()
@@ -626,41 +635,66 @@ export default function Elections() {
                 used to squeeze the 400px chart's padding to zero on the right
                 (Jesse: callout butted against the panel edge). */}
             {!isLoading && !timeMachineActive && activeRace?.isRCV && rcvData && (
-              <div className="absolute bottom-6 left-5 z-10 glass-card rounded-xl p-4" style={{ maxWidth: rcvViewMode === 'sankey' ? 648 : 448 }}>
-                <div className="flex items-center gap-2 mb-3">
+              <div
+                className={`absolute bottom-6 left-5 z-10 glass-card rounded-xl ${rcvCollapsed ? 'px-3 py-2 cursor-pointer' : 'p-4'}`}
+                style={{ maxWidth: rcvCollapsed ? undefined : rcvViewMode === 'flow' ? 648 : 448 }}
+                onClick={rcvCollapsed ? () => setRcvCollapsed(false) : undefined}
+                title={rcvCollapsed ? 'Expand RCV panel' : undefined}
+              >
+                <div className={`flex items-center gap-2 ${rcvCollapsed ? '' : 'mb-3'}`}>
                   <span className="text-nano font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-500">
                     RCV
                   </span>
                   <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 flex-1">
                     {rcvData.totalRounds} Rounds &middot; Winner: {rcvData.winner.split(' ').pop()}
                   </p>
-                  {/* View toggle */}
-                  <div className="flex items-center gap-0.5 bg-slate-800/60 rounded-md p-0.5">
-                    <button
-                      onClick={() => setRcvViewMode('rounds')}
-                      className={`px-2 py-0.5 rounded text-nano font-mono transition-all ${
-                        rcvViewMode === 'rounds'
-                          ? 'bg-ochre-500/20 text-ochre-400'
-                          : 'text-slate-500 hover:text-slate-300'
-                      }`}
-                    >
-                      Rounds
-                    </button>
-                    <button
-                      onClick={() => setRcvViewMode('sankey')}
-                      className={`px-2 py-0.5 rounded text-nano font-mono transition-all ${
-                        rcvViewMode === 'sankey'
-                          ? 'bg-ochre-500/20 text-ochre-400'
-                          : 'text-slate-500 hover:text-slate-300'
-                      }`}
-                    >
-                      Flow
-                    </button>
-                  </div>
+                  {/* View toggle — hidden while minimized; the chip stays a
+                      one-line summary. */}
+                  {!rcvCollapsed && (
+                    <div className="flex items-center gap-0.5 bg-slate-800/60 rounded-md p-0.5">
+                      <button
+                        onClick={() => setRcvViewMode('rounds')}
+                        className={`px-2 py-0.5 rounded text-nano font-mono transition-all ${
+                          rcvViewMode === 'rounds'
+                            ? 'bg-ochre-500/20 text-ochre-400'
+                            : 'text-slate-500 hover:text-slate-300'
+                        }`}
+                      >
+                        Rounds
+                      </button>
+                      <button
+                        onClick={() => setRcvViewMode('flow')}
+                        className={`px-2 py-0.5 rounded text-nano font-mono transition-all ${
+                          rcvViewMode === 'flow'
+                            ? 'bg-ochre-500/20 text-ochre-400'
+                            : 'text-slate-500 hover:text-slate-300'
+                        }`}
+                      >
+                        Flow
+                      </button>
+                    </div>
+                  )}
+                  {/* Minimize / expand — stopPropagation so the collapsed
+                      chip's whole-surface expand click doesn't double-toggle. */}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setRcvCollapsed((v) => !v) }}
+                    aria-expanded={!rcvCollapsed}
+                    aria-label={rcvCollapsed ? 'Expand RCV panel' : 'Minimize RCV panel'}
+                    title={rcvCollapsed ? 'Expand' : 'Minimize'}
+                    className="w-6 h-6 rounded-md bg-indigo-500/10 flex items-center justify-center hover:bg-indigo-500/20 transition-colors flex-shrink-0"
+                  >
+                    <svg width="8" height="8" viewBox="0 0 8 8" fill="#616a96" aria-hidden>
+                      {rcvCollapsed
+                        ? <path d="M1 5.5L4 2L7 5.5Z" />
+                        : <path d="M1 2.5L4 6L7 2.5Z" />}
+                    </svg>
+                  </button>
                 </div>
 
-                {rcvViewMode === 'rounds' ? (
+                {!rcvCollapsed && (rcvViewMode === 'rounds' ? (
                   <RCVRoundChart
+                    key={`${activeElection}-${rcvData.raceId}`}
                     rcvData={rcvData}
                     candidateColors={candidateColors}
                     width={400}
@@ -668,13 +702,12 @@ export default function Elections() {
                     onRoundChange={setRcvActiveRound}
                   />
                 ) : (
-                  <RCVSankey
+                  <RCVComposition
                     rcvData={rcvData}
                     candidateColors={candidateColors}
                     width={600}
-                    height={300}
                   />
-                )}
+                ))}
               </div>
             )}
 

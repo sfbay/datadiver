@@ -1,8 +1,8 @@
 /**
  * Election-specific color utilities.
  *
- * Candidate colors are deterministic hashes based on name — each candidate
- * gets a unique hue. Margin and turnout use sequential scales.
+ * Candidate colors are assigned by VOTE RANK within a race — color encodes
+ * standing, not identity. Margin and turnout use sequential scales.
  */
 import * as d3 from 'd3'
 
@@ -36,37 +36,35 @@ export const CANDIDATE_PALETTE = [
   '#d17566', // brick-400
 ]
 
-/** Simple string hash → stable index */
-function hashName(name: string): number {
-  let hash = 0
-  for (let i = 0; i < name.length; i++) {
-    hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0
-  }
-  return Math.abs(hash)
-}
-
-/** Deterministic color for a candidate name (hashed, not index-based) */
-export function candidateColor(name: string): string {
-  return CANDIDATE_PALETTE[hashName(name) % CANDIDATE_PALETTE.length]
-}
-
-/** Build a Map<candidateName, color> for a race's candidates (name-hashed, stable across orderings) */
+/**
+ * Build a Map<candidateName, color> for a race — assigned by VOTE RANK, so
+ * the palette's ordering finally does its job: rank 1 = indigo, rank 2 =
+ * terracotta (cool vs warm, unmistakable at any size), and the first SEVEN
+ * ranks each land in a different pigment family before any family repeats
+ * at another weight.
+ *
+ * Replaces a name-hash scheme whose randomized placement defeated that
+ * ordering — the 2024 mayor's top two hashed to plum-500 and plum-600
+ * (same family, one ramp step apart), Peskin/Farrell to near-twin salmons,
+ * and Safaí exact-collided into a race-dependent fallback. Color here
+ * encodes STANDING, not identity: a candidate may wear a different color
+ * in a different election, but within any race the biggest bars are
+ * always maximally separated.
+ *
+ * Sorted by totalVotes internally (stable for ties/missing), so the map is
+ * independent of input array order. Races beyond 16 candidates wrap the
+ * palette — sliver-scale write-in territory, accepted.
+ */
 export function buildCandidateColorMap(
-  candidates: { name: string }[]
+  candidates: { name: string; totalVotes?: number }[]
 ): Map<string, string> {
+  const ranked = [...candidates].sort(
+    (a, b) => (b.totalVotes ?? 0) - (a.totalVotes ?? 0),
+  )
   const map = new Map<string, string>()
-  // Use index-based assignment to avoid hash collisions within a single race,
-  // but hash-based for cross-race stability
-  const usedColors = new Set<string>()
-  for (const c of candidates) {
-    let color = candidateColor(c.name)
-    // If hash collision within this race, fall back to next unused color
-    if (usedColors.has(color)) {
-      color = CANDIDATE_PALETTE.find((p) => !usedColors.has(p)) || color
-    }
-    usedColors.add(color)
-    map.set(c.name, color)
-  }
+  ranked.forEach((c, i) => {
+    map.set(c.name, CANDIDATE_PALETTE[i % CANDIDATE_PALETTE.length])
+  })
   return map
 }
 
