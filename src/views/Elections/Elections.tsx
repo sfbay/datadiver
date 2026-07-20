@@ -157,6 +157,14 @@ export default function Elections() {
   const rcvSlug = activeRace?.isRCV ? activeRace.id : null
   const { data: rcvData } = useRCVRounds(activeElection, rcvSlug)
 
+  // Each contest opens on round 1 — clear the controlled round when the
+  // race (or election) changes, or the previous contest's position leaks
+  // through the `controlledRound ?? internalRound` fallback and the new
+  // chart opens mid-story (clamped to ITS final round, pre-fix behavior).
+  useEffect(() => {
+    setRcvActiveRound(undefined)
+  }, [activeElection, rcvSlug])
+
   // ── Ballot measures ────────────────────────────────────────────────
   const { data: ballotMeasures } = useBallotPropositions()
 
@@ -661,6 +669,7 @@ export default function Elections() {
 
                 {rcvViewMode === 'rounds' ? (
                   <RCVRoundChart
+                    key={`${activeElection}-${rcvData.raceId}`}
                     rcvData={rcvData}
                     candidateColors={candidateColors}
                     width={400}

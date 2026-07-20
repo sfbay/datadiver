@@ -552,11 +552,16 @@ body {
 /* Transfer segment: the recipient bar's growth region appears in the
    DONOR's color, holds, then fades out to reveal the recipient's own
    color on the grown bar beneath — the crossfade is the "adoption"
-   moment. Opacity-only so no per-pair fill parameterization is needed. */
+   moment. Opacity-only so no per-pair fill parameterization is needed.
+   Shape: fast pop to FULL donor strength (the "landing"), a slight
+   settle, then a long hold before the reveal — run over 2.2s (delay +
+   run set inline in RCVRoundChart.tsx; total must stay inside its
+   TRANSFER_WINDOW_MS). */
 @keyframes rcv-transfer-adopt {
   0% { opacity: 0; }
-  18% { opacity: 0.95; }
-  60% { opacity: 0.95; }
+  8% { opacity: 1; }
+  20% { opacity: 0.88; }
+  68% { opacity: 0.88; }
   100% { opacity: 0; }
 }
 

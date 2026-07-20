@@ -21,6 +21,17 @@ interface RCVRoundChartProps {
   onRoundChange?: (round: number) => void
 }
 
+// Autoplay dwell per displayed round. Rounds that just received transfers
+// hold ~2× longer so the redistribute→land→adopt sequence fully plays out
+// and the callout can be read; no-transfer rounds advance briskly. The
+// transfer dwell must exceed TRANSFER_WINDOW_MS (which must itself exceed
+// the adopt animation's 0.55s delay + 2.2s run) — shrinking it below that
+// advances the round mid-animation.
+const BASE_DWELL_MS = 1500
+const TRANSFER_DWELL_MS = 3400
+// How long the ribbons/glow/segment stay mounted after a forward step.
+const TRANSFER_WINDOW_MS = 3000
+
 export default function RCVRoundChart({
   rcvData,
   candidateColors,
@@ -29,10 +40,11 @@ export default function RCVRoundChart({
   onRoundChange,
 }: RCVRoundChartProps) {
   const totalRounds = rcvData.rounds.length
-  const [internalRound, setInternalRound] = useState(totalRounds - 1)
+  // Opens on ROUND 1, not the final result — the chart's story is the
+  // redistribution; starting at the end spoils it (Jesse's feedback).
+  const [internalRound, setInternalRound] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [justEliminated, setJustEliminated] = useState<{ names: string[]; isBatch: boolean } | null>(null)
-  const playTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const onRoundChangeRef = useRef(onRoundChange)
   onRoundChangeRef.current = onRoundChange
 
@@ -86,35 +98,30 @@ export default function RCVRoundChart({
     const eliminated = prev.candidates.filter((c) => c.isEliminated)
     if (eliminated.length > 0) {
       setJustEliminated({ names: eliminated.map((c) => c.name), isBatch: eliminated.length > 1 })
-      const timer = setTimeout(() => setJustEliminated(null), 1500)
+      const timer = setTimeout(() => setJustEliminated(null), TRANSFER_WINDOW_MS)
       return () => clearTimeout(timer)
     } else {
       setJustEliminated(null)
     }
   }, [activeRound, rcvData.rounds])
 
-  // Auto-play
+  // Auto-play — a per-round setTimeout chain, NOT a fixed interval: each
+  // displayed round chooses its own dwell (transfer rounds linger, see the
+  // dwell constants above). Under reduced motion the ribbons never render,
+  // so every round advances at the base pace.
   useEffect(() => {
-    if (!isPlaying) {
-      if (playTimer.current) clearInterval(playTimer.current)
+    if (!isPlaying) return
+    if (activeRound >= totalRounds - 1) {
+      setIsPlaying(false)
       return
     }
-    playTimer.current = setInterval(() => {
-      setInternalRound((prev) => {
-        const next = prev + 1
-        if (next >= totalRounds) {
-          setIsPlaying(false)
-          return totalRounds - 1
-        }
-        onRoundChangeRef.current?.(next)
-        return next
-      })
-    // 1500ms leaves ~500ms margin over the flow-ribbon sequence (800ms
-    // draw-in + a 500ms-delayed, 500ms bar-grow = 1000ms total) — re-check
-    // this margin if either duration changes.
-    }, 1500)
-    return () => { if (playTimer.current) clearInterval(playTimer.current) }
-  }, [isPlaying, totalRounds])
+    const receivedTransfers =
+      activeRound > 0 &&
+      rcvData.rounds[activeRound - 1].candidates.some((c) => c.isEliminated)
+    const dwell = receivedTransfers && !prefersReducedMotion ? TRANSFER_DWELL_MS : BASE_DWELL_MS
+    const timer = setTimeout(() => setActiveRound(activeRound + 1), dwell)
+    return () => clearTimeout(timer)
+  }, [isPlaying, activeRound, totalRounds, rcvData.rounds, prefersReducedMotion, setActiveRound])
 
   const round = rcvData.rounds[activeRound]
   const prevRound = activeRound > 0 ? rcvData.rounds[activeRound - 1] : null
@@ -435,7 +442,10 @@ export default function RCVRoundChart({
                   color on the (already grown) bar beneath: the crossfade IS
                   the adoption moment (Jesse: "the growth should at first
                   appear as the donated color then change to the adopted
-                  color"). Keyed per round so consecutive steps restart the
+                  color"). The 0.55s delay lands the pop right as the ribbon
+                  draw-in (0.8s) reaches the bar; total run must stay inside
+                  TRANSFER_WINDOW_MS or the segment unmounts mid-fade.
+                  Keyed per round so consecutive steps restart the
                   animation; gated on showRibbons so reduced-motion and
                   backward steps skip it entirely. */}
               {showRibbons && transfer && (() => {
@@ -455,21 +465,22 @@ export default function RCVRoundChart({
                     height={barHeight}
                     rx={3}
                     fill={donorColor}
-                    style={{ animation: 'rcv-transfer-adopt 1.1s ease-in-out 0.35s both' }}
+                    style={{ animation: 'rcv-transfer-adopt 2.2s ease-in-out 0.55s both' }}
                   />
                 )
               })()}
-              {/* Transfer amount badge */}
+              {/* Transfer amount badge — a step up from the count label's
+                  size/weight so the arriving quantity reads as the round's
+                  headline number, not another data value. */}
               {hasTransferGlow && transfer && (
                 <text
                   x={labelWidth + barW + 30}
                   y={y + barHeight / 2 + 1}
                   fill={color}
-                  fontWeight={600}
+                  fontWeight={700}
                   fontFamily="var(--font-mono)"
                   dominantBaseline="middle"
-                  opacity={0.9}
-                  style={{ fontSize: '0.5rem' }}
+                  style={{ fontSize: '0.5625rem' }}
                 >
                   +{transfer.amount.toLocaleString()}
                 </text>
