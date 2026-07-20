@@ -1,7 +1,8 @@
 // src/components/charts/rcvFlow.ts
 //
 // Shared vote-transfer derivation + ribbon-path math for the RCV rounds
-// chart (RCVRoundChart) and the all-rounds Sankey (RCVSankey). SF publishes
+// chart (RCVRoundChart) and the victory-composition view (RCVComposition,
+// the "Flow" tab — replaced the unreadable all-rounds Sankey). SF publishes
 // no source→destination transfer data — every transfer here is DERIVED from
 // round-over-round deltas, which is the ceiling of what SF's published
 // round-summary report supports (docs/superpowers/specs/
@@ -91,6 +92,90 @@ export function computeRoundTransfers(
     isBatch,
     transfers,
   }
+}
+
+export interface CompositionGain {
+  /** Round (1-based) the votes ARRIVED in. */
+  round: number
+  /** Candidate(s) whose elimination released these votes. */
+  donorNames: string[]
+  isBatch: boolean
+  amount: number
+}
+
+export interface CandidateComposition {
+  name: string
+  /** Round-1 first-choice votes. */
+  firstChoice: number
+  /** Final-round total. */
+  finalVotes: number
+  /** Arrival-round-ordered gains. Invariant (pinned by test):
+   *  firstChoice + Σ gains.amount === finalVotes — continuing candidates
+   *  never lose votes in RCV, and every round past round 1 follows an
+   *  elimination, so the per-round deltas partition the final total. */
+  gains: CompositionGain[]
+}
+
+export interface VictoryComposition {
+  /** Final-round candidates still holding votes, descending by final total. */
+  finalists: CandidateComposition[]
+  /** Ballots that left the count. initial + Σ gains === final (pinned). */
+  exhausted: { initial: number; final: number; gains: CompositionGain[] }
+  /** Elimination events in round order — the legend's spine. */
+  events: { round: number; donorNames: string[]; isBatch: boolean }[]
+}
+
+/**
+ * Decompose each finalist's total into first-choice votes + per-donor
+ * transfer gains — "how the win was built". Same delta derivation as
+ * computeRoundTransfers, accumulated across the whole contest.
+ *
+ * Attribution caveat (surface this to readers): a gain is credited to the
+ * candidate who LAST HELD the votes. A donor eliminated late may pass on
+ * votes that originally belonged to earlier-eliminated candidates and
+ * cascaded through them — ballot-level paths are not published, so
+ * "via X" is the honest ceiling, not "originally for X".
+ */
+export function computeVictoryComposition(rounds: RCVRound[]): VictoryComposition {
+  if (rounds.length === 0) {
+    return { finalists: [], exhausted: { initial: 0, final: 0, gains: [] }, events: [] }
+  }
+  const first = rounds[0]
+  const last = rounds[rounds.length - 1]
+  const firstVotes = new Map(first.candidates.map((c) => [c.name, c.votes]))
+
+  const finalists: CandidateComposition[] = last.candidates
+    .filter((c) => c.votes > 0)
+    .sort((a, b) => b.votes - a.votes)
+    .map((c) => ({
+      name: c.name,
+      firstChoice: firstVotes.get(c.name) ?? 0,
+      finalVotes: c.votes,
+      gains: [],
+    }))
+  const byName = new Map(finalists.map((f) => [f.name, f]))
+
+  const exhausted = { initial: first.exhausted, final: last.exhausted, gains: [] as CompositionGain[] }
+  const events: VictoryComposition['events'] = []
+
+  for (let i = 1; i < rounds.length; i++) {
+    const result = computeRoundTransfers(rounds[i], rounds[i - 1])
+    if (result.eliminatedNames.length === 0) continue
+    const round = i + 1
+    events.push({ round, donorNames: result.eliminatedNames, isBatch: result.isBatch })
+    for (const t of result.transfers) {
+      const gain: CompositionGain = {
+        round,
+        donorNames: result.eliminatedNames,
+        isBatch: result.isBatch,
+        amount: t.amount,
+      }
+      if (t.to === EXHAUSTED_SINK) exhausted.gains.push(gain)
+      else byName.get(t.to)?.gains.push(gain)
+    }
+  }
+
+  return { finalists, exhausted, events }
 }
 
 export interface RibbonPoint {

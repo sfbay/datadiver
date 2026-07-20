@@ -7,7 +7,7 @@
 // conservation-of-votes proof that pins the expected numbers below.
 
 import { describe, it, expect } from 'vitest'
-import { computeRoundTransfers, ribbonPath, EXHAUSTED_SINK } from './rcvFlow'
+import { computeRoundTransfers, computeVictoryComposition, ribbonPath, EXHAUSTED_SINK } from './rcvFlow'
 import type { RCVRound } from '@/types/elections'
 
 const ROUND_1: RCVRound = {
@@ -104,6 +104,77 @@ describe('computeRoundTransfers', () => {
     const flatExhausted: RCVRound = { ...ROUND_2, exhausted: ROUND_1.exhausted }
     const result = computeRoundTransfers(flatExhausted, ROUND_1)
     expect(result.transfers.find((t) => t.to === EXHAUSTED_SINK)).toBeUndefined()
+  })
+})
+
+// Synthetic round 3 continuing the real fixture: WENDY HA CHAU (round 2's
+// flagged eliminee, 1,661 votes) redistributes — 800 to Sauter, 500 to Lai,
+// 200 to Jamil, 153 exhausted, 8 to overvotes drift. Numbers chosen to
+// conserve exactly (800+500+200+153+8 = 1,661).
+const ROUND_3: RCVRound = {
+  round: 3,
+  candidates: [
+    { name: 'DANNY SAUTER', votes: 12326, percentage: 0.436, transfer: 800, isEliminated: false, isLeader: true },
+    { name: 'SHARON LAI', votes: 9109, percentage: 0.322, transfer: 500, isEliminated: false, isLeader: false },
+    { name: 'MOE JAMIL', votes: 4053, percentage: 0.1434, transfer: 200, isEliminated: false, isLeader: false },
+    { name: 'MATTHEW SUSK', votes: 2954, percentage: 0.1045, transfer: 0, isEliminated: false, isLeader: false },
+    { name: 'WENDY HA CHAU', votes: 0, percentage: 0, transfer: 0, isEliminated: false, isLeader: false },
+    { name: 'EDUARD NAVARRO', votes: 0, percentage: 0, transfer: 0, isEliminated: false, isLeader: false },
+  ],
+  continuingTotal: 28442,
+  exhausted: 306,
+  overvotes: 86,
+  blanks: 4838,
+}
+
+describe('computeVictoryComposition', () => {
+  const composition = computeVictoryComposition([ROUND_1, ROUND_2, ROUND_3])
+
+  it('lists final-round vote holders descending, excluding zeroed-out candidates', () => {
+    expect(composition.finalists.map((f) => f.name)).toEqual([
+      'DANNY SAUTER', 'SHARON LAI', 'MOE JAMIL', 'MATTHEW SUSK',
+    ])
+  })
+
+  it('conserves every finalist: firstChoice + Σ gains === finalVotes', () => {
+    for (const f of composition.finalists) {
+      const gained = f.gains.reduce((s, g) => s + g.amount, 0)
+      expect(f.firstChoice + gained).toBe(f.finalVotes)
+    }
+  })
+
+  it('attributes gains to the arrival round\'s donor, in round order', () => {
+    const sauter = composition.finalists[0]
+    expect(sauter.gains).toEqual([
+      { round: 2, donorNames: ['EDUARD NAVARRO'], isBatch: false, amount: 254 },
+      { round: 3, donorNames: ['WENDY HA CHAU'], isBatch: false, amount: 800 },
+    ])
+    // Susk gained only from Navarro — no round-3 entry fabricated.
+    const susk = composition.finalists[3]
+    expect(susk.gains).toEqual([
+      { round: 2, donorNames: ['EDUARD NAVARRO'], isBatch: false, amount: 154 },
+    ])
+  })
+
+  it('conserves exhausted ballots: initial + Σ gains === final', () => {
+    const { initial, final, gains } = composition.exhausted
+    expect(initial + gains.reduce((s, g) => s + g.amount, 0)).toBe(final)
+    expect(final).toBe(306)
+  })
+
+  it('records elimination events in round order for the legend', () => {
+    expect(composition.events).toEqual([
+      { round: 2, donorNames: ['EDUARD NAVARRO'], isBatch: false },
+      { round: 3, donorNames: ['WENDY HA CHAU'], isBatch: false },
+    ])
+  })
+
+  it('degenerates cleanly on empty input', () => {
+    expect(computeVictoryComposition([])).toEqual({
+      finalists: [],
+      exhausted: { initial: 0, final: 0, gains: [] },
+      events: [],
+    })
   })
 })
 

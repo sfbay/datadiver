@@ -314,30 +314,40 @@ export default function RCVRoundChart({
           synchronous transferResult, not the 1.5s justEliminated window,
           which now gates only the ribbons/glow) — it's context worth
           reading at leisure, not a flash. */}
-      <div className="mb-2 min-h-[52px] px-2 py-1.5 rounded-lg flex items-center border border-brick-500/20 bg-brick-500/10" style={{ opacity: transferResult.eliminatedNames.length > 0 ? 1 : 0, transition: 'opacity 0.3s' }}>
+      {/* Structured two lines — event headline, then recipients as
+          dot-coded items (a candidate-colored DOT + high-contrast neutral
+          text, instead of setting the NAME in the candidate's color, which
+          went muddy against the tinted panel — Jesse's contrast flag). */}
+      <div className="mb-2 min-h-[52px] px-2.5 py-1.5 rounded-lg flex flex-col justify-center gap-0.5 border border-brick-500/20 bg-brick-500/10" style={{ opacity: transferResult.eliminatedNames.length > 0 ? 1 : 0, transition: 'opacity 0.3s' }}>
         {transferResult.eliminatedNames.length > 0 && (
-          <p className="text-micro font-mono text-brick-400">
-            <span className="font-bold">
+          <>
+            <p className="text-micro font-mono font-bold text-brick-600 dark:text-brick-300">
               {transferResult.isBatch
                 ? `${transferResult.eliminatedNames.length} candidates eliminated together`
                 : `${toSentenceCase(transferResult.eliminatedNames[0])} eliminated`}
-            </span>
+            </p>
             {candidateTransfers.length > 0 && (
-              <span className="text-brick-400/70">
-                {' — votes transfer to '}
-                {candidateTransfers.slice(0, 3).map((t, i) => (
-                  <span key={t.to}>
-                    {i > 0 && ', '}
-                    <span style={{ color: candidateColors.get(t.to) || 'var(--color-slate-400)' }}>
+              <p className="text-micro font-mono text-paper-600 dark:text-paper-400 flex items-center gap-x-2.5 gap-y-0.5 flex-wrap">
+                <span aria-hidden>→</span>
+                {candidateTransfers.slice(0, 3).map((t) => (
+                  <span key={t.to} className="inline-flex items-center gap-1">
+                    <span
+                      className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                      style={{ background: candidateColors.get(t.to) || 'var(--color-slate-400)' }}
+                      aria-hidden
+                    />
+                    <span className="text-ink dark:text-paper-200">
                       {toSentenceCase(t.to.split(' ').pop() || t.to)}
                     </span>
-                    <span className="text-brick-400/50"> (+{t.amount.toLocaleString()})</span>
+                    <span className="font-bold tabular-nums text-ink dark:text-paper-100">
+                      +{t.amount.toLocaleString()}
+                    </span>
                   </span>
                 ))}
-                {candidateTransfers.length > 3 && <span className="text-brick-400/50"> + {candidateTransfers.length - 3} more</span>}
-              </span>
+                {candidateTransfers.length > 3 && <span>+{candidateTransfers.length - 3} more</span>}
+              </p>
             )}
-          </p>
+          </>
         )}
       </div>
 

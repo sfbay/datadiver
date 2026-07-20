@@ -22,7 +22,7 @@ import { SkeletonStatCards, SkeletonSidebarRows } from '@/components/ui/Skeleton
 import { ACCENT, buildCandidateColorMap, turnoutColor } from '@/utils/electionColors'
 import type { Race } from '@/types/elections'
 import RCVRoundChart from '@/components/charts/RCVRoundChart'
-import RCVSankey from '@/components/charts/RCVSankey'
+import RCVComposition from '@/components/charts/RCVComposition'
 import ElectionTimeline from '@/components/filters/ElectionTimeline'
 import { useElectionTimeline } from '@/hooks/useElectionTimeline'
 import BallotMeasureExplorer from '@/components/charts/BallotMeasureExplorer'
@@ -64,7 +64,7 @@ export default function Elections() {
   const [raceFilter, setRaceFilter] = useState<RaceFilter>('all')
   const mapHandleRef = useRef<MapHandle>(null)
 
-  const [rcvViewMode, setRcvViewMode] = useState<'rounds' | 'sankey'>('rounds')
+  const [rcvViewMode, setRcvViewMode] = useState<'rounds' | 'flow'>('rounds')
   const [rcvActiveRound, setRcvActiveRound] = useState<number | undefined>(undefined)
   const [timeMachineActive, setTimeMachineActive] = useState(false)
 
@@ -634,7 +634,7 @@ export default function Elections() {
                 used to squeeze the 400px chart's padding to zero on the right
                 (Jesse: callout butted against the panel edge). */}
             {!isLoading && !timeMachineActive && activeRace?.isRCV && rcvData && (
-              <div className="absolute bottom-6 left-5 z-10 glass-card rounded-xl p-4" style={{ maxWidth: rcvViewMode === 'sankey' ? 648 : 448 }}>
+              <div className="absolute bottom-6 left-5 z-10 glass-card rounded-xl p-4" style={{ maxWidth: rcvViewMode === 'flow' ? 648 : 448 }}>
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-nano font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-500">
                     RCV
@@ -655,9 +655,9 @@ export default function Elections() {
                       Rounds
                     </button>
                     <button
-                      onClick={() => setRcvViewMode('sankey')}
+                      onClick={() => setRcvViewMode('flow')}
                       className={`px-2 py-0.5 rounded text-nano font-mono transition-all ${
-                        rcvViewMode === 'sankey'
+                        rcvViewMode === 'flow'
                           ? 'bg-ochre-500/20 text-ochre-400'
                           : 'text-slate-500 hover:text-slate-300'
                       }`}
@@ -677,11 +677,10 @@ export default function Elections() {
                     onRoundChange={setRcvActiveRound}
                   />
                 ) : (
-                  <RCVSankey
+                  <RCVComposition
                     rcvData={rcvData}
                     candidateColors={candidateColors}
                     width={600}
-                    height={300}
                   />
                 )}
               </div>
