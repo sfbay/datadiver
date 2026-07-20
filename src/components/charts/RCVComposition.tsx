@@ -71,6 +71,13 @@ export default function RCVComposition({
     return <p className="text-micro text-slate-500 font-mono">No RCV rounds to visualize</p>
   }
 
+  // Entrance stagger uses fill-mode BACKWARDS, never `both`/`forwards`: a
+  // filled final keyframe outranks inline styles in the cascade, which
+  // permanently pinned every segment at the animation's opacity:1 and made
+  // the hover-highlight opacities silent no-ops (Jesse's screenshots —
+  // only the animation-free first-pick segment responded). `backwards`
+  // holds the from-frame through the stagger delay, then releases control
+  // to the inline hover opacity the moment the fade-in ends.
   const segmentStyle = (round: number, color: string): React.CSSProperties => ({
     background: color,
     opacity: hoveredRound == null ? 0.92 : hoveredRound === round ? 1 : 0.22,
@@ -78,7 +85,7 @@ export default function RCVComposition({
     boxShadow: 'inset 1px 0 0 rgba(0,0,0,0.3)',
     animation: prefersReducedMotion
       ? undefined
-      : `rcv-fade-in 0.35s ease-out ${(eventIndex.get(round) ?? 0) * 0.07}s both`,
+      : `rcv-fade-in 0.35s ease-out ${(eventIndex.get(round) ?? 0) * 0.07}s backwards`,
   })
 
   return (
