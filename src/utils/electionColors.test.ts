@@ -4,7 +4,6 @@ import { resolve } from 'node:path'
 import {
   CANDIDATE_PALETTE,
   buildCandidateColorMap,
-  candidateColor,
   marginColor,
   turnoutColor,
   measureColor,
@@ -70,16 +69,31 @@ describe('buildCandidateColorMap', () => {
     expect(new Set(map.values()).size).toBe(candidates.length)
   })
 
-  it('is stable across candidate orderings', () => {
-    const a = [{ name: 'LURIE' }, { name: 'PESKIN' }, { name: 'BREED' }]
-    const b = [{ name: 'BREED' }, { name: 'LURIE' }, { name: 'PESKIN' }]
+  it('assigns by vote rank: leader gets the palette head regardless of array order', () => {
+    // The palette's adjacent-family ordering only protects the big bars if
+    // rank 1 actually receives entry 0 — the old name-hash scheme threw
+    // that away (2024 mayor: Lurie plum-500, Breed plum-600).
+    const a = [
+      { name: 'LURIE', totalVotes: 182364 },
+      { name: 'PESKIN', totalVotes: 96354 },
+      { name: 'BREED', totalVotes: 149113 },
+    ]
+    const map = buildCandidateColorMap(a)
+    expect(map.get('LURIE')).toBe(CANDIDATE_PALETTE[0]) // indigo-500
+    expect(map.get('BREED')).toBe(CANDIDATE_PALETTE[1]) // terracotta-600
+    expect(map.get('PESKIN')).toBe(CANDIDATE_PALETTE[2]) // moss-500
+  })
+
+  it('is independent of input array order (rank comes from totalVotes)', () => {
+    const a = [
+      { name: 'LURIE', totalVotes: 182364 },
+      { name: 'BREED', totalVotes: 149113 },
+      { name: 'PESKIN', totalVotes: 96354 },
+    ]
+    const b = [a[2], a[0], a[1]]
     const ma = buildCandidateColorMap(a)
     const mb = buildCandidateColorMap(b)
     for (const { name } of a) expect(ma.get(name)).toBe(mb.get(name))
-  })
-
-  it('is deterministic for a given name', () => {
-    expect(candidateColor('KAMALA D. HARRIS')).toBe(candidateColor('KAMALA D. HARRIS'))
   })
 })
 
