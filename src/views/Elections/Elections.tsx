@@ -1058,7 +1058,7 @@ export default function Elections() {
             </div>
 
             {/* RCV lens strip — CVR-backed lenses for the active race
-                (Replay + Coalition shipped; What-if named but unshipped) */}
+                (Replay · Coalition · What-if, all shipped) */}
             {lensAvailable && (
               <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-lg p-0.5">
                 <span className="text-nano font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-500">
