@@ -519,6 +519,25 @@ export default function Elections() {
     return buildCandidateColorMap(displayRace.candidates)
   }, [displayRace])
 
+  // Precinct-click detail: the selected precinct's next-choice stacked
+  // composition (per-precinct detail = a bar, never a per-precinct sankey).
+  const coalitionDetail = useMemo(() => {
+    if (!secondChoices || !cvrArtifact || !coalitionFocus || !selectedPrecinct) return undefined
+    const p = cvrArtifact.precincts.indexOf(selectedPrecinct)
+    if (p < 0) return undefined
+    const pp = secondChoices.byPrecinct[p]
+    if (pp.total === 0) return undefined
+    const segments = Array.from(pp.next, (votes, i) => ({ name: cvrArtifact.candidates[i], votes }))
+      .filter((s) => s.votes > 0)
+      .sort((a, b) => b.votes - a.votes)
+      .map((s) => ({
+        name: leaderDisplayName(cleanCandidateName(s.name)),
+        votes: s.votes,
+        color: candidateColors.get(s.name) ?? '#a8926a',
+      }))
+    return { focusDisplay: coalitionFocus.display, cohort: pp.total, segments, none: pp.none, overvote: pp.overvote }
+  }, [secondChoices, cvrArtifact, coalitionFocus, selectedPrecinct, candidateColors])
+
   // ── Candidate focus mode ────────────────────────────────────────────
   // Focus is a results-mode lens; Time Machine beats have a different
   // candidate set per era so focus is suspended during a TM scrub. An
@@ -1076,6 +1095,7 @@ export default function Elections() {
               onClose={() => setSelectedPrecinct(null)}
               focusedCandidate={activeFocusCandidate}
               onFocusCandidate={setFocusedCandidate}
+              coalition={coalitionDetail}
             />
 
             {/* Map legend — decodes the active precinct fill */}
