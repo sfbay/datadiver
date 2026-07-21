@@ -296,6 +296,7 @@ export default function CardTray({ viewId, cards, className = '', hideComparison
                 sparkData={card.sparkData}
                 positionScale={card.positionScale}
                 badge={card.badge}
+                subtitleAction={card.subtitleAction}
               />
               {/* Minimize button — top-left on hover */}
               <button

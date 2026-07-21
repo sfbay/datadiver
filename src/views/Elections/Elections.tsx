@@ -645,6 +645,7 @@ export default function Elections() {
       withheldCount: cvrArtifact?.sovSuppressed.length ?? 0,
       outlineCount: activeLens === 'whatif' && whatIfOnFinalRound ? whatIfChangedShown.size : 0,
       hypothetical: activeLens === 'whatif' && whatIfModel !== null,
+      tieBroken: activeLens === 'whatif' && (whatIfModel?.tiesBroken.length ?? 0) > 0,
     }
   }, [activeLens, rcvData, whatIfChartData, rcvTransport, whatIfTransport, cvrArtifact, whatIfOnFinalRound, whatIfChangedShown, whatIfModel])
 
@@ -936,6 +937,27 @@ export default function Elections() {
       }
     }
 
+    // The hypothetical alert rides IN the tray as the leading card (Jesse's
+    // live QA: the floating plate covered the pill row and the cards' own
+    // chips) — minimizable but always present, zero overlap. Value names
+    // the removal compactly ("− Peskin +2"; the strike roster carries the
+    // full list); the subtitle IS the reset action. Unshifted LAST so the
+    // index-based overrides above (cards[0] winner, cards[1] turnout) stay
+    // valid.
+    if (activeLens === 'whatif' && whatIfModel && cvrArtifact && struckIdx.length > 0) {
+      const surnames = struckIdx.map((i) => leaderDisplayName(cleanCandidateName(cvrArtifact.candidates[i])))
+      cards.unshift({
+        id: 'whatif-hypothetical',
+        label: 'Hypothetical count',
+        shortLabel: 'Hypothetical',
+        value: surnames.length === 1 ? `− ${surnames[0]}` : `− ${surnames[0]} +${surnames.length - 1}`,
+        color: '#b85a33',
+        defaultExpanded: true,
+        subtitle: 'Reset to reality',
+        subtitleAction: () => setStrikes([]),
+      })
+    }
+
     return cards
   }, [
     displayResults,
@@ -950,6 +972,9 @@ export default function Elections() {
     displayDateCode,
     activeLens,
     whatIfModel,
+    cvrArtifact,
+    struckIdx,
+    setStrikes,
   ])
 
   // ── Filtered races for sidebar ────────────────────────────────────
@@ -973,15 +998,6 @@ export default function Elections() {
     }
     return counts as Record<RaceFilter, number>
   }, [displayResults])
-
-  // Banner copy: struck candidates as reader-facing full names —
-  // "Daniel Lurie", "Daniel Lurie and London Breed", "A, B and C".
-  const struckDisplay = useMemo(() => {
-    if (!cvrArtifact || struckIdx.length === 0) return ''
-    const names = struckIdx.map((i) => toSentenceCase(cvrArtifact.candidates[i]))
-    if (names.length === 1) return names[0]
-    return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
-  }, [cvrArtifact, struckIdx])
 
   return (
     <div className="h-full flex flex-col">
@@ -1177,48 +1193,20 @@ export default function Elections() {
               <CardTray viewId="elections" cards={cardDefs} hideComparison />
             )}
 
-            {/* Hypothetical-count plate + viewport frame — OVERLAYS, never a
-                layout-shifting banner row (a strip above the map moved every
-                click target when strikes toggled). Both live INSIDE
-                #elections-capture, so PNG exports and screenshots of any
-                crop carry the disclosure — what-if is the one surface on
-                DataDiver that doesn't show actual data, and the marking is
-                load-bearing (ochre stays Time Machine's signature; brick
-                would read as an error). */}
-            {activeLens === 'whatif' && whatIfModel && struckDisplay && (
-              <>
-                <div
-                  className="absolute inset-0 z-[2] pointer-events-none border-2 border-terracotta-500/40"
-                  aria-hidden
-                />
-                <div
-                  className="absolute top-5 left-1/2 -translate-x-1/2 z-20 glass-card glow-host rounded-xl px-4 py-2.5 border border-terracotta-500/40 max-w-[min(600px,calc(100vw-22rem))]"
-                  style={{ '--glow': '#b85a33' } as React.CSSProperties}
-                  role="status"
-                >
-                  <div className="glow-corner" />
-                  <div className="relative flex items-start gap-2.5">
-                    <span className="w-2 h-2 rounded-full bg-terracotta-500 animate-pulse mt-1 flex-shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-micro font-mono font-bold tracking-widest text-terracotta-600 dark:text-terracotta-400">
-                        HYPOTHETICAL COUNT — {struckDisplay} removed
-                      </p>
-                      <p className="text-micro text-slate-500 dark:text-slate-400 mt-0.5">
-                        Same ballots, rerun without them. The certified result is unchanged.
-                        {whatIfModel.tiesBroken.length > 0 && (
-                          <> A tie was broken using the real election&rsquo;s elimination order.</>
-                        )}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setStrikes([])}
-                      className="flex-shrink-0 ml-1 px-2.5 py-1 rounded-full text-micro font-mono bg-terracotta-500/15 text-terracotta-600 dark:text-terracotta-400 hover:bg-terracotta-500/25 transition-colors whitespace-nowrap"
-                    >
-                      Reset to reality
-                    </button>
-                  </div>
-                </div>
-              </>
+            {/* Hypothetical viewport frame — ambient, pointer-transparent,
+                survives screenshots of any crop; lives INSIDE
+                #elections-capture so PNG exports carry the disclosure
+                (what-if is the one surface on DataDiver that doesn't show
+                actual data, and the marking is load-bearing). The banner
+                itself rides in the CardTray as its own card — the floating
+                plate covered the pill row and the cards' own chips
+                (Jesse's live QA), and a tray card is minimizable but
+                always present with zero overlap. */}
+            {activeLens === 'whatif' && whatIfModel && (
+              <div
+                className="absolute inset-0 z-[2] pointer-events-none border-2 border-terracotta-500/40"
+                aria-hidden
+              />
             )}
 
             {/* RCV visualization panel — bottom-left when an RCV race is selected */}
