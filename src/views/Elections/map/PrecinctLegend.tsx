@@ -1,6 +1,6 @@
 import type { Race } from '@/types/elections'
 import { toSentenceCase } from '@/utils/format'
-import { leaderDisplayName } from '@/utils/electionData'
+import { cleanCandidateName, leaderDisplayName } from '@/utils/electionData'
 import type { PrecinctMapMode } from './precinctJoin'
 
 /** REPLAY lens state — when set, the legend swaps its whole body for the
@@ -19,6 +19,23 @@ export interface PrecinctLegendReplayState {
   withheldCount: number
 }
 
+/** COALITION lens state — when set, the legend swaps its whole body for the
+ *  second-choice disclosure variant (eyebrow + top-5 recipients + no-next-
+ *  choice row + overvote/suppressed/withheld footers) regardless of `mode`. */
+export interface PrecinctLegendCoalitionState {
+  /** Surname of the focus candidate ("Peskin"). */
+  focusDisplay: string
+  cohort: number
+  /** Top-5 citywide next choices, desc: RAW candidate name + votes + pct of cohort. */
+  recipients: { name: string; votes: number; pct: number }[]
+  nonePct: number
+  /** Ranked-two-at-once ballots citywide (render the row only when > 0). */
+  overvoteCount: number
+  /** Painted-eligible precincts hidden by the n<10 floor (render only when > 0). */
+  suppressedCount: number
+  withheldCount: number
+}
+
 interface PrecinctLegendProps {
   mode: PrecinctMapMode
   race: Race | null
@@ -32,6 +49,13 @@ interface PrecinctLegendProps {
   /** REPLAY lens only — when set, renders the replay variant in place of
    *  every other mode branch below. */
   replayState?: PrecinctLegendReplayState
+  /** COALITION lens only — when set, renders the coalition variant in place
+   *  of every other mode branch below. Never set alongside `replayState`. */
+  coalitionState?: PrecinctLegendCoalitionState
+  /** COALITION lens active, no focus candidate picked yet — renders the
+   *  results branch (candidate rows stay clickable) with a prompt line
+   *  instead of the normal "click to map support" hint. */
+  coalitionPrompt?: boolean
 }
 
 function GradientRow({ gradient, left, right }: { gradient: string; left: string; right: string }) {
@@ -51,7 +75,61 @@ function GradientRow({ gradient, left, right }: { gradient: string; left: string
  *  = how decisively). Ramps reuse the exact stops of the paint functions. */
 export default function PrecinctLegend({
   mode, race, raceIsProp, candidateColors, focusedCandidate, focusExtent, onFocusCandidate, replayState,
+  coalitionState, coalitionPrompt,
 }: PrecinctLegendProps) {
+  if (coalitionState) {
+    const cs = coalitionState
+    return (
+      <div className="absolute bottom-6 right-5 z-10 glass-card rounded-xl p-3">
+        <p className="text-nano font-mono tracking-widest text-paper-600 dark:text-paper-500 mb-1">
+          ── COALITION
+        </p>
+        <p className="text-micro text-slate-400 mb-1">
+          Where {cs.focusDisplay} voters went next
+        </p>
+        <p className="text-nano text-slate-400/70 dark:text-slate-500 mb-2">
+          {cs.cohort.toLocaleString()} ballots ranked {cs.focusDisplay} first
+        </p>
+        <div className="space-y-1">
+          {cs.recipients.map((r) => (
+            <div key={r.name} className="flex items-center gap-2">
+              <span
+                className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+                style={{ backgroundColor: candidateColors.get(r.name) || '#a8926a' }}
+              />
+              <span className="text-micro text-slate-400 truncate max-w-[7.5rem]">
+                {leaderDisplayName(cleanCandidateName(r.name))}
+              </span>
+              <span className="text-micro font-mono text-slate-500 ml-auto">
+                {Math.round(r.pct)}%
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center gap-2 mt-1.5">
+          <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: '#a8926a' }} />
+          <span className="text-micro text-slate-400">No next choice</span>
+          <span className="text-micro font-mono text-slate-500 ml-auto">{Math.round(cs.nonePct)}%</span>
+        </div>
+        {cs.overvoteCount > 0 && (
+          <p className="text-nano text-slate-400/70 dark:text-slate-500 mt-2">
+            {cs.overvoteCount.toLocaleString()} ballots ranked two candidates at once
+          </p>
+        )}
+        {cs.suppressedCount > 0 && (
+          <p className="text-nano text-slate-400/70 dark:text-slate-500 mt-2">
+            {cs.suppressedCount} precinct{cs.suppressedCount === 1 ? '' : 's'} under 10 ballots not shown
+          </p>
+        )}
+        {cs.withheldCount > 0 && (
+          <p className="text-nano text-slate-400/70 dark:text-slate-500 mt-2">
+            {cs.withheldCount} small precincts withheld by S.F. — ballots still count citywide
+          </p>
+        )}
+      </div>
+    )
+  }
+
   if (replayState) {
     const top5 = replayState.continuing.slice(0, 5)
     return (
@@ -164,9 +242,16 @@ export default function PrecinctLegend({
               </button>
             ))}
           </div>
-          <p className="text-nano text-slate-400/70 dark:text-slate-500 italic mt-2">
-            Click a candidate to map their support
-          </p>
+          {coalitionPrompt && (
+            <p className="text-micro text-ochre-600 dark:text-ochre-400 mt-2">
+              Pick a candidate to see where their voters went next.
+            </p>
+          )}
+          {!coalitionPrompt && (
+            <p className="text-nano text-slate-400/70 dark:text-slate-500 italic mt-2">
+              Click a candidate to map their support
+            </p>
+          )}
         </>
       )}
     </div>
