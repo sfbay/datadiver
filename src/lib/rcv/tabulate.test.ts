@@ -94,6 +94,51 @@ describe('tabulate', () => {
     expect(r1.candidates.map((c) => c.name)).toEqual(['C', 'D'])   // struck rows absent
     expect(r1.continuingTotal + r1.exhausted + r1.overvotes + r1.blanks).toBe(108)
   })
+  it('pins isLeader to the EVENTUAL WINNER even in a round they trailed (D11/D5-shaped)', () => {
+    // 3-candidate contest (D struck to isolate the shape). Patterns:
+    //   [0]     A only        8
+    //   [1, 0]  B then A      7   (transfers to A on B's elimination)
+    //   [2]     C only       12
+    // R1 (all 3 alive): A=8 B=7 C=12, continuingTotal=27. B is the minimum
+    // → eliminated; B's 7 ballots all carry a live next-rank (A) → advance
+    // to A, none exhaust.
+    //   R1 percentages: A 8/27=0.2963, B 7/27=0.2593, C 12/27=0.4444
+    // R2 (A, C alive; 2 remain → loop stops after this round): A=8+7=15,
+    // C=12 (unchanged), continuingTotal=27 (conserved, nothing exhausted).
+    //   R2 percentages: A 15/27=0.5556, C 12/27=0.4444, B zeroed at 0
+    //   transfer R1→R2: A +7, B -7, C 0 (sums to zero — no exhaustion)
+    // C leads R1 (12 > 8 > 7) but ultimately loses; A trails R1 yet is the
+    // eventual winner. isLeader must track the WINNER across every round,
+    // not the round's own vote leader — same shape as D11/D5 2024 (Chen/
+    // Sherrill-style trailing winner), pinned here at unit level.
+    const trailArt = makeArtifact(
+      [
+        [0],       // A only         8
+        [1, 0],    // B then A       7
+        [2],       // C only        12
+      ],
+      [8, 7, 12],
+    )
+    const t = tabulate(decodeBallots(trailArt), META, { struck: [3] })
+    const tr = t.contest.rounds
+    expect(t.contest.totalRounds).toBe(2)
+    expect(t.contest.winner).toBe('A')
+    expect(t.eliminationOrder).toEqual(['B'])
+
+    expect(tr[0].candidates.map((c) => [c.name, c.votes])).toEqual([['A', 8], ['B', 7], ['C', 12]])
+    expect(tr[0].candidates.map((c) => c.percentage)).toEqual([0.2963, 0.2593, 0.4444])
+    expect(tr[1].candidates.map((c) => [c.name, c.votes])).toEqual([['A', 15], ['B', 0], ['C', 12]])
+    expect(tr[0].candidates.map((c) => c.transfer)).toEqual([7, -7, 0])
+
+    // The contract: isLeader marks the eventual winner's row in EVERY
+    // round, including round 1 where they trail — and is false for the
+    // round-1 leader who ultimately loses, in every round including the
+    // one where they actually led.
+    const leaderFlags = (name: string) => tr.map((round) => round.candidates.find((c) => c.name === name)?.isLeader)
+    expect(leaderFlags('A')).toEqual([true, true])
+    expect(leaderFlags('C')).toEqual([false, false])
+    expect(leaderFlags('B')).toEqual([false, false])
+  })
   it('empty-input degeneracy', () => {
     const empty = makeArtifact([[]], [0])
     const e = tabulate(decodeBallots(empty), META)

@@ -38,4 +38,12 @@ describe('decodeBallots', () => {
     expect(() => decodeBallots({ ...artifact, groups: [0, 0] })).toThrow(/divisible/)
     expect(() => decodeBallots({ ...artifact, patterns: [[9]] })).toThrow(/candidate index/)
   })
+  it('throws on an out-of-range precinct index in a group', () => {
+    // 2 precincts (idx 0,1) — 5 is out of range.
+    expect(() => decodeBallots({ ...artifact, groups: [5, 0, 10] })).toThrow(/precinct index/)
+  })
+  it('throws on an out-of-range pattern index in a group', () => {
+    // 4 patterns (idx 0-3) — 9 is out of range.
+    expect(() => decodeBallots({ ...artifact, groups: [0, 9, 10] })).toThrow(/pattern index/)
+  })
 })

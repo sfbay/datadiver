@@ -681,6 +681,13 @@ function gateB(ctx: Context, acc: RaceAccumulator, artifact: CVRBallotArtifact):
   // citywide delta pinned to SOV_WRITEIN_DELTA. Withheld rows are skipped
   // here and reconciled through the residual below.
   const failures: string[] = []
+  // SOV rows are SPARSE — a candidate with zero votes at a precinct is
+  // simply omitted from row.votes, not listed with a 0. The loop above only
+  // walks `sov`'s own keys, so a named candidate our as-cast tallies credit
+  // at a precinct the SOV row never mentions them in at all (phantom votes
+  // at a published precinct) would pass silently. Close that hole: every
+  // named key in `ours` must be a subset of the SOV row's keys.
+  const phantomFailures: string[] = []
   let writeinDelta = 0
   for (const [label, row] of Object.entries(sovFile.precincts)) {
     if (withheldRows.has(label)) continue
@@ -696,11 +703,20 @@ function gateB(ctx: Context, acc: RaceAccumulator, artifact: CVRBallotArtifact):
         failures.push(`${label} ${key}: ours ${ourVotes} != sov ${sovVotes}`)
       }
     }
+    for (const [key, ourVotes] of ours) {
+      if (key !== WRITEIN_KEY && !sov.has(key)) {
+        phantomFailures.push(`${label} ${key}: ours ${ourVotes}, sov row never lists this candidate`)
+      }
+    }
     if (failures.length >= 12) break
   }
   check(
     failures.length === 0,
     `Gate B ${raceId}: per-precinct as-cast tallies diverge from the SOV — ${failures.length}+ rows, first: ${failures.slice(0, 6).join(' | ')}`,
+  )
+  check(
+    phantomFailures.length === 0,
+    `Gate B ${raceId}: as-cast credits candidates the SOV row never lists at that precinct — ${phantomFailures.length} row(s), first: ${phantomFailures.slice(0, 6).join(' | ')}`,
   )
   const allowedDelta = SOV_WRITEIN_DELTA[raceKey] ?? 0
   check(

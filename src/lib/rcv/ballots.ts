@@ -46,8 +46,8 @@ export function decodeBallots(artifact: CVRBallotArtifact): DecodedBallots {
     const pr = artifact.groups[g * 3]
     const pat = artifact.groups[g * 3 + 1]
     const c = artifact.groups[g * 3 + 2]
-    if (pr < 0 || pr >= artifact.precincts.length) throw new Error(`group ${g}: precinct index ${pr} out of range`)
-    if (pat < 0 || pat >= patternCount) throw new Error(`group ${g}: pattern index ${pat} out of range`)
+    if (pr < 0 || pr >= artifact.precincts.length) throw new Error(`CVR artifact group ${g}: precinct index ${pr} out of range`)
+    if (pat < 0 || pat >= patternCount) throw new Error(`CVR artifact group ${g}: pattern index ${pat} out of range`)
     groupPrecinct[g] = pr
     groupPattern[g] = pat
     groupCount[g] = c

@@ -347,10 +347,17 @@ export default function Elections() {
   )
   // While the artifact is still loading (replayRows null) this stays
   // undefined and the map keeps painting base mode — progressive, never
-  // blank.
-  const replayOption = activeLens === 'replay' && replayRows && rcvData
-    ? { rows: replayRows, round: rcvTransport.activeRound + 1, totalRounds: rcvData.rounds.length, lift: rcvTransport.inTransferWindow }
-    : undefined
+  // blank. Memoized: an unmemoized object literal here was rebuilt on
+  // every render (any unrelated state change while the lens was active),
+  // and buildPrecinctFeatures + setData downstream re-ran on that new
+  // identity even though nothing replay-relevant had changed.
+  const replayOption = useMemo(
+    () =>
+      activeLens === 'replay' && replayRows && rcvData
+        ? { rows: replayRows, round: rcvTransport.activeRound + 1, totalRounds: rcvData.rounds.length, lift: rcvTransport.inTransferWindow }
+        : undefined,
+    [activeLens, replayRows, rcvData, rcvTransport.activeRound, rcvTransport.inTransferWindow],
+  )
 
   // Legend's replay-variant disclosure state: top-5 continuing candidates +
   // citywide drain (how much of round 1's continuing count no longer holds

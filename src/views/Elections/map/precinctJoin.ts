@@ -93,10 +93,13 @@ export function buildPrecinctFeatures(opts: BuildPrecinctOptions): GeoJSON.Featu
   // Results mode (non-prop) precomputes ONE of two things before the main
   // loop: either the focused candidate's per-precinct share map (focus mode)
   // or the race-relative leader-share quartiles (leader-steps mode). Never
-  // both — focus mode doesn't use resultsFill/quartiles at all.
+  // both — focus mode doesn't use resultsFill/quartiles at all. Skipped
+  // entirely when opts.replay is set — REPLAY preempts fill selection in
+  // the main loop below and never reads `focus`/`quartiles` (it has its own
+  // replayQuartiles precompute just below).
   let quartiles: [number, number, number] | null = null
   let focus: { byLabel: Map<string, number>; extent: [number, number] | null } | null = null
-  if (mode === 'results' && bundle.race && !raceIsProp) {
+  if (!opts.replay && mode === 'results' && bundle.race && !raceIsProp) {
     if (focusCandidate) {
       focus = candidateShares(bundle.race, focusCandidate)
     } else {
