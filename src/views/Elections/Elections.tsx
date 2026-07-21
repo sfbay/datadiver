@@ -36,7 +36,8 @@ import { isProposition, leaderOf, leaderShareQuartiles } from './map/precinctPai
 import { candidateShares, type PaintBundle } from './map/precinctJoin'
 import { parseLens, SHIPPED_LENSES, type RcvLens } from './rcvLens'
 import { useReplayModel } from './useReplayModel'
-import { replayPaintRows } from '@/lib/rcv/replay'
+import { computeReplayRounds, replayPaintRows } from '@/lib/rcv/replay'
+import { tabulateWhatIf } from '@/lib/rcv/whatIf'
 import { COALITION_FLOOR, computeSecondChoices, computeHeadToHead, coalitionPaintRows } from '@/lib/rcv/coalition'
 import { useEraFadedBundle } from './map/useEraFadedBundle'
 import PrecinctFillLayer from './map/PrecinctFillLayer'
@@ -72,6 +73,10 @@ export default function Elections() {
   const selectedRaceId = searchParams.get('race') || null
   const selectedNeighborhood = searchParams.get('neighborhood') || null
   const focusedCandidate = searchParams.get('candidate') || null
+  // ?strike= is repeatable (getAll) — certified names can carry commas, so a
+  // joined single param would be ambiguous. Values are RAW artifact
+  // candidate spellings. Memo keyed on searchParams identity.
+  const strikeParams = useMemo(() => searchParams.getAll('strike'), [searchParams])
   // URL-level lens intent — unknown/unshipped values degrade to null.
   // Whether it's SHOWN is gated further down (`activeLens`) on CVR
   // availability + Time Machine.
@@ -105,6 +110,7 @@ export default function Elections() {
       next.delete('candidate') // a new race has a different candidate set — focus doesn't carry over
       next.delete('lens') // lens + round are per-race state — neither carries over
       next.delete('round')
+      next.delete('strike')
       return next
     }, { replace: true })
   }, [setSearchParams])
@@ -150,6 +156,19 @@ export default function Elections() {
       if (lens) next.set('lens', lens)
       else next.delete('lens')
       next.delete('round') // deleted on EVERY lens change (spec §4.1)
+      if (lens !== 'whatif') next.delete('strike')
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
+
+  // Rewrites the FULL strike set in one write (toggle callers compute the
+  // next set from the current one). Deleting then re-appending keeps the
+  // repeatable-param form canonical.
+  const setStrikes = useCallback((names: string[]) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('strike')
+      for (const n of names) next.append('strike', n)
       return next
     }, { replace: true })
   }, [setSearchParams])
@@ -164,6 +183,7 @@ export default function Elections() {
       const next = new URLSearchParams(prev)
       next.delete('lens')
       next.delete('round')
+      next.delete('strike')
       if (mode === 'results') next.delete('map_mode')
       else next.set('map_mode', mode)
       return next
@@ -229,7 +249,18 @@ export default function Elections() {
   if (initialRoundRef.current === null) {
     const parsed = Number.parseInt(searchParams.get('round') ?? '', 10)
     initialRoundRef.current = {
-      round: rcvLens !== null && Number.isFinite(parsed) && parsed >= 1 ? parsed - 1 : undefined,
+      round: rcvLens === 'replay' && Number.isFinite(parsed) && parsed >= 1 ? parsed - 1 : undefined,
+    }
+  }
+
+  // Separate mount seed for the WHATIF transport — same ref-initializer
+  // pattern. Consumed on the first counterfactual contest; later strike
+  // changes open on the (new) final round.
+  const whatIfSeedRef = useRef<{ round: number | undefined } | null>(null)
+  if (whatIfSeedRef.current === null) {
+    const parsed = Number.parseInt(searchParams.get('round') ?? '', 10)
+    whatIfSeedRef.current = {
+      round: rcvLens === 'whatif' && Number.isFinite(parsed) && parsed >= 1 ? parsed - 1 : undefined,
     }
   }
 
@@ -249,31 +280,13 @@ export default function Elections() {
   }, [rcvData])
 
   // Settled-position `?round=` writes — the URL records where the replay is
-  // PARKED, never every autoplay frame. Lens off → a lingering `?round=` is
-  // meaningless; drop it. searchParamsRef keeps the has/value checks out of
-  // the dep list so this never fires a same-URL replace navigation.
+  // PARKED, never every autoplay frame. searchParamsRef keeps the has/value
+  // checks out of that effect's dep list so it never fires a same-URL
+  // replace navigation. The effect itself lives further down (after the
+  // WHAT-IF transport is defined — it derives `roundTransport` from BOTH
+  // round-bearing lenses).
   const searchParamsRef = useRef(searchParams)
   searchParamsRef.current = searchParams
-  useEffect(() => {
-    if (activeLens === 'replay') {
-      // totalRounds 0 = contest not loaded (or 404) — no position to record.
-      if (rcvTransport.isPlaying || rcvTransport.totalRounds === 0) return
-      const value = String(rcvTransport.activeRound + 1)
-      if (searchParamsRef.current.get('round') === value) return
-      setSearchParams((prev) => {
-        const next = new URLSearchParams(prev)
-        next.set('round', value)
-        return next
-      }, { replace: true })
-      return
-    }
-    if (!searchParamsRef.current.has('round')) return
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev)
-      next.delete('round')
-      return next
-    }, { replace: true })
-  }, [rcvTransport.activeRound, rcvTransport.isPlaying, rcvTransport.totalRounds, activeLens, setSearchParams])
 
   // ── Ballot measures ────────────────────────────────────────────────
   const { data: ballotMeasures } = useBallotPropositions()
@@ -341,7 +354,7 @@ export default function Elections() {
   // not just the DOM); identity-guard against useStaticJSON's
   // stale-previous-data refetch window, same as raceFile above.
   const { data: cvrArtifactRaw } = useCVRBallots(
-    displayDateCode, activeRace?.id ?? null, activeLens === 'replay' || activeLens === 'coalition',
+    displayDateCode, activeRace?.id ?? null, activeLens !== null,
   )
   const cvrArtifact =
     cvrArtifactRaw?.dateCode === displayDateCode && cvrArtifactRaw?.raceId === activeRace?.id
@@ -492,6 +505,146 @@ export default function Elections() {
       withheldCount: cvrArtifact.sovSuppressed.length,
     }
   }, [activeLens, coalitionFocus, secondChoices, cvrArtifact, coalitionSuppressedShown])
+
+  // ── WHAT-IF lens data (strike candidates → counterfactual count) ──────
+  // Sanitized strike indices: unknown names dropped, duplicates dropped,
+  // capped at candidates.length − 2 in URL order — min-2-remaining holds
+  // even against a hand-typed query string. Matched via cleanCandidateName
+  // (the coalitionFocus precedent).
+  const struckIdx = useMemo(() => {
+    if (activeLens !== 'whatif' || !cvrArtifact) return []
+    const out: number[] = []
+    for (const raw of strikeParams) {
+      const clean = cleanCandidateName(raw)
+      const i = cvrArtifact.candidates.findIndex((c) => cleanCandidateName(c) === clean)
+      if (i >= 0 && !out.includes(i)) out.push(i)
+      if (out.length >= cvrArtifact.candidates.length - 2) break
+    }
+    return out
+  }, [activeLens, cvrArtifact, strikeParams])
+
+  // The counterfactual count. Zero strikes → null (the resting state shows
+  // the certified rounds — adjudication 4); tabulateWhatIf is pure and
+  // ~15–30ms for mayor, so a plain memo suffices.
+  const whatIfModel = useMemo(() => {
+    if (activeLens !== 'whatif' || !replayModel || !cvrArtifact || struckIdx.length === 0) return null
+    try {
+      return tabulateWhatIf(
+        replayModel.ballots,
+        { raceId: cvrArtifact.raceId, title: cvrArtifact.title, candidates: cvrArtifact.candidates, precincts: cvrArtifact.precincts },
+        struckIdx,
+        replayModel.tab,
+      )
+    } catch (err) {
+      console.error('[whatif] tabulation failed', err)
+      return null
+    }
+  }, [activeLens, replayModel, cvrArtifact, struckIdx])
+
+  // The contest the whatif chart/transport run on: counterfactual when
+  // strikes exist, certified otherwise (resting state), null off-lens
+  // (an inert totalRounds-0 transport).
+  const whatIfChartData = activeLens === 'whatif' ? (whatIfModel?.contest ?? rcvData ?? null) : null
+
+  const whatIfTransport = useRcvTransport(whatIfChartData, {
+    // Opens on the FINAL round — whatif's question is "how does it end"
+    // (replay's is "how it unfolds"). The mount seed wins once, for
+    // ?lens=whatif&round=K deep links.
+    initialRound: whatIfSeedRef.current.round ?? (whatIfChartData ? whatIfChartData.totalRounds - 1 : undefined),
+  })
+
+  useEffect(() => {
+    if (whatIfChartData) whatIfSeedRef.current = { round: undefined }
+  }, [whatIfChartData])
+
+  // Counterfactual per-round precinct states — certified states when no
+  // strikes (whatIfModel null), so the resting state still paints.
+  const whatIfStates = useMemo(() => {
+    if (activeLens !== 'whatif' || !replayModel) return null
+    return whatIfModel ? computeReplayRounds(replayModel.ballots, whatIfModel) : replayModel.states
+  }, [activeLens, replayModel, whatIfModel])
+
+  const whatIfRows = useMemo(
+    () => whatIfStates && cvrArtifact
+      ? replayPaintRows(whatIfStates, whatIfTransport.activeRound, cvrArtifact)
+      : null,
+    [whatIfStates, cvrArtifact, whatIfTransport.activeRound],
+  )
+
+  // FIXED from the COUNTERFACTUAL's round 1 over painted precincts
+  // (adjudication 3): cutpoints are fixed per tabulation — certified-R1
+  // cutpoints on a shrunken roster would mis-band the counterfactual.
+  const whatIfQuartiles = useMemo((): [number, number, number] | null => {
+    if (!whatIfStates || !cvrArtifact || !turnoutFile) return null
+    const round1Rows = replayPaintRows(whatIfStates, 0, cvrArtifact)
+    const shares: number[] = []
+    for (const [label, row] of Object.entries(turnoutFile.precincts)) {
+      if (row.unmapped) continue
+      const r = round1Rows[label]
+      if (!r || r.total === 0) continue
+      const leader = leaderOf(r.votes)
+      if (leader) shares.push(leader.share)
+    }
+    return leaderShareQuartiles(shares)
+  }, [whatIfStates, cvrArtifact, turnoutFile])
+
+  // Divergence outline set — changedPrecincts filtered through the SAME
+  // painted turnout-label set every quartile memo uses (6 of mayor−Lurie's
+  // 356 are SOV-withheld and must stay unmarked).
+  const whatIfChangedShown = useMemo(() => {
+    const shown = new Set<string>()
+    if (!whatIfModel || !turnoutFile) return shown
+    for (const label of whatIfModel.changedPrecincts) {
+      const row = turnoutFile.precincts[label]
+      if (row && !row.unmapped) shown.add(label)
+    }
+    return shown
+  }, [whatIfModel, turnoutFile])
+
+  const whatIfOnFinalRound =
+    whatIfChartData !== null && whatIfTransport.activeRound === whatIfChartData.totalRounds - 1
+
+  const whatIfOption = useMemo(
+    () =>
+      activeLens === 'whatif' && whatIfRows && whatIfChartData
+        ? {
+            rows: whatIfRows,
+            quartiles: whatIfQuartiles,
+            round: whatIfTransport.activeRound + 1,
+            totalRounds: whatIfChartData.totalRounds,
+            lift: whatIfTransport.inTransferWindow,
+            // Outline only on the counterfactual FINAL round (spec §4.5).
+            changedLabels: whatIfOnFinalRound && whatIfChangedShown.size > 0 ? whatIfChangedShown : undefined,
+          }
+        : undefined,
+    [activeLens, whatIfRows, whatIfChartData, whatIfQuartiles, whatIfTransport.activeRound, whatIfTransport.inTransferWindow, whatIfOnFinalRound, whatIfChangedShown],
+  )
+
+  // Which transport owns ?round= — replay and whatif are the round-bearing
+  // lenses (coalition has no clock).
+  const roundTransport = activeLens === 'replay' ? rcvTransport : activeLens === 'whatif' ? whatIfTransport : null
+  useEffect(() => {
+    if (roundTransport) {
+      if (roundTransport.isPlaying || roundTransport.totalRounds === 0) return
+      const value = String(roundTransport.activeRound + 1)
+      if (searchParamsRef.current.get('round') === value) return
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev)
+        next.set('round', value)
+        return next
+      }, { replace: true })
+      return
+    }
+    if (!searchParamsRef.current.has('round')) return
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('round')
+      return next
+    }, { replace: true })
+    // Scalar deps only — the transport OBJECT is a fresh identity every
+    // render and would make this run per-render; activeLens covers the
+    // null↔transport switch (the original PR 1 effect's dep discipline).
+  }, [activeLens, roundTransport?.activeRound, roundTransport?.isPlaying, roundTransport?.totalRounds, setSearchParams])
 
   // Race still loading (or 404 → error) → race: null → the join paints turnout
   // for that beat instead of a blank. Progressive, never empty.
@@ -802,6 +955,7 @@ export default function Elections() {
                       next.delete('candidate')
                       next.delete('lens')
                       next.delete('round')
+                      next.delete('strike')
                       return next
                     },
                     { replace: true },
@@ -918,7 +1072,7 @@ export default function Elections() {
               raceIsRCV={displayRace?.isRCV ?? false}
               selectedNeighborhood={selectedNeighborhood}
               focusCandidate={activeFocusCandidate}
-              replay={replayOption}
+              replay={activeLens === 'whatif' ? whatIfOption : replayOption}
               coalition={coalitionOption}
               fade={fade}
               fadeMs={fadeMs}
