@@ -104,8 +104,9 @@ src/
   types/         # TypeScript interfaces (datasets.ts, trends.ts)
   utils/         # Colors, time formatting, geo helpers
   views/         # 8 dataset views + Home + The Last 48 (nav 3) + The Pulse (anomaly wire, nav 4)
-                 # Nav order (reordered July 13 2026): Overview · Alerts · The Last 48 · Pulse ·
-                 #   Emergency Response · Crime Incidents · Traffic Safety · City Budget · …the rest
+                 # Nav order (Elections promoted July 21 2026): Overview · Alerts · The Last 48 ·
+                 #   Pulse · Emergency Response · Crime Incidents · Traffic Safety · Elections ·
+                 #   City Budget · …the rest
 ```
 
 ## Key Conventions

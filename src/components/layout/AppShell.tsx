@@ -63,6 +63,13 @@ const NAV_ITEMS = [
     accentColor: '#963e30', // brick-600 — danger semantic, twin to Crime
   },
   {
+    path: '/elections',
+    label: 'Elections',
+    shortLabel: 'EL',
+    description: 'Live results, RCV & historical playback',
+    accentColor: '#616a96', // indigo-500 — civic ceremony
+  },
+  {
     path: '/city-budget',
     label: 'City Budget',
     shortLabel: 'BU',
@@ -124,13 +131,6 @@ const NAV_ITEMS = [
     shortLabel: 'DM',
     description: 'Census demographics & civic correlations',
     accentColor: '#8b6282', // plum-500 — editorial cool, civic profiling
-  },
-  {
-    path: '/elections',
-    label: 'Elections',
-    shortLabel: 'EL',
-    description: 'Live results, RCV & historical playback',
-    accentColor: '#616a96', // indigo-500 — civic ceremony
   },
   {
     path: '/neighborhood',
