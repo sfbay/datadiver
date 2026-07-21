@@ -412,35 +412,6 @@ export default function Elections() {
     [activeLens, replayRows, replayQuartiles, rcvData, rcvTransport.activeRound, rcvTransport.inTransferWindow],
   )
 
-  // Legend's replay-variant disclosure state: top-5 continuing candidates +
-  // citywide drain (how much of round 1's continuing count no longer holds
-  // a live vote) + the withheld-precinct count from the CVR artifact's own
-  // reconciliation gate. Built off the committed rcvData (not the CVR
-  // replay model) — the legend speaks to the same certified round numbers
-  // the rounds chart does.
-  const replayLegendState = useMemo(() => {
-    if (activeLens !== 'replay' || !rcvData) return undefined
-    const round = rcvData.rounds[rcvTransport.activeRound]
-    const round1 = rcvData.rounds[0]
-    if (!round || !round1) return undefined
-    // The full continuing-candidates count (votes > 0) — the legend's
-    // subtitle N, NOT the top-5 slice length below.
-    const continuingAll = round.candidates.filter((c) => c.votes > 0)
-    const continuing = [...continuingAll]
-      .sort((a, b) => b.votes - a.votes)
-      .slice(0, 5)
-      .map((c) => ({ name: c.name, votes: c.votes, pct: c.percentage }))
-    const drainPct = ((round.exhausted + round.overvotes - round1.overvotes) / round1.continuingTotal) * 100
-    return {
-      round: rcvTransport.activeRound + 1,
-      totalRounds: rcvData.rounds.length,
-      continuing,
-      continuingCount: continuingAll.length,
-      drainPct,
-      withheldCount: cvrArtifact?.sovSuppressed.length ?? 0,
-    }
-  }, [activeLens, rcvData, rcvTransport.activeRound, cvrArtifact])
-
   // ── COALITION lens data (CVR ballots → second-choice geography) ────
   const coalitionFocus = useMemo(() => {
     if (activeLens !== 'coalition' || !cvrArtifact || !focusedCandidate) return null
@@ -632,6 +603,37 @@ export default function Elections() {
         : undefined,
     [activeLens, whatIfRows, whatIfChartData, whatIfQuartiles, whatIfTransport.activeRound, whatIfTransport.inTransferWindow, whatIfOnFinalRound, whatIfChangedShown],
   )
+
+  // Legend disclosure state for BOTH round-bearing lenses. Replay reads the
+  // committed certified rounds; whatif reads the counterfactual contest
+  // (same certified colors — the pin) and adds the outline count + the
+  // hypothetical eyebrow flag.
+  const replayLegendState = useMemo(() => {
+    const contest = activeLens === 'replay' ? (rcvData ?? null) : activeLens === 'whatif' ? whatIfChartData : null
+    const transport = activeLens === 'replay' ? rcvTransport : whatIfTransport
+    if (!contest) return undefined
+    const round = contest.rounds[transport.activeRound]
+    const round1 = contest.rounds[0]
+    if (!round || !round1) return undefined
+    const continuingAll = round.candidates.filter((c) => c.votes > 0)
+    const continuing = [...continuingAll]
+      .sort((a, b) => b.votes - a.votes)
+      .slice(0, 5)
+      .map((c) => ({ name: c.name, votes: c.votes, pct: c.percentage }))
+    const drainPct = round1.continuingTotal > 0
+      ? ((round.exhausted + round.overvotes - round1.overvotes) / round1.continuingTotal) * 100
+      : 0
+    return {
+      round: transport.activeRound + 1,
+      totalRounds: contest.rounds.length,
+      continuing,
+      continuingCount: continuingAll.length,
+      drainPct,
+      withheldCount: cvrArtifact?.sovSuppressed.length ?? 0,
+      outlineCount: activeLens === 'whatif' && whatIfOnFinalRound ? whatIfChangedShown.size : 0,
+      hypothetical: activeLens === 'whatif' && whatIfModel !== null,
+    }
+  }, [activeLens, rcvData, whatIfChartData, rcvTransport, whatIfTransport, cvrArtifact, whatIfOnFinalRound, whatIfChangedShown, whatIfModel])
 
   // Which transport owns ?round= — replay and whatif are the round-bearing
   // lenses (coalition has no clock).
@@ -828,6 +830,29 @@ export default function Elections() {
       })
     }
 
+    // WHAT-IF overrides — Winner speaks the counterfactual (certified
+    // pigment: candidateColors is rank-assigned from certified standings and
+    // deliberately NOT re-derived); Rounds discloses the certified count.
+    // Turnout/Registered stay certified (spec §4.5).
+    if (activeLens === 'whatif' && whatIfModel && rcvData) {
+      const cfWinnerRow = whatIfModel.contest.rounds[whatIfModel.contest.totalRounds - 1]
+        .candidates.find((c) => c.name === whatIfModel.contest.winner)
+      cards[0] = {
+        ...cards[0],
+        label: 'Hypothetical winner',
+        value: leaderDisplayName(whatIfModel.contest.winner),
+        color: candidateColors.get(whatIfModel.contest.winner) || ACCENT,
+        subtitle: cfWinnerRow
+          ? `${(cfWinnerRow.percentage * 100).toFixed(1)}% · certified: ${leaderDisplayName(rcvData.winner)}`
+          : `certified: ${leaderDisplayName(rcvData.winner)}`,
+      }
+      const roundsCard = cards.find((c) => c.id === 'rcv-rounds')
+      if (roundsCard) {
+        roundsCard.value = String(whatIfModel.contest.totalRounds)
+        roundsCard.subtitle = `certified: ${rcvData.totalRounds}`
+      }
+    }
+
     // ── Selection-aware overrides (comparison-framed, citywide = reference) ──
     const nfile = neighborhoodResults?.dateCode === displayDateCode ? neighborhoodResults : null
 
@@ -899,6 +924,8 @@ export default function Elections() {
     paintBundle,
     neighborhoodResults,
     displayDateCode,
+    activeLens,
+    whatIfModel,
   ])
 
   // ── Filtered races for sidebar ────────────────────────────────────
@@ -922,6 +949,15 @@ export default function Elections() {
     }
     return counts as Record<RaceFilter, number>
   }, [displayResults])
+
+  // Banner copy: struck candidates as reader-facing full names —
+  // "Daniel Lurie", "Daniel Lurie and London Breed", "A, B and C".
+  const struckDisplay = useMemo(() => {
+    if (!cvrArtifact || struckIdx.length === 0) return ''
+    const names = struckIdx.map((i) => toSentenceCase(cvrArtifact.candidates[i]))
+    if (names.length === 1) return names[0]
+    return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+  }, [cvrArtifact, struckIdx])
 
   return (
     <div className="h-full flex flex-col">
@@ -1064,6 +1100,31 @@ export default function Elections() {
           {timeline.isLoading && (
             <span className="text-micro font-mono text-slate-500 ml-auto">Loading…</span>
           )}
+        </div>
+      )}
+
+      {/* What-if banner — terracotta (ochre stays Time Machine's signature;
+          brick would read as an error). Persistent while strikes exist. */}
+      {activeLens === 'whatif' && whatIfModel && struckDisplay && (
+        <div className="flex-shrink-0 px-6 py-1.5 bg-terracotta-500/10 border-b border-terracotta-500/20 flex items-center gap-2 flex-wrap">
+          <span className="w-2 h-2 rounded-full bg-terracotta-500" />
+          <p className="text-micro font-mono text-terracotta-600 dark:text-terracotta-400">
+            HYPOTHETICAL COUNT — {struckDisplay} removed
+          </p>
+          <span className="text-micro text-slate-500 dark:text-slate-400">
+            Same ballots, rerun without them. The certified result is unchanged.
+          </span>
+          {whatIfModel.tiesBroken.length > 0 && (
+            <span className="text-micro text-slate-500 dark:text-slate-400 italic">
+              A tie was broken using the real election&rsquo;s elimination order.
+            </span>
+          )}
+          <button
+            onClick={() => setStrikes([])}
+            className="ml-auto px-2.5 py-0.5 rounded-full text-micro font-mono bg-terracotta-500/15 text-terracotta-600 dark:text-terracotta-400 hover:bg-terracotta-500/25 transition-colors"
+          >
+            Reset to reality
+          </button>
         </div>
       )}
 
@@ -1278,7 +1339,7 @@ export default function Elections() {
                 focusedCandidate={activeFocusCandidate}
                 focusExtent={focusExtent}
                 onFocusCandidate={setFocusedCandidate}
-                replayState={activeLens === 'replay' ? replayLegendState : undefined}
+                replayState={activeLens === 'replay' || activeLens === 'whatif' ? replayLegendState : undefined}
                 coalitionState={activeLens === 'coalition' ? coalitionLegendState : undefined}
                 coalitionPrompt={activeLens === 'coalition' && !coalitionFocus}
               />

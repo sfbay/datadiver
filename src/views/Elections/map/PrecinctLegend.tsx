@@ -17,6 +17,12 @@ export interface PrecinctLegendReplayState {
    *  (exhausted + overvotes, net of round-1 overvotes), 0-100. */
   drainPct: number
   withheldCount: number
+  /** WHAT-IF: painted precincts whose counterfactual final leader differs
+   *  from the certified count — 0 (or absent) hides the outline row. */
+  outlineCount?: number
+  /** WHAT-IF variant — prefixes the eyebrow so the round readout can't be
+   *  mistaken for the certified replay. */
+  hypothetical?: boolean
 }
 
 /** COALITION lens state — when set, the legend swaps its whole body for the
@@ -135,7 +141,7 @@ export default function PrecinctLegend({
     return (
       <div className="absolute bottom-6 right-5 z-10 glass-card rounded-xl p-3">
         <p className="text-nano font-mono tracking-widest text-paper-600 dark:text-paper-500 mb-1">
-          ── ROUND {replayState.round} OF {replayState.totalRounds}
+          ── {replayState.hypothetical ? 'HYPOTHETICAL — ' : ''}ROUND {replayState.round} OF {replayState.totalRounds}
         </p>
         <p className="text-micro text-slate-400 mb-1">
           Votes counting for {replayState.continuingCount} candidates
@@ -164,6 +170,17 @@ export default function PrecinctLegend({
             <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: '#a8926a' }} />
             <span className="text-micro text-slate-400">
               No longer counting — ballots with no remaining choices
+            </span>
+          </div>
+        )}
+        {(replayState.outlineCount ?? 0) > 0 && (
+          <div className="flex items-center gap-2 mt-1.5">
+            <span
+              className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+              style={{ border: '1.5px solid #b85a33' }}
+            />
+            <span className="text-micro text-slate-400">
+              Outlined precincts end with a different winner than the real count.
             </span>
           </div>
         )}
