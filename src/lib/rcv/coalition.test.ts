@@ -6,6 +6,7 @@ import { decodeBallots, type DecodedBallots } from './ballots'
 import {
   COALITION_FLOOR,
   coalitionPaintRows,
+  computeHeadToHead,
   computeSecondChoices,
 } from './coalition'
 
@@ -151,5 +152,81 @@ describe('coalition — synthetic fixtures', () => {
     // never title-case here
     expect(rows['1002'].dominant).toBe('BOB BBB')
     expect(rows['1002'].dominantShare).toBeCloseTo(9 / 11)
+  })
+})
+
+describe('computeHeadToHead — certified pins', () => {
+  it('mayor: LURIE is the head-to-head winner; BREED pair numbers exact (probe-pinned)', () => {
+    const { artifact, ballots } = loadRace('mayor')
+    const h = computeHeadToHead(ballots, artifact.candidates)
+    const n = artifact.candidates.length
+    const idx = (nm: string) => artifact.candidates.indexOf(nm)
+    expect(h.condorcetWinner).toBe(idx('DANIEL LURIE'))
+    const L = idx('DANIEL LURIE')
+    const B = idx('LONDON BREED')
+    expect(h.prefersBoth[L * n + B]).toBe(92063)
+    expect(h.prefersBoth[B * n + L]).toBe(72547)
+    expect(h.bothRanked[L * n + B]).toBe(164610)
+    expect(h.prefers[L * n + B]).toBe(182364)
+    expect(h.prefers[B * n + L]).toBe(149113)
+  })
+
+  it('D11: CHEN is the head-to-head winner while LAI leads among-both — the divergence edge (probe-pinned)', () => {
+    const { artifact, ballots } = loadRace('member-board-of-supervisors-district-11')
+    const h = computeHeadToHead(ballots, artifact.candidates)
+    const n = artifact.candidates.length
+    const idx = (nm: string) => artifact.candidates.indexOf(nm)
+    const C = idx('CHYANNE CHEN')
+    const M = idx('MICHAEL LAI')
+    expect(h.condorcetWinner).toBe(C)
+    expect(h.prefersBoth[C * n + M]).toBe(4920)
+    expect(h.prefersBoth[M * n + C]).toBe(6181) // among-both, LAI leads…
+    expect(h.prefers[C * n + M]).toBe(12001) // …but inclusive, CHEN wins
+    expect(h.prefers[M * n + C]).toBe(11803)
+  })
+
+  it.each(RACES)('%s: prefersBoth pairs sum to bothRanked; bothRanked symmetric', (raceId) => {
+    const { artifact, ballots } = loadRace(raceId)
+    const h = computeHeadToHead(ballots, artifact.candidates)
+    const n = artifact.candidates.length
+    for (let a = 0; a < n; a++) {
+      for (let b = 0; b < n; b++) {
+        if (a === b) continue
+        expect(h.prefersBoth[a * n + b] + h.prefersBoth[b * n + a]).toBe(h.bothRanked[a * n + b])
+        expect(h.bothRanked[a * n + b]).toBe(h.bothRanked[b * n + a])
+      }
+    }
+  })
+
+  it('synthetic: overvote terminator truncates the ranking; unranked counts as below', () => {
+    // A(0), B(1), C(2). [0,-1,…] → only A ranked (terminator stops the read).
+    const artifact: CVRBallotArtifact = {
+      formatVersion: 1,
+      dateCode: '20241105',
+      raceId: 'synthetic-h2h',
+      title: 'Synthetic',
+      candidates: ['ALICE AAA', 'BOB BBB', 'CARA CCC'],
+      precincts: ['1001'],
+      sovSuppressed: [],
+      patterns: [
+        [0, -1], // A then ranked-two → ranking is A alone
+        [1, 2], // B > C
+        [2], // C alone
+      ],
+      groups: [0, 0, 5, 0, 1, 3, 0, 2, 2],
+    }
+    const h = computeHeadToHead(decodeBallots(artifact), artifact.candidates)
+    const n = 3
+    // A-vs-B: A ranked alone on 5 (prefers A>B inclusive), B ranked on 3 (B>A), never both
+    expect(h.bothRanked[0 * n + 1]).toBe(0)
+    expect(h.prefers[0 * n + 1]).toBe(5)
+    expect(h.prefers[1 * n + 0]).toBe(3)
+    // B-vs-C: both ranked on 3 ballots with B above C; C alone on 2
+    expect(h.prefersBoth[1 * n + 2]).toBe(3)
+    expect(h.prefersBoth[2 * n + 1]).toBe(0)
+    expect(h.bothRanked[1 * n + 2]).toBe(3)
+    expect(h.prefers[2 * n + 1]).toBe(2)
+    // No head-to-head winner: A beats B 5–3, B beats C 5–2… but C-vs-A: A alone 5, C on 3+2=5 → tie, no winner
+    expect(h.condorcetWinner).toBeNull()
   })
 })

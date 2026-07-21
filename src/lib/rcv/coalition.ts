@@ -122,3 +122,76 @@ export function coalitionPaintRows(
   }
   return { rows, suppressedIds }
 }
+
+export interface HeadToHeadMatrix {
+  candidates: string[]
+  /** n×n among-both directional counts: ballots ranking BOTH a and b with a
+   *  above b. `prefersBoth[a,b] + prefersBoth[b,a] === bothRanked[a,b]` —
+   *  these are the numbers the copy line renders. */
+  prefersBoth: Int32Array
+  bothRanked: Int32Array
+  /** n×n inclusive counts (b unranked counts as below a) — the
+   *  beats-every-rival verdict input. Probe-verified D11 edge: the two
+   *  matrices can point OPPOSITE directions for a pair; the UI renders a
+   *  divergence disclosure line when they do. */
+  prefers: Int32Array
+  /** Candidate who inclusively beats every rival, or null (ties possible). */
+  condorcetWinner: number | null
+}
+
+/** Iterates citywide PATTERNS (not groups): ~65k × n² for mayor ≈ 11M ops,
+ *  ~20–40ms once, memoized at the hook layer. */
+export function computeHeadToHead(b: DecodedBallots, candidates: string[]): HeadToHeadMatrix {
+  const n = b.candidateCount
+  const prefersBoth = new Int32Array(n * n)
+  const bothRanked = new Int32Array(n * n)
+  const prefers = new Int32Array(n * n)
+  const rankOf = new Int32Array(n)
+  for (let pat = 0; pat < b.patternCount; pat++) {
+    const w = b.patternTotal[pat]
+    if (w === 0) continue
+    rankOf.fill(-1)
+    const s = b.patternStart[pat]
+    const e = b.patternStart[pat + 1]
+    let pos = 0
+    for (let i = s; i < e; i++) {
+      const v = b.patternFlat[i]
+      if (v === OVERVOTE_TERMINATOR) break
+      rankOf[v] = pos++
+    }
+    if (pos === 0) continue
+    for (let a = 0; a < n; a++) {
+      const ra = rankOf[a]
+      if (ra < 0) continue
+      for (let c = 0; c < n; c++) {
+        if (c === a) continue
+        const rc = rankOf[c]
+        if (rc < 0) {
+          prefers[a * n + c] += w
+          continue
+        }
+        if (ra < rc) {
+          prefers[a * n + c] += w
+          prefersBoth[a * n + c] += w
+        }
+        bothRanked[a * n + c] += w
+      }
+    }
+  }
+  let condorcetWinner: number | null = null
+  for (let a = 0; a < n; a++) {
+    let beatsAll = true
+    for (let c = 0; c < n; c++) {
+      if (c === a) continue
+      if (prefers[a * n + c] <= prefers[c * n + a]) {
+        beatsAll = false
+        break
+      }
+    }
+    if (beatsAll) {
+      condorcetWinner = a
+      break
+    }
+  }
+  return { candidates, prefersBoth, bothRanked, prefers, condorcetWinner }
+}
