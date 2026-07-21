@@ -133,8 +133,10 @@ export interface VictoryComposition {
  * Attribution caveat (surface this to readers): a gain is credited to the
  * candidate who LAST HELD the votes. A donor eliminated late may pass on
  * votes that originally belonged to earlier-eliminated candidates and
- * cascaded through them — ballot-level paths are not published, so
- * "via X" is the honest ceiling, not "originally for X".
+ * cascaded through them — this pipeline works from the round-summary
+ * report, so "via X" is its honest ceiling, not "originally for X".
+ * (SF DOES publish ballot-level CVRs that could resolve true paths;
+ * they're out of scope here — see the flow-animation spec.)
  */
 export function computeVictoryComposition(rounds: RCVRound[]): VictoryComposition {
   if (rounds.length === 0) {

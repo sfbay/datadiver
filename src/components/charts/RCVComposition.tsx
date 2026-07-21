@@ -260,7 +260,8 @@ export default function RCVComposition({
         ) : (
           <p className="text-nano font-mono text-paper-500 dark:text-paper-600 leading-snug">
             Transfers are credited to the candidate who last held the votes —
-            S.F. publishes round totals, not ballot paths.
+            derived from S.F.&rsquo;s round-by-round totals, not ballot-level
+            records.
           </p>
         )}
       </div>
