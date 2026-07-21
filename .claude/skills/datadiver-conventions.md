@@ -209,6 +209,13 @@ const buildShareUrl = useCallback(() => {
 
 **`ShareLinkButton`** is the standard share affordance (circle with link icon + green checkmark flash on copy). Located at `src/components/ui/ShareLinkButton.tsx`. Prefer this over custom "Share URL" text buttons.
 
+**Lens URL grammar (Elections RCV lenses, PR #132 — the template for any future mode-within-a-view):**
+- The lens is a SEPARATE dimension from the view's base mode (`?lens=` beside `mapMode`), parsed through an allow-list that grows per shipped PR (`SHIPPED_LENSES` in `src/views/Elections/rcvLens.ts`) — unshipped values parse to `null` so deep links degrade gracefully instead of 404ing or half-rendering.
+- Dependent params (`?round=`) are DELETED on every lens *change* (not just exit), IGNORED when their owner lens is inactive, and written only on settled positions (pause/seek/step — never on autoplay ticks). This keeps a bare `?round=9` from defeating opens-on-round-1, and keeps history clean.
+- Availability gates on data identity, not data presence: `cvrManifest?.dateCode === activeElection` — a cached manifest from the previous election must not paint a phantom lens strip during refetch.
+- Precedence is explicit and documented at the dispatch site: lens branch preempts candidate-focus branch in `buildPrecinctFeatures`; a URL carrying both paints the lens.
+- Combine lens + mode writes into ONE functional `setSearchParams` update — react-router v7 functional updaters clobber sibling writes from the same render.
+
 ## Deployment gotchas
 
 **`tsc -b` is stricter than `tsc --noEmit`.** Vercel's build runs `tsc -b` (project references mode) which catches issues the local `--noEmit` pass doesn't:
