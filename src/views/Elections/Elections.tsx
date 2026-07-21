@@ -74,9 +74,22 @@ export default function Elections() {
   const selectedNeighborhood = searchParams.get('neighborhood') || null
   const focusedCandidate = searchParams.get('candidate') || null
   // ?strike= is repeatable (getAll) — certified names can carry commas, so a
-  // joined single param would be ambiguous. Values are RAW artifact
-  // candidate spellings. Memo keyed on searchParams identity.
-  const strikeParams = useMemo(() => searchParams.getAll('strike'), [searchParams])
+  // joined single param would be ambiguous. CONTENT-keyed, not searchParams-
+  // identity-keyed: every unrelated URL write (e.g. the settled ?round=
+  // write on pause/seek) births a fresh searchParams object, and an
+  // identity-keyed array would cascade fresh identities into struckIdx →
+  // whatIfModel → whatIfChartData → the transport's reset effect, snapping
+  // a manual round scrub back to the final round. The joined string is a
+  // primitive, so identical strike sets stay referentially stable.
+  // Delimiter is U+0000 (NUL), NOT a space — candidate names are
+  // multi-word ("DANIEL LURIE", "LONDON BREED"); a space delimiter would
+  // shatter every such name into fragments on split and silently corrupt
+  // strike matching for virtually every candidate on the ballot.
+  const strikeKey = searchParams.getAll('strike').join('\u0000')
+  const strikeParams = useMemo(
+    () => (strikeKey ? strikeKey.split('\u0000') : []),
+    [strikeKey],
+  )
   // URL-level lens intent — unknown/unshipped values degrade to null.
   // Whether it's SHOWN is gated further down (`activeLens`) on CVR
   // availability + Time Machine.
