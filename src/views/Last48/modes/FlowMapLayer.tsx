@@ -19,6 +19,7 @@ import { useChronologicalReveal, hashId } from '@/hooks/useChronologicalReveal'
 import type { NormalizedEvent, DatasetId } from '@/types/last48'
 import { LAST48_DATASETS } from '@/types/last48'
 import { useAppStore } from '@/stores/appStore'
+import { mixHex } from '@/utils/colorMix'
 
 // Inter-sweep buffer — once stream N completes, wait this long before
 // stream N+1 is allowed to start. Gives the eye time to register "stream 1
@@ -97,29 +98,6 @@ const LATENCY_BASELINE_MS: Record<DatasetId, number> = {
   '911-realtime':       30 * 60 * 1000,
   'fire-ems-dispatch': 12 * 60 * 60 * 1000,
   '311-cases':         15 * 60 * 60 * 1000,
-}
-
-function hexToRgb(hex: string): [number, number, number] {
-  const h = hex.replace('#', '')
-  return [
-    parseInt(h.slice(0, 2), 16),
-    parseInt(h.slice(2, 4), 16),
-    parseInt(h.slice(4, 6), 16),
-  ]
-}
-
-function rgbToHex(r: number, g: number, b: number): string {
-  return '#' + [r, g, b].map((c) => Math.round(c).toString(16).padStart(2, '0')).join('')
-}
-
-function mixHex(a: string, b: string, t: number): string {
-  const [ar, ag, ab] = hexToRgb(a)
-  const [br, bg, bb] = hexToRgb(b)
-  return rgbToHex(
-    ar + (br - ar) * t,
-    ag + (bg - ag) * t,
-    ab + (bb - ab) * t,
-  )
 }
 
 /**
