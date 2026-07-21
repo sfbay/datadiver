@@ -80,7 +80,7 @@ export interface RCVCandidateRound {
   percentage: number
   transfer: number
   isEliminated: boolean // eliminated IN this round
-  isLeader: boolean
+  isLeader: boolean // the EVENTUAL WINNER's row, flagged in EVERY round (not the round's vote leader — D11 2024: Chen trails R1–R5 yet carries it)
 }
 
 // ── CVR Ballot Artifacts ────────────────────────────────────────────
@@ -97,7 +97,11 @@ export interface CVRBallotArtifact {
    *  keys match. */
   candidates: string[]
   /** Emitted-geometry id strings ("1101"), sorted ascending. Includes the
-   *  SOV-withheld precincts — their ballots are in the public CVR. */
+   *  SOV-withheld precincts — their ballots are in the public CVR. Races
+   *  with precinct-unattributable ballots (CVR `PrecinctPortionId: 0` — 3
+   *  poll ballots in 20241105) also carry the sentinel id "0000" (sorts
+   *  first, joins no geometry, not in sovSuppressed); see
+   *  UNATTRIBUTED_PRECINCT in scripts/build-cvr-ballots.ts. */
   precincts: string[]
   /** Subset of precincts with no _turnout/SOV row (13 for 20241105).
    *  Derived from data, never hardcoded. */

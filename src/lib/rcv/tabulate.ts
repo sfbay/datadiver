@@ -1,5 +1,7 @@
-import type { RCVCandidateRound, RCVContest, RCVRound } from '@/types/elections'
-import { OVERVOTE_TERMINATOR } from '@/types/elections'
+// Relative import (not `@/`): scripts/build-cvr-ballots.ts imports this module
+// under `npx tsx`, which resolves no tsconfig path aliases (alerts-lib precedent).
+import type { RCVCandidateRound, RCVContest, RCVRound } from '../../types/elections'
+import { OVERVOTE_TERMINATOR } from '../../types/elections'
 import type { DecodedBallots } from './ballots'
 
 export const ASSIGN_EXHAUSTED = -1
@@ -90,16 +92,19 @@ export function tabulate(
     }
     const continuingTotal = votes.reduce((s, v) => s + v, 0)
     const aliveIdx = rosterIdx.filter((i) => alive[i])
-    let maxVotes = 0
-    for (const i of aliveIdx) if (votes[i] > maxVotes) maxVotes = votes[i]
 
+    // isLeader is stamped AFTER the loop: in the certified round reports it
+    // marks the EVENTUAL WINNER's row in every round, not the round's vote
+    // leader (SF's pages flag the winner's column throughout — D11 2024:
+    // Chen trails Lai R1–R5 yet carries the flag; D5 2024 same shape.
+    // Gate A pins this against all 10 committed races).
     const rows: RCVCandidateRound[] = rosterIdx.map((i) => ({
       name: meta.candidates[i],
       votes: votes[i],
       percentage: continuingTotal > 0 ? Math.round((votes[i] / continuingTotal) * 10000) / 10000 : 0,
       transfer: 0,
       isEliminated: false,
-      isLeader: maxVotes > 0 && votes[i] === maxVotes,
+      isLeader: false,
     }))
     rounds.push({ round: roundNum, candidates: rows, continuingTotal, exhausted, overvotes: overvoted, blanks: blank })
     assignments.push({ round: roundNum, groups: Int16Array.from(assign) })
@@ -143,6 +148,11 @@ export function tabulate(
 
   const last = rounds[rounds.length - 1]
   const winnerRow = [...last.candidates].sort((a, b) => b.votes - a.votes)[0]
+  if (winnerRow && winnerRow.votes > 0) {
+    for (const round of rounds) {
+      for (const row of round.candidates) row.isLeader = row.name === winnerRow.name
+    }
+  }
   const contest: RCVContest = {
     raceId: meta.raceId,
     title: meta.title,

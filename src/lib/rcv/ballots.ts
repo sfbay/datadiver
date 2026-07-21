@@ -1,4 +1,6 @@
-import { OVERVOTE_TERMINATOR, type CVRBallotArtifact } from '@/types/elections'
+// Relative import (not `@/`): scripts/build-cvr-ballots.ts imports this module
+// under `npx tsx`, which resolves no tsconfig path aliases (alerts-lib precedent).
+import { OVERVOTE_TERMINATOR, type CVRBallotArtifact } from '../../types/elections'
 
 export interface DecodedBallots {
   candidateCount: number
