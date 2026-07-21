@@ -416,7 +416,10 @@ export interface WhatIfResult {
 }
 export function tabulateWhatIf(
   ballots: DecodedBallots,
-  meta: { raceId: string; title: string; candidates: string[] },
+  // `precincts` amended at PR 3 plan time: changedPrecincts speaks labels,
+  // and DecodedBallots is label-free by design — the meta carries the
+  // artifact's parallel label array.
+  meta: { raceId: string; title: string; candidates: string[]; precincts: string[] },
   struck: readonly number[],
   baseline: TabulationOutput,
 ): WhatIfResult
