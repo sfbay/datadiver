@@ -48,6 +48,7 @@ import NeighborhoodElectionPanel from './panels/NeighborhoodElectionPanel'
 import PrecinctDetailPanel from './panels/PrecinctDetailPanel'
 import NeighborhoodsSidebarContent from './panels/NeighborhoodsSidebarContent'
 import CoalitionPanel from './panels/CoalitionPanel'
+import WhatIfPanel from './panels/WhatIfPanel'
 
 type MapMode = 'results' | 'turnout' | 'margin'
 type SidebarTab = 'races' | 'neighborhoods' | 'measures'
@@ -1210,6 +1211,9 @@ export default function Elections() {
                     {rcvCollapsed && activeLens === 'coalition' && (
                       <> &middot; COALITION{coalitionFocus ? <> &middot; {coalitionFocus.display}</> : null}</>
                     )}
+                    {rcvCollapsed && activeLens === 'whatif' && (
+                      <> &middot; WHAT-IF &middot; {struckIdx.length} removed</>
+                    )}
                   </p>
                   {/* View toggle — hidden while minimized (the chip stays a
                       one-line summary) AND while a lens is active (Flow is
@@ -1285,6 +1289,19 @@ export default function Elections() {
                         />
                       ) : (
                         <p className="text-micro text-slate-400 px-2 py-3">Loading ballots…</p>
+                      )
+                    case 'whatif':
+                      return cvrArtifact ? (
+                        <WhatIfPanel
+                          artifact={cvrArtifact}
+                          candidateColors={candidateColors}
+                          struckIdx={struckIdx}
+                          onSetStrikes={setStrikes}
+                          chartData={whatIfChartData}
+                          transport={whatIfTransport}
+                        />
+                      ) : (
+                        <p className="text-micro text-slate-400 px-2 py-3">Loading ballots&hellip;</p>
                       )
                     default:
                       return rcvViewMode === 'rounds' ? (
