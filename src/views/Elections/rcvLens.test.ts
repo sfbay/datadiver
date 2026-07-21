@@ -6,8 +6,12 @@ describe('parseLens', () => {
     expect(parseLens('replay')).toBe('replay')
   })
 
+  it('accepts the coalition lens now that it has shipped', () => {
+    expect(parseLens('coalition')).toBe('coalition')
+  })
+
   it('degrades a known-but-unshipped lens to null (deep links degrade gracefully)', () => {
-    expect(parseLens('coalition')).toBe(null)
+    expect(parseLens('whatif')).toBe(null)
   })
 
   it('rejects garbage and null', () => {
@@ -25,5 +29,12 @@ describe('lens registry', () => {
     for (const lens of SHIPPED_LENSES) {
       expect(ALL_LENSES).toContain(lens)
     }
+  })
+
+  // Pins the flip as a conscious act: this test forces a deliberate edit
+  // whenever a lens ships or unships, rather than a registry change sliding
+  // through unnoticed.
+  it('SHIPPED_LENSES is exactly replay + coalition', () => {
+    expect(SHIPPED_LENSES).toEqual(['replay', 'coalition'])
   })
 })

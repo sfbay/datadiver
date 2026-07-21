@@ -17,6 +17,16 @@ interface PrecinctDetailPanelProps {
   /** Clean candidate name currently in FOCUS mode, or null. */
   focusedCandidate: string | null
   onFocusCandidate: (name: string | null) => void
+  /** COALITION lens: this precinct's next-choice composition for the
+   *  focused candidate's cohort. Segment names are PRE-DISPLAYED
+   *  (leaderDisplayName'd) and colors PRE-RESOLVED — rendered verbatim. */
+  coalition?: {
+    focusDisplay: string
+    cohort: number
+    segments: { name: string; votes: number; color: string }[]
+    none: number
+    overvote: number
+  }
 }
 
 /** Compact top-right precinct card (house DetailPanelShell pattern). Fetches
@@ -24,7 +34,7 @@ interface PrecinctDetailPanelProps {
  *  Footer discloses the suppressed-precinct residual, data-driven. */
 export default function PrecinctDetailPanel({
   label, dateCode, race, candidateColors, geometry, onSelectNeighborhood, onClose,
-  focusedCandidate, onFocusCandidate,
+  focusedCandidate, onFocusCandidate, coalition,
 }: PrecinctDetailPanelProps) {
   const { data: turnoutRaw } = usePrecinctTurnout(label ? dateCode : null)
   const turnout = turnoutRaw?.dateCode === dateCode ? turnoutRaw : null
@@ -132,6 +142,44 @@ export default function PrecinctDetailPanel({
             <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
               {toSentenceCase(race.title)}
             </p>
+            {coalition && (
+              <div className="mt-3">
+                <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-1">
+                  ── WHERE {coalition.focusDisplay.toUpperCase()} VOTERS WENT NEXT
+                </p>
+                <p className="text-nano text-slate-400 mb-1.5">
+                  {coalition.cohort.toLocaleString()} ballots ranked {coalition.focusDisplay} first here
+                </p>
+                {/* single stacked composition bar — RCVComposition segment idiom */}
+                <div className="h-[18px] rounded overflow-hidden flex w-full">
+                  {coalition.segments.map((s) => (
+                    <div
+                      key={s.name}
+                      className="h-full flex-shrink-0"
+                      title={`${s.name} — ${s.votes.toLocaleString()}`}
+                      style={{ width: `${(s.votes / coalition.cohort) * 100}%`, background: s.color, opacity: 0.92 }}
+                    />
+                  ))}
+                  {(coalition.none + coalition.overvote) > 0 && (
+                    <div
+                      className="h-full flex-shrink-0"
+                      title={`No next choice — ${(coalition.none + coalition.overvote).toLocaleString()}`}
+                      style={{ width: `${((coalition.none + coalition.overvote) / coalition.cohort) * 100}%`, background: '#a8926a', opacity: 0.55 }}
+                    />
+                  )}
+                </div>
+                {/* top-3 rows beneath, micro register */}
+                {coalition.segments.slice(0, 3).map((s) => (
+                  <div key={s.name} className="flex items-center gap-1.5 mt-1">
+                    <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: s.color }} />
+                    <span className="text-micro flex-1 truncate">{s.name}</span>
+                    <span className="text-nano font-mono text-slate-400 tabular-nums">
+                      {Math.round((s.votes / coalition.cohort) * 100)}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
             {raceLoading && !raceRow && (
               <p className="text-micro text-slate-500">Loading votes…</p>
             )}

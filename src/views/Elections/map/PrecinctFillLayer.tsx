@@ -20,6 +20,11 @@ interface PrecinctFillLayerProps {
    *  (preempts mode/focus inside the join). Undefined → base mode, so the
    *  map keeps painting progressively while the CVR artifact loads. */
   replay?: BuildPrecinctOptions['replay']
+  /** COALITION lens — when set, the fill is lens-driven dominant-next-choice
+   *  paint (preempts mode/focus/replay inside the join). Undefined → falls
+   *  through to base mode/replay, so the map keeps painting progressively
+   *  while the CVR artifact or second-choice math is still loading. */
+  coalition?: BuildPrecinctOptions['coalition']
   /** Era-transition multiplier, 0..1 — multiplies every feature's opacity. */
   fade: number
   /** Mapbox paint transition for the fade (0 under reduced motion). */
@@ -30,16 +35,16 @@ interface PrecinctFillLayerProps {
  *  (house rule for dense fills); hairline outline from the underlay idiom. */
 export default function PrecinctFillLayer({
   map, bundle, geometry, mode, colorMap, raceIsProp, raceIsRCV,
-  selectedNeighborhood, focusCandidate, replay, fade, fadeMs,
+  selectedNeighborhood, focusCandidate, replay, coalition, fade, fadeMs,
 }: PrecinctFillLayerProps) {
   const isDarkMode = useAppStore((s) => s.isDarkMode)
 
   const geojson = useMemo((): GeoJSON.FeatureCollection | null => {
     if (!bundle || !geometry) return null
     return buildPrecinctFeatures({
-      bundle, geometry, mode, colorMap, raceIsProp, raceIsRCV, selectedNeighborhood, focusCandidate, replay,
+      bundle, geometry, mode, colorMap, raceIsProp, raceIsRCV, selectedNeighborhood, focusCandidate, replay, coalition,
     })
-  }, [bundle, geometry, mode, colorMap, raceIsProp, raceIsRCV, selectedNeighborhood, focusCandidate, replay])
+  }, [bundle, geometry, mode, colorMap, raceIsProp, raceIsRCV, selectedNeighborhood, focusCandidate, replay, coalition])
 
   const layers = useMemo((): mapboxgl.AnyLayer[] => [
     {
