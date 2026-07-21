@@ -352,6 +352,32 @@ export default function Elections() {
     ? { rows: replayRows, round: rcvTransport.activeRound + 1, totalRounds: rcvData.rounds.length, lift: rcvTransport.inTransferWindow }
     : undefined
 
+  // Legend's replay-variant disclosure state: top-5 continuing candidates +
+  // citywide drain (how much of round 1's continuing count no longer holds
+  // a live vote) + the withheld-precinct count from the CVR artifact's own
+  // reconciliation gate. Built off the committed rcvData (not the CVR
+  // replay model) — the legend speaks to the same certified round numbers
+  // the rounds chart does.
+  const replayLegendState = useMemo(() => {
+    if (activeLens !== 'replay' || !rcvData) return undefined
+    const round = rcvData.rounds[rcvTransport.activeRound]
+    const round1 = rcvData.rounds[0]
+    if (!round || !round1) return undefined
+    const continuing = round.candidates
+      .filter((c) => c.votes > 0 && !c.isEliminated)
+      .sort((a, b) => b.votes - a.votes)
+      .slice(0, 5)
+      .map((c) => ({ name: c.name, votes: c.votes, pct: c.percentage }))
+    const drainPct = ((round.exhausted + round.overvotes - round1.overvotes) / round1.continuingTotal) * 100
+    return {
+      round: rcvTransport.activeRound + 1,
+      totalRounds: rcvData.rounds.length,
+      continuing,
+      drainPct,
+      withheldCount: cvrArtifact?.sovSuppressed.length ?? 0,
+    }
+  }, [activeLens, rcvData, rcvTransport.activeRound, cvrArtifact])
+
   // Race still loading (or 404 → error) → race: null → the join paints turnout
   // for that beat instead of a blank. Progressive, never empty.
   const nextBundle = useMemo((): PaintBundle | null => {
@@ -919,6 +945,7 @@ export default function Elections() {
                 focusedCandidate={activeFocusCandidate}
                 focusExtent={focusExtent}
                 onFocusCandidate={setFocusedCandidate}
+                replayState={activeLens === 'replay' ? replayLegendState : undefined}
               />
             )}
           </MapView>
