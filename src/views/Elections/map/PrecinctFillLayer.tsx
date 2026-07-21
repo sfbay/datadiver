@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import mapboxgl from 'mapbox-gl'
 import { useMapLayer } from '@/hooks/useMapLayer'
 import { useAppStore } from '@/stores/appStore'
-import { buildPrecinctFeatures, type PaintBundle, type PrecinctMapMode } from './precinctJoin'
+import { buildPrecinctFeatures, type BuildPrecinctOptions, type PaintBundle, type PrecinctMapMode } from './precinctJoin'
 
 interface PrecinctFillLayerProps {
   map: mapboxgl.Map | null
@@ -16,6 +16,10 @@ interface PrecinctFillLayerProps {
   /** Clean candidate name — when set, results mode paints a continuous
    *  single-hue support ramp for this candidate instead of the leader steps. */
   focusCandidate: string | null
+  /** REPLAY lens — when set, the fill is lens-driven per-round paint
+   *  (preempts mode/focus inside the join). Undefined → base mode, so the
+   *  map keeps painting progressively while the CVR artifact loads. */
+  replay?: BuildPrecinctOptions['replay']
   /** Era-transition multiplier, 0..1 — multiplies every feature's opacity. */
   fade: number
   /** Mapbox paint transition for the fade (0 under reduced motion). */
@@ -26,16 +30,16 @@ interface PrecinctFillLayerProps {
  *  (house rule for dense fills); hairline outline from the underlay idiom. */
 export default function PrecinctFillLayer({
   map, bundle, geometry, mode, colorMap, raceIsProp, raceIsRCV,
-  selectedNeighborhood, focusCandidate, fade, fadeMs,
+  selectedNeighborhood, focusCandidate, replay, fade, fadeMs,
 }: PrecinctFillLayerProps) {
   const isDarkMode = useAppStore((s) => s.isDarkMode)
 
   const geojson = useMemo((): GeoJSON.FeatureCollection | null => {
     if (!bundle || !geometry) return null
     return buildPrecinctFeatures({
-      bundle, geometry, mode, colorMap, raceIsProp, raceIsRCV, selectedNeighborhood, focusCandidate,
+      bundle, geometry, mode, colorMap, raceIsProp, raceIsRCV, selectedNeighborhood, focusCandidate, replay,
     })
-  }, [bundle, geometry, mode, colorMap, raceIsProp, raceIsRCV, selectedNeighborhood, focusCandidate])
+  }, [bundle, geometry, mode, colorMap, raceIsProp, raceIsRCV, selectedNeighborhood, focusCandidate, replay])
 
   const layers = useMemo((): mapboxgl.AnyLayer[] => [
     {
