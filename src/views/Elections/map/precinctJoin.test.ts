@@ -1,7 +1,9 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import type { PrecinctRaceFile, PrecinctTurnoutFile } from '@/types/elections'
-import { buildPrecinctFeatures, candidateShares } from './precinctJoin'
+import type { ReplayPaintRow } from '@/lib/rcv/replay'
+import { buildPrecinctFeatures, candidateShares, FLIP_LIFT } from './precinctJoin'
+import { leaderOf, leaderShareQuartiles } from './precinctPaint'
 
 // Real committed files as fixtures — the join is only as good as its
 // behavior against the actual emitted data (paths are repo-root relative;
@@ -138,6 +140,114 @@ describe('buildPrecinctFeatures — leader view now spreads across quartile step
     })
     const distinctOpacities = new Set(fc.features.map((f) => f.properties?.fillOpacity))
     expect(distinctOpacities.size).toBeGreaterThanOrEqual(3)
+  })
+})
+
+describe('buildPrecinctFeatures — replay lens (leader steps + drain + flip lift)', () => {
+  const harrisColor = '#616a96'
+  const trumpColor = '#963e30'
+  const colorMap = new Map([
+    ['KAMALA D. HARRIS / TIM WALZ', harrisColor],
+    ['DONALD J. TRUMP / JD VANCE', trumpColor],
+  ])
+
+  const toReplayRow = (raceRow: { votes: Record<string, number>; total: number }): ReplayPaintRow => ({
+    votes: raceRow.votes,
+    total: raceRow.total,
+    drainShare: 0,
+    flipped: false,
+  })
+
+  // Real 2024 president votes drive the replay rows — same leader/share
+  // spread the existing quartile-fix test relies on, just fed through the
+  // replay lens instead of `bundle.race`.
+  const fullReplayRows: Record<string, ReplayPaintRow> = Object.fromEntries(
+    Object.entries(president2024.precincts).map(([label, row]) => [label, toReplayRow(row)]),
+  )
+
+  // Quartiles are now passed IN (fixed per race, spec §4.3) — computed here
+  // the same way Elections does it: leader shares of the round-1 rows over
+  // turnout-joined labels.
+  const quartilesOf = (rows: Record<string, ReplayPaintRow>): [number, number, number] | null => {
+    const shares: number[] = []
+    for (const [label, row] of Object.entries(turnout2024.precincts)) {
+      if (row.unmapped) continue
+      const replayRow = rows[label]
+      if (!replayRow || replayRow.total === 0) continue
+      const leader = leaderOf(replayRow.votes)
+      if (leader) shares.push(leader.share)
+    }
+    return leaderShareQuartiles(shares)
+  }
+  const fixedQuartiles = quartilesOf(fullReplayRows)
+
+  const buildWithReplay = (
+    rows: Record<string, ReplayPaintRow>,
+    lift = false,
+    quartiles: [number, number, number] | null = fixedQuartiles,
+  ) =>
+    buildPrecinctFeatures({
+      ...base,
+      colorMap,
+      bundle: { dateCode: '20241105', era: 'prec_2022', turnout: turnout2024, race: president2024 },
+      geometry: geo2022,
+      mode: 'results',
+      focusCandidate: 'DONALD J. TRUMP / JD VANCE',
+      replay: { rows, quartiles, round: 3, totalRounds: 5, lift },
+    })
+
+  it('preempts focusCandidate — precinct 1101 (Harris-led) paints Harris color, not the focus hue', () => {
+    const fc = buildWithReplay(fullReplayRows)
+    const f = fc.features.find((x) => x.properties?.label === '1101')
+    // Under focus mode EVERY feature paints the focus (Trump) hue regardless
+    // of who actually leads there — painting Harris's color at a Harris-led
+    // precinct is only possible if replay preempted focus mode.
+    expect(f?.properties?.fillColor).toBe(harrisColor)
+    expect(f?.properties?.fillColor).not.toBe(trumpColor)
+  })
+
+  it('a turnout label missing from replay.rows is skipped (unpainted)', () => {
+    const rest = { ...fullReplayRows }
+    delete rest['1101']
+    const fc = buildWithReplay(rest)
+    expect(fc.features.some((f) => f.properties?.label === '1101')).toBe(false)
+    expect(fc.features.some((f) => f.properties?.label === '1102')).toBe(true) // everything else still paints
+  })
+
+  it('flipped && lift adds FLIP_LIFT capped at MAX_OPACITY (0.8)', () => {
+    const landslideRows: Record<string, ReplayPaintRow> = {
+      ...fullReplayRows,
+      '1101': { votes: { 'LANDSLIDE CANDIDATE': 99, OTHER: 1 }, total: 100, drainShare: 0, flipped: true },
+    }
+    const unlifted = buildWithReplay(landslideRows, false)
+    const lifted = buildWithReplay(landslideRows, true)
+    const unliftedOpacity = unlifted.features.find((x) => x.properties?.label === '1101')?.properties?.fillOpacity
+    const liftedOpacity = lifted.features.find((x) => x.properties?.label === '1101')?.properties?.fillOpacity
+    expect(unliftedOpacity).toBe(0.7) // top decisiveness step, pre-lift
+    expect(liftedOpacity).toBe(0.8) // 0.7 + FLIP_LIFT(0.12) = 0.82, capped at MAX_OPACITY
+    expect(liftedOpacity).toBeLessThanOrEqual(0.8)
+  })
+
+  it('respects the quartiles passed IN — the same share lands in different steps under different arrays', () => {
+    // Precinct 1101: Harris leads with a 72% share, drainShare 0.
+    const low = buildWithReplay(fullReplayRows, false, [0.1, 0.2, 0.3])
+    const high = buildWithReplay(fullReplayRows, false, [0.8, 0.9, 0.95])
+    const opacityAt = (fc: GeoJSON.FeatureCollection) =>
+      fc.features.find((x) => x.properties?.label === '1101')?.properties?.fillOpacity
+    expect(opacityAt(low)).toBe(0.7) // 0.72 ≥ q[2]=0.3 → top step
+    expect(opacityAt(high)).toBe(0.25) // 0.72 < q[0]=0.8 → bottom step
+  })
+
+  it('tooltip phrase composes as «Name» — NN% of ballots still counting here; votes = the turnout row\'s ballots cast', () => {
+    const fc = buildWithReplay(fullReplayRows)
+    const f = fc.features.find((x) => x.properties?.label === '1101')
+    expect(f?.properties?.tipLeaderName).toBe('Harris')
+    expect(f?.properties?.tipLeaderPhrase).toBe('72% of ballots still counting here')
+    // «votes» renders as "votes cast" in the tooltip template — it must
+    // carry the turnout row's ballots (660), NOT the round's continuing
+    // total (640); the leader phrase is the "still counting" carrier.
+    expect(f?.properties?.votes).toBe(turnout2024.precincts['1101'].ballots)
+    expect(f?.properties?.votes).toBe(660)
   })
 })
 

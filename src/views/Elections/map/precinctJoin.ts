@@ -8,6 +8,7 @@
  *     414 in the consolidated 2025 special — the CoverageChip explains it)
  */
 import type { PrecinctEra, PrecinctRaceFile, PrecinctTurnoutFile } from '@/types/elections'
+import type { ReplayPaintRow } from '@/lib/rcv/replay'
 import { cleanCandidateName, leaderDisplayName, nhoodKey, sharePhrase, yesShareOf } from '@/utils/electionData'
 import {
   focusFill,
@@ -15,6 +16,7 @@ import {
   leaderShareQuartiles,
   marginFill,
   propFill,
+  replayFill,
   resultsFill,
   turnoutFill,
   type Fill,
@@ -41,9 +43,24 @@ export interface BuildPrecinctOptions {
   /** Clean candidate name — when set, results mode paints a continuous
    *  single-hue support ramp for this candidate instead of the leader steps. */
   focusCandidate: string | null
+  /** REPLAY lens — when set, the fill is lens-driven: painted from these
+   *  per-precinct round rows instead of `bundle.race`/`mode`. Preempts
+   *  `focusCandidate` — a deep link carrying both paints replay. */
+  replay?: {
+    rows: Record<string, ReplayPaintRow>
+    /** FIXED per race (spec §4.3): computed ONCE from round-1 rows over
+     *  painted precincts by the caller and held constant across rounds —
+     *  other precincts moving the yardstick would read as phantom motion;
+     *  fixed cutpoints make late-round firming a true consolidation signal. */
+    quartiles: [number, number, number] | null
+    round: number
+    totalRounds: number
+    lift: boolean
+  }
 }
 
 const SELECT_LIFT = 0.1
+export const FLIP_LIFT = 0.12
 const MAX_OPACITY = 0.8
 
 /** Per-precinct share of one candidate (clean name) across a race file,
@@ -81,10 +98,13 @@ export function buildPrecinctFeatures(opts: BuildPrecinctOptions): GeoJSON.Featu
   // Results mode (non-prop) precomputes ONE of two things before the main
   // loop: either the focused candidate's per-precinct share map (focus mode)
   // or the race-relative leader-share quartiles (leader-steps mode). Never
-  // both — focus mode doesn't use resultsFill/quartiles at all.
+  // both — focus mode doesn't use resultsFill/quartiles at all. Skipped
+  // entirely when opts.replay is set — REPLAY preempts fill selection in
+  // the main loop below and never reads `focus`/`quartiles` (its quartiles
+  // arrive pre-computed in opts.replay.quartiles, fixed per race).
   let quartiles: [number, number, number] | null = null
   let focus: { byLabel: Map<string, number>; extent: [number, number] | null } | null = null
-  if (mode === 'results' && bundle.race && !raceIsProp) {
+  if (!opts.replay && mode === 'results' && bundle.race && !raceIsProp) {
     if (focusCandidate) {
       focus = candidateShares(bundle.race, focusCandidate)
     } else {
@@ -109,7 +129,22 @@ export function buildPrecinctFeatures(opts: BuildPrecinctOptions): GeoJSON.Featu
     let tipLeaderPhrase = ''
     let votes = row.ballots
 
-    if (mode === 'turnout' || !bundle.race) {
+    if (opts.replay) {
+      const replayRow = opts.replay.rows[label]
+      if (!replayRow || replayRow.total === 0) continue
+      const leader = leaderOf(replayRow.votes)
+      if (!leader) continue
+      fill = replayFill(leader, colorMap, opts.replay.quartiles, replayRow.drainShare)
+      if (replayRow.flipped && opts.replay.lift) {
+        fill = { ...fill, opacity: Math.min(MAX_OPACITY, fill.opacity + FLIP_LIFT) }
+      }
+      tipLeaderName = leaderDisplayName(leader.name)
+      tipLeaderPhrase = `${Math.round(leader.share * 100)}% of ballots still counting here`
+      // votes stays row.ballots — the tooltip template renders «votes» as
+      // "votes cast", so it must carry the turnout row's ballots-cast, not
+      // the round's continuing total (the leader phrase above is the
+      // "still counting" carrier).
+    } else if (mode === 'turnout' || !bundle.race) {
       fill = turnoutFill(row.turnout)
     } else if (!raceRow) {
       continue // no votes reported for this race here — unpainted, honest

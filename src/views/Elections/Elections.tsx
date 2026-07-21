@@ -14,8 +14,11 @@ import {
   useElectionGeo,
   useLegacyNeighborhoodGeo,
   preloadTimeMachineData,
+  useCVRManifest,
+  useCVRBallots,
 } from '@/hooks/useElectionResults'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
+import { useRcvTransport } from '@/hooks/useRcvTransport'
 import CardTray, { type CardDef } from '@/components/ui/CardTray'
 import ExportButton from '@/components/export/ExportButton'
 import { SkeletonStatCards, SkeletonSidebarRows } from '@/components/ui/Skeleton'
@@ -29,8 +32,11 @@ import BallotMeasureExplorer from '@/components/charts/BallotMeasureExplorer'
 import { useBallotPropositions } from '@/hooks/useElectionResults'
 import { toSentenceCase } from '@/utils/format'
 import { displayNhood, leaderDisplayName, nhoodKey } from '@/utils/electionData'
-import { isProposition, leaderOf } from './map/precinctPaint'
+import { isProposition, leaderOf, leaderShareQuartiles } from './map/precinctPaint'
 import { candidateShares, type PaintBundle } from './map/precinctJoin'
+import { parseLens, SHIPPED_LENSES, type RcvLens } from './rcvLens'
+import { useReplayModel } from './useReplayModel'
+import { replayPaintRows } from '@/lib/rcv/replay'
 import { useEraFadedBundle } from './map/useEraFadedBundle'
 import PrecinctFillLayer from './map/PrecinctFillLayer'
 import NeighborhoodFrameLayer from './map/NeighborhoodFrameLayer'
@@ -52,12 +58,22 @@ const FILTER_LABELS: Record<RaceFilter, string> = {
   measure: 'Propositions',
 }
 
+const LENS_LABELS: Record<RcvLens, string> = {
+  replay: 'Replay',
+  coalition: 'Coalition',
+  whatif: 'What-if',
+}
+
 export default function Elections() {
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedElection = searchParams.get('election') || null
   const selectedRaceId = searchParams.get('race') || null
   const selectedNeighborhood = searchParams.get('neighborhood') || null
   const focusedCandidate = searchParams.get('candidate') || null
+  // URL-level lens intent — unknown/unshipped values degrade to null.
+  // Whether it's SHOWN is gated further down (`activeLens`) on CVR
+  // availability + Time Machine.
+  const rcvLens = parseLens(searchParams.get('lens'))
 
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('races')
@@ -66,7 +82,6 @@ export default function Elections() {
 
   const [rcvViewMode, setRcvViewMode] = useState<'rounds' | 'flow'>('rounds')
   const [rcvCollapsed, setRcvCollapsed] = useState(false)
-  const [rcvActiveRound, setRcvActiveRound] = useState<number | undefined>(undefined)
   const [timeMachineActive, setTimeMachineActive] = useState(false)
 
   const mapMode = (searchParams.get('map_mode') as MapMode) || 'results'
@@ -86,6 +101,8 @@ export default function Elections() {
       if (!raceId) next.delete('race')
       else next.set('race', raceId)
       next.delete('candidate') // a new race has a different candidate set — focus doesn't carry over
+      next.delete('lens') // lens + round are per-race state — neither carries over
+      next.delete('round')
       return next
     }, { replace: true })
   }, [setSearchParams])
@@ -125,6 +142,32 @@ export default function Elections() {
     }, { replace: true })
   }, [setSearchParams])
 
+  const setLens = useCallback((lens: RcvLens | null) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (lens) next.set('lens', lens)
+      else next.delete('lens')
+      next.delete('round') // deleted on EVERY lens change (spec §4.1)
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
+
+  // Base-mode click while a lens is active EXITS the lens and activates that
+  // mode in ONE search-params write — two sequential setSearchParams calls in
+  // the same tick each compute from the same pre-click params, so the second
+  // would clobber the first (the functional updater reads the hook's memoized
+  // params, not same-tick writes — see [[react-router-redirect-clobber]]).
+  const exitLensToMode = useCallback((mode: MapMode) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('lens')
+      next.delete('round')
+      if (mode === 'results') next.delete('map_mode')
+      else next.set('map_mode', mode)
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
+
   // ── Data loading ──────────────────────────────────────────────────
   const { data: manifest, isLoading: manifestLoading, error: manifestError } = useElectionManifest()
 
@@ -154,17 +197,81 @@ export default function Elections() {
     return results.races[0] ?? null
   }, [results, selectedRaceId])
 
+  // ── REPLAY lens availability ───────────────────────────────────────
+  // `?lens=` is honored only when the active race has a committed CVR
+  // artifact (manifest `races` is a Record keyed by race id) and Time
+  // Machine is off. The lens PARAM survives suspension — TM entry
+  // suspends the lens, TM exit restores it.
+  const { data: cvrManifest } = useCVRManifest(activeElection)
+  // dateCode identity guard: useStaticJSON keeps the PREVIOUS election's
+  // manifest on a 404, which would leave a phantom Replay strip on another
+  // election's RCV races after switching.
+  const lensAvailable = Boolean(
+    activeRace?.isRCV &&
+      cvrManifest?.dateCode === activeElection &&
+      cvrManifest?.races[activeRace.id] &&
+      !timeMachineActive,
+  )
+  const activeLens = lensAvailable ? rcvLens : null
+
   // RCV data for the active race
   const rcvSlug = activeRace?.isRCV ? activeRace.id : null
   const { data: rcvData } = useRCVRounds(activeElection, rcvSlug)
 
-  // Each contest opens on round 1 — clear the controlled round when the
-  // race (or election) changes, or the previous contest's position leaks
-  // through the `controlledRound ?? internalRound` fallback and the new
-  // chart opens mid-story (clamped to ITS final round, pre-fix behavior).
+  // `?round=` (1-based) seeds the transport ONCE at mount, and ONLY when a
+  // shipped lens is in the URL too — a bare `?round=` must not defeat the
+  // chart's opens-on-round-1 rule. Ref-initializer pattern: computed on the
+  // first render, then cleared once the first contest consumes it (below)
+  // so a race/election switch never re-applies the seed.
+  const initialRoundRef = useRef<{ round: number | undefined } | null>(null)
+  if (initialRoundRef.current === null) {
+    const parsed = Number.parseInt(searchParams.get('round') ?? '', 10)
+    initialRoundRef.current = {
+      round: rcvLens !== null && Number.isFinite(parsed) && parsed >= 1 ? parsed - 1 : undefined,
+    }
+  }
+
+  // Shared transport clock for the RCV round chart + replay map — resets to
+  // round 1 on a new rcvData identity (a race/election switch) internally.
+  const rcvTransport = useRcvTransport(rcvData ?? null, {
+    initialRound: initialRoundRef.current.round,
+  })
+
+  // The transport re-reads its opts on every rcvData identity change — clear
+  // the mount seed once the FIRST contest has consumed it, so later race
+  // switches open on round 1 as always. (The transport's own reset effect is
+  // registered earlier in hook order, so it reads this render's still-seeded
+  // opts before this clears the ref for subsequent renders.)
   useEffect(() => {
-    setRcvActiveRound(undefined)
-  }, [activeElection, rcvSlug])
+    if (rcvData) initialRoundRef.current = { round: undefined }
+  }, [rcvData])
+
+  // Settled-position `?round=` writes — the URL records where the replay is
+  // PARKED, never every autoplay frame. Lens off → a lingering `?round=` is
+  // meaningless; drop it. searchParamsRef keeps the has/value checks out of
+  // the dep list so this never fires a same-URL replace navigation.
+  const searchParamsRef = useRef(searchParams)
+  searchParamsRef.current = searchParams
+  useEffect(() => {
+    if (activeLens === 'replay') {
+      // totalRounds 0 = contest not loaded (or 404) — no position to record.
+      if (rcvTransport.isPlaying || rcvTransport.totalRounds === 0) return
+      const value = String(rcvTransport.activeRound + 1)
+      if (searchParamsRef.current.get('round') === value) return
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev)
+        next.set('round', value)
+        return next
+      }, { replace: true })
+      return
+    }
+    if (!searchParamsRef.current.has('round')) return
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('round')
+      return next
+    }, { replace: true })
+  }, [rcvTransport.activeRound, rcvTransport.isPlaying, rcvTransport.totalRounds, activeLens, setSearchParams])
 
   // ── Ballot measures ────────────────────────────────────────────────
   const { data: ballotMeasures } = useBallotPropositions()
@@ -227,6 +334,85 @@ export default function Elections() {
       ? raceFileRaw
       : null
 
+  // ── REPLAY lens data (CVR ballots → per-round precinct paint) ──────
+  // The multi-MB artifact fetch is gated on lens ENTRY (gate the fetch,
+  // not just the DOM); identity-guard against useStaticJSON's
+  // stale-previous-data refetch window, same as raceFile above.
+  const { data: cvrArtifactRaw } = useCVRBallots(
+    displayDateCode, activeRace?.id ?? null, activeLens === 'replay',
+  )
+  const cvrArtifact =
+    cvrArtifactRaw?.dateCode === displayDateCode && cvrArtifactRaw?.raceId === activeRace?.id
+      ? cvrArtifactRaw : null // stale-during-refetch identity guard
+  const replayModel = useReplayModel(cvrArtifact, rcvData ?? null)
+  const replayRows = useMemo(
+    () => replayModel && cvrArtifact
+      ? replayPaintRows(replayModel.states, rcvTransport.activeRound, cvrArtifact)
+      : null,
+    [replayModel, cvrArtifact, rcvTransport.activeRound],
+  )
+  // Replay quartile cutpoints are FIXED per race (spec §4.3): computed ONCE
+  // from ROUND-1 rows over painted (turnout-joined) precincts and held
+  // constant as the transport advances. Per-round recomputation would let
+  // other precincts move the yardstick — reads as phantom motion; fixed
+  // means late-round firming is a true consolidation signal. Same
+  // leader-shares loop shape as the join's results-mode precompute.
+  const replayQuartiles = useMemo((): [number, number, number] | null => {
+    if (!replayModel || !cvrArtifact || !turnoutFile) return null
+    const round1Rows = replayPaintRows(replayModel.states, 0, cvrArtifact)
+    const shares: number[] = []
+    for (const [label, row] of Object.entries(turnoutFile.precincts)) {
+      if (row.unmapped) continue
+      const replayRow = round1Rows[label]
+      if (!replayRow || replayRow.total === 0) continue
+      const leader = leaderOf(replayRow.votes)
+      if (leader) shares.push(leader.share)
+    }
+    return leaderShareQuartiles(shares)
+  }, [replayModel, cvrArtifact, turnoutFile])
+  // While the artifact is still loading (replayRows null) this stays
+  // undefined and the map keeps painting base mode — progressive, never
+  // blank. Memoized: an unmemoized object literal here was rebuilt on
+  // every render (any unrelated state change while the lens was active),
+  // and buildPrecinctFeatures + setData downstream re-ran on that new
+  // identity even though nothing replay-relevant had changed.
+  const replayOption = useMemo(
+    () =>
+      activeLens === 'replay' && replayRows && rcvData
+        ? { rows: replayRows, quartiles: replayQuartiles, round: rcvTransport.activeRound + 1, totalRounds: rcvData.rounds.length, lift: rcvTransport.inTransferWindow }
+        : undefined,
+    [activeLens, replayRows, replayQuartiles, rcvData, rcvTransport.activeRound, rcvTransport.inTransferWindow],
+  )
+
+  // Legend's replay-variant disclosure state: top-5 continuing candidates +
+  // citywide drain (how much of round 1's continuing count no longer holds
+  // a live vote) + the withheld-precinct count from the CVR artifact's own
+  // reconciliation gate. Built off the committed rcvData (not the CVR
+  // replay model) — the legend speaks to the same certified round numbers
+  // the rounds chart does.
+  const replayLegendState = useMemo(() => {
+    if (activeLens !== 'replay' || !rcvData) return undefined
+    const round = rcvData.rounds[rcvTransport.activeRound]
+    const round1 = rcvData.rounds[0]
+    if (!round || !round1) return undefined
+    // The full continuing-candidates count (votes > 0) — the legend's
+    // subtitle N, NOT the top-5 slice length below.
+    const continuingAll = round.candidates.filter((c) => c.votes > 0)
+    const continuing = [...continuingAll]
+      .sort((a, b) => b.votes - a.votes)
+      .slice(0, 5)
+      .map((c) => ({ name: c.name, votes: c.votes, pct: c.percentage }))
+    const drainPct = ((round.exhausted + round.overvotes - round1.overvotes) / round1.continuingTotal) * 100
+    return {
+      round: rcvTransport.activeRound + 1,
+      totalRounds: rcvData.rounds.length,
+      continuing,
+      continuingCount: continuingAll.length,
+      drainPct,
+      withheldCount: cvrArtifact?.sovSuppressed.length ?? 0,
+    }
+  }, [activeLens, rcvData, rcvTransport.activeRound, cvrArtifact])
+
   // Race still loading (or 404 → error) → race: null → the join paints turnout
   // for that beat instead of a blank. Progressive, never empty.
   const nextBundle = useMemo((): PaintBundle | null => {
@@ -255,8 +441,11 @@ export default function Elections() {
 
   // ── Candidate focus mode ────────────────────────────────────────────
   // Focus is a results-mode lens; Time Machine beats have a different
-  // candidate set per era so focus is suspended during a TM scrub.
-  const activeFocusCandidate = mapMode === 'results' && !timeMachineActive ? focusedCandidate : null
+  // candidate set per era so focus is suspended during a TM scrub. An
+  // active RCV lens preempts focus — a deep link carrying both paints
+  // replay, not the focus ramp.
+  const activeFocusCandidate =
+    mapMode === 'results' && !timeMachineActive && activeLens === null ? focusedCandidate : null
 
   const focusExtent = useMemo((): [number, number] | null => {
     if (!focusedCandidate || !raceFile) return null
@@ -495,7 +684,7 @@ export default function Elections() {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {/* Election picker */}
             {manifest && (
               <select
@@ -509,6 +698,8 @@ export default function Elections() {
                       next.delete('neighborhood')
                       next.delete('precinct')
                       next.delete('candidate')
+                      next.delete('lens')
+                      next.delete('round')
                       return next
                     },
                     { replace: true },
@@ -524,14 +715,16 @@ export default function Elections() {
               </select>
             )}
 
-            {/* Map mode toggle */}
+            {/* Map mode toggle — while a lens is active all three render
+                unhighlighted (the lens supersedes the base mode); clicking
+                one exits the lens and activates that mode in one write. */}
             <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-lg p-0.5">
               {(['results', 'turnout', 'margin'] as const).map((mode) => (
                 <button
                   key={mode}
-                  onClick={() => setMapMode(mode)}
+                  onClick={() => (activeLens !== null ? exitLensToMode(mode) : setMapMode(mode))}
                   className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all duration-200 ${
-                    mapMode === mode
+                    mapMode === mode && activeLens === null
                       ? 'bg-white dark:bg-white/[0.08] text-ink dark:text-white shadow-sm'
                       : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
                   }`}
@@ -540,6 +733,29 @@ export default function Elections() {
                 </button>
               ))}
             </div>
+
+            {/* RCV lens strip — CVR-backed lenses for the active race
+                (Replay today; coalition/what-if named but unshipped) */}
+            {lensAvailable && (
+              <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-lg p-0.5">
+                <span className="text-nano font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-500">
+                  RCV
+                </span>
+                {SHIPPED_LENSES.map((lens) => (
+                  <button
+                    key={lens}
+                    onClick={() => setLens(activeLens === lens ? null : lens)}
+                    className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all duration-200 ${
+                      activeLens === lens
+                        ? 'bg-ochre-500/15 text-ink dark:text-paper-100'
+                        : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+                    }`}
+                  >
+                    {LENS_LABELS[lens]}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Time Machine toggle */}
             <button
@@ -600,6 +816,7 @@ export default function Elections() {
               raceIsRCV={displayRace?.isRCV ?? false}
               selectedNeighborhood={selectedNeighborhood}
               focusCandidate={activeFocusCandidate}
+              replay={replayOption}
               fade={fade}
               fadeMs={fadeMs}
             />
@@ -636,8 +853,17 @@ export default function Elections() {
                 (Jesse: callout butted against the panel edge). */}
             {!isLoading && !timeMachineActive && activeRace?.isRCV && rcvData && (
               <div
-                className={`absolute bottom-6 left-5 z-10 glass-card rounded-xl ${rcvCollapsed ? 'px-3 py-2 cursor-pointer' : 'p-4'}`}
-                style={{ maxWidth: rcvCollapsed ? undefined : rcvViewMode === 'flow' ? 648 : 448 }}
+                className={`absolute bottom-6 left-5 z-10 glass-card rounded-xl max-w-[calc(100vw-2.5rem)] ${rcvCollapsed ? 'px-3 py-2 cursor-pointer' : 'p-4'}`}
+                style={{
+                  // min() keeps the viewport guard live in the expanded states
+                  // too — a plain inline maxWidth would override the class
+                  // (the DetailPanelShell precedent guard, spec §4.6).
+                  maxWidth: rcvCollapsed
+                    ? undefined
+                    : activeLens === null && rcvViewMode === 'flow'
+                      ? 'min(648px, 100vw - 2.5rem)'
+                      : 'min(448px, 100vw - 2.5rem)',
+                }}
                 onClick={rcvCollapsed ? () => setRcvCollapsed(false) : undefined}
                 title={rcvCollapsed ? 'Expand RCV panel' : undefined}
               >
@@ -647,10 +873,14 @@ export default function Elections() {
                   </span>
                   <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 flex-1">
                     {rcvData.totalRounds} Rounds &middot; Winner: {rcvData.winner.split(' ').pop()}
+                    {rcvCollapsed && activeLens === 'replay' && (
+                      <> &middot; REPLAY &middot; R{rcvTransport.activeRound + 1}/{rcvTransport.totalRounds}</>
+                    )}
                   </p>
-                  {/* View toggle — hidden while minimized; the chip stays a
-                      one-line summary. */}
-                  {!rcvCollapsed && (
+                  {/* View toggle — hidden while minimized (the chip stays a
+                      one-line summary) AND while a lens is active (Flow is
+                      round-blind; the replay arm is transport-driven). */}
+                  {!rcvCollapsed && activeLens === null && (
                     <div className="flex items-center gap-0.5 bg-slate-800/60 rounded-md p-0.5">
                       <button
                         onClick={() => setRcvViewMode('rounds')}
@@ -692,22 +922,39 @@ export default function Elections() {
                   </button>
                 </div>
 
-                {!rcvCollapsed && (rcvViewMode === 'rounds' ? (
-                  <RCVRoundChart
-                    key={`${activeElection}-${rcvData.raceId}`}
-                    rcvData={rcvData}
-                    candidateColors={candidateColors}
-                    width={400}
-                    currentRound={rcvActiveRound}
-                    onRoundChange={setRcvActiveRound}
-                  />
-                ) : (
-                  <RCVComposition
-                    rcvData={rcvData}
-                    candidateColors={candidateColors}
-                    width={600}
-                  />
-                ))}
+                {!rcvCollapsed && (() => {
+                  switch (activeLens) {
+                    case 'replay':
+                      // Lens arm: the SAME chart on the SAME shared transport
+                      // (same key — no remount on lens toggle); only the
+                      // Rounds/Flow toggle above is hidden.
+                      return (
+                        <RCVRoundChart
+                          key={`${activeElection}-${rcvData.raceId}`}
+                          rcvData={rcvData}
+                          candidateColors={candidateColors}
+                          width={400}
+                          transport={rcvTransport}
+                        />
+                      )
+                    default:
+                      return rcvViewMode === 'rounds' ? (
+                        <RCVRoundChart
+                          key={`${activeElection}-${rcvData.raceId}`}
+                          rcvData={rcvData}
+                          candidateColors={candidateColors}
+                          width={400}
+                          transport={rcvTransport}
+                        />
+                      ) : (
+                        <RCVComposition
+                          rcvData={rcvData}
+                          candidateColors={candidateColors}
+                          width={600}
+                        />
+                      )
+                  }
+                })()}
               </div>
             )}
 
@@ -742,6 +989,7 @@ export default function Elections() {
                 focusedCandidate={activeFocusCandidate}
                 focusExtent={focusExtent}
                 onFocusCandidate={setFocusedCandidate}
+                replayState={activeLens === 'replay' ? replayLegendState : undefined}
               />
             )}
           </MapView>

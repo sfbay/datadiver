@@ -17,6 +17,8 @@ import type {
   PrecinctTurnoutFile,
   PrecinctRaceFile,
   NeighborhoodResultsFile,
+  CVRBallotArtifact,
+  CVRManifest,
 } from '@/types/elections'
 
 // ── Module-level cache ──────────────────────────────────────────────
@@ -180,4 +182,20 @@ export function preloadTimeMachineData(dateCodes: string[]): void {
   void fetchJSON(ERA_GEO_URL.prec_2012).catch(() => {})
   void fetchJSON(ERA_GEO_URL.prec_2022).catch(() => {})
   void fetchJSON(LEGACY_NHOOD_GEO_URL).catch(() => {})
+}
+
+// ── CVR ballot artifacts (RCV replay lens) ──────────────────────────
+
+export function useCVRManifest(dateCode: string | null) {
+  return useStaticJSON<CVRManifest>(
+    dateCode ? `/data/elections/results/${dateCode}/cvr/_manifest.json` : null,
+  )
+}
+/** The multi-MB ballot artifact — enabled ONLY on lens entry (gate the
+ *  FETCH, not just the DOM). Callers must identity-guard (dateCode+raceId)
+ *  against the stale-previous-data window, same as usePrecinctRace. */
+export function useCVRBallots(dateCode: string | null, raceId: string | null, enabled: boolean) {
+  return useStaticJSON<CVRBallotArtifact>(
+    enabled && dateCode && raceId ? `/data/elections/results/${dateCode}/cvr/${raceId}.json` : null,
+  )
 }

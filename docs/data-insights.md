@@ -234,7 +234,46 @@ analysis needs a "preliminary, X% counted" disclosure; certified-only work carri
 of latency. CVRs unlock what no summary tier can: true transfer paths, second choices of
 never-eliminated candidates' voters, head-to-head/Condorcet checks, precinct-level round
 states, and counterfactual re-tabulation. Independent cross-check for any CVR tabulation:
-ranked.vote publishes CVR-derived reports for SF races back to 2012.
+ranked.vote publishes CVR-derived reports for SF races back to 2012 — but it **condenses
+rounds** (~4 vs SF's certified 14 for the 2024 mayor), so it cross-checks winners,
+first-choice totals, final splits, and Condorcet only, never round sequences.
+
+### Certified `isLeader` marks the EVENTUAL WINNER in every round — not the per-round max
+
+**Finding (July 21 2026, PR 1 of the CVR skin — caught by Gate A):** in SF's certified RCV
+round reports, the leader flag sits on the candidate who ultimately WINS, in **every** round,
+including rounds where they trail. D11 Nov 2024 is the proof: Chen trails Lai 8,249–8,675
+from R1 through R5 and carries the flag the whole way, winning only in R6. The mayor's race
+masked this for months — Lurie led every round, so "per-round max" and "eventual winner"
+coincided. Our tabulator (`src/lib/rcv/tabulate.ts`) implements the certified semantics
+(winner stamped across all rounds post-tabulation); a unit fixture pins a trailing-winner
+case so a regression to per-round-max fails without needing the committed artifacts. Nothing
+reader-facing consumed `isLeader` under the old assumption.
+
+### Three ballots in the certified CVR carry `PrecinctPortionId: 0` — outside every summary
+
+**Finding (July 21 2026, generator Gate B):** the certified Nov 2024 CVR contains exactly
+**3 poll ballots** whose `PrecinctPortionId` is `0` — an id absent from
+`PrecinctPortionManifest` (514 portions). They are **counted in the certified round
+reports** (the citywide grand totals reconcile only WITH them) but **excluded from both the
+precinct SOV and the neighborhood DSOV** (residual identities close only WITHOUT them). The
+CVR pipeline buckets them under a documented sentinel precinct `"0000"` that joins no
+geometry and sits outside every per-precinct gate ledger — never painted, always counted.
+Any future tool reconciling CVR↔SOV at precinct grain must expect this class of
+unattributed ballot.
+
+### The SOV zeroes whole contests in individual precincts — a second withholding mechanism
+
+**Finding (July 21 2026, generator Gate B):** beyond the 13 precincts withheld from the SOV
+entirely, SF also publishes precinct rows with a single contest **zeroed** for ballot
+secrecy: Nov 2024 has exactly one per contested supervisor race — 9306 (D3), 9735 (D7,
+which publishes a single stray Melgar vote), 1149 (D11) — where turnout shows ~758 ballots
+and the CVR carries full tallies but the SOV row reads ~0. The existing SOV pipeline never
+noticed because its gate is `precinct sums ≤ certified totals`. Frozen as
+`SOV_CONTEST_WITHHELD` in `scripts/build-cvr-ballots.ts`; the reconciliation residual
+(dsov − sov − sov-at-withheld-rows) closes exactly. Related: the SOV's citywide `Write-in`
+row counts 4 mayor marks the tabulator rejected (ambiguous/adjudicated-away write-in
+bubbles) — pinned as `SOV_WRITEIN_DELTA`.
 
 ---
 

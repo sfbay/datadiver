@@ -6,76 +6,33 @@
  * 50% threshold line marks the winning mark.
  * Vote transfer indicators show where eliminated candidates' votes went.
  */
-import { useMemo, useState, useEffect, useCallback, useRef } from 'react'
+import { useMemo, useCallback } from 'react'
 import type { RCVContest } from '@/types/elections'
 import { toSentenceCase } from '@/utils/format'
 import { computeRoundTransfers, ribbonPath, EXHAUSTED_SINK } from './rcvFlow'
-import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
+import type { RcvTransport } from '@/hooks/useRcvTransport'
 
 interface RCVRoundChartProps {
   rcvData: RCVContest
   candidateColors: Map<string, string>
   width?: number
-  /** Optional: externally controlled round (for map sync) */
-  currentRound?: number
-  onRoundChange?: (round: number) => void
+  transport: RcvTransport
 }
-
-// Autoplay dwell per displayed round. Rounds that just received transfers
-// hold ~2× longer so the redistribute→land→adopt sequence fully plays out
-// and the callout can be read; no-transfer rounds advance briskly. The
-// transfer dwell must exceed TRANSFER_WINDOW_MS (which must itself exceed
-// the adopt animation's 0.55s delay + 2.2s run) — shrinking it below that
-// advances the round mid-animation.
-const BASE_DWELL_MS = 1500
-const TRANSFER_DWELL_MS = 3400
-// How long the ribbons/glow/segment stay mounted after a forward step.
-const TRANSFER_WINDOW_MS = 3000
 
 export default function RCVRoundChart({
   rcvData,
   candidateColors,
   width = 380,
-  currentRound: controlledRound,
-  onRoundChange,
+  transport,
 }: RCVRoundChartProps) {
   const totalRounds = rcvData.rounds.length
-  // Opens on ROUND 1, not the final result — the chart's story is the
-  // redistribution; starting at the end spoils it (Jesse's feedback).
-  const [internalRound, setInternalRound] = useState(0)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [justEliminated, setJustEliminated] = useState<{ names: string[]; isBatch: boolean } | null>(null)
-  const onRoundChangeRef = useRef(onRoundChange)
-  onRoundChangeRef.current = onRoundChange
-
-  const rawRound = controlledRound ?? internalRound
-  // Clamp: a controlled round can outlive a race switch (Elections never
-  // resets it), and an index past rounds.length crashes on .candidates.
-  const activeRound = Math.min(Math.max(rawRound, 0), totalRounds - 1)
-  const setActiveRound = useCallback((r: number) => {
-    setInternalRound(r)
-    onRoundChangeRef.current?.(r)
-  }, [])
-
-  const prefersReducedMotion = usePrefersReducedMotion()
-
-  // Backward steps SNAP — no reverse flow animation (votes don't
-  // "un-transfer" in RCV; a mirrored animation would teach something
-  // false). Track direction so the ribbon layer only renders forward.
-  //
-  // Synchronous step tracking — direction must be correct on the very render
-  // where round-derived values (barW etc.) change; an effect-updated value
-  // lags one committed render and silently defeats the delayed width
-  // transition below (task review finding). React's "adjust state during
-  // render" pattern: the setState triggers an immediate re-render before
-  // commit, and the inline derivation keeps this render's value correct too.
-  const [lastStep, setLastStep] = useState<{ round: number; dir: 'forward' | 'backward' | 'none' }>({ round: activeRound, dir: 'none' })
-  if (activeRound !== lastStep.round) {
-    setLastStep({ round: activeRound, dir: activeRound > lastStep.round ? 'forward' : 'backward' })
-  }
-  const stepDirection = activeRound !== lastStep.round
-    ? (activeRound > lastStep.round ? 'forward' : 'backward')
-    : lastStep.dir
+  const activeRound = transport.activeRound
+  const isPlaying = transport.isPlaying
+  const stepDirection = transport.stepDirection
+  const prefersReducedMotion = transport.reducedMotion
+  const justEliminated = transport.justEliminatedNames.length > 0
+    ? { names: transport.justEliminatedNames, isBatch: transport.isBatch }
+    : null
 
   // Longer than any realistic ribbon path in this chart's fixed coordinate
   // space (width defaults to 380-400px; chartWidth is width-180, height
@@ -86,42 +43,6 @@ export default function RCVRoundChart({
   // Duplicated in index.css's @keyframes rcv-ribbon-draw — change one,
   // change both.
   const RIBBON_DASH_LENGTH = 1200
-
-  // Detect whose votes were just redistributed INTO the currently-viewed
-  // round. The eliminated flag lives on the PREVIOUS round's entry — a
-  // round's own flag describes who's eliminated starting NEXT round, not
-  // who was just redistributed to produce this round's totals. See
-  // rcvFlow.ts and the implementation plan's "Resolved ambiguities" §3.
-  useEffect(() => {
-    if (activeRound === 0) { setJustEliminated(null); return }
-    const prev = rcvData.rounds[activeRound - 1]
-    const eliminated = prev.candidates.filter((c) => c.isEliminated)
-    if (eliminated.length > 0) {
-      setJustEliminated({ names: eliminated.map((c) => c.name), isBatch: eliminated.length > 1 })
-      const timer = setTimeout(() => setJustEliminated(null), TRANSFER_WINDOW_MS)
-      return () => clearTimeout(timer)
-    } else {
-      setJustEliminated(null)
-    }
-  }, [activeRound, rcvData.rounds])
-
-  // Auto-play — a per-round setTimeout chain, NOT a fixed interval: each
-  // displayed round chooses its own dwell (transfer rounds linger, see the
-  // dwell constants above). Under reduced motion the ribbons never render,
-  // so every round advances at the base pace.
-  useEffect(() => {
-    if (!isPlaying) return
-    if (activeRound >= totalRounds - 1) {
-      setIsPlaying(false)
-      return
-    }
-    const receivedTransfers =
-      activeRound > 0 &&
-      rcvData.rounds[activeRound - 1].candidates.some((c) => c.isEliminated)
-    const dwell = receivedTransfers && !prefersReducedMotion ? TRANSFER_DWELL_MS : BASE_DWELL_MS
-    const timer = setTimeout(() => setActiveRound(activeRound + 1), dwell)
-    return () => clearTimeout(timer)
-  }, [isPlaying, activeRound, totalRounds, rcvData.rounds, prefersReducedMotion, setActiveRound])
 
   const round = rcvData.rounds[activeRound]
   const prevRound = activeRound > 0 ? rcvData.rounds[activeRound - 1] : null
@@ -187,7 +108,7 @@ export default function RCVRoundChart({
   // Everything the width-transition and ribbon layer key off must be
   // derivable synchronously in render — never from effect-lagged state.
   const ribbonSequenceActive = !prefersReducedMotion && stepDirection === 'forward' && transferResult.eliminatedNames.length > 0
-  const showRibbons = ribbonSequenceActive && justEliminated !== null
+  const showRibbons = ribbonSequenceActive && transport.inTransferWindow
 
   const barHeight = 18
   const gap = 5
@@ -225,10 +146,9 @@ export default function RCVRoundChart({
     const target = e.target as HTMLElement
     if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return
     e.preventDefault()
-    setIsPlaying(false)
-    if (e.key === 'ArrowLeft') setActiveRound(Math.max(0, activeRound - 1))
-    else setActiveRound(Math.min(totalRounds - 1, activeRound + 1))
-  }, [activeRound, totalRounds, setActiveRound])
+    if (e.key === 'ArrowLeft') transport.stepBackward()
+    else transport.stepForward()
+  }, [transport])
 
   return (
     <div
@@ -244,7 +164,7 @@ export default function RCVRoundChart({
         {/* Transport controls */}
         <div className="flex items-center gap-0.5 flex-shrink-0">
           <button
-            onClick={() => { setIsPlaying(false); setActiveRound(Math.max(0, activeRound - 1)) }}
+            onClick={() => transport.stepBackward()}
             disabled={activeRound === 0}
             className="w-6 h-6 rounded-md bg-indigo-500/10 flex items-center justify-center hover:bg-indigo-500/20 disabled:opacity-20 transition-colors"
             title="Previous round"
@@ -254,14 +174,7 @@ export default function RCVRoundChart({
             </svg>
           </button>
           <button
-            onClick={() => {
-              if (isPlaying) {
-                setIsPlaying(false)
-              } else {
-                if (activeRound >= totalRounds - 1) setActiveRound(0)
-                setIsPlaying(true)
-              }
-            }}
+            onClick={() => (isPlaying ? transport.pause() : transport.play())}
             className="w-7 h-7 rounded-full bg-indigo-500/20 flex items-center justify-center hover:bg-indigo-500/30 transition-colors"
             title={isPlaying ? 'Pause' : 'Play all rounds'}
           >
@@ -277,7 +190,7 @@ export default function RCVRoundChart({
             )}
           </button>
           <button
-            onClick={() => { setIsPlaying(false); setActiveRound(Math.min(totalRounds - 1, activeRound + 1)) }}
+            onClick={() => transport.stepForward()}
             disabled={activeRound === totalRounds - 1}
             className="w-6 h-6 rounded-md bg-indigo-500/10 flex items-center justify-center hover:bg-indigo-500/20 disabled:opacity-20 transition-colors"
             title="Next round"
@@ -293,7 +206,7 @@ export default function RCVRoundChart({
           {Array.from({ length: totalRounds }).map((_, i) => (
             <button
               key={i}
-              onClick={() => { setIsPlaying(false); setActiveRound(i) }}
+              onClick={() => transport.seek(i)}
               className={`h-1.5 rounded-full transition-all duration-200 ${
                 i === activeRound ? 'bg-indigo-500 flex-[2]' : i < activeRound ? 'bg-indigo-500/40 flex-1' : 'bg-slate-700 flex-1'
               }`}
