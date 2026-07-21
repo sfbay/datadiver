@@ -476,10 +476,19 @@ function accumulate(ctx: Context): Map<string, RaceAccumulator> {
         if (el.PrecinctPortionId !== 0) throw new Error(`${name}: unknown PrecinctPortionId ${el.PrecinctPortionId}`)
         precinct = UNATTRIBUTED_PRECINCT
       }
+      // Split-card guard (spec §3.1 resolution rule): an RCV contest must
+      // appear on exactly one card of a session's current element — the
+      // accumulator counts one ballot per contest entry, so a contest split
+      // across cards would double-count. Throws; emission unchanged.
+      const seenRcvContests = new Set<number>()
       for (const card of el.Cards) {
         for (const entry of card.Contests) {
           const acc = byContestId.get(entry.Id)
           if (!acc) continue
+          if (seenRcvContests.has(entry.Id)) {
+            throw new Error(`${name}: RCV ContestId ${entry.Id} appears on more than one card in a single session's current element`)
+          }
+          seenRcvContests.add(entry.Id)
           acc.ballots++
           const { pattern } = resolveContest(entry, acc.info.ranks, ctx.candTypeById)
           const key = (pattern ?? []).join(',')

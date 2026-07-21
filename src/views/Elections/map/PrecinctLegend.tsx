@@ -10,6 +10,9 @@ export interface PrecinctLegendReplayState {
   round: number
   totalRounds: number
   continuing: { name: string; votes: number; pct: number }[]
+  /** ALL continuing candidates with votes > 0 in the viewed round — the
+   *  subtitle N; NOT the top-5 `continuing` slice length. */
+  continuingCount: number
   /** Citywide share of round-1 continuing ballots no longer counting
    *  (exhausted + overvotes, net of round-1 overvotes), 0-100. */
   drainPct: number
@@ -55,6 +58,9 @@ export default function PrecinctLegend({
       <div className="absolute bottom-6 right-5 z-10 glass-card rounded-xl p-3">
         <p className="text-nano font-mono tracking-widest text-paper-600 dark:text-paper-500 mb-1">
           ── ROUND {replayState.round} OF {replayState.totalRounds}
+        </p>
+        <p className="text-micro text-slate-400 mb-1">
+          Votes counting for {replayState.continuingCount} candidates
         </p>
         <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
           {race?.title ?? 'Results'}

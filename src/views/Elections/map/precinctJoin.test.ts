@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { PrecinctRaceFile, PrecinctTurnoutFile } from '@/types/elections'
 import type { ReplayPaintRow } from '@/lib/rcv/replay'
 import { buildPrecinctFeatures, candidateShares, FLIP_LIFT } from './precinctJoin'
+import { leaderOf, leaderShareQuartiles } from './precinctPaint'
 
 // Real committed files as fixtures — the join is only as good as its
 // behavior against the actual emitted data (paths are repo-root relative;
@@ -164,7 +165,27 @@ describe('buildPrecinctFeatures — replay lens (leader steps + drain + flip lif
     Object.entries(president2024.precincts).map(([label, row]) => [label, toReplayRow(row)]),
   )
 
-  const buildWithReplay = (rows: Record<string, ReplayPaintRow>, lift = false) =>
+  // Quartiles are now passed IN (fixed per race, spec §4.3) — computed here
+  // the same way Elections does it: leader shares of the round-1 rows over
+  // turnout-joined labels.
+  const quartilesOf = (rows: Record<string, ReplayPaintRow>): [number, number, number] | null => {
+    const shares: number[] = []
+    for (const [label, row] of Object.entries(turnout2024.precincts)) {
+      if (row.unmapped) continue
+      const replayRow = rows[label]
+      if (!replayRow || replayRow.total === 0) continue
+      const leader = leaderOf(replayRow.votes)
+      if (leader) shares.push(leader.share)
+    }
+    return leaderShareQuartiles(shares)
+  }
+  const fixedQuartiles = quartilesOf(fullReplayRows)
+
+  const buildWithReplay = (
+    rows: Record<string, ReplayPaintRow>,
+    lift = false,
+    quartiles: [number, number, number] | null = fixedQuartiles,
+  ) =>
     buildPrecinctFeatures({
       ...base,
       colorMap,
@@ -172,7 +193,7 @@ describe('buildPrecinctFeatures — replay lens (leader steps + drain + flip lif
       geometry: geo2022,
       mode: 'results',
       focusCandidate: 'DONALD J. TRUMP / JD VANCE',
-      replay: { rows, round: 3, totalRounds: 5, lift },
+      replay: { rows, quartiles, round: 3, totalRounds: 5, lift },
     })
 
   it('preempts focusCandidate — precinct 1101 (Harris-led) paints Harris color, not the focus hue', () => {
@@ -207,24 +228,26 @@ describe('buildPrecinctFeatures — replay lens (leader steps + drain + flip lif
     expect(liftedOpacity).toBeLessThanOrEqual(0.8)
   })
 
-  it('quartiles are computed from replay rows over turnout-joined labels only (an off-frame row cannot shift them)', () => {
-    const baseline = buildWithReplay(fullReplayRows)
-    const withGhost: Record<string, ReplayPaintRow> = {
-      ...fullReplayRows,
-      // no turnout label maps to this key, so it must never enter the quartile calc
-      'GHOST-9999': { votes: { GHOST_WINNER: 1 }, total: 1, drainShare: 0, flipped: false },
-    }
-    const withGhostFc = buildWithReplay(withGhost)
-    const opacities = (fc: GeoJSON.FeatureCollection) => fc.features.map((f) => f.properties?.fillOpacity).sort()
-    expect(opacities(withGhostFc)).toEqual(opacities(baseline))
+  it('respects the quartiles passed IN — the same share lands in different steps under different arrays', () => {
+    // Precinct 1101: Harris leads with a 72% share, drainShare 0.
+    const low = buildWithReplay(fullReplayRows, false, [0.1, 0.2, 0.3])
+    const high = buildWithReplay(fullReplayRows, false, [0.8, 0.9, 0.95])
+    const opacityAt = (fc: GeoJSON.FeatureCollection) =>
+      fc.features.find((x) => x.properties?.label === '1101')?.properties?.fillOpacity
+    expect(opacityAt(low)).toBe(0.7) // 0.72 ≥ q[2]=0.3 → top step
+    expect(opacityAt(high)).toBe(0.25) // 0.72 < q[0]=0.8 → bottom step
   })
 
-  it('tooltip phrase composes as «Name» — NN% of ballots still counting here; votes = continuing total', () => {
+  it('tooltip phrase composes as «Name» — NN% of ballots still counting here; votes = the turnout row\'s ballots cast', () => {
     const fc = buildWithReplay(fullReplayRows)
     const f = fc.features.find((x) => x.properties?.label === '1101')
     expect(f?.properties?.tipLeaderName).toBe('Harris')
     expect(f?.properties?.tipLeaderPhrase).toBe('72% of ballots still counting here')
-    expect(f?.properties?.votes).toBe(640)
+    // «votes» renders as "votes cast" in the tooltip template — it must
+    // carry the turnout row's ballots (660), NOT the round's continuing
+    // total (640); the leader phrase is the "still counting" carrier.
+    expect(f?.properties?.votes).toBe(turnout2024.precincts['1101'].ballots)
+    expect(f?.properties?.votes).toBe(660)
   })
 })
 

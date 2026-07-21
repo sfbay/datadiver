@@ -48,6 +48,11 @@ export interface BuildPrecinctOptions {
    *  `focusCandidate` — a deep link carrying both paints replay. */
   replay?: {
     rows: Record<string, ReplayPaintRow>
+    /** FIXED per race (spec §4.3): computed ONCE from round-1 rows over
+     *  painted precincts by the caller and held constant across rounds —
+     *  other precincts moving the yardstick would read as phantom motion;
+     *  fixed cutpoints make late-round firming a true consolidation signal. */
+    quartiles: [number, number, number] | null
     round: number
     totalRounds: number
     lift: boolean
@@ -95,8 +100,8 @@ export function buildPrecinctFeatures(opts: BuildPrecinctOptions): GeoJSON.Featu
   // or the race-relative leader-share quartiles (leader-steps mode). Never
   // both — focus mode doesn't use resultsFill/quartiles at all. Skipped
   // entirely when opts.replay is set — REPLAY preempts fill selection in
-  // the main loop below and never reads `focus`/`quartiles` (it has its own
-  // replayQuartiles precompute just below).
+  // the main loop below and never reads `focus`/`quartiles` (its quartiles
+  // arrive pre-computed in opts.replay.quartiles, fixed per race).
   let quartiles: [number, number, number] | null = null
   let focus: { byLabel: Map<string, number>; extent: [number, number] | null } | null = null
   if (!opts.replay && mode === 'results' && bundle.race && !raceIsProp) {
@@ -115,22 +120,6 @@ export function buildPrecinctFeatures(opts: BuildPrecinctOptions): GeoJSON.Featu
     }
   }
 
-  // REPLAY preempts mode/focus entirely — quartiles are recomputed from the
-  // replay rows (mirrors the leader-shares loop above) over turnout-joined
-  // labels only, so an unmapped or off-frame row can never shift the ladder.
-  let replayQuartiles: [number, number, number] | null = null
-  if (opts.replay) {
-    const shares: number[] = []
-    for (const [label, row] of Object.entries(bundle.turnout.precincts)) {
-      if (row.unmapped) continue
-      const replayRow = opts.replay.rows[label]
-      if (!replayRow || replayRow.total === 0) continue
-      const leader = leaderOf(replayRow.votes)
-      if (leader) shares.push(leader.share)
-    }
-    replayQuartiles = leaderShareQuartiles(shares)
-  }
-
   for (const [label, row] of Object.entries(bundle.turnout.precincts)) {
     if (row.unmapped) continue
 
@@ -145,13 +134,16 @@ export function buildPrecinctFeatures(opts: BuildPrecinctOptions): GeoJSON.Featu
       if (!replayRow || replayRow.total === 0) continue
       const leader = leaderOf(replayRow.votes)
       if (!leader) continue
-      fill = replayFill(leader, colorMap, replayQuartiles, replayRow.drainShare)
+      fill = replayFill(leader, colorMap, opts.replay.quartiles, replayRow.drainShare)
       if (replayRow.flipped && opts.replay.lift) {
         fill = { ...fill, opacity: Math.min(MAX_OPACITY, fill.opacity + FLIP_LIFT) }
       }
       tipLeaderName = leaderDisplayName(leader.name)
       tipLeaderPhrase = `${Math.round(leader.share * 100)}% of ballots still counting here`
-      votes = replayRow.total
+      // votes stays row.ballots — the tooltip template renders «votes» as
+      // "votes cast", so it must carry the turnout row's ballots-cast, not
+      // the round's continuing total (the leader phrase above is the
+      // "still counting" carrier).
     } else if (mode === 'turnout' || !bundle.race) {
       fill = turnoutFill(row.turnout)
     } else if (!raceRow) {

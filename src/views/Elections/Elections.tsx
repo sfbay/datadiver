@@ -32,7 +32,7 @@ import BallotMeasureExplorer from '@/components/charts/BallotMeasureExplorer'
 import { useBallotPropositions } from '@/hooks/useElectionResults'
 import { toSentenceCase } from '@/utils/format'
 import { displayNhood, leaderDisplayName, nhoodKey } from '@/utils/electionData'
-import { isProposition, leaderOf } from './map/precinctPaint'
+import { isProposition, leaderOf, leaderShareQuartiles } from './map/precinctPaint'
 import { candidateShares, type PaintBundle } from './map/precinctJoin'
 import { parseLens, SHIPPED_LENSES, type RcvLens } from './rcvLens'
 import { useReplayModel } from './useReplayModel'
@@ -203,8 +203,14 @@ export default function Elections() {
   // Machine is off. The lens PARAM survives suspension — TM entry
   // suspends the lens, TM exit restores it.
   const { data: cvrManifest } = useCVRManifest(activeElection)
+  // dateCode identity guard: useStaticJSON keeps the PREVIOUS election's
+  // manifest on a 404, which would leave a phantom Replay strip on another
+  // election's RCV races after switching.
   const lensAvailable = Boolean(
-    activeRace?.isRCV && cvrManifest?.races[activeRace.id] && !timeMachineActive,
+    activeRace?.isRCV &&
+      cvrManifest?.dateCode === activeElection &&
+      cvrManifest?.races[activeRace.id] &&
+      !timeMachineActive,
   )
   const activeLens = lensAvailable ? rcvLens : null
 
@@ -345,6 +351,25 @@ export default function Elections() {
       : null,
     [replayModel, cvrArtifact, rcvTransport.activeRound],
   )
+  // Replay quartile cutpoints are FIXED per race (spec §4.3): computed ONCE
+  // from ROUND-1 rows over painted (turnout-joined) precincts and held
+  // constant as the transport advances. Per-round recomputation would let
+  // other precincts move the yardstick — reads as phantom motion; fixed
+  // means late-round firming is a true consolidation signal. Same
+  // leader-shares loop shape as the join's results-mode precompute.
+  const replayQuartiles = useMemo((): [number, number, number] | null => {
+    if (!replayModel || !cvrArtifact || !turnoutFile) return null
+    const round1Rows = replayPaintRows(replayModel.states, 0, cvrArtifact)
+    const shares: number[] = []
+    for (const [label, row] of Object.entries(turnoutFile.precincts)) {
+      if (row.unmapped) continue
+      const replayRow = round1Rows[label]
+      if (!replayRow || replayRow.total === 0) continue
+      const leader = leaderOf(replayRow.votes)
+      if (leader) shares.push(leader.share)
+    }
+    return leaderShareQuartiles(shares)
+  }, [replayModel, cvrArtifact, turnoutFile])
   // While the artifact is still loading (replayRows null) this stays
   // undefined and the map keeps painting base mode — progressive, never
   // blank. Memoized: an unmemoized object literal here was rebuilt on
@@ -354,9 +379,9 @@ export default function Elections() {
   const replayOption = useMemo(
     () =>
       activeLens === 'replay' && replayRows && rcvData
-        ? { rows: replayRows, round: rcvTransport.activeRound + 1, totalRounds: rcvData.rounds.length, lift: rcvTransport.inTransferWindow }
+        ? { rows: replayRows, quartiles: replayQuartiles, round: rcvTransport.activeRound + 1, totalRounds: rcvData.rounds.length, lift: rcvTransport.inTransferWindow }
         : undefined,
-    [activeLens, replayRows, rcvData, rcvTransport.activeRound, rcvTransport.inTransferWindow],
+    [activeLens, replayRows, replayQuartiles, rcvData, rcvTransport.activeRound, rcvTransport.inTransferWindow],
   )
 
   // Legend's replay-variant disclosure state: top-5 continuing candidates +
@@ -370,8 +395,10 @@ export default function Elections() {
     const round = rcvData.rounds[rcvTransport.activeRound]
     const round1 = rcvData.rounds[0]
     if (!round || !round1) return undefined
-    const continuing = round.candidates
-      .filter((c) => c.votes > 0)
+    // The full continuing-candidates count (votes > 0) — the legend's
+    // subtitle N, NOT the top-5 slice length below.
+    const continuingAll = round.candidates.filter((c) => c.votes > 0)
+    const continuing = [...continuingAll]
       .sort((a, b) => b.votes - a.votes)
       .slice(0, 5)
       .map((c) => ({ name: c.name, votes: c.votes, pct: c.percentage }))
@@ -380,6 +407,7 @@ export default function Elections() {
       round: rcvTransport.activeRound + 1,
       totalRounds: rcvData.rounds.length,
       continuing,
+      continuingCount: continuingAll.length,
       drainPct,
       withheldCount: cvrArtifact?.sovSuppressed.length ?? 0,
     }
@@ -825,8 +853,17 @@ export default function Elections() {
                 (Jesse: callout butted against the panel edge). */}
             {!isLoading && !timeMachineActive && activeRace?.isRCV && rcvData && (
               <div
-                className={`absolute bottom-6 left-5 z-10 glass-card rounded-xl ${rcvCollapsed ? 'px-3 py-2 cursor-pointer' : 'p-4'}`}
-                style={{ maxWidth: rcvCollapsed ? undefined : activeLens === null && rcvViewMode === 'flow' ? 648 : 448 }}
+                className={`absolute bottom-6 left-5 z-10 glass-card rounded-xl max-w-[calc(100vw-2.5rem)] ${rcvCollapsed ? 'px-3 py-2 cursor-pointer' : 'p-4'}`}
+                style={{
+                  // min() keeps the viewport guard live in the expanded states
+                  // too — a plain inline maxWidth would override the class
+                  // (the DetailPanelShell precedent guard, spec §4.6).
+                  maxWidth: rcvCollapsed
+                    ? undefined
+                    : activeLens === null && rcvViewMode === 'flow'
+                      ? 'min(648px, 100vw - 2.5rem)'
+                      : 'min(448px, 100vw - 2.5rem)',
+                }}
                 onClick={rcvCollapsed ? () => setRcvCollapsed(false) : undefined}
                 title={rcvCollapsed ? 'Expand RCV panel' : undefined}
               >
@@ -837,7 +874,7 @@ export default function Elections() {
                   <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 flex-1">
                     {rcvData.totalRounds} Rounds &middot; Winner: {rcvData.winner.split(' ').pop()}
                     {rcvCollapsed && activeLens === 'replay' && (
-                      <> &middot; R{rcvTransport.activeRound + 1}/{rcvTransport.totalRounds}</>
+                      <> &middot; REPLAY &middot; R{rcvTransport.activeRound + 1}/{rcvTransport.totalRounds}</>
                     )}
                   </p>
                   {/* View toggle — hidden while minimized (the chip stays a
