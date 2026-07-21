@@ -83,9 +83,11 @@ export default function PrecinctLegend({
             </span>
           </div>
         )}
-        <p className="text-nano text-slate-400/70 dark:text-slate-500 mt-2">
-          {replayState.withheldCount} small precincts withheld by S.F. — ballots still count citywide
-        </p>
+        {replayState.withheldCount > 0 && (
+          <p className="text-nano text-slate-400/70 dark:text-slate-500 mt-2">
+            {replayState.withheldCount} small precincts withheld by S.F. — ballots still count citywide
+          </p>
+        )}
       </div>
     )
   }

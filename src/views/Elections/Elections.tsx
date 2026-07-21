@@ -364,7 +364,7 @@ export default function Elections() {
     const round1 = rcvData.rounds[0]
     if (!round || !round1) return undefined
     const continuing = round.candidates
-      .filter((c) => c.votes > 0 && !c.isEliminated)
+      .filter((c) => c.votes > 0)
       .sort((a, b) => b.votes - a.votes)
       .slice(0, 5)
       .map((c) => ({ name: c.name, votes: c.votes, pct: c.percentage }))
