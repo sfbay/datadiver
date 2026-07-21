@@ -538,9 +538,21 @@ export default function Elections() {
     initialRound: whatIfSeedRef.current.round ?? (whatIfChartData ? whatIfChartData.totalRounds - 1 : undefined),
   })
 
+  // Consume the mount seed only once the contest the deep link DESCRIBES has
+  // arrived. On a ?lens=whatif&strike=…&round=K cold load, the certified
+  // rcvData lands well before the multi-MB artifact + tabulation, so
+  // whatIfChartData's FIRST identity is the certified interim — clearing the
+  // seed there loses K, and the counterfactual's later reset falls back to
+  // its final round (the Task-3 review's M2 race, confirmed by headless
+  // probe 7a). While strikes are pending, both resets read the seed — the
+  // interim parks on K transiently, then the counterfactual parks on K and
+  // the seed clears. The struckIdx guard releases the hold when every URL
+  // strike sanitizes away (unknown names → no counterfactual ever comes).
+  const whatIfStrikesPending =
+    strikeParams.length > 0 && whatIfModel === null && (!cvrArtifact || struckIdx.length > 0)
   useEffect(() => {
-    if (whatIfChartData) whatIfSeedRef.current = { round: undefined }
-  }, [whatIfChartData])
+    if (whatIfChartData && !whatIfStrikesPending) whatIfSeedRef.current = { round: undefined }
+  }, [whatIfChartData, whatIfStrikesPending])
 
   // Counterfactual per-round precinct states — certified states when no
   // strikes (whatIfModel null), so the resting state still paints.
