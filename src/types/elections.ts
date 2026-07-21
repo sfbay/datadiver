@@ -83,6 +83,45 @@ export interface RCVCandidateRound {
   isLeader: boolean
 }
 
+// ── CVR Ballot Artifacts ────────────────────────────────────────────
+
+export const OVERVOTE_TERMINATOR = -1
+
+export interface CVRBallotArtifact {
+  formatVersion: 1
+  dateCode: string
+  raceId: string
+  /** Certified round-report names VERBATIM, in the committed round file's
+   *  round-1 row order (descending R1 votes). Pattern values index here.
+   *  Already clean — cleanCandidateName is a no-op; buildCandidateColorMap
+   *  keys match. */
+  candidates: string[]
+  /** Emitted-geometry id strings ("1101"), sorted ascending. Includes the
+   *  SOV-withheld precincts — their ballots are in the public CVR. */
+  precincts: string[]
+  /** Subset of precincts with no _turnout/SOV row (13 for 20241105).
+   *  Derived from data, never hardcoded. */
+  sovSuppressed: string[]
+  title: string
+  /** Canonical effective rankings: candidate indices; a trailing
+   *  OVERVOTE_TERMINATOR means exhaust-by-overvote at that point; [] = blank
+   *  contest. Sorted by citywide count desc, then lexicographic (common
+   *  patterns get short indices; deterministic for --check). */
+  patterns: number[][]
+  /** Flat (precinctIdx, patternIdx, count) triples, sorted by
+   *  (precinctIdx, patternIdx). Client wraps in typed arrays. */
+  groups: number[]
+}
+
+export interface CVRManifest {
+  dateCode: string
+  formatVersion: 1
+  races: Record<string, { ballots: number; patterns: number; groups: number; bytes: number }>
+  /** isRCV races with CVR ballots but no certified round report to gate
+   *  against — mirrors KNOWN_MISSING_RCV. ["treasurer"] today. */
+  reconciliationBlocked: string[]
+}
+
 // ── Historical Turnout ──────────────────────────────────────────────
 
 export interface TurnoutRecord {
