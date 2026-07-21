@@ -275,6 +275,24 @@ noticed because its gate is `precinct sums ≤ certified totals`. Frozen as
 row counts 4 mayor marks the tabulator rejected (ambiguous/adjudicated-away write-in
 bubbles) — pinned as `SOV_WRITEIN_DELTA`.
 
+### Head-to-head counts point two directions at once — among-both vs inclusive can DISAGREE
+
+**Finding (July 21 2026, COALITION probe):** a pairwise "who beats whom" question has two
+legitimate answers that can contradict each other on real ballots. Among ballots ranking
+BOTH candidates, D11's Lai beats Chen **6,181 to 4,920** — yet on inclusive counts (a ballot
+ranking only one of the pair counts that one above the unranked other) Chen wins **12,001
+to 11,803**, and Chen inclusively beats every rival (she is also the certified RCV winner).
+The gap is broad-but-shallow support: Chen led first choices among ballots that ranked only
+one of the two. Naively quoting one number class while verdicting on the other renders an
+apparent self-contradiction. DataDiver's rule (`computeHeadToHead` in
+`src/lib/rcv/coalition.ts`, probe-pinned tests): the reader-facing copy line uses among-both
+counts (concrete, explainable), the beats-every-rival verdict uses inclusive counts (the
+standard pairwise criterion), and a **divergence disclosure line renders whenever the two
+disagree for the displayed pair**. Corollary for any future consumer: never mix the two
+matrices in one sentence, and never present among-both counts as "the" head-to-head result
+without checking for divergence. Mayor 2024 shows no such divergence (Lurie wins both ways,
+92,063–72,547 among-both) — D11 is why the disclosure exists.
+
 ---
 
 ## 911 Realtime & Fire/EMS (live dispatch feeds)
