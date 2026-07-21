@@ -113,10 +113,13 @@ export default function RCVRoundChart({
   const barHeight = 18
   const gap = 5
   const labelWidth = 120
-  // Right gutter holds the count label ("14,056") and the "+N" transfer
-  // badge past the longest bar — 60 crowded them against the panel edge
-  // (Jesse's screenshot); 76 gives the right side room to breathe.
-  const chartWidth = width - labelWidth - 76
+  // Right gutter holds the count label ("14,056") and, during transfer
+  // windows, the "+N" badge flowing after it — the longest bar needs room
+  // for BOTH ("175,018" + gap + "+46,748" ≈ 80px of mono; 76 clipped the
+  // badge at the panel edge, Jesse's second screenshot). 100 fits the
+  // worst real case; the svg is overflow-visible so Large Type growth
+  // spills into the panel padding instead of clipping.
+  const chartWidth = width - labelWidth - 100
 
   // CONSTANT height — derives from the roster length alone, never from how
   // many candidates are currently active vs. eliminated. This is the whole
@@ -270,6 +273,7 @@ export default function RCVRoundChart({
         width={width}
         height={svgHeight}
         viewBox={`0 0 ${width} ${svgHeight}`}
+        className="overflow-visible"
       >
         {/* 50% threshold */}
         {threshold > 0 && threshold <= maxVotes && (
@@ -392,22 +396,17 @@ export default function RCVRoundChart({
                   />
                 )
               })()}
-              {/* Transfer amount badge — a step up from the count label's
-                  size/weight so the arriving quantity reads as the round's
-                  headline number, not another data value. */}
-              {hasTransferGlow && transfer && (
-                <text
-                  x={labelWidth + barW + 30}
-                  y={y + barHeight / 2 + 1}
-                  fill={color}
-                  fontWeight={700}
-                  fontFamily="var(--font-mono)"
-                  dominantBaseline="middle"
-                  style={{ fontSize: '0.5625rem' }}
-                >
-                  +{transfer.amount.toLocaleString()}
-                </text>
-              )}
+              {/* Count label + transfer badge share ONE text element: the
+                  "+N" badge is a tspan flowing AFTER the count, so SVG lays
+                  them out sequentially and they can never collide — the old
+                  fixed bar-end+30 badge anchor overlapped 6-digit totals
+                  ("175,018" is ~34px of mono; Jesse's screenshot), and any
+                  px offset breaks again under Large Type since the rem text
+                  grows while the offset doesn't. dx is em-based for the same
+                  reason. The badge keeps its step up in size/weight — the
+                  arriving quantity reads as the round's headline number.
+                  `transfer` is derived only for non-eliminated rows, so the
+                  badge never needs to render without its host label. */}
               {!isEliminatedNow && (
                 <text
                   x={labelWidth + barW + 4}
@@ -418,6 +417,16 @@ export default function RCVRoundChart({
                   style={{ fontSize: '0.5rem' }}
                 >
                   {votes.toLocaleString()}
+                  {hasTransferGlow && transfer && (
+                    <tspan
+                      dx="0.8em"
+                      fill={color}
+                      fontWeight={700}
+                      style={{ fontSize: '0.5625rem' }}
+                    >
+                      +{transfer.amount.toLocaleString()}
+                    </tspan>
+                  )}
                 </text>
               )}
             </g>
