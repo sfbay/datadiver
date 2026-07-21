@@ -431,7 +431,11 @@ export function tabulate(
     rounds.push({ round: roundNum, candidates: rows, continuingTotal, exhausted, overvotes: overvoted, blanks: blank })
     assignments.push({ round: roundNum, groups: Int16Array.from(assign) })
 
-    if (aliveIdx.length <= 2) break
+    // Two terminal states: two finalists remain, or NO ballot still counts —
+    // with zero continuing votes no elimination is derivable (an all-zero
+    // "tie" is degeneracy, not a tie; RCVTieError is reserved for real
+    // minimum-vote ties with ballots behind them).
+    if (aliveIdx.length <= 2 || continuingTotal === 0) break
 
     let min = Infinity
     for (const i of aliveIdx) if (votes[i] < min) min = votes[i]
