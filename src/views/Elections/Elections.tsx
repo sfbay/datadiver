@@ -850,9 +850,14 @@ export default function Elections() {
     if (activeLens === 'whatif' && whatIfModel && rcvData) {
       const cfWinnerRow = whatIfModel.contest.rounds[whatIfModel.contest.totalRounds - 1]
         .candidates.find((c) => c.name === whatIfModel.contest.winner)
+      // The terracotta HYPOTHETICAL chip is the unmistakable mark (Jesse:
+      // the only non-actual-data surface on the site must read as such at a
+      // glance); the value keeps the winner's certified pigment — the chip,
+      // not the number, carries the warning.
       cards[0] = {
         ...cards[0],
-        label: 'Hypothetical winner',
+        label: 'Winner',
+        badge: { text: 'HYPOTHETICAL', color: '#b85a33' },
         value: leaderDisplayName(whatIfModel.contest.winner),
         color: candidateColors.get(whatIfModel.contest.winner) || ACCENT,
         subtitle: cfWinnerRow
@@ -863,6 +868,7 @@ export default function Elections() {
       if (roundsCard) {
         roundsCard.value = String(whatIfModel.contest.totalRounds)
         roundsCard.subtitle = `certified: ${rcvData.totalRounds}`
+        roundsCard.badge = { text: 'HYPOTHETICAL', color: '#b85a33' }
       }
     }
 
@@ -1121,31 +1127,6 @@ export default function Elections() {
         </div>
       )}
 
-      {/* What-if banner — terracotta (ochre stays Time Machine's signature;
-          brick would read as an error). Persistent while strikes exist. */}
-      {activeLens === 'whatif' && whatIfModel && struckDisplay && (
-        <div className="flex-shrink-0 px-6 py-1.5 bg-terracotta-500/10 border-b border-terracotta-500/20 flex items-center gap-2 flex-wrap">
-          <span className="w-2 h-2 rounded-full bg-terracotta-500" />
-          <p className="text-micro font-mono text-terracotta-600 dark:text-terracotta-400">
-            HYPOTHETICAL COUNT — {struckDisplay} removed
-          </p>
-          <span className="text-micro text-slate-500 dark:text-slate-400">
-            Same ballots, rerun without them. The certified result is unchanged.
-          </span>
-          {whatIfModel.tiesBroken.length > 0 && (
-            <span className="text-micro text-slate-500 dark:text-slate-400 italic">
-              A tie was broken using the real election&rsquo;s elimination order.
-            </span>
-          )}
-          <button
-            onClick={() => setStrikes([])}
-            className="ml-auto px-2.5 py-0.5 rounded-full text-micro font-mono bg-terracotta-500/15 text-terracotta-600 dark:text-terracotta-400 hover:bg-terracotta-500/25 transition-colors"
-          >
-            Reset to reality
-          </button>
-        </div>
-      )}
-
       {/* Content */}
       <div id="elections-capture" className="flex-1 overflow-hidden flex flex-col">
         <div className="flex-1 overflow-hidden flex">
@@ -1196,6 +1177,50 @@ export default function Elections() {
               <CardTray viewId="elections" cards={cardDefs} hideComparison />
             )}
 
+            {/* Hypothetical-count plate + viewport frame — OVERLAYS, never a
+                layout-shifting banner row (a strip above the map moved every
+                click target when strikes toggled). Both live INSIDE
+                #elections-capture, so PNG exports and screenshots of any
+                crop carry the disclosure — what-if is the one surface on
+                DataDiver that doesn't show actual data, and the marking is
+                load-bearing (ochre stays Time Machine's signature; brick
+                would read as an error). */}
+            {activeLens === 'whatif' && whatIfModel && struckDisplay && (
+              <>
+                <div
+                  className="absolute inset-0 z-[2] pointer-events-none border-2 border-terracotta-500/40"
+                  aria-hidden
+                />
+                <div
+                  className="absolute top-5 left-1/2 -translate-x-1/2 z-20 glass-card glow-host rounded-xl px-4 py-2.5 border border-terracotta-500/40 max-w-[min(600px,calc(100vw-22rem))]"
+                  style={{ '--glow': '#b85a33' } as React.CSSProperties}
+                  role="status"
+                >
+                  <div className="glow-corner" />
+                  <div className="relative flex items-start gap-2.5">
+                    <span className="w-2 h-2 rounded-full bg-terracotta-500 animate-pulse mt-1 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-micro font-mono font-bold tracking-widest text-terracotta-600 dark:text-terracotta-400">
+                        HYPOTHETICAL COUNT — {struckDisplay} removed
+                      </p>
+                      <p className="text-micro text-slate-500 dark:text-slate-400 mt-0.5">
+                        Same ballots, rerun without them. The certified result is unchanged.
+                        {whatIfModel.tiesBroken.length > 0 && (
+                          <> A tie was broken using the real election&rsquo;s elimination order.</>
+                        )}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setStrikes([])}
+                      className="flex-shrink-0 ml-1 px-2.5 py-1 rounded-full text-micro font-mono bg-terracotta-500/15 text-terracotta-600 dark:text-terracotta-400 hover:bg-terracotta-500/25 transition-colors whitespace-nowrap"
+                    >
+                      Reset to reality
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+
             {/* RCV visualization panel — bottom-left when an RCV race is selected */}
             {/* maxWidth = chart width + p-4 padding (32px) + 16px spare — 420
                 used to squeeze the 400px chart's padding to zero on the right
@@ -1220,8 +1245,18 @@ export default function Elections() {
                   <span className="text-nano font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-500">
                     RCV
                   </span>
+                  {activeLens === 'whatif' && whatIfModel && (
+                    <span className="text-nano font-mono font-bold px-1.5 py-0.5 rounded tracking-widest bg-terracotta-500/15 text-terracotta-600 dark:text-terracotta-400">
+                      HYPOTHETICAL
+                    </span>
+                  )}
+                  {/* Summary line speaks the ACTIVE count: with strikes live
+                      it must not read "Winner: Lurie" beside a HYPOTHETICAL
+                      chip while the chart below shows Breed winning — the
+                      certified figures stay disclosed on the stat cards'
+                      subtitles. */}
                   <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 flex-1">
-                    {rcvData.totalRounds} Rounds &middot; Winner: {rcvData.winner.split(' ').pop()}
+                    {(activeLens === 'whatif' && whatIfModel ? whatIfModel.contest : rcvData).totalRounds} Rounds &middot; Winner: {(activeLens === 'whatif' && whatIfModel ? whatIfModel.contest : rcvData).winner.split(' ').pop()}
                     {rcvCollapsed && activeLens === 'replay' && (
                       <> &middot; REPLAY &middot; R{rcvTransport.activeRound + 1}/{rcvTransport.totalRounds}</>
                     )}

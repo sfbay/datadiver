@@ -14,6 +14,11 @@ interface StatCardProps {
   zScore?: number | null
   /** Glossary key for an explanatory tooltip on the label */
   info?: string
+  /** Nano chip beside the label — for states that must be unmistakable on
+   *  the card itself (e.g. the Elections what-if lens stamps HYPOTHETICAL
+   *  in terracotta: the value keeps its own pigment, the chip carries the
+   *  warning). */
+  badge?: { text: string; color: string }
   /** Optional annual spark data: values for the last N years, last value = current period */
   sparkData?: { values: number[]; labels?: string[] }
   /** Optional "you are here" microvis — shows where this entity's value
@@ -28,7 +33,7 @@ interface StatCardProps {
   }
 }
 
-export default function StatCard({ label, value, color, subtitle, delay = 0, trend, yoyDelta, zScore, info, sparkData, positionScale }: StatCardProps) {
+export default function StatCard({ label, value, color, subtitle, delay = 0, trend, yoyDelta, zScore, info, sparkData, positionScale, badge }: StatCardProps) {
   const [visible, setVisible] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -64,6 +69,14 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
         <div className="glow-corner" />
         <p className="relative text-label font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 whitespace-nowrap flex items-center">
           {label}
+          {badge && (
+            <span
+              className="ml-1.5 px-1.5 py-0.5 rounded text-nano font-mono font-bold tracking-widest"
+              style={{ backgroundColor: `${badge.color}26`, color: badge.color }}
+            >
+              {badge.text}
+            </span>
+          )}
           {info && <InfoTip term={info} size={11} />}
         </p>
         <p

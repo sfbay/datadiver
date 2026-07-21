@@ -39,6 +39,9 @@ export interface CardDef {
     range: [number, number]
     reference?: number
   }
+  /** Nano chip beside the label (see StatCard.badge) — states that must be
+   *  unmistakable on the card itself, e.g. what-if's HYPOTHETICAL stamp. */
+  badge?: { text: string; color: string }
 }
 
 type CardState = 'expanded' | 'minimized' | 'hidden'
@@ -292,6 +295,7 @@ export default function CardTray({ viewId, cards, className = '', hideComparison
                 info={card.info}
                 sparkData={card.sparkData}
                 positionScale={card.positionScale}
+                badge={card.badge}
               />
               {/* Minimize button — top-left on hover */}
               <button
