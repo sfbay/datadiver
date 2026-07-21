@@ -16,6 +16,7 @@ import {
   preloadTimeMachineData,
 } from '@/hooks/useElectionResults'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
+import { useRcvTransport } from '@/hooks/useRcvTransport'
 import CardTray, { type CardDef } from '@/components/ui/CardTray'
 import ExportButton from '@/components/export/ExportButton'
 import { SkeletonStatCards, SkeletonSidebarRows } from '@/components/ui/Skeleton'
@@ -66,7 +67,6 @@ export default function Elections() {
 
   const [rcvViewMode, setRcvViewMode] = useState<'rounds' | 'flow'>('rounds')
   const [rcvCollapsed, setRcvCollapsed] = useState(false)
-  const [rcvActiveRound, setRcvActiveRound] = useState<number | undefined>(undefined)
   const [timeMachineActive, setTimeMachineActive] = useState(false)
 
   const mapMode = (searchParams.get('map_mode') as MapMode) || 'results'
@@ -158,13 +158,9 @@ export default function Elections() {
   const rcvSlug = activeRace?.isRCV ? activeRace.id : null
   const { data: rcvData } = useRCVRounds(activeElection, rcvSlug)
 
-  // Each contest opens on round 1 — clear the controlled round when the
-  // race (or election) changes, or the previous contest's position leaks
-  // through the `controlledRound ?? internalRound` fallback and the new
-  // chart opens mid-story (clamped to ITS final round, pre-fix behavior).
-  useEffect(() => {
-    setRcvActiveRound(undefined)
-  }, [activeElection, rcvSlug])
+  // Shared transport clock for the RCV round chart — resets to round 1 on
+  // a new rcvData identity (a race/election switch) internally.
+  const rcvTransport = useRcvTransport(rcvData ?? null)
 
   // ── Ballot measures ────────────────────────────────────────────────
   const { data: ballotMeasures } = useBallotPropositions()
@@ -698,8 +694,7 @@ export default function Elections() {
                     rcvData={rcvData}
                     candidateColors={candidateColors}
                     width={400}
-                    currentRound={rcvActiveRound}
-                    onRoundChange={setRcvActiveRound}
+                    transport={rcvTransport}
                   />
                 ) : (
                   <RCVComposition
