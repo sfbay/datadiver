@@ -208,6 +208,34 @@ semantics. Transfers INTO round N come from round N−1's flags (`computeRoundTr
 Batch eliminations (multiple flags in one round) are legal under SF's rules but absent from all
 shipped data — code the aggregate-attribution guard, never claim per-source precision for a batch.
 
+### RCV granularity comes in three tiers — and ballot-level Cast Vote Records DO exist
+
+**Finding (July 20 2026, verified against `sfelections.org/results/20241105w/detail.html`):**
+SF publishes RCV data at three distinct grains, and it's easy to overclaim the limits of the
+lower tiers (a shipped footnote said "SF publishes round totals, not ballot paths" — false,
+corrected in `022c61c`):
+
+1. **Precinct SOV (`sov.xlsx`)** — per-precinct totals, but for RCV races these are
+   **first-choice (round 1) votes only**. No round-by-round exists at precinct level in any
+   summary report; this is why the precinct choropleth paints first choices.
+2. **RCV round reports** (our `rcv/*.json` source) — full round-by-round totals,
+   **citywide only**, zero geography, and no source→destination transfer data (deltas are
+   the derivation ceiling *of this tier*).
+3. **Cast Vote Records** — ballot-level full rankings with precinct identifiers, published
+   as Dominion JSON exports (modern format ~Nov 2019+; older elections used a different
+   ballot-image text format). The 18–35 GB Dropbox files are ballot *scans* for audits —
+   never needed; the CVR JSON is the structured data.
+
+**Latency (measured, Nov 2024):** first preliminary CVR landed **Nov 11** (6 days
+post-election, with Preliminary Report 9), then near-daily full-snapshot refreshes through
+the canvass, certified final **Dec 3** (28 days). Preliminary CVRs are moving targets —
+SF counts vote-by-mail for weeks and late ballots shift results — so any preliminary-based
+analysis needs a "preliminary, X% counted" disclosure; certified-only work carries ~4 weeks
+of latency. CVRs unlock what no summary tier can: true transfer paths, second choices of
+never-eliminated candidates' voters, head-to-head/Condorcet checks, precinct-level round
+states, and counterfactual re-tabulation. Independent cross-check for any CVR tabulation:
+ranked.vote publishes CVR-derived reports for SF races back to 2012.
+
 ---
 
 ## 911 Realtime & Fire/EMS (live dispatch feeds)
