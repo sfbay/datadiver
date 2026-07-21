@@ -8,9 +8,11 @@
  *     414 in the consolidated 2025 special — the CoverageChip explains it)
  */
 import type { PrecinctEra, PrecinctRaceFile, PrecinctTurnoutFile } from '@/types/elections'
+import type { CoalitionPaintRow } from '@/lib/rcv/coalition'
 import type { ReplayPaintRow } from '@/lib/rcv/replay'
 import { cleanCandidateName, leaderDisplayName, nhoodKey, sharePhrase, yesShareOf } from '@/utils/electionData'
 import {
+  coalitionFill,
   focusFill,
   leaderOf,
   leaderShareQuartiles,
@@ -56,6 +58,18 @@ export interface BuildPrecinctOptions {
     round: number
     totalRounds: number
     lift: boolean
+  }
+  /** COALITION lens — dominant second choice of the focus candidate's
+   *  first-choice voters. Same preemption as replay: lens-driven fill,
+   *  ignores `mode`/`focusCandidate`. `rows` is floor-filtered (Task 1) —
+   *  absent label ⇒ unpainted (zero-cohort or suppressed). */
+  coalition?: {
+    rows: Record<string, CoalitionPaintRow>
+    /** Race-relative quartiles of dominantShare over PAINTED precincts,
+     *  computed once per focus candidate by the caller. */
+    quartiles: [number, number, number] | null
+    /** Surname for tooltips: "next choice of 34% of Peskin voters here". */
+    focusDisplay: string
   }
 }
 
@@ -104,7 +118,7 @@ export function buildPrecinctFeatures(opts: BuildPrecinctOptions): GeoJSON.Featu
   // arrive pre-computed in opts.replay.quartiles, fixed per race).
   let quartiles: [number, number, number] | null = null
   let focus: { byLabel: Map<string, number>; extent: [number, number] | null } | null = null
-  if (!opts.replay && mode === 'results' && bundle.race && !raceIsProp) {
+  if (!opts.replay && !opts.coalition && mode === 'results' && bundle.race && !raceIsProp) {
     if (focusCandidate) {
       focus = candidateShares(bundle.race, focusCandidate)
     } else {
@@ -144,6 +158,20 @@ export function buildPrecinctFeatures(opts: BuildPrecinctOptions): GeoJSON.Featu
       // "votes cast", so it must carry the turnout row's ballots-cast, not
       // the round's continuing total (the leader phrase above is the
       // "still counting" carrier).
+    } else if (opts.coalition) {
+      const cRow = opts.coalition.rows[label]
+      if (!cRow) continue // zero-cohort or floor-suppressed — unpainted, disclosed in the legend
+      fill = coalitionFill(cRow, colorMap, opts.coalition.quartiles)
+      const pct = Math.round(cRow.dominantShare * 100)
+      if (cRow.dominant) {
+        tipLeaderName = leaderDisplayName(cRow.dominant)
+        tipLeaderPhrase = `next choice of ${pct}% of ${opts.coalition.focusDisplay} voters here`
+      } else {
+        tipLeaderName = 'No next choice'
+        tipLeaderPhrase = `${pct}% of ${opts.coalition.focusDisplay} voters had no next choice here`
+      }
+      // votes stays row.ballots (same rule as replay: the tooltip template
+      // renders «votes» as "votes cast").
     } else if (mode === 'turnout' || !bundle.race) {
       fill = turnoutFill(row.turnout)
     } else if (!raceRow) {

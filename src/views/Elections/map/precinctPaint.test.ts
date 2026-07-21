@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { mixHex } from '@/utils/colorMix'
 import {
+  coalitionFill,
   decisivenessOpacity,
   decisivenessOpacityRelative,
   focusFill,
@@ -168,5 +169,32 @@ describe('resultsFill — optional quartiles arg (backwards compatible)', () => 
       color: '#616a96',
       opacity: 0.55,
     })
+  })
+})
+
+describe('coalitionFill', () => {
+  const colorMap = new Map([['London Breed', '#b85a33']])
+  it('dominant candidate paints in the recipient pigment with quartile opacity', () => {
+    const fill = coalitionFill(
+      { dominant: 'London Breed', dominantShare: 0.6, cohort: 40 },
+      colorMap,
+      [0.3, 0.45, 0.62],
+    )
+    expect(fill.color).toBe('#b85a33')
+    expect(fill.opacity).toBe(0.55) // between q2 0.45 and q3 0.62
+  })
+  it('no-next-choice dominant paints paper-500', () => {
+    const fill = coalitionFill(
+      { dominant: null, dominantShare: 0.8, cohort: 40 },
+      colorMap,
+      [0.3, 0.45, 0.62],
+    )
+    expect(fill.color).toBe('#a8926a')
+    expect(fill.opacity).toBe(0.7)
+  })
+  it('null quartiles fall back to the absolute ladder; unknown candidate falls back to paper', () => {
+    const fill = coalitionFill({ dominant: 'Nobody Known', dominantShare: 0.4, cohort: 40 }, colorMap, null)
+    expect(fill.color).toBe('#a8926a')
+    expect(fill.opacity).toBe(0.4) // absolute: 0.34 ≤ 0.4 < 0.5
   })
 })

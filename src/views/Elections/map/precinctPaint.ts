@@ -4,6 +4,7 @@
  * ramp (steps read as "levels of decisiveness"; continuous reads as noise
  * at 500-polygon scale).
  */
+import type { CoalitionPaintRow } from '@/lib/rcv/coalition'
 import { marginColor, measureColor, turnoutColor } from '@/utils/electionColors'
 import { cleanCandidateName } from '@/utils/electionData'
 import { mixHex } from '@/utils/colorMix'
@@ -109,6 +110,23 @@ export function replayFill(
   const base = resultsFill(leader, colorMap, quartiles)
   if (drainShare <= 0) return base
   return { color: mixHex(base.color, '#d4c8a8', Math.min(drainShare, 0.5)), opacity: base.opacity }
+}
+
+/** COALITION: dominant-next-choice hue + the same 4-step decisiveness ladder
+ *  keyed to the dominant bucket's share of the cohort. No-usable-next-choice
+ *  dominant → paper-500 (the FALLBACK hex — deliberate: "went nowhere" is the
+ *  absence-of-destination color). */
+export function coalitionFill(
+  row: CoalitionPaintRow,
+  colorMap: Map<string, string>,
+  quartiles: [number, number, number] | null,
+): Fill {
+  return {
+    color: row.dominant ? (colorMap.get(row.dominant) ?? FALLBACK) : FALLBACK,
+    opacity: quartiles
+      ? decisivenessOpacityRelative(row.dominantShare, quartiles)
+      : decisivenessOpacity(row.dominantShare),
+  }
 }
 
 /** Yes/no diverging ramp (brick → paper-300 → moss). */

@@ -251,6 +251,79 @@ describe('buildPrecinctFeatures — replay lens (leader steps + drain + flip lif
   })
 })
 
+describe('buildPrecinctFeatures — coalition branch', () => {
+  // Real 2024 president bundle, same '1101' precinct the replay/results
+  // tests key on (single id, ballots-cast 660). Only '1101' gets a coalition
+  // row — every other turnout label has none and must stay unpainted.
+  const harrisColor = '#616a96'
+  const trumpColor = '#963e30'
+  const coalitionColorMap = new Map([
+    ['KAMALA D. HARRIS / TIM WALZ', harrisColor],
+    ['DONALD J. TRUMP / JD VANCE', trumpColor],
+  ])
+  const FIXTURE_BALLOTS_1101 = turnout2024.precincts['1101'].ballots
+
+  it('paints only precincts with a coalition row; tooltip names the dominant next choice', () => {
+    const fc = buildPrecinctFeatures({
+      ...base,
+      colorMap: coalitionColorMap,
+      bundle: { dateCode: '20241105', era: 'prec_2022', turnout: turnout2024, race: president2024 },
+      geometry: geo2022,
+      mode: 'results',
+      coalition: {
+        rows: { '1101': { dominant: 'KAMALA D. HARRIS / TIM WALZ', dominantShare: 0.6, cohort: 40 } },
+        quartiles: null,
+        focusDisplay: 'Peskin',
+      },
+    })
+    const labels = fc.features.map((f) => f.properties?.label)
+    expect(labels).toEqual(['1101']) // every other turnout row has no coalition row → unpainted
+    const p = fc.features[0].properties!
+    expect(p.tipLeaderName).toBe('Harris') // leaderDisplayName
+    expect(p.tipLeaderPhrase).toBe('next choice of 60% of Peskin voters here')
+    // «votes» must be the turnout row's ballots-cast value (660), NOT the
+    // coalition cohort (40).
+    expect(p.votes).toBe(FIXTURE_BALLOTS_1101)
+    expect(p.votes).toBe(660)
+  })
+
+  it('no-next-choice dominant: paper fill and the had-no-next-choice phrase', () => {
+    const fc = buildPrecinctFeatures({
+      ...base,
+      colorMap: coalitionColorMap,
+      bundle: { dateCode: '20241105', era: 'prec_2022', turnout: turnout2024, race: president2024 },
+      geometry: geo2022,
+      mode: 'results',
+      coalition: {
+        rows: { '1101': { dominant: null, dominantShare: 0.55, cohort: 40 } },
+        quartiles: null,
+        focusDisplay: 'Peskin',
+      },
+    })
+    const p = fc.features[0].properties!
+    expect(p.fillColor).toBe('#a8926a')
+    expect(p.tipLeaderName).toBe('No next choice')
+    expect(p.tipLeaderPhrase).toBe('55% of Peskin voters had no next choice here')
+  })
+
+  it('coalition preempts focusCandidate and the results precompute', () => {
+    const fc = buildPrecinctFeatures({
+      ...base,
+      colorMap: coalitionColorMap,
+      bundle: { dateCode: '20241105', era: 'prec_2022', turnout: turnout2024, race: president2024 },
+      geometry: geo2022,
+      mode: 'results',
+      focusCandidate: 'DONALD J. TRUMP / JD VANCE', // would paint focusFill without the lens
+      coalition: {
+        rows: { '1101': { dominant: 'KAMALA D. HARRIS / TIM WALZ', dominantShare: 0.6, cohort: 40 } },
+        quartiles: null,
+        focusDisplay: 'Peskin',
+      },
+    })
+    expect(fc.features[0].properties!.tipLeaderPhrase).toContain('next choice of')
+  })
+})
+
 describe('name-normalization gate — all six elections', () => {
   const frames: Record<string, Set<string>> = {
     legacy26: new Set(
