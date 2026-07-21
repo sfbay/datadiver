@@ -185,6 +185,7 @@ describe('buildPrecinctFeatures — replay lens (leader steps + drain + flip lif
     rows: Record<string, ReplayPaintRow>,
     lift = false,
     quartiles: [number, number, number] | null = fixedQuartiles,
+    changedLabels?: ReadonlySet<string>,
   ) =>
     buildPrecinctFeatures({
       ...base,
@@ -193,7 +194,7 @@ describe('buildPrecinctFeatures — replay lens (leader steps + drain + flip lif
       geometry: geo2022,
       mode: 'results',
       focusCandidate: 'DONALD J. TRUMP / JD VANCE',
-      replay: { rows, quartiles, round: 3, totalRounds: 5, lift },
+      replay: { rows, quartiles, round: 3, totalRounds: 5, lift, changedLabels },
     })
 
   it('preempts focusCandidate — precinct 1101 (Harris-led) paints Harris color, not the focus hue', () => {
@@ -248,6 +249,27 @@ describe('buildPrecinctFeatures — replay lens (leader steps + drain + flip lif
     // total (640); the leader phrase is the "still counting" carrier.
     expect(f?.properties?.votes).toBe(turnout2024.precincts['1101'].ballots)
     expect(f?.properties?.votes).toBe(660)
+  })
+
+  it('stamps whatifChanged=true only for labels in replay.changedLabels', () => {
+    const fc = buildWithReplay(fullReplayRows, false, fixedQuartiles, new Set(['1101']))
+    expect(fc.features.find((f) => f.properties?.label === '1101')?.properties?.whatifChanged).toBe(true)
+    expect(fc.features.find((f) => f.properties?.label === '1102')?.properties?.whatifChanged).toBe(false)
+  })
+
+  it('stamps whatifChanged=false everywhere when changedLabels is absent (incl. base modes)', () => {
+    const replayFc = buildWithReplay(fullReplayRows)
+    expect(replayFc.features.every((f) => f.properties?.whatifChanged === false)).toBe(true)
+    const baseFc = buildPrecinctFeatures({
+      ...base,
+      colorMap,
+      bundle: { dateCode: '20241105', era: 'prec_2022', turnout: turnout2024, race: president2024 },
+      geometry: geo2022,
+      mode: 'results',
+      focusCandidate: null,
+    })
+    expect(baseFc.features.length).toBeGreaterThan(0)
+    expect(baseFc.features.every((f) => f.properties?.whatifChanged === false)).toBe(true)
   })
 })
 

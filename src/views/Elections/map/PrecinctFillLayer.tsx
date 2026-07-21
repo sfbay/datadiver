@@ -66,6 +66,23 @@ export default function PrecinctFillLayer({
         'line-width': 0.5,
       },
     } as mapboxgl.AnyLayer,
+    // WHAT-IF divergence emphasis — terracotta ring on precincts whose
+    // counterfactual final leader differs from the certified count. An
+    // emphasis OUTLINE, deliberately not the house hatch (hatch means
+    // "non-comparable/excluded"; these are the most significant precincts
+    // on the map). Filter-driven: draws nothing unless the join stamped
+    // whatifChanged=true (only on the counterfactual final round).
+    {
+      id: 'election-precinct-whatif-outline',
+      type: 'line',
+      source: 'election-precincts',
+      filter: ['==', ['get', 'whatifChanged'], true],
+      paint: {
+        'line-color': '#b85a33',
+        'line-width': 1.5,
+        'line-opacity': 0.9 * fade,
+      },
+    } as mapboxgl.AnyLayer,
   ], [fade, fadeMs, isDarkMode])
 
   useMapLayer(map, 'election-precincts', geojson, layers, { belowLabels: true })
