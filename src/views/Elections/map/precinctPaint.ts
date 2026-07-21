@@ -6,6 +6,7 @@
  */
 import { marginColor, measureColor, turnoutColor } from '@/utils/electionColors'
 import { cleanCandidateName } from '@/utils/electionData'
+import { mixHex } from '@/utils/colorMix'
 
 export interface PrecinctLeader {
   /** Clean candidate name (party suffix stripped) — keys the color map. */
@@ -93,6 +94,21 @@ export function resultsFill(
       ? decisivenessOpacityRelative(leader.share, quartiles)
       : decisivenessOpacity(leader.share),
   }
+}
+
+/** REPLAY: leader steps + drain — pigment fades toward the paper anchor as
+ *  the precinct's ballots stop counting (tonal-age-ramp vocabulary). Capped
+ *  at 0.5 so hue never fully vanishes. drainShare 0 ≡ resultsFill exactly
+ *  (the round-1 paint-identity pin). */
+export function replayFill(
+  leader: PrecinctLeader,
+  colorMap: Map<string, string>,
+  quartiles: [number, number, number] | null,
+  drainShare: number,
+): Fill {
+  const base = resultsFill(leader, colorMap, quartiles)
+  if (drainShare <= 0) return base
+  return { color: mixHex(base.color, '#d4c8a8', Math.min(drainShare, 0.5)), opacity: base.opacity }
 }
 
 /** Yes/no diverging ramp (brick → paper-300 → moss). */

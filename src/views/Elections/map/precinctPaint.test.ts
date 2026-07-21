@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { mixHex } from '@/utils/colorMix'
 import {
   decisivenessOpacity,
   decisivenessOpacityRelative,
@@ -8,6 +9,7 @@ import {
   leaderShareQuartiles,
   marginFill,
   propFill,
+  replayFill,
   resultsFill,
   turnoutFill,
 } from './precinctPaint'
@@ -64,6 +66,33 @@ describe('fill functions', () => {
   it('turnoutFill and marginFill carry fixed 0.55 opacity', () => {
     expect(turnoutFill(0.74).opacity).toBe(0.55)
     expect(marginFill(0.2).opacity).toBe(0.55)
+  })
+})
+
+describe('replayFill — leader steps + drain toward the paper anchor', () => {
+  const map = new Map([['A', '#616a96']])
+  const leader = { name: 'A', share: 0.6, lead: 0.2 }
+
+  it('drainShare 0 deep-equals resultsFill exactly (round-1 paint-identity pin)', () => {
+    expect(replayFill(leader, map, null, 0)).toEqual(resultsFill(leader, map, null))
+  })
+
+  it('drainShare <= 0 (negative) also returns resultsFill unchanged', () => {
+    expect(replayFill(leader, map, null, -0.2)).toEqual(resultsFill(leader, map, null))
+  })
+
+  it('mixes color toward the paper anchor at t=drainShare, opacity unchanged', () => {
+    const base = resultsFill(leader, map, null)
+    const result = replayFill(leader, map, null, 0.3)
+    expect(result.opacity).toBe(base.opacity)
+    expect(result.color).toBe(mixHex(base.color, '#d4c8a8', 0.3))
+  })
+
+  it('drain is capped at 0.5 (drainShare 0.9 → mix t 0.5)', () => {
+    const base = resultsFill(leader, map, null)
+    const result = replayFill(leader, map, null, 0.9)
+    expect(result.color).toBe(mixHex(base.color, '#d4c8a8', 0.5))
+    expect(result.color).not.toBe(mixHex(base.color, '#d4c8a8', 0.9))
   })
 })
 

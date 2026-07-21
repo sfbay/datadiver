@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import type { PrecinctRaceFile, PrecinctTurnoutFile } from '@/types/elections'
-import { buildPrecinctFeatures, candidateShares } from './precinctJoin'
+import type { ReplayPaintRow } from '@/lib/rcv/replay'
+import { buildPrecinctFeatures, candidateShares, FLIP_LIFT } from './precinctJoin'
 
 // Real committed files as fixtures — the join is only as good as its
 // behavior against the actual emitted data (paths are repo-root relative;
@@ -138,6 +139,92 @@ describe('buildPrecinctFeatures — leader view now spreads across quartile step
     })
     const distinctOpacities = new Set(fc.features.map((f) => f.properties?.fillOpacity))
     expect(distinctOpacities.size).toBeGreaterThanOrEqual(3)
+  })
+})
+
+describe('buildPrecinctFeatures — replay lens (leader steps + drain + flip lift)', () => {
+  const harrisColor = '#616a96'
+  const trumpColor = '#963e30'
+  const colorMap = new Map([
+    ['KAMALA D. HARRIS / TIM WALZ', harrisColor],
+    ['DONALD J. TRUMP / JD VANCE', trumpColor],
+  ])
+
+  const toReplayRow = (raceRow: { votes: Record<string, number>; total: number }): ReplayPaintRow => ({
+    votes: raceRow.votes,
+    total: raceRow.total,
+    drainShare: 0,
+    flipped: false,
+  })
+
+  // Real 2024 president votes drive the replay rows — same leader/share
+  // spread the existing quartile-fix test relies on, just fed through the
+  // replay lens instead of `bundle.race`.
+  const fullReplayRows: Record<string, ReplayPaintRow> = Object.fromEntries(
+    Object.entries(president2024.precincts).map(([label, row]) => [label, toReplayRow(row)]),
+  )
+
+  const buildWithReplay = (rows: Record<string, ReplayPaintRow>, lift = false) =>
+    buildPrecinctFeatures({
+      ...base,
+      colorMap,
+      bundle: { dateCode: '20241105', era: 'prec_2022', turnout: turnout2024, race: president2024 },
+      geometry: geo2022,
+      mode: 'results',
+      focusCandidate: 'DONALD J. TRUMP / JD VANCE',
+      replay: { rows, round: 3, totalRounds: 5, lift },
+    })
+
+  it('preempts focusCandidate — precinct 1101 (Harris-led) paints Harris color, not the focus hue', () => {
+    const fc = buildWithReplay(fullReplayRows)
+    const f = fc.features.find((x) => x.properties?.label === '1101')
+    // Under focus mode EVERY feature paints the focus (Trump) hue regardless
+    // of who actually leads there — painting Harris's color at a Harris-led
+    // precinct is only possible if replay preempted focus mode.
+    expect(f?.properties?.fillColor).toBe(harrisColor)
+    expect(f?.properties?.fillColor).not.toBe(trumpColor)
+  })
+
+  it('a turnout label missing from replay.rows is skipped (unpainted)', () => {
+    const rest = { ...fullReplayRows }
+    delete rest['1101']
+    const fc = buildWithReplay(rest)
+    expect(fc.features.some((f) => f.properties?.label === '1101')).toBe(false)
+    expect(fc.features.some((f) => f.properties?.label === '1102')).toBe(true) // everything else still paints
+  })
+
+  it('flipped && lift adds FLIP_LIFT capped at MAX_OPACITY (0.8)', () => {
+    const landslideRows: Record<string, ReplayPaintRow> = {
+      ...fullReplayRows,
+      '1101': { votes: { 'LANDSLIDE CANDIDATE': 99, OTHER: 1 }, total: 100, drainShare: 0, flipped: true },
+    }
+    const unlifted = buildWithReplay(landslideRows, false)
+    const lifted = buildWithReplay(landslideRows, true)
+    const unliftedOpacity = unlifted.features.find((x) => x.properties?.label === '1101')?.properties?.fillOpacity
+    const liftedOpacity = lifted.features.find((x) => x.properties?.label === '1101')?.properties?.fillOpacity
+    expect(unliftedOpacity).toBe(0.7) // top decisiveness step, pre-lift
+    expect(liftedOpacity).toBe(0.8) // 0.7 + FLIP_LIFT(0.12) = 0.82, capped at MAX_OPACITY
+    expect(liftedOpacity).toBeLessThanOrEqual(0.8)
+  })
+
+  it('quartiles are computed from replay rows over turnout-joined labels only (an off-frame row cannot shift them)', () => {
+    const baseline = buildWithReplay(fullReplayRows)
+    const withGhost: Record<string, ReplayPaintRow> = {
+      ...fullReplayRows,
+      // no turnout label maps to this key, so it must never enter the quartile calc
+      'GHOST-9999': { votes: { GHOST_WINNER: 1 }, total: 1, drainShare: 0, flipped: false },
+    }
+    const withGhostFc = buildWithReplay(withGhost)
+    const opacities = (fc: GeoJSON.FeatureCollection) => fc.features.map((f) => f.properties?.fillOpacity).sort()
+    expect(opacities(withGhostFc)).toEqual(opacities(baseline))
+  })
+
+  it('tooltip phrase composes as «Name» — NN% of ballots still counting here; votes = continuing total', () => {
+    const fc = buildWithReplay(fullReplayRows)
+    const f = fc.features.find((x) => x.properties?.label === '1101')
+    expect(f?.properties?.tipLeaderName).toBe('Harris')
+    expect(f?.properties?.tipLeaderPhrase).toBe('72% of ballots still counting here')
+    expect(f?.properties?.votes).toBe(640)
   })
 })
 
