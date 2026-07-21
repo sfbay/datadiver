@@ -38,9 +38,22 @@ export function useRcvTransport(
   const totalRounds = rcvData?.rounds.length ?? 0
   const reducedMotion = usePrefersReducedMotion()
 
-  const [activeRound, setActiveRoundState] = useState(() =>
+  const [rawRound, setRawRound] = useState(() =>
     clampRound(opts?.initialRound ?? 0, totalRounds),
   )
+  // Derive the exposed round from the LIVE totalRounds rather than trusting
+  // the state write's own clamp — the reset effect below only fires AFTER
+  // the commit that changes `rcvData` (React runs passive effects
+  // post-paint), so for one frame a race switch to a SHORTER contest could
+  // otherwise expose a raw round left over from the previous, longer
+  // contest, indexing past the new rounds array. This is the same
+  // invariant RCVRoundChart used to enforce inline before Task 9
+  // centralized the transport clock here (its old comment: "a controlled
+  // round can outlive a race switch… an index past rounds.length crashes
+  // on .candidates"). Deriving it here means every subscriber — the chart,
+  // and the Task 12 map — inherits the invariant at the source instead of
+  // reimplementing it downstream.
+  const activeRound = clampRound(rawRound, totalRounds)
   const [isPlaying, setIsPlaying] = useState(false)
   const [justEliminatedNames, setJustEliminatedNames] = useState<string[]>([])
 
@@ -55,15 +68,17 @@ export function useRcvTransport(
   // story is the redistribution; starting at the end spoils it).
   useEffect(() => {
     const total = rcvData?.rounds.length ?? 0
-    setActiveRoundState(clampRound(optsRef.current?.initialRound ?? 0, total))
+    setRawRound(clampRound(optsRef.current?.initialRound ?? 0, total))
     setIsPlaying(false)
   }, [rcvData])
 
   // Clamped setter every mutation path funnels through — autoplay ticks
   // included, so a race switch mid-flight can never park the clock past
-  // the new contest's last round.
+  // the new contest's last round. (The derive-time clamp above is a second,
+  // belt-and-suspenders layer for the one pre-effect frame this setter
+  // can't reach — see the comment there.)
   const goToRound = useCallback(
-    (r: number) => setActiveRoundState(clampRound(r, totalRounds)),
+    (r: number) => setRawRound(clampRound(r, totalRounds)),
     [totalRounds],
   )
 
