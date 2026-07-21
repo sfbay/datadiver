@@ -891,7 +891,12 @@ export default function Elections() {
         }
         const raceRow = paintBundle.race?.precincts[selectedPrecinct]
         const leader = raceRow ? leaderOf(raceRow.votes) : null
-        if (leader) {
+        // Under an active counterfactual, the CERTIFIED precinct leader must
+        // not overwrite the Hypothetical winner card — it would contradict
+        // the counterfactual map fill (and the terracotta outline) on the
+        // very precinct being inspected (final-review F1). The turnout
+        // override above stays: turnout is certified-stable under strikes.
+        if (leader && !(activeLens === 'whatif' && whatIfModel)) {
           cards[0] = {
             ...cards[0],
             label: 'Leads this precinct',
