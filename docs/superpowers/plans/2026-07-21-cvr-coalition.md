@@ -197,7 +197,13 @@ describe('coalition — synthetic fixtures', () => {
     const { rows } = coalitionPaintRows(sc, artifact)
     expect(rows['1001'].dominant).toBeNull() // none 12 vs BOB 3
     expect(rows['1001'].dominantShare).toBeCloseTo(12 / 15)
-    expect(rows['1002'].dominant).toBe('Bob Bbb') // cleanCandidateName-processed
+    // cleanCandidateName strips ONLY "\n(PARTY)" suffixes — names stay
+    // verbatim (all-caps). This is the colorMap-key contract: candidateColors
+    // keys are RAW certified names, so `dominant` must round-trip through
+    // colorMap.get() exactly like replay's leaderOf() names do. NEVER
+    // title-case here — a sentence-cased dominant misses every colorMap
+    // lookup and the whole coalition map silently paints paper.
+    expect(rows['1002'].dominant).toBe('BOB BBB')
     expect(rows['1002'].dominantShare).toBeCloseTo(9 / 11)
   })
 })
