@@ -147,7 +147,10 @@ export default function CoalitionPanel({
 
   const [rivalOverride, setRivalOverride] = useState<number | null>(null)
   useEffect(() => setRivalOverride(null), [focusedCandidate])
-  const rivalIdx = rivalOverride ?? defaultRivalIdx
+  // A stale override equal to the focus must fall back render-synchronously —
+  // the effect reset above lands a frame late (focus A → pick rival B →
+  // click B in the roster: same render, rivalOverride === focusIdx).
+  const rivalIdx = rivalOverride != null && rivalOverride !== focusIdx ? rivalOverride : defaultRivalIdx
 
   return (
     <div>
