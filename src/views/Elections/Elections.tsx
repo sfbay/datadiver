@@ -37,7 +37,7 @@ import { candidateShares, type PaintBundle } from './map/precinctJoin'
 import { parseLens, SHIPPED_LENSES, type RcvLens } from './rcvLens'
 import { useReplayModel } from './useReplayModel'
 import { replayPaintRows } from '@/lib/rcv/replay'
-import { computeSecondChoices, computeHeadToHead, coalitionPaintRows } from '@/lib/rcv/coalition'
+import { COALITION_FLOOR, computeSecondChoices, computeHeadToHead, coalitionPaintRows } from '@/lib/rcv/coalition'
 import { useEraFadedBundle } from './map/useEraFadedBundle'
 import PrecinctFillLayer from './map/PrecinctFillLayer'
 import NeighborhoodFrameLayer from './map/NeighborhoodFrameLayer'
@@ -526,7 +526,10 @@ export default function Elections() {
     const p = cvrArtifact.precincts.indexOf(selectedPrecinct)
     if (p < 0) return undefined
     const pp = secondChoices.byPrecinct[p]
-    if (pp.total === 0) return undefined
+    // The map's n<10 floor holds here too — a suppressed precinct's full
+    // composition in the detail panel would be single-digit-ballot
+    // storytelling through the side door.
+    if (pp.total < COALITION_FLOOR) return undefined
     const segments = Array.from(pp.next, (votes, i) => ({ name: cvrArtifact.candidates[i], votes }))
       .filter((s) => s.votes > 0)
       .sort((a, b) => b.votes - a.votes)
