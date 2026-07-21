@@ -31,12 +31,13 @@ import { useElectionTimeline } from '@/hooks/useElectionTimeline'
 import BallotMeasureExplorer from '@/components/charts/BallotMeasureExplorer'
 import { useBallotPropositions } from '@/hooks/useElectionResults'
 import { toSentenceCase } from '@/utils/format'
-import { displayNhood, leaderDisplayName, nhoodKey } from '@/utils/electionData'
+import { cleanCandidateName, displayNhood, leaderDisplayName, nhoodKey } from '@/utils/electionData'
 import { isProposition, leaderOf, leaderShareQuartiles } from './map/precinctPaint'
 import { candidateShares, type PaintBundle } from './map/precinctJoin'
 import { parseLens, SHIPPED_LENSES, type RcvLens } from './rcvLens'
 import { useReplayModel } from './useReplayModel'
 import { replayPaintRows } from '@/lib/rcv/replay'
+import { computeSecondChoices, computeHeadToHead, coalitionPaintRows } from '@/lib/rcv/coalition'
 import { useEraFadedBundle } from './map/useEraFadedBundle'
 import PrecinctFillLayer from './map/PrecinctFillLayer'
 import NeighborhoodFrameLayer from './map/NeighborhoodFrameLayer'
@@ -45,6 +46,7 @@ import CoverageChip from './map/CoverageChip'
 import NeighborhoodElectionPanel from './panels/NeighborhoodElectionPanel'
 import PrecinctDetailPanel from './panels/PrecinctDetailPanel'
 import NeighborhoodsSidebarContent from './panels/NeighborhoodsSidebarContent'
+import CoalitionPanel from './panels/CoalitionPanel'
 
 type MapMode = 'results' | 'turnout' | 'margin'
 type SidebarTab = 'races' | 'neighborhoods' | 'measures'
@@ -339,7 +341,7 @@ export default function Elections() {
   // not just the DOM); identity-guard against useStaticJSON's
   // stale-previous-data refetch window, same as raceFile above.
   const { data: cvrArtifactRaw } = useCVRBallots(
-    displayDateCode, activeRace?.id ?? null, activeLens === 'replay',
+    displayDateCode, activeRace?.id ?? null, activeLens === 'replay' || activeLens === 'coalition',
   )
   const cvrArtifact =
     cvrArtifactRaw?.dateCode === displayDateCode && cvrArtifactRaw?.raceId === activeRace?.id
@@ -412,6 +414,84 @@ export default function Elections() {
       withheldCount: cvrArtifact?.sovSuppressed.length ?? 0,
     }
   }, [activeLens, rcvData, rcvTransport.activeRound, cvrArtifact])
+
+  // ── COALITION lens data (CVR ballots → second-choice geography) ────
+  const coalitionFocus = useMemo(() => {
+    if (activeLens !== 'coalition' || !cvrArtifact || !focusedCandidate) return null
+    const clean = cleanCandidateName(focusedCandidate)
+    const idx = cvrArtifact.candidates.findIndex((c) => cleanCandidateName(c) === clean)
+    if (idx < 0) return null
+    return { idx, display: leaderDisplayName(clean) }
+  }, [activeLens, cvrArtifact, focusedCandidate])
+
+  const secondChoices = useMemo(
+    () => (coalitionFocus && replayModel ? computeSecondChoices(replayModel.ballots, coalitionFocus.idx) : null),
+    [coalitionFocus, replayModel],
+  )
+
+  const coalitionPaint = useMemo(
+    () => (secondChoices && cvrArtifact ? coalitionPaintRows(secondChoices, cvrArtifact) : null),
+    [secondChoices, cvrArtifact],
+  )
+
+  // Race-relative quartiles over PAINTED rows + the floor-suppressed count the
+  // legend discloses. Mirrors the replayQuartiles memo above: filter both
+  // through the SAME turnout-label set it uses (turnoutFile.precincts minus
+  // unmapped rows), so withheld/"0000" ids in the artifact can't skew the
+  // cutpoints or inflate the disclosure.
+  const coalitionQuartiles = useMemo((): [number, number, number] | null => {
+    if (!coalitionPaint || !turnoutFile) return null
+    const shares: number[] = []
+    for (const [label, row] of Object.entries(coalitionPaint.rows)) {
+      const turnoutRow = turnoutFile.precincts[label]
+      if (!turnoutRow || turnoutRow.unmapped) continue
+      shares.push(row.dominantShare)
+    }
+    return leaderShareQuartiles(shares)
+  }, [coalitionPaint, turnoutFile])
+
+  const coalitionSuppressedShown = useMemo(() => {
+    if (!coalitionPaint || !turnoutFile) return 0
+    return coalitionPaint.suppressedIds.filter((id) => {
+      const turnoutRow = turnoutFile.precincts[id]
+      return turnoutRow && !turnoutRow.unmapped
+    }).length
+  }, [coalitionPaint, turnoutFile])
+
+  const headToHead = useMemo(
+    () =>
+      activeLens === 'coalition' && replayModel && cvrArtifact
+        ? computeHeadToHead(replayModel.ballots, cvrArtifact.candidates)
+        : null,
+    [activeLens, replayModel, cvrArtifact],
+  )
+
+  const coalitionOption = useMemo(
+    () =>
+      activeLens === 'coalition' && coalitionPaint && coalitionFocus
+        ? { rows: coalitionPaint.rows, quartiles: coalitionQuartiles, focusDisplay: coalitionFocus.display }
+        : undefined,
+    [activeLens, coalitionPaint, coalitionQuartiles, coalitionFocus],
+  )
+
+  const coalitionLegendState = useMemo(() => {
+    if (activeLens !== 'coalition' || !coalitionFocus || !secondChoices || !cvrArtifact) return undefined
+    const total = secondChoices.total
+    const recipients = Array.from(secondChoices.next, (votes, i) => ({ name: cvrArtifact.candidates[i], votes }))
+      .filter((r) => r.votes > 0)
+      .sort((a, b) => b.votes - a.votes)
+      .slice(0, 5)
+      .map((r) => ({ ...r, pct: total > 0 ? (r.votes / total) * 100 : 0 }))
+    return {
+      focusDisplay: coalitionFocus.display,
+      cohort: total,
+      recipients,
+      nonePct: total > 0 ? (secondChoices.none / total) * 100 : 0,
+      overvoteCount: secondChoices.overvote,
+      suppressedCount: coalitionSuppressedShown,
+      withheldCount: cvrArtifact.sovSuppressed.length,
+    }
+  }, [activeLens, coalitionFocus, secondChoices, cvrArtifact, coalitionSuppressedShown])
 
   // Race still loading (or 404 → error) → race: null → the join paints turnout
   // for that beat instead of a blank. Progressive, never empty.
@@ -817,6 +897,7 @@ export default function Elections() {
               selectedNeighborhood={selectedNeighborhood}
               focusCandidate={activeFocusCandidate}
               replay={replayOption}
+              coalition={coalitionOption}
               fade={fade}
               fadeMs={fadeMs}
             />
@@ -860,7 +941,7 @@ export default function Elections() {
                   // (the DetailPanelShell precedent guard, spec §4.6).
                   maxWidth: rcvCollapsed
                     ? undefined
-                    : activeLens === null && rcvViewMode === 'flow'
+                    : (activeLens === null && rcvViewMode === 'flow') || activeLens === 'coalition'
                       ? 'min(648px, 100vw - 2.5rem)'
                       : 'min(448px, 100vw - 2.5rem)',
                 }}
@@ -875,6 +956,9 @@ export default function Elections() {
                     {rcvData.totalRounds} Rounds &middot; Winner: {rcvData.winner.split(' ').pop()}
                     {rcvCollapsed && activeLens === 'replay' && (
                       <> &middot; REPLAY &middot; R{rcvTransport.activeRound + 1}/{rcvTransport.totalRounds}</>
+                    )}
+                    {rcvCollapsed && activeLens === 'coalition' && (
+                      <> &middot; COALITION{coalitionFocus ? <> &middot; {coalitionFocus.display}</> : null}</>
                     )}
                   </p>
                   {/* View toggle — hidden while minimized (the chip stays a
@@ -937,6 +1021,21 @@ export default function Elections() {
                           transport={rcvTransport}
                         />
                       )
+                    case 'coalition':
+                      return cvrArtifact ? (
+                        <CoalitionPanel
+                          rcvData={rcvData}
+                          artifact={cvrArtifact}
+                          candidateColors={candidateColors}
+                          focusedCandidate={focusedCandidate}
+                          onFocusCandidate={setFocusedCandidate}
+                          secondChoices={secondChoices}
+                          headToHead={headToHead}
+                          focusDisplay={coalitionFocus?.display ?? null}
+                        />
+                      ) : (
+                        <p className="text-micro text-slate-400 px-2 py-3">Loading ballots…</p>
+                      )
                     default:
                       return rcvViewMode === 'rounds' ? (
                         <RCVRoundChart
@@ -990,6 +1089,8 @@ export default function Elections() {
                 focusExtent={focusExtent}
                 onFocusCandidate={setFocusedCandidate}
                 replayState={activeLens === 'replay' ? replayLegendState : undefined}
+                coalitionState={activeLens === 'coalition' ? coalitionLegendState : undefined}
+                coalitionPrompt={activeLens === 'coalition' && !coalitionFocus}
               />
             )}
           </MapView>
