@@ -8,7 +8,6 @@
  * as cast. Roster-relative ("next continuing at round k") and ranked-anywhere
  * cohort variants are explicitly deferred; do not add them speculatively.
  */
-import { toSentenceCase } from '../../utils/format'
 import { OVERVOTE_TERMINATOR, type CVRBallotArtifact } from '../../types/elections'
 import { cleanCandidateName } from '../../utils/electionData'
 import type { DecodedBallots } from './ballots'
@@ -116,7 +115,7 @@ export function coalitionPaintRows(
     const dominant = noNext > bestVotes || bestIdx < 0 ? null : bestIdx
     const dominantVotes = dominant === null ? noNext : bestVotes
     rows[artifact.precincts[p]] = {
-      dominant: dominant === null ? null : toSentenceCase(cleanCandidateName(artifact.candidates[dominant])),
+      dominant: dominant === null ? null : cleanCandidateName(artifact.candidates[dominant]),
       dominantShare: dominantVotes / pp.total,
       cohort: pp.total,
     }
