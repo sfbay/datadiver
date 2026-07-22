@@ -2,7 +2,7 @@
 
 > **DRAFT** — working paper, July 2026. Target: preprint (OSF/SSRN), ~5–6k words.
 > Spec: `2026-07-21-rcv-cvr-whitepaper-outline.md` (same directory).
-> Drafted: Abstract, §1–§3. Pending: §4–§9 (see outline).
+> Drafted: Abstract, §1–§5. Pending: §6–§9 (see outline).
 > Every quantitative claim below is sourced from `docs/data-insights.md` → Elections,
 > the design spec `docs/superpowers/specs/2026-07-21-rcv-cvr-skin-design.md`, or the
 > committed artifacts and pinned tests in `src/lib/rcv/` — not from memory.
@@ -217,13 +217,212 @@ as a *standing* property — prior tools validate once, at analysis time; here t
 certified election is a permanent test fixture that every future code change must
 re-satisfy (§4).
 
+## 4. The ship-ballots artifact and the self-proving pipeline
+
+### 4.1 Distilling the export
+
+The 5 GB export is bulk, not information: each ballot arrives as a verbose
+session record repeating tabulator, batch, and adjudication metadata around a
+handful of marks. Two aggregations, applied in a build-time generator, collapse
+it into something a browser loads casually.
+
+First, **mark resolution happens once, in the generator**. Each ballot's marks
+are walked rank by rank under the Charter rules of §2.2 — skipped ranks collapse,
+duplicate rankings keep their first occurrence, unresolved write-in marks skip
+their rank, and an overvote appends an explicit terminator and stops — yielding a
+*canonical effective ranking*: the ordered list of candidates this ballot can
+ever support. The step is sound only because each rule is a property of the
+ballot as cast, not of who is in the race: an overvote exhausts at its rank under
+every possible roster, a duplicate keeps its first occurrence regardless of who
+else runs, a skip collapses unconditionally. Roster-independence is what later
+makes counterfactual re-tabulation over these resolved rankings exact rather than
+approximate (§6), and it is why rankings are stored at full depth rather than
+truncated to what the real count happened to reach.
+
+Second, **pattern-group aggregation**: ballots holding identical effective
+rankings collapse into one pattern, and the artifact stores (precinct, pattern,
+count) triples. The November 2024 mayoral race — 410,105 ballots — reduces to
+64,589 distinct patterns in 152,521 precinct-pattern groups: 2.9 MB of plain
+JSON. All ten reconciled races together commit at 3.53 MB, and compress on the
+wire to less than a typical hero image.
+
+Two designs were rejected and are worth recording. Binary packing would roughly
+halve the footprint but destroy inspectability — anyone can open this JSON and
+read a ballot pattern — and would break the pipeline's byte-comparison
+discipline: the generator sorts patterns by citywide frequency (then
+lexicographically) and groups by precinct, so regeneration is deterministic and
+*any* drift between source and committed artifact is detectable by comparison
+alone. Truncating rankings to the depth the certified count reached would save
+little and silently cap the counterfactual lens. The artifact also discloses
+strictly less than its public source — precinct-level aggregation drops the
+tabulator, batch, and record identifiers the export carries — a point §7 returns
+to when presentation floors enter.
+
+### 4.2 Provenance and the adversarial self-test
+
+The fetch step verifies the downloaded export against San Francisco's own
+published SHA-512 checksum before any parsing; the generator then reads the zip
+directly, one batch file at a time. Beyond the byte-comparison check, the
+generator carries a `--self-test` mode that *perturbs one ballot-group count and
+demands the reconciliation gates catch it*. This tests the alarm rather than the
+system: a gate that has never been seen to fail proves nothing.
+
+### 4.3 The gate ladder
+
+Four gates run at artifact build time; every rung throws rather than warns.
+
+- **Gate A — self-proving.** Decode the committed artifact, tabulate it, and
+  deep-equal the result against the city's certified round report: every round,
+  every candidate, every bucket, across all ten races. This is the load-bearing
+  gate: it proves the artifact *and* the tabulator simultaneously, because only a
+  correct pair can reproduce fourteen rounds of certified mayoral arithmetic.
+- **Gate B — precinct grain.** Compare as-cast rank-1 mark tallies — computed
+  before canonicalization, since resolution destroys them — against the certified
+  precinct workbook, row by row, and close the withheld-precinct residual against
+  the neighborhood workbook. The insistence on *as-cast versus as-cast* is not
+  pedantry; §5.1 shows the naive comparison is impossible.
+- **Gate C — roster and join.** Candidate names must form a verbatim bijection
+  between the CVR and the certified round file, and the precinct-identifier set
+  must equal the boundary geometry's (514 = 514).
+- **Gate D — accounting.** The partition identity — continuing votes plus
+  exhausted plus overvotes plus blanks equals total ballots — must hold in every
+  round of every race.
+
+The ladder is also an honesty instrument. The treasurer's race was conducted as
+RCV and its ballots are present in the CVR, but San Francisco published no round
+report for it — so there is nothing to prove against, and the race is pinned as
+*reconciliation-blocked* in the artifact manifest rather than shipped unproven.
+Absence of a proof surface means absence of the feature.
+
+### 4.4 Self-proving as a standing property
+
+The tabulator is a single TypeScript module consumed by both the generator at
+build time and the browser bundle at runtime — the same code, not a port of it.
+A standing test in the repository's ordinary suite re-derives all ten certified
+races from the committed ballot artifacts and deep-equals the certified rounds on
+every test run, in under two seconds. The property this buys is stronger than
+validation: prior CVR tools validate once, at analysis time, and then evolve; here
+the certified election is a permanent test fixture, and any future change that
+alters the kernel's output on any certified race fails continuous integration.
+The shipped tool cannot drift from the proven count without the build turning
+red. One further discipline belongs to this section: the kernel *throws* on an
+elimination tie rather than guessing — no tie exists anywhere in the certified
+November 2024 data (itself a pinned fact), and the counterfactual lens's
+tie-handling (§6) is therefore an explicit, disclosed layer above the kernel, not
+a silent branch inside it.
+
+## 5. What reconciliation taught us about the official data
+
+None of the findings below came from an audit, and none is visible by reading
+the files. Each surfaced the same way: an independent derivation was required to
+match a certified figure exactly, and did not. Each cost a real debugging arc;
+each is now pinned by a test.
+
+### 5.1 Two official first-choice counts, 2,021 votes apart
+
+The precinct workbook and the certified round report both state "first choices"
+for the mayoral race, and they disagree: the 501 published precinct rows sum to
+388,163 (including a 4-vote generic Write-in row), the neighborhood workbook
+totals 389,087, and certified round 1 reports 390,184 continuing votes. The
+numbers are not in error — they count different things. The workbooks tally
+**as-cast rank-1 marks**; the round report tallies **effective first choices**
+after skip, duplicate, and unresolved-write-in resolution, which promotes roughly
+1,100 ballots citywide to a different first choice, while 983 further ballots sit
+in precincts withheld from the precinct workbook entirely (§5.4). We verified the
+naive comparison irreconcilable before rewriting Gate B to compare as-cast marks
+with as-cast marks. Any pipeline that joins SOV-tier and round-tier figures —
+including, we suspect, casual journalistic use — silently spans this 2,021-vote
+semantic gap.
+
+### 5.2 The leader flag marks the eventual winner, not the round leader
+
+In the certified round reports, the `isLeader` flag sits on the candidate who
+ultimately wins — in **every** round, including rounds where they trail. District
+11 is the proof: the certified winner trails from round 1 (8,249 votes to her
+rival's 8,675) through round 5, carrying the flag the entire way, and takes the
+lead only in the final round. The mayoral race masked this semantics for months
+because its winner led every round, so "per-round maximum" and "eventual winner"
+coincided. Gate A caught it; a unit fixture now pins a trailing-winner case so a
+regression to per-round-max fails without needing the full artifacts.
+
+### 5.3 The elimination flag describes the *next* round's removal
+
+A candidate flagged `isEliminated` on round *N* was eliminated *based on* round
+*N*'s standings — their votes redistribute into round *N+1*, and on round *N*
+they still hold live votes. A round's flag therefore describes the future while
+its vote deltas describe the past, and any consumer must explicitly choose a
+side. Three independent pieces of our own display code initially read the flag
+from the wrong side — transfer callouts crediting deltas to the wrong candidate
+shipped to production before the semantics were pinned. The proof method is worth
+stating because it generalizes: **conservation of votes**. For every consecutive
+round pair, each continuing candidate's gain plus the exhausted-ballot delta plus
+overvote drift sums exactly to the *previous* round's flagged eliminee's total —
+verified across all rounds of all races, exact rather than approximate because
+every certified elimination is single.
+
+### 5.4 Ballot secrecy operates through two distinct withholding mechanisms
+
+Thirteen precincts (983 ballots) appear in the neighborhood workbook and in the
+CVR but have no precinct-workbook row at all — the documented small-precinct
+protection. Reconciliation surfaced a second, undocumented mechanism: precincts
+whose row exists but whose figures for a *single contest* are zeroed. November
+2024 has exactly one per contested supervisor district — precincts where turnout
+shows roughly 758 ballots and the CVR carries full tallies, but the published row
+reads zero (one of them publishing a single stray vote). Both mechanisms close
+exactly once modeled; neither is mentioned in the files that exhibit it.
+Relatedly, San Francisco's own certified publications disagree with each other at
+the margin: of 472 candidate totals compared across the neighborhood workbook and
+the citywide summary, 462 match exactly and 10 differ by one or two votes, always
+with the neighborhood sum lower. A reconciliation gate that demanded cross-source
+equality would fail on the city's own internal inconsistency — so ours compares
+each emitted file against its *own* source exactly, and treats sub-5-vote
+cross-source disagreement as a property of the publications.
+
+### 5.5 Three ballots live outside every summary
+
+The certified CVR contains exactly three ballots whose precinct identifier is
+`0`, an identifier absent from the export's own precinct manifest. They are
+counted in the certified round reports — the citywide totals reconcile only
+*with* them — and excluded from both the precinct and neighborhood workbooks,
+whose residuals close only *without* them. The pipeline buckets them under a
+sentinel precinct that joins no geometry: never painted, always counted. Any tool
+reconciling CVR against summary tiers at precinct grain must expect this class of
+unattributed ballot.
+
+### 5.6 Precinct identifiers lie across redistricting
+
+San Francisco renumbered precincts in the 2022 redistricting, and the identifiers
+overlap: precinct 1101 in 2020 and precinct 1101 today are different geography
+that match as text. A join across the break succeeds, throws nothing, and renders
+a plausible, wrong map. Validated against the city's own certified neighborhood
+totals: joining 2020 identifiers through current geography reconciles 4 of 27
+neighborhoods, stranding 19% of the electorate; a spatial max-overlap join
+manages 20 of 40, with boundary-straddling precincts landing in the wrong
+neighborhood in exactly offsetting pairs; only the era-correct boundary file's
+own official neighborhood label reconciles at delta zero. The discipline that
+follows — pin every election to the boundary vintage in force when it was held —
+predates the CVR work but governs it: the ballot artifacts join era-pinned
+geometry, never a crosswalk.
+
+### 5.7 The pattern
+
+The meta-finding is the method. Every semantics above is invisible in
+documentation and invisible to inspection; each became visible at the moment an
+independent implementation failed to reproduce a certified number and the
+discrepancy demanded explanation. Reconciliation is usually framed as quality
+control. Used exactly — equality, not tolerance — it is a *discovery procedure*
+for the undocumented meaning of official data, and the findings it yields
+(counting semantics, flag semantics, withholding mechanisms, unattributed
+ballots) are precisely the ones a consumer must know to use the data honestly.
+The practical corollary for anyone approaching a jurisdiction's CVRs: budget for
+the gap between file *format* and file *meaning*; the format documentation
+describes the former and is silent, sometimes wrong, about the latter.
+
 ---
 
-*Sections pending (see outline): §4 The ship-ballots artifact and the self-proving
-pipeline · §5 What reconciliation taught us about the official data · §6 Three
-lenses on one kernel · §7 Disclosure design for hypothetical civic data ·
-§8 Limitations and future work · §9 Availability · Acknowledgments + AI
-disclosure (lift from /about).*
+*Sections pending (see outline): §6 Three lenses on one kernel · §7 Disclosure
+design for hypothetical civic data · §8 Limitations and future work ·
+§9 Availability · Acknowledgments + AI disclosure (lift from /about).*
 
 ## Citations to verify before preprint (flagged inline as [CITE])
 
