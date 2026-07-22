@@ -17,6 +17,15 @@ export interface PrecinctLegendReplayState {
    *  (exhausted + overvotes, net of round-1 overvotes), 0-100. */
   drainPct: number
   withheldCount: number
+  /** WHAT-IF: painted precincts whose counterfactual final leader differs
+   *  from the certified count — 0 (or absent) hides the outline row. */
+  outlineCount?: number
+  /** WHAT-IF variant — prefixes the eyebrow so the round readout can't be
+   *  mistaken for the certified replay, and adds the methodology sentence
+   *  (the legend is the decoder; the tray card carries state + reset). */
+  hypothetical?: boolean
+  /** WHAT-IF: a counterfactual tie was ladder-broken — discloses inline. */
+  tieBroken?: boolean
 }
 
 /** COALITION lens state — when set, the legend swaps its whole body for the
@@ -135,8 +144,18 @@ export default function PrecinctLegend({
     return (
       <div className="absolute bottom-6 right-5 z-10 glass-card rounded-xl p-3">
         <p className="text-nano font-mono tracking-widest text-paper-600 dark:text-paper-500 mb-1">
-          ── ROUND {replayState.round} OF {replayState.totalRounds}
+          ── {replayState.hypothetical ? 'HYPOTHETICAL — ' : ''}ROUND {replayState.round} OF {replayState.totalRounds}
         </p>
+        {replayState.hypothetical && (
+          <p className="text-micro text-slate-400 mb-1 max-w-[13rem]">
+            Same ballots, rerun without them. The certified result is unchanged.
+          </p>
+        )}
+        {replayState.hypothetical && replayState.tieBroken && (
+          <p className="text-nano text-slate-400/70 dark:text-slate-500 italic mb-1 max-w-[13rem]">
+            A tie was broken using the real election&rsquo;s elimination order.
+          </p>
+        )}
         <p className="text-micro text-slate-400 mb-1">
           Votes counting for {replayState.continuingCount} candidates
         </p>
@@ -164,6 +183,17 @@ export default function PrecinctLegend({
             <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: '#a8926a' }} />
             <span className="text-micro text-slate-400">
               No longer counting — ballots with no remaining choices
+            </span>
+          </div>
+        )}
+        {(replayState.outlineCount ?? 0) > 0 && (
+          <div className="flex items-center gap-2 mt-1.5">
+            <span
+              className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+              style={{ border: '1.5px solid #b85a33' }}
+            />
+            <span className="text-micro text-slate-400">
+              Outlined precincts end with a different winner than the real count.
             </span>
           </div>
         )}

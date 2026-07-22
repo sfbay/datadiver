@@ -36,7 +36,8 @@ import { isProposition, leaderOf, leaderShareQuartiles } from './map/precinctPai
 import { candidateShares, type PaintBundle } from './map/precinctJoin'
 import { parseLens, SHIPPED_LENSES, type RcvLens } from './rcvLens'
 import { useReplayModel } from './useReplayModel'
-import { replayPaintRows } from '@/lib/rcv/replay'
+import { computeReplayRounds, replayPaintRows } from '@/lib/rcv/replay'
+import { tabulateWhatIf } from '@/lib/rcv/whatIf'
 import { COALITION_FLOOR, computeSecondChoices, computeHeadToHead, coalitionPaintRows } from '@/lib/rcv/coalition'
 import { useEraFadedBundle } from './map/useEraFadedBundle'
 import PrecinctFillLayer from './map/PrecinctFillLayer'
@@ -47,6 +48,7 @@ import NeighborhoodElectionPanel from './panels/NeighborhoodElectionPanel'
 import PrecinctDetailPanel from './panels/PrecinctDetailPanel'
 import NeighborhoodsSidebarContent from './panels/NeighborhoodsSidebarContent'
 import CoalitionPanel from './panels/CoalitionPanel'
+import WhatIfPanel from './panels/WhatIfPanel'
 
 type MapMode = 'results' | 'turnout' | 'margin'
 type SidebarTab = 'races' | 'neighborhoods' | 'measures'
@@ -72,6 +74,23 @@ export default function Elections() {
   const selectedRaceId = searchParams.get('race') || null
   const selectedNeighborhood = searchParams.get('neighborhood') || null
   const focusedCandidate = searchParams.get('candidate') || null
+  // ?strike= is repeatable (getAll) — certified names can carry commas, so a
+  // joined single param would be ambiguous. CONTENT-keyed, not searchParams-
+  // identity-keyed: every unrelated URL write (e.g. the settled ?round=
+  // write on pause/seek) births a fresh searchParams object, and an
+  // identity-keyed array would cascade fresh identities into struckIdx →
+  // whatIfModel → whatIfChartData → the transport's reset effect, snapping
+  // a manual round scrub back to the final round. The joined string is a
+  // primitive, so identical strike sets stay referentially stable.
+  // Delimiter is U+0000 (NUL), NOT a space — candidate names are
+  // multi-word ("DANIEL LURIE", "LONDON BREED"); a space delimiter would
+  // shatter every such name into fragments on split and silently corrupt
+  // strike matching for virtually every candidate on the ballot.
+  const strikeKey = searchParams.getAll('strike').join('\u0000')
+  const strikeParams = useMemo(
+    () => (strikeKey ? strikeKey.split('\u0000') : []),
+    [strikeKey],
+  )
   // URL-level lens intent — unknown/unshipped values degrade to null.
   // Whether it's SHOWN is gated further down (`activeLens`) on CVR
   // availability + Time Machine.
@@ -105,6 +124,7 @@ export default function Elections() {
       next.delete('candidate') // a new race has a different candidate set — focus doesn't carry over
       next.delete('lens') // lens + round are per-race state — neither carries over
       next.delete('round')
+      next.delete('strike')
       return next
     }, { replace: true })
   }, [setSearchParams])
@@ -150,6 +170,19 @@ export default function Elections() {
       if (lens) next.set('lens', lens)
       else next.delete('lens')
       next.delete('round') // deleted on EVERY lens change (spec §4.1)
+      if (lens !== 'whatif') next.delete('strike')
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
+
+  // Rewrites the FULL strike set in one write (toggle callers compute the
+  // next set from the current one). Deleting then re-appending keeps the
+  // repeatable-param form canonical.
+  const setStrikes = useCallback((names: string[]) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('strike')
+      for (const n of names) next.append('strike', n)
       return next
     }, { replace: true })
   }, [setSearchParams])
@@ -164,6 +197,7 @@ export default function Elections() {
       const next = new URLSearchParams(prev)
       next.delete('lens')
       next.delete('round')
+      next.delete('strike')
       if (mode === 'results') next.delete('map_mode')
       else next.set('map_mode', mode)
       return next
@@ -229,7 +263,18 @@ export default function Elections() {
   if (initialRoundRef.current === null) {
     const parsed = Number.parseInt(searchParams.get('round') ?? '', 10)
     initialRoundRef.current = {
-      round: rcvLens !== null && Number.isFinite(parsed) && parsed >= 1 ? parsed - 1 : undefined,
+      round: rcvLens === 'replay' && Number.isFinite(parsed) && parsed >= 1 ? parsed - 1 : undefined,
+    }
+  }
+
+  // Separate mount seed for the WHATIF transport — same ref-initializer
+  // pattern. Consumed on the first counterfactual contest; later strike
+  // changes open on the (new) final round.
+  const whatIfSeedRef = useRef<{ round: number | undefined } | null>(null)
+  if (whatIfSeedRef.current === null) {
+    const parsed = Number.parseInt(searchParams.get('round') ?? '', 10)
+    whatIfSeedRef.current = {
+      round: rcvLens === 'whatif' && Number.isFinite(parsed) && parsed >= 1 ? parsed - 1 : undefined,
     }
   }
 
@@ -249,31 +294,13 @@ export default function Elections() {
   }, [rcvData])
 
   // Settled-position `?round=` writes — the URL records where the replay is
-  // PARKED, never every autoplay frame. Lens off → a lingering `?round=` is
-  // meaningless; drop it. searchParamsRef keeps the has/value checks out of
-  // the dep list so this never fires a same-URL replace navigation.
+  // PARKED, never every autoplay frame. searchParamsRef keeps the has/value
+  // checks out of that effect's dep list so it never fires a same-URL
+  // replace navigation. The effect itself lives further down (after the
+  // WHAT-IF transport is defined — it derives `roundTransport` from BOTH
+  // round-bearing lenses).
   const searchParamsRef = useRef(searchParams)
   searchParamsRef.current = searchParams
-  useEffect(() => {
-    if (activeLens === 'replay') {
-      // totalRounds 0 = contest not loaded (or 404) — no position to record.
-      if (rcvTransport.isPlaying || rcvTransport.totalRounds === 0) return
-      const value = String(rcvTransport.activeRound + 1)
-      if (searchParamsRef.current.get('round') === value) return
-      setSearchParams((prev) => {
-        const next = new URLSearchParams(prev)
-        next.set('round', value)
-        return next
-      }, { replace: true })
-      return
-    }
-    if (!searchParamsRef.current.has('round')) return
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev)
-      next.delete('round')
-      return next
-    }, { replace: true })
-  }, [rcvTransport.activeRound, rcvTransport.isPlaying, rcvTransport.totalRounds, activeLens, setSearchParams])
 
   // ── Ballot measures ────────────────────────────────────────────────
   const { data: ballotMeasures } = useBallotPropositions()
@@ -341,7 +368,7 @@ export default function Elections() {
   // not just the DOM); identity-guard against useStaticJSON's
   // stale-previous-data refetch window, same as raceFile above.
   const { data: cvrArtifactRaw } = useCVRBallots(
-    displayDateCode, activeRace?.id ?? null, activeLens === 'replay' || activeLens === 'coalition',
+    displayDateCode, activeRace?.id ?? null, activeLens !== null,
   )
   const cvrArtifact =
     cvrArtifactRaw?.dateCode === displayDateCode && cvrArtifactRaw?.raceId === activeRace?.id
@@ -385,35 +412,6 @@ export default function Elections() {
         : undefined,
     [activeLens, replayRows, replayQuartiles, rcvData, rcvTransport.activeRound, rcvTransport.inTransferWindow],
   )
-
-  // Legend's replay-variant disclosure state: top-5 continuing candidates +
-  // citywide drain (how much of round 1's continuing count no longer holds
-  // a live vote) + the withheld-precinct count from the CVR artifact's own
-  // reconciliation gate. Built off the committed rcvData (not the CVR
-  // replay model) — the legend speaks to the same certified round numbers
-  // the rounds chart does.
-  const replayLegendState = useMemo(() => {
-    if (activeLens !== 'replay' || !rcvData) return undefined
-    const round = rcvData.rounds[rcvTransport.activeRound]
-    const round1 = rcvData.rounds[0]
-    if (!round || !round1) return undefined
-    // The full continuing-candidates count (votes > 0) — the legend's
-    // subtitle N, NOT the top-5 slice length below.
-    const continuingAll = round.candidates.filter((c) => c.votes > 0)
-    const continuing = [...continuingAll]
-      .sort((a, b) => b.votes - a.votes)
-      .slice(0, 5)
-      .map((c) => ({ name: c.name, votes: c.votes, pct: c.percentage }))
-    const drainPct = ((round.exhausted + round.overvotes - round1.overvotes) / round1.continuingTotal) * 100
-    return {
-      round: rcvTransport.activeRound + 1,
-      totalRounds: rcvData.rounds.length,
-      continuing,
-      continuingCount: continuingAll.length,
-      drainPct,
-      withheldCount: cvrArtifact?.sovSuppressed.length ?? 0,
-    }
-  }, [activeLens, rcvData, rcvTransport.activeRound, cvrArtifact])
 
   // ── COALITION lens data (CVR ballots → second-choice geography) ────
   const coalitionFocus = useMemo(() => {
@@ -492,6 +490,190 @@ export default function Elections() {
       withheldCount: cvrArtifact.sovSuppressed.length,
     }
   }, [activeLens, coalitionFocus, secondChoices, cvrArtifact, coalitionSuppressedShown])
+
+  // ── WHAT-IF lens data (strike candidates → counterfactual count) ──────
+  // Sanitized strike indices: unknown names dropped, duplicates dropped,
+  // capped at candidates.length − 2 in URL order — min-2-remaining holds
+  // even against a hand-typed query string. Matched via cleanCandidateName
+  // (the coalitionFocus precedent).
+  const struckIdx = useMemo(() => {
+    if (activeLens !== 'whatif' || !cvrArtifact) return []
+    const out: number[] = []
+    for (const raw of strikeParams) {
+      const clean = cleanCandidateName(raw)
+      const i = cvrArtifact.candidates.findIndex((c) => cleanCandidateName(c) === clean)
+      if (i >= 0 && !out.includes(i)) out.push(i)
+      if (out.length >= cvrArtifact.candidates.length - 2) break
+    }
+    return out
+  }, [activeLens, cvrArtifact, strikeParams])
+
+  // The counterfactual count. Zero strikes → null (the resting state shows
+  // the certified rounds — adjudication 4); tabulateWhatIf is pure and
+  // ~15–30ms for mayor, so a plain memo suffices.
+  const whatIfModel = useMemo(() => {
+    if (activeLens !== 'whatif' || !replayModel || !cvrArtifact || struckIdx.length === 0) return null
+    try {
+      return tabulateWhatIf(
+        replayModel.ballots,
+        { raceId: cvrArtifact.raceId, title: cvrArtifact.title, candidates: cvrArtifact.candidates, precincts: cvrArtifact.precincts },
+        struckIdx,
+        replayModel.tab,
+      )
+    } catch (err) {
+      console.error('[whatif] tabulation failed', err)
+      return null
+    }
+  }, [activeLens, replayModel, cvrArtifact, struckIdx])
+
+  // The contest the whatif chart/transport run on: counterfactual when
+  // strikes exist, certified otherwise (resting state), null off-lens
+  // (an inert totalRounds-0 transport).
+  const whatIfChartData = activeLens === 'whatif' ? (whatIfModel?.contest ?? rcvData ?? null) : null
+
+  const whatIfTransport = useRcvTransport(whatIfChartData, {
+    // Opens on the FINAL round — whatif's question is "how does it end"
+    // (replay's is "how it unfolds"). The mount seed wins once, for
+    // ?lens=whatif&round=K deep links.
+    initialRound: whatIfSeedRef.current.round ?? (whatIfChartData ? whatIfChartData.totalRounds - 1 : undefined),
+  })
+
+  // Consume the mount seed only once the contest the deep link DESCRIBES has
+  // arrived. On a ?lens=whatif&strike=…&round=K cold load, the certified
+  // rcvData lands well before the multi-MB artifact + tabulation, so
+  // whatIfChartData's FIRST identity is the certified interim — clearing the
+  // seed there loses K, and the counterfactual's later reset falls back to
+  // its final round (the Task-3 review's M2 race, confirmed by headless
+  // probe 7a). While strikes are pending, both resets read the seed — the
+  // interim parks on K transiently, then the counterfactual parks on K and
+  // the seed clears. The struckIdx guard releases the hold when every URL
+  // strike sanitizes away (unknown names → no counterfactual ever comes).
+  const whatIfStrikesPending =
+    strikeParams.length > 0 && whatIfModel === null && (!cvrArtifact || struckIdx.length > 0)
+  useEffect(() => {
+    if (whatIfChartData && !whatIfStrikesPending) whatIfSeedRef.current = { round: undefined }
+  }, [whatIfChartData, whatIfStrikesPending])
+
+  // Counterfactual per-round precinct states — certified states when no
+  // strikes (whatIfModel null), so the resting state still paints.
+  const whatIfStates = useMemo(() => {
+    if (activeLens !== 'whatif' || !replayModel) return null
+    return whatIfModel ? computeReplayRounds(replayModel.ballots, whatIfModel) : replayModel.states
+  }, [activeLens, replayModel, whatIfModel])
+
+  const whatIfRows = useMemo(
+    () => whatIfStates && cvrArtifact
+      ? replayPaintRows(whatIfStates, whatIfTransport.activeRound, cvrArtifact)
+      : null,
+    [whatIfStates, cvrArtifact, whatIfTransport.activeRound],
+  )
+
+  // FIXED from the COUNTERFACTUAL's round 1 over painted precincts
+  // (adjudication 3): cutpoints are fixed per tabulation — certified-R1
+  // cutpoints on a shrunken roster would mis-band the counterfactual.
+  const whatIfQuartiles = useMemo((): [number, number, number] | null => {
+    if (!whatIfStates || !cvrArtifact || !turnoutFile) return null
+    const round1Rows = replayPaintRows(whatIfStates, 0, cvrArtifact)
+    const shares: number[] = []
+    for (const [label, row] of Object.entries(turnoutFile.precincts)) {
+      if (row.unmapped) continue
+      const r = round1Rows[label]
+      if (!r || r.total === 0) continue
+      const leader = leaderOf(r.votes)
+      if (leader) shares.push(leader.share)
+    }
+    return leaderShareQuartiles(shares)
+  }, [whatIfStates, cvrArtifact, turnoutFile])
+
+  // Divergence outline set — changedPrecincts filtered through the SAME
+  // painted turnout-label set every quartile memo uses (6 of mayor−Lurie's
+  // 356 are SOV-withheld and must stay unmarked).
+  const whatIfChangedShown = useMemo(() => {
+    const shown = new Set<string>()
+    if (!whatIfModel || !turnoutFile) return shown
+    for (const label of whatIfModel.changedPrecincts) {
+      const row = turnoutFile.precincts[label]
+      if (row && !row.unmapped) shown.add(label)
+    }
+    return shown
+  }, [whatIfModel, turnoutFile])
+
+  const whatIfOnFinalRound =
+    whatIfChartData !== null && whatIfTransport.activeRound === whatIfChartData.totalRounds - 1
+
+  const whatIfOption = useMemo(
+    () =>
+      activeLens === 'whatif' && whatIfRows && whatIfChartData
+        ? {
+            rows: whatIfRows,
+            quartiles: whatIfQuartiles,
+            round: whatIfTransport.activeRound + 1,
+            totalRounds: whatIfChartData.totalRounds,
+            lift: whatIfTransport.inTransferWindow,
+            // Outline only on the counterfactual FINAL round (spec §4.5).
+            changedLabels: whatIfOnFinalRound && whatIfChangedShown.size > 0 ? whatIfChangedShown : undefined,
+          }
+        : undefined,
+    [activeLens, whatIfRows, whatIfChartData, whatIfQuartiles, whatIfTransport.activeRound, whatIfTransport.inTransferWindow, whatIfOnFinalRound, whatIfChangedShown],
+  )
+
+  // Legend disclosure state for BOTH round-bearing lenses. Replay reads the
+  // committed certified rounds; whatif reads the counterfactual contest
+  // (same certified colors — the pin) and adds the outline count + the
+  // hypothetical eyebrow flag.
+  const replayLegendState = useMemo(() => {
+    const contest = activeLens === 'replay' ? (rcvData ?? null) : activeLens === 'whatif' ? whatIfChartData : null
+    const transport = activeLens === 'replay' ? rcvTransport : whatIfTransport
+    if (!contest) return undefined
+    const round = contest.rounds[transport.activeRound]
+    const round1 = contest.rounds[0]
+    if (!round || !round1) return undefined
+    const continuingAll = round.candidates.filter((c) => c.votes > 0)
+    const continuing = [...continuingAll]
+      .sort((a, b) => b.votes - a.votes)
+      .slice(0, 5)
+      .map((c) => ({ name: c.name, votes: c.votes, pct: c.percentage }))
+    const drainPct = round1.continuingTotal > 0
+      ? ((round.exhausted + round.overvotes - round1.overvotes) / round1.continuingTotal) * 100
+      : 0
+    return {
+      round: transport.activeRound + 1,
+      totalRounds: contest.rounds.length,
+      continuing,
+      continuingCount: continuingAll.length,
+      drainPct,
+      withheldCount: cvrArtifact?.sovSuppressed.length ?? 0,
+      outlineCount: activeLens === 'whatif' && whatIfOnFinalRound ? whatIfChangedShown.size : 0,
+      hypothetical: activeLens === 'whatif' && whatIfModel !== null,
+      tieBroken: activeLens === 'whatif' && (whatIfModel?.tiesBroken.length ?? 0) > 0,
+    }
+  }, [activeLens, rcvData, whatIfChartData, rcvTransport, whatIfTransport, cvrArtifact, whatIfOnFinalRound, whatIfChangedShown, whatIfModel])
+
+  // Which transport owns ?round= — replay and whatif are the round-bearing
+  // lenses (coalition has no clock).
+  const roundTransport = activeLens === 'replay' ? rcvTransport : activeLens === 'whatif' ? whatIfTransport : null
+  useEffect(() => {
+    if (roundTransport) {
+      if (roundTransport.isPlaying || roundTransport.totalRounds === 0) return
+      const value = String(roundTransport.activeRound + 1)
+      if (searchParamsRef.current.get('round') === value) return
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev)
+        next.set('round', value)
+        return next
+      }, { replace: true })
+      return
+    }
+    if (!searchParamsRef.current.has('round')) return
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('round')
+      return next
+    }, { replace: true })
+    // Scalar deps only — the transport OBJECT is a fresh identity every
+    // render and would make this run per-render; activeLens covers the
+    // null↔transport switch (the original PR 1 effect's dep discipline).
+  }, [activeLens, roundTransport?.activeRound, roundTransport?.isPlaying, roundTransport?.totalRounds, setSearchParams])
 
   // Race still loading (or 404 → error) → race: null → the join paints turnout
   // for that beat instead of a blank. Progressive, never empty.
@@ -662,6 +844,35 @@ export default function Elections() {
       })
     }
 
+    // WHAT-IF overrides — Winner speaks the counterfactual (certified
+    // pigment: candidateColors is rank-assigned from certified standings and
+    // deliberately NOT re-derived); Rounds discloses the certified count.
+    // Turnout/Registered stay certified (spec §4.5).
+    if (activeLens === 'whatif' && whatIfModel && rcvData) {
+      const cfWinnerRow = whatIfModel.contest.rounds[whatIfModel.contest.totalRounds - 1]
+        .candidates.find((c) => c.name === whatIfModel.contest.winner)
+      // The terracotta HYPOTHETICAL chip is the unmistakable mark (Jesse:
+      // the only non-actual-data surface on the site must read as such at a
+      // glance); the value keeps the winner's certified pigment — the chip,
+      // not the number, carries the warning.
+      cards[0] = {
+        ...cards[0],
+        label: 'Winner',
+        badge: { text: 'HYPOTHETICAL', color: '#b85a33' },
+        value: leaderDisplayName(whatIfModel.contest.winner),
+        color: candidateColors.get(whatIfModel.contest.winner) || ACCENT,
+        subtitle: cfWinnerRow
+          ? `${(cfWinnerRow.percentage * 100).toFixed(1)}% · certified: ${leaderDisplayName(rcvData.winner)}`
+          : `certified: ${leaderDisplayName(rcvData.winner)}`,
+      }
+      const roundsCard = cards.find((c) => c.id === 'rcv-rounds')
+      if (roundsCard) {
+        roundsCard.value = String(whatIfModel.contest.totalRounds)
+        roundsCard.subtitle = `certified: ${rcvData.totalRounds}`
+        roundsCard.badge = { text: 'HYPOTHETICAL', color: '#b85a33' }
+      }
+    }
+
     // ── Selection-aware overrides (comparison-framed, citywide = reference) ──
     const nfile = neighborhoodResults?.dateCode === displayDateCode ? neighborhoodResults : null
 
@@ -687,7 +898,12 @@ export default function Elections() {
         }
         const raceRow = paintBundle.race?.precincts[selectedPrecinct]
         const leader = raceRow ? leaderOf(raceRow.votes) : null
-        if (leader) {
+        // Under an active counterfactual, the CERTIFIED precinct leader must
+        // not overwrite the Hypothetical winner card — it would contradict
+        // the counterfactual map fill (and the terracotta outline) on the
+        // very precinct being inspected (final-review F1). The turnout
+        // override above stays: turnout is certified-stable under strikes.
+        if (leader && !(activeLens === 'whatif' && whatIfModel)) {
           cards[0] = {
             ...cards[0],
             label: 'Leads this precinct',
@@ -721,6 +937,31 @@ export default function Elections() {
       }
     }
 
+    // The hypothetical alert rides IN the tray as the leading card (Jesse's
+    // live QA: the floating plate covered the pill row and the cards' own
+    // chips) — minimizable but always present, zero overlap. Value names
+    // the removal compactly ("− Peskin +2"; the strike roster carries the
+    // full list); the subtitle IS the reset action. Unshifted LAST so the
+    // index-based overrides above (cards[0] winner, cards[1] turnout) stay
+    // valid.
+    if (activeLens === 'whatif' && whatIfModel && cvrArtifact && struckIdx.length > 0) {
+      const surnames = struckIdx.map((i) => leaderDisplayName(cleanCandidateName(cvrArtifact.candidates[i])))
+      // Same grammar as its marked neighbors (Jesse): plain label in the
+      // house label font, the terracotta chip carries HYPOTHETICAL — so the
+      // chip idiom is uniform across Winner / Rounds / Removed.
+      cards.unshift({
+        id: 'whatif-hypothetical',
+        label: 'Removed',
+        shortLabel: 'Removed',
+        badge: { text: 'HYPOTHETICAL', color: '#b85a33' },
+        value: surnames.length === 1 ? surnames[0] : `${surnames[0]} +${surnames.length - 1}`,
+        color: '#b85a33',
+        defaultExpanded: true,
+        subtitle: 'Reset to reality',
+        subtitleAction: () => setStrikes([]),
+      })
+    }
+
     return cards
   }, [
     displayResults,
@@ -733,6 +974,11 @@ export default function Elections() {
     paintBundle,
     neighborhoodResults,
     displayDateCode,
+    activeLens,
+    whatIfModel,
+    cvrArtifact,
+    struckIdx,
+    setStrikes,
   ])
 
   // ── Filtered races for sidebar ────────────────────────────────────
@@ -802,6 +1048,7 @@ export default function Elections() {
                       next.delete('candidate')
                       next.delete('lens')
                       next.delete('round')
+                      next.delete('strike')
                       return next
                     },
                     { replace: true },
@@ -837,7 +1084,7 @@ export default function Elections() {
             </div>
 
             {/* RCV lens strip — CVR-backed lenses for the active race
-                (Replay + Coalition shipped; What-if named but unshipped) */}
+                (Replay · Coalition · What-if, all shipped) */}
             {lensAvailable && (
               <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-lg p-0.5">
                 <span className="text-nano font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-500">
@@ -918,7 +1165,7 @@ export default function Elections() {
               raceIsRCV={displayRace?.isRCV ?? false}
               selectedNeighborhood={selectedNeighborhood}
               focusCandidate={activeFocusCandidate}
-              replay={replayOption}
+              replay={activeLens === 'whatif' ? whatIfOption : replayOption}
               coalition={coalitionOption}
               fade={fade}
               fadeMs={fadeMs}
@@ -950,6 +1197,22 @@ export default function Elections() {
               <CardTray viewId="elections" cards={cardDefs} hideComparison />
             )}
 
+            {/* Hypothetical viewport frame — ambient, pointer-transparent,
+                survives screenshots of any crop; lives INSIDE
+                #elections-capture so PNG exports carry the disclosure
+                (what-if is the one surface on DataDiver that doesn't show
+                actual data, and the marking is load-bearing). The banner
+                itself rides in the CardTray as its own card — the floating
+                plate covered the pill row and the cards' own chips
+                (Jesse's live QA), and a tray card is minimizable but
+                always present with zero overlap. */}
+            {activeLens === 'whatif' && whatIfModel && (
+              <div
+                className="absolute inset-0 z-[2] pointer-events-none border-2 border-terracotta-500/40"
+                aria-hidden
+              />
+            )}
+
             {/* RCV visualization panel — bottom-left when an RCV race is selected */}
             {/* maxWidth = chart width + p-4 padding (32px) + 16px spare — 420
                 used to squeeze the 400px chart's padding to zero on the right
@@ -974,13 +1237,26 @@ export default function Elections() {
                   <span className="text-nano font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-500">
                     RCV
                   </span>
+                  {activeLens === 'whatif' && whatIfModel && (
+                    <span className="text-nano font-mono font-bold px-1.5 py-0.5 rounded tracking-widest bg-terracotta-500/15 text-terracotta-600 dark:text-terracotta-400">
+                      HYPOTHETICAL
+                    </span>
+                  )}
+                  {/* Summary line speaks the ACTIVE count: with strikes live
+                      it must not read "Winner: Lurie" beside a HYPOTHETICAL
+                      chip while the chart below shows Breed winning — the
+                      certified figures stay disclosed on the stat cards'
+                      subtitles. */}
                   <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 flex-1">
-                    {rcvData.totalRounds} Rounds &middot; Winner: {rcvData.winner.split(' ').pop()}
+                    {(activeLens === 'whatif' && whatIfModel ? whatIfModel.contest : rcvData).totalRounds} Rounds &middot; Winner: {(activeLens === 'whatif' && whatIfModel ? whatIfModel.contest : rcvData).winner.split(' ').pop()}
                     {rcvCollapsed && activeLens === 'replay' && (
                       <> &middot; REPLAY &middot; R{rcvTransport.activeRound + 1}/{rcvTransport.totalRounds}</>
                     )}
                     {rcvCollapsed && activeLens === 'coalition' && (
                       <> &middot; COALITION{coalitionFocus ? <> &middot; {coalitionFocus.display}</> : null}</>
+                    )}
+                    {rcvCollapsed && activeLens === 'whatif' && (
+                      <> &middot; WHAT-IF &middot; {struckIdx.length} removed</>
                     )}
                   </p>
                   {/* View toggle — hidden while minimized (the chip stays a
@@ -1058,6 +1334,19 @@ export default function Elections() {
                       ) : (
                         <p className="text-micro text-slate-400 px-2 py-3">Loading ballots…</p>
                       )
+                    case 'whatif':
+                      return cvrArtifact ? (
+                        <WhatIfPanel
+                          artifact={cvrArtifact}
+                          candidateColors={candidateColors}
+                          struckIdx={struckIdx}
+                          onSetStrikes={setStrikes}
+                          chartData={whatIfChartData}
+                          transport={whatIfTransport}
+                        />
+                      ) : (
+                        <p className="text-micro text-slate-400 px-2 py-3">Loading ballots&hellip;</p>
+                      )
                     default:
                       return rcvViewMode === 'rounds' ? (
                         <RCVRoundChart
@@ -1111,7 +1400,7 @@ export default function Elections() {
                 focusedCandidate={activeFocusCandidate}
                 focusExtent={focusExtent}
                 onFocusCandidate={setFocusedCandidate}
-                replayState={activeLens === 'replay' ? replayLegendState : undefined}
+                replayState={activeLens === 'replay' || activeLens === 'whatif' ? replayLegendState : undefined}
                 coalitionState={activeLens === 'coalition' ? coalitionLegendState : undefined}
                 coalitionPrompt={activeLens === 'coalition' && !coalitionFocus}
               />

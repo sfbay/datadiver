@@ -58,6 +58,13 @@ export interface BuildPrecinctOptions {
     round: number
     totalRounds: number
     lift: boolean
+    /** WHAT-IF divergence outline — labels whose counterfactual FINAL-round
+     *  leader differs from the certified one. The caller passes this ONLY
+     *  when the transport sits on the counterfactual final round (spec §4.5:
+     *  the outline renders there alone) and only pre-filtered to painted
+     *  labels. Stamped as `whatifChanged` for the line layer's filter;
+     *  undefined → every feature stamps false. */
+    changedLabels?: ReadonlySet<string>
   }
   /** COALITION lens — dominant second choice of the focus candidate's
    *  first-choice voters. Same preemption as replay: lens-driven fill,
@@ -221,6 +228,7 @@ export function buildPrecinctFeatures(opts: BuildPrecinctOptions): GeoJSON.Featu
           label,
           nhood,
           selected,
+          whatifChanged: opts.replay?.changedLabels?.has(label) === true,
           fillColor: fill.color,
           fillOpacity: selected ? Math.min(MAX_OPACITY, fill.opacity + SELECT_LIFT) : fill.opacity,
           tipLeaderName,
