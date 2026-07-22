@@ -26,13 +26,25 @@ driving three interactive lenses — round-by-round precinct geography, second-c
 that keeps hypothetical output unmistakable. Along the way, reconciliation surfaced
 undocumented semantics in SF's own publications that any CVR consumer must know.
 
-## Audience + candidate venues (Jesse decides)
+## Audience + venues — WORKING PLAN (Jesse, 7/21: IRE-led, dual-track)
 
-- **Practitioner-academic**: ESRA (Election Sciences, Reform & Administration) —
-  best topical fit; NICAR/IRE for the data-journalism methods angle.
-- **Software-paper track**: JOSS (Journal of Open Source Software) — fits the
-  self-proving-artifact framing if the code is opened (open question below).
-- **Preprint first**: arXiv (cs.CY) + the site itself; venues can follow.
+Jesse is an IRE member; that community is both his home and the audience that would
+actually use CVR data. Agreed shape:
+
+1. **Full technical paper (~5–6k words) → PREPRINT** (OSF or SSRN — zero-friction,
+   free DOI, no gatekeeper; arXiv cs.CY only if endorsement is easy). The preprint is
+   the timestamp on the novelty claims (the white space won't stay white) and the
+   citable object the practitioner piece points at. Preprinting forecloses nothing —
+   practitioner venues don't care, and election-science journals allow prior preprints
+   if a journal submission ever follows.
+2. **IRE Journal piece (~1.5–2k words) derived from the paper** — service register:
+   "your jurisdiction publishes ballot-level records too; here's what SF's files
+   won't tell you, and how we proved our count against the certified one."
+3. **NICAR tipsheet/session** when the conference cycle comes around.
+
+Coupling: the preprint's self-proving-reproducibility claim lands best with at least
+`src/lib/rcv/` + the committed ballot artifacts publicly visible — §9's
+code-availability question should be settled before the preprint posts.
 
 ## Section outline
 
