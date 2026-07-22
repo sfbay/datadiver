@@ -2,13 +2,15 @@
 
 > **DRAFT** — working paper, July 2026. Target: preprint (OSF/SSRN), ~5–6k words.
 > Spec: `2026-07-21-rcv-cvr-whitepaper-outline.md` (same directory).
-> Drafted: Abstract, §1–§5. Pending: §6–§9 (see outline).
+> Drafted: COMPLETE (Abstract, §1–§9, acknowledgments). Next: citation
+> verification pass (see checklist at bottom), then venue formatting.
 > Every quantitative claim below is sourced from `docs/data-insights.md` → Elections,
 > the design spec `docs/superpowers/specs/2026-07-21-rcv-cvr-skin-design.md`, or the
 > committed artifacts and pinned tests in `src/lib/rcv/` — not from memory.
 
-**Jesse Garnier** · San Francisco State University, Journalism Department
-<!-- TODO(Jesse): affiliation format / contact line as you want it on the preprint -->
+**Jesse Garnier** · Associate Professor of Journalism, San Francisco State
+University · jesse@jlabsf.org
+<!-- TODO(Jesse): confirm contact line / ORCID for the preprint -->
 
 ## Abstract
 
@@ -436,11 +438,179 @@ The practical corollary for anyone approaching a jurisdiction's CVRs: budget for
 the gap between file *format* and file *meaning*; the format documentation
 describes the former and is silent, sometimes wrong, about the latter.
 
----
+## 6. Three lenses on one kernel
 
-*Sections pending (see outline): §6 Three lenses on one kernel · §7 Disclosure
-design for hypothetical civic data · §8 Limitations and future work ·
-§9 Availability · Acknowledgments + AI disclosure (lift from /about).*
+The lenses are interface, not analysis: each poses a different question to the
+same certified-proven tabulator, entirely client-side. A race's full model —
+decode, tabulate, derive per-round precinct states — computes in tens of
+milliseconds, so every interaction below is instant, and a single master clock
+synchronizes the round chart and the map: scrubbing one scrubs the other, and
+any mid-count state is a shareable URL.
+
+### 6.1 Round replay: watching the city re-sort
+
+The first lens paints each precinct by its leading continuing candidate, round
+by round. Three design decisions carry it. First, a **multi-hue leader fabric**
+rather than one candidate's intensity ramp: the phenomenon RCV geography
+uniquely exhibits — whole neighborhoods flipping allegiance as their candidate
+exits — is visible only when every candidate holds a color (prior art's
+single-candidate ramps cannot show the city re-sorting; §3). Second, **class
+breaks are fixed from round 1**: recomputing lead-strength quartiles per round
+would repaint precincts whose votes never changed — phantom motion — so later
+rounds are read against round 1's scale. Third, ballots that have stopped
+counting are encoded as **drain toward paper**: each precinct's fill desaturates
+toward the page's base tone in proportion to its ballots exhausted since round
+1, so the map literally fades where the electorate's voice has run out — a
+quantity no official publication maps. The thirteen withheld precincts stay
+unpainted in every round (the city's own secrecy discipline, extended); their
+ballots still count in every total, and the legend says so.
+
+### 6.2 Second-choice geography: where a candidate's voters went next
+
+The second lens answers the question every losing coalition asks: *where would
+our votes have gone?* Pick a candidate; each precinct paints by the dominant
+next choice among ballots whose effective first choice was that candidate.
+Cohorts under ten ballots are suppressed and the suppression is counted in the
+legend — disclosure matches display (§7). Ballots with no next choice get their
+own bucket, as do ballots that ranked two candidates at once (the reader-facing
+copy never says "overvote").
+
+This lens forced the paper's subtlest semantic finding. A pairwise "who beats
+whom" question has two legitimate answers: among ballots ranking *both*
+candidates, and inclusively, where a ballot ranking only one counts that one
+ahead of the unranked other. On real ballots they can disagree. In District 11,
+the runner-up beats the eventual winner among-both, 6,181 to 4,920 — yet the
+winner prevails inclusively, 12,001 to 11,803, and inclusively beats every
+rival, consistent with her certified victory. The gap is broad-but-shallow
+support, and quoting one count class while verdicting on the other reads as
+self-contradiction. Our rule: the copy line uses among-both counts (concrete,
+explainable), the beats-every-rival verdict uses inclusive counts (the standard
+pairwise criterion), and a divergence disclosure renders automatically whenever
+the two disagree for the displayed pair. The 2024 mayoral race shows no such
+divergence (the winner prevails both ways, 92,063 to 72,547 among-both) —
+District 11 is why the disclosure exists.
+
+### 6.3 Counterfactual re-tabulation: the count, rerun
+
+The third lens removes candidates and reruns the count — the same ballots, the
+same kernel, a smaller field. Soundness rests on §4.1's roster-independence:
+because canonical rankings encode only properties of the ballot as cast, a
+struck candidate simply drops out of every ranking, exactly as a pre-round-1
+elimination. The kernel itself never guesses at ties (§4.4); the counterfactual
+layer catches its tie signal and resolves by a deterministic, disclosed ladder —
+the real election's elimination order first, then fewer certified first-round
+votes — and reports every invocation to the reader.
+
+Exhaustive runs over the certified ballots yield four findings:
+
+- **Counterfactual ties are vanishingly rare.** All 55 single-candidate strikes
+  across the ten races produce zero elimination ties; the 105 mayoral
+  pair-strikes produce exactly one, which the ladder's first two rungs resolve
+  in agreement. The tie disclosure will almost never render on real data — its
+  behavior is pinned synthetically for exactly that reason.
+- **Striking a winner flips every race, with wildly different geographic blast
+  radii**: removing the mayoral winner hands the race to the runner-up with 356
+  of 514 precincts changing final leader; removing the city attorney (a
+  two-candidate race) changes 510 of 514; district races change 25 to 38.
+- **Reduction to two candidates reproduces the inclusive head-to-head matrix
+  exactly.** The mayoral race struck to its top two tabulates in one round,
+  182,364 to 149,113 — the same numbers the second-choice lens derives from
+  pairwise ranking comparison. Two independent code paths over the same
+  ballots, one truth; pinned as a standing cross-consistency test. It is also
+  a teaching identity: "head-to-head" *is* the election you would get by
+  removing everyone else.
+- **Round count is roster-relative.** Striking the mayoral race's last-place
+  finisher (one first-round vote) changes no precinct and no winner — but the
+  count completes in thirteen rounds instead of fourteen, because his
+  elimination round disappears. Only leaders and geography are comparable
+  across counterfactuals.
+
+## 7. Disclosure design for hypothetical civic data
+
+The counterfactual lens is the only surface in the platform whose numbers are
+not actual data, and it is aimed at the public. That combination raises a
+presentation problem most counterfactual analyses never confront, because they
+never leave the paper they were published in: an interactive tool's output will
+be screenshotted, cropped, and re-shared stripped of its context — sometimes
+carelessly, sometimes deliberately. The design requirement that follows is
+strict: **the hypothetical state must survive a screenshot of any crop.**
+
+The shipped system marks the state redundantly, at every scale a crop could
+isolate: a colored frame around the entire map viewport, drawn *inside* the
+image-export capture region; a leading stat card naming the removed candidates,
+carrying a HYPOTHETICAL chip and a one-click "Reset to reality"; matching chips
+on every statistic the counterfactual changes; and a legend whose title line
+begins HYPOTHETICAL and whose methodology sentence states the epistemics in ten
+words: *"Same ballots, rerun without them. The certified result is
+unchanged."* Statistics the counterfactual does not touch — turnout,
+registration — remain certified and unmarked, and changed statistics stay
+anchored to reality (the hypothetical winner's card subtitles the certified
+winner). Two implementation lessons generalize. First, our own initial design
+failed the requirement and briefly shipped: a disclosure banner rendered
+*outside* the export capture region, so exported images of counterfactual maps
+carried no marking at all — disclosure that is not in the capture path fails
+precisely when it matters most. Second, disclosure must not move the furniture:
+the banner also reflowed the layout under the reader's pointer; the shipped
+design marks state without shifting a single click target.
+
+Color identity obeys the same anchoring discipline. Candidate colors are
+assigned by certified standing and *pinned* across every counterfactual:
+re-deriving colors from counterfactual standings would hand the departed
+winner's color to the new winner, visually implying continuity where the
+scenario's whole point is rupture.
+
+Finally, the privacy floor. Although the ballot-level source is public, the
+tool refuses single-ballot storytelling: the shipped artifact aggregates to
+precinct grain and discloses strictly less than its source (§4.1), and every
+lens applies a present / suppressed / absent taxonomy — small cohorts are
+suppressed *and counted in the disclosure*; structurally-empty categories are
+absent and silent. What the reader sees, what was withheld, and what never
+existed are three different states, and the interface never lets one
+impersonate another.
+
+## 8. Limitations and future work
+
+This work proves one certified vintage (November 2024); earlier Dominion-format
+elections (roughly 2019 onward) await the same treatment, and each will re-test
+the gates against a different edge distribution. The treasurer's race remains
+reconciliation-blocked by the absence of any certified round report. The
+Charter's batch-elimination rule is legal but unexercised in our data — the
+kernel guards it but no certified fixture proves it. The counterfactual tie
+ladder is one defensible choice among several (simulated lot, or presenting all
+branches); ties are rare enough (§6.3) that the choice is nearly moot on real
+data, but a jurisdiction with closer races would need the alternatives
+seriously weighed. Certified-only sourcing accepts roughly four weeks of
+latency; a preliminary-CVR mode would need prominent "X% counted" disclosure
+throughout. The accessibility of the counterfactual interaction — its meaning
+under a screen reader — is underexplored. Generalization to other Dominion
+jurisdictions is plausible (the export format is vendor-standard) but our
+format findings are verified against San Francisco's export alone; the gate
+ladder, not the format notes, is the portable artifact.
+
+## 9. Availability
+
+The explorer is live at datadiver.jlabsf.org/elections. The full platform —
+tabulator, generator, gate ladder, standing reconciliation test, and the
+committed ballot artifacts — is public at github.com/sfbay/datadiver under an
+MIT license. The self-proving claim is reproducible from a clean clone: the
+repository's ordinary test suite re-derives all ten certified races from the
+committed ballots and fails on any deviation from the certified rounds. The
+ballot artifacts derive entirely from San Francisco's public records and carry
+no additional encumbrance.
+
+## Acknowledgments and AI disclosure
+
+DataDiver, and the work reported here, were built in sustained collaboration
+with Claude (Anthropic), an AI assistant working through the Claude Code
+development environment. In this collaboration Claude wrote most of the
+application code, performed the exploratory data analysis, and surfaced several
+of the findings reported in §5; the author set direction, made every editorial
+and design decision, reviewed each change through a pull-request workflow,
+independently verified the analytical claims, and is solely responsible for the
+published platform and for this paper. The disclosure is intentionally
+specific: an AI system is a tool with a substantial role here, not an author.
+Errors remain the author's responsibility; corrections are welcome at
+jesse@jlabsf.org.
 
 ## Citations to verify before preprint (flagged inline as [CITE])
 
