@@ -129,9 +129,14 @@ confront public-facing presentation.)
   the counterfactual interaction; generalization to other Dominion jurisdictions.
 
 ### 9. Availability
-- Live: datadiver.jlabsf.org/elections. Committed artifacts + pinned tests in-repo.
-- OPEN QUESTION (Jesse): code availability / license for the paper's replication
-  claim — public repo as-is, extracted library, or artifact-on-request.
+- Live: datadiver.jlabsf.org/elections. Repo CONFIRMED PUBLIC (7/21:
+  github.com/sfbay/datadiver) — committed ballot artifacts + the tabulator + the
+  standing reconciliation test are all inspectable; `pnpm test` re-proves the
+  certified count from a clean clone. That grounds the self-proving claim.
+- REMAINING (Jesse's call): no LICENSE file exists — public-without-license
+  defaults to all-rights-reserved, so replication-by-reuse needs an explicit
+  grant. Recommendation: MIT for the code (ballot artifacts derive from SF
+  public records, unencumbered). Add before the preprint posts.
 
 ## Authorship + AI disclosure
 
