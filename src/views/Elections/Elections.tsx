@@ -946,11 +946,15 @@ export default function Elections() {
     // valid.
     if (activeLens === 'whatif' && whatIfModel && cvrArtifact && struckIdx.length > 0) {
       const surnames = struckIdx.map((i) => leaderDisplayName(cleanCandidateName(cvrArtifact.candidates[i])))
+      // Same grammar as its marked neighbors (Jesse): plain label in the
+      // house label font, the terracotta chip carries HYPOTHETICAL — so the
+      // chip idiom is uniform across Winner / Rounds / Removed.
       cards.unshift({
         id: 'whatif-hypothetical',
-        label: 'Hypothetical count',
-        shortLabel: 'Hypothetical',
-        value: surnames.length === 1 ? `− ${surnames[0]}` : `− ${surnames[0]} +${surnames.length - 1}`,
+        label: 'Removed',
+        shortLabel: 'Removed',
+        badge: { text: 'HYPOTHETICAL', color: '#b85a33' },
+        value: surnames.length === 1 ? surnames[0] : `${surnames[0]} +${surnames.length - 1}`,
         color: '#b85a33',
         defaultExpanded: true,
         subtitle: 'Reset to reality',
