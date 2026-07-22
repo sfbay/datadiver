@@ -119,18 +119,24 @@ and certified-only work (our choice) accepts roughly four weeks of latency.
 ### 2.2 The tabulation rules
 
 San Francisco Charter §13.102 governs the count. The operative rules, verified
-against the Charter text: an **overvote** (two or more different candidates at one
-rank) exhausts the ballot *at that rank* — earlier ranks count normally; a
-**skipped rank** transfers to the voter's next indicated choice, with no limit on
-consecutive skips (San Francisco has no two-skip exhaustion rule, unlike some
-jurisdictions); a **duplicate ranking** of one candidate counts at its first
-occurrence and is disregarded after; elimination proceeds one candidate per round
-by fewest continuing votes, until two remain. The Charter permits a batch
-elimination of the bottom group when its combined total cannot catch the
-next-highest candidate — legal, but unused in the certified November 2024 reports.
-Ties are "resolved in accordance with State law" — by lot [CITE: Cal. Elec. Code
-§15651] — with no codified procedure for elimination ties; none occurs anywhere in
-the certified November 2024 data.
+against the Charter text: an **overvote** (equal rank given to two or more
+candidates) exhausts the ballot at that rank — "the ballot shall be declared
+exhausted when such multiple rankings are reached" — with earlier ranks counting
+normally; a **skipped rank** transfers to the voter's next indicated choice,
+with no limit on consecutive skips (San Francisco has no two-skip exhaustion
+rule, unlike some jurisdictions); elimination proceeds one candidate per round
+by fewest continuing votes, until a candidate holds a majority of the continuing
+ballots — in practice the certified reports run every race to its final pair, an
+outcome-equivalent presentation, since a majority of continuing votes cannot be
+overtaken. The Charter permits a batch elimination of the bottom group when its
+combined total cannot catch the next-highest candidate — legal, but unused in
+the certified November 2024 reports. Two rules the count requires are *not* in
+the Charter: it is silent on a **duplicate ranking** of one candidate at
+multiple ranks (Department of Elections practice, which our reconciliation
+confirms: the first occurrence counts and later ones are disregarded), and it
+sets no procedure for elimination ties beyond "resolved in accordance with State
+law" — by lot [CITE: Cal. Elec. Code §15651]; none occurs anywhere in the
+certified November 2024 data.
 
 Two rule properties turn out to be load-bearing for everything that follows.
 First, overvote exhaustion is a property of the ballot *as cast*, independent of
@@ -676,11 +682,10 @@ noted, a primary document), not from memory or search snippets.
 9. San Francisco Charter § 13.102 ("Instant Runoff Elections"), as amended by
    Proposition A (Mar. 5, 2002).
    https://codelibrary.amlegal.com/codes/san_francisco/latest/sf_charter/0-0-0-1181
-   (American Legal Publishing). *amlegal blocks automated fetch (403);
-   §13.102(b)/(h) text verified via the City Attorney memorandum in ref. 2, and
-   operative tabulation text was verified during project recon — load the
-   amlegal page in a browser to confirm any pinpoint quote before the preprint
-   posts.*
+   (American Legal Publishing). *Full section text confirmed by the author
+   against the amlegal page, July 21, 2026 (amlegal blocks automated fetch, so
+   this one was human-verified). Both quotes in §2.2 — the overvote clause and
+   the tie clause — are verbatim from subsections (a) and (f).*
 
 Objects of study for §5.1's published-conflation passage (cited as observed
 artifacts, with frozen revisions):
