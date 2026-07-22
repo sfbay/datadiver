@@ -6,14 +6,13 @@
 > `2026-07-14-elections-real-results-design.md` + `2026-07-21-rcv-cvr-skin-design.md`;
 > pinned tests in `src/lib/rcv/`.
 
-## Working titles (pick or remix)
+## Title — CHOSEN (Jesse, 7/21)
 
-1. *Same Ballots, Rerun: Self-Proving Interactive Tabulation of San Francisco's
-   Ranked-Choice Cast Vote Records*
-2. *The Count, Replayed: Building a Certified-Reconciled RCV Explorer from
-   Ballot-Level Public Data*
-3. *What 410,105 Ballots Can Show: Interactive Geography and Counterfactuals
-   from SF's Cast Vote Records*
+***The Count, Replayed: Building a Certified-Reconciled RCV Explorer from
+Ballot-Level Public Data***
+
+(Runners-up, kept for section-head/abstract vocabulary: "Same Ballots, Rerun" —
+already the product's banner copy — and "What 410,105 Ballots Can Show".)
 
 ## Thesis (one paragraph)
 
@@ -133,10 +132,9 @@ confront public-facing presentation.)
   github.com/sfbay/datadiver) — committed ballot artifacts + the tabulator + the
   standing reconciliation test are all inspectable; `pnpm test` re-proves the
   certified count from a clean clone. That grounds the self-proving claim.
-- REMAINING (Jesse's call): no LICENSE file exists — public-without-license
-  defaults to all-rights-reserved, so replication-by-reuse needs an explicit
-  grant. Recommendation: MIT for the code (ballot artifacts derive from SF
-  public records, unencumbered). Add before the preprint posts.
+- RESOLVED (Jesse, 7/21): MIT license added (Copyright 2026 Jesse Garnier) —
+  the availability statement can claim full replication-by-reuse; ballot
+  artifacts derive from SF public records, unencumbered.
 
 ## Authorship + AI disclosure
 
