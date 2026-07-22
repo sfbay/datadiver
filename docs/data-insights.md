@@ -234,7 +234,8 @@ analysis needs a "preliminary, X% counted" disclosure; certified-only work carri
 of latency. CVRs unlock what no summary tier can: true transfer paths, second choices of
 never-eliminated candidates' voters, head-to-head/Condorcet checks, precinct-level round
 states, and counterfactual re-tabulation. Independent cross-check for any CVR tabulation:
-ranked.vote publishes CVR-derived reports for SF races back to 2012 — but it **condenses
+ranked.vote publishes CVR-derived reports for SF races back to 2008 (site index
+verified July 2026; an earlier note here said 2012) — but it **condenses
 rounds** (~4 vs SF's certified 14 for the 2024 mayor), so it cross-checks winners,
 first-choice totals, final splits, and Condorcet only, never round sequences.
 
