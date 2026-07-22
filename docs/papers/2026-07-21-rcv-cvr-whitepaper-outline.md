@@ -1,0 +1,142 @@
+# Whitepaper outline — Self-Proving Interactive Tabulation of Ballot-Level Cast Vote Records
+
+> Status: OUTLINE for Jesse's review (greenlit as a standalone paper, July 21 2026).
+> Nothing here is final — section order, titles, and claims are all up for edit.
+> Companion sources: `docs/data-insights.md` → Elections; specs
+> `2026-07-14-elections-real-results-design.md` + `2026-07-21-rcv-cvr-skin-design.md`;
+> pinned tests in `src/lib/rcv/`.
+
+## Working titles (pick or remix)
+
+1. *Same Ballots, Rerun: Self-Proving Interactive Tabulation of San Francisco's
+   Ranked-Choice Cast Vote Records*
+2. *The Count, Replayed: Building a Certified-Reconciled RCV Explorer from
+   Ballot-Level Public Data*
+3. *What 410,105 Ballots Can Show: Interactive Geography and Counterfactuals
+   from SF's Cast Vote Records*
+
+## Thesis (one paragraph)
+
+Election authorities increasingly publish ballot-level Cast Vote Records, but the
+public experiences RCV through terse round tables. We show that a browser can carry
+the full weight of the ballots themselves: a from-scratch tabulator whose output is
+mechanically reconciled against the certified count on every build ("self-proving"),
+driving three interactive lenses — round-by-round precinct geography, second-choice
+("coalition") geography, and counterfactual re-tabulation — with a disclosure design
+that keeps hypothetical output unmistakable. Along the way, reconciliation surfaced
+undocumented semantics in SF's own publications that any CVR consumer must know.
+
+## Audience + candidate venues (Jesse decides)
+
+- **Practitioner-academic**: ESRA (Election Sciences, Reform & Administration) —
+  best topical fit; NICAR/IRE for the data-journalism methods angle.
+- **Software-paper track**: JOSS (Journal of Open Source Software) — fits the
+  self-proving-artifact framing if the code is opened (open question below).
+- **Preprint first**: arXiv (cs.CY) + the site itself; venues can follow.
+
+## Section outline
+
+### 1. Introduction — the legibility gap
+- RCV adoption grows; public understanding lags. Voters see a winner and a round
+  table; the ballots' actual structure (preferences, transfers, geography) stays dark.
+- SF publishes the complete Dominion CVR export (296 MB, 27,554 files, every contest,
+  every ranking) — and, to our knowledge, no public tool anywhere renders it
+  interactively. The data is public; the insight is not (DataDiver's founding claim,
+  applied to its hardest dataset).
+- Contributions list (the three below).
+
+### 2. Background: what San Francisco actually publishes
+- The publication landscape: certified round reports, precinct SOV / neighborhood
+  DSOV workbooks, and the ballot-level CVR export; Charter §13.102 tabulation rules
+  (overvote exhaustion, skip handling, duplicate handling, sequential elimination).
+- The Dominion JSON shape (Original/Modified sessions, Cards→Contests→Marks,
+  IsCurrent/IsVote/IsAmbiguous) — documented here because the vendor PDF omits
+  load-bearing details (e.g. the `Cards` nesting).
+
+### 3. Related work
+- CUNY's NYC round viewer (closest prior art: rounds, not ballots-interactive);
+  ranked.vote (static condensed analyses); FairVote / Center for Election Science
+  literature; academic CVR analyses (static, offline). Position the gap precisely:
+  **interactive + geographic + counterfactual + continuously reconciled**.
+
+### 4. The ship-ballots artifact and the self-proving pipeline
+- Lossy aggregation: canonical effective rankings as pattern groups keyed by
+  precinct — 296 MB → ~6 MB committed JSON for 10 races; mark resolution happens
+  once, roster-independently (the property that later makes counterfactuals sound).
+- The gate ladder (A: tabulation ≡ certified rounds, field-for-field ×10 races;
+  B: as-cast rank-1 marks ≡ precinct SOV; C: roster/geometry bijections;
+  D: conservation) + the **standing reconciliation test**: every CI run re-derives
+  the certified election from the committed ballots. Formalize "self-proving": the
+  browser runs the same kernel the gate proves.
+- Design rejections worth recording: binary packing (inspectability), truncated
+  rankings (counterfactuals need depth).
+
+### 5. What reconciliation taught us about the official data
+(The paper's empirical spine — each item cost a real debugging arc and is pinned by test.)
+- The **2,021-vote semantic gap**: precinct SOV counts as-cast rank-1 marks; the
+  certified R1 counts effective first choices. They cannot be reconciled naively.
+- `isLeader` flags the **eventual winner in every round**, not the round leader
+  (D11 2024: Chen trails rounds 1–5 while carrying the flag).
+- 13 precincts are SOV-withheld (983 ballots) yet present in the CVR; SF's own two
+  certified publications disagree by 1–2 votes for ~2% of candidates.
+- Precinct identifiers lie across the 2022 renumbering (joins succeed and render
+  plausible wrong maps) — the era-pinning discipline.
+
+### 6. Three lenses on one kernel
+- **Replay**: per-round precinct leader geography; fixed round-1 quartiles (the
+  phantom-motion argument); drain-toward-paper encoding for exhausted ballots.
+- **Second-choice geography**: cohort = effective first choice; the
+  **among-both vs. inclusive head-to-head divergence** as a real-ballot phenomenon
+  (D11: Lai wins among-both 6,181–4,920 while Chen wins inclusive 12,001–11,803 and
+  the seat) — why the UI computes both and discloses disagreement.
+- **Counterfactual (what-if)**: strike semantics as pre-round-1 eliminations over
+  roster-independent rankings; the deterministic disclosed tie ladder; empirical
+  findings — Nov 2024 is nearly tie-free under surgery (0 ties in 55 single strikes,
+  1 in 105 mayor pairs); striking any winner flips its race with blast radii from
+  25 to 510 precincts; **strike-to-two reproduces the inclusive head-to-head matrix
+  exactly** (a cross-consistency identity between two independent code paths — and a
+  teaching identity: head-to-head IS the election with everyone else removed).
+
+### 7. Disclosure design for hypothetical civic data
+(Arguably the most transferable contribution — most counterfactual tools never
+confront public-facing presentation.)
+- The marking system: the hypothetical state must survive a screenshot of any crop —
+  viewport frame, tray-native card (never a layout-shifting banner), chips on every
+  affected stat, legend eyebrow, and the export-capture containment requirement
+  (our own first banner sat outside the PNG capture — a shipped honesty hole).
+- Color identity pinned to the certified count across a comparison (re-deriving
+  hands the departed winner's pigment to the new winner).
+- The present / suppressed / absent taxonomy and the n<10 floor; no single-ballot
+  storytelling from public ballot-level data (privacy stance: the artifact discloses
+  strictly less than its public source).
+
+### 8. Limitations and future work
+- One certified vintage (Nov 2024); treasurer reconciliation-blocked (no certified
+  rounds to prove against); batch elimination legal but unexercised; the tie ladder
+  is one defensible choice among several (alternatives discussed); accessibility of
+  the counterfactual interaction; generalization to other Dominion jurisdictions.
+
+### 9. Availability
+- Live: datadiver.jlabsf.org/elections. Committed artifacts + pinned tests in-repo.
+- OPEN QUESTION (Jesse): code availability / license for the paper's replication
+  claim — public repo as-is, extracted library, or artifact-on-request.
+
+## Authorship + AI disclosure
+
+Follow the About-page convention already established: top-line credit is Jesse's
+(academic convention); Claude's role disclosed specifically in an acknowledgments/
+methods note. Draft language to be lifted from /about and tightened for the venue.
+
+## Open questions for Jesse (before drafting)
+
+1. Venue-first or preprint-first? (Shapes length + register.)
+2. Code availability answer for §9.
+3. Include the disclosure-design section as a full section (my recommendation) or
+   compress into the lenses section?
+4. Target length: ESRA/practitioner ~4–6k words vs. journal ~8–10k.
+
+## Process next steps
+
+Outline review (Jesse) → section-by-section draft in `docs/papers/` (repo-committed,
+reviewable by diff) → figure list (map exports already carry the disclosure marking —
+the export button is the figure pipeline) → venue formatting pass.
