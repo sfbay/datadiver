@@ -36,8 +36,9 @@ under an MIT license, and the certified count can be re-proven from a clean clon
 ## 1. Introduction: the legibility gap
 
 Ranked-choice voting keeps spreading — San Francisco has run RCV elections since
-2004, and dozens of U.S. jurisdictions now use some form of it [CITE: FairVote
-adoption count] — but public understanding has not kept pace with adoption. What a
+2004, and by early 2026 forty-nine U.S. jurisdictions across twenty-two states
+and Washington, D.C. used or had adopted some form of it [CITE: FairVote] — but
+public understanding has not kept pace with adoption. What a
 voter sees after an RCV election is a terse artifact: a winner's name and a
 citywide table of rounds. The structure the voters themselves created — who ranked
 whom behind whom, where each candidate's support pooled, how ballots actually moved
@@ -186,15 +187,15 @@ reconciliation is what forces the semantics into the open.
 ## 3. Related work
 
 The closest prior art renders *rounds*, not ballots. The CUNY Mapping Service's
-viewer for New York City [CITE: exact tool name/URL] offers a round slider over
-election-district geography — the round-by-round map idea — but paints a
-single-candidate intensity ramp (one candidate's support at a time, so the reader
-cannot watch the city re-sort as the field narrows), and NYC publishes its CVRs
-separately from the visualization, which does not consume them at ballot level.
+viewer for New York City's 2021 ranked-choice primary [CITE: NYC 2021 RCV Map]
+offers a round slider over election-district geography — the round-by-round map
+idea — but paints a single-candidate intensity ramp (one candidate's support at
+a time, so the reader cannot watch the city re-sort as the field narrows), and
+offers no ballot-level interaction.
 RCVis [CITE] renders citywide round charts and transfer sankeys — summary-tier
 visualizations of the round table itself. ranked.vote [CITE] is the nearest
 analytical relative: an open-source pipeline that does consume CVRs, including San
-Francisco's back to 2012, and publishes static condensed reports — but it
+Francisco's back to 2008, and publishes static condensed reports — but it
 condenses the round sequence itself (four rendered rounds versus the certified
 fourteen for the 2024 mayoral race), carries no geography and no interaction, and
 so serves as a cross-check on winners and final splits rather than a public
@@ -612,36 +613,94 @@ specific: an AI system is a tool with a substantial role here, not an author.
 Errors remain the author's responsibility; corrections are welcome at
 jesse@jlabsf.org.
 
-## Citations to verify before preprint (flagged inline as [CITE])
+## References (working list — all fetch-verified July 21, 2026)
 
-1. FairVote (or equivalent) count of U.S. RCV jurisdictions, as of 2026.
-2. SF RCV adoption: Prop A (March 2002), first used 2004 — confirm dates.
-3. Cal. Elections Code §15651 (ties by lot).
-4. CUNY Mapping Service NYC RCV tool — exact name, author, URL, year.
-5. RCVis — URL, maintainer.
-6. ranked.vote — author, URL; confirm SF coverage back to 2012.
-7. Kuriwaki et al., 2020 cast-vote-records database (Scientific Data?) — verify
-   citation before use.
-8. Graham-Squire & McCune (and any companions) on RCV anomalies from real ballot
-   data — verify specific papers before use.
-9. SF Charter §13.102 — canonical citation format for the operative text.
+Inline `[CITE: …]` markers swap to numbered references at venue formatting.
+Every entry below was verified against the fetched source page (or, where
+noted, a primary document), not from memory or search snippets.
 
-Verified July 21, 2026 (evidence for §5.1's published-conflation passage; needs
-citation formatting only — cite as objects of study, with access date and, for
-Wikipedia, the archived revision id):
+1. FairVote. "Where Is Ranked Choice Voting Used?"
+   https://fairvote.org/where-is-ranked-choice-voting-used/ (data as of March
+   2026; accessed July 21, 2026). Verbatim: "As of March 2026, 49 American
+   jurisdictions use ranked choice voting (RCV) in public elections or have
+   passed it for upcoming elections, reaching nearly 14 million voters across
+   22 states and Washington, DC." *Note: page updates in place — re-check the
+   figure immediately before the preprint posts.*
+2. Ballotpedia. "San Francisco, California, Proposition A, Ranked-Choice Voting
+   Measure (March 2002)." https://ballotpedia.org/San_Francisco,_California,_Proposition_A,_Ranked-Choice_Voting_Measure_(March_2002)
+   (approved March 5, 2002; 55.48%–44.52%). Corroborated by: Office of the City
+   Attorney (Herrera, Stewart, Moll), "Implementation of Ranked-Choice Voting
+   (Proposition A, March 5, 2002)," memorandum, July 15, 2003,
+   https://media.api.sf.gov/documents/Implementation-of-Instant-Runoff-Voting-Proposition-A-March-5-2002.pdf
+   — which also documents why first use slipped to 2004; and S.F. Department of
+   Elections, "Ranked Choice Voting," https://www.sf.gov/ranked-choice-voting
+   ("since November 2004").
+3. Cal. Elec. Code § 15651.
+   https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=15651.&lawCode=ELEC
+   ("…the election board shall determine a tie vote… by lot"). *Nuance, not
+   cited in text: §15651(b) permits a pre-adopted runoff-election policy in
+   lieu of lot; does not affect SF's ordinary RCV contests.*
+4. Romalewski, Steven / CUNY Mapping Service, Center for Urban Research, CUNY
+   Graduate Center. "NYC 2021 RCV Map."
+   https://www.urbanresearchmaps.org/nycrcv2021/ (2021). Functional description
+   (round slider, election-district geography, single-candidate intensity ramp)
+   verified via Gothamist, "First Interactive Map Shows How Primary Votes Moved
+   Across The City," Aug. 24, 2021. *A 2025 edition exists
+   (urbanresearchmaps.org/nycrcv2025/) but is a client-rendered app whose
+   interface could not be verified by fetch; cited tool is the 2021 edition.*
+5. Samii, Armin. RCVis: Ranked Choice Voting Visualizations.
+   https://www.rcvis.com/ (accessed July 21, 2026); source:
+   https://github.com/artoonie/rcvis. Independent open-source project — no
+   sponsoring org; do not credit FairVote as maintainer.
+6. Butler, Paul, and Felix Sargent. ranked.vote — Ranked-Choice Voting Election
+   Reports. https://ranked.vote (accessed July 2026); source:
+   https://github.com/ranked-vote/rcv.report. Site's own words: "All reports
+   are generated from the raw ballot data"; SF coverage verified back to 2008;
+   report pages confirmed static (no maps) via a fetched 2012 SF D7 report.
+7. Kuriwaki, Shiro, Mason Reece, Samuel Baltz, et al. "Cast Vote Records: A
+   Database of Ballots from the 2020 U.S. Election." *Scientific Data* 11, 1304
+   (2024). https://doi.org/10.1038/s41597-024-04017-1. (14 authors; verified
+   from the Nature article page.)
+8. Graham-Squire, Adam, and David McCune. "An Examination of Ranked-Choice
+   Voting in the United States, 2004–2022." *Representation* 61, no. 1
+   (2023 online / 2025 print): 1–19.
+   https://doi.org/10.1080/00344893.2023.2221689 (preprint arXiv:2301.12075).
+   · Graham-Squire, Adam, and David McCune. "A Mathematical Analysis of the
+   2022 Alaska Special Election for US House." arXiv:2209.04764 (2022).
+   · McCune, David, and Jennifer Wilson. "Ranked-Choice Voting and the Spoiler
+   Effect." *Public Choice* 196, no. 1–2 (2023): 19–50.
+   https://doi.org/10.1007/s11127-023-01050-3. *(Third paper is McCune &
+   Wilson, not Graham-Squire — text should not imply joint authorship. Two
+   snippet-suggested candidates were ruled out on fetch: Clelland
+   arXiv:2303.00108 and Miller's Public Choice note are by other authors.)*
+9. San Francisco Charter § 13.102 ("Instant Runoff Elections"), as amended by
+   Proposition A (Mar. 5, 2002).
+   https://codelibrary.amlegal.com/codes/san_francisco/latest/sf_charter/0-0-0-1181
+   (American Legal Publishing). *amlegal blocks automated fetch (403);
+   §13.102(b)/(h) text verified via the City Attorney memorandum in ref. 2, and
+   operative tabulation text was verified during project recon — load the
+   amlegal page in a browser to confirm any pinpoint quote before the preprint
+   posts.*
+
+Objects of study for §5.1's published-conflation passage (cited as observed
+artifacts, with frozen revisions):
 
 10. Certified Nov 2024 SOV workbook (`20241105_sov.xlsx`, sfelections.org):
     mayoral contest on sheet 19 of 54, titled "MAYOR" with Precinct / Voters /
     Undervotes / Overvotes / Total Votes columns — structure identical to the
     presidential plurality contest (sheet 2); no rank/round qualifier. Verified
     directly from the workbook XML.
-11. Wikipedia, "2024 San Francisco mayoral election" — infobox totals Lurie
-    102,720 / 26.33%, Breed 95,117 / 24.38% (≡ certified round-report R1
-    exactly); map file `2024SFMayoralR1.svg`, Commons description "2024 San
-    Francisco mayoral election (RCV round 1) by precinct," author ExactlyIndeed,
-    dated Dec 20, 2024, source "Own work."
-    https://en.wikipedia.org/wiki/2024_San_Francisco_mayoral_election ·
-    https://commons.wikimedia.org/wiki/File:2024SFMayoralR1.svg
+11. "2024 San Francisco mayoral election," Wikipedia, permanent link
+    https://en.wikipedia.org/w/index.php?title=2024_San_Francisco_mayoral_election&oldid=1358037766
+    (revision of June 6, 2026 UTC — current as of access, July 21, 2026;
+    infobox totals Lurie 102,720 / 26.33%, Breed 95,117 / 24.38% ≡ certified
+    round-report R1 exactly). Map: "File:2024SFMayoralR1.svg," Wikimedia
+    Commons, permanent link
+    https://commons.wikimedia.org/w/index.php?title=File:2024SFMayoralR1.svg&oldid=1121906549
+    — description "2024 San Francisco mayoral election (RCV round 1) by
+    precinct," author ExactlyIndeed, uploaded Dec. 21, 2024, source "Own
+    work." *Only one image version has ever been uploaded — the depicted map
+    content is frozen at the Dec. 21, 2024 upload.*
 12. Mission Local, "Election 2024: See results across San Francisco" (Nov 2024)
     — precinct map labeled "first-choice," ranked-choice breakdown in a separate
     section, "Data from the San Francisco Department of Elections."
