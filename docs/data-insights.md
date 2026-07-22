@@ -293,6 +293,31 @@ matrices in one sentence, and never present among-both counts as "the" head-to-h
 without checking for divergence. Mayor 2024 shows no such divergence (Lurie wins both ways,
 92,063–72,547 among-both) — D11 is why the disclosure exists.
 
+### Counterfactual re-tabulation: Nov 2024 is nearly tie-free, and strike-to-two ≡ head-to-head
+
+Findings from the WHAT-IF lens probe (July 2026, `tabulateWhatIf` over the committed
+ballots; pinned in `src/lib/rcv/whatIf.test.ts`):
+
+- **Ties are vanishingly rare even under surgery.** All 55 single-candidate strikes across
+  the 10 RCV races produce ZERO elimination ties; the 105 mayor pair-strikes produce exactly
+  one (remove Safaí + Hirsch-Shell → round-6 Mei/Shariati tie, resolved by the disclosed
+  ladder — the certified elimination order and the fewer-R1-votes rung agree on Shariati).
+  The tie-disclosure line will almost never render on real data, which is exactly why its
+  behavior is pinned synthetically.
+- **Striking a race's winner flips every race**, with wildly different geographic blast
+  radii: mayor −Lurie → Breed with 356 of 514 precincts changing final leader, but
+  city-attorney −Chiu changes 510 of 514 (a two-candidate race collapses to the
+  challenger everywhere). District races change 25–38.
+- **Strike-to-two reproduces the inclusive head-to-head matrix exactly** (mayor reduced to
+  Lurie/Breed → one round, 182,364–149,113 — the same numbers `computeHeadToHead` derives
+  from rankings). Two independent code paths over the same ballots, one truth; pinned as a
+  cross-consistency test. This is also a useful teaching identity: "head-to-head" IS the
+  election you'd get by removing everyone else.
+- **Removing the last-place finisher is not a no-op on round COUNT** (mayor −Lin, R1 = 1
+  vote: same winner, zero changed precincts, but 13 rounds instead of 14 — his elimination
+  round disappears). Round count is roster-relative; only leaders and geography are
+  comparable across counterfactuals.
+
 ---
 
 ## 911 Realtime & Fire/EMS (live dispatch feeds)
