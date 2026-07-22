@@ -330,9 +330,27 @@ after skip, duplicate, and unresolved-write-in resolution, which promotes roughl
 1,100 ballots citywide to a different first choice, while 983 further ballots sit
 in precincts withheld from the precinct workbook entirely (§5.4). We verified the
 naive comparison irreconcilable before rewriting Gate B to compare as-cast marks
-with as-cast marks. Any pipeline that joins SOV-tier and round-tier figures —
-including, we suspect, casual journalistic use — silently spans this 2,021-vote
-semantic gap.
+with as-cast marks.
+
+The conflation this gap invites is not hypothetical — it is the natural reading
+of the city's own document, and it is already in the published record. The
+certified workbook gives a reader nothing to distinguish the tiers: its mayoral
+sheet is titled simply "MAYOR," with the same Precinct / Voters / Undervotes /
+Overvotes / Total Votes column structure as the plurality presidential contest
+seventeen sheets earlier, and no rank or round qualifier anywhere [CITE: SOV
+workbook, sheets 2 and 19]. The English Wikipedia article on the race (as of
+this writing) quotes the certified round-report figures — 102,720 first-round
+votes for the winner, 26.33% — directly above a precinct map its creator labeled
+"RCV round 1 by precinct" [CITE: article + Commons file page, accessed July 21,
+2026]. At precinct grain the only published source is the workbook, whose rows
+sum the same candidate to 102,310. Two figures presented under one "round 1"
+label, 410 votes apart for the winner and 2,021 in aggregate, with nothing in
+the article — or in the city's publications — from which a reader could learn
+that they measure different things. The careful case proves the same point from
+the other side: Mission Local's precinct map is labeled "first-choice" and kept
+in a separate section from its ranked-choice breakdown [CITE: Mission Local],
+sound handling — but even care cannot disclose a distinction the source itself
+nowhere documents.
 
 ### 5.2 The leader flag marks the eventual winner, not the round leader
 
@@ -437,3 +455,24 @@ design for hypothetical civic data · §8 Limitations and future work ·
 8. Graham-Squire & McCune (and any companions) on RCV anomalies from real ballot
    data — verify specific papers before use.
 9. SF Charter §13.102 — canonical citation format for the operative text.
+
+Verified July 21, 2026 (evidence for §5.1's published-conflation passage; needs
+citation formatting only — cite as objects of study, with access date and, for
+Wikipedia, the archived revision id):
+
+10. Certified Nov 2024 SOV workbook (`20241105_sov.xlsx`, sfelections.org):
+    mayoral contest on sheet 19 of 54, titled "MAYOR" with Precinct / Voters /
+    Undervotes / Overvotes / Total Votes columns — structure identical to the
+    presidential plurality contest (sheet 2); no rank/round qualifier. Verified
+    directly from the workbook XML.
+11. Wikipedia, "2024 San Francisco mayoral election" — infobox totals Lurie
+    102,720 / 26.33%, Breed 95,117 / 24.38% (≡ certified round-report R1
+    exactly); map file `2024SFMayoralR1.svg`, Commons description "2024 San
+    Francisco mayoral election (RCV round 1) by precinct," author ExactlyIndeed,
+    dated Dec 20, 2024, source "Own work."
+    https://en.wikipedia.org/wiki/2024_San_Francisco_mayoral_election ·
+    https://commons.wikimedia.org/wiki/File:2024SFMayoralR1.svg
+12. Mission Local, "Election 2024: See results across San Francisco" (Nov 2024)
+    — precinct map labeled "first-choice," ranked-choice breakdown in a separate
+    section, "Data from the San Francisco Department of Elections."
+    https://missionlocal.org/2024/11/election-2024-see-results-across-san-francisco/
