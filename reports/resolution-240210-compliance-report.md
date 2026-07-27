@@ -1,6 +1,8 @@
-<!-- Regenerate the .docx with:
-       pandoc -f gfm-tex_math_dollars reports/resolution-240210-compliance-report.md -o reports/resolution-240210-compliance-report.docx
-     The -tex_math_dollars is required: plain gfm treats paired $ amounts in prose
+<!-- This .md is canonical for TEXT. The tracked .docx alongside it is Jesse's
+     FORMATTED master (Word layout, text boxes) — do not overwrite it with plain
+     pandoc output. To produce a plain draft for re-formatting, use:
+       pandoc -f gfm-tex_math_dollars reports/resolution-240210-compliance-report.md -o /tmp/report-plain.docx
+     The -tex_math_dollars is REQUIRED: plain gfm treats paired $ amounts in prose
      as TeX math and mangles every paragraph containing two dollar figures. -->
 
 # Resolution 240210 Compliance Report
@@ -60,7 +62,7 @@ The longer trend remains **down**, despite a first uptick. From a peak of 21.0% 
 
 1. **Why do most departments spend zero?** Of ~26 departments with advertising budgets, only a few direct any dollars at all toward ethnic media. MTA and HSA demonstrate compliance is achievable — what barriers prevent other departments from following their lead?
 
-2. **Does any of the $36.5 million in agency contracts reach ethnic media?** Agencies like Civic Edge Consulting ($23.8M through FY2026) and Most Likely To ($4.9M) receive city funds for marketing and communications work not classified as "Advertising" in the financial system. Some of this spending may well include ethnic media placements — but we cannot tell from the data. Departments and agencies are best positioned to answer this question.
+2. **Does any of the $36.5 million in agency contracts reach community or ethnic media?** Agencies like Civic Edge Consulting ($23.8 million through FY2026) and Most Likely To ($4.9 million) receive city funds for marketing and communications work not classified as "Advertising" in the financial system. Some of this spending may well include ethnic media placements — but we cannot tell from the data. Departments and agencies are best positioned to answer this question.
 
 3. **What are P-card advertising purchases being used for?** Between $33,000 and $59,000 per year classified as advertising is purchased via procurement cards (P-cards), appearing only as "P-CARD ONLY US BANK N.A." These may be digital platform buys (Facebook, Google), but they could also include other media. Departments using P-cards for advertising can clarify what these purchases represent.
 
@@ -115,10 +117,10 @@ Vendors are classified using an open-source registry maintained in DataDiver's c
 
 | Community | Outlets in Registry |
 |-----------|-------------------|
-| Chinese-language | Sing Tao Daily, World Journal, Chinese Times, Wind Newspaper |
+| Chinese-language | Sing Tao Daily, Wind Newspaper, World Journal, Chinese Times |
 | Spanish-language | El Mensajero, El Tecolote/Accion Latina, El Reportero |
 | Filipino | Philippine News, Fil-Am Radio |
-| Korean / Asian / South Asian | Korea Times, India Currents, AsianWeek, Center for Asian American Media |
+| Korean/Asian/South Asian | Korea Times, India Currents, Center for Asian American Media |
 | LGBTQ+ | Bay Area Reporter, San Francisco Bay Times |
 | African American | San Francisco Bay View |
 | Neighborhood / Hyperlocal | SF Neighborhood Newspaper Association, Mission Local, Broke-Ass Stuart, The Potrero View, Hoodline |
@@ -144,7 +146,7 @@ In August 2022, the city's Office of Economic and Workforce Development (OEWD) p
 
 **Applying DataDiver's classification methodology to OEWD's raw voucher data, we match the city's own classification to 100%** across all 10 vendors OEWD labeled as Community and Ethnic Print Media — $518,912.01 in aggregate, exact to the penny. DataDiver additionally catches two vendors OEWD omitted (Multicultural Radio Broadcasting, $54,135; Center for Asian American Media, $7,500), both of which are legitimate community and ethnic media by any reasonable definition.
 
-**The three-layer model (tagged, agency, p-card) is validated by OEWD's own data ordering.** In the 2017–2022 period, the top four advertising recipients were Daily Journal Corporation ($1.73M legal notices), Zeba Consulting ($1.19M full-service agency), Promotion Marketing ($340K agency), and Intersection Media ($312K out-of-home) — exactly the categories DataDiver's three-layer model was designed to surface as non-community spending. OEWD labeled all four as "Other Media," confirming they should not count toward compliance.
+**The three-layer model (tagged, agency, p-card) is validated by OEWD's own data ordering.** In the 2017–2022 period, the top four advertising recipients were Daily Journal Corporation ($1.73 million, legal notices), Zeba Consulting ($1.19 million, full-service agency), Promotion Marketing ($340k, agency), and Intersection Media ($312K out-of-home) — exactly the categories DataDiver's three-layer model was designed to surface as non-community spending. OEWD labeled all four as "Other Media," confirming they should not count toward compliance.
 
 A more striking finding from the same file: OEWD's broader 31-outlet ecosystem list names 19 community and ethnic media outlets that received **zero dollars** in city advertising payments across the full 5+ year period covered by the file. Full validation tables and the complete zero-payment outlet list are in Appendix D. The OEWD source file and our cross-reference CSV are version-controlled at `reports/validation/` alongside this report.
 
@@ -379,7 +381,7 @@ This is the largest gap in our compliance picture. It is possible that significa
 
 A related issue affects agencies whose contracts are tagged as Advertising — most notably Most Likely To's work for the Department of Elections ($424,980 in FY2025 and $240,357 in FY2026) and, new in FY2026, the Public Library ($106,986). Unlike the agencies listed above, this spending is classified as Advertising and counts in the compliance denominator. But the same opacity applies: we cannot see whether the agency placed ads in ethnic media, in mainstream media, or spent the funds on non-placement services. The classification as "Advertising" may overstate the actual media buy, inflating the denominator with strategy and creative costs that are not discretionary ad placements. This affects the accuracy of both the numerator and the denominator.
 
-We invite departments and their agency partners to share media placement data so the full picture can be assessed.
+We invite departments and their agency partners to share media placement data.
 
 ### Questions for Departments and Agencies
 
@@ -391,7 +393,7 @@ We invite departments and their agency partners to share media placement data so
 
 ## 7. P-Card Advertising: An Open Question
 
-Procurement cards (P-cards) allow city employees to make small purchases without a formal purchase order. When used for advertising, the vendor appears as **"P-CARD ONLY US BANK N.A."** — the bank that issues the card, not the media outlet that received the payment.
+Procurement cards (P-cards) allow city employees to make small purchases without a formal purchase order. When used for advertising, the vendor appears as **"P-CARD ONLY US BANK N.A."** and does not reveal the media outlet that may have received the payment.
 
 ### P-Card Advertising Trend
 
@@ -409,9 +411,9 @@ Procurement cards (P-cards) allow city employees to make small purchases without
 
 ### What Are These Purchases?
 
-The payment method offers a clue — traditional media (newspapers, radio, TV, billboards) typically invoice through accounts payable, while digital platforms (Facebook, Google, Instagram) accept credit card payment for small, immediate ad buys. This suggests P-card advertising may skew toward digital platform purchases, but **we cannot confirm this without department input**.
+The payment method offers a clue — traditional media (newspapers, radio, TV, billboards) typically invoice through accounts payable, while digital platforms (Meta, etc.) accept credit card payment for small, immediate ad buys. This suggests P-card advertising may skew toward digital platforms, but **we cannot confirm this without department input**.
 
-The Department of Public Health is the primary P-card advertiser, spending $28,593 in FY2026. This is consistent with health campaigns using social media ad boosts for targeted outreach — but DPH is best positioned to confirm what these purchases represent.
+The Department of Public Health is the primary P-card advertiser, spending $28,593 in FY2026. This is consistent with health campaigns using social media boosts for targeted outreach — but DPH is best positioned to confirm what these purchases represent.
 
 ### Questions for Departments
 
@@ -436,7 +438,7 @@ P-card advertising totaling $33,000–$59,000 per year is included in the discre
 | World Journal SF | $9,178 | 10 | Chinese-language |
 | Wind Newspaper | $6,370 | 5 | Chinese-language |
 | Sing Tao Newspapers SF | $6,048 | 7 | Chinese-language |
-| Broke-Ass Stuart | $3,600 | 6 | Hyperlocal / neighborhood |
+| Broke-Ass Stuart | $3,600 | 6 | Hyperlocal/culture |
 | Sing Tao Daily | $2,845 | 3 | Chinese-language |
 | El Reportero | $2,600 | 2 | Spanish-language |
 | San Francisco Bay Times | $1,000 | 1 | LGBTQ+ |
@@ -516,8 +518,8 @@ A civic media marketplace platform could accelerate this by allowing publishers 
 **8. Redirect social media ad spend through ethnic media channels.**
 Departments currently spending on direct-to-platform digital ads (via P-cards or agencies) should explore whether those same campaigns can be placed through ethnic media outlets' digital properties. A civic media marketplace platform would make this operationally simple: a department could select target communities, see which publishers serve those audiences across which platforms (Instagram, Facebook, newsletter, web display), place orders at published rates, and receive delivery confirmation with engagement metrics — all with a procurement-ready audit trail. A DPH health campaign that currently buys Facebook boosts via P-card could instead be routed through community outlets' social channels, reaching the same audiences while supporting local journalism and generating a transparent, auditable compliance record.
 
-**9. Establish a citywide advertising contract with ethnic media provisions.**
-A civic media marketplace platform could serve as the operational backbone of such a contract — providing the publisher inventory, rate standardization, order management, delivery tracking, and compliance reporting that a citywide contract requires. Rather than building this infrastructure from scratch within city procurement, the city could partner with an existing platform purpose-built for connecting government advertisers with community media.
+**9. Establish a citywide advertising gateway with community and ethnic media provisions.**
+A civic media marketplace platform could serve as the operational backbone of such a gateway — providing the publisher inventory, rate standardization, order management, delivery tracking, and compliance reporting that citywide contracts require. Rather than building this infrastructure from scratch within city procurement, the city could partner with an existing platform purpose-built for connecting government advertisers with community media.
 
 ### Prioritize Recruitment Advertising
 
@@ -594,9 +596,8 @@ The following vendors are classified as "Community & Ethnic Press" in DataDiver'
 
 ### Spanish-Language Press
 - El Mensajero
-- El Tecolote
+- El Tecolote/Accion Latina
 - El Reportero LLC
-- Accion Latina
 
 ### Filipino Press
 - Philippine News
@@ -605,7 +606,6 @@ The following vendors are classified as "Community & Ethnic Press" in DataDiver'
 ### Korean / South Asian Press
 - Korea Times
 - India Currents
-- AsianWeek
 - Center for Asian American Media
 
 ### LGBTQ+ Press
@@ -721,9 +721,9 @@ Applying DataDiver's full classifier to OEWD's 2017–2022 voucher data produces
 
 ### D.4 The Broader 31-Outlet Ecosystem: A Zero-Payment Finding
 
-OEWD maintained a second list in the same workbook — the "SF Ethnic & Community News Media Outlets" column — naming 31 outlets (after deduplication) the city recognized as part of the SF community and ethnic media ecosystem. **Cross-referencing this broader list against the raw voucher data reveals that 19 of 31 outlets (61%) received zero dollars in city advertising payments over the 5+ year period covered by the file.**
+OEWD maintained a second list in the same workbook — the "SF Ethnic & Community News Media Outlets" column — naming 31 outlets (after deduplication) the city recognized as part of the SF community and ethnic media ecosystem. Cross-referencing this broader list against the raw voucher data reveals that 19 of 31 outlets (61%) received zero dollars in city advertising payments over the 5+ year period covered by the file.
 
-**Outlets receiving ZERO city advertising payments, 2017–2022:**
+Outlets receiving ZERO city advertising payments, 2017–2022:
 
 | Outlet | Community Served |
 |--------|------------------|
@@ -764,6 +764,6 @@ The source file is preserved at `reports/validation/` for future re-analysis as 
 
 ---
 
-*This report was generated using data from the City and County of San Francisco's open data portal (data.sfgov.org). All figures are derived from the Vendor Payments dataset (`n9pm-xkyq`) and are independently verifiable. The DataDiver civic data platform is developed at San Francisco State University.*
+*This report was generated using data from the City and County of San Francisco's open data portal (data.sfgov.org). All figures are derived from the Vendor Payments dataset (`n9pm-xkyq`) and are independently verifiable. The DataDiver civic data platform is developed by Assoc. Professor Jesse Garnier, San Francisco State University.*
 
 *Live compliance monitoring: [datadiver.jlabsf.org/city-budget?tab=advertising](https://datadiver.jlabsf.org/city-budget?tab=advertising)*
