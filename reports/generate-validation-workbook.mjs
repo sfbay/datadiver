@@ -17,100 +17,32 @@ import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const OUTPUT_DIR = path.join(__dirname, 'validation')
-const REPORT_DATE = '2026-03-23'
+const REPORT_DATE = '2026-07-26'
 const GENERATED_AT = new Date().toISOString()
 const BASE_URL = 'https://data.sfgov.org/resource/n9pm-xkyq.json'
 const APP_TOKEN = process.env.VITE_SOCRATA_APP_TOKEN || process.env.SOCRATA_APP_TOKEN || ''
 
-// ── Vendor Classification Registry (ported from src/utils/mediaClassification.ts) ──
+// ── Vendor Classification Registry — parsed at runtime from the single source of
+// truth, src/utils/mediaClassification.ts. A hand-ported copy here drifted once
+// (missing POTRERO VIEW / PIXEL LABS / HOODLINE / S F CHRONICLE / SAN FRANCISCO
+// MEDIA CO vs the site classifier); parsing the TS literal prevents recurrence. ──
 
-const VENDOR_REGISTRY = [
-  // Legal notices
-  { pattern: 'DAILY JOURNAL', category: 'legal-notices' },
-  { pattern: 'CALIFORNIA NEWSPAPER SERVICE', category: 'legal-notices' },
-  // Major metro print
-  { pattern: 'SF CHRONICLE', category: 'major-metro-print' },
-  { pattern: 'SAN FRANCISCO CHRONICLE', category: 'major-metro-print' },
-  { pattern: 'SF EXAMINER', category: 'major-metro-print' },
-  { pattern: 'SAN FRANCISCO EXAMINER', category: 'major-metro-print' },
-  // Community & ethnic press — Chinese-language
-  { pattern: 'SING TAO', category: 'community-ethnic-press' },
-  { pattern: 'WORLD JOURNAL', category: 'community-ethnic-press' },
-  { pattern: 'CHINESE TIMES', category: 'community-ethnic-press' },
-  { pattern: 'WIND NEWSPAPER', category: 'community-ethnic-press' },
-  // Spanish-language
-  { pattern: 'EL MENSAJERO', category: 'community-ethnic-press' },
-  { pattern: 'EL TECOLOTE', category: 'community-ethnic-press' },
-  { pattern: 'EL REPORTERO', category: 'community-ethnic-press' },
-  { pattern: 'ACCION LATINA', category: 'community-ethnic-press' },
-  // Filipino
-  { pattern: 'PHILIPPINE NEWS', category: 'community-ethnic-press' },
-  { pattern: 'FIL-AM RADIO', category: 'community-ethnic-press' },
-  // Korean / South Asian
-  { pattern: 'KOREA TIMES', category: 'community-ethnic-press' },
-  { pattern: 'INDIA CURRENTS', category: 'community-ethnic-press' },
-  { pattern: 'ASIAN WEEK', category: 'community-ethnic-press' },
-  { pattern: 'CENTER FOR ASIAN AMERICAN MEDIA', category: 'community-ethnic-press' },
-  // LGBTQ+
-  { pattern: 'BAY AREA REPORTER', category: 'community-ethnic-press' },
-  { pattern: 'SAN FRANCISCO BAY TIMES', category: 'community-ethnic-press' },
-  // African American
-  { pattern: 'SAN FRANCISCO BAY VIEW', category: 'community-ethnic-press' },
-  // Neighborhood / hyperlocal
-  { pattern: 'SF NEIGHBORHOOD NEWSPAPER', category: 'community-ethnic-press' },
-  { pattern: 'S F NEIGHBORHOOD NEWSPAPER', category: 'community-ethnic-press' },
-  { pattern: 'MISSION LOCAL', category: 'community-ethnic-press' },
-  { pattern: 'BROKE-ASS STUART', category: 'community-ethnic-press' },
-  // Multicultural radio
-  { pattern: 'MULTICULTURAL RADIO', category: 'community-ethnic-press' },
-  // Radio & TV
-  { pattern: 'UNIVISION', category: 'radio-tv' },
-  { pattern: 'TELEMUNDO', category: 'radio-tv' },
-  { pattern: 'COMCAST', category: 'radio-tv' },
-  { pattern: 'EFFECTV', category: 'radio-tv' },
-  { pattern: 'IHEART', category: 'radio-tv' },
-  { pattern: 'KTSF', category: 'radio-tv' },
-  { pattern: 'KRON', category: 'radio-tv' },
-  { pattern: 'KGO TV', category: 'radio-tv' },
-  { pattern: 'SKY LINK TV', category: 'radio-tv' },
-  { pattern: 'NBCUNIVERSAL', category: 'radio-tv' },
-  { pattern: 'ENTERCOM', category: 'radio-tv' },
-  { pattern: 'AUDACY', category: 'radio-tv' },
-  { pattern: 'BONNEVILLE', category: 'radio-tv' },
-  { pattern: 'KQED', category: 'radio-tv' },
-  { pattern: 'DISNEY ADVERTISING', category: 'radio-tv' },
-  { pattern: 'LEADER MEDIA GRP', category: 'radio-tv' },
-  // Out-of-home / transit
-  { pattern: 'CBS OUTDOOR', category: 'out-of-home' },
-  { pattern: 'CLEAR CHANNEL', category: 'out-of-home' },
-  { pattern: 'TITAN OUTDOOR', category: 'out-of-home' },
-  { pattern: 'INTERSECTION MEDIA', category: 'out-of-home' },
-  { pattern: 'OUTFRONT', category: 'out-of-home' },
-  { pattern: 'LAMAR ADVERTISING', category: 'out-of-home' },
-  // Full-service agencies
-  { pattern: 'ZEBA CONSULTING', category: 'full-service-agency' },
-  { pattern: 'MOST LIKELY TO', category: 'full-service-agency' },
-  { pattern: "O'RORKE", category: 'full-service-agency' },
-  { pattern: 'ORORKE', category: 'full-service-agency' },
-  { pattern: 'GREAT KOLOR', category: 'full-service-agency' },
-  { pattern: 'CIVIC EDGE', category: 'full-service-agency' },
-  { pattern: 'PROMOTION MARKETING', category: 'full-service-agency' },
-  // Digital / interactive agencies
-  { pattern: 'CKR INTERACTIVE', category: 'digital-agency' },
-  { pattern: 'BETTER WORLD ADVERTISING', category: 'digital-agency' },
-  // Recruitment
-  { pattern: 'ADVANCE RECRUITMENT', category: 'recruitment' },
-  // Direct social platforms
-  { pattern: 'LINKEDIN', category: 'direct-social' },
-  // P-card
-  { pattern: 'P-CARD', category: 'p-card' },
-  { pattern: 'PCARD', category: 'p-card' },
-  { pattern: 'US BANK N.A', category: 'p-card' },
-  // Production
-  { pattern: 'FLAG & BANNER', category: 'production' },
-  { pattern: 'ART SIGN', category: 'production' },
-  { pattern: 'EPIC PRODUCTIONS', category: 'production' },
-]
+const REGISTRY_TS_PATH = path.join(__dirname, '..', 'src', 'utils', 'mediaClassification.ts')
+
+function parseVendorRegistry() {
+  const ts = fs.readFileSync(REGISTRY_TS_PATH, 'utf-8')
+  const body = ts.split('const VENDOR_REGISTRY')[1]
+  if (!body) throw new Error('VENDOR_REGISTRY not found in mediaClassification.ts')
+  const entries = [...body.matchAll(/\{\s*pattern:\s*'((?:[^'\\]|\\.)*)',\s*category:\s*'([a-z-]+)'/g)]
+    .map((m) => ({ pattern: m[1].replace(/\\'/g, "'"), category: m[2] }))
+  if (entries.length < 70) {
+    throw new Error(`Registry parse suspicious: only ${entries.length} patterns — check mediaClassification.ts format`)
+  }
+  return entries
+}
+
+const VENDOR_REGISTRY = parseVendorRegistry()
+
 
 function classifyVendor(vendorName) {
   const upper = vendorName.toUpperCase()
@@ -192,19 +124,19 @@ function writeCSV(filepath, headers, rows) {
 
 const TREND_REPORT = {
   2018: { total: 1137376, legal: 409540, disc: 727836, ethnic: 130755, pct: 18.0, outlets: 8 },
-  2019: { total: 1227364, legal: 512790, disc: 714574, ethnic: 126480, pct: 17.7, outlets: 8 },
-  2020: { total: 1611905, legal: 409304, disc: 1202601, ethnic: 148615, pct: 12.4, outlets: 9 },
+  2019: { total: 1227364, legal: 512790, disc: 714574, ethnic: 126980, pct: 17.8, outlets: 9 },
+  2020: { total: 1611905, legal: 409304, disc: 1202601, ethnic: 151420, pct: 12.6, outlets: 10 },
   2021: { total: 1674180, legal: 317459, disc: 1356721, ethnic: 159262, pct: 11.7, outlets: 7 },
   2022: { total: 1491282, legal: 455411, disc: 1035871, ethnic: 217942, pct: 21.0, outlets: 9 },
   2023: { total: 1559847, legal: 290395, disc: 1269452, ethnic: 163094, pct: 12.8, outlets: 10 },
   2024: { total: 1538522, legal: 318377, disc: 1220145, ethnic: 90993, pct: 7.5, outlets: 11 },
-  2025: { total: 1408531, legal: 371290, disc: 1037241, ethnic: 60546, pct: 5.8, outlets: 9 },
-  2026: { total: 829607, legal: 346805, disc: 482802, ethnic: 47624, pct: 9.9, outlets: 10 },
+  2025: { total: 1408531, legal: 371290, disc: 1037241, ethnic: 60547, pct: 5.8, outlets: 9 },
+  2026: { total: 1368053, legal: 504612, disc: 863441, ethnic: 70489, pct: 8.2, outlets: 10 },
 }
 
 const BLA_REPORT = {
-  2018: 33.2, 2019: 41.2, 2020: 33.7, 2021: 46.2, 2022: 40.8,
-  2023: 33.3, 2024: 22.9, 2025: 18.2, 2026: 14.4,
+  2018: 33.2, 2019: 41.4, 2020: 34.3, 2021: 46.2, 2022: 40.8,
+  2023: 33.3, 2024: 22.9, 2025: 18.2, 2026: 18.5,
 }
 
 const DEPT_FY2025_REPORT = [
@@ -219,9 +151,26 @@ const DEPT_FY2025_REPORT = [
   { dept: 'DPH Public Health', ethnic: 0, disc: 88790, pct: 0.0, outlets: 0 },
 ]
 
+// FY2026-final report card rows (Section 5, primary table in the July 2026 edition)
+const DEPT_FY2026_REPORT = [
+  { dept: 'MTA Municipal Transprtn Agncy', ethnic: 41171, disc: 59461, pct: 69.2, outlets: 8 },
+  { dept: 'ASR Assessor - Recorder', ethnic: 2000, disc: 2000, pct: 100.0, outlets: 1 },
+  { dept: 'ECN Economic & Wrkfrce Dvlpmnt', ethnic: 702, disc: 702, pct: 100.0, outlets: 1 },
+  { dept: 'BOS Board of Supervisors', ethnic: 385, disc: 385, pct: 100.0, outlets: 1 },
+  { dept: 'HSA Human Services Agency', ethnic: 18531, disc: 41122, pct: 45.1, outlets: 3 },
+  { dept: 'LIB Public Library', ethnic: 4770, disc: 138431, pct: 3.4, outlets: 2 },
+  { dept: 'HRD Human Resources', ethnic: 2930, disc: 62932, pct: 4.7, outlets: 3 },
+  { dept: 'REG Elections', ethnic: 0, disc: 240357, pct: 0.0, outlets: 0 },
+  { dept: 'SHF Sheriff', ethnic: 0, disc: 121118, pct: 0.0, outlets: 0 },
+  { dept: 'PUC Public Utilities Commsn', ethnic: 0, disc: 110265, pct: 0.0, outlets: 0 },
+  { dept: 'DPH Public Health', ethnic: 0, disc: 28743, pct: 0.0, outlets: 0 },
+  { dept: 'DAT District Attorney', ethnic: 0, disc: 25000, pct: 0.0, outlets: 0 },
+  { dept: 'PRT Port', ethnic: 0, disc: 11773, pct: 0.0, outlets: 0 },
+]
+
 const PCARD_REPORT = {
   2018: 4932, 2019: 20888, 2020: 13594, 2021: 46082, 2022: 38665,
-  2023: 58615, 2024: 45746, 2025: 47111, 2026: 33475,
+  2023: 58615, 2024: 45746, 2025: 47111, 2026: 35751,
 }
 
 // Vendors explicitly named in the report (for in_report flag)
@@ -336,7 +285,7 @@ function computeDeptCards(classified, fy) {
 
 // ── Claim registry builder ──
 
-function buildClaimRegistry(computedTrend, computedBLA, computedPcard, deptCards2025) {
+function buildClaimRegistry(computedTrend, computedBLA, computedPcard, deptCards2025, deptCards2026) {
   const claims = []
 
   // Full reproducible Socrata URLs — anyone can paste these into a browser
@@ -457,38 +406,45 @@ function buildClaimRegistry(computedTrend, computedBLA, computedPcard, deptCards
     })
   }
 
-  // Department cards FY2025
-  for (const rep of DEPT_FY2025_REPORT) {
-    const comp = deptCards2025.find((d) => d.dept === rep.dept)
-    const deptUrl = deptQuery(2025, rep.dept)
-    claims.push({
-      claim_id: `dept-fy25-${rep.dept.slice(0, 3).toLowerCase()}-ethnic`,
-      section: 'Section 5: Department Report Card',
-      description: `FY2025 ${rep.dept} Ethnic Media Spend`,
-      fiscal_year: 2025,
-      report_value: rep.ethnic,
-      computed_value: comp?.ethnic ?? 'N/A',
-      match: comp ? Math.abs(rep.ethnic - comp.ethnic) <= 50 : false,
-      tolerance: '$50',
-      unit: '$',
-      source_query: deptUrl,
-      computation: 'SUM(vouchers_paid) WHERE category=community-ethnic-press',
-      generated_at: GENERATED_AT,
-    })
-    claims.push({
-      claim_id: `dept-fy25-${rep.dept.slice(0, 3).toLowerCase()}-disc`,
-      section: 'Section 5: Department Report Card',
-      description: `FY2025 ${rep.dept} Discretionary Total`,
-      fiscal_year: 2025,
-      report_value: rep.disc,
-      computed_value: comp?.disc ?? 'N/A',
-      match: comp ? Math.abs(rep.disc - comp.disc) <= 50 : false,
-      tolerance: '$50',
-      unit: '$',
-      source_query: deptUrl,
-      computation: 'SUM(vouchers_paid) - SUM(WHERE category=legal-notices)',
-      generated_at: GENERATED_AT,
-    })
+  // Department cards — FY2025 and FY2026 report-card tables
+  const deptTables = [
+    [2025, DEPT_FY2025_REPORT, deptCards2025],
+    [2026, DEPT_FY2026_REPORT, deptCards2026],
+  ]
+  for (const [fy, reportRows, computedCards] of deptTables) {
+    const fyTag = `fy${String(fy).slice(2)}`
+    for (const rep of reportRows) {
+      const comp = computedCards.find((d) => d.dept === rep.dept)
+      const deptUrl = deptQuery(fy, rep.dept)
+      claims.push({
+        claim_id: `dept-${fyTag}-${rep.dept.slice(0, 3).toLowerCase()}-ethnic`,
+        section: 'Section 5: Department Report Card',
+        description: `FY${fy} ${rep.dept} Ethnic Media Spend`,
+        fiscal_year: fy,
+        report_value: rep.ethnic,
+        computed_value: comp?.ethnic ?? 'N/A',
+        match: comp ? Math.abs(rep.ethnic - comp.ethnic) <= 50 : false,
+        tolerance: '$50',
+        unit: '$',
+        source_query: deptUrl,
+        computation: 'SUM(vouchers_paid) WHERE category=community-ethnic-press',
+        generated_at: GENERATED_AT,
+      })
+      claims.push({
+        claim_id: `dept-${fyTag}-${rep.dept.slice(0, 3).toLowerCase()}-disc`,
+        section: 'Section 5: Department Report Card',
+        description: `FY${fy} ${rep.dept} Discretionary Total`,
+        fiscal_year: fy,
+        report_value: rep.disc,
+        computed_value: comp?.disc ?? 'N/A',
+        match: comp ? Math.abs(rep.disc - comp.disc) <= 50 : false,
+        tolerance: '$50',
+        unit: '$',
+        source_query: deptUrl,
+        computation: 'SUM(vouchers_paid) - SUM(WHERE category=legal-notices)',
+        generated_at: GENERATED_AT,
+      })
+    }
   }
 
   return claims
@@ -791,8 +747,9 @@ async function main() {
   const computedBLA = computeBLA(historicalClassified)
   const computedPcard = computePcard(historicalClassified)
   const deptCards2025 = computeDeptCards(classified, 2025)
+  const deptCards2026 = computeDeptCards(classified, 2026)
 
-  const claims = buildClaimRegistry(computedTrend, computedBLA, computedPcard, deptCards2025)
+  const claims = buildClaimRegistry(computedTrend, computedBLA, computedPcard, deptCards2025, deptCards2026)
   const matches = claims.filter((c) => c.match).length
   const mismatches = claims.filter((c) => !c.match)
   console.log(`  → ${claims.length} claims registered`)

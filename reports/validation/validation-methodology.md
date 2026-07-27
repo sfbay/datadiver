@@ -1,7 +1,7 @@
 # Validation Methodology — Resolution 240210 Compliance Report
 
-**Generated:** 2026-04-07T15:08:00.773Z
-**Report Date:** 2026-03-23
+**Generated:** 2026-07-27T05:36:38.339Z
+**Report Date:** 2026-07-26
 **Data Source:** SF Open Data, Vendor Payments dataset `n9pm-xkyq`
 
 ---
@@ -16,43 +16,43 @@ This validation workbook verifies the data pipeline behind the Resolution 240210
 
 ## Claim Registry Results
 
-- **Total claims:** 90
-- **Matching live data:** 84 (93.3%)
-- **Mismatches:** 6
+- **Total claims:** 116
+- **Matching live data:** 116 (100.0%)
+- **Mismatches:** 0
 
 Tolerances applied:
 - Dollar amounts: within $50 (data updates weekly; small changes expected)
 - Percentages: within 0.15 percentage points
 - Counts: exact match required
 
-**Note:** Mismatches may reflect data updates since the report was generated on 2026-03-23. Review each mismatch in claim-registry.csv to determine if it represents a data update or a computation error.
+All claims match within tolerance.
 
 ## Validation Sample Design
 
-**Sample size:** 75 records (from 179 total vendor-department-FY aggregations)
+**Sample size:** 75 records (from 186 total vendor-department-FY aggregations)
 
 ### Stratification
 
 | Stratum | Records | Purpose |
 |---------|--------:|---------|
 | ethnic-media-named | 35 | All ethnic media vendors named in the report — most consequential classifications |
-| category-fill | 19 | Ensure ≥5 records per major category for coverage |
+| category-fill | 25 | Ensure ≥5 records per major category for coverage |
 | top-spend | 10 | Top 10 vendors by dollar amount — dominate the denominator |
-| random | 6 | Random fill to reach target sample size for statistical confidence |
-| dept-fill | 5 | Ensure every report-named department has at least one sampled record |
+| dept-fill | 3 | Ensure every report-named department has at least one sampled record |
+| random | 2 | Random fill to reach target sample size for statistical confidence |
 
 ### Category Coverage in Sample
 
 | Category | Records |
 |----------|--------:|
 | community-ethnic-press | 35 |
-| unknown | 10 |
-| legal-notices | 7 |
+| unknown | 7 |
 | radio-tv | 7 |
-| p-card | 6 |
+| legal-notices | 6 |
 | full-service-agency | 5 |
-| out-of-home | 4 |
-| digital-agency | 1 |
+| p-card | 5 |
+| major-metro-print | 5 |
+| out-of-home | 5 |
 
 ## Instructions for Reviewers
 
