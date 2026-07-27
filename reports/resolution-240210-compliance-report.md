@@ -1,3 +1,8 @@
+<!-- Regenerate the .docx with:
+       pandoc -f gfm-tex_math_dollars reports/resolution-240210-compliance-report.md -o reports/resolution-240210-compliance-report.docx
+     The -tex_math_dollars is required: plain gfm treats paired $ amounts in prose
+     as TeX math and mangles every paragraph containing two dollar figures. -->
+
 # Resolution 240210 Compliance Report
 
 ## City and County of San Francisco — Ethnic & Community Media Advertising
