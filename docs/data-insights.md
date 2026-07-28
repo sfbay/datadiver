@@ -359,6 +359,28 @@ ALL-CAPS/Title-Case duplicates) that cannot join the 41-name `nhood` polygon geo
 
 ---
 
+## Vendor Payments (`n9pm-xkyq`, compliance reporting)
+
+Found July 2026 while producing the FY2025-26 final Resolution 240210 report
+(`reports/`; every figure gated by `reports/generate-validation-workbook.mjs`, 116/116).
+
+- **"Single Payment Payees" is a vendor-shaped black box.** The financial system aggregates
+  one-time payees into a single vendor string — FY2026 Sheriff advertising carries $28,451
+  across 11 payments under it, recipients unrecoverable from the dataset. Treat it like
+  P-card: present in totals, attributable to no outlet.
+- **Vendor LIKE-patterns overmatch across entities.** `'DAILY JOURNAL'` (legal-notices
+  classifier rule) also matches SAN MATEO DAILY JOURNAL — a real newspaper, $17,157 lifetime,
+  none since FY2018, so no current-report impact; tighten to `'DAILY JOURNAL CORP'` when
+  querying lifetime legal-notice totals directly.
+- **Fiscal-year close behaves well but isn't instant-final.** At the July 17, 2026 load
+  (17 days post-close), FY2026 `vouchers_pending` for advertising was $0 and FY2027 rows were
+  already posting (25K rows) — yet the Controller's year-end close can post late/corrected
+  vouchers into the fall, and FY2025 figures drifted by small amounts ($849 moved between two
+  legal-notice vendors) months after that year closed. Disclose the data-load date on any
+  "final" fiscal-year figure.
+
+---
+
 ## General Patterns
 
 ### Floating SF-Local Timestamps (all DataSF datasets)

@@ -40,8 +40,9 @@ progress.md
 # Lock files (Word writes these next to open .docx files)
 ~$*
 # Dated working copies of the compliance report. The canonical
-# resolution-240210-compliance-report.docx (no date suffix) is tracked.
+# resolution-240210-compliance-report.docx / .pdf (no suffix) are tracked.
 reports/resolution-240210-compliance-report-*.docx
+reports/resolution-240210-compliance-report-*.pdf
 
 # Design handoff working artifacts — the brief's content distills into the
 # code itself (tokens.css, components, CLAUDE.md). The unzipped reference

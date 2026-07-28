@@ -7,6 +7,28 @@ description: Use when working on the Resolution 240210 compliance dashboard, the
 
 This is the densest knowledge cluster in the DataDiver project. The Resolution 240210 compliance dashboard has been through many design iterations and has accumulated specific architectural, visual, editorial, and stakeholder patterns that are not fully captured in code comments or CLAUDE.md. Read this before touching anything compliance-related.
 
+## The compliance report deliverable (`reports/`, FY2025-26 final edition shipped July 2026)
+
+- **Three tracked artifacts, three roles**: `resolution-240210-compliance-report.md` is
+  canonical for TEXT; the tracked `.docx` is Jesse's FORMATTED Word master (contains text
+  boxes — banner, "A Question for the Coalition," footer link — that pandoc extraction
+  silently drops); the tracked `.pdf` is his export of that master. **NEVER overwrite the
+  tracked docx with plain pandoc output** — the md's header comment carries the safe
+  plain-draft command. Suffixed variants (`-2`, `-4`, dated pdfs) are gitignored working
+  copies by design.
+- **md→docx conversion MUST use `-f gfm-tex_math_dollars`** — plain gfm parses paired `$`
+  amounts in prose as TeX math (space-collapsed italics; `%` even comments out trailing
+  text). This corrupted a formatted docx in July 2026 badly enough to need an XML-level
+  repair — full story in `reports/HANDOFF-compliance-report-repair.md`.
+- **Every number in the report is gated by `reports/generate-validation-workbook.mjs`**:
+  it parses the classifier registry from `src/utils/mediaClassification.ts` at runtime
+  (a hand-ported copy drifted once — never re-inline it), recomputes all ~116 report claims
+  from live Socrata, and must report ~100% match before shipping. Update its hardcoded
+  claim tables whenever report figures change.
+- Report-vs-code registry note: AsianWeek was editorially removed from the report's outlet
+  lists (July 2026) but the `ASIAN WEEK` pattern remains in `mediaClassification.ts` (zero
+  payment impact FY2018+) — Jesse's call pending on removing it for consistency.
+
 ## Stakeholder context
 
 - **Maya** is the primary stakeholder for this dashboard. The compliance report was delivered to her on **2026-04-08** for review.
