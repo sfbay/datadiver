@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Pigments: evictions terracotta-500 `#b85a33`; buyouts ochre-500 `#d4a435`. No new hex values outside `src/styles/tokens.css` ramps.
+- Pigments: evictions terracotta-600 `#b85a33` (the CLAUDE.md brand-terracotta hex; UI chrome uses terracotta-500 classes per ViolationTypeFilter precedent — map paint uses the 600 hex); buyouts ochre-500 `#d4a435`. No new hex values outside `src/styles/tokens.css` ramps.
 - SoQL booleans are REAL booleans: `non_payment = true` (no quotes). Wide breakdown syntax (live-verified): `sum(case(col = true, 1, true, 0)) as col` — pairs syntax, `true` as else-condition.
 - Socrata numeric fields arrive as STRINGS in JSON (`buyout_amount: "40000"`); parse with `Number()`.
 - Buyout stream ALWAYS filters `buyout_agreement_date IS NOT NULL` (the dataset is 55% declaration-only rows; date-range WHERE on `buyout_agreement_date` achieves this — never query the stream without a date clause).
