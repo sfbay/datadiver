@@ -97,8 +97,9 @@ type StreamId = (typeof HOUSING_STREAMS)[number]['id']
   **global** `dateRange` (appStore); clamp end to today. Single-year click selects that
   year. The strip also *renders* the current global range as a highlight window, so
   DateRangePicker edits reflect back — two faces, one time system.
-- Editorial annotations (hardcoded, AP style): dot-com wave (peak 1998–2001), 2008
-  crisis, Ellis wave (2013–15), COVID cliff (2020).
+- Editorial annotations (hardcoded, AP style), verified against annual totals:
+  dot-com wave (1998 all-time peak, 2,917), post-crash low (2009 trough, 1,174),
+  Ellis wave (2016 peak, 2,134), COVID cliff (2020 floor, 778).
 - All text rem via inline style (Large Type Phase 3); no `text-*` tokens in SVG.
 
 ## Cause filter (evictions)
