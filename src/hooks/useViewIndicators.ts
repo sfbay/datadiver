@@ -37,6 +37,7 @@ type ViewId =
   | 'crime-incidents'
   | 'parking-citations'
   | 'traffic-safety'
+  | 'housing'
   | 'business-activity'
   | 'campaign-finance'
   | 'city-budget'
@@ -284,6 +285,33 @@ const VIEW_TRANSFORMERS: Record<ViewId, ViewTransformer> = {
           'view-traffic-anomaly', `${anomaly.neighborhood}: ${anomaly.zScore.toFixed(1)}σ crash anomaly`,
           'anomaly', 'alert', 'traffic-safety', 90,
           { delta: anomaly.yoyPct }
+        ))
+      }
+    }
+
+    return items
+  },
+
+  'housing': (data) => {
+    const items: (TickerItem | null)[] = []
+    const { trend } = data
+
+    if (trend?.cityWideYoY) {
+      const { pct, current } = trend.cityWideYoY
+      items.push(makeItem(
+        'view-housing-yoy', `Eviction notices ${formatPct(pct)} vs last year · ${formatCount(current)} filed`,
+        'trend', deltaSeverity(pct, true), 'housing', 70,
+        { delta: pct, value: formatCount(current) }
+      ))
+    }
+
+    if (trend?.neighborhoods) {
+      const anomaly = topAnomalyNeighborhood(trend.neighborhoods)
+      if (anomaly) {
+        items.push(makeItem(
+          'view-housing-anomaly', `${anomaly.neighborhood}: ${anomaly.zScore.toFixed(1)}σ eviction anomaly`,
+          'anomaly', 'alert', 'housing', 90,
+          { delta: anomaly.yoyPct, value: formatCount(anomaly.currentCount) }
         ))
       }
     }

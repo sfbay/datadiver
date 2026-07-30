@@ -19,6 +19,12 @@ import { useEvictionComparisonData } from '@/hooks/useComparisonDataFactory'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import type { EvictionNoticeRow, BuyoutRow } from '@/types/datasets'
+import type { CensusVariable } from '@/types/census'
+import { useCensusData } from '@/hooks/useCensusData'
+import { useDemographicUnderlay } from '@/components/maps/DemographicUnderlay'
+import UnderlayPicker from '@/components/maps/UnderlayPicker'
+import UnderlayLegend from '@/components/maps/UnderlayLegend'
+import { UNDERLAY_PRESETS } from '@/utils/censusVariables'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
 import MapSidebar from '@/components/layout/MapSidebar'
 import ExportButton from '@/components/export/ExportButton'
@@ -402,6 +408,22 @@ export default function Housing() {
   // or polygon bounds, resets to the citywide default view when cleared.
   const { boundaries: neighborhoodBoundaries } = useNeighborhoodBoundaries()
   useMapCameraPresets(mapInstance, { selectedNeighborhood, neighborhoodBoundaries })
+
+  // Census demographic underlay — same idiom as CrimeIncidents/TrafficSafety:
+  // picker in the header, hook manages its own source/layers (below the
+  // eviction dots so the choropleth reads as ground context, not overlay).
+  const [underlayVariable, setUnderlayVariable] = useState<CensusVariable | null>(null)
+  const { neighborhoods: censusNeighborhoods } = useCensusData()
+
+  useDemographicUnderlay({
+    map: mapInstance,
+    variable: underlayVariable,
+    censusData: censusNeighborhoods,
+    boundaries: neighborhoodBoundaries,
+    geoIdProperty: 'nhood',
+    opacity: 0.2,
+    beforeLayerId: 'housing-eviction-points',
+  })
 
   // --- Trend baseline + period comparison (Task 8: CardTray YoY/compare) ---
   const trendConfig = useMemo((): TrendConfig => ({
@@ -828,6 +850,12 @@ export default function Housing() {
               </div>
             )}
 
+            <UnderlayPicker
+              presets={UNDERLAY_PRESETS['housing'] ?? []}
+              activeVariable={underlayVariable}
+              onSelect={setUnderlayVariable}
+            />
+
             <ExportButton targetSelector="#housing-capture" filename="housing" />
           </div>
         </div>
@@ -859,6 +887,7 @@ export default function Housing() {
             <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
               {isLoading && <MapScanOverlay label="Scanning housing data" color="#b85a33" />}
               <MapProgressBar color="#b85a33" />
+              <UnderlayLegend variable={underlayVariable} data={censusNeighborhoods} />
 
               {combinedError && (
                 <div className="absolute top-5 left-1/2 -translate-x-1/2 z-20 w-full max-w-md rounded-[14px] backdrop-blur-xl bg-white/60 dark:bg-slate-900/60">

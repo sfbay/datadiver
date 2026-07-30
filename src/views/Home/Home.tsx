@@ -118,6 +118,20 @@ const VISUALIZATIONS = [
     accentColor: '#963e30', // brick-600
   },
   {
+    path: '/housing',
+    title: 'Housing',
+    subtitle: 'SF Rent Board · Evictions & Buyouts',
+    badge: 'HO',
+    description:
+      'Where is displacement pressure concentrated? Map eviction notices and tenant buyout agreements back to 1997, by cause and neighborhood.',
+    stats: [
+      { label: 'Eviction history', value: '29 yrs' },
+      { label: 'Disclosed buyouts', value: '$170M' },
+      { label: 'Neighborhoods', value: '41' },
+    ],
+    accentColor: '#b85a33', // terracotta-600
+  },
+  {
     path: '/business-activity',
     title: 'Business Activity',
     subtitle: 'Opening & Closing Trends',

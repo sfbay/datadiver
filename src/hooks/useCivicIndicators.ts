@@ -156,6 +156,7 @@ async function computeAllIndicators(
     fetchParkingRevenue(ctx),
     fetchParkingCitations(ctx),
     fetchCampaignFinance(ctx),
+    fetchEvictionNotices(ctx),
     // Dropped: Traffic Safety (current period reads -100% from the 4-6 week
     // crash-reporting lag — the 60-day freshness gate is too coarse to catch
     // an empty *current* window) and Net Business Formation (NAICS
@@ -534,6 +535,57 @@ async function fetchParkingCitations(ctx: QueryContext): Promise<TickerItem | nu
     freshness: 'daily',
     computedAt: ctx.now,
     priority: 65,
+  }
+}
+
+// 7b. Eviction Notices — 30-day filing trend vs. same window last year.
+//     Freshness-gated like fetchParkingCitations: Rent Board filings can lag
+//     behind the current date-range window, and an empty current period would
+//     otherwise read as a fabricated -100% decline.
+async function fetchEvictionNotices(ctx: QueryContext): Promise<TickerItem | null> {
+  const isFresh = await checkFreshness('evictionNotices', 'file_date', 45)
+  if (!isFresh) return null
+
+  const [curRows, priRows, spark] = await Promise.all([
+    fetchDataset<CountRow>('evictionNotices', {
+      $select: 'count(*) as cnt',
+      $where: `file_date >= '${ctx.curStart}' AND file_date <= '${ctx.curEnd}'`,
+      $limit: 1,
+    }),
+    fetchDataset<CountRow>('evictionNotices', {
+      $select: 'count(*) as cnt',
+      $where: `file_date >= '${ctx.priStart}' AND file_date <= '${ctx.priEnd}'`,
+      $limit: 1,
+    }),
+    fetchSparkline('evictionNotices', 'file_date', ctx.curStart, ctx.curEnd),
+  ])
+
+  const current = parseInt(curRows[0]?.cnt, 10) || 0
+  const prior = parseInt(priRows[0]?.cnt, 10) || 0
+  if (current === 0 && prior === 0) return null
+
+  const delta = pctDelta(current, prior)
+  const category = deltaCategory(delta)
+  const severity = deltaSeverity(delta, true) // more evictions = worse
+
+  return {
+    id: 'civic-eviction-notices',
+    headline: `Eviction notices ${formatPct(delta)} vs last year · ${formatCount(current)} filed`,
+    detail: `${formatCount(prior)} filed in prior year period`,
+    category,
+    severity,
+    source: {
+      view: '/housing',
+      label: 'Housing',
+      datasetId: '5cei-gny5',
+    },
+    sparkData: spark,
+    delta,
+    value: formatCount(current),
+    priorValue: formatCount(prior),
+    freshness: 'daily',
+    computedAt: ctx.now,
+    priority: priorityFromCategory(category),
   }
 }
 

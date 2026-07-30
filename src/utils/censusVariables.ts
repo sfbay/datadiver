@@ -551,6 +551,11 @@ export const UNDERLAY_PRESETS: Partial<Record<string, CensusVariable[]>> = {
   // property values, monthly rent, household rent-stress, and elderly concentration
   // (the last correlates with EMS demand).
   'last48':             ['medianHomeValue', 'medianRent', 'rentBurden', 'pctOver65'],
+  // Housing — the four ACS variables most directly explanatory of eviction/
+  // buyout pressure: what rent costs, how burdened renters already are, how
+  // many households are exposed (renter share), and what a bought-out unit
+  // is worth to convert.
+  'housing':            ['medianRent', 'rentBurden', 'renterPct', 'medianHomeValue'],
 }
 
 // ---------------------------------------------------------------------------

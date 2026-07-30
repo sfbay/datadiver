@@ -63,6 +63,13 @@ const NAV_ITEMS = [
     accentColor: '#963e30', // brick-600 — danger semantic, twin to Crime
   },
   {
+    path: '/housing',
+    label: 'Housing',
+    shortLabel: 'HO',
+    description: 'Evictions & buyouts',
+    accentColor: '#b85a33', // terracotta-600 — kin to the primary brand pigment
+  },
+  {
     path: '/elections',
     label: 'Elections',
     shortLabel: 'EL',
