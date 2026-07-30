@@ -75,7 +75,7 @@ const SOURCES: SourceRow[] = [
   { name: 'Pavement Condition Index', id: '5aye-4rtt' },
   { name: 'Registered Business Locations', id: 'g8m3-pdis', dateField: 'dba_start_date', note: 'DataSF dropped industry labels (Jul 2026) — sectors derived from the raw NAICS code; ~96% of new registrations have no code (see findings)' },
   { name: 'Eviction Notices', id: '5cei-gny5', dateField: 'file_date', note: 'Notices filed with the SF Rent Board since 1997 — not completed evictions (see findings)' },
-  { name: 'Buyout Agreements', id: 'wmam-7g8d', dateField: 'buyout_agreement_date', note: 'Disclosed tenant buyout agreements since Mar 2015; declarations excluded, amounts ~96% covered (see findings)' },
+  { name: 'Buyout Agreements', id: 'wmam-7g8d', dateField: 'buyout_agreement_date', note: 'Disclosed tenant buyout agreements since March 2015; declarations excluded, amounts ~96% covered (see findings)' },
   { name: 'Campaign Finance (SF Ethics)', id: 'pitq-e56w', dateField: 'calculated_date', note: 'SF filings only — excludes state FPPC/CAL-ACCESS' },
   { name: 'Budget', id: 'xdgd-c79v' },
   { name: 'Spending & Revenue', id: 'bpnb-jwfb' },

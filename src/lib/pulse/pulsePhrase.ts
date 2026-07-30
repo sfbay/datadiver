@@ -74,6 +74,7 @@ const TICKER_SUBJECT: Record<string, string> = {
   'civic-crime-incidents': 'Violent crime',
   'civic-parking-revenue': 'Parking revenue',
   'civic-parking-citations': 'Parking citations',
+  'civic-eviction-notices': 'Eviction notices',
 }
 
 // Feed pigment for citywide trends (the card's single colour = its dataset,
@@ -83,6 +84,7 @@ const TICKER_PIGMENT: Record<string, string> = {
   'civic-crime-incidents': '#963e30', // brick
   'civic-parking-revenue': '#5c9693', // teal
   'civic-parking-citations': '#d47149', // terracotta-500
+  'civic-eviction-notices': '#8f4426', // terracotta-700 (600 = Fire & EMS, 500 = citations)
 }
 
 // ── Inclusion thresholds ────────────────────────────────────────────────────

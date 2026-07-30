@@ -542,6 +542,11 @@ async function fetchParkingCitations(ctx: QueryContext): Promise<TickerItem | nu
 //     Freshness-gated like fetchParkingCitations: Rent Board filings can lag
 //     behind the current date-range window, and an empty current period would
 //     otherwise read as a fabricated -100% decline.
+//     CAVEAT: the 45-day MAX(file_date) gate assumes the Rent Board's ~2-day
+//     weekday cadence; a PARTIALLY empty current window inside that horizon
+//     still undercounts (the Traffic Safety trap that got it dropped from
+//     this engine). Bounded to ~2/30 days at today's cadence — revisit if
+//     the feed slows.
 async function fetchEvictionNotices(ctx: QueryContext): Promise<TickerItem | null> {
   const isFresh = await checkFreshness('evictionNotices', 'file_date', 45)
   if (!isFresh) return null

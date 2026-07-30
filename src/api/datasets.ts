@@ -250,7 +250,7 @@ export const DATASETS: Record<string, DatasetConfig> = {
   evictionNotices: {
     id: '5cei-gny5',
     name: 'Eviction Notices',
-    description: 'Eviction notices filed with the SF Rent Board since 1997',
+    description: 'Housing eviction notices filed with the SF Rent Board since 1997',
     endpoint: `${BASE_URL}/5cei-gny5.json`,
     category: 'housing',
     hasGeo: true,
