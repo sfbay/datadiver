@@ -254,7 +254,7 @@ export const DATASETS: Record<string, DatasetConfig> = {
     endpoint: `${BASE_URL}/5cei-gny5.json`,
     category: 'housing',
     hasGeo: true,
-    geoField: 'client_location',
+    geoField: 'shape',
     dateField: 'file_date',
     defaultSort: 'file_date DESC',
   },

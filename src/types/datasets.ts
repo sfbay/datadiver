@@ -634,7 +634,7 @@ export interface EvictionNoticeRow {
   constraints_date?: string
   supervisor_district?: string
   neighborhood?: string
-  client_location?: { type: 'Point'; coordinates: [number, number] }
+  shape?: { type: 'Point'; coordinates: [number, number] }
   // cause booleans (real JSON booleans)
   non_payment?: boolean
   breach?: boolean

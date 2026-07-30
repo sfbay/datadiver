@@ -18,7 +18,7 @@ story at a glance; the era strip puts today's numbers against the dot-com and 20
 
 ### Eviction Notices — `5cei-gny5`
 - 48,752 rows, `file_date` 1997-01-02 → 2026-07-28 (~2-day publish lag), updated daily.
-- Geo: `client_location` (point) ~99.8% populated every year; `neighborhood` = the 41
+- Geo: `shape` (true GeoJSON point) ~99.8% populated every year. TRAP: the sibling `client_location` column REPORTS dataTypeName "point" in columns.json but SERIALIZES as the legacy location type ({latitude, longitude, human_address} strings) — extractCoordinates gets no .coordinates and every feature silently drops. Use `shape`; `neighborhood` = the 41
   Analysis Neighborhoods (verified 41 distinct); `supervisor_district`.
 - ~19 boolean cause columns — **real JSON booleans** (`non_payment = true`, no quotes).
   A notice can carry multiple causes.

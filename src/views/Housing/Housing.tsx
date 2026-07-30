@@ -62,7 +62,7 @@ type MapMode = 'dots' | 'heatmap'
  *  must pass an explicit empty FeatureCollection instead of null to clear the map. */
 const EMPTY_FC: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] } as const
 
-const EVICTION_SELECT_FIELDS = `eviction_id,address,file_date,neighborhood,supervisor_district,client_location,${ALL_CAUSES.join(',')}`
+const EVICTION_SELECT_FIELDS = `eviction_id,address,file_date,neighborhood,supervisor_district,shape,${ALL_CAUSES.join(',')}`
 const BUYOUT_SELECT_FIELDS = 'case_number,buyout_agreement_date,pre_buyout_disclosure_declaration_date,buyout_amount,unknown_amount,number_of_tenants,address,analysis_neighborhood,supervisor_district,point'
 
 interface EvictionNeighborhoodAggRow { neighborhood: string; n: string }
@@ -247,7 +247,7 @@ export default function Housing() {
     return `pre_buyout_disclosure_declaration_date >= '${dateRange.start}' AND pre_buyout_disclosure_declaration_date <= '${dateRange.end}'`
   }, [dateRange])
 
-  const freshness = useDataFreshness('evictionNotices', 'file_date', dateRange, { geoField: 'client_location' })
+  const freshness = useDataFreshness('evictionNotices', 'file_date', dateRange, { geoField: 'shape' })
 
   // --- Data queries (10 total) ---
   // 1. Eviction rows (map dots)
@@ -443,7 +443,7 @@ export default function Housing() {
   const evictionPoints = useMemo(() => {
     return evictionRows
       .map((r) => {
-        const coords = extractCoordinates(r.client_location)
+        const coords = extractCoordinates(r.shape)
         if (!coords) return null
         const trueCauses = ALL_CAUSES.filter((c) => r[c])
         return {
