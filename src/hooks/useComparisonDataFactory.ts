@@ -8,6 +8,7 @@ import type {
   PoliceIncident,
   TrafficCrashRecord,
   ParkingCitationRecord,
+  EvictionNoticeRow,
   DailyTrendPoint,
 } from '@/types/datasets'
 import { diffMinutes, diffHours, groupByDay } from '@/utils/time'
@@ -481,4 +482,38 @@ export const useCitationComparisonData = createComparisonDataHook<
     extractDate: (r) => r.citation_issued_datetime,
   },
   'useCitationComparisonData'
+)
+
+// ── Eviction Notices ──────────────────────────────────────────────
+
+export interface ComparisonStatsEviction {
+  total: number
+}
+
+export const useEvictionComparisonData = createComparisonDataHook<
+  Pick<EvictionNoticeRow, 'file_date'>,
+  ComparisonStatsEviction,
+  { total: number }
+>(
+  {
+    datasetKey: 'evictionNotices',
+    dateField: 'file_date',
+    selectFields: 'file_date',
+    computeStats(records) {
+      return { total: records.length }
+    },
+    computeDeltas(current, comparison) {
+      return { total: pctDelta(current.total, comparison.total) }
+    },
+    buildTrendPoint(day, recs) {
+      return {
+        day,
+        callCount: recs.length,
+        avgResponseTime: 0,
+        medianResponseTime: 0,
+      }
+    },
+    extractDate: (r) => r.file_date,
+  },
+  'useEvictionComparisonData'
 )

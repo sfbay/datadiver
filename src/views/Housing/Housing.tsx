@@ -11,13 +11,20 @@ import { useProgressScope } from '@/hooks/useLoadingProgress'
 import { useAppStore } from '@/stores/appStore'
 import { eventFlyToOffset } from '@/utils/cameraPadding'
 import { extractCoordinates } from '@/utils/geo'
-import { formatDate, formatNumber } from '@/utils/time'
+import { formatDate, formatNumber, formatDelta } from '@/utils/time'
+import { resolveComparisonStart, comparisonLabel } from '@/utils/comparisonMode'
+import { useTrendBaseline } from '@/hooks/useTrendBaseline'
+import type { TrendConfig } from '@/types/trends'
+import { useEvictionComparisonData } from '@/hooks/useComparisonDataFactory'
 import type { EvictionNoticeRow, BuyoutRow } from '@/types/datasets'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
 import ExportButton from '@/components/export/ExportButton'
 import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
 import { ErrorState } from '@/components/ui/ErrorState'
-import { MapScanOverlay, MapProgressBar } from '@/components/ui/Skeleton'
+import { MapScanOverlay, MapProgressBar, SkeletonStatCards } from '@/components/ui/Skeleton'
+import CardTray, { type CardDef } from '@/components/ui/CardTray'
+import EraStrip from './EraStrip'
+import { parseYearCounts } from './eraStripMath'
 import { ALL_CAUSES, CAUSE_LABELS, buildCauseClause, causeBreakdownSelect, noFaultClause, type CauseColumn } from './causes'
 import { buyoutRadius, parseAmount } from './buyoutScale'
 
@@ -80,7 +87,7 @@ function StreamChip({ label, pigment, textClass, active, count, onClick }: {
 }
 
 export default function Housing() {
-  const { dateRange, selectedHousingEvent, setSelectedHousingEvent } = useAppStore()
+  const { dateRange, comparisonMode, selectedHousingEvent, setSelectedHousingEvent, setDateRange } = useAppStore()
   const civicIndicators = useCivicIndicators()
   const [searchParams, setSearchParams] = useSearchParams()
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
@@ -179,6 +186,19 @@ export default function Housing() {
     if (selectedNeighborhood) conditions.push(`neighborhood = '${selectedNeighborhood.replace(/'/g, "''")}'`)
     return conditions.join(' AND ')
   }, [evictionDateOnlyClause, causeClause, selectedNeighborhood])
+
+  // Comparison-hook variant of evictionWhere: the comparison factory locates
+  // the current period inside the where string via a literal
+  // `${dateField} >= '${start}T00:00:00'` / `<= '${end}T23:59:59'` match (see
+  // useComparisonDataFactory.ts) to swap in the comparison window — the plain
+  // date-only evictionWhere above has no time suffix and would silently fail
+  // that match, leaving the "comparison" query identical to the current one.
+  const evictionCompareWhere = useMemo(() => {
+    const conditions = [`file_date >= '${dateRange.start}T00:00:00'`, `file_date <= '${dateRange.end}T23:59:59'`]
+    if (causeClause) conditions.push(causeClause)
+    if (selectedNeighborhood) conditions.push(`neighborhood = '${selectedNeighborhood.replace(/'/g, "''")}'`)
+    return conditions.join(' AND ')
+  }, [dateRange, causeClause, selectedNeighborhood])
 
   const buyoutDateOnlyClause = useMemo(() => {
     return `buyout_agreement_date >= '${dateRange.start}' AND buyout_agreement_date <= '${dateRange.end}'`
@@ -301,21 +321,37 @@ export default function Housing() {
   )
 
   // 10. Era strip years — stable storytelling context, NO date/cause filter (Task 8 mounts EraStrip)
-  const { data: evictionYearRows } = useDataset<YearAggRow>(
+  const { data: evictionYearRows, isLoading: evictionYearsLoading } = useDataset<YearAggRow>(
     'evictionNotices',
     { $select: 'date_extract_y(file_date) as yr, count(*) as n', $group: 'yr', $order: 'yr', $limit: 50 },
     []
   )
-  const { data: buyoutYearRows } = useDataset<YearAggRow>(
+  const { data: buyoutYearRows, isLoading: buyoutYearsLoading } = useDataset<YearAggRow>(
     'buyoutAgreements',
     { $select: 'date_extract_y(buyout_agreement_date) as yr, count(*) as n', $group: 'yr', $order: 'yr', $limit: 50 },
     []
   )
+  const evictionYearCounts = useMemo(() => parseYearCounts(evictionYearRows), [evictionYearRows])
+  const buyoutYearCounts = useMemo(() => parseYearCounts(buyoutYearRows), [buyoutYearRows])
   // evictionYearRows/buyoutYearRows feed EraStrip; causeBreakdownRows feeds
   // EvictionCauseFilter's counts; noFaultCount/declarationsInRange/medianBuyout
   // feed CardTray; evictionNeighborhoodRows/buyoutNeighborhoodRows feed the
   // sidebar ranking — all wired up in later tasks. Fetched here so the query
   // shape is locked in now.
+
+  // --- Trend baseline + period comparison (Task 8: CardTray YoY/compare) ---
+  const trendConfig = useMemo((): TrendConfig => ({
+    datasetKey: 'evictionNotices',
+    dateField: 'file_date',
+    neighborhoodField: 'neighborhood',
+  }), [])
+  const trend = useTrendBaseline(trendConfig, dateRange, causeClause || undefined)
+
+  const compStart = useMemo(() => resolveComparisonStart(comparisonMode, dateRange), [comparisonMode, dateRange])
+  const comparison = useEvictionComparisonData(dateRange, evictionCompareWhere, compStart, evictionRows, evictionsHitLimit)
+  const compLabel = comparisonLabel(comparisonMode, dateRange)
+
+  const evictionSparkValues = useMemo(() => trend.currentPeriods.map((p) => p.count), [trend.currentPeriods])
 
   // --- Computed map data ---
   const evictionPoints = useMemo(() => {
@@ -600,6 +636,70 @@ export default function Housing() {
     (enabledStreams.has('buyouts') ? buyoutPoints.length : 0)
   const anyHitLimit = evictionsHitLimit || buyoutsHitLimit
 
+  // --- Stat cards (Task 8) ---
+  // Card values describe the current date+cause+neighborhood scope, NOT map
+  // visibility — they still render when a stream is toggled off on the map.
+  const cardDefs = useMemo((): CardDef[] => {
+    const noFaultPct = noFaultCount != null && evictionScopeTotal
+      ? Math.round((noFaultCount / evictionScopeTotal) * 100)
+      : null
+
+    return [
+      {
+        id: 'evictions',
+        label: 'Eviction notices',
+        shortLabel: 'Notices',
+        value: evictionTotal != null ? formatNumber(evictionTotal) : '—',
+        color: '#b85a33',
+        delay: 0,
+        defaultExpanded: true,
+        subtitle: comparison.deltas
+          ? `${formatDelta(comparison.deltas.total)} ${compLabel}`
+          : (comparison.suppressed && comparisonMode !== null
+            ? 'Compare needs a narrower date range'
+            : 'Notices filed with the Rent Board — not completed evictions.'),
+        trend: comparison.deltas
+          ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral')
+          : undefined,
+        yoyDelta: !comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null,
+        sparkData: evictionSparkValues.length > 0 ? { values: evictionSparkValues } : undefined,
+      },
+      {
+        id: 'no-fault-share',
+        label: 'No-fault share',
+        shortLabel: 'No-fault',
+        value: noFaultPct != null ? `${noFaultPct}%` : '—',
+        color: '#b85a33',
+        delay: 80,
+        defaultExpanded: true,
+        subtitle: 'Owner move-in, Ellis Act, demolition and other no-fault grounds',
+      },
+      {
+        id: 'buyouts',
+        label: 'Buyout agreements',
+        shortLabel: 'Buyouts',
+        value: buyoutTotal != null ? formatNumber(buyoutTotal) : '—',
+        color: '#d4a435',
+        delay: 160,
+        defaultExpanded: true,
+        subtitle: declarationsInRange != null ? `From ${formatNumber(declarationsInRange)} opened negotiations` : undefined,
+      },
+      {
+        id: 'median-buyout',
+        label: 'Median buyout',
+        shortLabel: 'Median',
+        value: buyoutTotal && medianBuyout != null ? `$${formatNumber(Math.round(medianBuyout))}` : '—',
+        color: '#d4a435',
+        delay: 240,
+        defaultExpanded: !!buyoutTotal,
+        subtitle: 'Median of disclosed amounts',
+      },
+    ]
+  }, [
+    evictionTotal, noFaultCount, evictionScopeTotal, buyoutTotal, declarationsInRange, medianBuyout,
+    comparison.deltas, comparison.suppressed, compLabel, comparisonMode, trend.cityWideYoY, evictionSparkValues,
+  ])
+
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
@@ -677,34 +777,51 @@ export default function Housing() {
         />
       </div>
 
-      {/* Content — era strip (Task 8) will slot in above the map inside this capture div */}
-      <div id="housing-capture" className="flex-1 overflow-hidden flex">
-        <div className="flex-1 relative">
-          <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
-            {isLoading && <MapScanOverlay label="Scanning housing data" color="#b85a33" />}
-            <MapProgressBar color="#b85a33" />
+      {/* Content — era strip band above the map, both inside the capture div */}
+      <div id="housing-capture" className="flex-1 overflow-hidden flex flex-col">
+        {/* Era strip — 1997–present annual bars, brush drives the global date range */}
+        <div className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-4 py-1 bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl">
+          <EraStrip
+            evictionYears={evictionYearCounts}
+            buyoutYears={buyoutYearCounts}
+            range={dateRange}
+            onRangeChange={setDateRange}
+            isLoading={evictionYearsLoading || buyoutYearsLoading}
+          />
+        </div>
 
-            {combinedError && (
-              <div className="absolute top-5 left-1/2 -translate-x-1/2 z-20 w-full max-w-md rounded-[14px] backdrop-blur-xl bg-white/60 dark:bg-slate-900/60">
-                <ErrorState
-                  message={combinedError}
-                  onRetry={() => { refetchEvictions(); refetchBuyouts() }}
-                  what="housing records"
+        <div className="flex-1 overflow-hidden flex">
+          <div className="flex-1 relative">
+            <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
+              {isLoading && <MapScanOverlay label="Scanning housing data" color="#b85a33" />}
+              <MapProgressBar color="#b85a33" />
+
+              {combinedError && (
+                <div className="absolute top-5 left-1/2 -translate-x-1/2 z-20 w-full max-w-md rounded-[14px] backdrop-blur-xl bg-white/60 dark:bg-slate-900/60">
+                  <ErrorState
+                    message={combinedError}
+                    onRetry={() => { refetchEvictions(); refetchBuyouts() }}
+                    what="housing records"
+                  />
+                </div>
+              )}
+
+              {!isLoading && !freshness.isLoading && (!freshness.hasDataInRange || (!freshness.hasGeoInRange && !geoGapDismissed)) && (
+                <DataFreshnessAlert
+                  latestDate={freshness.latestDate}
+                  latestGeoDate={freshness.latestGeoDate}
+                  mode={freshness.hasDataInRange ? 'geo-gap' : 'no-data'}
+                  onDismiss={freshness.hasDataInRange ? () => setGeoGapDismissed(true) : undefined}
+                  suggestedRange={freshness.hasDataInRange ? freshness.suggestedGeoRange : freshness.suggestedRange}
+                  accentColor="#b85a33"
                 />
-              </div>
-            )}
+              )}
 
-            {!isLoading && !freshness.isLoading && (!freshness.hasDataInRange || (!freshness.hasGeoInRange && !geoGapDismissed)) && (
-              <DataFreshnessAlert
-                latestDate={freshness.latestDate}
-                latestGeoDate={freshness.latestGeoDate}
-                mode={freshness.hasDataInRange ? 'geo-gap' : 'no-data'}
-                onDismiss={freshness.hasDataInRange ? () => setGeoGapDismissed(true) : undefined}
-                suggestedRange={freshness.hasDataInRange ? freshness.suggestedGeoRange : freshness.suggestedRange}
-                accentColor="#b85a33"
-              />
-            )}
-          </MapView>
+              {/* Stat cards — top left */}
+              {isLoading && <SkeletonStatCards count={4} />}
+              {!isLoading && <CardTray viewId="housing" cards={cardDefs} />}
+            </MapView>
+          </div>
         </div>
       </div>
     </div>
