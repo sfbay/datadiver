@@ -33,6 +33,7 @@ const Neighborhood = lazy(() => import('@/views/Neighborhood/Neighborhood'))
 const Alerts = lazy(() => import('@/views/Alerts/AlertsView'))
 const About = lazy(() => import('@/views/About/About'))
 const Pulse = lazy(() => import('@/views/Pulse/Pulse'))
+const Housing = lazy(() => import('@/views/Housing/Housing'))
 
 /** Chunk-loading fallback — same calm register as the skeleton kit: a corner
  *  pill, not a takeover. The view's own progressive skeletons handle the rest
@@ -107,6 +108,7 @@ export default function App() {
           <Route path="/crime-incidents" element={<CrimeIncidents />} />
           <Route path="/parking-citations" element={<ParkingCitations />} />
           <Route path="/traffic-safety" element={<TrafficSafety />} />
+          <Route path="/housing" element={<Housing />} />
           <Route path="/business-activity" element={<BusinessActivity />} />
           <Route path="/business" element={<BusinessSearch />} />
           <Route path="/business/chain/:ban" element={<ChainProfile />} />

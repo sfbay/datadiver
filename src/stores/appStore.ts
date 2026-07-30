@@ -56,6 +56,9 @@ interface AppState {
   /** Selected business uniqueid for detail panel (null = closed) */
   selectedBusiness: string | null
 
+  /** Selected housing event, prefixed "evictions:<id>" / "buyouts:<case>", for detail panel (null = closed) */
+  selectedHousingEvent: string | null
+
   /** Loading state */
   isLoading: boolean
 
@@ -79,6 +82,7 @@ interface AppState {
   setSelectedCitation: (id: string | null) => void
   setSelectedCrash: (id: string | null) => void
   setSelectedBusiness: (id: string | null) => void
+  setSelectedHousingEvent: (id: string | null) => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
 }
@@ -107,6 +111,7 @@ export const useAppStore = create<AppState>((set) => ({
   selectedCitation: null,
   selectedCrash: null,
   selectedBusiness: null,
+  selectedHousingEvent: null,
   isLoading: false,
   error: null,
 
@@ -149,6 +154,7 @@ export const useAppStore = create<AppState>((set) => ({
   setSelectedCitation: (id) => set({ selectedCitation: id }),
   setSelectedCrash: (id) => set({ selectedCrash: id }),
   setSelectedBusiness: (id) => set({ selectedBusiness: id }),
+  setSelectedHousingEvent: (id) => set({ selectedHousingEvent: id }),
   setLoading: (loading) => set({ isLoading: loading }),
   setError: (error) => set({ error }),
 }))

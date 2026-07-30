@@ -1,0 +1,669 @@
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import mapboxgl from 'mapbox-gl'
+import CivicTicker from '@/components/ui/CivicTicker'
+import { useCivicIndicators } from '@/hooks/useCivicIndicators'
+import { useDataset } from '@/hooks/useDataset'
+import { useMapLayer } from '@/hooks/useMapLayer'
+import { useMapTooltip } from '@/hooks/useMapTooltip'
+import { useDataFreshness } from '@/hooks/useDataFreshness'
+import { useProgressScope } from '@/hooks/useLoadingProgress'
+import { useAppStore } from '@/stores/appStore'
+import { eventFlyToOffset } from '@/utils/cameraPadding'
+import { extractCoordinates } from '@/utils/geo'
+import { formatDate, formatNumber } from '@/utils/time'
+import type { EvictionNoticeRow, BuyoutRow } from '@/types/datasets'
+import MapView, { type MapHandle } from '@/components/maps/MapView'
+import ExportButton from '@/components/export/ExportButton'
+import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { MapScanOverlay, MapProgressBar } from '@/components/ui/Skeleton'
+import { ALL_CAUSES, CAUSE_LABELS, buildCauseClause, causeBreakdownSelect, noFaultClause, type CauseColumn } from './causes'
+import { buyoutRadius, parseAmount } from './buyoutScale'
+
+const HOUSING_STREAMS = [
+  { id: 'evictions', label: 'Eviction Notices', pigment: '#b85a33',
+    datasetKey: 'evictionNotices' as const, dateField: 'file_date',
+    neighborhoodField: 'neighborhood' },
+  { id: 'buyouts', label: 'Buyouts', pigment: '#d4a435',
+    datasetKey: 'buyoutAgreements' as const, dateField: 'buyout_agreement_date',
+    neighborhoodField: 'analysis_neighborhood' },
+] as const
+type StreamId = (typeof HOUSING_STREAMS)[number]['id']
+
+const STREAM_IDS = HOUSING_STREAMS.map((s) => s.id)
+const STREAM_TEXT_CLASS: Record<StreamId, string> = {
+  evictions: 'text-terracotta-500',
+  buyouts: 'text-ochre-500',
+}
+
+type MapMode = 'dots' | 'heatmap'
+
+const EVICTION_SELECT_FIELDS = `eviction_id,address,file_date,neighborhood,supervisor_district,client_location,${ALL_CAUSES.join(',')}`
+const BUYOUT_SELECT_FIELDS = 'case_number,buyout_agreement_date,pre_buyout_disclosure_declaration_date,buyout_amount,unknown_amount,number_of_tenants,address,analysis_neighborhood,supervisor_district,point'
+
+interface EvictionNeighborhoodAggRow { neighborhood: string; n: string }
+interface BuyoutNeighborhoodAggRow { analysis_neighborhood: string; n: string; total: string }
+interface YearAggRow { yr?: string; n: string }
+
+/** Stream toggle chip — TrafficSafety overlay-chip visual: pigment dot + label + count. */
+function StreamChip({ label, pigment, textClass, active, count, onClick }: {
+  label: string
+  pigment: string
+  textClass: string
+  active: boolean
+  count: number | null
+  onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      aria-pressed={active}
+      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-micro font-mono font-medium transition-all duration-200 ${
+        active
+          ? `bg-white dark:bg-white/[0.08] shadow-sm ${textClass}`
+          : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+      }`}
+    >
+      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: active ? pigment : '#94a3b8' }} />
+      {label}
+      {count !== null && <span className="tabular-nums opacity-70">{formatNumber(count)}</span>}
+    </button>
+  )
+}
+
+export default function Housing() {
+  const { dateRange, selectedHousingEvent, setSelectedHousingEvent } = useAppStore()
+  const civicIndicators = useCivicIndicators()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
+  const [geoGapDismissed, setGeoGapDismissed] = useState(false)
+  const mapHandleRef = useRef<MapHandle>(null)
+
+  // Deep-link: rehydrate detail panel from URL on mount.
+  useEffect(() => {
+    const detailParam = searchParams.get('detail')
+    if (detailParam) setSelectedHousingEvent(detailParam)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Sync detail selection → URL param
+  useEffect(() => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (selectedHousingEvent) next.set('detail', selectedHousingEvent)
+      else next.delete('detail')
+      return next
+    }, { replace: true })
+  }, [selectedHousingEvent, setSearchParams])
+
+  // --- View-local state from URL params ---
+  const enabledStreams = useMemo(() => {
+    const param = searchParams.get('streams')
+    if (param === null) return new Set<StreamId>(STREAM_IDS)
+    const valid = new Set<string>(STREAM_IDS)
+    const parsed = param.split(',').map(decodeURIComponent).filter((s) => valid.has(s))
+    return new Set(parsed as StreamId[])
+  }, [searchParams])
+
+  const mapMode = (searchParams.get('map_mode') as MapMode) || 'dots'
+
+  const selectedCauses = useMemo(() => {
+    const param = searchParams.get('causes')
+    if (!param) return new Set<string>()
+    return new Set(param.split(',').map(decodeURIComponent))
+  }, [searchParams])
+
+  const selectedNeighborhood = searchParams.get('neighborhood') || null
+
+  const toggleStream = useCallback((id: StreamId) => {
+    const next = new Set(enabledStreams)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev)
+      if (next.size === STREAM_IDS.length) params.delete('streams')
+      else params.set('streams', Array.from(next).map(encodeURIComponent).join(','))
+      return params
+    }, { replace: true })
+  }, [enabledStreams, setSearchParams])
+
+  const setMapMode = useCallback((mode: MapMode) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (mode === 'dots') next.delete('map_mode')
+      else next.set('map_mode', mode)
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
+
+  // setSelectedCauses / setSelectedNeighborhood: URL-state writers for the
+  // EvictionCauseFilter + neighborhood sidebar wiring that lands in a later
+  // task. Defined now so the URL contract (?causes=, ?neighborhood=) is
+  // complete and round-trips even though no UI calls these setters yet.
+  const setSelectedCauses = useCallback((causes: Set<string>) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (causes.size === 0) next.delete('causes')
+      else next.set('causes', Array.from(causes).map(encodeURIComponent).join(','))
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
+
+  const setSelectedNeighborhood = useCallback((n: string | null) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (!n) next.delete('neighborhood')
+      else next.set('neighborhood', n)
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
+
+  // --- WHERE clause construction ---
+  const causeClause = useMemo(() => buildCauseClause(selectedCauses), [selectedCauses])
+
+  const evictionDateOnlyClause = useMemo(() => {
+    return `file_date >= '${dateRange.start}' AND file_date <= '${dateRange.end}'`
+  }, [dateRange])
+
+  const evictionWhere = useMemo(() => {
+    const conditions = [evictionDateOnlyClause]
+    if (causeClause) conditions.push(causeClause)
+    if (selectedNeighborhood) conditions.push(`neighborhood = '${selectedNeighborhood.replace(/'/g, "''")}'`)
+    return conditions.join(' AND ')
+  }, [evictionDateOnlyClause, causeClause, selectedNeighborhood])
+
+  const buyoutDateOnlyClause = useMemo(() => {
+    return `buyout_agreement_date >= '${dateRange.start}' AND buyout_agreement_date <= '${dateRange.end}'`
+  }, [dateRange])
+
+  const buyoutWhere = useMemo(() => {
+    const conditions = [buyoutDateOnlyClause]
+    if (selectedNeighborhood) conditions.push(`analysis_neighborhood = '${selectedNeighborhood.replace(/'/g, "''")}'`)
+    return conditions.join(' AND ')
+  }, [buyoutDateOnlyClause, selectedNeighborhood])
+
+  const noFaultWhere = useMemo(() => `${evictionDateOnlyClause} AND ${noFaultClause()}`, [evictionDateOnlyClause])
+
+  const declarationsWhere = useMemo(() => {
+    return `pre_buyout_disclosure_declaration_date >= '${dateRange.start}' AND pre_buyout_disclosure_declaration_date <= '${dateRange.end}'`
+  }, [dateRange])
+
+  const freshness = useDataFreshness('evictionNotices', 'file_date', dateRange, { geoField: 'client_location' })
+
+  // --- Data queries (10 total) ---
+  // 1. Eviction rows (map dots)
+  const { data: evictionRows, isLoading: evictionsLoading, error: evictionsError, hitLimit: evictionsHitLimit, refetch: refetchEvictions } = useDataset<EvictionNoticeRow>(
+    'evictionNotices',
+    { $where: evictionWhere, $limit: 5000, $select: EVICTION_SELECT_FIELDS, $order: 'file_date DESC' },
+    [evictionWhere]
+  )
+
+  // 2. Buyout rows (map rings)
+  const { data: buyoutRows, isLoading: buyoutsLoading, error: buyoutsError, hitLimit: buyoutsHitLimit, refetch: refetchBuyouts } = useDataset<BuyoutRow>(
+    'buyoutAgreements',
+    { $where: buyoutWhere, $limit: 5000, $select: BUYOUT_SELECT_FIELDS, $order: 'buyout_agreement_date DESC' },
+    [buyoutWhere]
+  )
+
+  // 3. Eviction total count
+  const { data: evictionCountRows } = useDataset<{ count: string }>(
+    'evictionNotices',
+    { $select: 'count(*) as count', $where: evictionWhere },
+    [evictionWhere]
+  )
+  const evictionTotal = evictionCountRows[0] ? parseInt(evictionCountRows[0].count, 10) : null
+
+  // 4. Buyout total count
+  const { data: buyoutCountRows } = useDataset<{ count: string }>(
+    'buyoutAgreements',
+    { $select: 'count(*) as count', $where: buyoutWhere },
+    [buyoutWhere]
+  )
+  const buyoutTotal = buyoutCountRows[0] ? parseInt(buyoutCountRows[0].count, 10) : null
+
+  // 5. No-fault count
+  const { data: noFaultRows } = useDataset<{ count: string }>(
+    'evictionNotices',
+    { $select: 'count(*) as count', $where: noFaultWhere },
+    [noFaultWhere]
+  )
+  const noFaultCount = noFaultRows[0] ? parseInt(noFaultRows[0].count, 10) : null
+
+  // 6. Cause breakdown — one wide row, date-only clause (unfiltered by cause/neighborhood)
+  const { data: causeBreakdownRows } = useDataset<Record<CauseColumn, string>>(
+    'evictionNotices',
+    { $select: causeBreakdownSelect(), $where: evictionDateOnlyClause, $limit: 1 },
+    [evictionDateOnlyClause]
+  )
+
+  // 7. Median buyout
+  const { data: medianBuyoutRows } = useDataset<{ med: string }>(
+    'buyoutAgreements',
+    { $select: 'median(buyout_amount) as med', $where: buyoutWhere, $limit: 1 },
+    [buyoutWhere]
+  )
+  const medianBuyout = medianBuyoutRows[0]?.med != null ? parseAmount(medianBuyoutRows[0].med) : null
+
+  // 8. Declarations in range — deliberately NO agreement-date clause; counts undated rows.
+  const { data: declarationRows } = useDataset<{ count: string }>(
+    'buyoutAgreements',
+    { $select: 'count(*) as count', $where: declarationsWhere, $limit: 1 },
+    [declarationsWhere]
+  )
+  const declarationsInRange = declarationRows[0] ? parseInt(declarationRows[0].count, 10) : null
+
+  // 9. Per-stream neighborhood GROUP BY
+  const { data: evictionNeighborhoodRows } = useDataset<EvictionNeighborhoodAggRow>(
+    'evictionNotices',
+    { $select: 'neighborhood, count(*) as n', $where: evictionWhere, $group: 'neighborhood', $order: 'n DESC', $limit: 50 },
+    [evictionWhere]
+  )
+  const { data: buyoutNeighborhoodRows } = useDataset<BuyoutNeighborhoodAggRow>(
+    'buyoutAgreements',
+    { $select: 'analysis_neighborhood, count(*) as n, sum(buyout_amount) as total', $where: buyoutWhere, $group: 'analysis_neighborhood', $order: 'n DESC', $limit: 50 },
+    [buyoutWhere]
+  )
+
+  // 10. Era strip years — stable storytelling context, NO date/cause filter (Task 8 mounts EraStrip)
+  const { data: evictionYearRows } = useDataset<YearAggRow>(
+    'evictionNotices',
+    { $select: 'date_extract_y(file_date) as yr, count(*) as n', $group: 'yr', $order: 'yr', $limit: 50 },
+    []
+  )
+  const { data: buyoutYearRows } = useDataset<YearAggRow>(
+    'buyoutAgreements',
+    { $select: 'date_extract_y(buyout_agreement_date) as yr, count(*) as n', $group: 'yr', $order: 'yr', $limit: 50 },
+    []
+  )
+  // evictionYearRows/buyoutYearRows feed EraStrip; causeBreakdownRows feeds
+  // EvictionCauseFilter's counts; noFaultCount/declarationsInRange/medianBuyout
+  // feed CardTray; evictionNeighborhoodRows/buyoutNeighborhoodRows feed the
+  // sidebar ranking — all wired up in later tasks. Fetched here so the query
+  // shape is locked in now.
+
+  // --- Computed map data ---
+  const evictionPoints = useMemo(() => {
+    return evictionRows
+      .map((r) => {
+        const coords = extractCoordinates(r.client_location)
+        if (!coords) return null
+        const trueCauses = ALL_CAUSES.filter((c) => r[c])
+        return {
+          id: r.eviction_id,
+          lat: coords.lat,
+          lng: coords.lng,
+          headline: r.address || 'Address unavailable',
+          fileDate: r.file_date,
+          causesLabel: trueCauses.length > 0 ? trueCauses.map((c) => CAUSE_LABELS[c]).join(', ') : 'Cause not specified',
+        }
+      })
+      .filter((r): r is NonNullable<typeof r> => r !== null)
+  }, [evictionRows])
+
+  const buyoutPoints = useMemo(() => {
+    return buyoutRows
+      .map((r) => {
+        const coords = extractCoordinates(r.point)
+        if (!coords) return null
+        const amount = parseAmount(r.buyout_amount)
+        return {
+          id: r.case_number,
+          lat: coords.lat,
+          lng: coords.lng,
+          headline: r.address || 'Address unavailable',
+          agreementDate: r.buyout_agreement_date || null,
+          amount,
+          disclosed: amount != null,
+        }
+      })
+      .filter((r): r is NonNullable<typeof r> => r !== null)
+  }, [buyoutRows])
+
+  // Evictions dots geojson (dots mode, stream enabled)
+  const evictionDotsGeojson = useMemo((): GeoJSON.FeatureCollection | null => {
+    if (!enabledStreams.has('evictions') || mapMode !== 'dots' || evictionPoints.length === 0) return null
+    return {
+      type: 'FeatureCollection',
+      features: evictionPoints.map((p) => ({
+        type: 'Feature' as const,
+        geometry: { type: 'Point' as const, coordinates: [p.lng, p.lat] },
+        properties: { id: p.id, headline: p.headline, causes: p.causesLabel, fileDate: p.fileDate },
+      })),
+    }
+  }, [evictionPoints, enabledStreams, mapMode])
+
+  // Evictions heatmap geojson (heatmap mode, stream enabled) — same rows, different symbology.
+  const evictionHeatGeojson = useMemo((): GeoJSON.FeatureCollection | null => {
+    if (!enabledStreams.has('evictions') || mapMode !== 'heatmap' || evictionPoints.length === 0) return null
+    return {
+      type: 'FeatureCollection',
+      features: evictionPoints.map((p) => ({
+        type: 'Feature' as const,
+        geometry: { type: 'Point' as const, coordinates: [p.lng, p.lat] },
+        properties: { id: p.id, headline: p.headline, causes: p.causesLabel, fileDate: p.fileDate },
+      })),
+    }
+  }, [evictionPoints, enabledStreams, mapMode])
+
+  // Buyout rings geojson (stream enabled)
+  const buyoutGeojson = useMemo((): GeoJSON.FeatureCollection | null => {
+    if (!enabledStreams.has('buyouts') || buyoutPoints.length === 0) return null
+    return {
+      type: 'FeatureCollection',
+      features: buyoutPoints.map((p) => ({
+        type: 'Feature' as const,
+        geometry: { type: 'Point' as const, coordinates: [p.lng, p.lat] },
+        properties: {
+          id: p.id,
+          headline: p.headline,
+          amount: p.amount,
+          disclosed: p.disclosed,
+          radius: buyoutRadius(p.amount),
+          agreementDate: p.agreementDate,
+        },
+      })),
+    }
+  }, [buyoutPoints, enabledStreams])
+
+  // --- Map layers ---
+  const evictionDotLayers = useMemo((): mapboxgl.AnyLayer[] => [
+    {
+      id: 'housing-eviction-points',
+      type: 'circle',
+      source: 'housing-eviction-dots-data',
+      paint: {
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 3, 16, 6],
+        'circle-color': '#b85a33',
+        'circle-opacity': 0.8,
+        'circle-stroke-width': 1,
+        'circle-stroke-color': '#1e140d',
+        'circle-stroke-opacity': 0.6,
+      },
+    } as mapboxgl.AnyLayer,
+  ], [])
+
+  const evictionHeatmapLayers = useMemo((): mapboxgl.AnyLayer[] => [
+    {
+      id: 'housing-eviction-heat',
+      type: 'heatmap',
+      source: 'housing-eviction-heatmap-data',
+      maxzoom: 15,
+      paint: {
+        'heatmap-weight': 1,
+        'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 10, 0.3, 13, 0.6, 15, 1],
+        'heatmap-color': [
+          'interpolate', ['linear'], ['heatmap-density'],
+          0, 'rgba(0,0,0,0)',
+          0.1, 'rgba(184,90,51,0.15)',
+          0.3, 'rgba(184,90,51,0.4)',
+          0.5, 'rgba(212,164,53,0.55)',
+          0.7, 'rgba(212,164,53,0.75)',
+          0.85, 'rgba(245,236,217,0.8)',
+          1, 'rgba(245,236,217,0.95)',
+        ],
+        'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 10, 8, 13, 16, 15, 25],
+        'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], 13, 0.7, 15, 0.4, 16, 0.15],
+      },
+    } as mapboxgl.AnyLayer,
+    {
+      id: 'housing-eviction-heat-points',
+      type: 'circle',
+      source: 'housing-eviction-heatmap-data',
+      minzoom: 13,
+      paint: {
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 3, 16, 6],
+        'circle-color': '#b85a33',
+        'circle-opacity': 0.7,
+        'circle-stroke-width': 1,
+        'circle-stroke-color': 'rgba(245,236,217,0.15)',
+      },
+    } as mapboxgl.AnyLayer,
+  ], [])
+
+  const buyoutLayers = useMemo((): mapboxgl.AnyLayer[] => [
+    {
+      id: 'housing-buyout-rings',
+      type: 'circle',
+      source: 'housing-buyout-data',
+      paint: {
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, ['*', ['get', 'radius'], 0.6], 14, ['get', 'radius']],
+        'circle-color': '#d4a435',
+        'circle-opacity': 0.12,
+        'circle-stroke-color': '#d4a435',
+        'circle-stroke-width': ['case', ['get', 'disclosed'], 2, 1],
+        'circle-stroke-opacity': ['case', ['get', 'disclosed'], 0.9, 0.45],
+      },
+    } as mapboxgl.AnyLayer,
+  ], [])
+
+  // Eviction sources bound first so buyout rings draw above eviction dots.
+  useMapLayer(mapInstance, 'housing-eviction-dots-data', evictionDotsGeojson, evictionDotLayers)
+  useMapLayer(mapInstance, 'housing-eviction-heatmap-data', evictionHeatGeojson, evictionHeatmapLayers)
+  useMapLayer(mapInstance, 'housing-buyout-data', buyoutGeojson, buyoutLayers)
+
+  // --- Tooltips ---
+  useMapTooltip(mapInstance, 'housing-eviction-points', (props) => {
+    const dateStr = props.fileDate ? formatDate(String(props.fileDate), 'long') : null
+    return `
+      ${dateStr ? `<div style="color:#e2e8f0">${dateStr}</div>` : ''}
+      <div class="tooltip-label" style="margin-top:6px">Address</div>
+      <div style="color:#e2e8f0">${props.headline || 'Unknown'}</div>
+      <div class="tooltip-label" style="margin-top:6px">Cause</div>
+      <div style="color:#94a3b8">${props.causes || 'Not specified'}</div>
+    `
+  })
+
+  useMapTooltip(mapInstance, 'housing-eviction-heat-points', (props) => {
+    const dateStr = props.fileDate ? formatDate(String(props.fileDate), 'long') : null
+    return `
+      ${dateStr ? `<div style="color:#e2e8f0">${dateStr}</div>` : ''}
+      <div class="tooltip-label" style="margin-top:6px">Address</div>
+      <div style="color:#e2e8f0">${props.headline || 'Unknown'}</div>
+      <div class="tooltip-label" style="margin-top:6px">Cause</div>
+      <div style="color:#94a3b8">${props.causes || 'Not specified'}</div>
+    `
+  })
+
+  useMapTooltip(mapInstance, 'housing-buyout-rings', (props) => {
+    const dateStr = props.agreementDate ? formatDate(String(props.agreementDate), 'long') : null
+    const amountVal = props.amount != null ? Number(props.amount) : null
+    const amountStr = amountVal != null && Number.isFinite(amountVal)
+      ? `$${Math.round(amountVal).toLocaleString()}`
+      : 'Amount undisclosed'
+    return `
+      ${dateStr ? `<div style="color:#e2e8f0">${dateStr}</div>` : ''}
+      <div class="tooltip-label" style="margin-top:6px">Amount</div>
+      <div style="color:#d4a435;font-weight:600">${amountStr}</div>
+      <div class="tooltip-label" style="margin-top:6px">Address</div>
+      <div style="color:#94a3b8">${props.headline || 'Unknown'}</div>
+    `
+  })
+
+  // --- Click → selection (detail panels arrive in a later task) ---
+  useEffect(() => {
+    if (!mapInstance) return
+
+    const handleClick = (e: mapboxgl.MapLayerMouseEvent) => {
+      if (!e.features || e.features.length === 0) return
+      const id = e.features[0].properties?.id
+      if (!id) return
+      setSelectedHousingEvent(`evictions:${id}`)
+      const coords = (e.features[0].geometry as GeoJSON.Point).coordinates
+      mapInstance.flyTo({ center: [coords[0], coords[1]], zoom: 16, duration: 800, offset: eventFlyToOffset(mapInstance, 320) })
+    }
+
+    const layers = ['housing-eviction-points', 'housing-eviction-heat-points']
+    const tryAttach = () => {
+      try {
+        let attached = 0
+        for (const layer of layers) {
+          if (mapInstance.getLayer(layer)) {
+            mapInstance.on('click', layer, handleClick)
+            attached++
+          }
+        }
+        return attached > 0
+      } catch { /* layers not ready */ }
+      return false
+    }
+
+    if (!tryAttach()) {
+      const interval = setInterval(() => { if (tryAttach()) clearInterval(interval) }, 500)
+      return () => { clearInterval(interval); layers.forEach((l) => { try { mapInstance.off('click', l, handleClick) } catch { /* */ } }) }
+    }
+
+    return () => { layers.forEach((l) => { try { mapInstance.off('click', l, handleClick) } catch { /* */ } }) }
+  }, [mapInstance, setSelectedHousingEvent])
+
+  useEffect(() => {
+    if (!mapInstance) return
+
+    const handleClick = (e: mapboxgl.MapLayerMouseEvent) => {
+      if (!e.features || e.features.length === 0) return
+      const id = e.features[0].properties?.id
+      if (!id) return
+      setSelectedHousingEvent(`buyouts:${id}`)
+      const coords = (e.features[0].geometry as GeoJSON.Point).coordinates
+      mapInstance.flyTo({ center: [coords[0], coords[1]], zoom: 16, duration: 800, offset: eventFlyToOffset(mapInstance, 320) })
+    }
+
+    const tryAttach = () => {
+      try {
+        if (mapInstance.getLayer('housing-buyout-rings')) {
+          mapInstance.on('click', 'housing-buyout-rings', handleClick)
+          return true
+        }
+      } catch { /* layer not ready */ }
+      return false
+    }
+
+    if (!tryAttach()) {
+      const interval = setInterval(() => { if (tryAttach()) clearInterval(interval) }, 500)
+      return () => { clearInterval(interval); try { mapInstance.off('click', 'housing-buyout-rings', handleClick) } catch { /* */ } }
+    }
+
+    return () => { try { mapInstance.off('click', 'housing-buyout-rings', handleClick) } catch { /* */ } }
+  }, [mapInstance, setSelectedHousingEvent])
+
+  const handleMapReady = useCallback((map: mapboxgl.Map) => {
+    setMapInstance(map)
+  }, [])
+
+  useProgressScope()
+
+  const isLoading = evictionsLoading || buyoutsLoading
+  const combinedError = evictionsError || buyoutsError
+  const totalDisplayed = evictionPoints.length + buyoutPoints.length
+  const anyHitLimit = evictionsHitLimit || buyoutsHitLimit
+
+  return (
+    <div className="h-full flex flex-col">
+      {/* Header */}
+      <header className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl z-20">
+        <div className="flex flex-wrap items-start justify-between gap-3 desk:items-center">
+          <div className="flex flex-wrap items-center gap-4 min-w-0">
+            <div className="min-w-0">
+              <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">
+                Housing
+              </h1>
+              <p className="hidden sm:block truncate text-micro font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
+                SF Rent Board &middot; Eviction Notices &amp; Buyouts
+              </p>
+            </div>
+            {!isLoading && totalDisplayed > 0 && (
+              <div className="hidden sm:flex items-center gap-1.5">
+                <span className="inline-flex items-center gap-1.5 text-micro font-mono text-terracotta-500/80 bg-terracotta-500/10 px-2 py-1 rounded-full">
+                  <span className="w-1 h-1 rounded-full bg-terracotta-500 pulse-live" />
+                  {formatNumber(totalDisplayed)} records
+                </span>
+                {anyHitLimit && (
+                  <span className="text-micro font-mono text-ochre-500/80 bg-ochre-500/10 px-2 py-1 rounded-full">
+                    sample capped
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-end gap-2 flex-shrink-0">
+            {/* Stream toggle chips */}
+            <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-lg p-0.5">
+              {HOUSING_STREAMS.map((stream) => (
+                <StreamChip
+                  key={stream.id}
+                  label={stream.label}
+                  pigment={stream.pigment}
+                  textClass={STREAM_TEXT_CLASS[stream.id]}
+                  active={enabledStreams.has(stream.id)}
+                  count={stream.id === 'evictions' ? evictionTotal : buyoutTotal}
+                  onClick={() => toggleStream(stream.id)}
+                />
+              ))}
+            </div>
+
+            {/* Map mode toggle — evictions only */}
+            {enabledStreams.has('evictions') && (
+              <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-lg p-0.5">
+                {(['dots', 'heatmap'] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setMapMode(mode)}
+                    className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all duration-200 ${
+                      mapMode === mode
+                        ? 'bg-white dark:bg-white/[0.08] text-ink dark:text-white shadow-sm'
+                        : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+                    }`}
+                  >
+                    {mode === 'dots' ? 'Dots' : 'Heatmap'}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <ExportButton targetSelector="#housing-capture" filename="housing" />
+          </div>
+        </div>
+      </header>
+
+      {/* Cross-view ticker — signals from other datasets */}
+      <div className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-1 bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl z-10">
+        <CivicTicker
+          items={civicIndicators.items.filter(i => i.source.view !== '/housing')}
+          size="compact"
+        />
+      </div>
+
+      {/* Content — era strip (Task 8) will slot in above the map inside this capture div */}
+      <div id="housing-capture" className="flex-1 overflow-hidden flex">
+        <div className="flex-1 relative">
+          <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
+            {isLoading && <MapScanOverlay label="Scanning housing data" color="#b85a33" />}
+            <MapProgressBar color="#b85a33" />
+
+            {combinedError && (
+              <div className="absolute top-5 left-1/2 -translate-x-1/2 z-20 w-full max-w-md rounded-[14px] backdrop-blur-xl bg-white/60 dark:bg-slate-900/60">
+                <ErrorState
+                  message={combinedError}
+                  onRetry={() => { refetchEvictions(); refetchBuyouts() }}
+                  what="housing records"
+                />
+              </div>
+            )}
+
+            {!isLoading && !freshness.isLoading && (!freshness.hasDataInRange || (!freshness.hasGeoInRange && !geoGapDismissed)) && (
+              <DataFreshnessAlert
+                latestDate={freshness.latestDate}
+                latestGeoDate={freshness.latestGeoDate}
+                mode={freshness.hasDataInRange ? 'geo-gap' : 'no-data'}
+                onDismiss={freshness.hasDataInRange ? () => setGeoGapDismissed(true) : undefined}
+                suggestedRange={freshness.hasDataInRange ? freshness.suggestedGeoRange : freshness.suggestedRange}
+                accentColor="#b85a33"
+              />
+            )}
+          </MapView>
+        </div>
+      </div>
+    </div>
+  )
+}
