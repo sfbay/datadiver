@@ -90,7 +90,7 @@ export interface BuyoutRow {
   buyout_amount?: string        // Socrata numerics arrive as strings
   unknown_amount?: boolean      // true-or-absent
   number_of_tenants?: string
-  other_consideration?: string
+  other_consideration?: boolean
   address?: string
   zip_code?: string
   supervisor_district?: string
