@@ -626,8 +626,55 @@ export interface CampaignUniqueDonorRow {
   cnt: string
 }
 
+/** Eviction Notice (5cei-gny5) */
+export interface EvictionNoticeRow {
+  eviction_id: string
+  address?: string
+  file_date: string
+  constraints_date?: string
+  supervisor_district?: string
+  neighborhood?: string
+  client_location?: { type: 'Point'; coordinates: [number, number] }
+  // cause booleans (real JSON booleans)
+  non_payment?: boolean
+  breach?: boolean
+  nuisance?: boolean
+  illegal_use?: boolean
+  failure_to_sign_renewal?: boolean
+  access_denial?: boolean
+  unapproved_subtenant?: boolean
+  owner_move_in?: boolean
+  demolition?: boolean
+  capital_improvement?: boolean
+  substantial_rehab?: boolean
+  ellis_act_withdrawal?: boolean
+  condo_conversion?: boolean
+  roommate_same_unit?: boolean
+  other_cause?: boolean
+  late_payments?: boolean
+  lead_remediation?: boolean
+  development?: boolean
+  good_samaritan_ends?: boolean
+}
+
+/** Buyout Agreement (wmam-7g8d) */
+export interface BuyoutRow {
+  case_number: string
+  pre_buyout_disclosure_declaration_date?: string
+  buyout_agreement_date?: string
+  buyout_amount?: string // Socrata numerics arrive as strings
+  unknown_amount?: boolean // true-or-absent
+  number_of_tenants?: string
+  other_consideration?: string
+  address?: string
+  zip_code?: string
+  supervisor_district?: string
+  analysis_neighborhood?: string
+  point?: { type: 'Point'; coordinates: [number, number] }
+}
+
 /** View state for URL serialization */
-export type ViewId = 'home' | 'emergency-response' | 'parking-revenue' | 'dispatch-911' | '311-cases' | 'crime-incidents' | 'parking-citations' | 'traffic-safety' | 'business-activity' | 'campaign-finance' | 'demographics'
+export type ViewId = 'home' | 'emergency-response' | 'parking-revenue' | 'dispatch-911' | '311-cases' | 'crime-incidents' | 'parking-citations' | 'traffic-safety' | 'business-activity' | 'campaign-finance' | 'demographics' | 'housing'
 
 export interface ViewState {
   view: ViewId
