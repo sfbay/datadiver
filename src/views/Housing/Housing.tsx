@@ -39,6 +39,10 @@ const STREAM_TEXT_CLASS: Record<StreamId, string> = {
 
 type MapMode = 'dots' | 'heatmap'
 
+/** useMapLayer's data-update effect ignores `null` (stale layer), so toggle-off
+ *  must pass an explicit empty FeatureCollection instead of null to clear the map. */
+const EMPTY_FC: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] } as const
+
 const EVICTION_SELECT_FIELDS = `eviction_id,address,file_date,neighborhood,supervisor_district,client_location,${ALL_CAUSES.join(',')}`
 const BUYOUT_SELECT_FIELDS = 'case_number,buyout_agreement_date,pre_buyout_disclosure_declaration_date,buyout_amount,unknown_amount,number_of_tenants,address,analysis_neighborhood,supervisor_district,point'
 
@@ -65,7 +69,10 @@ function StreamChip({ label, pigment, textClass, active, count, onClick }: {
           : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
       }`}
     >
-      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: active ? pigment : '#94a3b8' }} />
+      <span
+        className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${active ? '' : 'bg-slate-400 dark:bg-slate-500'}`}
+        style={active ? { backgroundColor: pigment } : undefined}
+      />
       {label}
       {count !== null && <span className="tabular-nums opacity-70">{formatNumber(count)}</span>}
     </button>
@@ -106,7 +113,7 @@ export default function Housing() {
     return new Set(parsed as StreamId[])
   }, [searchParams])
 
-  const mapMode = (searchParams.get('map_mode') as MapMode) || 'dots'
+  const mapMode: MapMode = searchParams.get('map_mode') === 'heatmap' ? 'heatmap' : 'dots'
 
   const selectedCauses = useMemo(() => {
     const param = searchParams.get('causes')
@@ -183,7 +190,24 @@ export default function Housing() {
     return conditions.join(' AND ')
   }, [buyoutDateOnlyClause, selectedNeighborhood])
 
-  const noFaultWhere = useMemo(() => `${evictionDateOnlyClause} AND ${noFaultClause()}`, [evictionDateOnlyClause])
+  // Scope shared by the no-fault numerator and its denominator: date +
+  // neighborhood (when selected), deliberately NO cause clause.
+  const evictionScopeWhere = useMemo(() => {
+    const conditions = [evictionDateOnlyClause]
+    if (selectedNeighborhood) conditions.push(`neighborhood = '${selectedNeighborhood.replace(/'/g, "''")}'`)
+    return conditions.join(' AND ')
+  }, [evictionDateOnlyClause, selectedNeighborhood])
+
+  const noFaultWhere = useMemo(() => `${evictionScopeWhere} AND ${noFaultClause()}`, [evictionScopeWhere])
+
+  // Ranking queries stay citywide (comparison-not-drilldown): date + cause,
+  // NO selected-neighborhood clause. Buyouts have no cause filter, so their
+  // ranking where is just the date clause.
+  const evictionRankingWhere = useMemo(() => {
+    const conditions = [evictionDateOnlyClause]
+    if (causeClause) conditions.push(causeClause)
+    return conditions.join(' AND ')
+  }, [evictionDateOnlyClause, causeClause])
 
   const declarationsWhere = useMemo(() => {
     return `pre_buyout_disclosure_declaration_date >= '${dateRange.start}' AND pre_buyout_disclosure_declaration_date <= '${dateRange.end}'`
@@ -230,6 +254,15 @@ export default function Housing() {
   )
   const noFaultCount = noFaultRows[0] ? parseInt(noFaultRows[0].count, 10) : null
 
+  // 5b. Eviction scope total — denominator for the no-fault share (Task 8):
+  // same date+neighborhood scope as noFaultWhere, but NO cause clause.
+  const { data: evictionScopeTotalRows } = useDataset<{ count: string }>(
+    'evictionNotices',
+    { $select: 'count(*) as count', $where: evictionScopeWhere },
+    [evictionScopeWhere]
+  )
+  const evictionScopeTotal = evictionScopeTotalRows[0] ? parseInt(evictionScopeTotalRows[0].count, 10) : null
+
   // 6. Cause breakdown — one wide row, date-only clause (unfiltered by cause/neighborhood)
   const { data: causeBreakdownRows } = useDataset<Record<CauseColumn, string>>(
     'evictionNotices',
@@ -253,16 +286,18 @@ export default function Housing() {
   )
   const declarationsInRange = declarationRows[0] ? parseInt(declarationRows[0].count, 10) : null
 
-  // 9. Per-stream neighborhood GROUP BY
+  // 9. Per-stream neighborhood GROUP BY — citywide ranking (comparison-not-
+  // drilldown): date (+cause for evictions) only, NEVER the selected-
+  // neighborhood clause — this is the comparison frame, not a drilldown.
   const { data: evictionNeighborhoodRows } = useDataset<EvictionNeighborhoodAggRow>(
     'evictionNotices',
-    { $select: 'neighborhood, count(*) as n', $where: evictionWhere, $group: 'neighborhood', $order: 'n DESC', $limit: 50 },
-    [evictionWhere]
+    { $select: 'neighborhood, count(*) as n', $where: evictionRankingWhere, $group: 'neighborhood', $order: 'n DESC', $limit: 50 },
+    [evictionRankingWhere]
   )
   const { data: buyoutNeighborhoodRows } = useDataset<BuyoutNeighborhoodAggRow>(
     'buyoutAgreements',
-    { $select: 'analysis_neighborhood, count(*) as n, sum(buyout_amount) as total', $where: buyoutWhere, $group: 'analysis_neighborhood', $order: 'n DESC', $limit: 50 },
-    [buyoutWhere]
+    { $select: 'analysis_neighborhood, count(*) as n, sum(buyout_amount) as total', $where: buyoutDateOnlyClause, $group: 'analysis_neighborhood', $order: 'n DESC', $limit: 50 },
+    [buyoutDateOnlyClause]
   )
 
   // 10. Era strip years — stable storytelling context, NO date/cause filter (Task 8 mounts EraStrip)
@@ -320,9 +355,12 @@ export default function Housing() {
       .filter((r): r is NonNullable<typeof r> => r !== null)
   }, [buyoutRows])
 
-  // Evictions dots geojson (dots mode, stream enabled)
-  const evictionDotsGeojson = useMemo((): GeoJSON.FeatureCollection | null => {
-    if (!enabledStreams.has('evictions') || mapMode !== 'dots' || evictionPoints.length === 0) return null
+  // Evictions dots geojson (dots mode, stream enabled). Toggle-off must pass
+  // EMPTY_FC (not null) — useMapLayer's data effect ignores null, leaving
+  // stale dots on the map.
+  const evictionDotsGeojson = useMemo((): GeoJSON.FeatureCollection => {
+    if (!enabledStreams.has('evictions') || mapMode !== 'dots') return EMPTY_FC
+    if (evictionPoints.length === 0) return EMPTY_FC
     return {
       type: 'FeatureCollection',
       features: evictionPoints.map((p) => ({
@@ -333,9 +371,11 @@ export default function Housing() {
     }
   }, [evictionPoints, enabledStreams, mapMode])
 
-  // Evictions heatmap geojson (heatmap mode, stream enabled) — same rows, different symbology.
-  const evictionHeatGeojson = useMemo((): GeoJSON.FeatureCollection | null => {
-    if (!enabledStreams.has('evictions') || mapMode !== 'heatmap' || evictionPoints.length === 0) return null
+  // Evictions heatmap geojson (heatmap mode, stream enabled) — same rows,
+  // different symbology. Toggle-off/mode-off must pass EMPTY_FC (not null) —
+  // useMapLayer's data effect ignores null, leaving stale features on the map.
+  const evictionHeatGeojson = useMemo((): GeoJSON.FeatureCollection => {
+    if (!enabledStreams.has('evictions') || mapMode !== 'heatmap' || evictionPoints.length === 0) return EMPTY_FC
     return {
       type: 'FeatureCollection',
       features: evictionPoints.map((p) => ({
@@ -346,9 +386,10 @@ export default function Housing() {
     }
   }, [evictionPoints, enabledStreams, mapMode])
 
-  // Buyout rings geojson (stream enabled)
-  const buyoutGeojson = useMemo((): GeoJSON.FeatureCollection | null => {
-    if (!enabledStreams.has('buyouts') || buyoutPoints.length === 0) return null
+  // Buyout rings geojson (stream enabled). Toggle-off must pass EMPTY_FC (not
+  // null) — useMapLayer's data effect ignores null, leaving stale rings on the map.
+  const buyoutGeojson = useMemo((): GeoJSON.FeatureCollection => {
+    if (!enabledStreams.has('buyouts') || buyoutPoints.length === 0) return EMPTY_FC
     return {
       type: 'FeatureCollection',
       features: buyoutPoints.map((p) => ({
@@ -503,7 +544,7 @@ export default function Housing() {
             attached++
           }
         }
-        return attached > 0
+        return attached === layers.length
       } catch { /* layers not ready */ }
       return false
     }
@@ -554,7 +595,9 @@ export default function Housing() {
 
   const isLoading = evictionsLoading || buyoutsLoading
   const combinedError = evictionsError || buyoutsError
-  const totalDisplayed = evictionPoints.length + buyoutPoints.length
+  const totalDisplayed =
+    (enabledStreams.has('evictions') ? evictionPoints.length : 0) +
+    (enabledStreams.has('buyouts') ? buyoutPoints.length : 0)
   const anyHitLimit = evictionsHitLimit || buyoutsHitLimit
 
   return (
