@@ -354,31 +354,48 @@ export default function Housing() {
     return result
   }, [causeBreakdownRows])
 
-  // Sidebar neighborhood ranking: join the two per-stream GROUP BYs by name.
-  // analysis_neighborhood (buyouts, 39 distinct) is an exact-name subset of
+  // Sidebar neighborhood ranking: UNION of the two per-stream GROUP BYs by
+  // name (not just an eviction-keyed join — a neighborhood with buyouts but
+  // zero evictions in the current date/cause window is plausible, buyout
+  // volume runs ~10x lower, and must still show with eviction count 0 rather
+  // than vanish — present/suppressed/absent transparency rule). analysis_
+  // neighborhood (buyouts, 39 distinct) is an exact-name subset of
   // neighborhood (evictions, 41 Analysis Neighborhoods), so string equality
   // is a safe join key (verified — see docs/superpowers/specs/2026-07-30-
-  // housing-view-design.md). Sorted by eviction count per the task brief;
-  // both fields stay citywide (comparison-not-drilldown — no selected-
-  // neighborhood clause upstream, see query #9 above).
+  // housing-view-design.md). Sorted by eviction count desc, ties by buyout
+  // count desc then name; both fields stay citywide (comparison-not-
+  // drilldown — no selected-neighborhood clause upstream, see query #9 above).
   const neighborhoodRanking = useMemo((): NeighborhoodRankRow[] => {
-    const buyoutMap = new Map<string, { n: number; total: number }>()
+    const rows = new Map<string, NeighborhoodRankRow>()
+    for (const r of evictionNeighborhoodRows) {
+      if (!r.neighborhood) continue
+      rows.set(r.neighborhood, {
+        neighborhood: r.neighborhood,
+        evictionCount: parseInt(r.n, 10) || 0,
+        buyoutCount: 0,
+        buyoutTotal: 0,
+      })
+    }
     for (const r of buyoutNeighborhoodRows) {
       if (!r.analysis_neighborhood) continue
-      buyoutMap.set(r.analysis_neighborhood, { n: parseInt(r.n, 10) || 0, total: parseAmount(r.total) ?? 0 })
+      const existing = rows.get(r.analysis_neighborhood)
+      const buyoutCount = parseInt(r.n, 10) || 0
+      const buyoutTotal = parseAmount(r.total) ?? 0
+      if (existing) {
+        existing.buyoutCount = buyoutCount
+        existing.buyoutTotal = buyoutTotal
+      } else {
+        rows.set(r.analysis_neighborhood, {
+          neighborhood: r.analysis_neighborhood,
+          evictionCount: 0,
+          buyoutCount,
+          buyoutTotal,
+        })
+      }
     }
-    return evictionNeighborhoodRows
-      .filter((r) => r.neighborhood)
-      .map((r) => {
-        const b = buyoutMap.get(r.neighborhood)
-        return {
-          neighborhood: r.neighborhood,
-          evictionCount: parseInt(r.n, 10) || 0,
-          buyoutCount: b?.n ?? 0,
-          buyoutTotal: b?.total ?? 0,
-        }
-      })
-      .sort((a, b) => b.evictionCount - a.evictionCount)
+    return Array.from(rows.values()).sort((a, b) =>
+      b.evictionCount - a.evictionCount || b.buyoutCount - a.buyoutCount || a.neighborhood.localeCompare(b.neighborhood)
+    )
   }, [evictionNeighborhoodRows, buyoutNeighborhoodRows])
 
   // Neighborhood camera flight — flies to the selected neighborhood's preset
