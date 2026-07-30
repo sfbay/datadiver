@@ -16,16 +16,22 @@ import { resolveComparisonStart, comparisonLabel } from '@/utils/comparisonMode'
 import { useTrendBaseline } from '@/hooks/useTrendBaseline'
 import type { TrendConfig } from '@/types/trends'
 import { useEvictionComparisonData } from '@/hooks/useComparisonDataFactory'
+import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
+import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import type { EvictionNoticeRow, BuyoutRow } from '@/types/datasets'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
+import MapSidebar from '@/components/layout/MapSidebar'
 import ExportButton from '@/components/export/ExportButton'
 import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
 import { ErrorState } from '@/components/ui/ErrorState'
-import { MapScanOverlay, MapProgressBar, SkeletonStatCards } from '@/components/ui/Skeleton'
+import { MapScanOverlay, MapProgressBar, SkeletonStatCards, SkeletonSidebarRows } from '@/components/ui/Skeleton'
 import CardTray, { type CardDef } from '@/components/ui/CardTray'
+import EvictionDetailPanel from '@/components/ui/EvictionDetailPanel'
+import BuyoutDetailPanel from '@/components/ui/BuyoutDetailPanel'
 import EraStrip from './EraStrip'
 import { parseYearCounts } from './eraStripMath'
 import { ALL_CAUSES, CAUSE_LABELS, buildCauseClause, causeBreakdownSelect, noFaultClause, type CauseColumn } from './causes'
+import EvictionCauseFilter from './EvictionCauseFilter'
 import { buyoutRadius, parseAmount } from './buyoutScale'
 
 const HOUSING_STREAMS = [
@@ -56,6 +62,7 @@ const BUYOUT_SELECT_FIELDS = 'case_number,buyout_agreement_date,pre_buyout_discl
 interface EvictionNeighborhoodAggRow { neighborhood: string; n: string }
 interface BuyoutNeighborhoodAggRow { analysis_neighborhood: string; n: string; total: string }
 interface YearAggRow { yr?: string; n: string }
+interface NeighborhoodRankRow { neighborhood: string; evictionCount: number; buyoutCount: number; buyoutTotal: number }
 
 /** Stream toggle chip — TrafficSafety overlay-chip visual: pigment dot + label + count. */
 function StreamChip({ label, pigment, textClass, active, count, onClick }: {
@@ -92,6 +99,7 @@ export default function Housing() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
   const [geoGapDismissed, setGeoGapDismissed] = useState(false)
+  const [sidebarTab, setSidebarTab] = useState<'causes' | 'neighborhoods'>('causes')
   const mapHandleRef = useRef<MapHandle>(null)
 
   // Deep-link: rehydrate detail panel from URL on mount.
@@ -336,8 +344,47 @@ export default function Housing() {
   // evictionYearRows/buyoutYearRows feed EraStrip; causeBreakdownRows feeds
   // EvictionCauseFilter's counts; noFaultCount/declarationsInRange/medianBuyout
   // feed CardTray; evictionNeighborhoodRows/buyoutNeighborhoodRows feed the
-  // sidebar ranking — all wired up in later tasks. Fetched here so the query
-  // shape is locked in now.
+  // sidebar ranking below.
+
+  // Cause breakdown row (Socrata aggregates arrive as strings) → typed counts for EvictionCauseFilter.
+  const causeCounts = useMemo((): Record<CauseColumn, number> => {
+    const row = causeBreakdownRows[0]
+    const result = {} as Record<CauseColumn, number>
+    for (const c of ALL_CAUSES) result[c] = row ? Number(row[c]) || 0 : 0
+    return result
+  }, [causeBreakdownRows])
+
+  // Sidebar neighborhood ranking: join the two per-stream GROUP BYs by name.
+  // analysis_neighborhood (buyouts, 39 distinct) is an exact-name subset of
+  // neighborhood (evictions, 41 Analysis Neighborhoods), so string equality
+  // is a safe join key (verified — see docs/superpowers/specs/2026-07-30-
+  // housing-view-design.md). Sorted by eviction count per the task brief;
+  // both fields stay citywide (comparison-not-drilldown — no selected-
+  // neighborhood clause upstream, see query #9 above).
+  const neighborhoodRanking = useMemo((): NeighborhoodRankRow[] => {
+    const buyoutMap = new Map<string, { n: number; total: number }>()
+    for (const r of buyoutNeighborhoodRows) {
+      if (!r.analysis_neighborhood) continue
+      buyoutMap.set(r.analysis_neighborhood, { n: parseInt(r.n, 10) || 0, total: parseAmount(r.total) ?? 0 })
+    }
+    return evictionNeighborhoodRows
+      .filter((r) => r.neighborhood)
+      .map((r) => {
+        const b = buyoutMap.get(r.neighborhood)
+        return {
+          neighborhood: r.neighborhood,
+          evictionCount: parseInt(r.n, 10) || 0,
+          buyoutCount: b?.n ?? 0,
+          buyoutTotal: b?.total ?? 0,
+        }
+      })
+      .sort((a, b) => b.evictionCount - a.evictionCount)
+  }, [evictionNeighborhoodRows, buyoutNeighborhoodRows])
+
+  // Neighborhood camera flight — flies to the selected neighborhood's preset
+  // or polygon bounds, resets to the citywide default view when cleared.
+  const { boundaries: neighborhoodBoundaries } = useNeighborhoodBoundaries()
+  useMapCameraPresets(mapInstance, { selectedNeighborhood, neighborhoodBoundaries })
 
   // --- Trend baseline + period comparison (Task 8: CardTray YoY/compare) ---
   const trendConfig = useMemo((): TrendConfig => ({
@@ -820,8 +867,87 @@ export default function Housing() {
               {/* Stat cards — top left */}
               {isLoading && <SkeletonStatCards count={4} />}
               {!isLoading && <CardTray viewId="housing" cards={cardDefs} />}
+
+              {/* Detail panels — top right, click-driven from map + sidebar */}
+              <EvictionDetailPanel rows={evictionRows} isLoading={evictionsLoading} />
+              <BuyoutDetailPanel rows={buyoutRows} isLoading={buyoutsLoading} />
             </MapView>
           </div>
+
+          {/* Sidebar */}
+          <MapSidebar>
+            {/* Tab bar */}
+            <div className="flex border-b border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
+              {([['causes', 'Causes'], ['neighborhoods', 'Neighborhoods']] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => setSidebarTab(key)}
+                  className={`flex-1 py-2.5 text-micro font-mono uppercase tracking-[0.15em] transition-all duration-200 ${
+                    sidebarTab === key
+                      ? 'text-ink dark:text-white border-b-2 border-terracotta-500'
+                      : 'text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div className="p-4 flex-1 overflow-y-auto">
+              {sidebarTab === 'causes' && (
+                <>
+                  <EvictionCauseFilter counts={causeCounts} selected={selectedCauses} onChange={setSelectedCauses} />
+                  <p className="text-nano text-slate-500 dark:text-slate-400 italic mt-3">
+                    Cause counts exceed notices — a notice can cite several grounds.
+                  </p>
+                </>
+              )}
+
+              {sidebarTab === 'neighborhoods' && (
+                <>
+                  {isLoading && <SkeletonSidebarRows count={8} />}
+                  <div className="space-y-0.5 stagger-in">
+                    {neighborhoodRanking.slice(0, 30).map((ns) => {
+                      const maxCount = neighborhoodRanking[0]?.evictionCount || 1
+                      const barWidth = (ns.evictionCount / maxCount) * 100
+                      const isActive = selectedNeighborhood === ns.neighborhood
+                      return (
+                        <div
+                          key={ns.neighborhood}
+                          onClick={() => setSelectedNeighborhood(selectedNeighborhood === ns.neighborhood ? null : ns.neighborhood)}
+                          className={`relative py-2 px-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                            isActive
+                              ? 'bg-terracotta-500/10 ring-1 ring-terracotta-500/30'
+                              : 'hover:bg-white/80 dark:hover:bg-white/[0.04]'
+                          }`}
+                        >
+                          <div
+                            className="absolute inset-y-0 left-0 rounded-lg opacity-[0.06] bar-grow"
+                            style={{ width: `${barWidth}%`, backgroundColor: '#b85a33' }}
+                          />
+                          <div className="relative flex items-center justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[12px] font-medium text-ink dark:text-slate-200 truncate leading-tight">
+                                {ns.neighborhood}
+                              </p>
+                              <p className="text-micro text-slate-400 dark:text-slate-600 font-mono">
+                                {ns.evictionCount.toLocaleString()} notices
+                              </p>
+                            </div>
+                            {ns.buyoutCount > 0 && (
+                              <p className="text-micro font-mono text-ochre-500 flex-shrink-0 tabular-nums text-right">
+                                {ns.buyoutCount} &middot; ${formatNumber(Math.round(ns.buyoutTotal))}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+          </MapSidebar>
         </div>
       </div>
     </div>
