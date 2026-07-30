@@ -137,7 +137,7 @@ describe('causes', () => {
   it('breakdown select uses verified pairs-case syntax for every cause', () => {
     const sel = causeBreakdownSelect()
     expect(sel).toContain('sum(case(non_payment = true, 1, true, 0)) as non_payment')
-    expect(sel.split(',').length).toBe(19)
+    expect(sel.match(/sum\(case\(/g)).toHaveLength(19)  // NOT split(',') — case() bodies contain commas
   })
   it('noFaultClause covers exactly the no-fault group', () => {
     expect(noFaultClause()).toContain('owner_move_in = true')
