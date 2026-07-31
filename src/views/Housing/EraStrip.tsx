@@ -26,6 +26,10 @@ const BUYOUT_START_YEAR = 2015
 /** Height reserved under the bars for the year axis labels. */
 const AXIS_H = 13
 
+/** Height of the count-label lane above the bars — a fixed horizontal row of
+ *  annual eviction totals (empirical context; high/low emphasized). */
+const LABEL_H = 12
+
 const MARGIN = { top: 2, right: 2, bottom: 2, left: 2 }
 
 /** Warm neutral for pending-amount bar segments — paper-500, the palette's
@@ -134,17 +138,21 @@ export default function EraStrip({ evictionYears, buyoutYears, range, onRangeCha
 
     const w = Math.max(0, size.width - MARGIN.left - MARGIN.right)
     const fullH = Math.max(0, size.height - MARGIN.top - MARGIN.bottom)
-    const h = Math.max(0, fullH - AXIS_H) // bar area; axis labels live below
+    // Vertical layout: count-label lane (LABEL_H) / bars (h) / year axis (AXIS_H).
+    const h = Math.max(0, fullH - AXIS_H - LABEL_H)
     if (w <= 0 || h <= 0) return
 
     const x = d3.scaleLinear().domain([ERA_START_YEAR, currentYear + 1]).range([0, w])
     xScaleRef.current = x
 
-    const g = svg
+    const outerG = svg
       .attr('width', size.width)
       .attr('height', size.height)
       .append('g')
       .attr('transform', `translate(${MARGIN.left},${MARGIN.top})`)
+
+    // Bars, axis, annotations and the brush all live below the label lane.
+    const g = outerG.append('g').attr('transform', `translate(0,${LABEL_H})`)
 
     // Highlight window rect — appended FIRST so it renders under the bars.
     // Position gets set for real by syncToRange() right after this effect;
@@ -226,6 +234,33 @@ export default function EraStrip({ evictionYears, buyoutYears, range, onRangeCha
       .attr('fill', PENDING_GRAY)
       .attr('opacity', 0.6)
 
+    // Count-label lane — a fixed horizontal row of annual eviction totals
+    // above the bars (empirical context). High/low years are emphasized
+    // (terracotta peak / dusty-teal floor, matching the busy-warm ↔
+    // quiet-teal site semantics) and always visible; the rest are dimmed and
+    // desk-only. The current PARTIAL year is excluded from high/low
+    // emphasis — a year-to-date count must never masquerade as a record.
+    const completeYears = evictionYears.filter((d) => d.year < currentYear)
+    const peakYear = d3.greatest(completeYears, (d) => d.count)?.year
+    const floorYear = d3.least(completeYears, (d) => d.count)?.year
+
+    outerG.selectAll('.era-count-label')
+      .data(years.filter((yr) => evictionByYear.has(yr)))
+      .enter()
+      .append('text')
+      .attr('class', (yr) => {
+        if (yr === peakYear) return 'era-count-label fill-terracotta-500 font-mono'
+        if (yr === floorYear) return 'era-count-label fill-teal-600 dark:fill-teal-400 font-mono'
+        return 'era-count-label fill-ink dark:fill-paper-300 font-mono hidden desk:block'
+      })
+      .attr('x', (yr) => x(yr) + bandWidth(yr) * 0.34)
+      .attr('y', LABEL_H - 4)
+      .attr('text-anchor', 'middle')
+      .attr('opacity', (yr) => (yr === peakYear || yr === floorYear ? 0.95 : yr === currentYear ? 0.35 : 0.5))
+      .attr('font-weight', (yr) => (yr === peakYear || yr === floorYear ? 700 : 400))
+      .style('font-size', '0.5rem')
+      .text((yr) => (evictionByYear.get(yr) ?? 0).toLocaleString('en-US'))
+
     // Year axis under the bars — decade labels always visible, the
     // in-between fives desk-only (mobile keeps a readable sparse axis).
     const axisYears = d3.range(2000, currentYear + 1, 5)
@@ -304,7 +339,7 @@ export default function EraStrip({ evictionYears, buyoutYears, range, onRangeCha
 
     g.append('text')
       .attr('x', buyoutX + 3)
-      .attr('y', 9)
+      .attr('y', 20) // one line below the annotation-dot lane — the 2016 marker sits at y≈5
       .attr('class', 'fill-ink dark:fill-paper-200 opacity-60 font-mono uppercase tracking-wider')
       .style('font-size', '0.5rem')
       .text('── BUYOUT ORDINANCE')
@@ -369,7 +404,7 @@ export default function EraStrip({ evictionYears, buyoutYears, range, onRangeCha
   return (
     <div
       ref={containerRef}
-      className="glow-host relative w-full h-[4.5rem] desk:h-24 rounded-md bg-paper-50/70 dark:bg-espresso-900/60"
+      className="glow-host relative w-full h-20 desk:h-28 rounded-md bg-paper-50/70 dark:bg-espresso-900/60"
       style={{ '--glow': '#5c9693' } as React.CSSProperties}
     >
       <div className="glow-corner" aria-hidden />
