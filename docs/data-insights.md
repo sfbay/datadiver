@@ -381,6 +381,46 @@ Found July 2026 while producing the FY2025-26 final Resolution 240210 report
 
 ---
 
+## Housing (Eviction Notices `5cei-gny5` + Buyout Agreements `wmam-7g8d`)
+
+**Socrata's metadata LIES about `client_location`'s type.** `columns.json` reports
+`dataTypeName: "point"` for both `client_location` and `shape`, but the API serializes
+`client_location` as the LEGACY location type (`{latitude, longitude, human_address}`
+with STRING coordinates) while `shape` is a true GeoJSON Point. Code reading
+`.coordinates` off `client_location` gets `undefined` and silently drops every feature —
+the Housing view shipped its first build with zero eviction dots while buyout rings
+(a genuine point column) rendered fine. **Always use `shape`** (same ~99.8% coverage);
+never trust `columns.json` dataTypeName for location-vs-point distinctions — probe one
+actual row.
+
+**Buyout "Agreements" is really a DISCLOSURE-FILINGS dataset.** All 8,431 rows carry
+`pre_buyout_disclosure_declaration_date` (a landlord must file before negotiating);
+only 3,786 (45%) have `buyout_agreement_date` — the rest are opened negotiations that
+never produced a filed agreement. Filter on `buyout_agreement_date IS NOT NULL` for
+the agreement stream (a date-range WHERE does this naturally). Never divide in-window
+agreements by in-window declarations — agreements mostly stem from declarations filed
+months earlier, so the ratio reads ~78% when the true lifetime conversion is 45%.
+
+**Buyout amounts lag by entry, not disclosure.** 96.4% of dated agreements carry
+`buyout_amount` (3,651/3,786), but recent windows run near-zero coverage (77 of 180
+2026 rows null as of July 2026) — the amounts get entered later. A 30-day median is
+usually empty; that's entry lag, not secrecy. The `unknown_amount` flag is
+true-or-absent (56 true lifetime) and does NOT mark the null-amount rows. Lifetime:
+$169.6M disclosed, median ~$40K recent years, max $469,562.
+
+**Eviction cause columns are wide real booleans.** ~19 one-column-per-cause checkboxes
+(`non_payment = true`, no quotes); a notice can carry several. Per-cause counts come
+from ONE wide query — `sum(case(col = true, 1, true, 0)) as col` (pairs syntax,
+live-verified) — not a GROUP BY. `MEDIAN` had to be added to `fetchDataset`'s
+aggregate-detection regex (client.ts) or the injected defaultSort 400s every
+`median()` query.
+
+**Era shape of the 29-year eviction series** (annual `file_date` counts, verified
+July 2026): 1998 all-time peak 2,917 (dot-com wave) → 2009 post-crash trough 1,174 →
+2016 Ellis-wave peak 2,134 → 2020 COVID floor 778 (lowest ever) → 2025 rebound 1,495
+(highest since 2019). Both `neighborhood` (evictions) and `analysis_neighborhood`
+(buyouts) speak the 41 Analysis Neighborhoods vocabulary — joinable by exact name.
+
 ## General Patterns
 
 ### Floating SF-Local Timestamps (all DataSF datasets)
