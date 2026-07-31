@@ -76,6 +76,7 @@ export default function EraStrip({ evictionYears, buyoutYears, range, onRangeCha
   const brushRef = useRef<d3.BrushBehavior<unknown> | null>(null)
   const brushGRef = useRef<SVGGElement | null>(null)
   const highlightRef = useRef<SVGRectElement | null>(null)
+  const glowRectRef = useRef<SVGRectElement | null>(null)
 
   // Always-fresh refs so effects that don't list these as deps (by design)
   // never read a stale closure.
@@ -117,6 +118,11 @@ export default function EraStrip({ evictionYears, buyoutYears, range, onRangeCha
         .attr('x', target[0])
         .attr('width', Math.max(0, target[1] - target[0]))
     }
+    if (glowRectRef.current) {
+      d3.select(glowRectRef.current)
+        .attr('x', target[0])
+        .attr('width', Math.max(0, target[1] - target[0]))
+    }
 
     const brush = brushRef.current
     if (!brush) return
@@ -154,9 +160,25 @@ export default function EraStrip({ evictionYears, buyoutYears, range, onRangeCha
     // Bars, axis, annotations and the brush all live below the label lane.
     const g = outerG.append('g').attr('transform', `translate(0,${LABEL_H})`)
 
-    // Highlight window rect — appended FIRST so it renders under the bars.
-    // Position gets set for real by syncToRange() right after this effect;
-    // start at zero width to avoid a one-frame flash at the wrong span.
+    // Highlight window rects — appended FIRST so they render under the bars.
+    // Two layers: a base tint + the corner-glow signature RELOCATED onto the
+    // selection itself (top-left-anchored teal radial, objectBoundingBox so
+    // it stretches with the selected span) — the selected era reads as the
+    // lit part of the strip. Positions get set for real by syncToRange()
+    // right after this effect; start at zero width to avoid a one-frame
+    // flash at the wrong span.
+    const defs = svg.append('defs')
+    const grad = defs
+      .append('radialGradient')
+      .attr('id', 'era-selection-glow')
+      .attr('gradientUnits', 'objectBoundingBox')
+      .attr('cx', 0)
+      .attr('cy', 0)
+      .attr('r', 1)
+    grad.append('stop').attr('offset', '0%').attr('stop-color', '#5c9693').attr('stop-opacity', 0.42)
+    grad.append('stop').attr('offset', '55%').attr('stop-color', '#5c9693').attr('stop-opacity', 0.14)
+    grad.append('stop').attr('offset', '100%').attr('stop-color', '#5c9693').attr('stop-opacity', 0)
+
     const highlight = g
       .append('rect')
       .attr('class', 'fill-cream-300 dark:fill-espresso-700')
@@ -164,8 +186,17 @@ export default function EraStrip({ evictionYears, buyoutYears, range, onRangeCha
       .attr('y', 0)
       .attr('width', 0)
       .attr('height', h)
-      .attr('opacity', 0.5)
+      .attr('opacity', 0.45)
     highlightRef.current = highlight.node()
+
+    const glowRect = g
+      .append('rect')
+      .attr('x', 0)
+      .attr('y', 0)
+      .attr('width', 0)
+      .attr('height', h)
+      .attr('fill', 'url(#era-selection-glow)')
+    glowRectRef.current = glowRect.node()
 
     const evictionByYear = new Map(evictionYears.map((d) => [d.year, d.count]))
     const buyoutByYear = new Map(
@@ -393,21 +424,24 @@ export default function EraStrip({ evictionYears, buyoutYears, range, onRangeCha
     syncToRange()
   }, [range])
 
-  // Annotation card horizontal clamp so it never overflows the strip.
+  // Annotation card sits BESIDE the marker (right by default, flipping left
+  // near the strip's right edge) so the cursor hovering the dot never
+  // obscures the card's text.
   const annoCardStyle = useMemo(() => {
     if (!activeAnno) return undefined
     const cardW = 240
-    const left = Math.max(8, Math.min(activeAnno.px - cardW / 2, size.width - cardW - 8))
+    const gap = 14
+    const left = activeAnno.px + gap + cardW <= size.width - 8
+      ? activeAnno.px + gap
+      : Math.max(8, activeAnno.px - gap - cardW)
     return { left, width: cardW }
   }, [activeAnno, size.width])
 
   return (
     <div
       ref={containerRef}
-      className="glow-host relative w-full h-20 desk:h-28 rounded-md bg-paper-50/70 dark:bg-espresso-900/60"
-      style={{ '--glow': '#5c9693' } as React.CSSProperties}
+      className="relative w-full h-20 desk:h-28 rounded-md bg-paper-50/70 dark:bg-espresso-900/60"
     >
-      <div className="glow-corner" aria-hidden />
       {isLoading ? (
         <div className="absolute inset-0 rounded-md bg-cream-200/60 dark:bg-white/[0.06] skeleton" />
       ) : (

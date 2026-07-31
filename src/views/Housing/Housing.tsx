@@ -509,11 +509,17 @@ export default function Housing() {
   const compLabel = comparisonLabel(comparisonMode, dateRange)
 
   const evictionSparkValues = useMemo(() => trend.currentPeriods.map((p) => p.count), [trend.currentPeriods])
-  // Single-letter month labels under the spark bars (J F M A M J …) — only
-  // when the trend buckets are months; daily/weekly buckets go unlabeled.
+  // Spark-bar labels — only when the trend buckets are months. Up to ~13
+  // periods: single-letter months (J F M A M J …). Longer ranges: month
+  // letters become noise, so label only the JANUARY bars by year (’23 ’24 …)
+  // with the rest blank — sparse year ticks over the same slots.
   const evictionSparkLabels = useMemo(() => {
     if (trend.granularity !== 'monthly') return undefined
-    return trend.currentPeriods.map((p) => p.periodLabel.charAt(0).toUpperCase())
+    const periods = trend.currentPeriods
+    if (periods.length > 13) {
+      return periods.map((p) => (p.period.slice(5, 7) === '01' ? `’${p.period.slice(2, 4)}` : ''))
+    }
+    return periods.map((p) => p.periodLabel.charAt(0).toUpperCase())
   }, [trend.granularity, trend.currentPeriods])
 
   // --- Computed map data ---
