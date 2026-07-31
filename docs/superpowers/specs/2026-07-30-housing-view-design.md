@@ -74,8 +74,14 @@ type StreamId = (typeof HOUSING_STREAMS)[number]['id']
   stream only.
 - **Buyouts:** hollow ochre rings (house hollow-ring idiom: stroke-weighted, faint
   fill). Radius ∝ `sqrt(buyout_amount)` clamped to ~[4, 22] px across the $0–$470K
-  domain. Amount-missing rows: fixed minimum radius, reduced stroke opacity; tooltip
-  "amount undisclosed"; map legend counts them ("N of M amounts undisclosed").
+  domain. Amount-missing rows (Jesse QA, July 30): GRAY rings (paper-500 `#a8926a`,
+  the palette's excluded/neutral pigment) at `BUYOUT_RADIUS_PENDING` — the
+  lifetime-AVERAGE size, never the minimum (which would falsely read "small
+  buyout") — recessive in hue but findable over underlays. Recency split
+  (`AMOUNT_ENTRY_LAG_DAYS` = 180): newer missing amounts are "pending entry" (the
+  Rent Board keys amounts ~3 months behind), older are "undisclosed" — tooltip,
+  detail panel, and the ring legend all speak the split ("N of M amounts pending
+  entry" / "… undisclosed").
 - **Draw order:** ACS underlay < eviction dots/heat < buyout rings < labels.
   Underlay via `useDemographicUnderlay({ beforeLayerId: <eviction layer id> })`;
   `UNDERLAY_PRESETS['housing'] = ['medianRent', 'rentBurden', 'renterPct',
@@ -99,7 +105,14 @@ type StreamId = (typeof HOUSING_STREAMS)[number]['id']
   DateRangePicker edits reflect back — two faces, one time system.
 - Editorial annotations (hardcoded, AP style), verified against annual totals:
   dot-com wave (1998 all-time peak, 2,917), post-crash low (2009 trough, 1,174),
-  Ellis wave (2016 peak, 2,134), COVID cliff (2020 floor, 778).
+  Ellis wave (2016 peak, 2,134), COVID cliff (2020 floor, 778). Rendered as
+  **hoverable annotation markers** (dot + dashed tick; hover/click opens an HTML
+  card with label + one-line detail) — never as on-viz SVG text (Jesse QA call,
+  July 30). The BUYOUT ORDINANCE label stays literal text at all widths (honesty
+  item 3). Buyout bars are STACKED: ochre = amounts entered, gray (paper-500) =
+  pending entry — the tally counts every agreement. A sparse **year axis** runs
+  under the bars (decades always, fives desk-only); the band carries the corner
+  glow (counter-color dusty teal `#5c9693`) on a raised panel for prominence.
 - All text rem via inline style (Large Type Phase 3); no `text-*` tokens in SVG.
 
 ## Cause filter (evictions)

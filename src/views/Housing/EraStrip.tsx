@@ -1,18 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as d3 from 'd3'
 import { ERA_START_YEAR, ERA_ANNOTATIONS, snapBrushToRange, rangeToYearSpan } from './eraStripMath'
-import type { YearCount } from './eraStripMath'
+import type { YearCount, BuyoutYearCount } from './eraStripMath'
 
 /** EraStrip — a slim always-visible band of annual eviction (terracotta) and
- *  buyout (ochre) bars, 1997–present, with a d3.brushX that snaps to whole
- *  years and drives the app's global date range.
+ *  buyout (ochre, stacked: disclosed + gray pending-amount) bars,
+ *  1997–present, with a d3.brushX that snaps to whole years and drives the
+ *  app's global date range. Era beats render as hoverable annotation markers
+ *  (dot + HTML card), never as on-viz text; a year axis runs underneath.
  *
  *  Presentational only: props in, callback out. No store imports, no
  *  fetching — the parent (Housing view) owns data + the global dateRange. */
 
 interface EraStripProps {
   evictionYears: YearCount[]
-  buyoutYears: YearCount[]
+  buyoutYears: BuyoutYearCount[]
   range: { start: string; end: string }
   onRangeChange: (start: string, end: string) => void
   isLoading: boolean
@@ -21,7 +23,14 @@ interface EraStripProps {
 /** Buyouts publish zero pre-ordinance — no bars, just the annotation. */
 const BUYOUT_START_YEAR = 2015
 
+/** Height reserved under the bars for the year axis labels. */
+const AXIS_H = 13
+
 const MARGIN = { top: 2, right: 2, bottom: 2, left: 2 }
+
+/** Warm neutral for pending-amount bar segments — paper-500, the palette's
+ *  "excluded/neutral" pigment (same family as the map's pending rings). */
+const PENDING_GRAY = '#a8926a'
 
 /** Date-only YYYY-MM-DD from local `Date` parts — this bounds a UI control
  *  (the brush's max-drag day), not data, so the viewer's clock is fine.
@@ -41,10 +50,19 @@ function selectionsDiffer(a: PxSpan | null, b: PxSpan): boolean {
   return Math.abs(a[0] - b[0]) > 0.5 || Math.abs(a[1] - b[1]) > 0.5
 }
 
+interface ActiveAnnotation {
+  year: number
+  label: string
+  detail: string
+  /** Marker center in container px (post-margin). */
+  px: number
+}
+
 export default function EraStrip({ evictionYears, buyoutYears, range, onRangeChange, isLoading }: EraStripProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const [size, setSize] = useState({ width: 0, height: 0 })
+  const [activeAnno, setActiveAnno] = useState<ActiveAnnotation | null>(null)
 
   // Refs bridging the draw effect and the range-sync effect — the brush and
   // scale are recreated only when data/size change; range changes (picker
@@ -104,7 +122,7 @@ export default function EraStrip({ evictionYears, buyoutYears, range, onRangeCha
     }
   }
 
-  // Main draw effect — bars, era annotations, and the brush behavior itself.
+  // Main draw effect — bars, axis, annotation markers, and the brush itself.
   // Deliberately does NOT depend on `range`: rebuilding the whole strip on
   // every date-range edit would redraw static bars for no reason and could
   // fight the in-progress brush gesture. Range application is syncToRange().
@@ -115,7 +133,8 @@ export default function EraStrip({ evictionYears, buyoutYears, range, onRangeCha
     svg.selectAll('*').remove()
 
     const w = Math.max(0, size.width - MARGIN.left - MARGIN.right)
-    const h = Math.max(0, size.height - MARGIN.top - MARGIN.bottom)
+    const fullH = Math.max(0, size.height - MARGIN.top - MARGIN.bottom)
+    const h = Math.max(0, fullH - AXIS_H) // bar area; axis labels live below
     if (w <= 0 || h <= 0) return
 
     const x = d3.scaleLinear().domain([ERA_START_YEAR, currentYear + 1]).range([0, w])
@@ -142,10 +161,10 @@ export default function EraStrip({ evictionYears, buyoutYears, range, onRangeCha
 
     const evictionByYear = new Map(evictionYears.map((d) => [d.year, d.count]))
     const buyoutByYear = new Map(
-      buyoutYears.filter((d) => d.year >= BUYOUT_START_YEAR).map((d) => [d.year, d.count]),
+      buyoutYears.filter((d) => d.year >= BUYOUT_START_YEAR).map((d) => [d.year, d]),
     )
     const maxEviction = d3.max(evictionYears, (d) => d.count) || 1
-    const maxBuyout = d3.max(Array.from(buyoutByYear.values())) || 1
+    const maxBuyout = d3.max(Array.from(buyoutByYear.values()), (d) => d.count) || 1
 
     const yEvict = d3.scaleLinear().domain([0, maxEviction]).range([h, 0])
     const yBuyout = d3.scaleLinear().domain([0, maxBuyout]).range([h, 0])
@@ -166,21 +185,66 @@ export default function EraStrip({ evictionYears, buyoutYears, range, onRangeCha
       .attr('fill', '#b85a33')
       .attr('opacity', 0.75)
 
-    // Buyout bars — slimmer, right side, 2015 on only.
-    g.selectAll('.era-bar-buyout')
-      .data(years.filter((yr) => yr >= BUYOUT_START_YEAR))
+    // Buyout bars — slimmer, right side, 2015 on. STACKED: ochre bottom
+    // segment = amounts entered; gray top segment = pending entry (the Rent
+    // Board keys amounts ~3 months behind — the tally still counts them).
+    const buyoutSlice = years.filter((yr) => buyoutByYear.has(yr))
+    const bx = (yr: number) => x(yr) + bandWidth(yr) * 0.68
+    const bw = (yr: number) => bandWidth(yr) * 0.26
+
+    g.selectAll('.era-bar-buyout-disclosed')
+      .data(buyoutSlice)
       .enter()
       .append('rect')
-      .attr('class', 'era-bar-buyout')
-      .attr('x', (yr) => x(yr) + bandWidth(yr) * 0.68)
-      .attr('width', (yr) => bandWidth(yr) * 0.26)
-      .attr('y', (yr) => yBuyout(buyoutByYear.get(yr) ?? 0))
-      .attr('height', (yr) => h - yBuyout(buyoutByYear.get(yr) ?? 0))
+      .attr('class', 'era-bar-buyout-disclosed')
+      .attr('x', bx)
+      .attr('width', bw)
+      .attr('y', (yr) => {
+        const d = buyoutByYear.get(yr)!
+        // Disclosed segment sits at the bottom of the full-count bar.
+        return yBuyout(d.disclosed)
+      })
+      .attr('height', (yr) => {
+        const d = buyoutByYear.get(yr)!
+        return h - yBuyout(d.disclosed)
+      })
       .attr('fill', '#d4a435')
       .attr('opacity', 0.85)
 
-    // Era annotations — thin vertical tick + a rotated mono micro-label,
-    // hidden below `desk:` (labels only; the tick stays visible).
+    g.selectAll('.era-bar-buyout-pending')
+      .data(buyoutSlice.filter((yr) => buyoutByYear.get(yr)!.count > buyoutByYear.get(yr)!.disclosed))
+      .enter()
+      .append('rect')
+      .attr('class', 'era-bar-buyout-pending')
+      .attr('x', bx)
+      .attr('width', bw)
+      .attr('y', (yr) => yBuyout(buyoutByYear.get(yr)!.count))
+      .attr('height', (yr) => {
+        const d = buyoutByYear.get(yr)!
+        return yBuyout(d.disclosed) - yBuyout(d.count)
+      })
+      .attr('fill', PENDING_GRAY)
+      .attr('opacity', 0.6)
+
+    // Year axis under the bars — decade labels always visible, the
+    // in-between fives desk-only (mobile keeps a readable sparse axis).
+    const axisYears = d3.range(2000, currentYear + 1, 5)
+    g.selectAll('.era-axis-year')
+      .data(axisYears)
+      .enter()
+      .append('text')
+      .attr('class', (yr) =>
+        `era-axis-year fill-ink dark:fill-paper-300 font-mono ${yr % 10 === 0 ? '' : 'hidden desk:block'}`)
+      .attr('x', (yr) => x(yr) + bandWidth(yr) * 0.34)
+      .attr('y', h + AXIS_H - 3)
+      .attr('text-anchor', 'middle')
+      .attr('opacity', 0.55)
+      .style('font-size', '0.5625rem')
+      .text((yr) => String(yr))
+
+    // Era annotation markers — dashed tick + a hoverable dot near the top;
+    // the label + detail render as an HTML card via React state (never
+    // on-viz SVG text). Click works where hover doesn't (touch).
     const annoG = g
       .selectAll('.era-annotation')
       .data(ERA_ANNOTATIONS)
@@ -190,25 +254,44 @@ export default function EraStrip({ evictionYears, buyoutYears, range, onRangeCha
 
     annoG
       .append('line')
-      .attr('x1', (d) => x(d.year))
-      .attr('x2', (d) => x(d.year))
-      .attr('y1', 0)
+      .attr('x1', (d) => x(d.year) + bandWidth(d.year) * 0.34)
+      .attr('x2', (d) => x(d.year) + bandWidth(d.year) * 0.34)
+      .attr('y1', 10)
       .attr('y2', h)
       .attr('class', 'stroke-ink dark:stroke-paper-300')
       .attr('stroke-width', 1)
       .attr('stroke-dasharray', '2,2')
-      .attr('opacity', 0.35)
+      .attr('opacity', 0.3)
+
+    const markerCx = (d: (typeof ERA_ANNOTATIONS)[number]) => x(d.year) + bandWidth(d.year) * 0.34
 
     annoG
-      .append('text')
-      .attr('x', (d) => x(d.year) + 3)
-      .attr('y', h - 3)
-      .attr('transform', (d) => `rotate(-90, ${x(d.year) + 3}, ${h - 3})`)
-      .attr('class', 'fill-ink dark:fill-paper-200 opacity-60 hidden desk:block font-mono uppercase tracking-wider')
-      .style('font-size', '0.5rem')
-      .text((d) => d.label)
+      .append('circle')
+      .attr('class', 'era-annotation-dot fill-cream-100 dark:fill-espresso-900 stroke-ink dark:stroke-paper-200')
+      .attr('cx', markerCx)
+      .attr('cy', 5)
+      .attr('r', 3.5)
+      .attr('stroke-width', 1.5)
+      .attr('opacity', 0.9)
+
+    // Oversized invisible hit target so the 7px dot is actually hoverable.
+    annoG
+      .append('circle')
+      .attr('cx', markerCx)
+      .attr('cy', 6)
+      .attr('r', 10)
+      .attr('fill', 'transparent')
+      .style('cursor', 'pointer')
+      .on('mouseenter', (_evt, d) => setActiveAnno({ year: d.year, label: d.label, detail: d.detail, px: markerCx(d) + MARGIN.left }))
+      .on('mouseleave', () => setActiveAnno(null))
+      .on('click', (evt, d) => {
+        evt.stopPropagation()
+        setActiveAnno((cur) => (cur?.year === d.year ? null : { year: d.year, label: d.label, detail: d.detail, px: markerCx(d) + MARGIN.left }))
+      })
 
     // Buyout-ordinance annotation at 2015 — rule-leading micro label idiom.
+    // Stays TEXT at all widths: it is the disclosure that keeps pre-2015
+    // emptiness from reading as "zero buyouts" (honesty ledger item 3).
     const buyoutX = x(BUYOUT_START_YEAR)
     g.append('line')
       .attr('x1', buyoutX)
@@ -226,7 +309,8 @@ export default function EraStrip({ evictionYears, buyoutYears, range, onRangeCha
       .style('font-size', '0.5rem')
       .text('── BUYOUT ORDINANCE')
 
-    // Brush — snaps to whole years on release.
+    // Brush — snaps to whole years on release. Extent covers the bar area
+    // only; the axis strip below stays inert.
     const brush = d3
       .brushX()
       .extent([
@@ -260,6 +344,11 @@ export default function EraStrip({ evictionYears, buyoutYears, range, onRangeCha
     brushRef.current = brush
     brushGRef.current = brushGSel.node()
 
+    // The brush overlay rect captures pointer events across the whole strip —
+    // raise the annotation groups above it so their dots stay hoverable.
+    // (Trade-off: a brush drag can't START on a dot's 10px hit circle.)
+    g.selectAll('.era-annotation').raise()
+
     syncToRange()
   }, [evictionYears, buyoutYears, size.width, size.height, currentYear, isLoading])
 
@@ -269,12 +358,40 @@ export default function EraStrip({ evictionYears, buyoutYears, range, onRangeCha
     syncToRange()
   }, [range])
 
+  // Annotation card horizontal clamp so it never overflows the strip.
+  const annoCardStyle = useMemo(() => {
+    if (!activeAnno) return undefined
+    const cardW = 240
+    const left = Math.max(8, Math.min(activeAnno.px - cardW / 2, size.width - cardW - 8))
+    return { left, width: cardW }
+  }, [activeAnno, size.width])
+
   return (
-    <div ref={containerRef} className="relative w-full h-14 desk:h-20">
+    <div
+      ref={containerRef}
+      className="glow-host relative w-full h-[4.5rem] desk:h-24 rounded-md bg-paper-50/70 dark:bg-espresso-900/60"
+      style={{ '--glow': '#5c9693' } as React.CSSProperties}
+    >
+      <div className="glow-corner" aria-hidden />
       {isLoading ? (
         <div className="absolute inset-0 rounded-md bg-cream-200/60 dark:bg-white/[0.06] skeleton" />
       ) : (
-        <svg ref={svgRef} className="w-full h-full" />
+        <>
+          <svg ref={svgRef} className="w-full h-full" />
+          {activeAnno && (
+            <div
+              className="absolute top-3 z-10 pointer-events-none rounded-md border border-paper-300/40 dark:border-espresso-700 bg-cream-100/95 dark:bg-espresso-900/95 px-2.5 py-1.5 shadow-lg"
+              style={annoCardStyle}
+            >
+              <div className="font-mono uppercase tracking-wider text-micro text-ink dark:text-paper-200 opacity-80">
+                {activeAnno.year} — {activeAnno.label}
+              </div>
+              <div className="text-label text-ink dark:text-paper-300 opacity-90 leading-snug mt-0.5">
+                {activeAnno.detail}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

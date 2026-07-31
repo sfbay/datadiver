@@ -21,3 +21,13 @@ describe('buyoutScale', () => {
     expect(parseAmount('')).toBeNull()
   })
 })
+
+describe('pending radius', () => {
+  it('sits between min and max, near the lifetime-average size', async () => {
+    const { BUYOUT_RADIUS_PENDING, BUYOUT_RADIUS_MIN, BUYOUT_RADIUS_MAX, buyoutRadius } = await import('./buyoutScale')
+    expect(BUYOUT_RADIUS_PENDING).toBeGreaterThan(BUYOUT_RADIUS_MIN)
+    expect(BUYOUT_RADIUS_PENDING).toBeLessThan(BUYOUT_RADIUS_MAX)
+    // ≈ the ring a ~$46K (lifetime average) agreement would earn.
+    expect(Math.abs(buyoutRadius(46_437) - BUYOUT_RADIUS_PENDING)).toBeLessThan(1)
+  })
+})

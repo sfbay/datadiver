@@ -35,10 +35,10 @@ import CardTray, { type CardDef } from '@/components/ui/CardTray'
 import EvictionDetailPanel from '@/components/ui/EvictionDetailPanel'
 import BuyoutDetailPanel from '@/components/ui/BuyoutDetailPanel'
 import EraStrip from './EraStrip'
-import { parseYearCounts } from './eraStripMath'
+import { parseYearCounts, parseBuyoutYearCounts } from './eraStripMath'
 import { ALL_CAUSES, CAUSE_LABELS, buildCauseClause, causeBreakdownSelect, noFaultClause, type CauseColumn } from './causes'
 import EvictionCauseFilter from './EvictionCauseFilter'
-import { buyoutRadius, parseAmount } from './buyoutScale'
+import { buyoutRadius, parseAmount, BUYOUT_RADIUS_PENDING, AMOUNT_ENTRY_LAG_DAYS } from './buyoutScale'
 
 const HOUSING_STREAMS = [
   { id: 'evictions', label: 'Eviction Notices', pigment: '#b85a33',
@@ -68,15 +68,20 @@ const STREAM_TEXT_CLASS: Record<StreamId, string> = {
  *
  *  Stacks ABOVE UnderlayLegend's bottom-4 right-4 slot when a demographic
  *  underlay is active (`stacked`), so the two panels never overlap. */
-function BuyoutRingLegend({ enabled, rows, stacked }: {
+function BuyoutRingLegend({ enabled, rows, stacked, pendingCutoffIso }: {
   enabled: boolean
   rows: BuyoutRow[]
   stacked: boolean
+  /** Amount-missing rows with agreement dates ≥ this are "pending entry"
+   *  (Rent Board backlog); older ones are genuinely undisclosed. */
+  pendingCutoffIso: string
 }) {
   if (!enabled || rows.length === 0) return null
 
   const total = rows.length
-  const undisclosed = rows.filter((r) => parseAmount(r.buyout_amount) == null).length
+  const missing = rows.filter((r) => parseAmount(r.buyout_amount) == null)
+  const pending = missing.filter((r) => (r.buyout_agreement_date ?? '') >= pendingCutoffIso).length
+  const undisclosed = missing.length - pending
 
   return (
     <div className={`absolute ${stacked ? 'bottom-24' : 'bottom-4'} right-4 z-[3] pointer-events-auto`}>
@@ -97,10 +102,20 @@ function BuyoutRingLegend({ enabled, rows, stacked }: {
             Ring size = buyout amount
           </span>
         </div>
+        {pending > 0 && (
+          <div className="flex items-center gap-2 mt-1">
+            <svg width="16" height="18" viewBox="0 0 16 18" className="flex-shrink-0" aria-hidden="true">
+              <circle cx="8" cy="9" r="6" fill="none" stroke="#a8926a" strokeOpacity="0.7" strokeWidth="1.5" />
+            </svg>
+            <span className="text-micro font-mono text-slate-500 dark:text-slate-500 whitespace-nowrap">
+              {pending} of {total} amounts pending entry
+            </span>
+          </div>
+        )}
         {undisclosed > 0 && (
           <div className="flex items-center gap-2 mt-1">
             <svg width="16" height="18" viewBox="0 0 16 18" className="flex-shrink-0" aria-hidden="true">
-              <circle cx="8" cy="9" r="6" fill="none" stroke="#d4a435" strokeOpacity="0.45" strokeWidth="1.5" />
+              <circle cx="8" cy="9" r="6" fill="none" stroke="#a8926a" strokeOpacity="0.45" strokeWidth="1.5" />
             </svg>
             <span className="text-micro font-mono text-slate-500 dark:text-slate-500 whitespace-nowrap">
               {undisclosed} of {total} amounts undisclosed
@@ -123,7 +138,7 @@ const BUYOUT_SELECT_FIELDS = 'case_number,buyout_agreement_date,pre_buyout_discl
 
 interface EvictionNeighborhoodAggRow { neighborhood: string; n: string }
 interface BuyoutNeighborhoodAggRow { analysis_neighborhood: string; n: string; total: string }
-interface YearAggRow { yr?: string; n: string }
+interface YearAggRow { yr?: string; n: string; with_amt?: string }
 interface NeighborhoodRankRow { neighborhood: string; evictionCount: number; buyoutCount: number; buyoutTotal: number }
 
 /** Stream toggle chip — TrafficSafety overlay-chip visual: pigment dot + label + count. */
@@ -398,11 +413,11 @@ export default function Housing() {
   )
   const { data: buyoutYearRows, isLoading: buyoutYearsLoading } = useDataset<YearAggRow>(
     'buyoutAgreements',
-    { $select: 'date_extract_y(buyout_agreement_date) as yr, count(*) as n', $group: 'yr', $order: 'yr', $limit: 50 },
+    { $select: 'date_extract_y(buyout_agreement_date) as yr, count(*) as n, count(buyout_amount) as with_amt', $group: 'yr', $order: 'yr', $limit: 50 },
     []
   )
   const evictionYearCounts = useMemo(() => parseYearCounts(evictionYearRows), [evictionYearRows])
-  const buyoutYearCounts = useMemo(() => parseYearCounts(buyoutYearRows), [buyoutYearRows])
+  const buyoutYearCounts = useMemo(() => parseBuyoutYearCounts(buyoutYearRows), [buyoutYearRows])
   // evictionYearRows/buyoutYearRows feed EraStrip; causeBreakdownRows feeds
   // EvictionCauseFilter's counts; noFaultCount/declarationsInRange/medianBuyout
   // feed CardTray; evictionNeighborhoodRows/buyoutNeighborhoodRows feed the
@@ -494,6 +509,12 @@ export default function Housing() {
   const compLabel = comparisonLabel(comparisonMode, dateRange)
 
   const evictionSparkValues = useMemo(() => trend.currentPeriods.map((p) => p.count), [trend.currentPeriods])
+  // Single-letter month labels under the spark bars (J F M A M J …) — only
+  // when the trend buckets are months; daily/weekly buckets go unlabeled.
+  const evictionSparkLabels = useMemo(() => {
+    if (trend.granularity !== 'monthly') return undefined
+    return trend.currentPeriods.map((p) => p.periodLabel.charAt(0).toUpperCase())
+  }, [trend.granularity, trend.currentPeriods])
 
   // --- Computed map data ---
   const evictionPoints = useMemo(() => {
@@ -514,12 +535,23 @@ export default function Housing() {
       .filter((r): r is NonNullable<typeof r> => r !== null)
   }, [evictionRows])
 
+  // Amount-missing rows split by recency: within the Rent Board's ~3-month
+  // entry backlog = "pending entry" (amount still coming); older = genuinely
+  // undisclosed. Cutoff is a date-only string built from local Date parts —
+  // string comparison against the SF-local agreement date is prefix-safe.
+  const pendingCutoffIso = useMemo(() => {
+    const d = new Date()
+    d.setDate(d.getDate() - AMOUNT_ENTRY_LAG_DAYS)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  }, [])
+
   const buyoutPoints = useMemo(() => {
     return buyoutRows
       .map((r) => {
         const coords = extractCoordinates(r.point)
         if (!coords) return null
         const amount = parseAmount(r.buyout_amount)
+        const disclosed = amount != null
         return {
           id: r.case_number,
           lat: coords.lat,
@@ -527,11 +559,12 @@ export default function Housing() {
           headline: r.address || 'Address unavailable',
           agreementDate: r.buyout_agreement_date || null,
           amount,
-          disclosed: amount != null,
+          disclosed,
+          pending: !disclosed && (r.buyout_agreement_date ?? '') >= pendingCutoffIso,
         }
       })
       .filter((r): r is NonNullable<typeof r> => r !== null)
-  }, [buyoutRows])
+  }, [buyoutRows, pendingCutoffIso])
 
   // Evictions dots geojson (dots mode, stream enabled). Toggle-off must pass
   // EMPTY_FC (not null) — useMapLayer's data effect ignores null, leaving
@@ -578,7 +611,10 @@ export default function Housing() {
           headline: p.headline,
           amount: p.amount,
           disclosed: p.disclosed,
-          radius: buyoutRadius(p.amount),
+          pending: p.pending,
+          // Unknown amounts render at the lifetime-average size (gray) —
+          // never the minimum, which would falsely read as "small buyout".
+          radius: p.disclosed ? buyoutRadius(p.amount) : BUYOUT_RADIUS_PENDING,
           agreementDate: p.agreementDate,
         },
       })),
@@ -647,11 +683,14 @@ export default function Housing() {
       source: 'housing-buyout-data',
       paint: {
         'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, ['*', ['get', 'radius'], 0.6], 14, ['get', 'radius']],
-        'circle-color': '#d4a435',
+        // Amount-missing rings go GRAY (paper-500, the palette's neutral) at
+        // the lifetime-average radius — recessive in hue, still findable
+        // over a choropleth underlay.
+        'circle-color': ['case', ['get', 'disclosed'], '#d4a435', '#a8926a'],
         'circle-opacity': 0.12,
-        'circle-stroke-color': '#d4a435',
-        'circle-stroke-width': ['case', ['get', 'disclosed'], 2, 1],
-        'circle-stroke-opacity': ['case', ['get', 'disclosed'], 0.9, 0.45],
+        'circle-stroke-color': ['case', ['get', 'disclosed'], '#d4a435', '#a8926a'],
+        'circle-stroke-width': ['case', ['get', 'disclosed'], 2, 1.5],
+        'circle-stroke-opacity': ['case', ['get', 'disclosed'], 0.9, 0.7],
       },
     } as mapboxgl.AnyLayer,
   ], [])
@@ -687,13 +726,14 @@ export default function Housing() {
   useMapTooltip(mapInstance, 'housing-buyout-rings', (props) => {
     const dateStr = props.agreementDate ? formatDate(String(props.agreementDate), 'long') : null
     const amountVal = props.amount != null ? Number(props.amount) : null
-    const amountStr = amountVal != null && Number.isFinite(amountVal)
+    const hasAmount = amountVal != null && Number.isFinite(amountVal)
+    const amountStr = hasAmount
       ? `$${Math.round(amountVal).toLocaleString()}`
-      : 'Amount undisclosed'
+      : (props.pending ? 'Amount pending entry' : 'Amount undisclosed')
     return `
       ${dateStr ? `<div style="color:#e2e8f0">${dateStr}</div>` : ''}
       <div class="tooltip-label" style="margin-top:6px">Amount</div>
-      <div style="color:#d4a435;font-weight:600">${amountStr}</div>
+      <div style="color:${hasAmount ? '#d4a435' : '#a8926a'};font-weight:600">${amountStr}</div>
       <div class="tooltip-label" style="margin-top:6px">Address</div>
       <div style="color:#94a3b8">${props.headline || 'Unknown'}</div>
     `
@@ -799,12 +839,14 @@ export default function Housing() {
           ? `${formatDelta(comparison.deltas.total)} ${compLabel}`
           : (comparison.suppressed && comparisonMode !== null
             ? 'Compare needs a narrower date range'
-            : 'Notices filed with the Rent Board — not completed evictions.'),
+            : 'Filings — not completed evictions.'),
         trend: comparison.deltas
           ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral')
           : undefined,
         yoyDelta: !comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null,
-        sparkData: evictionSparkValues.length > 0 ? { values: evictionSparkValues } : undefined,
+        sparkData: evictionSparkValues.length > 0
+          ? { values: evictionSparkValues, labels: evictionSparkLabels }
+          : undefined,
       },
       {
         id: 'no-fault-share',
@@ -948,6 +990,7 @@ export default function Housing() {
                 enabled={enabledStreams.has('buyouts')}
                 rows={buyoutRows}
                 stacked={underlayVariable != null}
+                pendingCutoffIso={pendingCutoffIso}
               />
 
               {combinedError && (
@@ -977,7 +1020,7 @@ export default function Housing() {
 
               {/* Detail panels — top right, click-driven from map + sidebar */}
               <EvictionDetailPanel rows={evictionRows} isLoading={evictionsLoading} />
-              <BuyoutDetailPanel rows={buyoutRows} isLoading={buyoutsLoading} />
+              <BuyoutDetailPanel rows={buyoutRows} isLoading={buyoutsLoading} pendingCutoffIso={pendingCutoffIso} />
             </MapView>
           </div>
 

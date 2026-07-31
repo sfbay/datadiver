@@ -12,6 +12,9 @@ interface BuyoutDetailPanelProps {
   rows: BuyoutRow[]
   /** True while the buyout query that backs `rows` is still in flight. */
   isLoading: boolean
+  /** Amount-missing agreements dated ≥ this read "pending entry" (Rent Board
+   *  keys amounts in ~3 months behind); older ones "undisclosed". */
+  pendingCutoffIso?: string
 }
 
 /**
@@ -20,7 +23,7 @@ interface BuyoutDetailPanelProps {
  * the fetch-on-select CrimeDetailPanel/CaseDetailPanel pattern. A stale deep
  * link renders the shell open but empty (no fetch to retry).
  */
-export default function BuyoutDetailPanel({ rows, isLoading }: BuyoutDetailPanelProps) {
+export default function BuyoutDetailPanel({ rows, isLoading, pendingCutoffIso }: BuyoutDetailPanelProps) {
   const { selectedHousingEvent, setSelectedHousingEvent } = useAppStore()
 
   const caseId = selectedHousingEvent?.startsWith(BUYOUTS_PREFIX)
@@ -41,7 +44,11 @@ export default function BuyoutDetailPanel({ rows, isLoading }: BuyoutDetailPanel
   }, [selectedHousingEvent])
 
   const amount = record ? parseAmount(record.buyout_amount) : null
-  const amountStr = amount != null ? `$${formatNumber(Math.round(amount))}` : 'Amount undisclosed'
+  const amountPending = amount == null && pendingCutoffIso != null
+    && (record?.buyout_agreement_date ?? '') >= pendingCutoffIso
+  const amountStr = amount != null
+    ? `$${formatNumber(Math.round(amount))}`
+    : (amountPending ? 'Amount pending entry' : 'Amount undisclosed')
   const tenantCount = record?.number_of_tenants ? parseInt(record.number_of_tenants, 10) : null
 
   return (
