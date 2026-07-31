@@ -51,7 +51,7 @@ copy-paste chassis). Single local stream spine — the one table Last 48 never h
 const HOUSING_STREAMS = [
   { id: 'evictions', label: 'Eviction Notices', pigment: '#b85a33', // terracotta-600 (brand)
     datasetKey: 'evictionNotices', dateField: 'file_date',
-    geoField: 'client_location', neighborhoodField: 'neighborhood' },
+    geoField: 'shape', neighborhoodField: 'neighborhood' },
   { id: 'buyouts', label: 'Buyouts', pigment: '#d4a435',            // ochre-500
     datasetKey: 'buyoutAgreements', dateField: 'buyout_agreement_date',
     geoField: 'point', neighborhoodField: 'analysis_neighborhood' },

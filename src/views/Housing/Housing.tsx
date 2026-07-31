@@ -56,6 +56,62 @@ const STREAM_TEXT_CLASS: Record<StreamId, string> = {
   buyouts: 'text-ochre-500',
 }
 
+/** BuyoutRingLegend — compact glass-card legend explaining the ochre ring
+ *  encoding on the map (ring size ∝ buyout amount; a faint ring marks an
+ *  undisclosed amount). Mirrors UnderlayLegend's visual idiom (mono micro
+ *  eyebrow, compact glass panel — see src/components/maps/UnderlayLegend.tsx)
+ *  so the two read as one system when both are on screen.
+ *
+ *  Renders nothing when the buyouts stream is off or no buyout rows are
+ *  loaded. Buyouts never hit the 5K row cap, so `rows` is always the
+ *  complete loaded set — N/M below is an exact count, not a sample estimate.
+ *
+ *  Stacks ABOVE UnderlayLegend's bottom-4 right-4 slot when a demographic
+ *  underlay is active (`stacked`), so the two panels never overlap. */
+function BuyoutRingLegend({ enabled, rows, stacked }: {
+  enabled: boolean
+  rows: BuyoutRow[]
+  stacked: boolean
+}) {
+  if (!enabled || rows.length === 0) return null
+
+  const total = rows.length
+  const undisclosed = rows.filter((r) => parseAmount(r.buyout_amount) == null).length
+
+  return (
+    <div className={`absolute ${stacked ? 'bottom-24' : 'bottom-4'} right-4 z-[3] pointer-events-auto`}>
+      <div className="rounded-lg px-3 py-2 backdrop-blur-xl
+        bg-white/85 dark:bg-slate-900/80
+        ring-1 ring-slate-200/60 dark:ring-white/[0.08]
+        shadow-md shadow-slate-900/10 dark:shadow-black/40">
+        <p className="text-nano font-mono uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 mb-1.5 whitespace-nowrap">
+          {'── BUYOUTS'}
+        </p>
+        <div className="flex items-center gap-2">
+          <svg width="44" height="18" viewBox="0 0 44 18" className="flex-shrink-0" aria-hidden="true">
+            <circle cx="8" cy="9" r="2.5" fill="none" stroke="#d4a435" strokeWidth="1.5" />
+            <circle cx="20" cy="9" r="4.5" fill="none" stroke="#d4a435" strokeWidth="1.5" />
+            <circle cx="35" cy="9" r="6.5" fill="none" stroke="#d4a435" strokeWidth="1.5" />
+          </svg>
+          <span className="text-micro font-mono text-slate-600 dark:text-slate-300 whitespace-nowrap">
+            Ring size = buyout amount
+          </span>
+        </div>
+        {undisclosed > 0 && (
+          <div className="flex items-center gap-2 mt-1">
+            <svg width="16" height="18" viewBox="0 0 16 18" className="flex-shrink-0" aria-hidden="true">
+              <circle cx="8" cy="9" r="6" fill="none" stroke="#d4a435" strokeOpacity="0.45" strokeWidth="1.5" />
+            </svg>
+            <span className="text-micro font-mono text-slate-500 dark:text-slate-500 whitespace-nowrap">
+              {undisclosed} of {total} amounts undisclosed
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 type MapMode = 'dots' | 'heatmap'
 
 /** useMapLayer's data-update effect ignores `null` (stale layer), so toggle-off
@@ -768,7 +824,7 @@ export default function Housing() {
         color: '#d4a435',
         delay: 160,
         defaultExpanded: true,
-        subtitle: declarationsInRange != null ? `From ${formatNumber(declarationsInRange)} opened negotiations` : undefined,
+        subtitle: declarationsInRange != null ? `${formatNumber(declarationsInRange)} negotiations opened in this period` : undefined,
       },
       {
         id: 'median-buyout',
@@ -888,6 +944,11 @@ export default function Housing() {
               {isLoading && <MapScanOverlay label="Scanning housing data" color="#b85a33" />}
               <MapProgressBar color="#b85a33" />
               <UnderlayLegend variable={underlayVariable} data={censusNeighborhoods} />
+              <BuyoutRingLegend
+                enabled={enabledStreams.has('buyouts')}
+                rows={buyoutRows}
+                stacked={underlayVariable != null}
+              />
 
               {combinedError && (
                 <div className="absolute top-5 left-1/2 -translate-x-1/2 z-20 w-full max-w-md rounded-[14px] backdrop-blur-xl bg-white/60 dark:bg-slate-900/60">

@@ -222,7 +222,7 @@ export default function EraStrip({ evictionYears, buyoutYears, range, onRangeCha
     g.append('text')
       .attr('x', buyoutX + 3)
       .attr('y', 9)
-      .attr('class', 'fill-ink dark:fill-paper-200 opacity-60 hidden desk:block font-mono uppercase tracking-wider')
+      .attr('class', 'fill-ink dark:fill-paper-200 opacity-60 font-mono uppercase tracking-wider')
       .style('font-size', '0.5rem')
       .text('── BUYOUT ORDINANCE')
 
@@ -261,14 +261,12 @@ export default function EraStrip({ evictionYears, buyoutYears, range, onRangeCha
     brushGRef.current = brushGSel.node()
 
     syncToRange()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [evictionYears, buyoutYears, size.width, size.height, currentYear, isLoading])
 
   // Keep the highlight + brush selection synced to `range` — e.g. edits from
   // the global date picker — without rebuilding the bars.
   useEffect(() => {
     syncToRange()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [range])
 
   return (
