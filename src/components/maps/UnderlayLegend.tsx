@@ -97,7 +97,9 @@ export default function UnderlayLegend({
         />
         <div className="flex justify-between text-nano font-mono text-slate-600 dark:text-slate-300 tabular-nums">
           <span>{formatValue(min, config.format)}</span>
-          <span>{formatValue(max, config.format)}</span>
+          {/* Unit suffix rides the max label only — "0 … 18/1K renter HH"
+              reads cleanly where doubling it would crowd the strip. */}
+          <span>{formatValue(max, config.format)}{config.unit ?? ''}</span>
         </div>
       </div>
     </div>

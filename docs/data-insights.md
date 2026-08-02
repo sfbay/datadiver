@@ -415,6 +415,23 @@ live-verified) — not a GROUP BY. `MEDIAN` had to be added to `fetchDataset`'s
 aggregate-detection regex (client.ts) or the injected defaultSort 400s every
 `median()` query.
 
+**Eviction-rate denominators (renter households) — provenance.** Per-neighborhood
+`renterHouseholds` in `src/data/census-neighborhoods.json` = ACS 5-year 2023
+`B25003_003E` per tract, summed to Analysis Neighborhoods via **DataSF's official
+whole-tract assignment (`sevw-6tgi`)** — NOT the repo's `TRACT_MAPPINGS` crosswalk,
+which covers only 161 of 244 tracts and drops ~70% of the mass for count variables
+(fine-ish for the weighted averages it was built for, catastrophic for sums).
+Conservation check: 244/244 tracts assigned, citywide total 223,040 exactly. Two
+traps discovered en route: (1) the **Census API now hard-requires a key** — anonymous
+requests 302 to `missing_key.html`; (2) **never set `VITE_CENSUS_API_KEY`** until
+`useCensusData`'s live-refresh path is rebuilt on the official assignment — it
+silently replaces the correct committed JSONs with partial-crosswalk aggregates
+(caught live: the rate card read 5,216/1K). Rates are ANNUALIZED (per 1,000 renter
+households × 365.25/rangeDays, `evictionRate.ts`, floor 100 renter HH) so any window
+reads on the same scale. Also: `scripts/generate-census-static.ts` run WITHOUT a key
+silently falls back to sample mode and OVERWRITES the committed JSONs (41→37
+neighborhoods, tracts emptied) — check `git diff` after any run.
+
 **Era shape of the 29-year eviction series** (annual `file_date` counts, verified
 July 2026): 1998 all-time peak 2,917 (dot-com wave) → 2009 post-crash trough 1,174 →
 2016 Ellis-wave peak 2,134 → 2020 COVID floor 778 (lowest ever) → 2025 rebound 1,495

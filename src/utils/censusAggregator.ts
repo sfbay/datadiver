@@ -7,7 +7,7 @@ import { CENSUS_VARIABLES } from './censusVariables'
 import { TRACT_MAPPINGS, getAllMappedNeighborhoods } from './tractMapping'
 
 /** Variables that should be summed (not averaged) when aggregating to neighborhoods. */
-const COUNT_VARIABLES = new Set<CensusVariable>(['totalPopulation'])
+const COUNT_VARIABLES = new Set<CensusVariable>(['totalPopulation', 'renterHouseholds'])
 
 /**
  * Population-weighted average for rate/median variables.

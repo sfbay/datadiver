@@ -12,7 +12,8 @@ import { useAppStore } from '@/stores/appStore'
 import { eventFlyToOffset } from '@/utils/cameraPadding'
 import { extractCoordinates } from '@/utils/geo'
 import { formatDate, formatNumber, formatDelta } from '@/utils/time'
-import { resolveComparisonStart, comparisonLabel } from '@/utils/comparisonMode'
+import { resolveComparisonStart, comparisonLabel, rangeLengthDays } from '@/utils/comparisonMode'
+import { annualizedRatePer1k, formatRate } from './evictionRate'
 import { useTrendBaseline } from '@/hooks/useTrendBaseline'
 import type { TrendConfig } from '@/types/trends'
 import { useEvictionComparisonData } from '@/hooks/useComparisonDataFactory'
@@ -486,10 +487,45 @@ export default function Housing() {
   const [underlayVariable, setUnderlayVariable] = useState<CensusVariable | null>(null)
   const { neighborhoods: censusNeighborhoods } = useCensusData()
 
+  // --- Eviction rates (per 1,000 renter households, annualized) ---
+  // Denominator: ACS B25003_003 renter households per neighborhood (exact
+  // sums via DataSF's official tract assignment — see data-insights.md →
+  // Housing). Numerator: the citywide ranking query (date + cause scope).
+  const rangeDays = useMemo(() => rangeLengthDays(dateRange), [dateRange])
+  const renterHHByName = useMemo(
+    () => new Map(censusNeighborhoods.map((n) => [n.name, n.renterHouseholds ?? null])),
+    [censusNeighborhoods],
+  )
+  const citywideRenterHH = useMemo(
+    () => censusNeighborhoods.reduce((sum, n) => sum + (n.renterHouseholds ?? 0), 0),
+    [censusNeighborhoods],
+  )
+  const evictionCountByNH = useMemo(
+    () => new Map(evictionNeighborhoodRows.filter((r) => r.neighborhood).map((r) => [r.neighborhood, parseInt(r.n, 10) || 0])),
+    [evictionNeighborhoodRows],
+  )
+  /** Annualized rate for one neighborhood under the current date+cause scope. */
+  const rateFor = useCallback(
+    (name: string): number | null =>
+      annualizedRatePer1k(evictionCountByNH.get(name) ?? 0, renterHHByName.get(name), rangeDays),
+    [evictionCountByNH, renterHHByName, rangeDays],
+  )
+  // The rate underlay is a DERIVED census variable: enrich the neighborhood
+  // rows with the computed rate and the untouched hook paints it like any
+  // other variable. Zero notices = a real 0 (palest ramp step); below the
+  // renter-household floor = null (unpainted, like missing census data).
+  const enrichedCensusData = useMemo(
+    () => censusNeighborhoods.map((n) => {
+      const rate = rateFor(n.name)
+      return rate != null ? { ...n, evictionRate: Math.round(rate * 100) / 100 } : n
+    }),
+    [censusNeighborhoods, rateFor],
+  )
+
   useDemographicUnderlay({
     map: mapInstance,
     variable: underlayVariable,
-    censusData: censusNeighborhoods,
+    censusData: enrichedCensusData,
     boundaries: neighborhoodBoundaries,
     geoIdProperty: 'nhood',
     opacity: 0.2,
@@ -846,6 +882,19 @@ export default function Housing() {
           : (comparison.suppressed && comparisonMode !== null
             ? 'Compare needs a narrower date range'
             : 'Filings — not completed evictions.'),
+        // Rate row: same scope as the count above it (date + cause +
+        // neighborhood); denominator swaps to the selected neighborhood's
+        // renter households when one is chosen.
+        secondary: (() => {
+          const denom = selectedNeighborhood
+            ? renterHHByName.get(selectedNeighborhood)
+            : citywideRenterHH
+          const rate = annualizedRatePer1k(evictionTotal, denom, rangeDays)
+          return rate != null
+            ? { value: `${formatRate(rate)} per 1K renter households`, caption: 'annualized' }
+            : undefined
+        })(),
+        wrapSubtitle: true,
         trend: comparison.deltas
           ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral')
           : undefined,
@@ -887,6 +936,7 @@ export default function Housing() {
   }, [
     evictionTotal, noFaultCount, evictionScopeTotal, buyoutTotal, declarationsInRange, medianBuyout,
     comparison.deltas, comparison.suppressed, compLabel, comparisonMode, trend.cityWideYoY, evictionSparkValues,
+    evictionSparkLabels, selectedNeighborhood, renterHHByName, citywideRenterHH, rangeDays,
   ])
 
   return (
@@ -990,7 +1040,7 @@ export default function Housing() {
             <MapView ref={mapHandleRef} onMapReady={handleMapReady}>
               {isLoading && <MapScanOverlay label="Scanning housing data" color="#b85a33" />}
               <MapProgressBar color="#b85a33" />
-              <UnderlayLegend variable={underlayVariable} data={censusNeighborhoods} />
+              <UnderlayLegend variable={underlayVariable} data={enrichedCensusData} />
               <BuyoutRingLegend
                 enabled={enabledStreams.has('buyouts')}
                 rows={buyoutRows}
@@ -1087,6 +1137,10 @@ export default function Housing() {
                               </p>
                               <p className="text-micro text-slate-400 dark:text-slate-600 font-mono">
                                 {ns.evictionCount.toLocaleString()} notices
+                                {(() => {
+                                  const rate = rateFor(ns.neighborhood)
+                                  return rate != null ? ` · ${formatRate(rate)}/1K` : ''
+                                })()}
                               </p>
                             </div>
                             {ns.buyoutCount > 0 && (

@@ -115,6 +115,18 @@ type StreamId = (typeof HOUSING_STREAMS)[number]['id']
   glow (counter-color dusty teal `#5c9693`) on a raised panel for prominence.
 - All text rem via inline style (Large Type Phase 3); no `text-*` tokens in SVG.
 
+### Eviction rates (added July 31, Jesse QA)
+
+Rate = notices per 1,000 renter households, ANNUALIZED over the selected range
+(`evictionRate.ts`, floor 100 renter HH — parks suppress to '—'). Denominator:
+ACS B25003_003 per neighborhood via DataSF's official tract assignment
+(provenance + traps: data-insights.md → Housing). Surfaces: eviction card
+secondary row (denominator swaps to the selected neighborhood), sidebar ranking
+rows ("N notices · R/1K"), and the **Eviction Rate underlay** — a DERIVED census
+variable (`isDerived: true`, hidden from other views' pickers): the view enriches
+censusNeighborhoods with the computed rate and the untouched underlay hook paints
+it like any other variable. Legend unit via the config's `unit` field.
+
 ## Cause filter (evictions)
 
 `src/views/Housing/EvictionCauseFilter.tsx`, cloned from the `IncidentCategoryFilter`

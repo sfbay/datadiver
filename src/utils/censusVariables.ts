@@ -116,6 +116,34 @@ export const CENSUS_VARIABLES: CensusVariableConfig[] = [
     availableAt: ['neighborhood', 'tract', 'blockgroup'],
   },
   {
+    key: 'renterHouseholds',
+    label: 'Renter Households',
+    shortLabel: 'Renter HH',
+    category: 'income',
+    acsTable: 'B25003',
+    acsVariables: ['B25003_003E'],
+    format: 'number',
+    colorScale: 'sequential',
+    colorRamp: STRESS_RAMP,
+    availableAt: ['neighborhood', 'tract', 'blockgroup'],
+    description: 'Renter-occupied households (count) — the denominator for eviction rates',
+  },
+  {
+    key: 'evictionRate',
+    label: 'Eviction Rate',
+    shortLabel: 'Evic. Rate',
+    category: 'income',
+    acsTable: 'B25003',           // denominator's table; numerator is Rent Board data
+    acsVariables: [],             // derived — no direct ACS fetch
+    format: 'number',
+    unit: '/1K renter HH',
+    colorScale: 'sequential',
+    colorRamp: ['#f5ecd9', '#e8c06b', '#d47149', '#b85a33'], // cream → ochre → terracotta
+    availableAt: ['neighborhood'],
+    description: 'Eviction notices per 1,000 renter households, annualized over the selected range',
+    isDerived: true,
+  },
+  {
     key: 'medianRent',
     label: 'Median Gross Rent',
     shortLabel: 'Med. Rent',
@@ -522,7 +550,10 @@ export function getVariableConfig(key: CensusVariable): CensusVariableConfig | u
 
 /** Return all variable configs belonging to a given category. */
 export function getVariablesByCategory(category: CensusCategory): CensusVariableConfig[] {
-  return CENSUS_VARIABLES.filter(v => v.category === category)
+  // Derived variables (isDerived) are excluded: they carry no value in the
+  // static census JSONs, so a generic picker would offer a value-less layer.
+  // The owning view surfaces them through its preset list instead.
+  return CENSUS_VARIABLES.filter(v => v.category === category && !v.isDerived)
 }
 
 /**
@@ -555,7 +586,7 @@ export const UNDERLAY_PRESETS: Partial<Record<string, CensusVariable[]>> = {
   // buyout pressure: what rent costs, how burdened renters already are, how
   // many households are exposed (renter share), and what a bought-out unit
   // is worth to convert.
-  'housing':            ['medianRent', 'rentBurden', 'renterPct', 'medianHomeValue'],
+  'housing':            ['evictionRate', 'medianRent', 'rentBurden', 'renterPct', 'medianHomeValue'],
 }
 
 // ---------------------------------------------------------------------------

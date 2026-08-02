@@ -6,7 +6,8 @@ export type CensusVariable =
   | 'totalPopulation' | 'populationDensity'
   // Income & Housing Stress
   | 'medianIncome' | 'incomeDistribution' | 'povertyRate'
-  | 'rentBurden' | 'renterPct' | 'medianRent' | 'medianHomeValue'
+  | 'rentBurden' | 'renterPct' | 'renterHouseholds' | 'medianRent' | 'medianHomeValue'
+  | 'evictionRate'
   // Race/Ethnicity
   | 'pctWhite' | 'pctBlack' | 'pctAsian' | 'pctHispanic'
   | 'pctPacificIslander' | 'pctMultiracial' | 'pctOther'
@@ -39,6 +40,15 @@ export interface CensusVariableConfig {
   description?: string
   isSubPicker?: boolean
   parentGroup?: string
+  /** Legend unit suffix for 'number'-format variables whose scale isn't
+   *  self-evident (e.g. '/1K renter HH' for evictionRate). */
+  unit?: string
+  /** Derived variables carry no value in the static census JSONs — a view
+   *  computes them per-render and passes ENRICHED censusData to the underlay
+   *  hook (e.g. Housing's evictionRate). Hidden from the generic
+   *  "More variables" listing so other views never offer a value-less layer;
+   *  the owning view surfaces them via its preset list. */
+  isDerived?: boolean
 }
 
 /** Census data for a single geographic unit (tract, block group, or neighborhood) */

@@ -28,7 +28,8 @@
     "pctDriveAlone": 13.201035375323556,
     "pctTransit": 24.158757549611735,
     "pctWFH": 44.43485763589301,
-    "pctBikeWalk": 11.906816220880069
+    "pctBikeWalk": 11.906816220880069,
+    "renterHouseholds": 1099
   },
   {
     "geoId": "06075010102",
@@ -58,7 +59,8 @@
     "pctDriveAlone": 28.07017543859649,
     "pctTransit": 21.75438596491228,
     "pctWFH": 31.929824561403507,
-    "pctBikeWalk": 15.204678362573098
+    "pctBikeWalk": 15.204678362573098,
+    "renterHouseholds": 605
   },
   {
     "geoId": "06075010201",
@@ -89,7 +91,8 @@
     "pctDriveAlone": 17.702227432590856,
     "pctTransit": 13.012895662368113,
     "pctWFH": 46.83470105509965,
-    "pctBikeWalk": 17.995310668229777
+    "pctBikeWalk": 17.995310668229777,
+    "renterHouseholds": 840
   },
   {
     "geoId": "06075010202",
@@ -120,7 +123,8 @@
     "pctDriveAlone": 22.93794186959937,
     "pctTransit": 14.061272584446192,
     "pctWFH": 33.228593872741556,
-    "pctBikeWalk": 27.651217596229376
+    "pctBikeWalk": 27.651217596229376,
+    "renterHouseholds": 753
   },
   {
     "geoId": "06075010300",
@@ -151,7 +155,8 @@
     "pctDriveAlone": 24.442642886096476,
     "pctTransit": 9.039319010944467,
     "pctWFH": 55.69517632752331,
-    "pctBikeWalk": 10.822861775435753
+    "pctBikeWalk": 10.822861775435753,
+    "renterHouseholds": 1644
   },
   {
     "geoId": "06075010401",
@@ -182,7 +187,8 @@
     "pctDriveAlone": 39.16317991631799,
     "pctTransit": 2.8451882845188283,
     "pctWFH": 26.94560669456067,
-    "pctBikeWalk": 24.01673640167364
+    "pctBikeWalk": 24.01673640167364,
+    "renterHouseholds": 628
   },
   {
     "geoId": "06075010402",
@@ -213,7 +219,8 @@
     "pctDriveAlone": 18.504240555127215,
     "pctTransit": 10.79414032382421,
     "pctWFH": 40.78643022359291,
-    "pctBikeWalk": 27.139552814186587
+    "pctBikeWalk": 27.139552814186587,
+    "renterHouseholds": 836
   },
   {
     "geoId": "06075010500",
@@ -244,7 +251,8 @@
     "pctDriveAlone": 11.124694376528117,
     "pctTransit": 17.970660146699267,
     "pctWFH": 29.88997555012225,
-    "pctBikeWalk": 34.41320293398533
+    "pctBikeWalk": 34.41320293398533,
+    "renterHouseholds": 1374
   },
   {
     "geoId": "06075010600",
@@ -275,7 +283,8 @@
     "pctDriveAlone": 14.300151591712988,
     "pctTransit": 27.539161192521476,
     "pctWFH": 23.446184941889843,
-    "pctBikeWalk": 31.430015159171298
+    "pctBikeWalk": 31.430015159171298,
+    "renterHouseholds": 1641
   },
   {
     "geoId": "06075010701",
@@ -306,7 +315,8 @@
     "pctDriveAlone": 7.187499999999999,
     "pctTransit": 45.15625,
     "pctWFH": 18.90625,
-    "pctBikeWalk": 26.328125000000004
+    "pctBikeWalk": 26.328125000000004,
+    "renterHouseholds": 1737
   },
   {
     "geoId": "06075010702",
@@ -337,7 +347,8 @@
     "pctDriveAlone": 10.262828535669586,
     "pctTransit": 23.153942428035045,
     "pctWFH": 25.782227784730914,
-    "pctBikeWalk": 29.411764705882355
+    "pctBikeWalk": 29.411764705882355,
+    "renterHouseholds": 549
   },
   {
     "geoId": "06075010800",
@@ -368,7 +379,8 @@
     "pctDriveAlone": 18.47682119205298,
     "pctTransit": 19.834437086092716,
     "pctWFH": 26.655629139072843,
-    "pctBikeWalk": 30.82781456953642
+    "pctBikeWalk": 30.82781456953642,
+    "renterHouseholds": 1911
   },
   {
     "geoId": "06075010901",
@@ -399,7 +411,8 @@
     "pctDriveAlone": 27.50478621569879,
     "pctTransit": 25.079770261646456,
     "pctWFH": 15.634971282705806,
-    "pctBikeWalk": 23.675813656668794
+    "pctBikeWalk": 23.675813656668794,
+    "renterHouseholds": 818
   },
   {
     "geoId": "06075010902",
@@ -430,7 +443,8 @@
     "pctDriveAlone": 17.80185758513932,
     "pctTransit": 12.177502579979361,
     "pctWFH": 47.26522187822497,
-    "pctBikeWalk": 14.860681114551083
+    "pctBikeWalk": 14.860681114551083,
+    "renterHouseholds": 1310
   },
   {
     "geoId": "06075011001",
@@ -461,7 +475,8 @@
     "pctDriveAlone": 16.698656429942417,
     "pctTransit": 24.56813819577735,
     "pctWFH": 35.956493921944976,
-    "pctBikeWalk": 15.930902111324377
+    "pctBikeWalk": 15.930902111324377,
+    "renterHouseholds": 1093
   },
   {
     "geoId": "06075011002",
@@ -492,7 +507,8 @@
     "pctDriveAlone": 18.78589007383101,
     "pctTransit": 16.57095980311731,
     "pctWFH": 24.69237079573421,
-    "pctBikeWalk": 28.547990155865467
+    "pctBikeWalk": 28.547990155865467,
+    "renterHouseholds": 772
   },
   {
     "geoId": "06075011101",
@@ -523,7 +539,8 @@
     "pctDriveAlone": 16.686674669867948,
     "pctTransit": 24.729891956782712,
     "pctWFH": 25.930372148859544,
-    "pctBikeWalk": 23.589435774309724
+    "pctBikeWalk": 23.589435774309724,
+    "renterHouseholds": 1319
   },
   {
     "geoId": "06075011102",
@@ -554,7 +571,8 @@
     "pctDriveAlone": 8.717221828490432,
     "pctTransit": 25.584691708008506,
     "pctWFH": 17.576187101346562,
-    "pctBikeWalk": 41.45995747696669
+    "pctBikeWalk": 41.45995747696669,
+    "renterHouseholds": 1218
   },
   {
     "geoId": "06075011200",
@@ -585,7 +603,8 @@
     "pctDriveAlone": 17.47448979591837,
     "pctTransit": 16.581632653061224,
     "pctWFH": 34.82142857142857,
-    "pctBikeWalk": 25.57397959183674
+    "pctBikeWalk": 25.57397959183674,
+    "renterHouseholds": 1271
   },
   {
     "geoId": "06075011300",
@@ -616,7 +635,8 @@
     "pctDriveAlone": 9.718875502008032,
     "pctTransit": 17.028112449799195,
     "pctWFH": 32.36947791164659,
-    "pctBikeWalk": 37.59036144578313
+    "pctBikeWalk": 37.59036144578313,
+    "renterHouseholds": 1203
   },
   {
     "geoId": "06075011700",
@@ -647,7 +667,8 @@
     "pctDriveAlone": 9.519136408243375,
     "pctTransit": 18.940137389597645,
     "pctWFH": 19.627085377821395,
-    "pctBikeWalk": 46.025515210991166
+    "pctBikeWalk": 46.025515210991166,
+    "renterHouseholds": 983
   },
   {
     "geoId": "06075011800",
@@ -677,7 +698,8 @@
     "pctDriveAlone": 4.971590909090909,
     "pctTransit": 30.39772727272727,
     "pctWFH": 19.03409090909091,
-    "pctBikeWalk": 35.79545454545455
+    "pctBikeWalk": 35.79545454545455,
+    "renterHouseholds": 712
   },
   {
     "geoId": "06075011901",
@@ -708,7 +730,8 @@
     "pctDriveAlone": 10.71663379355687,
     "pctTransit": 20.775805391190005,
     "pctWFH": 24.06311637080868,
-    "pctBikeWalk": 35.8974358974359
+    "pctBikeWalk": 35.8974358974359,
+    "renterHouseholds": 1005
   },
   {
     "geoId": "06075011902",
@@ -739,7 +762,8 @@
     "pctDriveAlone": 11.70610211706102,
     "pctTransit": 17.932752179327522,
     "pctWFH": 30.884184308841846,
-    "pctBikeWalk": 37.60896637608966
+    "pctBikeWalk": 37.60896637608966,
+    "renterHouseholds": 1592
   },
   {
     "geoId": "06075012001",
@@ -770,7 +794,8 @@
     "pctDriveAlone": 10.106820049301561,
     "pctTransit": 10.928512736236648,
     "pctWFH": 34.346754313886606,
-    "pctBikeWalk": 34.92193919474117
+    "pctBikeWalk": 34.92193919474117,
+    "renterHouseholds": 910
   },
   {
     "geoId": "06075012002",
@@ -801,7 +826,8 @@
     "pctDriveAlone": 8.900083963056256,
     "pctTransit": 23.425692695214106,
     "pctWFH": 18.639798488664987,
-    "pctBikeWalk": 46.51553316540722
+    "pctBikeWalk": 46.51553316540722,
+    "renterHouseholds": 1183
   },
   {
     "geoId": "06075012100",
@@ -832,7 +858,8 @@
     "pctDriveAlone": 10.104529616724738,
     "pctTransit": 22.34320557491289,
     "pctWFH": 17.50871080139373,
-    "pctBikeWalk": 42.1602787456446
+    "pctBikeWalk": 42.1602787456446,
+    "renterHouseholds": 1933
   },
   {
     "geoId": "06075012202",
@@ -863,7 +890,8 @@
     "pctDriveAlone": 6.809184481393507,
     "pctTransit": 27.55344418052256,
     "pctWFH": 18.368962787015043,
-    "pctBikeWalk": 32.38321456848773
+    "pctBikeWalk": 32.38321456848773,
+    "renterHouseholds": 1310
   },
   {
     "geoId": "06075012203",
@@ -893,7 +921,8 @@
     "pctDriveAlone": 9.523809523809524,
     "pctTransit": 40.55299539170507,
     "pctWFH": 2.457757296466974,
-    "pctBikeWalk": 32.565284178187405
+    "pctBikeWalk": 32.565284178187405,
+    "renterHouseholds": 1081
   },
   {
     "geoId": "06075012204",
@@ -924,7 +953,8 @@
     "pctDriveAlone": 5.507051712558765,
     "pctTransit": 21.22229684351914,
     "pctWFH": 21.692411014103424,
-    "pctBikeWalk": 41.034251175285426
+    "pctBikeWalk": 41.034251175285426,
+    "renterHouseholds": 1347
   },
   {
     "geoId": "06075012301",
@@ -954,7 +984,8 @@
     "pctDriveAlone": 6.901840490797547,
     "pctTransit": 35.12269938650307,
     "pctWFH": 8.895705521472392,
-    "pctBikeWalk": 47.08588957055215
+    "pctBikeWalk": 47.08588957055215,
+    "renterHouseholds": 1283
   },
   {
     "geoId": "06075012302",
@@ -984,7 +1015,8 @@
     "pctDriveAlone": 8.957133717210493,
     "pctTransit": 20.985284708893154,
     "pctWFH": 18.042226487523994,
-    "pctBikeWalk": 48.17658349328215
+    "pctBikeWalk": 48.17658349328215,
+    "renterHouseholds": 1886
   },
   {
     "geoId": "06075012403",
@@ -1014,7 +1046,8 @@
     "pctDriveAlone": 19.54612005856515,
     "pctTransit": 40.62957540263543,
     "pctWFH": 9.882869692532942,
-    "pctBikeWalk": 16.617862371888727
+    "pctBikeWalk": 16.617862371888727,
+    "renterHouseholds": 1155
   },
   {
     "geoId": "06075012404",
@@ -1044,7 +1077,8 @@
     "pctDriveAlone": 19.463087248322147,
     "pctTransit": 37.06189410887398,
     "pctWFH": 0,
-    "pctBikeWalk": 37.13646532438479
+    "pctBikeWalk": 37.13646532438479,
+    "renterHouseholds": 1499
   },
   {
     "geoId": "06075012405",
@@ -1074,7 +1108,8 @@
     "pctDriveAlone": 13.260706235912847,
     "pctTransit": 24.906085649887302,
     "pctWFH": 37.0022539444027,
-    "pctBikeWalk": 21.90082644628099
+    "pctBikeWalk": 21.90082644628099,
+    "renterHouseholds": 2470
   },
   {
     "geoId": "06075012406",
@@ -1105,7 +1140,8 @@
     "pctDriveAlone": 15.472312703583063,
     "pctTransit": 21.986970684039086,
     "pctWFH": 18.403908794788272,
-    "pctBikeWalk": 42.34527687296417
+    "pctBikeWalk": 42.34527687296417,
+    "renterHouseholds": 799
   },
   {
     "geoId": "06075012502",
@@ -1135,7 +1171,8 @@
     "pctDriveAlone": 11.776718856364875,
     "pctTransit": 44.04356705241661,
     "pctWFH": 9.666439754935329,
-    "pctBikeWalk": 31.449965963240302
+    "pctBikeWalk": 31.449965963240302,
+    "renterHouseholds": 2270
   },
   {
     "geoId": "06075012503",
@@ -1165,7 +1202,8 @@
     "pctDriveAlone": 15.860517435320585,
     "pctTransit": 35.60179977502812,
     "pctWFH": 9.50506186726659,
-    "pctBikeWalk": 37.34533183352081
+    "pctBikeWalk": 37.34533183352081,
+    "renterHouseholds": 2194
   },
   {
     "geoId": "06075012504",
@@ -1195,7 +1233,8 @@
     "pctDriveAlone": 0,
     "pctTransit": 79.60199004975125,
     "pctWFH": 12.935323383084576,
-    "pctBikeWalk": 7.462686567164178
+    "pctBikeWalk": 7.462686567164178,
+    "renterHouseholds": 278
   },
   {
     "geoId": "06075012601",
@@ -1226,7 +1265,8 @@
     "pctDriveAlone": 25.291295407813568,
     "pctTransit": 27.895819054146674,
     "pctWFH": 36.257710760795064,
-    "pctBikeWalk": 6.100068540095957
+    "pctBikeWalk": 6.100068540095957,
+    "renterHouseholds": 1028
   },
   {
     "geoId": "06075012602",
@@ -1257,7 +1297,8 @@
     "pctDriveAlone": 24.293505205751114,
     "pctTransit": 25.334655428854735,
     "pctWFH": 37.03520079325731,
-    "pctBikeWalk": 3.619236489836391
+    "pctBikeWalk": 3.619236489836391,
+    "renterHouseholds": 975
   },
   {
     "geoId": "06075012700",
@@ -1288,7 +1329,8 @@
     "pctDriveAlone": 28.906560636182903,
     "pctTransit": 14.632206759443338,
     "pctWFH": 41.312127236580515,
-    "pctBikeWalk": 3.7375745526838964
+    "pctBikeWalk": 3.7375745526838964,
+    "renterHouseholds": 1461
   },
   {
     "geoId": "06075012801",
@@ -1319,7 +1361,8 @@
     "pctDriveAlone": 26.69869595058339,
     "pctTransit": 10.432395332875773,
     "pctWFH": 38.09196980096088,
-    "pctBikeWalk": 13.864104323953331
+    "pctBikeWalk": 13.864104323953331,
+    "renterHouseholds": 761
   },
   {
     "geoId": "06075012802",
@@ -1350,7 +1393,8 @@
     "pctDriveAlone": 14.349112426035504,
     "pctTransit": 19.600591715976332,
     "pctWFH": 47.26331360946745,
-    "pctBikeWalk": 13.831360946745564
+    "pctBikeWalk": 13.831360946745564,
+    "renterHouseholds": 702
   },
   {
     "geoId": "06075012901",
@@ -1381,7 +1425,8 @@
     "pctDriveAlone": 24.58049886621315,
     "pctTransit": 19.86394557823129,
     "pctWFH": 40.54421768707483,
-    "pctBikeWalk": 9.750566893424036
+    "pctBikeWalk": 9.750566893424036,
+    "renterHouseholds": 1130
   },
   {
     "geoId": "06075012902",
@@ -1412,7 +1457,8 @@
     "pctDriveAlone": 19.013062409288825,
     "pctTransit": 23.657474600870827,
     "pctWFH": 38.12288340590227,
-    "pctBikeWalk": 6.627963231736817
+    "pctBikeWalk": 6.627963231736817,
+    "renterHouseholds": 1313
   },
   {
     "geoId": "06075013001",
@@ -1443,7 +1489,8 @@
     "pctDriveAlone": 34.36911487758945,
     "pctTransit": 25.98870056497175,
     "pctWFH": 14.218455743879474,
-    "pctBikeWalk": 18.926553672316384
+    "pctBikeWalk": 18.926553672316384,
+    "renterHouseholds": 634
   },
   {
     "geoId": "06075013002",
@@ -1474,7 +1521,8 @@
     "pctDriveAlone": 16.961889425657542,
     "pctTransit": 19.216317767042405,
     "pctWFH": 44.49812130971551,
-    "pctBikeWalk": 9.07139023081052
+    "pctBikeWalk": 9.07139023081052,
+    "renterHouseholds": 976
   },
   {
     "geoId": "06075013101",
@@ -1505,7 +1553,8 @@
     "pctDriveAlone": 17.063042657606644,
     "pctTransit": 14.345035862589656,
     "pctWFH": 34.31483578708947,
-    "pctBikeWalk": 20.498301245753115
+    "pctBikeWalk": 20.498301245753115,
+    "renterHouseholds": 1683
   },
   {
     "geoId": "06075013102",
@@ -1536,7 +1585,8 @@
     "pctDriveAlone": 29.8417894162575,
     "pctTransit": 15.930169121658484,
     "pctWFH": 36.279323513366066,
-    "pctBikeWalk": 10.256410256410255
+    "pctBikeWalk": 10.256410256410255,
+    "renterHouseholds": 1084
   },
   {
     "geoId": "06075013200",
@@ -1567,7 +1617,8 @@
     "pctDriveAlone": 21.98001816530427,
     "pctTransit": 9.128065395095367,
     "pctWFH": 35.37693006357856,
-    "pctBikeWalk": 10.535876475930973
+    "pctBikeWalk": 10.535876475930973,
+    "renterHouseholds": 1409
   },
   {
     "geoId": "06075013300",
@@ -1598,7 +1649,8 @@
     "pctDriveAlone": 32.432432432432435,
     "pctTransit": 19.020907700152982,
     "pctWFH": 30.290668026517082,
-    "pctBikeWalk": 10.147883732789394
+    "pctBikeWalk": 10.147883732789394,
+    "renterHouseholds": 1181
   },
   {
     "geoId": "06075013401",
@@ -1629,7 +1681,8 @@
     "pctDriveAlone": 28.286014721345953,
     "pctTransit": 22.292323869610936,
     "pctWFH": 25.44689800210305,
-    "pctBikeWalk": 5.678233438485805
+    "pctBikeWalk": 5.678233438485805,
+    "renterHouseholds": 594
   },
   {
     "geoId": "06075013402",
@@ -1660,7 +1713,8 @@
     "pctDriveAlone": 29.17789757412399,
     "pctTransit": 17.048517520215633,
     "pctWFH": 36.99460916442048,
-    "pctBikeWalk": 4.514824797843666
+    "pctBikeWalk": 4.514824797843666,
+    "renterHouseholds": 920
   },
   {
     "geoId": "06075013500",
@@ -1691,7 +1745,8 @@
     "pctDriveAlone": 34.18851087562744,
     "pctTransit": 16.508644729503626,
     "pctWFH": 27.718906860011156,
-    "pctBikeWalk": 12.325711098717234
+    "pctBikeWalk": 12.325711098717234,
+    "renterHouseholds": 1168
   },
   {
     "geoId": "06075015100",
@@ -1722,7 +1777,8 @@
     "pctDriveAlone": 15.24277811923786,
     "pctTransit": 29.256299938537182,
     "pctWFH": 31.837738168408116,
-    "pctBikeWalk": 17.148125384142592
+    "pctBikeWalk": 17.148125384142592,
+    "renterHouseholds": 1098
   },
   {
     "geoId": "06075015201",
@@ -1753,7 +1809,8 @@
     "pctDriveAlone": 28.49846782431052,
     "pctTransit": 20.326864147088866,
     "pctWFH": 27.170582226762,
-    "pctBikeWalk": 13.074565883554648
+    "pctBikeWalk": 13.074565883554648,
+    "renterHouseholds": 866
   },
   {
     "geoId": "06075015202",
@@ -1784,7 +1841,8 @@
     "pctDriveAlone": 23.106060606060606,
     "pctTransit": 16.224747474747474,
     "pctWFH": 37.24747474747475,
-    "pctBikeWalk": 9.91161616161616
+    "pctBikeWalk": 9.91161616161616,
+    "renterHouseholds": 521
   },
   {
     "geoId": "06075015300",
@@ -1815,7 +1873,8 @@
     "pctDriveAlone": 11.944965603502189,
     "pctTransit": 22.76422764227642,
     "pctWFH": 39.89993746091307,
-    "pctBikeWalk": 15.509693558474048
+    "pctBikeWalk": 15.509693558474048,
+    "renterHouseholds": 650
   },
   {
     "geoId": "06075015401",
@@ -1846,7 +1905,8 @@
     "pctDriveAlone": 19.797687861271676,
     "pctTransit": 23.073217726396916,
     "pctWFH": 40.1252408477842,
-    "pctBikeWalk": 8.092485549132949
+    "pctBikeWalk": 8.092485549132949,
+    "renterHouseholds": 1074
   },
   {
     "geoId": "06075015402",
@@ -1877,7 +1937,8 @@
     "pctDriveAlone": 24.891067538126364,
     "pctTransit": 19.00871459694989,
     "pctWFH": 43.08278867102396,
-    "pctBikeWalk": 3.32244008714597
+    "pctBikeWalk": 3.32244008714597,
+    "renterHouseholds": 1006
   },
   {
     "geoId": "06075015500",
@@ -1908,7 +1969,8 @@
     "pctDriveAlone": 23.739376770538243,
     "pctTransit": 27.025495750708217,
     "pctWFH": 35.35410764872521,
-    "pctBikeWalk": 11.104815864022664
+    "pctBikeWalk": 11.104815864022664,
+    "renterHouseholds": 2080
   },
   {
     "geoId": "06075015600",
@@ -1939,7 +2001,8 @@
     "pctDriveAlone": 25.288092189500638,
     "pctTransit": 25.86427656850192,
     "pctWFH": 29.2573623559539,
-    "pctBikeWalk": 8.450704225352112
+    "pctBikeWalk": 8.450704225352112,
+    "renterHouseholds": 985
   },
   {
     "geoId": "06075015701",
@@ -1970,7 +2033,8 @@
     "pctDriveAlone": 24.15406767458603,
     "pctTransit": 29.625629949604033,
     "pctWFH": 20.87832973362131,
-    "pctBikeWalk": 20.230381569474442
+    "pctBikeWalk": 20.230381569474442,
+    "renterHouseholds": 830
   },
   {
     "geoId": "06075015702",
@@ -2001,7 +2065,8 @@
     "pctDriveAlone": 30.863636363636367,
     "pctTransit": 20.59090909090909,
     "pctWFH": 31.181818181818183,
-    "pctBikeWalk": 10.681818181818182
+    "pctBikeWalk": 10.681818181818182,
+    "renterHouseholds": 742
   },
   {
     "geoId": "06075015801",
@@ -2032,7 +2097,8 @@
     "pctDriveAlone": 27.023809523809522,
     "pctTransit": 29.583333333333332,
     "pctWFH": 25.357142857142854,
-    "pctBikeWalk": 10
+    "pctBikeWalk": 10,
+    "renterHouseholds": 1093
   },
   {
     "geoId": "06075015802",
@@ -2063,7 +2129,8 @@
     "pctDriveAlone": 19.844890510948904,
     "pctTransit": 23.677007299270073,
     "pctWFH": 32.57299270072993,
-    "pctBikeWalk": 11.496350364963504
+    "pctBikeWalk": 11.496350364963504,
+    "renterHouseholds": 1234
   },
   {
     "geoId": "06075015900",
@@ -2094,7 +2161,8 @@
     "pctDriveAlone": 20.1495637723307,
     "pctTransit": 23.01620274200249,
     "pctWFH": 32.11466555878687,
-    "pctBikeWalk": 18.44619858745326
+    "pctBikeWalk": 18.44619858745326,
+    "renterHouseholds": 1650
   },
   {
     "geoId": "06075016000",
@@ -2125,7 +2193,8 @@
     "pctDriveAlone": 33.85286783042394,
     "pctTransit": 17.08229426433915,
     "pctWFH": 24.875311720698253,
-    "pctBikeWalk": 16.895261845386532
+    "pctBikeWalk": 16.895261845386532,
+    "renterHouseholds": 1290
   },
   {
     "geoId": "06075016101",
@@ -2155,7 +2224,8 @@
     "pctDriveAlone": 16.70103092783505,
     "pctTransit": 32.06185567010309,
     "pctWFH": 37.422680412371136,
-    "pctBikeWalk": 4.845360824742269
+    "pctBikeWalk": 4.845360824742269,
+    "renterHouseholds": 1422
   },
   {
     "geoId": "06075016102",
@@ -2184,7 +2254,8 @@
     "pctDriveAlone": 30.29525032092426,
     "pctTransit": 57.25288831835687,
     "pctWFH": 1.4120667522464698,
-    "pctBikeWalk": 11.0397946084724
+    "pctBikeWalk": 11.0397946084724,
+    "renterHouseholds": 1189
   },
   {
     "geoId": "06075016200",
@@ -2215,7 +2286,8 @@
     "pctDriveAlone": 20.57456696239966,
     "pctTransit": 18.166455428812846,
     "pctWFH": 31.60118293198141,
-    "pctBikeWalk": 25.686523024926068
+    "pctBikeWalk": 25.686523024926068,
+    "renterHouseholds": 1406
   },
   {
     "geoId": "06075016300",
@@ -2246,7 +2318,8 @@
     "pctDriveAlone": 17.91044776119403,
     "pctTransit": 26.294995610184372,
     "pctWFH": 35.99648814749781,
-    "pctBikeWalk": 13.257243195785778
+    "pctBikeWalk": 13.257243195785778,
+    "renterHouseholds": 1662
   },
   {
     "geoId": "06075016400",
@@ -2277,7 +2350,8 @@
     "pctDriveAlone": 22.794117647058822,
     "pctTransit": 29.801038062283737,
     "pctWFH": 33.780276816608996,
-    "pctBikeWalk": 6.833910034602077
+    "pctBikeWalk": 6.833910034602077,
+    "renterHouseholds": 1430
   },
   {
     "geoId": "06075016500",
@@ -2308,7 +2382,8 @@
     "pctDriveAlone": 11.57328805885682,
     "pctTransit": 21.477079796264857,
     "pctWFH": 35.766836445953594,
-    "pctBikeWalk": 23.231465761177137
+    "pctBikeWalk": 23.231465761177137,
+    "renterHouseholds": 1573
   },
   {
     "geoId": "06075016601",
@@ -2339,7 +2414,8 @@
     "pctDriveAlone": 20.37317196167423,
     "pctTransit": 24.8613212304589,
     "pctWFH": 33.83761976802824,
-    "pctBikeWalk": 16.036308623298034
+    "pctBikeWalk": 16.036308623298034,
+    "renterHouseholds": 1200
   },
   {
     "geoId": "06075016602",
@@ -2370,7 +2446,8 @@
     "pctDriveAlone": 18.600252206809582,
     "pctTransit": 23.076923076923077,
     "pctWFH": 42.938209331651954,
-    "pctBikeWalk": 8.827238335435057
+    "pctBikeWalk": 8.827238335435057,
+    "renterHouseholds": 790
   },
   {
     "geoId": "06075016700",
@@ -2401,7 +2478,8 @@
     "pctDriveAlone": 18.069612441372502,
     "pctTransit": 27.647494445815845,
     "pctWFH": 33.76943964453221,
-    "pctBikeWalk": 14.588990372747471
+    "pctBikeWalk": 14.588990372747471,
+    "renterHouseholds": 1588
   },
   {
     "geoId": "06075016801",
@@ -2432,7 +2510,8 @@
     "pctDriveAlone": 9.907997169143666,
     "pctTransit": 42.073602264685064,
     "pctWFH": 23.283793347487617,
-    "pctBikeWalk": 14.897381457891012
+    "pctBikeWalk": 14.897381457891012,
+    "renterHouseholds": 1608
   },
   {
     "geoId": "06075016802",
@@ -2463,7 +2542,8 @@
     "pctDriveAlone": 17.3514306676449,
     "pctTransit": 25.458547322083643,
     "pctWFH": 32.57520176082171,
-    "pctBikeWalk": 22.046955245781362
+    "pctBikeWalk": 22.046955245781362,
+    "renterHouseholds": 1610
   },
   {
     "geoId": "06075016900",
@@ -2494,7 +2574,8 @@
     "pctDriveAlone": 14.399999999999999,
     "pctTransit": 33.54666666666667,
     "pctWFH": 37.17333333333334,
-    "pctBikeWalk": 10.186666666666666
+    "pctBikeWalk": 10.186666666666666,
+    "renterHouseholds": 1102
   },
   {
     "geoId": "06075017000",
@@ -2525,7 +2606,8 @@
     "pctDriveAlone": 19.87439970446989,
     "pctTransit": 24.713705208718135,
     "pctWFH": 36.165496859992615,
-    "pctBikeWalk": 7.055781307720724
+    "pctBikeWalk": 7.055781307720724,
+    "renterHouseholds": 1041
   },
   {
     "geoId": "06075017101",
@@ -2556,7 +2638,8 @@
     "pctDriveAlone": 24.282744282744282,
     "pctTransit": 22.57796257796258,
     "pctWFH": 37.92099792099792,
-    "pctBikeWalk": 9.854469854469855
+    "pctBikeWalk": 9.854469854469855,
+    "renterHouseholds": 1177
   },
   {
     "geoId": "06075017102",
@@ -2587,7 +2670,8 @@
     "pctDriveAlone": 26.692878986456968,
     "pctTransit": 20.96985583224115,
     "pctWFH": 29.61992136304063,
-    "pctBikeWalk": 12.800349497597205
+    "pctBikeWalk": 12.800349497597205,
+    "renterHouseholds": 1034
   },
   {
     "geoId": "06075017602",
@@ -2618,7 +2702,8 @@
     "pctDriveAlone": 10.470941883767534,
     "pctTransit": 15.280561122244487,
     "pctWFH": 24.34869739478958,
-    "pctBikeWalk": 37.5250501002004
+    "pctBikeWalk": 37.5250501002004,
+    "renterHouseholds": 1398
   },
   {
     "geoId": "06075017603",
@@ -2649,7 +2734,8 @@
     "pctDriveAlone": 8.706928492034088,
     "pctTransit": 25.787328640237124,
     "pctWFH": 34.19785105594665,
-    "pctBikeWalk": 23.934790663208595
+    "pctBikeWalk": 23.934790663208595,
+    "renterHouseholds": 1949
   },
   {
     "geoId": "06075017604",
@@ -2680,7 +2766,8 @@
     "pctDriveAlone": 8.938547486033519,
     "pctTransit": 34.80876665234207,
     "pctWFH": 15.857327030511387,
-    "pctBikeWalk": 36.95745595186936
+    "pctBikeWalk": 36.95745595186936,
+    "renterHouseholds": 1953
   },
   {
     "geoId": "06075017700",
@@ -2711,7 +2798,8 @@
     "pctDriveAlone": 22.37926972909305,
     "pctTransit": 27.67962308598351,
     "pctWFH": 33.745583038869256,
-    "pctBikeWalk": 11.189634864546525
+    "pctBikeWalk": 11.189634864546525,
+    "renterHouseholds": 887
   },
   {
     "geoId": "06075017801",
@@ -2742,7 +2830,8 @@
     "pctDriveAlone": 8.402203856749312,
     "pctTransit": 10.537190082644628,
     "pctWFH": 43.18181818181818,
-    "pctBikeWalk": 36.84573002754821
+    "pctBikeWalk": 36.84573002754821,
+    "renterHouseholds": 1767
   },
   {
     "geoId": "06075017803",
@@ -2773,7 +2862,8 @@
     "pctDriveAlone": 7.766990291262135,
     "pctTransit": 18.284789644012946,
     "pctWFH": 31.31067961165049,
-    "pctBikeWalk": 25.88996763754045
+    "pctBikeWalk": 25.88996763754045,
+    "renterHouseholds": 874
   },
   {
     "geoId": "06075017804",
@@ -2804,7 +2894,8 @@
     "pctDriveAlone": 21.24777183600713,
     "pctTransit": 17.11229946524064,
     "pctWFH": 30.481283422459892,
-    "pctBikeWalk": 24.9554367201426
+    "pctBikeWalk": 24.9554367201426,
+    "renterHouseholds": 1465
   },
   {
     "geoId": "06075017903",
@@ -2834,7 +2925,8 @@
     "pctDriveAlone": 30.20758768790265,
     "pctTransit": 33.786685755189694,
     "pctWFH": 12.813171080887617,
-    "pctBikeWalk": 12.813171080887617
+    "pctBikeWalk": 12.813171080887617,
+    "renterHouseholds": 617
   },
   {
     "geoId": "06075018000",
@@ -2865,7 +2957,8 @@
     "pctDriveAlone": 16.282420749279538,
     "pctTransit": 17.77137367915466,
     "pctWFH": 31.027857829010568,
-    "pctBikeWalk": 25.936599423631122
+    "pctBikeWalk": 25.936599423631122,
+    "renterHouseholds": 1131
   },
   {
     "geoId": "06075020101",
@@ -2896,7 +2989,8 @@
     "pctDriveAlone": 21.890547263681594,
     "pctTransit": 22.885572139303484,
     "pctWFH": 17.093105899076047,
-    "pctBikeWalk": 23.489694385216772
+    "pctBikeWalk": 23.489694385216772,
+    "renterHouseholds": 1432
   },
   {
     "geoId": "06075020102",
@@ -2927,7 +3021,8 @@
     "pctDriveAlone": 30.59360730593607,
     "pctTransit": 29.22374429223744,
     "pctWFH": 20.040588533739218,
-    "pctBikeWalk": 16.43835616438356
+    "pctBikeWalk": 16.43835616438356,
+    "renterHouseholds": 1150
   },
   {
     "geoId": "06075020201",
@@ -2957,7 +3052,8 @@
     "pctDriveAlone": 15.377932232841008,
     "pctTransit": 31.364031277150307,
     "pctWFH": 24.413553431798434,
-    "pctBikeWalk": 20.677671589921808
+    "pctBikeWalk": 20.677671589921808,
+    "renterHouseholds": 765
   },
   {
     "geoId": "06075020202",
@@ -2988,7 +3084,8 @@
     "pctDriveAlone": 12.275017998560116,
     "pctTransit": 22.390208783297336,
     "pctWFH": 41.10871130309575,
-    "pctBikeWalk": 20.15838732901368
+    "pctBikeWalk": 20.15838732901368,
+    "renterHouseholds": 1691
   },
   {
     "geoId": "06075020300",
@@ -3019,7 +3116,8 @@
     "pctDriveAlone": 14.977973568281937,
     "pctTransit": 19.10292350820985,
     "pctWFH": 47.77733279935923,
-    "pctBikeWalk": 14.21706047256708
+    "pctBikeWalk": 14.21706047256708,
+    "renterHouseholds": 1387
   },
   {
     "geoId": "06075020401",
@@ -3050,7 +3148,8 @@
     "pctDriveAlone": 15.886354541816727,
     "pctTransit": 27.611044417767104,
     "pctWFH": 42.25690276110444,
-    "pctBikeWalk": 6.002400960384153
+    "pctBikeWalk": 6.002400960384153,
+    "renterHouseholds": 860
   },
   {
     "geoId": "06075020402",
@@ -3081,7 +3180,8 @@
     "pctDriveAlone": 34.60461861441568,
     "pctTransit": 19.664100769769068,
     "pctWFH": 29.14625612316305,
-    "pctBikeWalk": 3.918824352694192
+    "pctBikeWalk": 3.918824352694192,
+    "renterHouseholds": 1621
   },
   {
     "geoId": "06075020500",
@@ -3112,7 +3212,8 @@
     "pctDriveAlone": 21.07756068679692,
     "pctTransit": 27.29425695677916,
     "pctWFH": 33.39253996447602,
-    "pctBikeWalk": 9.532267613972765
+    "pctBikeWalk": 9.532267613972765,
+    "renterHouseholds": 723
   },
   {
     "geoId": "06075020601",
@@ -3143,7 +3244,8 @@
     "pctDriveAlone": 23.63150867823765,
     "pctTransit": 28.971962616822427,
     "pctWFH": 28.526924788607033,
-    "pctBikeWalk": 7.610146862483311
+    "pctBikeWalk": 7.610146862483311,
+    "renterHouseholds": 853
   },
   {
     "geoId": "06075020602",
@@ -3174,7 +3276,8 @@
     "pctDriveAlone": 20.66306861989206,
     "pctTransit": 16.114109483423285,
     "pctWFH": 39.321511179645334,
-    "pctBikeWalk": 15.805705474171164
+    "pctBikeWalk": 15.805705474171164,
+    "renterHouseholds": 730
   },
   {
     "geoId": "06075020701",
@@ -3205,7 +3308,8 @@
     "pctDriveAlone": 20.853307766059444,
     "pctTransit": 29.96164908916587,
     "pctWFH": 33.125599232981784,
-    "pctBikeWalk": 13.7104506232023
+    "pctBikeWalk": 13.7104506232023,
+    "renterHouseholds": 896
   },
   {
     "geoId": "06075020702",
@@ -3236,7 +3340,8 @@
     "pctDriveAlone": 23.022598870056495,
     "pctTransit": 24.081920903954803,
     "pctWFH": 38.347457627118644,
-    "pctBikeWalk": 13.064971751412429
+    "pctBikeWalk": 13.064971751412429,
+    "renterHouseholds": 888
   },
   {
     "geoId": "06075020801",
@@ -3267,7 +3372,8 @@
     "pctDriveAlone": 26.906265177270523,
     "pctTransit": 34.28848955803788,
     "pctWFH": 17.629917435648373,
-    "pctBikeWalk": 16.707139388052454
+    "pctBikeWalk": 16.707139388052454,
+    "renterHouseholds": 1261
   },
   {
     "geoId": "06075020802",
@@ -3298,7 +3404,8 @@
     "pctDriveAlone": 9.084699453551913,
     "pctTransit": 49.24863387978142,
     "pctWFH": 25.06830601092896,
-    "pctBikeWalk": 14.685792349726775
+    "pctBikeWalk": 14.685792349726775,
+    "renterHouseholds": 920
   },
   {
     "geoId": "06075020900",
@@ -3329,7 +3436,8 @@
     "pctDriveAlone": 18.22531535450196,
     "pctTransit": 40.36537625054372,
     "pctWFH": 26.402783819051763,
-    "pctBikeWalk": 9.134406263592867
+    "pctBikeWalk": 9.134406263592867,
+    "renterHouseholds": 1318
   },
   {
     "geoId": "06075021000",
@@ -3360,7 +3468,8 @@
     "pctDriveAlone": 25.31924262439454,
     "pctTransit": 24.746807573756055,
     "pctWFH": 25.18714222809335,
-    "pctBikeWalk": 11.889035667107
+    "pctBikeWalk": 11.889035667107,
+    "renterHouseholds": 1037
   },
   {
     "geoId": "06075021100",
@@ -3391,7 +3500,8 @@
     "pctDriveAlone": 21.41848976711362,
     "pctTransit": 24.27664079040226,
     "pctWFH": 36.908962597035995,
-    "pctBikeWalk": 10.23288637967537
+    "pctBikeWalk": 10.23288637967537,
+    "renterHouseholds": 1110
   },
   {
     "geoId": "06075021200",
@@ -3422,7 +3532,8 @@
     "pctDriveAlone": 27.57177033492823,
     "pctTransit": 19.078947368421055,
     "pctWFH": 36.782296650717704,
-    "pctBikeWalk": 5.023923444976076
+    "pctBikeWalk": 5.023923444976076,
+    "renterHouseholds": 590
   },
   {
     "geoId": "06075021300",
@@ -3453,7 +3564,8 @@
     "pctDriveAlone": 44.38502673796791,
     "pctTransit": 14.260249554367203,
     "pctWFH": 33.392751039809866,
-    "pctBikeWalk": 4.57516339869281
+    "pctBikeWalk": 4.57516339869281,
+    "renterHouseholds": 573
   },
   {
     "geoId": "06075021400",
@@ -3484,7 +3596,8 @@
     "pctDriveAlone": 25.065387968613773,
     "pctTransit": 13.993025283347865,
     "pctWFH": 42.58936355710549,
-    "pctBikeWalk": 11.987794245858762
+    "pctBikeWalk": 11.987794245858762,
+    "renterHouseholds": 1039
   },
   {
     "geoId": "06075021500",
@@ -3515,7 +3628,8 @@
     "pctDriveAlone": 27.866593164277838,
     "pctTransit": 32.138919514884236,
     "pctWFH": 26.79162072767365,
-    "pctBikeWalk": 8.820286659316427
+    "pctBikeWalk": 8.820286659316427,
+    "renterHouseholds": 1465
   },
   {
     "geoId": "06075021600",
@@ -3546,7 +3660,8 @@
     "pctDriveAlone": 34.79080286468149,
     "pctTransit": 12.551828119110443,
     "pctWFH": 49.37806257067471,
-    "pctBikeWalk": 1.2438748586505841
+    "pctBikeWalk": 1.2438748586505841,
+    "renterHouseholds": 964
   },
   {
     "geoId": "06075021700",
@@ -3577,7 +3692,8 @@
     "pctDriveAlone": 27.81919850885368,
     "pctTransit": 18.173345759552657,
     "pctWFH": 37.27865796831314,
-    "pctBikeWalk": 4.240447343895619
+    "pctBikeWalk": 4.240447343895619,
+    "renterHouseholds": 541
   },
   {
     "geoId": "06075021800",
@@ -3608,7 +3724,8 @@
     "pctDriveAlone": 27.290679304897314,
     "pctTransit": 14.415481832543446,
     "pctWFH": 43.79936808846762,
-    "pctBikeWalk": 7.345971563981042
+    "pctBikeWalk": 7.345971563981042,
+    "renterHouseholds": 676
   },
   {
     "geoId": "06075022600",
@@ -3639,7 +3756,8 @@
     "pctDriveAlone": 18.47548880702749,
     "pctTransit": 16.18022102578634,
     "pctWFH": 27.99659960328705,
-    "pctBikeWalk": 28.761688863700762
+    "pctBikeWalk": 28.761688863700762,
+    "renterHouseholds": 1761
   },
   {
     "geoId": "06075022702",
@@ -3670,7 +3788,8 @@
     "pctDriveAlone": 21.718538565629228,
     "pctTransit": 10.148849797023004,
     "pctWFH": 41.74560216508796,
-    "pctBikeWalk": 21.58322056833559
+    "pctBikeWalk": 21.58322056833559,
+    "renterHouseholds": 619
   },
   {
     "geoId": "06075022704",
@@ -3701,7 +3820,8 @@
     "pctDriveAlone": 32.568985619898946,
     "pctTransit": 7.073455110765643,
     "pctWFH": 38.32102603964244,
-    "pctBikeWalk": 13.719393703847649
+    "pctBikeWalk": 13.719393703847649,
+    "renterHouseholds": 891
   },
   {
     "geoId": "06075022801",
@@ -3732,7 +3852,8 @@
     "pctDriveAlone": 32.86661753868828,
     "pctTransit": 17.428150331613853,
     "pctWFH": 27.78187177597642,
-    "pctBikeWalk": 16.359616801768606
+    "pctBikeWalk": 16.359616801768606,
+    "renterHouseholds": 1016
   },
   {
     "geoId": "06075022802",
@@ -3763,7 +3884,8 @@
     "pctDriveAlone": 24.48210922787194,
     "pctTransit": 19.303201506591336,
     "pctWFH": 34.65160075329567,
-    "pctBikeWalk": 15.44256120527307
+    "pctBikeWalk": 15.44256120527307,
+    "renterHouseholds": 422
   },
   {
     "geoId": "06075022803",
@@ -3794,7 +3916,8 @@
     "pctDriveAlone": 35.559336452573376,
     "pctTransit": 19.99149298170991,
     "pctWFH": 21.863037005529563,
-    "pctBikeWalk": 13.696299447043812
+    "pctBikeWalk": 13.696299447043812,
+    "renterHouseholds": 815
   },
   {
     "geoId": "06075022901",
@@ -3825,7 +3948,8 @@
     "pctDriveAlone": 34.079804560260584,
     "pctTransit": 25.28501628664495,
     "pctWFH": 20.03257328990228,
-    "pctBikeWalk": 9.486970684039088
+    "pctBikeWalk": 9.486970684039088,
+    "renterHouseholds": 1090
   },
   {
     "geoId": "06075022902",
@@ -3856,7 +3980,8 @@
     "pctDriveAlone": 30.438448566610454,
     "pctTransit": 22.006745362563237,
     "pctWFH": 27.48735244519393,
-    "pctBikeWalk": 13.322091062394604
+    "pctBikeWalk": 13.322091062394604,
+    "renterHouseholds": 399
   },
   {
     "geoId": "06075022903",
@@ -3887,7 +4012,8 @@
     "pctDriveAlone": 19.394921663965427,
     "pctTransit": 21.71799027552674,
     "pctWFH": 32.03673689897353,
-    "pctBikeWalk": 21.555915721231766
+    "pctBikeWalk": 21.555915721231766,
+    "renterHouseholds": 593
   },
   {
     "geoId": "06075023001",
@@ -3918,7 +4044,8 @@
     "pctDriveAlone": 49.6526508226691,
     "pctTransit": 24.351005484460693,
     "pctWFH": 7.495429616087751,
-    "pctBikeWalk": 3.03473491773309
+    "pctBikeWalk": 3.03473491773309,
+    "renterHouseholds": 522
   },
   {
     "geoId": "06075023003",
@@ -3949,7 +4076,8 @@
     "pctDriveAlone": 46.7280163599182,
     "pctTransit": 13.34355828220859,
     "pctWFH": 11.758691206543967,
-    "pctBikeWalk": 6.186094069529653
+    "pctBikeWalk": 6.186094069529653,
+    "renterHouseholds": 210
   },
   {
     "geoId": "06075023102",
@@ -3980,7 +4108,8 @@
     "pctDriveAlone": 44.671781756180735,
     "pctTransit": 37.510656436487636,
     "pctWFH": 10.656436487638533,
-    "pctBikeWalk": 0
+    "pctBikeWalk": 0,
+    "renterHouseholds": 725
   },
   {
     "geoId": "06075023103",
@@ -4010,7 +4139,8 @@
     "pctDriveAlone": 55.04664970313825,
     "pctTransit": 21.458863443596268,
     "pctWFH": 9.32994062765055,
-    "pctBikeWalk": 7.20949957591179
+    "pctBikeWalk": 7.20949957591179,
+    "renterHouseholds": 1473
   },
   {
     "geoId": "06075023200",
@@ -4041,7 +4171,8 @@
     "pctDriveAlone": 34.256410256410255,
     "pctTransit": 19.641025641025642,
     "pctWFH": 15.64102564102564,
-    "pctBikeWalk": 6.153846153846154
+    "pctBikeWalk": 6.153846153846154,
+    "renterHouseholds": 381
   },
   {
     "geoId": "06075023300",
@@ -4072,7 +4203,8 @@
     "pctDriveAlone": 50.02660989888238,
     "pctTransit": 25.38584353379457,
     "pctWFH": 12.02767429483768,
-    "pctBikeWalk": 3.2996274614156467
+    "pctBikeWalk": 3.2996274614156467,
+    "renterHouseholds": 609
   },
   {
     "geoId": "06075023400",
@@ -4103,7 +4235,8 @@
     "pctDriveAlone": 58.56958762886598,
     "pctTransit": 24.162371134020617,
     "pctWFH": 4.510309278350515,
-    "pctBikeWalk": 0.7087628865979382
+    "pctBikeWalk": 0.7087628865979382,
+    "renterHouseholds": 520
   },
   {
     "geoId": "06075025100",
@@ -4134,7 +4267,8 @@
     "pctDriveAlone": 37.87303309820944,
     "pctTransit": 10.90613130765057,
     "pctWFH": 34.83450895279436,
-    "pctBikeWalk": 8.627238198589257
+    "pctBikeWalk": 8.627238198589257,
+    "renterHouseholds": 522
   },
   {
     "geoId": "06075025200",
@@ -4165,7 +4299,8 @@
     "pctDriveAlone": 30.10717765508282,
     "pctTransit": 15.88177979863592,
     "pctWFH": 28.97044494965898,
-    "pctBikeWalk": 17.668074050016237
+    "pctBikeWalk": 17.668074050016237,
+    "renterHouseholds": 773
   },
   {
     "geoId": "06075025300",
@@ -4196,7 +4331,8 @@
     "pctDriveAlone": 40.33168666196189,
     "pctTransit": 14.255469301340861,
     "pctWFH": 31.65137614678899,
-    "pctBikeWalk": 5.257586450247001
+    "pctBikeWalk": 5.257586450247001,
+    "renterHouseholds": 819
   },
   {
     "geoId": "06075025401",
@@ -4227,7 +4363,8 @@
     "pctDriveAlone": 28.84111169375983,
     "pctTransit": 13.057157839538542,
     "pctWFH": 33.61300471945464,
-    "pctBikeWalk": 17.93392763502884
+    "pctBikeWalk": 17.93392763502884,
+    "renterHouseholds": 603
   },
   {
     "geoId": "06075025402",
@@ -4258,7 +4395,8 @@
     "pctDriveAlone": 50.231481481481474,
     "pctTransit": 10.87962962962963,
     "pctWFH": 18.63425925925926,
-    "pctBikeWalk": 8.449074074074074
+    "pctBikeWalk": 8.449074074074074,
+    "renterHouseholds": 348
   },
   {
     "geoId": "06075025403",
@@ -4289,7 +4427,8 @@
     "pctDriveAlone": 33.392777530093625,
     "pctTransit": 16.139099420419083,
     "pctWFH": 24.52073116362015,
-    "pctBikeWalk": 5.3499777084262155
+    "pctBikeWalk": 5.3499777084262155,
+    "renterHouseholds": 670
   },
   {
     "geoId": "06075025501",
@@ -4320,7 +4459,8 @@
     "pctDriveAlone": 25.684420109507215,
     "pctTransit": 28.670980587356894,
     "pctWFH": 24.390243902439025,
-    "pctBikeWalk": 1.7919362867098059
+    "pctBikeWalk": 1.7919362867098059,
+    "renterHouseholds": 198
   },
   {
     "geoId": "06075025502",
@@ -4351,7 +4491,8 @@
     "pctDriveAlone": 42.4160346695558,
     "pctTransit": 23.510292524377032,
     "pctWFH": 24.53954496208017,
-    "pctBikeWalk": 2.4918743228602382
+    "pctBikeWalk": 2.4918743228602382,
+    "renterHouseholds": 323
   },
   {
     "geoId": "06075025600",
@@ -4382,7 +4523,8 @@
     "pctDriveAlone": 32.83333333333333,
     "pctTransit": 27.03333333333333,
     "pctWFH": 20.200000000000003,
-    "pctBikeWalk": 1.9666666666666666
+    "pctBikeWalk": 1.9666666666666666,
+    "renterHouseholds": 559
   },
   {
     "geoId": "06075025701",
@@ -4413,7 +4555,8 @@
     "pctDriveAlone": 42.25457260171706,
     "pctTransit": 24.188129899216126,
     "pctWFH": 14.25905188503173,
-    "pctBikeWalk": 4.292646509891751
+    "pctBikeWalk": 4.292646509891751,
+    "renterHouseholds": 592
   },
   {
     "geoId": "06075025702",
@@ -4444,7 +4587,8 @@
     "pctDriveAlone": 39.90461049284579,
     "pctTransit": 21.409644939056705,
     "pctWFH": 9.644939056703763,
-    "pctBikeWalk": 0.688924218335983
+    "pctBikeWalk": 0.688924218335983,
+    "renterHouseholds": 440
   },
   {
     "geoId": "06075025800",
@@ -4475,7 +4619,8 @@
     "pctDriveAlone": 39.71291866028708,
     "pctTransit": 23.32535885167464,
     "pctWFH": 16.74641148325359,
-    "pctBikeWalk": 2.511961722488038
+    "pctBikeWalk": 2.511961722488038,
+    "renterHouseholds": 321
   },
   {
     "geoId": "06075025900",
@@ -4506,7 +4651,8 @@
     "pctDriveAlone": 64.57013574660634,
     "pctTransit": 10.135746606334841,
     "pctWFH": 13.891402714932127,
-    "pctBikeWalk": 2.760180995475113
+    "pctBikeWalk": 2.760180995475113,
+    "renterHouseholds": 163
   },
   {
     "geoId": "06075026001",
@@ -4537,7 +4683,8 @@
     "pctDriveAlone": 39.50578667500782,
     "pctTransit": 31.904910853925557,
     "pctWFH": 12.386612449171098,
-    "pctBikeWalk": 1.6265248670628716
+    "pctBikeWalk": 1.6265248670628716,
+    "renterHouseholds": 841
   },
   {
     "geoId": "06075026002",
@@ -4568,7 +4715,8 @@
     "pctDriveAlone": 43.88535031847134,
     "pctTransit": 19.363057324840767,
     "pctWFH": 19.299363057324843,
-    "pctBikeWalk": 0.89171974522293
+    "pctBikeWalk": 0.89171974522293,
+    "renterHouseholds": 253
   },
   {
     "geoId": "06075026003",
@@ -4599,7 +4747,8 @@
     "pctDriveAlone": 41.5469146238377,
     "pctTransit": 20.118343195266274,
     "pctWFH": 17.962806424344883,
-    "pctBikeWalk": 3.592561284868977
+    "pctBikeWalk": 3.592561284868977,
+    "renterHouseholds": 427
   },
   {
     "geoId": "06075026004",
@@ -4630,7 +4779,8 @@
     "pctDriveAlone": 46.472125435540065,
     "pctTransit": 21.777003484320556,
     "pctWFH": 21.777003484320556,
-    "pctBikeWalk": 0.6533101045296167
+    "pctBikeWalk": 0.6533101045296167,
+    "renterHouseholds": 374
   },
   {
     "geoId": "06075026100",
@@ -4661,7 +4811,8 @@
     "pctDriveAlone": 32.99970562260818,
     "pctTransit": 34.824845451869294,
     "pctWFH": 19.193405946423315,
-    "pctBikeWalk": 3.238151309979394
+    "pctBikeWalk": 3.238151309979394,
+    "renterHouseholds": 663
   },
   {
     "geoId": "06075026201",
@@ -4692,7 +4843,8 @@
     "pctDriveAlone": 39.36810431293882,
     "pctTransit": 24.57372116349047,
     "pctWFH": 15.997993981945838,
-    "pctBikeWalk": 1.2036108324974923
+    "pctBikeWalk": 1.2036108324974923,
+    "renterHouseholds": 372
   },
   {
     "geoId": "06075026202",
@@ -4723,7 +4875,8 @@
     "pctDriveAlone": 46.57671164417791,
     "pctTransit": 34.48275862068966,
     "pctWFH": 5.197401299350324,
-    "pctBikeWalk": 1.5492253873063468
+    "pctBikeWalk": 1.5492253873063468,
+    "renterHouseholds": 363
   },
   {
     "geoId": "06075026301",
@@ -4754,7 +4907,8 @@
     "pctDriveAlone": 41.064453125,
     "pctTransit": 26.416015625,
     "pctWFH": 12.01171875,
-    "pctBikeWalk": 6.787109375
+    "pctBikeWalk": 6.787109375,
+    "renterHouseholds": 567
   },
   {
     "geoId": "06075026302",
@@ -4785,7 +4939,8 @@
     "pctDriveAlone": 60.38543897216274,
     "pctTransit": 21.841541755888652,
     "pctWFH": 2.355460385438972,
-    "pctBikeWalk": 1.7130620985010707
+    "pctBikeWalk": 1.7130620985010707,
+    "renterHouseholds": 463
   },
   {
     "geoId": "06075026303",
@@ -4816,7 +4971,8 @@
     "pctDriveAlone": 46.06035205364627,
     "pctTransit": 30.46940486169321,
     "pctWFH": 11.483654652137469,
-    "pctBikeWalk": 3.143336127409891
+    "pctBikeWalk": 3.143336127409891,
+    "renterHouseholds": 259
   },
   {
     "geoId": "06075026401",
@@ -4847,7 +5003,8 @@
     "pctDriveAlone": 54.082914572864325,
     "pctTransit": 23.42964824120603,
     "pctWFH": 6.407035175879397,
-    "pctBikeWalk": 2.0728643216080402
+    "pctBikeWalk": 2.0728643216080402,
+    "renterHouseholds": 296
   },
   {
     "geoId": "06075026402",
@@ -4878,7 +5035,8 @@
     "pctDriveAlone": 51.68776371308017,
     "pctTransit": 16.455696202531644,
     "pctWFH": 12.869198312236287,
-    "pctBikeWalk": 0.29535864978902954
+    "pctBikeWalk": 0.29535864978902954,
+    "renterHouseholds": 343
   },
   {
     "geoId": "06075026403",
@@ -4909,7 +5067,8 @@
     "pctDriveAlone": 53.228840125391855,
     "pctTransit": 21.316614420062695,
     "pctWFH": 8.087774294670847,
-    "pctBikeWalk": 0
+    "pctBikeWalk": 0,
+    "renterHouseholds": 335
   },
   {
     "geoId": "06075026404",
@@ -4940,7 +5099,8 @@
     "pctDriveAlone": 42.45998315080033,
     "pctTransit": 23.92586352148273,
     "pctWFH": 10.193765796124685,
-    "pctBikeWalk": 3.7068239258635214
+    "pctBikeWalk": 3.7068239258635214,
+    "renterHouseholds": 310
   },
   {
     "geoId": "06075030101",
@@ -4971,7 +5131,8 @@
     "pctDriveAlone": 17.026462395543177,
     "pctTransit": 17.37465181058496,
     "pctWFH": 21.62256267409471,
-    "pctBikeWalk": 39.902506963788305
+    "pctBikeWalk": 39.902506963788305,
+    "renterHouseholds": 1612
   },
   {
     "geoId": "06075030102",
@@ -5002,7 +5163,8 @@
     "pctDriveAlone": 19.205539358600582,
     "pctTransit": 17.27405247813411,
     "pctWFH": 28.753644314868804,
-    "pctBikeWalk": 20.262390670553938
+    "pctBikeWalk": 20.262390670553938,
+    "renterHouseholds": 1142
   },
   {
     "geoId": "06075030201",
@@ -5033,7 +5195,8 @@
     "pctDriveAlone": 29.651912333476577,
     "pctTransit": 29.437043403523848,
     "pctWFH": 21.873657069187797,
-    "pctBikeWalk": 9.110442629995703
+    "pctBikeWalk": 9.110442629995703,
+    "renterHouseholds": 1442
   },
   {
     "geoId": "06075030202",
@@ -5064,7 +5227,8 @@
     "pctDriveAlone": 23.768115942028984,
     "pctTransit": 34.69979296066252,
     "pctWFH": 27.701863354037265,
-    "pctBikeWalk": 8.654244306418219
+    "pctBikeWalk": 8.654244306418219,
+    "renterHouseholds": 1573
   },
   {
     "geoId": "06075030301",
@@ -5095,7 +5259,8 @@
     "pctDriveAlone": 36.99219800914716,
     "pctTransit": 11.299435028248588,
     "pctWFH": 34.14043583535109,
-    "pctBikeWalk": 9.120258272800646
+    "pctBikeWalk": 9.120258272800646,
+    "renterHouseholds": 1098
   },
   {
     "geoId": "06075030302",
@@ -5126,7 +5291,8 @@
     "pctDriveAlone": 41.449426485922835,
     "pctTransit": 15.172054223149114,
     "pctWFH": 28.72784150156413,
-    "pctBikeWalk": 2.7632950990615224
+    "pctBikeWalk": 2.7632950990615224,
+    "renterHouseholds": 436
   },
   {
     "geoId": "06075030400",
@@ -5157,7 +5323,8 @@
     "pctDriveAlone": 32.471655328798185,
     "pctTransit": 15.827664399092969,
     "pctWFH": 31.292517006802722,
-    "pctBikeWalk": 3.4013605442176873
+    "pctBikeWalk": 3.4013605442176873,
+    "renterHouseholds": 342
   },
   {
     "geoId": "06075030500",
@@ -5188,7 +5355,8 @@
     "pctDriveAlone": 55.8047493403694,
     "pctTransit": 7.321899736147758,
     "pctWFH": 31.53034300791557,
-    "pctBikeWalk": 0
+    "pctBikeWalk": 0,
+    "renterHouseholds": 293
   },
   {
     "geoId": "06075030600",
@@ -5219,7 +5387,8 @@
     "pctDriveAlone": 40.64856711915535,
     "pctTransit": 15.912518853695323,
     "pctWFH": 36.95324283559578,
-    "pctBikeWalk": 2.0361990950226243
+    "pctBikeWalk": 2.0361990950226243,
+    "renterHouseholds": 137
   },
   {
     "geoId": "06075030700",
@@ -5250,7 +5419,8 @@
     "pctDriveAlone": 42.98275278998985,
     "pctTransit": 15.01521812647954,
     "pctWFH": 22.962461954683803,
-    "pctBikeWalk": 9.90869124112276
+    "pctBikeWalk": 9.90869124112276,
+    "renterHouseholds": 419
   },
   {
     "geoId": "06075030800",
@@ -5281,7 +5451,8 @@
     "pctDriveAlone": 34.6401028277635,
     "pctTransit": 18.123393316195372,
     "pctWFH": 39.04241645244216,
-    "pctBikeWalk": 2.924164524421594
+    "pctBikeWalk": 2.924164524421594,
+    "renterHouseholds": 553
   },
   {
     "geoId": "06075030900",
@@ -5312,7 +5483,8 @@
     "pctDriveAlone": 33.47226675216415,
     "pctTransit": 16.126963770439243,
     "pctWFH": 30.77909586405899,
-    "pctBikeWalk": 5.418403334402052
+    "pctBikeWalk": 5.418403334402052,
+    "renterHouseholds": 90
   },
   {
     "geoId": "06075031000",
@@ -5343,7 +5515,8 @@
     "pctDriveAlone": 43.92082940622055,
     "pctTransit": 8.671065032987748,
     "pctWFH": 33.364750235626765,
-    "pctBikeWalk": 3.4401508011310082
+    "pctBikeWalk": 3.4401508011310082,
+    "renterHouseholds": 372
   },
   {
     "geoId": "06075031100",
@@ -5374,7 +5547,8 @@
     "pctDriveAlone": 35.93062386746052,
     "pctTransit": 22.34015014237639,
     "pctWFH": 30.98628009319182,
-    "pctBikeWalk": 0.9578048149106911
+    "pctBikeWalk": 0.9578048149106911,
+    "renterHouseholds": 859
   },
   {
     "geoId": "06075031201",
@@ -5405,7 +5579,8 @@
     "pctDriveAlone": 42.95345104333869,
     "pctTransit": 27.12680577849117,
     "pctWFH": 14.767255216693421,
-    "pctBikeWalk": 2.279293739967897
+    "pctBikeWalk": 2.279293739967897,
+    "renterHouseholds": 862
   },
   {
     "geoId": "06075031202",
@@ -5436,7 +5611,8 @@
     "pctDriveAlone": 42.91845493562232,
     "pctTransit": 17.525035765379112,
     "pctWFH": 23.032904148783977,
-    "pctBikeWalk": 1.7882689556509301
+    "pctBikeWalk": 1.7882689556509301,
+    "renterHouseholds": 256
   },
   {
     "geoId": "06075031301",
@@ -5467,7 +5643,8 @@
     "pctDriveAlone": 52.29779411764706,
     "pctTransit": 14.384191176470587,
     "pctWFH": 17.325367647058822,
-    "pctBikeWalk": 7.44485294117647
+    "pctBikeWalk": 7.44485294117647,
+    "renterHouseholds": 411
   },
   {
     "geoId": "06075031302",
@@ -5498,7 +5675,8 @@
     "pctDriveAlone": 32.254379284082255,
     "pctTransit": 22.658035034272658,
     "pctWFH": 25.856816450875858,
-    "pctBikeWalk": 1.1043412033511044
+    "pctBikeWalk": 1.1043412033511044,
+    "renterHouseholds": 644
   },
   {
     "geoId": "06075031401",
@@ -5529,7 +5707,8 @@
     "pctDriveAlone": 46.98795180722892,
     "pctTransit": 26.576895818568392,
     "pctWFH": 6.803685329553508,
-    "pctBikeWalk": 0.42523033309709424
+    "pctBikeWalk": 0.42523033309709424,
+    "renterHouseholds": 267
   },
   {
     "geoId": "06075031402",
@@ -5560,7 +5739,8 @@
     "pctDriveAlone": 41.38737334372564,
     "pctTransit": 14.41932969602494,
     "pctWFH": 25.409197194076384,
-    "pctBikeWalk": 1.1301636788776306
+    "pctBikeWalk": 1.1301636788776306,
+    "renterHouseholds": 151
   },
   {
     "geoId": "06075032601",
@@ -5591,7 +5771,8 @@
     "pctDriveAlone": 34.24768051633723,
     "pctTransit": 18.475191609519968,
     "pctWFH": 22.79144816458249,
-    "pctBikeWalk": 7.745058491327147
+    "pctBikeWalk": 7.745058491327147,
+    "renterHouseholds": 1015
   },
   {
     "geoId": "06075032602",
@@ -5622,7 +5803,8 @@
     "pctDriveAlone": 35.007313505607016,
     "pctTransit": 15.163334958556801,
     "pctWFH": 22.818137493905414,
-    "pctBikeWalk": 9.751340809361288
+    "pctBikeWalk": 9.751340809361288,
+    "renterHouseholds": 747
   },
   {
     "geoId": "06075032700",
@@ -5653,7 +5835,8 @@
     "pctDriveAlone": 35.50847457627119,
     "pctTransit": 19.237288135593218,
     "pctWFH": 24.37853107344633,
-    "pctBikeWalk": 14.096045197740112
+    "pctBikeWalk": 14.096045197740112,
+    "renterHouseholds": 842
   },
   {
     "geoId": "06075032801",
@@ -5684,7 +5867,8 @@
     "pctDriveAlone": 53.19706498951782,
     "pctTransit": 17.662473794549268,
     "pctWFH": 15.09433962264151,
-    "pctBikeWalk": 6.184486373165619
+    "pctBikeWalk": 6.184486373165619,
+    "renterHouseholds": 464
   },
   {
     "geoId": "06075032802",
@@ -5715,7 +5899,8 @@
     "pctDriveAlone": 40.376007162041184,
     "pctTransit": 21.172784243509398,
     "pctWFH": 18.621307072515666,
-    "pctBikeWalk": 3.491495076096687
+    "pctBikeWalk": 3.491495076096687,
+    "renterHouseholds": 497
   },
   {
     "geoId": "06075032901",
@@ -5746,7 +5931,8 @@
     "pctDriveAlone": 33.92857142857143,
     "pctTransit": 25.892857142857146,
     "pctWFH": 22.69345238095238,
-    "pctBikeWalk": 5.803571428571429
+    "pctBikeWalk": 5.803571428571429,
+    "renterHouseholds": 430
   },
   {
     "geoId": "06075032902",
@@ -5777,7 +5963,8 @@
     "pctDriveAlone": 48.83023395320936,
     "pctTransit": 20.875824835032994,
     "pctWFH": 13.737252549490103,
-    "pctBikeWalk": 1.3797240551889622
+    "pctBikeWalk": 1.3797240551889622,
+    "renterHouseholds": 260
   },
   {
     "geoId": "06075033001",
@@ -5808,7 +5995,8 @@
     "pctDriveAlone": 41.196172248803826,
     "pctTransit": 21.004784688995215,
     "pctWFH": 21.004784688995215,
-    "pctBikeWalk": 4.449760765550239
+    "pctBikeWalk": 4.449760765550239,
+    "renterHouseholds": 197
   },
   {
     "geoId": "06075033002",
@@ -5839,7 +6027,8 @@
     "pctDriveAlone": 33.65785813630042,
     "pctTransit": 22.4849327770051,
     "pctWFH": 29.114510894761242,
-    "pctBikeWalk": 4.1261010662957815
+    "pctBikeWalk": 4.1261010662957815,
+    "renterHouseholds": 681
   },
   {
     "geoId": "06075033100",
@@ -5870,7 +6059,8 @@
     "pctDriveAlone": 48.11664641555286,
     "pctTransit": 9.113001215066829,
     "pctWFH": 31.591737545565007,
-    "pctBikeWalk": 2.612393681652491
+    "pctBikeWalk": 2.612393681652491,
+    "renterHouseholds": 157
   },
   {
     "geoId": "06075033201",
@@ -5900,7 +6090,8 @@
     "pctDriveAlone": 16.773816481589712,
     "pctTransit": 28.462887200467563,
     "pctWFH": 17.82583284628872,
-    "pctBikeWalk": 29.047340736411453
+    "pctBikeWalk": 29.047340736411453,
+    "renterHouseholds": 589
   },
   {
     "geoId": "06075033203",
@@ -5931,7 +6122,8 @@
     "pctDriveAlone": 48.201438848920866,
     "pctTransit": 19.904076738609113,
     "pctWFH": 17.985611510791365,
-    "pctBikeWalk": 3.0575539568345325
+    "pctBikeWalk": 3.0575539568345325,
+    "renterHouseholds": 1453
   },
   {
     "geoId": "06075033204",
@@ -5961,7 +6153,8 @@
     "pctDriveAlone": 55.172413793103445,
     "pctTransit": 20.88484059856864,
     "pctWFH": 10.019518542615485,
-    "pctBikeWalk": 8.458035133376708
+    "pctBikeWalk": 8.458035133376708,
+    "renterHouseholds": 1634
   },
   {
     "geoId": "06075035101",
@@ -5992,7 +6185,8 @@
     "pctDriveAlone": 49.83089064261556,
     "pctTransit": 8.850056369785793,
     "pctWFH": 13.021420518602028,
-    "pctBikeWalk": 7.215332581736189
+    "pctBikeWalk": 7.215332581736189,
+    "renterHouseholds": 803
   },
   {
     "geoId": "06075035102",
@@ -6023,7 +6217,8 @@
     "pctDriveAlone": 47.50684931506849,
     "pctTransit": 23.506849315068493,
     "pctWFH": 15.890410958904111,
-    "pctBikeWalk": 4.602739726027397
+    "pctBikeWalk": 4.602739726027397,
+    "renterHouseholds": 288
   },
   {
     "geoId": "06075035201",
@@ -6054,7 +6249,8 @@
     "pctDriveAlone": 44.87985212569316,
     "pctTransit": 15.009242144177449,
     "pctWFH": 20.147874306839185,
-    "pctBikeWalk": 4.731977818853974
+    "pctBikeWalk": 4.731977818853974,
+    "renterHouseholds": 490
   },
   {
     "geoId": "06075035202",
@@ -6085,7 +6281,8 @@
     "pctDriveAlone": 33.78799688230709,
     "pctTransit": 27.474668745128604,
     "pctWFH": 22.330475448168354,
-    "pctBikeWalk": 5.9236165237724085
+    "pctBikeWalk": 5.9236165237724085,
+    "renterHouseholds": 1099
   },
   {
     "geoId": "06075035300",
@@ -6116,7 +6313,8 @@
     "pctDriveAlone": 40.20307354555433,
     "pctTransit": 19.374313940724477,
     "pctWFH": 26.399560922063664,
-    "pctBikeWalk": 5.954994511525795
+    "pctBikeWalk": 5.954994511525795,
+    "renterHouseholds": 653
   },
   {
     "geoId": "06075035400",
@@ -6147,7 +6345,8 @@
     "pctDriveAlone": 47.22921914357683,
     "pctTransit": 20.875314861460957,
     "pctWFH": 16.84508816120907,
-    "pctBikeWalk": 7.273299748110832
+    "pctBikeWalk": 7.273299748110832,
+    "renterHouseholds": 499
   },
   {
     "geoId": "06075040100",
@@ -6178,7 +6377,8 @@
     "pctDriveAlone": 25.963808025177027,
     "pctTransit": 30.527143981117234,
     "pctWFH": 28.206136900078675,
-    "pctBikeWalk": 9.71675845790716
+    "pctBikeWalk": 9.71675845790716,
+    "renterHouseholds": 955
   },
   {
     "geoId": "06075040200",
@@ -6209,7 +6409,8 @@
     "pctDriveAlone": 30.461242793081354,
     "pctTransit": 18.898142216527866,
     "pctWFH": 34.68930172966048,
-    "pctBikeWalk": 5.541319666880205
+    "pctBikeWalk": 5.541319666880205,
+    "renterHouseholds": 1497
   },
   {
     "geoId": "06075042601",
@@ -6240,7 +6441,8 @@
     "pctDriveAlone": 34.51676528599605,
     "pctTransit": 24.7534516765286,
     "pctWFH": 28.254437869822485,
-    "pctBikeWalk": 4.881656804733728
+    "pctBikeWalk": 4.881656804733728,
+    "renterHouseholds": 1268
   },
   {
     "geoId": "06075042602",
@@ -6271,7 +6473,8 @@
     "pctDriveAlone": 33.464125560538115,
     "pctTransit": 17.656950672645742,
     "pctWFH": 32.7914798206278,
-    "pctBikeWalk": 6.109865470852018
+    "pctBikeWalk": 6.109865470852018,
+    "renterHouseholds": 745
   },
   {
     "geoId": "06075042700",
@@ -6302,7 +6505,8 @@
     "pctDriveAlone": 38.5894876912841,
     "pctTransit": 19.06187624750499,
     "pctWFH": 17.897538256819693,
-    "pctBikeWalk": 5.82168995342648
+    "pctBikeWalk": 5.82168995342648,
+    "renterHouseholds": 1909
   },
   {
     "geoId": "06075042800",
@@ -6333,7 +6537,8 @@
     "pctDriveAlone": 39.058629232039635,
     "pctTransit": 5.202312138728324,
     "pctWFH": 43.43517753922378,
-    "pctBikeWalk": 6.028075970272502
+    "pctBikeWalk": 6.028075970272502,
+    "renterHouseholds": 229
   },
   {
     "geoId": "06075045100",
@@ -6364,7 +6569,8 @@
     "pctDriveAlone": 25.822426600636717,
     "pctTransit": 20.516448532012735,
     "pctWFH": 35.939158118146445,
-    "pctBikeWalk": 7.923593915811815
+    "pctBikeWalk": 7.923593915811815,
+    "renterHouseholds": 1405
   },
   {
     "geoId": "06075045201",
@@ -6395,7 +6601,8 @@
     "pctDriveAlone": 32.95519001701645,
     "pctTransit": 28.19058423142371,
     "pctWFH": 22.234826999432787,
-    "pctBikeWalk": 11.401020986954055
+    "pctBikeWalk": 11.401020986954055,
+    "renterHouseholds": 646
   },
   {
     "geoId": "06075045202",
@@ -6426,7 +6633,8 @@
     "pctDriveAlone": 34.59664320519762,
     "pctTransit": 15.159718462371414,
     "pctWFH": 28.370330265295074,
-    "pctBikeWalk": 11.478072550081214
+    "pctBikeWalk": 11.478072550081214,
+    "renterHouseholds": 1071
   },
   {
     "geoId": "06075047600",
@@ -6457,7 +6665,8 @@
     "pctDriveAlone": 23.31707317073171,
     "pctTransit": 18.536585365853657,
     "pctWFH": 34.016260162601625,
-    "pctBikeWalk": 6.536585365853659
+    "pctBikeWalk": 6.536585365853659,
+    "renterHouseholds": 1218
   },
   {
     "geoId": "06075047701",
@@ -6488,7 +6697,8 @@
     "pctDriveAlone": 28.820791311093867,
     "pctTransit": 23.894491854150505,
     "pctWFH": 36.57874321179209,
-    "pctBikeWalk": 6.245151280062063
+    "pctBikeWalk": 6.245151280062063,
+    "renterHouseholds": 1168
   },
   {
     "geoId": "06075047702",
@@ -6519,7 +6729,8 @@
     "pctDriveAlone": 39.21568627450981,
     "pctTransit": 12.135665076841548,
     "pctWFH": 30.25967143614203,
-    "pctBikeWalk": 8.956014838367778
+    "pctBikeWalk": 8.956014838367778,
+    "renterHouseholds": 975
   },
   {
     "geoId": "06075047801",
@@ -6550,7 +6761,8 @@
     "pctDriveAlone": 37.89556962025317,
     "pctTransit": 19.62025316455696,
     "pctWFH": 25.75158227848101,
-    "pctBikeWalk": 4.786392405063291
+    "pctBikeWalk": 4.786392405063291,
+    "renterHouseholds": 783
   },
   {
     "geoId": "06075047802",
@@ -6581,7 +6793,8 @@
     "pctDriveAlone": 35.002503755633455,
     "pctTransit": 23.685528292438658,
     "pctWFH": 24.486730095142715,
-    "pctBikeWalk": 8.512769153730595
+    "pctBikeWalk": 8.512769153730595,
+    "renterHouseholds": 832
   },
   {
     "geoId": "06075047902",
@@ -6612,7 +6825,8 @@
     "pctDriveAlone": 40.24676850763807,
     "pctTransit": 11.985898942420683,
     "pctWFH": 31.8448883666275,
-    "pctBikeWalk": 8.871915393654524
+    "pctBikeWalk": 8.871915393654524,
+    "renterHouseholds": 727
   },
   {
     "geoId": "06075047903",
@@ -6643,7 +6857,8 @@
     "pctDriveAlone": 36.725412166003416,
     "pctTransit": 14.894826606026152,
     "pctWFH": 32.29107447413303,
-    "pctBikeWalk": 6.310403638430927
+    "pctBikeWalk": 6.310403638430927,
+    "renterHouseholds": 593
   },
   {
     "geoId": "06075047904",
@@ -6674,7 +6889,8 @@
     "pctDriveAlone": 38.38582677165354,
     "pctTransit": 20.99737532808399,
     "pctWFH": 33.53018372703412,
-    "pctBikeWalk": 0.6561679790026247
+    "pctBikeWalk": 0.6561679790026247,
+    "renterHouseholds": 838
   },
   {
     "geoId": "06075060100",
@@ -6704,7 +6920,8 @@
     "pctDriveAlone": 41.617063492063494,
     "pctTransit": 9.325396825396826,
     "pctWFH": 27.18253968253968,
-    "pctBikeWalk": 14.930555555555555
+    "pctBikeWalk": 14.930555555555555,
+    "renterHouseholds": 1338
   },
   {
     "geoId": "06075060400",
@@ -6735,7 +6952,8 @@
     "pctDriveAlone": 46.80390032502709,
     "pctTransit": 8.234019501625136,
     "pctWFH": 30.01083423618635,
-    "pctBikeWalk": 5.52546045503792
+    "pctBikeWalk": 5.52546045503792,
+    "renterHouseholds": 742
   },
   {
     "geoId": "06075060502",
@@ -6766,7 +6984,8 @@
     "pctDriveAlone": 56.582388840453355,
     "pctTransit": 24.585876198779424,
     "pctWFH": 10.28770706190061,
-    "pctBikeWalk": 2.528334786399302
+    "pctBikeWalk": 2.528334786399302,
+    "renterHouseholds": 666
   },
   {
     "geoId": "06075060701",
@@ -6797,7 +7016,8 @@
     "pctDriveAlone": 15.310395048243219,
     "pctTransit": 18.441653012925542,
     "pctWFH": 40.03276897870016,
-    "pctBikeWalk": 20.844711450937556
+    "pctBikeWalk": 20.844711450937556,
+    "renterHouseholds": 2200
   },
   {
     "geoId": "06075060702",
@@ -6828,7 +7048,8 @@
     "pctDriveAlone": 29.881472239550845,
     "pctTransit": 24.76606363069245,
     "pctWFH": 9.357454772301933,
-    "pctBikeWalk": 29.631940112289456
+    "pctBikeWalk": 29.631940112289456,
+    "renterHouseholds": 1036
   },
   {
     "geoId": "06075060703",
@@ -6859,7 +7080,8 @@
     "pctDriveAlone": 16.40173410404624,
     "pctTransit": 20.496146435452793,
     "pctWFH": 38.51156069364162,
-    "pctBikeWalk": 21.7485549132948
+    "pctBikeWalk": 21.7485549132948,
+    "renterHouseholds": 1567
   },
   {
     "geoId": "06075061000",
@@ -6890,7 +7112,8 @@
     "pctDriveAlone": 51.817015818725956,
     "pctTransit": 7.9948696023941865,
     "pctWFH": 21.120136810602823,
-    "pctBikeWalk": 0.8978195810175289
+    "pctBikeWalk": 0.8978195810175289,
+    "renterHouseholds": 454
   },
   {
     "geoId": "06075061101",
@@ -6921,7 +7144,8 @@
     "pctDriveAlone": 1.5673981191222568,
     "pctTransit": 40.75235109717868,
     "pctWFH": 7.6802507836990594,
-    "pctBikeWalk": 49.21630094043887
+    "pctBikeWalk": 49.21630094043887,
+    "renterHouseholds": 865
   },
   {
     "geoId": "06075061102",
@@ -6952,7 +7176,8 @@
     "pctDriveAlone": 13.725490196078432,
     "pctTransit": 28.027681660899656,
     "pctWFH": 8.765859284890427,
-    "pctBikeWalk": 49.48096885813148
+    "pctBikeWalk": 49.48096885813148,
+    "renterHouseholds": 801
   },
   {
     "geoId": "06075061200",
@@ -6983,7 +7208,8 @@
     "pctDriveAlone": 45.30892448512586,
     "pctTransit": 24.576659038901603,
     "pctWFH": 14.096109839816934,
-    "pctBikeWalk": 3.0663615560640736
+    "pctBikeWalk": 3.0663615560640736,
+    "renterHouseholds": 627
   },
   {
     "geoId": "06075061401",
@@ -7014,7 +7240,8 @@
     "pctDriveAlone": 29.06474820143885,
     "pctTransit": 18.848920863309353,
     "pctWFH": 32.51798561151079,
-    "pctBikeWalk": 9.136690647482014
+    "pctBikeWalk": 9.136690647482014,
+    "renterHouseholds": 601
   },
   {
     "geoId": "06075061402",
@@ -7045,7 +7272,8 @@
     "pctDriveAlone": 13.06930693069307,
     "pctTransit": 15.907590759075907,
     "pctWFH": 40.79207920792079,
-    "pctBikeWalk": 18.085808580858085
+    "pctBikeWalk": 18.085808580858085,
+    "renterHouseholds": 689
   },
   {
     "geoId": "06075061501",
@@ -7076,7 +7304,8 @@
     "pctDriveAlone": 28.982898289828984,
     "pctTransit": 4.68046804680468,
     "pctWFH": 16.38163816381638,
-    "pctBikeWalk": 41.4041404140414
+    "pctBikeWalk": 41.4041404140414,
+    "renterHouseholds": 387
   },
   {
     "geoId": "06075061502",
@@ -7107,7 +7336,8 @@
     "pctDriveAlone": 17.265087853323145,
     "pctTransit": 31.398013750954927,
     "pctWFH": 19.709702062643238,
-    "pctBikeWalk": 22.536287242169596
+    "pctBikeWalk": 22.536287242169596,
+    "renterHouseholds": 1150
   },
   {
     "geoId": "06075061503",
@@ -7137,7 +7367,8 @@
     "pctDriveAlone": 12.54030813328556,
     "pctTransit": 21.031888212110356,
     "pctWFH": 20.888570404872805,
-    "pctBikeWalk": 45.53923324973128
+    "pctBikeWalk": 45.53923324973128,
+    "renterHouseholds": 1556
   },
   {
     "geoId": "06075061504",
@@ -7168,7 +7399,8 @@
     "pctDriveAlone": 10.342598577892694,
     "pctTransit": 9.179056237879767,
     "pctWFH": 43.89140271493213,
-    "pctBikeWalk": 36.199095022624434
+    "pctBikeWalk": 36.199095022624434,
+    "renterHouseholds": 807
   },
   {
     "geoId": "06075061505",
@@ -7199,7 +7431,8 @@
     "pctDriveAlone": 16.245883644346872,
     "pctTransit": 10.757409440175632,
     "pctWFH": 35.01646542261251,
-    "pctBikeWalk": 25.356750823271128
+    "pctBikeWalk": 25.356750823271128,
+    "renterHouseholds": 171
   },
   {
     "geoId": "06075061506",
@@ -7230,7 +7463,8 @@
     "pctDriveAlone": 7.350340995200809,
     "pctTransit": 7.198787572619349,
     "pctWFH": 47.43622126799697,
-    "pctBikeWalk": 32.003031068451634
+    "pctBikeWalk": 32.003031068451634,
+    "renterHouseholds": 1708
   },
   {
     "geoId": "06075061507",
@@ -7261,7 +7495,8 @@
     "pctDriveAlone": 5.892255892255893,
     "pctTransit": 36.7003367003367,
     "pctWFH": 17.929292929292927,
-    "pctBikeWalk": 35.774410774410775
+    "pctBikeWalk": 35.774410774410775,
+    "renterHouseholds": 564
   },
   {
     "geoId": "06075061508",
@@ -7292,7 +7527,8 @@
     "pctDriveAlone": 11.054913294797688,
     "pctTransit": 22.54335260115607,
     "pctWFH": 31.79190751445087,
-    "pctBikeWalk": 27.02312138728324
+    "pctBikeWalk": 27.02312138728324,
+    "renterHouseholds": 699
   },
   {
     "geoId": "06075980200",
@@ -7312,7 +7548,8 @@
     "pctOver65": 68.15642458100558,
     "pctWorkingAge": 31.84357541899442,
     "pctNoHighSchool": 22.3463687150838,
-    "pctBachelorsPlus": 26.256983240223462
+    "pctBachelorsPlus": 26.256983240223462,
+    "renterHouseholds": 0
   },
   {
     "geoId": "06075980300",
@@ -7342,14 +7579,16 @@
     "pctDriveAlone": 26.666666666666668,
     "pctTransit": 13.333333333333334,
     "pctWFH": 30,
-    "pctBikeWalk": 16.666666666666664
+    "pctBikeWalk": 16.666666666666664,
+    "renterHouseholds": 40
   },
   {
     "geoId": "06075980401",
     "geoType": "tract",
     "name": "Census Tract 9804.01; San Francisco County; California",
     "population": 0,
-    "totalPopulation": 0
+    "totalPopulation": 0,
+    "renterHouseholds": 0
   },
   {
     "geoId": "06075980501",
@@ -7379,7 +7618,8 @@
     "pctDriveAlone": 55.55555555555556,
     "pctTransit": 0,
     "pctWFH": 0,
-    "pctBikeWalk": 44.44444444444444
+    "pctBikeWalk": 44.44444444444444,
+    "renterHouseholds": 123
   },
   {
     "geoId": "06075980600",
@@ -7410,7 +7650,8 @@
     "pctDriveAlone": 44.12955465587044,
     "pctTransit": 12.82051282051282,
     "pctWFH": 26.58569500674764,
-    "pctBikeWalk": 2.564102564102564
+    "pctBikeWalk": 2.564102564102564,
+    "renterHouseholds": 222
   },
   {
     "geoId": "06075980900",
@@ -7440,20 +7681,23 @@
     "pctDriveAlone": 56.17977528089888,
     "pctTransit": 18.53932584269663,
     "pctWFH": 12.359550561797752,
-    "pctBikeWalk": 6.741573033707865
+    "pctBikeWalk": 6.741573033707865,
+    "renterHouseholds": 156
   },
   {
     "geoId": "06075990100",
     "geoType": "tract",
     "name": "Census Tract 9901; San Francisco County; California",
     "population": 0,
-    "totalPopulation": 0
+    "totalPopulation": 0,
+    "renterHouseholds": 0
   },
   {
     "geoId": "06075990200",
     "geoType": "tract",
     "name": "Census Tract 9902; San Francisco County; California",
     "population": 0,
-    "totalPopulation": 0
+    "totalPopulation": 0,
+    "renterHouseholds": 0
   }
 ]

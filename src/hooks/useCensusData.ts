@@ -33,6 +33,15 @@ const CACHE_TTL = 24 * 60 * 60 * 1000 // 24 hours
  * Returns static JSON data immediately on first call — no loading state for initial render.
  * If VITE_CENSUS_API_KEY is set and cache is stale (>24hr), fetches live data from the
  * Census API in the background and updates the module-level cache on success.
+ *
+ * ⚠ DO NOT set VITE_CENSUS_API_KEY until the live path is fixed: the live
+ * refresh re-aggregates through TRACT_MAPPINGS, which covers only 161 of 244
+ * SF tracts — it silently REPLACES the correct committed JSONs (built from
+ * complete data) with partial-coverage aggregates. Count variables like
+ * renterHouseholds lose ~70% of their mass (July 2026, caught live when the
+ * eviction-rate card read 5,216 per 1K). Fix = aggregate via DataSF's
+ * official whole-tract assignment (sevw-6tgi) instead of the fractional
+ * crosswalk, then re-enable.
  */
 export function useCensusData(): CensusDataResult {
   // State counter used only to trigger re-renders when background fetch completes
