@@ -105,7 +105,7 @@ export default function EvictionCauseFilter({ counts, selected, onChange }: Evic
             >
               {/* Background volume bar */}
               <div
-                className="absolute inset-y-0 left-0 rounded-lg opacity-[0.06]"
+                className="absolute inset-y-0 left-0 rounded-lg opacity-[0.16] dark:opacity-[0.22]"
                 style={{
                   width: `${barWidth}%`,
                   backgroundColor: '#d47149',
