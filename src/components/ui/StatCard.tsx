@@ -25,6 +25,14 @@ interface StatCardProps {
   subtitleAction?: () => void
   /** Optional annual spark data: values for the last N years, last value = current period */
   sparkData?: { values: number[]; labels?: string[] }
+  /** Optional smaller stat row between the value and subtitle — lets one
+   *  card carry a companion figure (e.g. Buyouts count + median $) instead
+   *  of splitting into two tiles. */
+  secondary?: { value: string; caption?: string }
+  /** Allow the subtitle to wrap to two lines (line-clamp-2) instead of the
+   *  default single-line truncate — for cards whose explainer text matters
+   *  more than uniform tile height. */
+  wrapSubtitle?: boolean
   /** Optional "you are here" microvis — shows where this entity's value
    *  falls along the population's range. Use when the displayed `value`
    *  belongs to a selected entity (e.g., a neighborhood) and you want to
@@ -37,7 +45,7 @@ interface StatCardProps {
   }
 }
 
-export default function StatCard({ label, value, color, subtitle, delay = 0, trend, yoyDelta, zScore, info, sparkData, positionScale, badge, subtitleAction }: StatCardProps) {
+export default function StatCard({ label, value, color, subtitle, delay = 0, trend, yoyDelta, zScore, info, sparkData, positionScale, badge, subtitleAction, secondary, wrapSubtitle }: StatCardProps) {
   const [visible, setVisible] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -89,6 +97,16 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
         >
           {value}
         </p>
+        {secondary && (
+          <p className="relative mt-1 font-mono text-sm font-semibold tracking-tight leading-none" style={{ color }}>
+            {secondary.value}
+            {secondary.caption && (
+              <span className="ml-1.5 text-label font-normal text-slate-500 dark:text-slate-400">
+                {secondary.caption}
+              </span>
+            )}
+          </p>
+        )}
         {subtitle && (
           <p
             title={subtitle}
@@ -121,7 +139,7 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
                 {subtitle}
               </button>
             ) : (
-              <span className="truncate">{subtitle}</span>
+              <span className={wrapSubtitle ? 'line-clamp-2' : 'truncate'}>{subtitle}</span>
             )}
           </p>
         )}

@@ -863,6 +863,7 @@ export default function Housing() {
         delay: 80,
         defaultExpanded: true,
         subtitle: 'Owner move-in, Ellis Act, demolition and other no-fault grounds',
+        wrapSubtitle: true,
       },
       {
         id: 'buyouts',
@@ -872,17 +873,15 @@ export default function Housing() {
         color: '#d4a435',
         delay: 160,
         defaultExpanded: true,
+        // Count + median share one tile: the companion row carries the
+        // median (or its pending-entry state) so the pair reads as one story.
+        secondary: buyoutTotal
+          ? (medianBuyout != null
+            ? { value: `$${formatNumber(Math.round(medianBuyout))} median`, caption: 'disclosed amounts' }
+            : { value: '— median', caption: 'amounts pending entry' })
+          : undefined,
         subtitle: declarationsInRange != null ? `${formatNumber(declarationsInRange)} negotiations opened in this period` : undefined,
-      },
-      {
-        id: 'median-buyout',
-        label: 'Median buyout',
-        shortLabel: 'Median',
-        value: buyoutTotal && medianBuyout != null ? `$${formatNumber(Math.round(medianBuyout))}` : '—',
-        color: '#d4a435',
-        delay: 240,
-        defaultExpanded: !!buyoutTotal,
-        subtitle: 'Median of disclosed amounts',
+        wrapSubtitle: true,
       },
     ]
   }, [
