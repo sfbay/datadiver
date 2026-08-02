@@ -520,6 +520,32 @@ export default function Housing() {
       annualizedRatePer1k(evictionCountByNH.get(name) ?? 0, renterHHByName.get(name), rangeDays),
     [evictionCountByNH, renterHHByName, rangeDays],
   )
+
+  // Sidebar ranking sort — the row's background bar re-encodes to the ACTIVE
+  // sort metric (the bar IS the visualization: rate-sort turns the list into
+  // a rate chart), colored by the metric's stream (buyout $ = ochre, else
+  // terracotta). Rate-suppressed rows (parks — below the renter-household
+  // floor) sort to the bottom under rate sort rather than vanishing.
+  const [sidebarSort, setSidebarSort] = useState<'notices' | 'rate' | 'buyouts'>('notices')
+  const sortedRanking = useMemo(() => {
+    const rows = neighborhoodRanking.map((ns) => ({ ...ns, rate: rateFor(ns.neighborhood) }))
+    if (sidebarSort === 'rate') {
+      return rows.sort((a, b) => (b.rate ?? -1) - (a.rate ?? -1) || b.evictionCount - a.evictionCount)
+    }
+    if (sidebarSort === 'buyouts') {
+      return rows.sort((a, b) => b.buyoutTotal - a.buyoutTotal || b.buyoutCount - a.buyoutCount || b.evictionCount - a.evictionCount)
+    }
+    return rows // upstream order is already notices-desc
+  }, [neighborhoodRanking, rateFor, sidebarSort])
+  const sortMetric = useCallback(
+    (r: (typeof sortedRanking)[number]): number =>
+      sidebarSort === 'rate' ? (r.rate ?? 0) : sidebarSort === 'buyouts' ? r.buyoutTotal : r.evictionCount,
+    [sidebarSort],
+  )
+  const maxSortMetric = useMemo(
+    () => Math.max(...sortedRanking.map(sortMetric), 1e-9),
+    [sortedRanking, sortMetric],
+  )
   // The rate underlay is a DERIVED census variable: enrich the neighborhood
   // rows with the computed rate and the untouched hook paints it like any
   // other variable. Zero notices = a real 0 (palest ramp step); below the
@@ -1121,10 +1147,29 @@ export default function Housing() {
               {sidebarTab === 'neighborhoods' && (
                 <>
                   {isLoading && <SkeletonSidebarRows count={8} />}
+                  {/* Rank-by pills — cause quick-group idiom */}
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <span className="text-nano font-mono uppercase tracking-[0.18em] text-slate-400 dark:text-slate-600 mr-0.5">
+                      Rank by
+                    </span>
+                    {([['notices', 'Notices'], ['rate', 'Rate /1K'], ['buyouts', 'Buyout $']] as const).map(([key, label]) => (
+                      <button
+                        key={key}
+                        onClick={() => setSidebarSort(key)}
+                        className={`px-2 py-1 rounded-md text-micro font-mono font-medium transition-all duration-150 ${
+                          sidebarSort === key
+                            ? (key === 'buyouts' ? 'bg-ochre-500/15 text-ochre-500' : 'bg-terracotta-500/15 text-terracotta-500')
+                            : 'bg-slate-100 dark:bg-white/[0.04] text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-white/[0.08]'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                   <div className="space-y-0.5 stagger-in">
-                    {neighborhoodRanking.slice(0, 30).map((ns) => {
-                      const maxCount = neighborhoodRanking[0]?.evictionCount || 1
-                      const barWidth = (ns.evictionCount / maxCount) * 100
+                    {sortedRanking.slice(0, 30).map((ns) => {
+                      const barWidth = (sortMetric(ns) / maxSortMetric) * 100
+                      const barColor = sidebarSort === 'buyouts' ? '#d4a435' : '#b85a33'
                       const isActive = selectedNeighborhood === ns.neighborhood
                       return (
                         <div
@@ -1138,7 +1183,7 @@ export default function Housing() {
                         >
                           <div
                             className="absolute inset-y-0 left-0 rounded-lg opacity-[0.06] bar-grow"
-                            style={{ width: `${barWidth}%`, backgroundColor: '#b85a33' }}
+                            style={{ width: `${barWidth}%`, backgroundColor: barColor }}
                           />
                           <div className="relative flex items-center justify-between gap-2">
                             <div className="min-w-0 flex-1">
@@ -1147,10 +1192,7 @@ export default function Housing() {
                               </p>
                               <p className="text-micro text-slate-400 dark:text-slate-600 font-mono">
                                 {ns.evictionCount.toLocaleString()} notices
-                                {(() => {
-                                  const rate = rateFor(ns.neighborhood)
-                                  return rate != null ? ` · ${formatRate(rate)}/1K` : ''
-                                })()}
+                                {ns.rate != null ? ` · ${formatRate(ns.rate)}/1K` : ''}
                               </p>
                             </div>
                             {ns.buyoutCount > 0 && (
