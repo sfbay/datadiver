@@ -44,13 +44,37 @@ export interface UseMapCameraPresetsOptions {
    *  accurate frame than centroid-flyTo. Preferred over `fallbackPoints`
    *  for neighborhood selections when both are provided. */
   neighborhoodBoundaries?: GeoJSON.FeatureCollection | null
+  /** Viewport chrome the camera should dodge (px): a view whose map is
+   *  partly covered by overlays (CardTray across the top, legends at the
+   *  bottom) passes the covered depths so flights center content in the
+   *  VISIBLE well, not the geometric viewport. Applied to every camera op
+   *  in the hook — including the reset flight, because Mapbox camera
+   *  padding persists once set and an unpadded reset would inherit a stale
+   *  offset. Memoize in the caller. */
+  viewportPadding?: { top?: number; bottom?: number; left?: number; right?: number }
 }
 
 export function useMapCameraPresets(
   map: mapboxgl.Map | null,
   options: UseMapCameraPresetsOptions,
 ) {
-  const { selectedCorridor, selectedNeighborhood, fallbackPoints, neighborhoodBoundaries } = options
+  const { selectedCorridor, selectedNeighborhood, fallbackPoints, neighborhoodBoundaries, viewportPadding } = options
+
+  // Full PaddingOptions (Mapbox wants all four sides) with a base breathing
+  // margin for the fitBounds paths; undefined when the caller passes nothing
+  // so views that never set padding are untouched.
+  const pad = viewportPadding
+    ? {
+        top: viewportPadding.top ?? 0,
+        bottom: viewportPadding.bottom ?? 0,
+        left: viewportPadding.left ?? 0,
+        right: viewportPadding.right ?? 0,
+      }
+    : undefined
+  const fitPad = (base: number) =>
+    pad
+      ? { top: base + pad.top, bottom: base + pad.bottom, left: base + pad.left, right: base + pad.right }
+      : base
 
   // Corridor preset — applies on selection or falls back to fit-bounds.
   // Note: the deps include fallbackPoints; if the upstream view passes a
@@ -61,7 +85,7 @@ export function useMapCameraPresets(
 
     const preset = getCorridorView(selectedCorridor)
     if (preset) {
-      applyCameraView(map, preset, { duration: 1000 })
+      applyCameraView(map, preset, { duration: 1000, padding: pad })
       return
     }
 
@@ -74,15 +98,16 @@ export function useMapCameraPresets(
         if (p.lng > maxLng) maxLng = p.lng
       }
       if (minLat === maxLat && minLng === maxLng) {
-        map.flyTo({ center: [minLng, minLat], zoom: 16, duration: 1000 })
+        map.flyTo({ center: [minLng, minLat], zoom: 16, duration: 1000, ...(pad ? { padding: pad } : {}) })
       } else {
         map.fitBounds(
           [[minLng, minLat], [maxLng, maxLat]],
-          { padding: 80, maxZoom: 16, duration: 1000 },
+          { padding: fitPad(80), maxZoom: 16, duration: 1000 },
         )
       }
     }
-  }, [map, selectedCorridor, fallbackPoints])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, selectedCorridor, fallbackPoints, viewportPadding])
 
   // Neighborhood preset — applies on selection. Falls back (in priority order)
   // to: 1) polygon-based fitBounds over the matching feature in
@@ -93,7 +118,7 @@ export function useMapCameraPresets(
 
     const preset = getNeighborhoodView(selectedNeighborhood)
     if (preset) {
-      applyCameraView(map, preset, { duration: 1000 })
+      applyCameraView(map, preset, { duration: 1000, padding: pad })
       return
     }
 
@@ -121,7 +146,7 @@ export function useMapCameraPresets(
               [Math.min(...lngs), Math.min(...lats)],
               [Math.max(...lngs), Math.max(...lats)],
             ],
-            { padding: 80, duration: 1200 },
+            { padding: fitPad(80), duration: 1200 },
           )
           return
         }
@@ -132,9 +157,10 @@ export function useMapCameraPresets(
     if (fallbackPoints && fallbackPoints.length > 0) {
       const avgLat = fallbackPoints.reduce((s, d) => s + d.lat, 0) / fallbackPoints.length
       const avgLng = fallbackPoints.reduce((s, d) => s + d.lng, 0) / fallbackPoints.length
-      map.flyTo({ center: [avgLng, avgLat], zoom: 14, duration: 1200 })
+      map.flyTo({ center: [avgLng, avgLat], zoom: 14, duration: 1200, ...(pad ? { padding: pad } : {}) })
     }
-  }, [map, selectedNeighborhood, fallbackPoints, neighborhoodBoundaries])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, selectedNeighborhood, fallbackPoints, neighborhoodBoundaries, viewportPadding])
 
   // Reset to global default on falling-edge clear (set → null transition for
   // both selections). Tracked via ref so we don't fire on every mount where
@@ -152,7 +178,11 @@ export function useMapCameraPresets(
       neighborhood: selectedNeighborhood ?? null,
     }
     if (justCleared) {
-      applyCameraView(map, SF_DEFAULT_VIEW, { duration: 1200 })
+      // Same padding on reset: flight padding persists on the map, so an
+      // unpadded reset after a padded selection flight would re-center the
+      // citywide view under the overlay chrome.
+      applyCameraView(map, SF_DEFAULT_VIEW, { duration: 1200, padding: pad })
     }
-  }, [map, selectedCorridor, selectedNeighborhood])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, selectedCorridor, selectedNeighborhood, viewportPadding])
 }

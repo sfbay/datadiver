@@ -395,15 +395,19 @@ export function getNeighborhoodView(name: string | null | undefined): CameraView
 export function applyCameraView(
   map: mapboxgl.Map,
   view: CameraView,
-  options: { duration?: number } = {},
+  options: { duration?: number; padding?: mapboxgl.PaddingOptions } = {},
 ) {
-  const { duration = 1000 } = options
+  const { duration = 1000, padding } = options
   map.flyTo({
     center: [view.center.lng, view.center.lat],
     zoom: view.zoom,
     pitch: view.pitch,
     bearing: view.bearing,
     duration,
+    // Mapbox camera padding PERSISTS on the map once set — callers that pass
+    // it on selection flights must also pass it on reset flights, or the
+    // reset inherits a stale offset (see useMapCameraPresets.viewportPadding).
+    ...(padding ? { padding } : {}),
     essential: true, // honors prefers-reduced-motion automatically
   })
 }

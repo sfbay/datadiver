@@ -19,6 +19,7 @@ import type { TrendConfig } from '@/types/trends'
 import { useEvictionComparisonData } from '@/hooks/useComparisonDataFactory'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import type { EvictionNoticeRow, BuyoutRow } from '@/types/datasets'
 import type { CensusVariable } from '@/types/census'
 import { useCensusData } from '@/hooks/useCensusData'
@@ -479,7 +480,16 @@ export default function Housing() {
   // Neighborhood camera flight — flies to the selected neighborhood's preset
   // or polygon bounds, resets to the citywide default view when cleared.
   const { boundaries: neighborhoodBoundaries } = useNeighborhoodBoundaries()
-  useMapCameraPresets(mapInstance, { selectedNeighborhood, neighborhoodBoundaries })
+  // Neighborhood flights center in the VISIBLE map well, not the geometric
+  // viewport: the CardTray covers the top ~210px (three tall cards) and the
+  // ring/underlay legends the bottom-right ~100px. Mobile's compact pill bar
+  // needs far less headroom.
+  const isMobileVp = useIsMobile()
+  const cameraPadding = useMemo(
+    () => (isMobileVp ? { top: 90 } : { top: 220, bottom: 90 }),
+    [isMobileVp],
+  )
+  useMapCameraPresets(mapInstance, { selectedNeighborhood, neighborhoodBoundaries, viewportPadding: cameraPadding })
 
   // Census demographic underlay — same idiom as CrimeIncidents/TrafficSafety:
   // picker in the header, hook manages its own source/layers (below the
