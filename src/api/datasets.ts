@@ -5,7 +5,7 @@ export interface DatasetConfig {
   name: string
   description: string
   endpoint: string
-  category: 'public-safety' | 'transportation' | 'other'
+  category: 'public-safety' | 'transportation' | 'other' | 'housing'
   hasGeo: boolean
   geoField?: string
   defaultSort?: string
@@ -245,6 +245,30 @@ export const DATASETS: Record<string, DatasetConfig> = {
     category: 'public-safety',
     hasGeo: true,
     cacheTTL: 24 * 60 * 60_000, // 24 hours — updated annually
+  },
+
+  evictionNotices: {
+    id: '5cei-gny5',
+    name: 'Eviction Notices',
+    description: 'Housing eviction notices filed with the SF Rent Board since 1997',
+    endpoint: `${BASE_URL}/5cei-gny5.json`,
+    category: 'housing',
+    hasGeo: true,
+    geoField: 'shape',
+    dateField: 'file_date',
+    defaultSort: 'file_date DESC',
+  },
+
+  buyoutAgreements: {
+    id: 'wmam-7g8d',
+    name: 'Buyout Agreements',
+    description: 'Tenant buyout disclosures and agreements filed with the SF Rent Board since March 2015',
+    endpoint: `${BASE_URL}/wmam-7g8d.json`,
+    category: 'housing',
+    hasGeo: true,
+    geoField: 'point',
+    dateField: 'buyout_agreement_date',
+    defaultSort: 'buyout_agreement_date DESC',
   },
 } as const
 

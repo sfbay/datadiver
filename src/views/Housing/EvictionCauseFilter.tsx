@@ -1,0 +1,163 @@
+import { useMemo, useCallback } from 'react'
+import { ALL_CAUSES, CAUSE_GROUPS, CAUSE_LABELS, type CauseColumn } from './causes'
+
+interface EvictionCauseFilterProps {
+  counts: Record<CauseColumn, number>
+  selected: Set<string>
+  onChange: (selected: Set<string>) => void
+}
+
+export default function EvictionCauseFilter({ counts, selected, onChange }: EvictionCauseFilterProps) {
+  const presentCauses = useMemo(
+    () => ALL_CAUSES.filter((c) => counts[c] > 0),
+    [counts]
+  )
+  const sortedCauses = useMemo(
+    () => [...presentCauses].sort((a, b) => counts[b] - counts[a]),
+    [presentCauses, counts]
+  )
+  const allTypes = useMemo(() => new Set<string>(presentCauses), [presentCauses])
+  const maxCount = useMemo(() => Math.max(...presentCauses.map((c) => counts[c]), 1), [presentCauses, counts])
+  const allSelected = selected.size === 0 || selected.size === allTypes.size
+
+  const handleToggle = useCallback((name: string) => {
+    const next = new Set(selected.size === 0 ? allTypes : selected)
+    if (next.has(name)) {
+      next.delete(name)
+    } else {
+      next.add(name)
+    }
+    if (next.size === allTypes.size) {
+      onChange(new Set())
+    } else {
+      onChange(next)
+    }
+  }, [selected, allTypes, onChange])
+
+  const handleSolo = useCallback((name: string) => {
+    onChange(new Set([name]))
+  }, [onChange])
+
+  const handleSelectAll = useCallback(() => {
+    onChange(new Set())
+  }, [onChange])
+
+  const handleGroup = useCallback((groupName: string) => {
+    const groupCauses = CAUSE_GROUPS[groupName] || []
+    onChange(new Set(groupCauses.filter((c) => counts[c] > 0)))
+  }, [counts, onChange])
+
+  const isGroupActive = useCallback((groupName: string) => {
+    if (allSelected) return false
+    const groupCauses = CAUSE_GROUPS[groupName] || []
+    const available = groupCauses.filter((c) => counts[c] > 0)
+    return available.length > 0 && available.every((c) => selected.has(c)) && selected.size === available.length
+  }, [selected, counts, allSelected])
+
+  const isSelected = (name: string) => selected.size === 0 || selected.has(name)
+
+  return (
+    <div className="flex flex-col gap-2">
+      {/* Quick group buttons */}
+      <div className="flex flex-wrap gap-1">
+        <button
+          onClick={handleSelectAll}
+          className={`px-2 py-1 rounded-md text-micro font-mono font-medium transition-all duration-150 ${
+            allSelected
+              ? 'bg-terracotta-500/15 text-terracotta-500'
+              : 'bg-slate-100 dark:bg-white/[0.04] text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-white/[0.08]'
+          }`}
+        >
+          All
+        </button>
+        {Object.keys(CAUSE_GROUPS).map((groupName) => (
+          <button
+            key={groupName}
+            onClick={() => handleGroup(groupName)}
+            className={`px-2 py-1 rounded-md text-micro font-mono font-medium transition-all duration-150 ${
+              isGroupActive(groupName)
+                ? 'bg-terracotta-500/15 text-terracotta-500'
+                : 'bg-slate-100 dark:bg-white/[0.04] text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-white/[0.08]'
+            }`}
+          >
+            {groupName}
+          </button>
+        ))}
+      </div>
+
+      {/* Cause list */}
+      <div className="space-y-0.5 max-h-[420px] overflow-y-auto pr-1">
+        {sortedCauses.map((cause) => {
+          const count = counts[cause]
+          const active = isSelected(cause)
+          const barWidth = (count / maxCount) * 100
+          return (
+            <div
+              key={cause}
+              className={`
+                group w-full flex items-center gap-2 py-1.5 px-2 rounded-lg text-left
+                transition-all duration-150 relative overflow-hidden
+                ${active
+                  ? 'hover:bg-white/80 dark:hover:bg-white/[0.04]'
+                  : 'opacity-35 hover:opacity-60'
+                }
+              `}
+            >
+              {/* Background volume bar */}
+              <div
+                className="absolute inset-y-0 left-0 rounded-lg opacity-[0.16] dark:opacity-[0.22]"
+                style={{
+                  width: `${barWidth}%`,
+                  backgroundColor: '#d47149',
+                }}
+              />
+
+              {/* Controls cluster: checkbox + solo */}
+              <div className="relative flex items-center gap-1 flex-shrink-0">
+                <button
+                  onClick={() => handleToggle(cause)}
+                  className={`
+                    flex-shrink-0 w-3 h-3 rounded-sm border transition-all cursor-pointer
+                    ${active
+                      ? 'bg-terracotta-500 border-terracotta-500'
+                      : 'border-slate-300 dark:border-slate-600'
+                    }
+                  `}
+                >
+                  {active && (
+                    <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                      <path d="M3 6l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleSolo(cause) }}
+                  title="Show only this cause"
+                  className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150 p-0.5 rounded hover:bg-slate-200/60 dark:hover:bg-white/[0.08] cursor-pointer"
+                >
+                  <svg className="w-2.5 h-2.5 text-slate-400 dark:text-slate-500" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <circle cx="8" cy="8" r="3" />
+                    <path d="M8 1v2M8 13v2M1 8h2M13 8h2" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Label (click to toggle) */}
+              <button
+                onClick={() => handleToggle(cause)}
+                className="relative flex-1 min-w-0 text-label text-ink dark:text-slate-300 truncate leading-tight cursor-pointer text-left"
+              >
+                {CAUSE_LABELS[cause]}
+              </button>
+
+              {/* Count badge */}
+              <span className="relative text-micro font-mono text-slate-400 dark:text-slate-500 tabular-nums flex-shrink-0">
+                {count.toLocaleString()}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}

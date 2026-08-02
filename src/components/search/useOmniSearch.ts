@@ -29,6 +29,8 @@ const DATASET_ROUTES: Record<string, string> = {
   vendorPayments: '/city-budget',
   budget: '/city-budget',
   spendingRevenue: '/city-budget',
+  evictionNotices: '/housing',
+  buyoutAgreements: '/housing',
 }
 
 /** Build the static index once at module level */

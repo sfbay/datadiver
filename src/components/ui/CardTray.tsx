@@ -42,6 +42,10 @@ export interface CardDef {
   /** Nano chip beside the label (see StatCard.badge) — states that must be
    *  unmistakable on the card itself, e.g. what-if's HYPOTHETICAL stamp. */
   badge?: { text: string; color: string }
+  /** Companion stat row under the main value (see StatCard.secondary). */
+  secondary?: { value: string; caption?: string }
+  /** Let the subtitle wrap to two lines instead of truncating. */
+  wrapSubtitle?: boolean
 }
 
 type CardState = 'expanded' | 'minimized' | 'hidden'
@@ -297,6 +301,8 @@ export default function CardTray({ viewId, cards, className = '', hideComparison
                 positionScale={card.positionScale}
                 badge={card.badge}
                 subtitleAction={card.subtitleAction}
+                secondary={card.secondary}
+                wrapSubtitle={card.wrapSubtitle}
               />
               {/* Minimize button — top-left on hover */}
               <button

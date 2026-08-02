@@ -71,7 +71,7 @@ export async function fetchDataset<T>(
   if (!config) throw new Error(`Unknown dataset: ${datasetKey}`)
 
   // Skip default sort for aggregation queries — ordering by a non-selected field causes Socrata 400 errors
-  const useDefaultSort = !params.$group && !params.$select?.match(/\b(SUM|COUNT|AVG|MIN|MAX)\s*\(/i)
+  const useDefaultSort = !params.$group && !params.$select?.match(/\b(SUM|COUNT|AVG|MIN|MAX|MEDIAN)\s*\(/i)
 
   const queryParams: SoQLParams = {
     ...(useDefaultSort && config.defaultSort ? { $order: config.defaultSort } : {}),

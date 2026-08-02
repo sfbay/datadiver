@@ -207,6 +207,11 @@ function computeVariables(
   // ── Housing ──────────────────────────────────────────────────────────
   result.renterPct = pctSafe(val('B25003_003E'), val('B25003_001E'))
 
+  // Raw renter-household COUNT (rate denominator — summed, not averaged,
+  // when aggregating to neighborhoods; see censusAggregator COUNT_VARIABLES).
+  const renterHH = val('B25003_003E')
+  if (renterHH !== undefined) result.renterHouseholds = renterHH
+
   const rentBurdenNum = sumRaw(row, ['B25070_007E', 'B25070_008E', 'B25070_009E', 'B25070_010E'])
   result.rentBurden = pctSafe(rentBurdenNum, val('B25070_001E'))
 
