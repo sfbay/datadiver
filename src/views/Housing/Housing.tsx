@@ -1182,7 +1182,7 @@ export default function Housing() {
                           }`}
                         >
                           <div
-                            className="absolute inset-y-0 left-0 rounded-lg opacity-[0.06] bar-grow"
+                            className="absolute inset-y-0 left-0 rounded-lg opacity-[0.16] dark:opacity-[0.22] bar-grow"
                             style={{ width: `${barWidth}%`, backgroundColor: barColor }}
                           />
                           <div className="relative flex items-center justify-between gap-2">
