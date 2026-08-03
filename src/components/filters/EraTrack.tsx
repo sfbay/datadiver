@@ -63,6 +63,11 @@ export default function EraTrack({
     [domain.end, minYear],
   )
 
+  /** Half-width of each edge's grab zone, in px. Wide enough to hit with a
+   *  fingertip on the compact mobile strip, narrow enough that a press in the
+   *  middle of a selection still starts a fresh one. */
+  const HANDLE_GRAB_PX = 12
+
   const clampPct = (n: number) => Math.max(0, Math.min(100, n))
   const pct = (year: number) => ((year - minYear) / span) * 100
   const activeRange = dragAnchor != null && dragPreview ? dragPreview : value
@@ -92,9 +97,34 @@ export default function EraTrack({
                     touch-none select-none`}
         onPointerDown={(e) => {
           if (e.button !== 0) return
+          const rect = e.currentTarget.getBoundingClientRect()
+          const x = e.clientX - rect.left
           const y = xToYear(e.clientX)
-          setDragAnchor(y)
-          setDragPreview(previewRange(y, y))
+
+          // Grab the nearer EDGE when the press lands on one, and anchor the
+          // OPPOSITE edge so it stays put. Without this, every press started a
+          // fresh zero-width brush at the cursor, so reaching for one edge
+          // collapsed the selection and the far edge appeared to rush over to
+          // meet it. Anchoring is expressed in the same fractional-year space
+          // snapBrushToRange consumes: the left edge round-trips as its own
+          // year, the right edge as year+1 (that function derives its end from
+          // `round(x1) - 1`), so a held edge lands back on exactly itself.
+          const leftPx = (clampPct(pct(yearOf(value.start))) / 100) * rect.width
+          const rightPx = (clampPct(pct(yearOf(value.end) + 1)) / 100) * rect.width
+          const nearLeft = Math.abs(x - leftPx) <= HANDLE_GRAB_PX
+          const nearRight = Math.abs(x - rightPx) <= HANDLE_GRAB_PX
+
+          // Ties go to whichever edge is genuinely closer — on a very narrow
+          // selection both zones overlap.
+          const grabLeft = nearLeft && (!nearRight || Math.abs(x - leftPx) <= Math.abs(x - rightPx))
+          const anchor = grabLeft
+            ? yearOf(value.end) + 1          // dragging the LEFT edge; right edge held
+            : nearRight
+              ? yearOf(value.start)          // dragging the RIGHT edge; left edge held
+              : y                            // fresh selection from the press point
+
+          setDragAnchor(anchor)
+          setDragPreview(previewRange(anchor, y))
           e.currentTarget.setPointerCapture(e.pointerId)
         }}
         onPointerMove={(e) => {
@@ -145,6 +175,20 @@ export default function EraTrack({
                         border-[#5c9693] bg-[#5c9693]/15 pointer-events-none
                         transition-all duration-150"
              style={{ left: `${selLeft}%`, width: `${Math.max(1, selRight - selLeft)}%` }} />
+
+        {/* Edge affordances. Cursor only — they carry no listeners, because the
+            parent's onPointerDown already decides intent from proximity. Their
+            job is to make the handles DISCOVERABLE: without a cursor change,
+            edge-dragging is a hidden gesture. Width matches HANDLE_GRAB_PX so
+            what the cursor promises is what the hit test actually does. */}
+        {!isLoading && (
+          <>
+            <div className="absolute top-0 bottom-0 w-6 -ml-3 cursor-ew-resize"
+                 style={{ left: `${selLeft}%` }} aria-hidden="true" />
+            <div className="absolute top-0 bottom-0 w-6 -ml-3 cursor-ew-resize"
+                 style={{ left: `${selRight}%` }} aria-hidden="true" />
+          </>
+        )}
       </div>
 
       {/* axis — the middle slot discloses, in priority order: a clamp that
