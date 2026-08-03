@@ -6,6 +6,7 @@
 // camelCase localStorage key and unrelated.
 
 import type { DatasetKey } from './datasets'
+import type { ViewId } from '@/types/datasets'
 
 export interface EraSeam {
   year: number
@@ -34,7 +35,7 @@ export interface EraSource {
   seams?: EraSeam[]
 }
 
-export const ERA_SOURCES: Record<string, EraSource> = {
+export const ERA_SOURCES: Partial<Record<ViewId, EraSource>> = {
   'crime-incidents': {
     datasetKey: 'policeIncidents',
     dateField: 'incident_datetime',
@@ -96,7 +97,10 @@ export const ERA_SOURCES: Record<string, EraSource> = {
 export function eraSourceForPath(pathname: string): EraSource | undefined {
   const segments = pathname.split('/').filter(Boolean)
   if (segments.length !== 1) return undefined // '' = home; deeper = detail pages
-  return ERA_SOURCES[segments[0]]
+  // A pathname is an arbitrary runtime string, not a known ViewId — the cast is
+  // deliberate; ERA_SOURCES being Partial means an unregistered or bogus key
+  // still resolves to undefined, same as before.
+  return ERA_SOURCES[segments[0] as ViewId]
 }
 
 export interface EraQuery {

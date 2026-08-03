@@ -3,6 +3,7 @@ import {
   ERA_SOURCES, eraSourceForPath, buildEraQuery, buildHistoricalEraQuery, eraDomain,
 } from './eraSources'
 import { DATASETS } from './datasets'
+import type { ViewId } from '@/types/datasets'
 
 describe('ERA_SOURCES integrity', () => {
   // The duplicated-allow-list lesson: a shared constant plus a pinning test,
@@ -40,7 +41,7 @@ describe('eraSourceForPath', () => {
 
 describe('buildEraQuery', () => {
   it('groups by year with an open upper bound when unclamped', () => {
-    const q = buildEraQuery(ERA_SOURCES['311-cases'])
+    const q = buildEraQuery(ERA_SOURCES['311-cases']!)
     expect(q.$select).toBe('date_extract_y(requested_datetime) as yr, count(*) as n')
     expect(q.$group).toBe('yr')
     expect(q.$where).toBe("requested_datetime >= '2008-01-01'")
@@ -48,13 +49,13 @@ describe('buildEraQuery', () => {
   // SFPD ships two extracts that OVERLAP by 4.5 months. untilYear is the
   // modern query's floor precisely so those months are counted once.
   it('starts the modern query at untilYear when a historical extract exists', () => {
-    expect(buildEraQuery(ERA_SOURCES['crime-incidents']).$where)
+    expect(buildEraQuery(ERA_SOURCES['crime-incidents']!).$where)
       .toBe("incident_datetime >= '2018-01-01'")
   })
   // Parking Citations publishes 1951–2044; both ends are junk. Without the
   // upper bound the axis renders 94 years of nothing.
   it('adds an upper bound when the source is clamped at both ends', () => {
-    const q = buildEraQuery(ERA_SOURCES['parking-citations'])
+    const q = buildEraQuery(ERA_SOURCES['parking-citations']!)
     expect(q.$where).toBe(
       "citation_issued_datetime >= '2012-01-01' AND citation_issued_datetime < '2027-01-01'"
     )
@@ -63,23 +64,24 @@ describe('buildEraQuery', () => {
 
 describe('eraDomain', () => {
   it('runs from the clamp floor to today when open-ended', () => {
-    expect(eraDomain(ERA_SOURCES['crime-incidents'], '2026-08-03'))
+    expect(eraDomain(ERA_SOURCES['crime-incidents']!, '2026-08-03'))
       .toEqual({ start: '2003-01-01', end: '2026-08-03' })
   })
   it('stops at the clamp ceiling when closed', () => {
-    expect(eraDomain(ERA_SOURCES['parking-citations'], '2026-08-03').end)
+    expect(eraDomain(ERA_SOURCES['parking-citations']!, '2026-08-03').end)
       .toBe('2026-08-03')
   })
 })
 
 describe('buildHistoricalEraQuery', () => {
   it('covers the clamp floor up to (not including) untilYear', () => {
-    expect(buildHistoricalEraQuery(ERA_SOURCES['crime-incidents'])?.$where)
+    expect(buildHistoricalEraQuery(ERA_SOURCES['crime-incidents']!)?.$where)
       .toBe("date >= '2003-01-01' AND date < '2018-01-01'")
   })
   it('is null for every source with a single extract', () => {
-    for (const view of ['311-cases', 'housing', 'parking-citations']) {
-      expect(buildHistoricalEraQuery(ERA_SOURCES[view]), view).toBeNull()
+    const views: ViewId[] = ['311-cases', 'housing', 'parking-citations']
+    for (const view of views) {
+      expect(buildHistoricalEraQuery(ERA_SOURCES[view]!), view).toBeNull()
     }
   })
 })
@@ -88,9 +90,10 @@ describe('clamp disclosure', () => {
   // A clamp that hides published rows must SAY so on the axis. A clamp that
   // merely matches the real data floor must not — a note there would be noise.
   it('parking-citations discloses; the others do not', () => {
-    expect(ERA_SOURCES['parking-citations'].clampNote).toBeTruthy()
-    for (const view of ['crime-incidents', '311-cases', 'housing']) {
-      expect(ERA_SOURCES[view].clampNote, view).toBeUndefined()
+    expect(ERA_SOURCES['parking-citations']!.clampNote).toBeTruthy()
+    const views: ViewId[] = ['crime-incidents', '311-cases', 'housing']
+    for (const view of views) {
+      expect(ERA_SOURCES[view]!.clampNote, view).toBeUndefined()
     }
   })
 })
