@@ -4,10 +4,16 @@
 //
 // Honesty requirements baked in here, per the spec:
 //  - the partial current year is hatched, never drawn as a solid collapse
-//  - seams (definitional discontinuities) get a dashed rule and a label
+//  - seams (definitional discontinuities) get a dashed rule, and their PROSE
+//    lives in the view that owns them, next to the data it qualifies —
+//    CrimeIncidents states the 2018 category change on its Total card, which
+//    is where a reader looking at pre-2018 counts is actually looking. The
+//    axis carries year ticks only; it was too narrow to hold both.
+//  - a clamp that hides published rows still discloses here, because it has no
+//    view-level home
 //  - loading shows skeleton bars, never an empty strip
 
-import { useRef, useCallback, useState } from 'react'
+import { useRef, useCallback, useState, useEffect, useMemo } from 'react'
 import { snapBrushToRange, type YearCount } from '@/utils/eraStrip'
 import type { EraSeam } from '@/api/eraSources'
 
@@ -70,6 +76,45 @@ export default function EraTrack({
 
   const clampPct = (n: number) => Math.max(0, Math.min(100, n))
   const pct = (year: number) => ((year - minYear) / span) * 100
+
+  // Tick density is a PIXEL problem, not a percentage one — the same 24-year
+  // domain is legible in the expanded rail and cramped in the collapsed one —
+  // so measure the rail rather than guessing a breakpoint.
+  const [railW, setRailW] = useState(0)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    setRailW(el.getBoundingClientRect().width)
+    const ro = new ResizeObserver(([entry]) => setRailW(entry.contentRect.width))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  /** Width a 4-digit Space Mono label needs at text-nano, plus breathing room. */
+  const LABEL_PX = 26
+
+  /** Both domain bounds always, plus interior ticks on a 5- or 10-year grid —
+   *  whichever the measured rail can hold. An interior tick too close to a
+   *  bound is dropped rather than overlapped: at ~10px/year, 2005 sits 20px
+   *  from 2003 and would collide. */
+  const tickYears = useMemo(() => {
+    const bounds = [
+      { year: minYear, align: 'start' as const, leftPct: 0 },
+      { year: maxYear, align: 'end' as const, leftPct: 100 },
+    ]
+    if (railW <= 0) return bounds
+    const pxPerYear = railW / span
+    const stepYears = pxPerYear * 5 >= LABEL_PX ? 5 : 10
+    const interior: Array<{ year: number; align: 'mid'; leftPct: number }> = []
+    for (let y = Math.ceil(minYear / stepYears) * stepYears; y <= maxYear; y += stepYears) {
+      if ((y - minYear) * pxPerYear < LABEL_PX) continue          // too near the left bound
+      if ((maxYear + 1 - y) * pxPerYear < LABEL_PX) continue      // too near the right bound
+      // Centered under the year's own band, so the label points at the bar it names.
+      interior.push({ year: y, align: 'mid', leftPct: pct(y) + 100 / span / 2 })
+    }
+    return [bounds[0], ...interior, bounds[1]]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [railW, minYear, maxYear, span])
   const activeRange = dragAnchor != null && dragPreview ? dragPreview : value
   // Clamped so a selection outside the current domain (e.g. arriving from a
   // different view with a wider era) shows a pinned sliver at the edge
@@ -191,19 +236,36 @@ export default function EraTrack({
         )}
       </div>
 
-      {/* axis — the middle slot discloses, in priority order: a clamp that
-          hides published rows, then a seam label. Both are honesty copy, so
-          the clamp wins when a view somehow has both. */}
-      <div className="flex justify-between mt-0.5 text-nano font-mono
+      {/* Year ticks. Seam prose used to occupy this row and left space for only
+          the two bounds, which made a 24-year strip impossible to read
+          positionally. */}
+      <div className="relative h-3 mt-0.5 text-nano font-mono tabular-nums
                       text-slate-400/60 dark:text-slate-600">
-        <span>{minYear}</span>
-        {clampNote
-          ? <span className="truncate px-2" title={clampNote}>{clampNote}</span>
-          : seams.length > 0
-            ? <span className="truncate px-2" title={seams[0].label}>{seams[0].label}</span>
-            : null}
-        <span>{maxYear}</span>
+        {tickYears.map((t) => (
+          <span
+            key={t.year}
+            className="absolute top-0"
+            style={
+              t.align === 'start' ? { left: 0 }
+              : t.align === 'end' ? { right: 0 }
+              : { left: `${t.leftPct}%`, transform: 'translateX(-50%)' }
+            }
+          >
+            {t.year}
+          </span>
+        ))}
       </div>
+
+      {/* A clamp that hides published rows is the one disclosure with no
+          view-level home, so it stays — but only when it exists, and no longer
+          competing with the year grid. */}
+      {clampNote && (
+        <p className="mt-0.5 text-nano font-mono truncate
+                      text-slate-400/60 dark:text-slate-600"
+           title={clampNote}>
+          {clampNote}
+        </p>
+      )}
     </div>
   )
 }

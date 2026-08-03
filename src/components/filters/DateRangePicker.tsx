@@ -185,10 +185,26 @@ export default function DateRangePicker() {
     const e = new Date(end + 'T12:00:00')
     const fmt = (d: Date) =>
       d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    const yearSuffix = s.getFullYear() !== e.getFullYear()
-      ? `, ${s.getFullYear()}`
-      : ''
-    return `${fmt(s)}${yearSuffix} \u2013 ${fmt(e)}`
+    // The era strip snaps to whole years, so a strip-selected range is always
+    // Jan 1 -> Dec 31. Label those at YEAR granularity: "2008 \u2013 2016" is
+    // shorter than the day form (which wrapped to two lines in the rail and
+    // shoved the strip down) and truer \u2014 the day form implies a precision the
+    // reader never asked for. A range clamped to today is not a whole year and
+    // correctly falls through to the day form, which is how a partial year
+    // stays visibly partial.
+    const wholeYears = start.endsWith('-01-01') && end.endsWith('-12-31')
+    if (wholeYears) {
+      return s.getFullYear() === e.getFullYear()
+        ? `${s.getFullYear()}`
+        : `${s.getFullYear()} \u2013 ${e.getFullYear()}`
+    }
+    // Otherwise a cross-year range must name the year at BOTH ends. Stamping
+    // only the start yielded "Jan 1, 2008 \u2013 Dec 31" \u2014 December 31 of no stated
+    // year, which was rare before the strip could reach past two years.
+    if (s.getFullYear() !== e.getFullYear()) {
+      return `${fmt(s)}, ${s.getFullYear()} \u2013 ${fmt(e)}, ${e.getFullYear()}`
+    }
+    return `${fmt(s)} \u2013 ${fmt(e)}`
   }
 
   const rangeDays = daysBetween(dateRange.start, dateRange.end)
