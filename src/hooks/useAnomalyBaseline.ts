@@ -17,10 +17,16 @@
 import { useEffect, useState } from 'react'
 import { fetchDataset } from '@/api/client'
 import { baselineWindow } from './anomalyBaselineWindow'
-import { bucketDailyCounts, computeAnomalies, type BaselineRow } from '@/lib/pulse/anomalyStats'
+import {
+  bucketDailyCounts,
+  computeAnomalies,
+  suppressStaleQuiet,
+  type BaselineRow,
+} from '@/lib/pulse/anomalyStats'
 import type {
   AnomalyResult,
   DatasetId,
+  FreshnessMap,
   NormalizedEvent,
 } from '@/types/last48'
 
@@ -100,7 +106,7 @@ async function fetchBaselineForDataset(datasetId: DatasetId): Promise<BaselineEn
     { skipCache: true }
   )
 
-  return { historicalCounts: bucketDailyCounts(rows) }
+  return { historicalCounts: bucketDailyCounts(rows, { since, until }) }
 }
 
 export interface UseAnomalyBaselineResult {
@@ -112,6 +118,12 @@ export interface UseAnomalyBaselineResult {
 export function useAnomalyBaseline(opts: {
   datasets: DatasetId[]
   currentEvents: NormalizedEvent[]
+  /** Per-stream freshness from useLast48Window. REQUIRED: a quiet reading
+   *  from a stream that simply hasn't published is not quiet, and every
+   *  consumer of this hook renders quiet somewhere (the wire as a card, the
+   *  choropleth as teal). Gating here rather than per consumer is what keeps
+   *  the Pulse card and its evidence map from contradicting each other. */
+  freshness: FreshnessMap
 }): UseAnomalyBaselineResult {
   const [baseline, setBaseline] = useState<Record<DatasetId, BaselineEntry> | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -164,5 +176,5 @@ export function useAnomalyBaseline(opts: {
     }
   }
 
-  return { anomalies, isLoading, error }
+  return { anomalies: suppressStaleQuiet(anomalies, opts.freshness), isLoading, error }
 }

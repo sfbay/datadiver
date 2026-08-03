@@ -145,6 +145,7 @@ export default function Last48UnifiedView({
   const { anomalies, isLoading: anomalyLoading } = useAnomalyBaseline({
     datasets,
     currentEvents: visibleEvents,
+    freshness: window48.freshness,
   })
 
   // Census data — fed to UnderlayLegend below when fill=demographic so the

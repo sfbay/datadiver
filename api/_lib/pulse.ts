@@ -90,7 +90,7 @@ async function fetchStreamAnomalies(id: DatasetId, nowMs: number): Promise<Anoma
   for (const r of currentRows) {
     if (r.neighborhood) current[r.neighborhood] = parseInt(r.cnt, 10)
   }
-  return computeAnomalies(bucketDailyCounts(baselineRows), current, id)
+  return computeAnomalies(bucketDailyCounts(baselineRows, { since, until }), current, id)
 }
 
 /** The per-run Pulse context, or null when any piece fails — callers send

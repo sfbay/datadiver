@@ -55,6 +55,25 @@ export const DATASETS: Record<string, DatasetConfig> = {
     cacheTTL: 10 * 60_000, // 10 min
   },
 
+  // SFPD's pre-2018 archive — 2,071,736 incidents back to 2003, geocoded and
+  // carrying Analysis Neighborhoods as a computed region. Frozen (last row
+  // 2018-05-15), so it caches long. It OVERLAPS policeIncidents by 4.5 months
+  // and uses an entirely different schema and category vocabulary: query it
+  // only through src/views/CrimeIncidents/crimeEra.ts, which cuts the seam at
+  // 2018-01-01 and translates the field names.
+  policeIncidentsHistorical: {
+    id: 'tmnf-yvry',
+    name: 'Police Incident Reports (2003–May 2018)',
+    description: 'SFPD historical incident reports — different schema and category vocabulary than the 2018+ set',
+    endpoint: `${BASE_URL}/tmnf-yvry.json`,
+    category: 'public-safety',
+    hasGeo: true,
+    geoField: 'location',
+    defaultSort: 'date DESC',
+    dateField: 'date',
+    cacheTTL: 24 * 60 * 60_000, // 24h — the dataset is closed, nothing new lands
+  },
+
   dispatch911Realtime: {
     id: 'gnap-fj3t',
     name: '911 Dispatch (Real-Time)',
