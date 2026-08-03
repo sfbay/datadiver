@@ -3,6 +3,11 @@ import { useAppStore } from '@/stores/appStore'
 import { fetchDataset } from '@/api/client'
 import { useDispatchCrossRef } from '@/hooks/useDispatchCrossRef'
 import type { PoliceIncident } from '@/types/datasets'
+import {
+  normalizeHistoricalIncident,
+  HISTORICAL_SELECT_FIELDS,
+  type HistoricalIncidentRow,
+} from '@/views/CrimeIncidents/crimeEra'
 import { parseDateTime, formatDate, diffHours, formatResolution } from '@/utils/time'
 import { DISPOSITION_LABELS } from '@/utils/colors'
 import DetailPanelShell from '@/components/ui/DetailPanelShell'
@@ -70,13 +75,27 @@ export default function CrimeDetailPanel() {
     let cancelled = false
     setIsLoading(true)
 
+    // A pre-2018 dot's id is a `pdid` from the historical extract and cannot
+    // exist in the 2018+ dataset, so a single lookup there would leave the
+    // panel permanently blank. Fall back to the archive and normalize it into
+    // the same shape. See src/views/CrimeIncidents/crimeEra.ts.
     fetchDataset<PoliceIncident>('policeIncidents', {
       $where: `incident_id = '${selectedCrimeIncident}'`,
       $limit: 1,
     })
-      .then((records) => {
-        if (!cancelled && records.length > 0) {
-          setDetail(buildDetail(records[0]))
+      .then(async (records) => {
+        if (records.length > 0) return records[0]
+        const legacy = await fetchDataset<HistoricalIncidentRow>('policeIncidentsHistorical', {
+          $where: `pdid = '${selectedCrimeIncident}'`,
+          $select: HISTORICAL_SELECT_FIELDS,
+          $limit: 1,
+        })
+        const normalized = legacy[0] ? normalizeHistoricalIncident(legacy[0]) : null
+        return normalized as PoliceIncident | null
+      })
+      .then((record) => {
+        if (!cancelled && record) {
+          setDetail(buildDetail(record))
         }
       })
       .catch(() => {

@@ -331,7 +331,14 @@ export default function CrimeIncidents() {
         id: 'peak-hour',
         label: 'Peak Hour',
         shortLabel: 'Peak',
-        value: formatHour(stats.peakHour),
+        // usePoliceHourlyPattern queries the 2018+ dataset. On a historical
+        // range it returns no rows and peakHour falls back to 0, which renders
+        // as a confident "12am" for a window it never read. Withhold it.
+        // (The heatgrid and time-of-day filter already self-suppress on an
+        // all-zero grid, which is why they vanish instead of lying.)
+        value: hasHistorical ? '—' : formatHour(stats.peakHour),
+        subtitle: hasHistorical ? 'Hour-of-day not available before 2018' : undefined,
+        wrapSubtitle: hasHistorical,
         color: '#5c9693',
         delay: 240,
         info: 'peak-hour',
