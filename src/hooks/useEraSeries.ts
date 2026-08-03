@@ -3,8 +3,10 @@
 //
 // Deliberately independent of dateRange: the strip shows the whole record and
 // only the SELECTION moves as the user brushes, so brushing costs no requests.
-// ~24 rows, cached 24h — annual counts change at most once a day, and only in
-// the current year's bar.
+// ~24 rows. NOT cached 24h — these queries inherit the same per-dataset cache
+// TTL as everything else fetched through fetchDataset (10-30 minutes, see
+// src/api/datasets.ts's `cacheTTL`), so a fresh mount well inside that window
+// serves from cache; past it, a real request goes out again.
 
 import { useMemo } from 'react'
 import { useDataset } from '@/hooks/useDataset'
@@ -35,7 +37,10 @@ export function useEraSeries(pathname: string): UseEraSeriesResult {
     source?.datasetKey ?? 'policeIncidents',
     params,
     [JSON.stringify(params)],
-    { enabled: source != null },
+    // These are the app's heaviest queries (parking-citations measured at
+    // 34.9s cold) — timeoutMs/retries keep one from holding a per-host
+    // connection slot for a whole view's cold load. See useDataset.ts.
+    { enabled: source != null, timeoutMs: 20_000, retries: 1 },
   )
 
   // The second extract, for the one source that has one (SFPD 2003-2017).
@@ -43,7 +48,7 @@ export function useEraSeries(pathname: string): UseEraSeriesResult {
     source?.historical?.datasetKey ?? 'policeIncidents',
     histParams,
     [JSON.stringify(histParams)],
-    { enabled: source?.historical != null },
+    { enabled: source?.historical != null, timeoutMs: 20_000, retries: 1 },
   )
 
   const years = useMemo(

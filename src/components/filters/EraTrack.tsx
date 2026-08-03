@@ -30,6 +30,12 @@ export default function EraTrack({
 }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const [dragAnchor, setDragAnchor] = useState<number | null>(null)
+  // In-progress drag span, local only — the overlay renders from this while
+  // dragging so the selection visibly follows the pointer, but `onChange`
+  // (a global state write that refires ~11 dataset queries per view) fires
+  // exactly once, on release. See Housing's EraStrip, whose d3 brush commits
+  // on `.on('end')` rather than every intermediate move.
+  const [dragPreview, setDragPreview] = useState<{ start: string; end: string } | null>(null)
 
   const minYear = yearOf(domain.start)
   const maxYear = yearOf(domain.end)
@@ -50,9 +56,21 @@ export default function EraTrack({
     onChange(snapBrushToRange(Math.min(a, b), Math.max(a, b), domain.end, minYear))
   }, [onChange, domain.end, minYear])
 
+  // Same snap math as `commit`, but returns the range instead of dispatching
+  // it — used to compute the live drag preview without writing global state.
+  const previewRange = useCallback(
+    (a: number, b: number) => snapBrushToRange(Math.min(a, b), Math.max(a, b), domain.end, minYear),
+    [domain.end, minYear],
+  )
+
+  const clampPct = (n: number) => Math.max(0, Math.min(100, n))
   const pct = (year: number) => ((year - minYear) / span) * 100
-  const selLeft = pct(yearOf(value.start))
-  const selRight = pct(yearOf(value.end) + 1)
+  const activeRange = dragAnchor != null && dragPreview ? dragPreview : value
+  // Clamped so a selection outside the current domain (e.g. arriving from a
+  // different view with a wider era) shows a pinned sliver at the edge
+  // instead of a selection that renders entirely off-strip.
+  const selLeft = clampPct(pct(yearOf(activeRange.start)))
+  const selRight = clampPct(pct(yearOf(activeRange.end) + 1))
 
   return (
     <div className="relative pt-1 pb-3">
@@ -73,14 +91,23 @@ export default function EraTrack({
                     bg-slate-200/50 dark:bg-white/[0.05] cursor-crosshair
                     touch-none select-none`}
         onPointerDown={(e) => {
+          if (e.button !== 0) return
           const y = xToYear(e.clientX)
           setDragAnchor(y)
+          setDragPreview(previewRange(y, y))
           e.currentTarget.setPointerCapture(e.pointerId)
-          commit(y, y)
         }}
-        onPointerMove={(e) => { if (dragAnchor != null) commit(dragAnchor, xToYear(e.clientX)) }}
-        onPointerUp={() => setDragAnchor(null)}
-        onPointerCancel={() => setDragAnchor(null)}
+        onPointerMove={(e) => {
+          if (dragAnchor == null) return
+          setDragPreview(previewRange(dragAnchor, xToYear(e.clientX)))
+        }}
+        onPointerUp={(e) => {
+          if (dragAnchor != null) commit(dragAnchor, xToYear(e.clientX))
+          setDragAnchor(null)
+          setDragPreview(null)
+        }}
+        onPointerCancel={() => { setDragAnchor(null); setDragPreview(null) }}
+        onLostPointerCapture={() => { setDragAnchor(null); setDragPreview(null) }}
       >
         {/* bars */}
         <div className="absolute inset-0 flex items-end gap-px px-px">

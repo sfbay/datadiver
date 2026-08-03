@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAppStore } from '@/stores/appStore'
 import { useEraSeries } from '@/hooks/useEraSeries'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import EraTrack from '@/components/filters/EraTrack'
 import { resizeToDays, stepWindow, moveToNow, windowDays } from '@/utils/dateWindow'
 
@@ -127,6 +128,7 @@ export default function DateRangePicker() {
   const { dateRange, setDateRange } = useAppStore()
   const { pathname } = useLocation()
   const era = useEraSeries(pathname)
+  const isMobile = useIsMobile()
   const [isCustomOpen, setIsCustomOpen] = useState(false)
   const [localStart, setLocalStart] = useState(dateRange.start)
   const [localEnd, setLocalEnd] = useState(dateRange.end)
@@ -220,6 +222,7 @@ export default function DateRangePicker() {
             clampNote={era.clampNote}
             value={dateRange}
             isLoading={era.isLoading}
+            compact={isMobile}
             onChange={(w) => applyRange(w.start, w.end)}
           />
         </div>
@@ -251,10 +254,10 @@ export default function DateRangePicker() {
         })}
       </div>
 
-      {era.available && dateRange.end !== today() && (
+      {era.available && dateRange.end !== era.domain.end && (
         <button
           onClick={() => {
-            const w = moveToNow(dateRange, today(), era.domain)
+            const w = moveToNow(dateRange, era.domain.end, era.domain)
             applyRange(w.start, w.end)
           }}
           className="w-full text-center py-0.5 text-nano font-mono
