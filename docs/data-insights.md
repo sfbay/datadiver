@@ -438,6 +438,56 @@ July 2026): 1998 all-time peak 2,917 (dot-com wave) → 2009 post-crash trough 1
 (highest since 2019). Both `neighborhood` (evictions) and `analysis_neighborhood`
 (buyouts) speak the 41 Analysis Neighborhoods vocabulary — joinable by exact name.
 
+## Police Incidents — SFPD publishes the record as TWO overlapping extracts
+
+`wg3w-h783` ("2018 to Present", 1,050,739 rows) and `tmnf-yvry` ("Historical
+2003 to May 2018", 2,071,736 rows). DataDiver read only the first until Aug 2026,
+so anything before 2018 rendered as an empty city.
+
+**The trap is the overlap.** `tmnf-yvry` runs to **2018-05-15** and `wg3w-h783`
+starts **2018-01-01** — both carrying the same incidents. Measured over
+Jan 1–May 15 2018: 43,733 rows in the historical extract, 54,326 in the modern
+one, incident numbers in the same `18xxxxxxx` space. A naive union inflates that
+window by ~80%, and it looks like a smooth line with a bump nobody questions.
+Cut the seam at 2018-01-01 and let the MODERN set own the overlap — it is the
+more complete of the two there, because it includes online/Coplogic report types
+the historical extract omits. Implemented in `src/views/CrimeIncidents/crimeEra.ts`.
+
+**The two extracts share no field names and no category vocabulary.**
+
+| | `tmnf-yvry` (2003–2018) | `wg3w-h783` (2018+) |
+|---|---|---|
+| when | `date` (DATE ONLY) + `time` (TEXT 'HH:MM') | `incident_datetime` |
+| category | `category` — `LARCENY/THEFT` | `incident_category` — `Larceny Theft` |
+| description | `descript` | `incident_description` |
+| district | `pddistrict` (`TARAVAL`) | `police_district` (`Taraval`) |
+| neighborhood | computed region `:@computed_region_ajp5_b2md` | `analysis_neighborhood` |
+| 911 link | **none** | `cad_number` |
+
+Consequences worth knowing before writing a query:
+- `time` is TEXT, so `date_extract_hh` is impossible — but it is zero-padded
+  (measured min `00:01`, max `23:59`), which makes a **lexicographic range a
+  valid hour filter** (`time >= '07:00' AND time <= '08:59'` → 8,293 rows in 2015).
+- Analysis Neighborhoods DO exist pre-2018, as a computed-region ID rather than
+  a name: `:@computed_region_ajp5_b2md` resolves to "Neighborhoods - Analysis
+  Boundaries" (`ajp5-b2md`, 41 rows) and is populated on **2,070,733 of
+  2,071,736 rows (99.95%)**, so neighborhood rankings reach back to 2003.
+- Geo cleanup is a single check: **138 rows sit at latitude 90**, and the
+  SF-bbox count is exactly total − 138. Separately ~53K rows geocode to the Hall
+  of Justice at 850 Bryant — those are real incidents *filed at the station*, not
+  errors, and must not be dropped.
+- The vocabularies are **deliberately not reconciled** in the product: six
+  historical categories have no faithful modern equivalent (`OTHER OFFENSES`,
+  `NON-CRIMINAL` and `SECONDARY CODES` among them), so mapping them would assert
+  a continuity the data does not have. Volumes are continuous across the seam
+  (2016: 141,345 · 2017: 145,025 · 2019: 142,963), which is good evidence the two
+  extracts measure the same thing even though they name it differently.
+
+**Note for any "SF crime is down" claim:** the full record is 2003→present once
+both extracts are read — 2018 is the all-time peak at 147,448 and 2025 the
+lowest full year at 95,549, a ~35% decline that sits entirely inside the modern
+dataset and is therefore not an artifact of the seam.
+
 ## General Patterns
 
 ### Floating SF-Local Timestamps (all DataSF datasets)
