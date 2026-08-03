@@ -11,7 +11,7 @@ import NeighborhoodCensusContext from '@/components/ui/NeighborhoodCensusContext
 import { UNDERLAY_PRESETS } from '@/utils/censusVariables'
 import { useSearchParams } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
-import { useDataset } from '@/hooks/useDataset'
+import { useCrimeEraData } from './useCrimeEraData'
 import { useMapLayer } from '@/hooks/useMapLayer'
 import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { usePoliceHourlyPattern } from '@/hooks/useHourlyPatternFactory'
@@ -120,40 +120,22 @@ export default function CrimeIncidents() {
     return `incident_category IN (${escaped.join(',')})`
   }, [selectedCategories])
 
-  const whereClause = useMemo(() => {
-    const conditions: string[] = []
-    conditions.push(`incident_datetime >= '${dateRange.start}T00:00:00'`)
-    conditions.push(`incident_datetime <= '${dateRange.end}T23:59:59'`)
-    if (categoryClause) conditions.push(categoryClause)
-    if (selectedNeighborhood) {
-      conditions.push(`analysis_neighborhood = '${selectedNeighborhood.replace(/'/g, "''")}'`)
-    }
-    if (timeOfDayFilter) {
-      const { startHour, endHour } = timeOfDayFilter
-      if (startHour <= endHour) {
-        conditions.push(`date_extract_hh(incident_datetime) >= ${startHour} AND date_extract_hh(incident_datetime) <= ${endHour}`)
-      } else {
-        conditions.push(`(date_extract_hh(incident_datetime) >= ${startHour} OR date_extract_hh(incident_datetime) <= ${endHour})`)
-      }
-    }
-    return conditions.join(' AND ')
-  }, [dateRange, categoryClause, selectedNeighborhood, timeOfDayFilter])
-
-  // Date-only clause (for category aggregation — excludes category filter)
-  const dateOnlyClause = useMemo(() => {
-    const conditions: string[] = []
-    conditions.push(`incident_datetime >= '${dateRange.start}T00:00:00'`)
-    conditions.push(`incident_datetime <= '${dateRange.end}T23:59:59'`)
-    if (timeOfDayFilter) {
-      const { startHour, endHour } = timeOfDayFilter
-      if (startHour <= endHour) {
-        conditions.push(`date_extract_hh(incident_datetime) >= ${startHour} AND date_extract_hh(incident_datetime) <= ${endHour}`)
-      } else {
-        conditions.push(`(date_extract_hh(incident_datetime) >= ${startHour} OR date_extract_hh(incident_datetime) <= ${endHour})`)
-      }
-    }
-    return conditions.join(' AND ')
-  }, [dateRange, timeOfDayFilter])
+  // SFPD publishes 2003–May 2018 and 2018–present as two differently-shaped
+  // datasets that overlap by 4.5 months. useCrimeEraData owns the seam: it
+  // routes each query to whichever extract covers the selected range, cuts the
+  // overlap at 2018-01-01 so nothing double-counts, and returns modern-shaped
+  // results either way. See crimeEra.ts for why the category vocabularies are
+  // NOT reconciled.
+  const era = useCrimeEraData({
+    dateRange,
+    categoryClause,
+    selectedNeighborhood,
+    timeOfDayFilter,
+  })
+  const whereClause = era.modernWhere
+  /** True while any pre-2018 rows are in range — gates the modern-only
+   *  affordances (category filter, 911 linkage, year-over-year). */
+  const hasHistorical = era.plan.era !== 'current'
 
   const freshness = useDataFreshness('policeIncidents', 'incident_datetime', dateRange)
 
@@ -170,69 +152,19 @@ export default function CrimeIncidents() {
   }, [categoryClause, selectedNeighborhood])
   const trend = useTrendBaseline(trendConfig, dateRange, trendExtraWhere)
 
-  // --- Data queries ---
-  const { data: rawData, isLoading, error, hitLimit, refetch } = useDataset<PoliceIncident>(
-    'policeIncidents',
-    { $where: whereClause, $limit: 5000, $select: SELECT_FIELDS },
-    [whereClause]
-  )
-
-  // Total count query
-  const { data: countRows } = useDataset<{ count: string }>(
-    'policeIncidents',
-    { $select: 'count(*) as count', $where: whereClause },
-    [whereClause]
-  )
-  const totalCount = countRows[0] ? parseInt(countRows[0].count, 10) : null
-
-  // Citywide-true 911-link counts — COUNT(field) counts non-null rows, so one
-  // aggregate query yields both the denominator and the cad_number-linked
-  // numerator without the 5K sample cap.
-  const { data: linkedRows } = useDataset<{ total_count: string; linked_count: string }>(
-    'policeIncidents',
-    {
-      $select: 'count(*) as total_count, count(cad_number) as linked_count',
-      $where: whereClause,
-      $limit: 1,
-    },
-    [whereClause]
-  )
-
-  const { data: categoryRows } = useDataset<IncidentCategoryAggRow>(
-    'policeIncidents',
-    {
-      $select: 'incident_category, count(*) as incident_count',
-      $group: 'incident_category',
-      $where: dateOnlyClause,
-      $order: 'incident_count DESC',
-      $limit: 60,
-    },
-    [dateOnlyClause]
-  )
-
-  const { data: neighborhoodRows } = useDataset<NeighborhoodAggRowPolice>(
-    'policeIncidents',
-    {
-      $select: 'analysis_neighborhood, count(*) as incident_count',
-      $group: 'analysis_neighborhood',
-      $where: whereClause,
-      $order: 'incident_count DESC',
-      $limit: 50,
-    },
-    [whereClause]
-  )
-
-  const { data: resolutionRows } = useDataset<ResolutionAggRow>(
-    'policeIncidents',
-    {
-      $select: 'resolution, count(*) as incident_count',
-      $group: 'resolution',
-      $where: whereClause,
-      $order: 'incident_count DESC',
-      $limit: 20,
-    },
-    [whereClause]
-  )
+  // --- Data queries (era-routed; see useCrimeEraData) ---
+  const {
+    incidents: rawData,
+    isLoading,
+    error,
+    hitLimit,
+    refetch,
+    totalCount,
+    linked,
+    categoryRows,
+    neighborhoodRows,
+    resolutionRows,
+  } = era
 
   // Hourly pattern
   const extraWhere = useMemo(() => {
@@ -315,11 +247,14 @@ export default function CrimeIncidents() {
 
     // 911 linked percentage — server-side counts; the 5K-sample ratio is
     // only an immediate-render fallback while the aggregate loads.
-    const serverTotal = linkedRows[0] ? parseInt(linkedRows[0].total_count, 10) : 0
-    const serverLinked = linkedRows[0] ? parseInt(linkedRows[0].linked_count, 10) : 0
-    const linkedPct = serverTotal > 0
-      ? (serverLinked / serverTotal) * 100
-      : (incidentData.filter((i) => i.cadNumber).length / incidentData.length) * 100
+    // null (not 0) once pre-2018 rows are in range: cad_number did not exist
+    // in the historical extract, so counting its absence as "unlinked" would
+    // report a real-looking 0% for a field that was never collected.
+    const linkedPct = !era.plan.cadLinkAvailable
+      ? null
+      : linked && linked.total > 0
+        ? (linked.linked / linked.total) * 100
+        : (incidentData.filter((i) => i.cadNumber).length / incidentData.length) * 100
 
     return {
       total: incidentData.length,
@@ -327,7 +262,7 @@ export default function CrimeIncidents() {
       linkedPct,
       peakHour: hourlyPattern.peakHour,
     }
-  }, [incidentData, categoryRows, linkedRows, hourlyPattern.peakHour])
+  }, [incidentData, categoryRows, linked, era.plan.cadLinkAvailable, hourlyPattern.peakHour])
 
   // Resolution bar data
   const resolutionBarData = useMemo((): BarDatum[] => {
@@ -351,11 +286,22 @@ export default function CrimeIncidents() {
         delay: 0,
         info: 'total-incidents',
         defaultExpanded: true,
-        subtitle: comparison.deltas
-          ? `${formatDelta(comparison.deltas.total)} ${compLabel}`
-          : (comparison.suppressed && comparisonMode !== null ? 'Compare needs a narrower date range' : undefined),
-        trend: comparison.deltas ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral') : undefined,
-        yoyDelta: !comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null,
+        // Compare and year-over-year both read the 2018+ dataset, which holds
+        // nothing before the seam — running them on a historical range would
+        // return zero rows and render a confident, fabricated decline. They
+        // are withheld, and the card says which archive is on screen instead.
+        subtitle: hasHistorical
+          ? (era.plan.era === 'straddle'
+              ? 'Spans SFPD’s 2003–2017 archive and the 2018+ dataset'
+              : 'SFPD’s 2003–2017 archive — categories as published then')
+          : comparison.deltas
+            ? `${formatDelta(comparison.deltas.total)} ${compLabel}`
+            : (comparison.suppressed && comparisonMode !== null ? 'Compare needs a narrower date range' : undefined),
+        wrapSubtitle: hasHistorical,
+        trend: !hasHistorical && comparison.deltas
+          ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral')
+          : undefined,
+        yoyDelta: !hasHistorical && !comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null,
       },
       {
         id: 'top-category',
@@ -371,7 +317,11 @@ export default function CrimeIncidents() {
         id: '911-linked',
         label: '911 Linked',
         shortLabel: '911%',
-        value: `${stats.linkedPct.toFixed(0)}%`,
+        // SFPD's pre-2018 extract has no cad_number at all, so there is no
+        // linkage rate to report — an em dash, not a fabricated 0%.
+        value: stats.linkedPct === null ? '—' : `${stats.linkedPct.toFixed(0)}%`,
+        subtitle: stats.linkedPct === null ? 'Not recorded before 2018' : undefined,
+        wrapSubtitle: stats.linkedPct === null,
         color: '#8b6282',
         delay: 160,
         info: '911-linked',
@@ -411,7 +361,8 @@ export default function CrimeIncidents() {
         ),
       })
     }
-    if (comparisonMode !== null && comparison.currentTrend.length > 0) {
+    // Same reason as the card above: the comparison series is 2018+ only.
+    if (!hasHistorical && comparisonMode !== null && comparison.currentTrend.length > 0) {
       tiles.push({
         id: 'daily-trend',
         label: `Daily Trend${comparison.isLoading ? ' (loading\u2026)' : ''}`,
@@ -799,7 +750,10 @@ export default function CrimeIncidents() {
               </div>
             )}
 
-            {!isLoading && !freshness.isLoading && !freshness.hasDataInRange && (
+            {/* Freshness is measured against the 2018+ dataset, so a
+                deliberately historical range would always look "stale" and
+                offer to yank the user back to last month. Suppressed there. */}
+            {!hasHistorical && !isLoading && !freshness.isLoading && !freshness.hasDataInRange && (
               <DataFreshnessAlert
                 latestDate={freshness.latestDate}
                 suggestedRange={freshness.suggestedRange}
@@ -870,11 +824,24 @@ export default function CrimeIncidents() {
                   </p>
                   <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
                 </div>
-                <IncidentCategoryFilter
-                  categories={categoryEntries}
-                  selected={selectedCategories}
-                  onChange={setSelectedCategories}
-                />
+                {/* The violent / property / quality-of-life groups are built
+                    on the 2018+ category names. SFPD used a different system
+                    before 2018 ('LARCENY/THEFT', 'OTHER OFFENSES'), so the
+                    filter would match nothing on a historical range. The rail
+                    still LISTS whatever each era published — only the filter
+                    is withheld, and it says why. */}
+                {hasHistorical ? (
+                  <p className="text-micro font-mono uppercase tracking-[0.18em] text-ink/45 dark:text-paper-100/45 leading-relaxed">
+                    Filtering unavailable — SFPD changed its category system in
+                    2018, and these counts are shown as each era published them.
+                  </p>
+                ) : (
+                  <IncidentCategoryFilter
+                    categories={categoryEntries}
+                    selected={selectedCategories}
+                    onChange={setSelectedCategories}
+                  />
+                )}
               </>
             )}
 

@@ -11,12 +11,24 @@ interface UseDatasetResult<T> {
   refetch: () => void
 }
 
+interface UseDatasetOptions {
+  /** When false, the query is not issued: the hook returns no rows and is NOT
+   *  loading. For conditional sources that can't be expressed by skipping the
+   *  hook call (hooks must run unconditionally) — e.g. CrimeIncidents asks the
+   *  pre-2018 archive only when the selected range reaches back that far.
+   *  Gating the FETCH matters, not just the render: a disabled query must cost
+   *  nothing and must not register with the loading-progress meter. */
+  enabled?: boolean
+}
+
 /** React hook for fetching Socrata dataset data with loading/error state */
 export function useDataset<T>(
   datasetKey: DatasetKey,
   params: SoQLParams = {},
-  deps: unknown[] = []
+  deps: unknown[] = [],
+  options: UseDatasetOptions = {}
 ): UseDatasetResult<T> {
+  const enabled = options.enabled ?? true
   const [data, setData] = useState<T[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -29,6 +41,14 @@ export function useDataset<T>(
   }, [])
 
   useEffect(() => {
+    if (!enabled) {
+      // Clear any rows from a previous enabled run, and settle: a disabled
+      // query that stayed "loading" would hang every skeleton downstream.
+      setData([])
+      setError(null)
+      setIsLoading(false)
+      return
+    }
     let cancelled = false
     const progressToken = registerQuery()
 
@@ -62,7 +82,7 @@ export function useDataset<T>(
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [datasetKey, paramsKey, refetchKey, ...deps])
+  }, [datasetKey, paramsKey, refetchKey, enabled, ...deps])
 
   const hitLimit = !isLoading && data.length > 0 && data.length === (params.$limit ?? 1000)
 
