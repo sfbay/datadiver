@@ -6,6 +6,18 @@
 
 export interface YearCount { year: number; count: number }
 
+/** Date-only YYYY-MM-DD from local `Date` parts — this bounds a UI control
+ *  (the strip's domain end / max-drag day), not data, so the viewer's clock
+ *  is fine. Never toISOString() here (see sfTime.ts for why, for DATA
+ *  timestamps; mirrors src/views/Housing/EraStrip.tsx's todayIso). */
+export function todayIso(): string {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 export function parseYearCounts(rows: Array<{ yr?: string; n: string }>): YearCount[] {
   return rows
     .filter((r): r is { yr: string; n: string } => r.yr != null)

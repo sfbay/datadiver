@@ -1,5 +1,17 @@
 import { describe, it, expect } from 'vitest'
-import { parseYearCounts, snapBrushToRange, rangeToYearSpan } from './eraStrip'
+import { parseYearCounts, snapBrushToRange, rangeToYearSpan, todayIso } from './eraStrip'
+
+describe('todayIso', () => {
+  it('returns YYYY-MM-DD built from local date parts, agreeing with a locally-constructed reference', () => {
+    const d = new Date()
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    const expected = `${y}-${m}-${day}`
+    expect(todayIso()).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    expect(todayIso()).toBe(expected)
+  })
+})
 
 describe('parseYearCounts', () => {
   it('parses and sorts, dropping rows with no year', () => {

@@ -9,7 +9,7 @@
 import { useMemo } from 'react'
 import { useDataset } from '@/hooks/useDataset'
 import { eraSourceForPath, buildEraQuery, buildHistoricalEraQuery, eraDomain, type EraSeam } from '@/api/eraSources'
-import { parseYearCounts, type YearCount } from '@/utils/eraStrip'
+import { parseYearCounts, todayIso, type YearCount } from '@/utils/eraStrip'
 
 export interface UseEraSeriesResult {
   years: YearCount[]
@@ -51,19 +51,21 @@ export function useEraSeries(pathname: string): UseEraSeriesResult {
     [data, histData, source],
   )
   const domain = useMemo(
-    () => (source ? eraDomain(source, new Date().toISOString().slice(0, 10))
+    () => (source ? eraDomain(source, todayIso())
                   : { start: '', end: '' }),
     [source],
   )
+
+  const anyLoading = source != null && (isLoading || (source.historical != null && histLoading))
 
   return {
     years,
     domain,
     seams: source?.seams ?? [],
     clampNote: source?.clampNote,
-    isLoading: source != null && (isLoading || (source.historical != null && histLoading)),
+    isLoading: anyLoading,
     // A source with zero returned years is a failed or empty query — fall back
     // rather than render an empty strip, which reads as "this city had no crime".
-    available: source != null && (isLoading || years.length > 0),
+    available: source != null && (anyLoading || years.length > 0),
   }
 }
