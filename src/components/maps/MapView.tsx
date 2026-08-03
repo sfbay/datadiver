@@ -190,59 +190,86 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
   useEffect(() => {
     if (!containerRef.current) return
 
-    // Clean up any existing map (handles StrictMode double-mount)
-    if (mapRef.current) {
-      mapRef.current.remove()
-      mapRef.current = null
+    // Map construction is deferred past the route's first paint. Building a
+    // mapboxgl.Map (WebGL context + style parse + layer wiring) blocks the
+    // main thread ~150-250ms; done synchronously on mount it lands inside
+    // the frame the user is waiting on after clicking a nav item, which is
+    // what Chrome's INP warning flags. A single rAF still runs BEFORE that
+    // frame paints — only the second rAF is guaranteed to start after the
+    // view's chrome and skeletons have committed to screen. onMapReady
+    // therefore fires ~2 frames later than it used to; every consumer is a
+    // state setter and useMapLayer's retry loop absorbs the delay.
+    let raf1 = 0
+    let raf2 = 0
+    let cancelled = false
+
+    const build = () => {
+      if (cancelled || !containerRef.current) return
+
+      // Clean up any existing map (handles StrictMode double-mount)
+      if (mapRef.current) {
+        mapRef.current.remove()
+        mapRef.current = null
+      }
+
+      const map = new mapboxgl.Map({
+        container: containerRef.current,
+        style: isDarkMode
+          ? 'mapbox://styles/mapbox/dark-v11'
+          : 'mapbox://styles/mapbox/light-v11',
+        // Per-field fallback to the global defaults — a view passing a partial
+        // `camera` overrides only what it specifies. Captured at mount (the
+        // camera is initial-only; users can pan/tilt freely afterward).
+        center: camera?.center
+          ? [camera.center.lng, camera.center.lat]
+          : [SF_CENTER.lng, SF_CENTER.lat],
+        zoom: camera?.zoom ?? SF_DEFAULT_ZOOM,
+        pitch: camera?.pitch ?? SF_DEFAULT_PITCH,
+        bearing: camera?.bearing ?? SF_DEFAULT_BEARING,
+        antialias: true,
+        preserveDrawingBuffer: true,
+        attributionControl: false,
+      })
+
+      // Zoom on the LEFT (bottom-right is occupied by the underlay/anomaly legend,
+      // which was hiding it); stacks above the compact attribution.
+      map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'bottom-left')
+      map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-left')
+
+      // Apply terrain + fog every time the style loads. style.load fires once
+      // on initial style load AND each time setStyle() is called (theme
+      // switch), so a single binding covers both. We read the live dark-mode
+      // state from the store at fire time so the fog tint matches the
+      // current theme even mid-session.
+      const handleStyleLoad = () => {
+        applyTerrainAndFog(map, useAppStore.getState().isDarkMode)
+        softenBasemapLabels(map, useAppStore.getState().isDarkMode)
+        labelSizeCache.current = collectStockTextSizes(map)
+        applyLabelTextScale(map, labelSizeCache.current, SCALE_FACTORS[useAppStore.getState().typeScale])
+      }
+      map.on('style.load', handleStyleLoad)
+      if (map.isStyleLoaded()) handleStyleLoad()
+
+      mapRef.current = map
+
+      // Notify parent right after construction — no waiting for Mapbox
+      // events; useMapLayer handles retry if the style isn't ready.
+      setIsReady(true)
+      onMapReadyRef.current?.(map)
     }
 
-    const map = new mapboxgl.Map({
-      container: containerRef.current,
-      style: isDarkMode
-        ? 'mapbox://styles/mapbox/dark-v11'
-        : 'mapbox://styles/mapbox/light-v11',
-      // Per-field fallback to the global defaults — a view passing a partial
-      // `camera` overrides only what it specifies. Captured at mount (the
-      // camera is initial-only; users can pan/tilt freely afterward).
-      center: camera?.center
-        ? [camera.center.lng, camera.center.lat]
-        : [SF_CENTER.lng, SF_CENTER.lat],
-      zoom: camera?.zoom ?? SF_DEFAULT_ZOOM,
-      pitch: camera?.pitch ?? SF_DEFAULT_PITCH,
-      bearing: camera?.bearing ?? SF_DEFAULT_BEARING,
-      antialias: true,
-      preserveDrawingBuffer: true,
-      attributionControl: false,
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(build)
     })
 
-    // Zoom on the LEFT (bottom-right is occupied by the underlay/anomaly legend,
-    // which was hiding it); stacks above the compact attribution.
-    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'bottom-left')
-    map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-left')
-
-    // Apply terrain + fog every time the style loads. style.load fires once
-    // on initial style load AND each time setStyle() is called (theme
-    // switch), so a single binding covers both. We read the live dark-mode
-    // state from the store at fire time so the fog tint matches the
-    // current theme even mid-session.
-    const handleStyleLoad = () => {
-      applyTerrainAndFog(map, useAppStore.getState().isDarkMode)
-      softenBasemapLabels(map, useAppStore.getState().isDarkMode)
-      labelSizeCache.current = collectStockTextSizes(map)
-      applyLabelTextScale(map, labelSizeCache.current, SCALE_FACTORS[useAppStore.getState().typeScale])
-    }
-    map.on('style.load', handleStyleLoad)
-    if (map.isStyleLoaded()) handleStyleLoad()
-
-    mapRef.current = map
-
-    // Notify parent immediately — useMapLayer handles retry if style isn't ready
-    setIsReady(true)
-    onMapReadyRef.current?.(map)
-
     return () => {
-      map.remove()
-      mapRef.current = null
+      cancelled = true
+      cancelAnimationFrame(raf1)
+      cancelAnimationFrame(raf2)
+      if (mapRef.current) {
+        mapRef.current.remove()
+        mapRef.current = null
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
