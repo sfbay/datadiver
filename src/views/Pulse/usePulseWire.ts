@@ -25,12 +25,11 @@ import {
   rankWire,
   type WireItem,
 } from '@/lib/pulse/pulsePhrase'
-
-// A "quiet" reading is only trustworthy if the stream's freshest event is
-// recent. If a stream hasn't published in over a day, a low 48h count is a
-// publishing gap, not real quiet — suppress it (the Quakebot / "crashes -100%"
-// trap). 24h comfortably clears all three live streams' normal cadence.
-const FRESH_MAX_MS = 24 * 60 * 60 * 1000
+// ONE definition of "fresh enough to trust a quiet reading", shared with the
+// choropleth. useAnomalyBaseline already drops stale-quiet anomalies before
+// they reach us; the per-item flag below stays as the second gate that also
+// governs prose, so the two can never disagree about the same stream.
+import { FRESH_MAX_MS } from '@/lib/pulse/anomalyStats'
 
 export interface UsePulseWireResult {
   items: WireItem[]
@@ -42,6 +41,7 @@ export function usePulseWire(): UsePulseWireResult {
   const { anomalies } = useAnomalyBaseline({
     datasets: LAST48_DATASETS,
     currentEvents: window48.events,
+    freshness: window48.freshness,
   })
   const { items: tickerItems, isLoading: tickerLoading } = useCivicIndicators()
 
