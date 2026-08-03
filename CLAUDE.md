@@ -122,7 +122,7 @@ src/
 - **Socrata schemas DRIFT — a `400 no-such-column` is usually not your typo.** DataSF silently removes columns. July 2026: `naic_code` / `naic_code_description` / `naics_code_descriptions_list` vanished from `g8m3-pdis`, 400'ing Business Search AND Business Activity together (shared field list). Ground truth is `https://data.sfgov.org/api/views/<id>/columns.json` — **never** a remembered schema. Business sectors are now RECONSTRUCTED from the surviving `self_reported_naics_code` by `src/utils/naicsSector.ts` (pure, unit-tested longest-prefix crosswalk; `sectorWhereClause()` builds server-side sector filters; sector aggregation groups on `substring(self_reported_naics_code,1,3)` + client rollup). Don't re-add the dead columns. Full story: `docs/data-insights.md`.
 
 ### Maps
-- `MapView` calls `onMapReady` immediately (no waiting for Mapbox events)
+- `MapView` defers `new mapboxgl.Map()` past the route's first paint (double-rAF, Aug 2026 — construction blocks ~150-250ms and was the whole nav-INP cost), then calls `onMapReady` right after construction with no waiting for Mapbox events. Consumers must treat the map as arriving ~2 frames post-mount (every existing one is a state setter; `useMapLayer` retries) — never assume it exists during the first commit
 - `useMapLayer` uses try-catch with setTimeout retry — the ONLY reliable pattern with Mapbox GL v3 + React
 - Container sizing: use `w-full h-full` NOT `absolute inset-0` — Mapbox overrides position to relative
 - Heatmap colors must be bright (cyan/red) on dark-v11 basemap — dark blues are invisible
