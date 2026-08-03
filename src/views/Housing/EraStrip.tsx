@@ -390,7 +390,7 @@ export default function EraStrip({ evictionYears, buyoutYears, range, onRangeCha
         const [x0px, x1px] = event.selection as PxSpan
         const x0 = x.invert(x0px)
         const x1 = x.invert(x1px)
-        const { start, end } = snapBrushToRange(x0, x1, todayIso())
+        const { start, end } = snapBrushToRange(x0, x1, todayIso(), ERA_START_YEAR)
 
         // Snap the visual selection to the exact whole-year pixel bounds
         // (the raw drag rarely lands on a year boundary).

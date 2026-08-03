@@ -1,5 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useAppStore } from '@/stores/appStore'
+import { useEraSeries } from '@/hooks/useEraSeries'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import EraTrack from '@/components/filters/EraTrack'
+import { resizeToDays, stepWindow, moveToNow, windowDays } from '@/utils/dateWindow'
 
 const PRESETS = [
   { label: '7d', days: 7 },
@@ -121,6 +126,9 @@ function TimelineTrack({
 
 export default function DateRangePicker() {
   const { dateRange, setDateRange } = useAppStore()
+  const { pathname } = useLocation()
+  const era = useEraSeries(pathname)
+  const isMobile = useIsMobile()
   const [isCustomOpen, setIsCustomOpen] = useState(false)
   const [localStart, setLocalStart] = useState(dateRange.start)
   const [localEnd, setLocalEnd] = useState(dateRange.end)
@@ -151,8 +159,10 @@ export default function DateRangePicker() {
   }, [setDateRange])
 
   const applyPreset = (preset: typeof PRESETS[number]) => {
-    const start = preset.days === 0 ? yearStart() : daysAgo(preset.days)
-    applyRange(start, today())
+    if (preset.days === 0) { applyRange(yearStart(), today()); return }  // YTD stays absolute
+    if (!era.available) { applyRange(daysAgo(preset.days), today()); return }
+    const w = resizeToDays(dateRange, preset.days, era.domain)
+    applyRange(w.start, w.end)
   }
 
   const handleApply = () => {
@@ -163,8 +173,11 @@ export default function DateRangePicker() {
 
   // Detect active preset
   const activePreset = PRESETS.find((p) => {
-    const expectedStart = p.days === 0 ? yearStart() : daysAgo(p.days)
-    return dateRange.start === expectedStart && dateRange.end === today()
+    if (p.days === 0) return dateRange.start === yearStart() && dateRange.end === today()
+    if (!era.available) {
+      return dateRange.start === daysAgo(p.days) && dateRange.end === today()
+    }
+    return Math.abs(windowDays(dateRange) - p.days) <= 1
   })
 
   const formatDisplay = (start: string, end: string) => {
@@ -172,10 +185,26 @@ export default function DateRangePicker() {
     const e = new Date(end + 'T12:00:00')
     const fmt = (d: Date) =>
       d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    const yearSuffix = s.getFullYear() !== e.getFullYear()
-      ? `, ${s.getFullYear()}`
-      : ''
-    return `${fmt(s)}${yearSuffix} \u2013 ${fmt(e)}`
+    // The era strip snaps to whole years, so a strip-selected range is always
+    // Jan 1 -> Dec 31. Label those at YEAR granularity: "2008 \u2013 2016" is
+    // shorter than the day form (which wrapped to two lines in the rail and
+    // shoved the strip down) and truer \u2014 the day form implies a precision the
+    // reader never asked for. A range clamped to today is not a whole year and
+    // correctly falls through to the day form, which is how a partial year
+    // stays visibly partial.
+    const wholeYears = start.endsWith('-01-01') && end.endsWith('-12-31')
+    if (wholeYears) {
+      return s.getFullYear() === e.getFullYear()
+        ? `${s.getFullYear()}`
+        : `${s.getFullYear()} \u2013 ${e.getFullYear()}`
+    }
+    // Otherwise a cross-year range must name the year at BOTH ends. Stamping
+    // only the start yielded "Jan 1, 2008 \u2013 Dec 31" \u2014 December 31 of no stated
+    // year, which was rare before the strip could reach past two years.
+    if (s.getFullYear() !== e.getFullYear()) {
+      return `${fmt(s)}, ${s.getFullYear()} \u2013 ${fmt(e)}, ${e.getFullYear()}`
+    }
+    return `${fmt(s)} \u2013 ${fmt(e)}`
   }
 
   const rangeDays = daysBetween(dateRange.start, dateRange.end)
@@ -193,7 +222,29 @@ export default function DateRangePicker() {
       </div>
 
       {/* Visual timeline track */}
-      <TimelineTrack start={dateRange.start} end={dateRange.end} onDragEnd={applyRange} />
+      {era.available ? (
+        <div
+          onKeyDown={(e) => {
+            if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+            e.preventDefault()
+            const w = stepWindow(dateRange, e.key === 'ArrowRight' ? 1 : -1, era.domain)
+            applyRange(w.start, w.end)
+          }}
+        >
+          <EraTrack
+            years={era.years}
+            domain={era.domain}
+            seams={era.seams}
+            clampNote={era.clampNote}
+            value={dateRange}
+            isLoading={era.isLoading}
+            compact={isMobile}
+            onChange={(w) => applyRange(w.start, w.end)}
+          />
+        </div>
+      ) : (
+        <TimelineTrack start={dateRange.start} end={dateRange.end} onDragEnd={applyRange} />
+      )}
 
       {/* Preset pills — always visible */}
       <div className="flex gap-0.5 mb-1">
@@ -218,6 +269,19 @@ export default function DateRangePicker() {
           )
         })}
       </div>
+
+      {era.available && dateRange.end !== era.domain.end && (
+        <button
+          onClick={() => {
+            const w = moveToNow(dateRange, era.domain.end, era.domain)
+            applyRange(w.start, w.end)
+          }}
+          className="w-full text-center py-0.5 text-nano font-mono
+                     text-[#5c9693] hover:text-[#5c9693]/80 transition-colors"
+        >
+          ← back to now
+        </button>
+      )}
 
       {/* Custom range toggle */}
       <button

@@ -19,6 +19,13 @@ interface UseDatasetOptions {
    *  Gating the FETCH matters, not just the render: a disabled query must cost
    *  nothing and must not register with the loading-progress meter. */
   enabled?: boolean
+  /** Forwarded to `fetchDataset` — aborts a stalled request instead of
+   *  holding one of the browser's ~6 per-host connection slots forever.
+   *  Required for any heavy query (see useVisionZero.ts, useLast48Window.ts
+   *  for the established `{ timeoutMs: 15_000, retries: 1 }` shape). */
+  timeoutMs?: number
+  /** Forwarded to `fetchDataset` — re-attempts on timeout/network/non-OK. */
+  retries?: number
 }
 
 /** React hook for fetching Socrata dataset data with loading/error state */
@@ -57,7 +64,10 @@ export function useDataset<T>(
       setError(null)
 
       try {
-        const result = await fetchDataset<T>(datasetKey, params)
+        const result = await fetchDataset<T>(datasetKey, params, {
+          timeoutMs: options.timeoutMs,
+          retries: options.retries,
+        })
         if (!cancelled) {
           setData(result)
         }
