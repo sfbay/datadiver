@@ -63,6 +63,11 @@ export default function EraTrack({
         aria-label="History range"
         aria-valuemin={minYear}
         aria-valuemax={maxYear}
+        // This control models a RANGE with a single slider role: aria-valuenow
+        // carries the range's leading edge (the required numeric prop) while
+        // aria-valuetext carries both edges for the announced string — don't
+        // "simplify" by dropping valuetext.
+        aria-valuenow={yearOf(value.start)}
         aria-valuetext={`${value.start} to ${value.end}`}
         className={`relative ${compact ? 'h-6' : 'h-9'} rounded
                     bg-slate-200/50 dark:bg-white/[0.05] cursor-crosshair
