@@ -26,6 +26,12 @@ describe('resizeToDays', () => {
     expect(resizeToDays({ start: '2020-01-01', end: today }, 30, D))
       .toEqual({ start: '2026-07-04', end: today })
   })
+  // Regression: a negative `days` used to push the computed start past the
+  // fixed end, emitting start > end. clampWindow now normalizes this.
+  it('never returns an inverted window given negative days', () => {
+    const out = resizeToDays({ start: '2010-01-01', end: '2010-06-15' }, -30, D)
+    expect(out.start <= out.end).toBe(true)
+  })
 })
 
 describe('stepWindow', () => {
@@ -50,6 +56,14 @@ describe('clampWindow', () => {
   })
   it('a window longer than the domain becomes the whole domain', () => {
     expect(clampWindow({ start: '1990-01-01', end: '2030-01-01' }, D)).toEqual(D)
+  })
+  // Regression: an inverted window that already sits fully inside the domain
+  // used to pass through unchanged — start after end. clampWindow must
+  // normalize via the floored length, never emit start > end.
+  it('never returns an inverted window, even given inverted input', () => {
+    const out = clampWindow({ start: '2020-07-15', end: '2020-06-15' }, D)
+    // 'YYYY-MM-DD' strings sort lexicographically the same as chronologically.
+    expect(out.start <= out.end).toBe(true)
   })
 })
 

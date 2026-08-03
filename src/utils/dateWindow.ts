@@ -24,7 +24,10 @@ export function windowDays(w: Win): number {
 
 /** Slide a window back inside the domain, PRESERVING its length. Shortening
  *  would silently change what the user asked for. A window longer than the
- *  domain collapses to the domain itself. */
+ *  domain collapses to the domain itself. Also normalizes: `len` is floored
+ *  to 0, and the return is always derived as `start + len`, so an inverted
+ *  input (or one produced by a negative `days` upstream) can never come out
+ *  the other side with `start > end`. */
 export function clampWindow(w: Win, d: Domain): Win {
   const ds = ms(d.start), de = ms(d.end)
   const len = Math.max(0, ms(w.end) - ms(w.start))
@@ -32,7 +35,7 @@ export function clampWindow(w: Win, d: Domain): Win {
   let s = ms(w.start), e = ms(w.end)
   if (s < ds) { s = ds; e = ds + len }
   if (e > de) { e = de; s = de - len }
-  return { start: iso(s), end: iso(e) }
+  return { start: iso(s), end: iso(s + len) }
 }
 
 /** Resize in place, END-anchored. With an end of today this is exactly what
