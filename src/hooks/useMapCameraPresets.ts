@@ -163,9 +163,9 @@ export function useMapCameraPresets(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, selectedNeighborhood, fallbackPoints, neighborhoodBoundaries, viewportPadding])
 
-  // Reset to global default on falling-edge clear (set → null transition for
-  // both selections). Tracked via ref so we don't fire on every mount where
-  // both happen to be null.
+  // Reset to the active city's default view on falling-edge clear (set → null
+  // transition for both selections). Tracked via ref so we don't fire on
+  // every mount where both happen to be null.
   const prev = useRef<{ corridor: string | null; neighborhood: string | null }>({
     corridor: null,
     neighborhood: null,

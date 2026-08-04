@@ -157,8 +157,8 @@ export interface MapHandle {
 }
 
 /** Optional per-view camera override. Any omitted field falls back to the
- *  global SF_DEFAULT_* / SF_CENTER, so views that don't pass `camera` render
- *  exactly as before. Read once at map construction — not reactive. */
+ *  active city's `camera.defaultView`, so views that don't pass `camera`
+ *  render exactly as before. Read once at map construction — not reactive. */
 export interface MapCamera {
   center?: { lat: number; lng: number }
   zoom?: number

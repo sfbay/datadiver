@@ -18,6 +18,12 @@ describe('parseRoute', () => {
     expect(parseRoute('/oakland/crime-incidents')).toEqual({ cityId: 'oakland', viewId: 'crime-incidents' })
     expect(parseRoute('/oakland/a/b')).toEqual({ cityId: 'oakland', viewId: 'a' })
   })
+  it('normalizes a mixed-case city prefix to agree with the router\'s case-insensitive match', () => {
+    expect(parseRoute('/Oakland/crime-incidents')).toEqual({ cityId: 'oakland', viewId: 'crime-incidents' })
+  })
+  it('normalizes an all-caps city prefix to agree with the router\'s case-insensitive match', () => {
+    expect(parseRoute('/OAKLAND')).toEqual({ cityId: 'oakland', viewId: 'home' })
+  })
   it('treats unknown first segments as SF views (catch-all is the router, not the parser)', () => {
     expect(parseRoute('/nosuchcity/whatever')).toEqual({ cityId: 'sf', viewId: 'nosuchcity' })
   })
