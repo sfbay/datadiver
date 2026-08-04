@@ -117,7 +117,8 @@ export interface CityConfig {
     // so a runtime joinProperty parameter would be huge churn for zero behavior;
     // the property name is a vendoring convention instead.
     names: readonly string[]
-    excluded: readonly string[]  // curated non-residential ids (SF parks/military)
+    excluded: ReadonlySet<string>  // curated non-residential ids (SF parks/military);
+                                    // matches the existing NON_RESIDENTIAL_NEIGHBORHOODS constant
     count: number
   }
   camera: {
@@ -131,14 +132,15 @@ export interface CityConfig {
   // null = city has no ACS pipeline; consumers HIDE census affordances. The static
   // JSON assets stay imported where they are today — config paths would be
   // speculative until a second census-bearing city exists.
-  datasets: Record<string, CityDatasetConfig>  // logical keys, endpoint DERIVED
-  manifest: ViewManifestEntry[]                // stage 1b; [] for oakland in stage 1
+  datasets: Record<string, RawDatasetConfig>    // logical keys, endpoint DERIVED
+  // manifest: ViewManifestEntry[] joins CityConfig in stage 1b — it does not exist in 1a.
 }
 ```
 
-`CityDatasetConfig` = today's `DatasetConfig` minus the baked `endpoint`, plus the bare
-Socrata 4×4 `id`; endpoints derive as `https://${portal.host}/resource/${id}.json` at
-lookup. `DatasetKey` stays exported from its current module (re-export of
+`RawDatasetConfig` (as built; named `CityDatasetConfig` in earlier drafts of this spec)
+= `Omit<DatasetConfig, 'endpoint'>` — today's `DatasetConfig` minus the baked `endpoint`,
+plus the bare Socrata 4×4 `id`; endpoints derive as `https://${portal.host}/resource/${id}.json`
+at lookup. `DatasetKey` stays exported from its current module (re-export of
 `keyof sfDatasets`) so the 43 importing files do not churn in stage 1.
 
 **Deliberately NOT in stage 1** (each has a named later consumer): voice pack
@@ -212,8 +214,11 @@ viewPath('oakland', 'crime-incidents') → '/oakland/crime-incidents'
 - Camera: `SF_CENTER`/`SF_DEFAULT_*` become `cities/sf` config values; `MapView`'s
   constructor fallback and `useMapCameraPresets`' falling-edge reset resolve through
   the active city (closing the "clearing an Oakland beat flies you to San Francisco"
-  trap). The four stray hand-tuned SF cameras (Last 48 hero, Neighborhood flyTo,
-  Alerts picker, ambient orbit anchor) move into named `camera.slots`.
+  trap). As built, only the Last 48 hero camera moved into a named `camera.slots`
+  entry in stage 1a (assembled by import from `LAST48_CAMERA`, value-identical); the
+  remaining three stray hand-tuned SF cameras (Neighborhood flyTo, Alerts picker,
+  ambient orbit anchor) stay where they are and migrate as each gains a config
+  consumer in a later stage.
 - Census gate: `useDemographicUnderlay` / `UnderlayPicker` / ACS consumers check
   `getCity(cityId).census`; `null` renders nothing (never an empty picker). SF
   behavior unchanged.
@@ -259,8 +264,10 @@ duplicated-allowlist drift class by construction. Per-city era-source integrity 
 - Full `pnpm build` via the devman wrapper (tsc -b strict) + `pnpm test`.
 - New unit tests: `parseRoute` round-trips (all grammar rows above, including `/live`
   dateless and `/live-feeds` redirect classification), `viewPath` inverse, manifest
-  completeness pin, boundary-cache city keying, `clearCache` endpoint matching,
-  census-gate null behavior.
+  completeness pin, census-gate null behavior (boundary-cache city keying and
+  `clearCache` endpoint matching have no unit tests — both are untestable under the
+  node-only Vitest, the hook needs a DOM and the client cache is module-private —
+  and are covered instead by the live preview walk + build below).
 - Live `vite preview` pass over the deep-link inventory: `/live?event=`, `?nh=`,
   `?fill=anomaly`, `/elections?precinct=`/`?candidate=`/`?strike=`, `?compare=`,
   `?streams=`/`?causes=` (Housing), `/live-feeds` legacy redirect — all must resolve
