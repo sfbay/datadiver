@@ -67,12 +67,18 @@ export interface ViewManifestEntry {
   accentColor: string       // pigment hex
   navPulse?: true           // the live-dot (today: hardcoded path==='/live' in AppShell render)
   homeCard?: {              // presence = the view gets a Home viz card
-    title: string; subtitle: string; badge: string; description: string
-    stats: readonly { label: string; value: string }[]  // authored strings, never derived
+    title: string; subtitle: string
     order: number           // Home grid order ≠ nav order today; this preserves it (§2)
   }
-  eraSource?: EraSource     // EraSource INTERFACE moves here; query builders stay in api/eraSources.ts
-  underlayPreset?: readonly string[]   // census-variable IDS, not objects (bundle rule below)
+  // (as-built: badge dropped — character-identical to navShortLabel for all 14
+  // cards, Home renders that; description/stats dropped — verified dead at both
+  // render sites, copy preserved in git history)
+  eraSource?: EraSource     // EraSource INTERFACE moves here; query builders stay in
+                            // api/eraSources.ts. As-built: EraSource.datasetKey is typed
+                            // `string` (a key into the owning city's registry, membership
+                            // pinned by tests) — importing DatasetKey would drag
+                            // api/datasets into the leaf for a string-wide alias.
+  underlayPreset?: readonly CensusVariable[]  // census-variable IDS via `import type` (bundle rule below)
   dateless?: true           // live: useUrlSync strips start/end/tod/compare
   omniDatasetKeys?: readonly string[]  // dataset keys that surface this view in ⌘K
 }
@@ -81,10 +87,12 @@ export interface ViewManifestEntry {
 **Bundle rule (load-bearing):** the manifest is pure data. No component imports
 (or every city pulls every view's lazy chunk), and no heavyweight data imports
 either — the manifest is reachable from the entry bundle via `fetchDataset` →
-registry → CityConfig. That is why `underlayPreset` holds **id strings**: views
-resolve them via a new `resolveUnderlayPreset()` helper in `censusVariables.ts`,
-inside their own lazy chunk, keeping the full census-variable definitions out of
-the entry graph (frontpage-perf rule). Moving the `EraSource` interface into the
+registry → CityConfig. That is why `underlayPreset` holds **id strings**: `CensusVariable` is a
+string-union TYPE, so the manifest carries the ids at zero bundle cost and views
+pass them straight to `UnderlayPicker` (whose `presets` prop already consumes
+ids), keeping the full census-variable definitions out of the entry graph
+(frontpage-perf rule). No resolver helper needed — the picker resolves ids
+against `CENSUS_VARIABLES` inside its own lazy chunk. Moving the `EraSource` interface into the
 manifest module (types are leaf-safe) avoids a module cycle
 `sf/manifest → api/eraSources → api/datasets → cities/registry → sf/manifest`;
 `api/eraSources.ts` re-exports the type so existing type importers don't churn.
@@ -101,8 +109,10 @@ manifest module (types are leaf-safe) avoids a module cycle
   surfaces and `business` is absent without recorded reason). `homeCard.order`
   transcribes today's sequence exactly; deriving the grid from nav order would
   visibly reshuffle Home and break the gate.
-- **All copy migrates verbatim** — including the stale Scanner Radio card (§7
-  fixes it) and every hand-authored stat chip ('~23.3M', '41', '29 yrs').
+- **All rendered copy migrates verbatim** — including the stale Scanner Radio
+  card (§7 fixes it). As-built: the old cards' `description`/`stats` chips
+  ('~23.3M', '41', '29 yrs') were verified DEAD (no render site) and dropped
+  rather than migrated; git history keeps the copy.
 - `camera.slots` is wired, not deleted: SF slot key renames `last48` → `live`;
   `Last48Map` reads `city.camera.slots.live` instead of importing `LAST48_CAMERA`
   — identical numbers (`sfCity` already copies them from `LAST48_CAMERA`), zero
@@ -116,7 +126,7 @@ manifest module (types are leaf-safe) avoids a module cycle
 | `Home` | private `VISUALIZATIONS` (14 rows) | derives from entries with `homeCard`, sorted by `homeCard.order` |
 | OmniSearch | `DATASET_ROUTES` + `SEARCH_INDEX` built once at module eval; imports `SF_NEIGHBORHOODS` + `DATASETS` directly | `buildSearchIndex(cityId)` memoized per city; iterates `city.datasets` in the same object order as today; routes from the manifest's `omniDatasetKeys` inverted to a datasetKey→viewId lookup; paths via `viewPath()`; places from `city.areas.names`. SF output element-for-element identical. |
 | Era Track | `ERA_SOURCES` table + `if (cityId !== 'sf')` guard, unsafe `as ViewId` cast | `eraSourceFor(cityId, viewId)` = manifest lookup, same signature, callers untouched. Oakland → undefined naturally (no entries); `/live` prohibition holds naturally (no `eraSource` field). |
-| Underlays | `UNDERLAY_PRESETS[literal] ?? []` at 9 view call sites; `'last48'` drift | new `useViewEntry()` hook (active city's entry for the current route) + `resolveUnderlayPreset(entry)`; the entry lives under `live` |
+| Underlays | `UNDERLAY_PRESETS[literal] ?? []` at 9 view call sites; `'last48'` drift | new `useViewEntry()` hook (active city's entry for the current route); views pass `entry?.underlayPreset ?? []` straight to the picker; the entry lives under `live` |
 | `useUrlSync` | `DATELESS_VIEWS` / `REDIRECT_VIEWS` module Sets | `manifestEntry?.dateless` / `city.redirects`. Skip-sync semantics UNCHANGED in 1b — the `cityId !== 'sf'` STAGE 3 CONTRACT clause stays; the #97 fix waits for §7. |
 | `App.tsx` | 20 hand-written `<Route>` rows | rows derive from the SF manifest over a component map `Record<ViewId, ComponentType>` (Home stays the eager import; the other 19 stay `lazy()`). Hand-written rows remain for: the three `/business/…` detail routes, redirect rows (derived from `city.redirects` via one search+hash-preserving component replacing `LiveFeedsRedirect`), `/oakland/*`, and the catch-all `*`. |
 
