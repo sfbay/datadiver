@@ -1,9 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { Suspense, lazy, useEffect } from 'react'
+import { Suspense, lazy, useEffect, useRef } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import { syncViewportMode } from '@/hooks/effectiveViewport'
 import AppShell from '@/components/layout/AppShell'
 import { RouteErrorBoundary } from '@/components/ui/ErrorBoundary'
+import { useRouteView } from '@/cities/useActiveCity'
 // Eager: ONLY the landing page. Every dataset view is route-split — including
 // The Last 48, whose import graph carries Mapbox GL (~467 KB gzip): keeping it
 // lazy keeps the GL engine off Home's critical path (the manualChunks split in
@@ -59,6 +60,19 @@ function LiveFeedsRedirect() {
   return <Navigate to={{ pathname: '/live', search, hash }} replace />
 }
 
+/** Clears cross-city selection state when the URL's city changes. The store
+ *  holds no city — the URL is the only authority (see spec §2). */
+function CityChangeReset() {
+  const { cityId } = useRouteView()
+  const setSelectedNeighborhood = useAppStore((s) => s.setSelectedNeighborhood)
+  const prev = useRef(cityId)
+  useEffect(() => {
+    if (prev.current !== cityId) setSelectedNeighborhood(null)
+    prev.current = cityId
+  }, [cityId, setSelectedNeighborhood])
+  return null
+}
+
 export default function App() {
   const isDarkMode = useAppStore((s) => s.isDarkMode)
   const typeScale = useAppStore((s) => s.typeScale)
@@ -97,6 +111,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AppShell>
+        <CityChangeReset />
         <RouteErrorBoundary>
         <Suspense fallback={<RouteFallback />}>
         <Routes>
@@ -126,6 +141,9 @@ export default function App() {
           <Route path="/live-feeds" element={<LiveFeedsRedirect />} />
           <Route path="/alerts" element={<Alerts />} />
           <Route path="/about" element={<About />} />
+          {/* Oakland routes are dormant until stage 3 fills them — until then
+              any /oakland/* URL lands on Home rather than 404-ing. */}
+          <Route path="/oakland/*" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         </Suspense>
