@@ -5,7 +5,7 @@
  *    1. Corridor selection — apply CORRIDOR_VIEWS preset, else fit-bounds
  *    2. Neighborhood selection — apply NEIGHBORHOOD_VIEWS preset, else
  *       centroid-flyTo at zoom 14
- *    3. Reset to SF_DEFAULT_VIEW when both selections clear
+ *    3. Reset to the active city's default view when both selections clear
  *
  *  The lookup tables in `src/utils/mapDefaults.ts` are global, so a preset
  *  tuned in any view applies in every view that calls this hook with the
@@ -24,8 +24,8 @@ import {
   getCorridorView,
   getNeighborhoodView,
   applyCameraView,
-  SF_DEFAULT_VIEW,
 } from '@/utils/mapDefaults'
+import { useActiveCity } from '@/cities/useActiveCity'
 
 export interface CameraPresetPoint {
   lat: number
@@ -59,6 +59,7 @@ export function useMapCameraPresets(
   options: UseMapCameraPresetsOptions,
 ) {
   const { selectedCorridor, selectedNeighborhood, fallbackPoints, neighborhoodBoundaries, viewportPadding } = options
+  const cityDefaultView = useActiveCity().camera.defaultView
 
   // Full PaddingOptions (Mapbox wants all four sides) with a base breathing
   // margin for the fitBounds paths; undefined when the caller passes nothing
@@ -181,7 +182,7 @@ export function useMapCameraPresets(
       // Same padding on reset: flight padding persists on the map, so an
       // unpadded reset after a padded selection flight would re-center the
       // citywide view under the overlay chrome.
-      applyCameraView(map, SF_DEFAULT_VIEW, { duration: 1200, padding: pad })
+      applyCameraView(map, cityDefaultView, { duration: 1200, padding: pad })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, selectedCorridor, selectedNeighborhood, viewportPadding])
