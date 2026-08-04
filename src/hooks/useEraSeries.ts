@@ -10,8 +10,9 @@
 
 import { useMemo } from 'react'
 import { useDataset } from '@/hooks/useDataset'
-import { eraSourceForPath, buildEraQuery, buildHistoricalEraQuery, eraDomain, type EraSeam } from '@/api/eraSources'
+import { eraSourceFor, buildEraQuery, buildHistoricalEraQuery, eraDomain, type EraSeam } from '@/api/eraSources'
 import { parseYearCounts, todayIso, type YearCount } from '@/utils/eraStrip'
+import type { CityId } from '@/cities/routing'
 
 export interface UseEraSeriesResult {
   years: YearCount[]
@@ -24,8 +25,8 @@ export interface UseEraSeriesResult {
   available: boolean
 }
 
-export function useEraSeries(pathname: string): UseEraSeriesResult {
-  const source = useMemo(() => eraSourceForPath(pathname), [pathname])
+export function useEraSeries(cityId: CityId, viewId: string): UseEraSeriesResult {
+  const source = useMemo(() => eraSourceFor(cityId, viewId), [cityId, viewId])
   const params = useMemo(() => (source ? buildEraQuery(source) : {}), [source])
   const histParams = useMemo(
     () => (source ? buildHistoricalEraQuery(source) ?? {} : {}), [source],

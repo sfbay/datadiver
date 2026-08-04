@@ -7,6 +7,7 @@
 
 import type { DatasetKey } from './datasets'
 import type { ViewId } from '@/types/datasets'
+import type { CityId } from '@/cities/routing'
 
 export interface EraSeam {
   year: number
@@ -88,19 +89,15 @@ export const ERA_SOURCES: Partial<Record<ViewId, EraSource>> = {
   },
 }
 
-/** Registered source for a router pathname, or undefined.
- *  Undefined is the correct, expected answer for: routes in the ViewId union
- *  that we chose not to register (home, dispatch-911, business-activity,
- *  campaign-finance, demographics), and routes that predate/postdate the union
- *  entirely (/live, /pulse, /elections, /city-budget, /neighborhood, /about).
- *  /live especially must never get a strip — useUrlSync strips start/end there. */
-export function eraSourceForPath(pathname: string): EraSource | undefined {
-  const segments = pathname.split('/').filter(Boolean)
-  if (segments.length !== 1) return undefined // '' = home; deeper = detail pages
-  // A pathname is an arbitrary runtime string, not a known ViewId — the cast is
-  // deliberate; ERA_SOURCES being Partial means an unregistered or bogus key
-  // still resolves to undefined, same as before.
-  return ERA_SOURCES[segments[0] as ViewId]
+/** Registered source for a (city, view) identity, or undefined.
+ *  Undefined remains the correct answer for unregistered ViewId routes and for
+ *  everything outside the union (/live especially — useUrlSync strips
+ *  start/end there). Oakland returns undefined for every view until stage 2
+ *  introduces its own era table with its own researched clamps and seams —
+ *  none of SF's transfer. */
+export function eraSourceFor(cityId: CityId, viewId: string): EraSource | undefined {
+  if (cityId !== 'sf') return undefined
+  return ERA_SOURCES[viewId as ViewId]
 }
 
 export interface EraQuery {

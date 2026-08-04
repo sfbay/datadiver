@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  ERA_SOURCES, eraSourceForPath, buildEraQuery, buildHistoricalEraQuery, eraDomain,
+  ERA_SOURCES, eraSourceFor, buildEraQuery, buildHistoricalEraQuery, eraDomain,
 } from './eraSources'
 import { DATASETS } from './datasets'
 import type { ViewId } from '@/types/datasets'
@@ -22,20 +22,26 @@ describe('ERA_SOURCES integrity', () => {
   })
 })
 
-describe('eraSourceForPath', () => {
-  it('resolves a registered route', () => {
-    expect(eraSourceForPath('/crime-incidents')?.datasetKey).toBe('policeIncidents')
-    expect(eraSourceForPath('/311-cases')?.datasetKey).toBe('cases311')
+describe('eraSourceFor', () => {
+  it('resolves SF registered views', () => {
+    expect(eraSourceFor('sf', 'crime-incidents')?.datasetKey).toBe('policeIncidents')
+    expect(eraSourceFor('sf', 'housing')?.datasetKey).toBe('evictionNotices')
   })
-  // These routes must NOT grow a history strip. /live in particular strips
-  // start/end from the URL entirely.
-  it('returns undefined for unregistered and non-ViewId routes', () => {
-    for (const p of ['/', '/live', '/pulse', '/elections', '/city-budget', '/about']) {
-      expect(eraSourceForPath(p), p).toBeUndefined()
+  it('returns undefined for unregistered views — including /live, which must never get a strip', () => {
+    expect(eraSourceFor('sf', 'live')).toBeUndefined()
+    expect(eraSourceFor('sf', 'business')).toBeUndefined()
+    expect(eraSourceFor('sf', 'home')).toBeUndefined()
+  })
+  it('returns undefined for every oakland view until per-city era tables exist (stage 2)', () => {
+    expect(eraSourceFor('oakland', 'crime-incidents')).toBeUndefined()
+  })
+  // Carried over from the old eraSourceForPath suite: these SF routes predate/
+  // postdate the ViewId union entirely and must keep resolving to undefined.
+  it('resolves another registered SF view and rejects other non-ViewId routes', () => {
+    expect(eraSourceFor('sf', '311-cases')?.datasetKey).toBe('cases311')
+    for (const view of ['pulse', 'elections', 'city-budget', 'about']) {
+      expect(eraSourceFor('sf', view), view).toBeUndefined()
     }
-  })
-  it('ignores deeper path segments rather than guessing', () => {
-    expect(eraSourceForPath('/business/chain/12345')).toBeUndefined()
   })
 })
 
