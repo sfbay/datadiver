@@ -12,6 +12,8 @@ export interface DatasetConfig {
   defaultSort?: string
   cacheTTL?: number // ms, default 5 min
   dateField?: string
+  /** Socrata export extension when not the default .json (highInjuryNetwork serves GeoJSON) */
+  ext?: 'geojson'
 }
 
 export type RawDatasetConfig = Omit<DatasetConfig, 'endpoint'>

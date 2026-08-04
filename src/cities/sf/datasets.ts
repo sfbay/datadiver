@@ -230,6 +230,7 @@ export const SF_DATASETS_RAW: Record<string, RawDatasetConfig> = {
     category: 'public-safety',
     hasGeo: true,
     cacheTTL: 24 * 60 * 60_000, // 24 hours — updated annually
+    ext: 'geojson', // Socrata serves this one as GeoJSON, not the default .json
   },
 
   evictionNotices: {

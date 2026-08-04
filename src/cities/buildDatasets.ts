@@ -6,7 +6,7 @@ export function buildDatasets(
 ): Record<string, DatasetConfig> {
   const out: Record<string, DatasetConfig> = {}
   for (const [key, cfg] of Object.entries(raw)) {
-    out[key] = { ...cfg, endpoint: `https://${host}/resource/${cfg.id}.json` }
+    out[key] = { ...cfg, endpoint: `https://${host}/resource/${cfg.id}.${cfg.ext ?? 'json'}` }
   }
   return out
 }
