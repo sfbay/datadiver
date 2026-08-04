@@ -16,4 +16,6 @@ export const oaklandCity: CityConfig = {
   },
   census: null,      // beats have no tract crosswalk — ACS affordances hide
   datasets: {},      // filled in stage 2
+  manifest: [],  // authored in stage 3 — Oakland's views, Oakland's copy
+  redirects: [],
 }
