@@ -1,103 +1,25 @@
 // src/api/eraSources.ts
-// Which dataset backs each view's Era Track, over what domain, with what
-// structural discontinuities. Keyed by ViewId, which for every registered view
-// is the route path minus its leading slash ('/crime-incidents' →
-// 'crime-incidents'). NOTE: this is NOT CardTray's `viewId` prop, which is a
+// Era Track query builders + the (city, view) → EraSource lookup. The source
+// DATA lives on each city's view manifest (src/cities/sf/manifest.ts) — this
+// module owns only the SoQL derivation. viewId here is the route-derived
+// kebab identity (parseRoute), NOT CardTray's `viewId` prop, which is a
 // camelCase localStorage key and unrelated.
 
-import type { DatasetKey } from './datasets'
-import type { ViewId } from '@/types/datasets'
+import { getCity } from '@/cities/registry'
 import type { CityId } from '@/cities/routing'
+import type { EraSource } from '@/cities/manifest'
 
-export interface EraSeam {
-  year: number
-  /** Reader-facing. Rendered beside a dashed rule on the strip. */
-  label: string
-}
-
-export interface EraSource {
-  datasetKey: DatasetKey
-  dateField: string
-  /** Inclusive year bounds; null upper = open to today. Guards published-range
-   *  junk — this is load-bearing, not cosmetic (see parking-citations). */
-  clamp: [number, number | null]
-  /** Set when the clamp HIDES published rows. Rendered on the axis, because a
-   *  silently narrowed domain is the same class of dishonesty as a silently
-   *  dropped row. Omit when the clamp merely matches the real data floor. */
-  clampNote?: string
-  /** A second, older extract covering the years BELOW `untilYear`. SFPD is the
-   *  only such case: wg3w-h783 starts 2018 and tmnf-yvry covers 2003–2017, so
-   *  a single query against the modern set would leave the strip's pre-2018
-   *  half empty while the domain claimed to reach 2003.
-   *  `untilYear` is EXCLUSIVE and doubles as the modern query's lower bound,
-   *  which is what stops the 4.5-month overlap between the two extracts from
-   *  being counted twice (see src/views/CrimeIncidents/crimeEra.ts). */
-  historical?: { datasetKey: DatasetKey; dateField: string; untilYear: number }
-  seams?: EraSeam[]
-}
-
-export const ERA_SOURCES: Partial<Record<ViewId, EraSource>> = {
-  'crime-incidents': {
-    datasetKey: 'policeIncidents',
-    dateField: 'incident_datetime',
-    clamp: [2003, null],
-    // 2003–2017 lives in a separate extract with a different schema. untilYear
-    // 2018 is also the modern query's lower bound, so the 4.5-month overlap
-    // between the two datasets is never double-counted.
-    historical: {
-      datasetKey: 'policeIncidentsHistorical',
-      dateField: 'date',
-      untilYear: 2018,
-    },
-    // A definitional discontinuity, not a data gap: same city, same phenomenon,
-    // different counting system. An unmarked continuous run would imply the
-    // two eras are like-for-like.
-    seams: [{ year: 2018, label: 'SFPD changed its category system' }],
-  },
-  'emergency-response': {
-    datasetKey: 'fireEMSDispatch',
-    dateField: 'received_dttm',
-    clamp: [2000, null],
-  },
-  '311-cases': {
-    datasetKey: 'cases311',
-    dateField: 'requested_datetime',
-    clamp: [2008, null],
-  },
-  'traffic-safety': {
-    datasetKey: 'trafficCrashes',
-    dateField: 'collision_datetime',
-    clamp: [2005, null],
-  },
-  // Published range is 1951-01-21 → 2044-12-21; BOTH ends are data-entry junk.
-  // The only registered source whose clamp hides published rows — hence the note.
-  'parking-citations': {
-    datasetKey: 'parkingCitations',
-    dateField: 'citation_issued_datetime',
-    clamp: [2012, 2026],
-    clampNote: 'range clamped — published dates run to 2044',
-  },
-  'parking-revenue': {
-    datasetKey: 'parkingRevenue',
-    dateField: 'session_start_dt',
-    clamp: [2017, null],
-  },
-  housing: {
-    datasetKey: 'evictionNotices',
-    dateField: 'file_date',
-    clamp: [1997, null],
-  },
-}
+// Type home moved to the manifest leaf in stage 1b; re-exported so consumers
+// (useEraSeries, EraTrack) keep importing from the api layer.
+export type { EraSeam, EraSource } from '@/cities/manifest'
 
 /** Registered source for a (city, view) identity, or undefined.
- *  Undefined remains the correct answer for unregistered ViewId routes and for
- *  everything outside the union (/live especially — useUrlSync strips
- *  start/end there). Oakland returns undefined for every view until stage 2
- *  introduces its own era table with its own researched clamps and seams —
- *  none of SF's transfer. */
+ *  Undefined remains the correct answer for every unregistered view (/live
+ *  especially — useUrlSync strips start/end there) and for every Oakland view
+ *  until stage 2 authors its manifest entries with their own researched
+ *  clamps and seams — none of SF's transfer. */
 export function eraSourceFor(cityId: CityId, viewId: string): EraSource | undefined {
-  if (cityId !== 'sf') return undefined
-  return ERA_SOURCES[viewId as ViewId]
+  return getCity(cityId).manifest.find((e) => e.viewId === viewId)?.eraSource
 }
 
 export interface EraQuery {

@@ -672,16 +672,3 @@ export interface BuyoutRow {
   analysis_neighborhood?: string
   point?: { type: 'Point'; coordinates: [number, number] }
 }
-
-/** View state for URL serialization */
-export type ViewId = 'home' | 'emergency-response' | 'parking-revenue' | 'dispatch-911' | '311-cases' | 'crime-incidents' | 'parking-citations' | 'traffic-safety' | 'business-activity' | 'campaign-finance' | 'demographics' | 'housing'
-
-export interface ViewState {
-  view: ViewId
-  dateRange: { start: string; end: string }
-  neighborhood?: string
-  serviceType?: 'fire' | 'police' | 'ems' | 'all'
-  mapBounds?: { north: number; south: number; east: number; west: number }
-  mapZoom?: number
-  mapCenter?: { lat: number; lng: number }
-}
