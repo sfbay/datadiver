@@ -37,9 +37,11 @@ export function useNeighborhoodBoundaries(cityId?: CityId): {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    setError(null)
     const cached = cachedByUrl.get(url)
     if (cached) { setBoundaries(cached); setIsLoading(false); return }
     let cancelled = false
+    setBoundaries(null)
     setIsLoading(true)
     fetch(url)
       .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
