@@ -5,6 +5,7 @@
 import { useState, useRef, useEffect } from 'react'
 import type { CensusVariable, CensusCategory, CensusVariableConfig } from '../../types/census'
 import { CENSUS_VARIABLES, getVariablesByCategory, getSubPickerVariables } from '../../utils/censusVariables'
+import { useActiveCity } from '@/cities/useActiveCity'
 
 interface UnderlayPickerProps {
   presets: CensusVariable[]
@@ -31,6 +32,7 @@ export default function UnderlayPicker({ presets, activeVariable, onSelect }: Un
   const [showMore, setShowMore] = useState(false)
   const [subPickerGroup, setSubPickerGroup] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const city = useActiveCity()
 
   // Close on outside click
   useEffect(() => {
@@ -45,6 +47,10 @@ export default function UnderlayPicker({ presets, activeVariable, onSelect }: Un
     document.addEventListener('mousedown', handleOutsideClick)
     return () => document.removeEventListener('mousedown', handleOutsideClick)
   }, [open])
+
+  // A city without a census pipeline (beats have no tract crosswalk) hides the
+  // control entirely — an empty picker would read as broken, not absent.
+  if (!city.census) return null
 
   const presetConfigs = presets
     .map(key => CENSUS_VARIABLES.find(v => v.key === key))

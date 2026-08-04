@@ -26,4 +26,7 @@ describe('city registry', () => {
     expect(Object.keys(CITIES.oakland.datasets)).toHaveLength(0)
     expect(CITIES.oakland.areas.noun).toBe('police beat')
   })
+  it('sf has a census pipeline', () => {
+    expect(CITIES.sf.census).not.toBeNull()
+  })
 })
