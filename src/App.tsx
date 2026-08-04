@@ -1,10 +1,14 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Suspense, lazy, useEffect, useRef } from 'react'
+import type { ComponentType } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import { syncViewportMode } from '@/hooks/effectiveViewport'
 import AppShell from '@/components/layout/AppShell'
 import { RouteErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { useRouteView } from '@/cities/useActiveCity'
+import { sfCity } from '@/cities/sf'
+import { viewPath } from '@/cities/routing'
+import type { ViewId } from '@/cities/manifest'
 // Eager: ONLY the landing page. Every dataset view is route-split — including
 // The Last 48, whose import graph carries Mapbox GL (~467 KB gzip): keeping it
 // lazy keeps the GL engine off Home's critical path (the manualChunks split in
@@ -36,6 +40,35 @@ const About = lazy(() => import('@/views/About/About'))
 const Pulse = lazy(() => import('@/views/Pulse/Pulse'))
 const Housing = lazy(() => import('@/views/Housing/Housing'))
 
+/** Route components for every view family. Typed Record<ViewId, …> so a
+ *  manifest view with no component (or a stray key) fails `tsc -b` —
+ *  coverage is a compile-time proof, not a test. The manifest itself stays
+ *  component-free (bundle rule): this map is the ONE place view identity
+ *  meets code. Components are city-agnostic; the manifest decides which
+ *  cities mount them. */
+const VIEW_COMPONENTS: Record<ViewId, ComponentType> = {
+  home: Home,
+  alerts: Alerts,
+  live: Last48,
+  pulse: Pulse,
+  'emergency-response': EmergencyResponse,
+  'crime-incidents': CrimeIncidents,
+  'traffic-safety': TrafficSafety,
+  housing: Housing,
+  elections: Elections,
+  'city-budget': CityBudget,
+  'parking-revenue': ParkingRevenue,
+  'dispatch-911': Dispatch911,
+  '311-cases': Cases311,
+  'parking-citations': ParkingCitations,
+  'business-activity': BusinessActivity,
+  business: BusinessSearch,
+  'campaign-finance': CampaignFinance,
+  demographics: Demographics,
+  neighborhood: Neighborhood,
+  about: About,
+}
+
 /** Chunk-loading fallback — same calm register as the skeleton kit: a corner
  *  pill, not a takeover. The view's own progressive skeletons handle the rest
  *  once the chunk arrives. */
@@ -52,12 +85,13 @@ function RouteFallback() {
   )
 }
 
-/** Permanent redirect from the old /live-feeds path to the canonical /live,
- *  preserving the query string and hash so deep-links (?event=…, ?ambient=…)
- *  survive. */
-function LiveFeedsRedirect() {
+/** Redirect row for a city's legacy path slugs (sf: /live-feeds → /live),
+ *  preserving query string and hash so deep-links (?event=…, ?ambient=…)
+ *  survive. Every row rendered from city.redirects has a matching skip-sync
+ *  registration in useUrlSync — that pairing is the clobber-bug fence. */
+function CityRedirect({ to }: { to: string }) {
   const { search, hash } = useLocation()
-  return <Navigate to={{ pathname: '/live', search, hash }} replace />
+  return <Navigate to={{ pathname: to, search, hash }} replace />
 }
 
 /** Clears cross-city selection state when the URL's city changes. The store
@@ -115,32 +149,21 @@ export default function App() {
         <RouteErrorBoundary>
         <Suspense fallback={<RouteFallback />}>
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/emergency-response" element={<EmergencyResponse />} />
-          <Route path="/parking-revenue" element={<ParkingRevenue />} />
-          <Route path="/dispatch-911" element={<Dispatch911 />} />
-          <Route path="/311-cases" element={<Cases311 />} />
-          <Route path="/crime-incidents" element={<CrimeIncidents />} />
-          <Route path="/parking-citations" element={<ParkingCitations />} />
-          <Route path="/traffic-safety" element={<TrafficSafety />} />
-          <Route path="/housing" element={<Housing />} />
-          <Route path="/business-activity" element={<BusinessActivity />} />
-          <Route path="/business" element={<BusinessSearch />} />
+          {/* One row per SF manifest entry — the route table derives FROM the
+              manifest, so route↔manifest drift is impossible by construction. */}
+          {sfCity.manifest.map(({ viewId }) => {
+            const Cmp = VIEW_COMPONENTS[viewId]
+            return <Route key={viewId} path={viewPath('sf', viewId)} element={<Cmp />} />
+          })}
+          {/* Detail routes stay hand-written — deeper pages of the business
+              family, not view identities (parseRoute collapses them). */}
           <Route path="/business/chain/:ban" element={<ChainProfile />} />
           <Route path="/business/owner/:name" element={<OwnerProfile />} />
           <Route path="/business/:uniqueid" element={<BusinessProfile />} />
-          <Route path="/campaign-finance" element={<CampaignFinance />} />
-          <Route path="/demographics" element={<Demographics />} />
-          <Route path="/city-budget" element={<CityBudget />} />
-          <Route path="/elections" element={<Elections />} />
-          <Route path="/neighborhood" element={<Neighborhood />} />
-          <Route path="/pulse" element={<Pulse />} />
-          <Route path="/live" element={<Last48 />} />
-          {/* /live-feeds → /live: keep the old path as a permanent redirect so
-              shared event links (?event=…) and bookmarks don't 404. */}
-          <Route path="/live-feeds" element={<LiveFeedsRedirect />} />
-          <Route path="/alerts" element={<Alerts />} />
-          <Route path="/about" element={<About />} />
+          {/* Legacy redirects, from the city registry. */}
+          {sfCity.redirects.map(({ from, to }) => (
+            <Route key={from} path={`/${from}`} element={<CityRedirect to={viewPath('sf', to)} />} />
+          ))}
           {/* Oakland routes are dormant until stage 3 fills them — until then
               any /oakland/* URL lands on Home rather than 404-ing. */}
           <Route path="/oakland/*" element={<Navigate to="/" replace />} />

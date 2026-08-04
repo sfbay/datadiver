@@ -3,19 +3,7 @@ import { useSearchParams, useLocation } from 'react-router-dom'
 import { useAppStore } from '@/stores/appStore'
 import { parseComparison, serializeComparison } from '@/utils/comparisonMode'
 import { parseRoute } from '@/cities/routing'
-
-// The Last 48 ignores the global date range (fixed 48h window) — its URL stays
-// clean in EVERY city ('/live', later '/oakland/live'), so classification is
-// by view identity, not pathname literal.
-const DATELESS_VIEWS = new Set(['live'])
-
-// Redirect-only locations must not sync — setSearchParams preserves the current
-// pathname, which would clobber a sibling <Navigate>'s pathname change. Two cases:
-// the legacy redirect views ('live-feeds'), and — until stage 3 renders real
-// non-SF views — every non-SF city path, whose whole route tree is a dormant
-// redirect to Home. STAGE 3 CONTRACT: when Oakland views become real, remove the
-// cityId clause so /oakland/* carries ?start/?end like any other view.
-const REDIRECT_VIEWS = new Set(['live-feeds'])
+import { getCity } from '@/cities/registry'
 
 /**
  * Syncs appStore date range to/from URL search params.
@@ -26,8 +14,19 @@ export function useUrlSync() {
   const [searchParams, setSearchParams] = useSearchParams()
   const pathname = useLocation().pathname
   const { cityId, viewId } = parseRoute(pathname)
-  const dateless = DATELESS_VIEWS.has(viewId)
-  const skipSync = REDIRECT_VIEWS.has(viewId) || cityId !== 'sf'
+  const city = getCity(cityId)
+  const entry = city.manifest.find((e) => e.viewId === viewId)
+  // The Last 48 ignores the global date range (fixed 48h window) — its URL
+  // stays clean in EVERY city; the manifest's `dateless` flag is the registry.
+  const dateless = entry?.dateless === true
+  // Redirect-only locations must not sync — setSearchParams preserves the
+  // current pathname, which would clobber a sibling <Navigate>'s pathname
+  // change. Two cases: the city's registered redirect slugs ('live-feeds'),
+  // and — until stage 3 renders real non-SF views — every non-SF city path,
+  // whose whole route tree is a dormant redirect to Home. STAGE 3 CONTRACT:
+  // when Oakland views become real, remove the cityId clause so /oakland/*
+  // carries ?start/?end like any other view.
+  const skipSync = city.redirects.some((r) => r.from === viewId) || cityId !== 'sf'
   const {
     dateRange, setDateRange,
     timeOfDayFilter, setTimeOfDayFilter,
@@ -66,7 +65,7 @@ export function useUrlSync() {
 
   // On store change: store → URL
   useEffect(() => {
-    // On a redirect-only route, don't sync — let <LiveFeedsRedirect> navigate.
+    // On a redirect-only route, don't sync — let <CityRedirect> navigate.
     if (!initialized.current || skipSync) return
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev)
