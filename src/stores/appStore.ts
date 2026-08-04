@@ -1,13 +1,9 @@
 import { create } from 'zustand'
-import type { ViewId } from '@/types/datasets'
 import type { ComparisonMode } from '@/utils/comparisonMode'
 import { parseTypeScale, type TypeScale } from '@/stores/typeScale'
 import { syncViewportMode } from '@/hooks/effectiveViewport'
 
 interface AppState {
-  /** Current active view */
-  currentView: ViewId
-
   /** Dark mode toggle */
   isDarkMode: boolean
 
@@ -66,7 +62,6 @@ interface AppState {
   error: string | null
 
   /** Actions */
-  setView: (view: ViewId) => void
   toggleDarkMode: () => void
   toggleSidebar: () => void
   toggleContextSidebar: () => void
@@ -92,7 +87,6 @@ const now = new Date()
 const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
 export const useAppStore = create<AppState>((set) => ({
-  currentView: 'home',
   isDarkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
   isSidebarOpen: localStorage.getItem('dd-sidebar') !== 'collapsed',
   isContextSidebarOpen: localStorage.getItem('dd-context-sidebar') !== 'collapsed',
@@ -115,7 +109,6 @@ export const useAppStore = create<AppState>((set) => ({
   isLoading: false,
   error: null,
 
-  setView: (view) => set({ currentView: view, error: null }),
   toggleDarkMode: () =>
     set((state) => {
       const next = !state.isDarkMode
