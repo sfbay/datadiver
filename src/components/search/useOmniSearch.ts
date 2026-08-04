@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
-import { SF_NEIGHBORHOODS } from '@/utils/geo'
-import { DATASETS } from '@/api/datasets'
+import { getCity } from '@/cities/registry'
+import { viewPath, type CityId } from '@/cities/routing'
+import { useRouteView } from '@/cities/useActiveCity'
 
 export type SearchCategory = 'place' | 'dataset' | 'vendor' | 'time'
 
@@ -14,80 +15,70 @@ export interface SearchResult {
   params?: Record<string, string>
 }
 
-/** Dataset key → view route mapping */
-const DATASET_ROUTES: Record<string, string> = {
-  fireEMSDispatch: '/emergency-response',
-  policeIncidents: '/crime-incidents',
-  dispatch911Realtime: '/dispatch-911',
-  dispatch911Historical: '/dispatch-911',
-  cases311: '/311-cases',
-  parkingRevenue: '/parking-revenue',
-  parkingCitations: '/parking-citations',
-  trafficCrashes: '/traffic-safety',
-  businessLocations: '/business-activity',
-  campaignFinance: '/campaign-finance',
-  vendorPayments: '/city-budget',
-  budget: '/city-budget',
-  spendingRevenue: '/city-budget',
-  evictionNotices: '/housing',
-  buyoutAgreements: '/housing',
-}
+// Built once per city per session, on first use — the same cost profile as
+// the old module-eval SF index, but the index now follows the URL's city.
+const indexCache = new Map<CityId, SearchResult[]>()
 
-/** Build the static index once at module level */
-function buildIndex(): SearchResult[] {
+export function buildSearchIndex(cityId: CityId): SearchResult[] {
+  const cached = indexCache.get(cityId)
+  if (cached) return cached
+  const city = getCity(cityId)
   const results: SearchResult[] = []
 
-  // Neighborhoods → place results
-  for (const name of SF_NEIGHBORHOODS) {
+  // Areas → place results (SF: the 41 Analysis Neighborhoods)
+  for (const name of city.areas.names) {
     results.push({
       id: `place-${name}`,
       category: 'place',
       label: name,
-      sublabel: 'San Francisco neighborhood',
+      sublabel: `${city.name} ${city.areas.noun}`,
       icon: '📍',
-      path: '/neighborhood',
+      path: viewPath(cityId, 'neighborhood'),
       params: { nh: name },
     })
   }
 
-  // Datasets → dataset results (only those with a mapped route)
-  for (const [key, config] of Object.entries(DATASETS)) {
-    const route = DATASET_ROUTES[key]
-    if (!route) continue
+  // datasetKey → owning view, inverted from the manifest's omniDatasetKeys
+  // (replaces the retired DATASET_ROUTES table).
+  const datasetView = new Map<string, string>()
+  for (const entry of city.manifest) {
+    for (const key of entry.omniDatasetKeys ?? []) datasetView.set(key, entry.viewId)
+  }
+
+  // Datasets → dataset results (only those a view claims), registry order
+  for (const [key, config] of Object.entries(city.datasets)) {
+    const viewId = datasetView.get(key)
+    if (!viewId) continue
     results.push({
       id: `dataset-${key}`,
       category: 'dataset',
       label: config.name,
       sublabel: config.description.slice(0, 60),
       icon: '📊',
-      path: route,
+      path: viewPath(cityId, viewId),
     })
   }
 
+  indexCache.set(cityId, results)
   return results
 }
 
-export const SEARCH_INDEX = buildIndex()
-
-function getIndex(): SearchResult[] {
-  return SEARCH_INDEX
-}
-
 export function useOmniSearch() {
+  const { cityId } = useRouteView()
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
 
   const results = useMemo<SearchResult[]>(() => {
     const q = query.trim().toLowerCase()
     if (!q) return []
-    return getIndex()
+    return buildSearchIndex(cityId)
       .filter(
         (r) =>
           r.label.toLowerCase().includes(q) ||
           r.sublabel.toLowerCase().includes(q)
       )
       .slice(0, 8)
-  }, [query])
+  }, [query, cityId])
 
   const open = () => setIsOpen(true)
   const close = () => {

@@ -257,6 +257,23 @@ the route table derive from one list; a Vitest pin asserts set equality, killing
 duplicated-allowlist drift class by construction. Per-city era-source integrity tests
 (today's `eraSources.test.ts`) run over each city's manifest entries.
 
+**Amended 2026-08-03 (stage 1b design; authoritative detail in
+`2026-08-03-view-manifest-design.md`):** (1) `indicatorKey` is dropped —
+`useViewIndicators` was verified dead (zero importers repo-wide; the live ticker
+runs on the heartbeat/pulse machinery) and is deleted, not absorbed. (2) Scope
+widened to three surfaces the survey found beyond the six: `UNDERLAY_PRESETS`
+(becomes `underlayPreset` id-string field), `DATELESS_VIEWS`/`REDIRECT_VIEWS`
+(become a `dateless` flag + per-city `redirects` table on CityConfig), and the
+dead `camera.slots` scaffolding (wired: key `last48`→`live`, Last48Map reads it).
+(3) `homeCard` gains `order` — the Home grid's historical order differs from nav
+order and the gate forbids reshuffling. (4) The canonical `ViewId` union (20
+members) moves to `src/cities/manifest.ts`, replacing the stale 12-member union
+in `types/datasets.ts`. (5) Route rows derive FROM the manifest (equality by
+construction); component coverage pins at compile time via
+`Record<ViewId, ComponentType>`. (6) A visible-fixes follow-up PR (stale Last 48
+home-card copy, the task-#97 catch-all guard, ⌘K view-name entries) lands
+immediately after — 1b itself stays gate-pure.
+
 ## §5 Verification (stage 1 acceptance gate)
 
 **SF is pixel-identical and URL-identical.** Concretely:

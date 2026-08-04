@@ -13,7 +13,8 @@
 // One question, one menu, one click.
 
 import { useState, useRef, useEffect } from 'react'
-import { CENSUS_VARIABLES, UNDERLAY_PRESETS } from '@/utils/censusVariables'
+import { CENSUS_VARIABLES } from '@/utils/censusVariables'
+import { useViewEntry } from '@/cities/useActiveCity'
 import type { CensusVariable } from '@/types/census'
 
 export type BaseFill = 'none' | 'anomaly' | 'demographic'
@@ -69,7 +70,7 @@ export default function LayerControls({
   }, [menuOpen])
 
   // Resolve the preset Census variables into display configs (label + key)
-  const presetVars = UNDERLAY_PRESETS['last48'] ?? []
+  const presetVars = useViewEntry()?.underlayPreset ?? []
   const presetConfigs = presetVars
     .map(key => CENSUS_VARIABLES.find(v => v.key === key))
     .filter((c): c is NonNullable<typeof c> => c != null)

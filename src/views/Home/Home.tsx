@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router-dom'
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useActiveCity } from '@/cities/useActiveCity'
+import { viewPath } from '@/cities/routing'
 import { useAppStore } from '@/stores/appStore'
 import CivicTicker, { useResponsiveTickerSize } from '@/components/ui/CivicTicker'
 import { useCivicIndicators } from '@/hooks/useCivicIndicators'
@@ -18,207 +20,26 @@ import PulseTeaser from './PulseTeaser'
 import VizCard from '@/components/ui/VizCard'
 import AlertsRibbon from '@/components/home/AlertsRibbon'
 
-const VISUALIZATIONS = [
-  {
-    path: '/emergency-response',
-    title: 'Emergency Response Times',
-    subtitle: 'SFFD / EMS Dispatch Analysis',
-    badge: 'ER',
-    description:
-      'How fast do first responders reach you? Map response time inequities across 41 neighborhoods.',
-    stats: [
-      { label: 'Timestamps', value: '7 per call' },
-      { label: 'Records/yr', value: '~600K' },
-      { label: 'Neighborhoods', value: '41' },
-    ],
-    accentColor: '#b85a33', // terracotta-600
-  },
-  {
-    path: '/parking-revenue',
-    title: 'Parking Meter Revenue',
-    subtitle: 'SFMTA Revenue Patterns',
-    badge: 'PR',
-    description:
-      'Where does the city earn from parking? Uncover revenue flows, payment trends, and meter utilization.',
-    stats: [
-      { label: 'Active meters', value: '~37K' },
-      { label: 'Detail level', value: 'Every session' },
-      { label: 'Meter types', value: '6' },
-    ],
-    accentColor: '#3f7573', // teal-600
-  },
-  {
-    path: '/dispatch-911',
-    title: '911 Dispatch: Sensitive Calls',
-    subtitle: 'SFPD Temporal Pattern Analysis',
-    badge: '911',
-    description:
-      'When do domestic violence calls peak? How do crisis calls differ from the citywide average? Temporal analysis of calls where geography is protected.',
-    stats: [
-      { label: 'Total records', value: '~7.5M' },
-      { label: 'Sensitive calls', value: '~181K' },
-      { label: 'Timestamps', value: '6 per call' },
-    ],
-    accentColor: '#474e74', // indigo-600
-  },
-  {
-    path: '/311-cases',
-    title: '311 Service Requests',
-    subtitle: 'SF311 Civic Complaint Analysis',
-    badge: '311',
-    description:
-      'Where do complaints concentrate? Discover hotspots, resolution patterns, and density anomalies across neighborhoods.',
-    stats: [
-      { label: 'Total records', value: '~8.4M' },
-      { label: 'Categories', value: '25' },
-      { label: 'Years of data', value: '18' },
-    ],
-    accentColor: '#5c7a3d', // moss-600
-  },
-  {
-    path: '/crime-incidents',
-    title: 'Crime Incidents',
-    subtitle: 'SFPD Reports & 911 Cross-Reference',
-    badge: 'CI',
-    description:
-      'Where does crime cluster? Explore SFPD incident reports, resolution outcomes, and cross-reference with 911 dispatch calls.',
-    stats: [
-      { label: 'Categories', value: '~50' },
-      { label: '911 linked', value: '~60%' },
-      { label: 'Neighborhoods', value: '41' },
-    ],
-    accentColor: '#963e30', // brick-600
-  },
-  {
-    path: '/parking-citations',
-    title: 'Parking Citations',
-    subtitle: 'SFMTA Citation Analysis',
-    badge: 'PC',
-    description:
-      'Where do tickets cluster? Explore citation patterns, violation hotspots, fine revenue, and out-of-state vehicles across the city.',
-    stats: [
-      { label: 'Total records', value: '~23.3M' },
-      { label: 'Violation types', value: '~40' },
-      { label: 'Revenue tracking', value: 'Yes' },
-    ],
-    accentColor: '#d47149', // terracotta-500
-  },
-  {
-    path: '/traffic-safety',
-    title: 'Traffic Safety',
-    subtitle: 'Vision Zero Crash & Speed Analysis',
-    badge: 'TS',
-    description:
-      'Where do crashes happen? Analyze collision severity, pedestrian & cyclist risk, speed cameras, and road conditions for Vision Zero.',
-    stats: [
-      { label: 'Crash records', value: '~64K' },
-      { label: 'Camera sites', value: '~100+' },
-      { label: 'Severity levels', value: '4' },
-    ],
-    accentColor: '#963e30', // brick-600
-  },
-  {
-    path: '/housing',
-    title: 'Housing',
-    subtitle: 'SF Rent Board · Evictions & Buyouts',
-    badge: 'HO',
-    description:
-      'Where is displacement pressure concentrated? Map eviction notices and tenant buyout agreements back to 1997, by cause and neighborhood.',
-    stats: [
-      { label: 'Eviction history', value: '29 yrs' },
-      { label: 'Disclosed buyouts', value: '$170M' },
-      { label: 'Neighborhoods', value: '41' },
-    ],
-    accentColor: '#b85a33', // terracotta-600
-  },
-  {
-    path: '/business-activity',
-    title: 'Business Activity',
-    subtitle: 'Opening & Closing Trends',
-    badge: 'BA',
-    description:
-      'Where are businesses opening and closing? Track neighborhood economic vitality, sector shifts, and net formation trends across San Francisco.',
-    stats: [
-      { label: 'Records', value: '~356K' },
-      { label: 'Active', value: '~164K' },
-      { label: 'Sectors', value: '15+' },
-    ],
-    accentColor: '#5c7a3d', // moss-600
-  },
-  {
-    path: '/demographics',
-    title: 'Demographics Explorer',
-    subtitle: 'U.S. Census Bureau · ACS Estimates',
-    badge: 'DM',
-    description:
-      'How do neighborhoods compare? Explore income, race, language, education, and housing across SF — and correlate demographics with civic outcomes.',
-    stats: [
-      { label: 'Neighborhoods', value: '37' },
-      { label: 'Variables', value: '35' },
-      { label: 'Source', value: 'ACS 5-yr' },
-    ],
-    accentColor: '#8b6282', // plum-500
-  },
-  {
-    path: '/elections',
-    title: 'Elections',
-    subtitle: 'SF Dept of Elections · Results & RCV',
-    badge: 'EL',
-    description:
-      'How does your neighborhood vote? Explore ranked choice voting rounds, ballot measures, and play back decades of election results on an interactive map.',
-    stats: [
-      { label: 'Elections', value: '5+' },
-      { label: 'RCV rounds', value: 'All' },
-      { label: 'Measures', value: '1961–now' },
-    ],
-    accentColor: '#616a96', // indigo-500
-  },
-  {
-    path: '/campaign-finance',
-    title: 'Campaign Finance',
-    subtitle: 'SF Ethics Commission Filings',
-    badge: 'CF',
-    description:
-      'Follow the money. Track contributions, spending, and independent expenditures across SF election cycles.',
-    stats: [
-      { label: 'Source', value: 'SF Ethics' },
-      { label: 'Filings', value: 'A/E/I/D' },
-      { label: 'Cycles', value: '4+' },
-    ],
-    accentColor: '#8b6282', // plum-500
-  },
-  {
-    path: '/city-budget',
-    title: 'City Budget',
-    subtitle: 'SF Controller · Spending & Vendors',
-    badge: 'BU',
-    description:
-      'Where does the money go? Explore $14B+ in city spending, vendor payments, advertising compliance, and anomaly detection.',
-    stats: [
-      { label: 'Payments', value: '7.9M' },
-      { label: 'Vendors', value: '12K+' },
-      { label: 'Since', value: 'FY2007' },
-    ],
-    accentColor: '#b58620', // ochre-600
-  },
-  {
-    path: '/live',
-    title: 'Live Feeds',
-    subtitle: 'Scanner Radio · SFPD, SFFD, EMS',
-    badge: 'LIVE',
-    description:
-      'Listen in. Scanner radio feeds for police, fire, and EMS — organized by district with contextual neighborhood data.',
-    stats: [
-      { label: 'Services', value: '3' },
-      { label: 'Districts', value: '10+' },
-      { label: 'Status', value: 'Live' },
-    ],
-    accentColor: '#d4a435', // ochre-500
-  },
-] as const
-
 export default function Home() {
   const navigate = useNavigate()
+  const city = useActiveCity()
+  // The viz-picker cards: manifest entries with a homeCard, in the grid's OWN
+  // historical order (homeCard.order) — deliberately not nav order.
+  const homeCards = useMemo(
+    () =>
+      city.manifest
+        .filter((e) => e.homeCard)
+        .sort((a, b) => a.homeCard!.order - b.homeCard!.order)
+        .map((e) => ({
+          viewId: e.viewId,
+          path: viewPath(city.id, e.viewId),
+          title: e.homeCard!.title,
+          subtitle: e.homeCard!.subtitle,
+          badge: e.navShortLabel,
+          accentColor: e.accentColor,
+        })),
+    [city]
+  )
   const isDarkMode = useAppStore((s) => s.isDarkMode)
   const [mounted, setMounted] = useState(false)
   const [comicOpen, setComicOpen] = useState(false)
@@ -404,8 +225,8 @@ export default function Home() {
           </p>
           <div className="-mx-[clamp(16px,3vw,64px)]">
             <div className="flex gap-2.5 overflow-x-auto snap-x px-[clamp(16px,3vw,64px)] pb-1">
-              {[...VISUALIZATIONS]
-                .sort((a, b) => (a.path === '/live' ? -1 : b.path === '/live' ? 1 : 0))
+              {[...homeCards]
+                .sort((a, b) => (a.viewId === 'live' ? -1 : b.viewId === 'live' ? 1 : 0))
                 .map((viz) => (
                   <div key={viz.path} className="w-[13.4375rem] shrink-0 snap-start">
                     <VizCard
@@ -707,7 +528,7 @@ export default function Home() {
               up to 6+ columns on ultrawide. Smaller minmax than the viz grid
               since each tile is a smaller card. */}
           <div className="grid gap-2.5 grid-cols-[repeat(auto-fit,minmax(220px,1fr))]">
-            {VISUALIZATIONS.map((viz, idx) => (
+            {homeCards.map((viz, idx) => (
               <VizCard
                 key={viz.path}
                 title={viz.title}

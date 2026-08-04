@@ -1,5 +1,6 @@
 import type { CityId } from './routing'
 import type { CameraView } from '@/utils/mapDefaults'
+import type { ViewId, ViewManifestEntry } from './manifest'
 
 export interface DatasetConfig {
   id: string
@@ -37,9 +38,17 @@ export interface CityConfig {
   }
   camera: {
     defaultView: CameraView            // map mount fallback + filters-clear reset
-    slots: Record<string, CameraView>  // named per-view overrides (sf: last48, …)
+    slots: Record<string, CameraView>  // named per-view overrides (sf: live, …)
   }
   /** null = city has no ACS pipeline; consumers HIDE census affordances. */
   census: { stateFips: string; countyFips: string } | null
   datasets: Record<string, DatasetConfig>  // endpoints derived by the registry
+  /** Ordered view registration — array order IS nav order. Everything that
+   *  used to be a per-view table (nav rows, Home cards, era sources, underlay
+   *  presets, ⌘K routing, dateless flags) reads from here. */
+  manifest: readonly ViewManifestEntry[]
+  /** Legacy path slugs mounted as redirect <Route> rows. Every entry doubles
+   *  as a skip-sync registration in useUrlSync — a redirect row WITHOUT one
+   *  is the recurring clobber bug ([[react-router-redirect-clobber]]). */
+  redirects: readonly { from: string; to: ViewId }[]
 }

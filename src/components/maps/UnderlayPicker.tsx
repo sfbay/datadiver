@@ -8,7 +8,7 @@ import { CENSUS_VARIABLES, getVariablesByCategory, getSubPickerVariables } from 
 import { useActiveCity } from '@/cities/useActiveCity'
 
 interface UnderlayPickerProps {
-  presets: CensusVariable[]
+  presets: readonly CensusVariable[]
   activeVariable: CensusVariable | null
   onSelect: (variable: CensusVariable | null) => void
 }

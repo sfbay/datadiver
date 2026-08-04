@@ -566,30 +566,6 @@ export function getSubPickerVariables(parentGroup: string): CensusVariableConfig
 }
 
 // ---------------------------------------------------------------------------
-// UNDERLAY_PRESETS — per-view suggested variables
-// Keys are ViewId strings; typed as Partial<Record<string, ...>> to avoid
-// a circular import with datasets.ts.
-// ---------------------------------------------------------------------------
-export const UNDERLAY_PRESETS: Partial<Record<string, CensusVariable[]>> = {
-  'crime-incidents':    ['medianIncome', 'pctAsian', 'populationDensity'],
-  '311-cases':          ['rentBurden', 'lepRate', 'pctHispanic'],
-  'traffic-safety':     ['medianAge', 'populationDensity', 'pctTransit'],
-  'emergency-response': ['rentBurden', 'pctOver65', 'pctBlack'],
-  'parking-citations':  ['medianIncome', 'renterPct', 'pctDriveAlone'],
-  'parking-revenue':    ['medianIncome', 'populationDensity'],
-  'business-activity':  ['medianIncome', 'pctBachelorsPlus', 'pctAsian'],
-  // The Last 48 — socioeconomic context that pairs with live 911/Fire/311 streams:
-  // property values, monthly rent, household rent-stress, and elderly concentration
-  // (the last correlates with EMS demand).
-  'last48':             ['medianHomeValue', 'medianRent', 'rentBurden', 'pctOver65'],
-  // Housing — the four ACS variables most directly explanatory of eviction/
-  // buyout pressure: what rent costs, how burdened renters already are, how
-  // many households are exposed (renter share), and what a bought-out unit
-  // is worth to convert.
-  'housing':            ['evictionRate', 'medianRent', 'rentBurden', 'renterPct', 'medianHomeValue'],
-}
-
-// ---------------------------------------------------------------------------
 // CIVIC_METRICS — scatter Y-axis options for the Census Explorer
 // ---------------------------------------------------------------------------
 export const CIVIC_METRICS: CivicMetricConfig[] = [
