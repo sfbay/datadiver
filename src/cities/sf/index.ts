@@ -17,7 +17,7 @@ export const sfCity: CityConfig = {
   camera: {
     defaultView: SF_DEFAULT_VIEW,
     slots: {
-      last48: { center: LAST48_CAMERA.center, zoom: LAST48_CAMERA.zoom, pitch: LAST48_CAMERA.pitch, bearing: LAST48_CAMERA.bearing },
+      live: { center: LAST48_CAMERA.center, zoom: LAST48_CAMERA.zoom, pitch: LAST48_CAMERA.pitch, bearing: LAST48_CAMERA.bearing },
     },
   },
   census: { stateFips: '06', countyFips: '075' },

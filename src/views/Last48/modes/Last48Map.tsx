@@ -15,7 +15,7 @@
 import { useState, useCallback, type ReactNode } from 'react'
 import mapboxgl from 'mapbox-gl'
 import MapView from '@/components/maps/MapView'
-import { LAST48_CAMERA } from '@/utils/geo'
+import { useActiveCity } from '@/cities/useActiveCity'
 
 interface Props {
   /** Render-prop for map layers + overlay components (loading pill,
@@ -36,13 +36,16 @@ interface Props {
 export default function Last48Map({ mapOverlay, rail }: Props) {
   const [map, setMap] = useState<mapboxgl.Map | null>(null)
   const handleReady = useCallback((m: mapboxgl.Map) => setMap(m), [])
+  const camera = useActiveCity().camera.slots.live
 
   return (
     <div className="absolute inset-0 flex">
       <div className="flex-1 relative">
-        {/* Last48-only camera framing (steeper pitch, tighter zoom) — every
-            other view omits `camera` and keeps the global SF_DEFAULT_*. */}
-        <MapView onMapReady={handleReady} camera={LAST48_CAMERA}>
+        {/* Last48-only camera framing (steeper pitch, tighter zoom) — the
+            city config's `live` slot; SF's numbers stay authored as
+            LAST48_CAMERA in src/utils/geo.ts. Every other view omits
+            `camera` and keeps the city default. */}
+        <MapView onMapReady={handleReady} camera={camera}>
           {mapOverlay(map)}
         </MapView>
       </div>

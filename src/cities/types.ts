@@ -38,7 +38,7 @@ export interface CityConfig {
   }
   camera: {
     defaultView: CameraView            // map mount fallback + filters-clear reset
-    slots: Record<string, CameraView>  // named per-view overrides (sf: last48, …)
+    slots: Record<string, CameraView>  // named per-view overrides (sf: live, …)
   }
   /** null = city has no ACS pipeline; consumers HIDE census affordances. */
   census: { stateFips: string; countyFips: string } | null
