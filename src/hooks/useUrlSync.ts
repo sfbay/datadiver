@@ -9,9 +9,12 @@ import { parseRoute } from '@/cities/routing'
 // by view identity, not pathname literal.
 const DATELESS_VIEWS = new Set(['live'])
 
-// 'live-feeds' is the legacy → /live redirect route (see <LiveFeedsRedirect>).
-// On it, useUrlSync must NOT write params: setSearchParams preserves the
-// current pathname, which would clobber the redirect's pathname change.
+// Redirect-only locations must not sync — setSearchParams preserves the current
+// pathname, which would clobber a sibling <Navigate>'s pathname change. Two cases:
+// the legacy redirect views ('live-feeds'), and — until stage 3 renders real
+// non-SF views — every non-SF city path, whose whole route tree is a dormant
+// redirect to Home. STAGE 3 CONTRACT: when Oakland views become real, remove the
+// cityId clause so /oakland/* carries ?start/?end like any other view.
 const REDIRECT_VIEWS = new Set(['live-feeds'])
 
 /**
@@ -22,9 +25,9 @@ const REDIRECT_VIEWS = new Set(['live-feeds'])
 export function useUrlSync() {
   const [searchParams, setSearchParams] = useSearchParams()
   const pathname = useLocation().pathname
-  const { viewId } = parseRoute(pathname)
+  const { cityId, viewId } = parseRoute(pathname)
   const dateless = DATELESS_VIEWS.has(viewId)
-  const skipSync = REDIRECT_VIEWS.has(viewId)
+  const skipSync = REDIRECT_VIEWS.has(viewId) || cityId !== 'sf'
   const {
     dateRange, setDateRange,
     timeOfDayFilter, setTimeOfDayFilter,
