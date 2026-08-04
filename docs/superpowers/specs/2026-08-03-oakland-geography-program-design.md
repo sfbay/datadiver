@@ -111,21 +111,26 @@ export interface CityConfig {
     noun: string          // 'neighborhood' | 'police beat'
     nounPlural: string
     geojsonPath: string   // same-origin vendored asset
-    joinProperty: string  // 'nhood' for SF — SF's asset is NOT renormalized
+    // NOTE: the boundary join property is the CANONICAL `nhood` for EVERY city —
+    // vendoring scripts normalize each city's asset to it. Plan-time audit found
+    // ~70 literal `properties.nhood` reads across ~25 files (not the estimated 12),
+    // so a runtime joinProperty parameter would be huge churn for zero behavior;
+    // the property name is a vendoring convention instead.
     names: readonly string[]
     excluded: readonly string[]  // curated non-residential ids (SF parks/military)
     count: number
   }
   camera: {
-    default: CameraSpec   // { center: [lng, lat]; zoom; pitch; bearing }
-    // named per-view/per-purpose overrides; SF entries: last48, alertsPicker,
-    // ambientOrbit, neighborhoodFlyTo — the existing hand-tuned SF cameras move here
-    slots: Record<string, CameraSpec>
+    defaultView: CameraView   // REUSES mapDefaults.ts's existing type — no new shape
+    // named per-view/per-purpose overrides; SF entries assemble BY IMPORT from the
+    // existing hand-tuned constants (LAST48_CAMERA etc.), which stay where they are —
+    // config is the authoritative surface for NEW consumers, migration is incremental
+    slots: Record<string, CameraView>
   }
-  census: {
-    stateFips: string; countyFips: string
-    neighborhoodsJson: string; tractsJson: string
-  } | null                // null = city has no ACS pipeline; consumers gate on this
+  census: { stateFips: string; countyFips: string } | null
+  // null = city has no ACS pipeline; consumers HIDE census affordances. The static
+  // JSON assets stay imported where they are today — config paths would be
+  // speculative until a second census-bearing city exists.
   datasets: Record<string, CityDatasetConfig>  // logical keys, endpoint DERIVED
   manifest: ViewManifestEntry[]                // stage 1b; [] for oakland in stage 1
 }
@@ -152,20 +157,21 @@ One pure parser, one path builder, one hook — the ONLY code that interprets pa
 // src/cities/routing.ts (pure, unit-tested)
 parseRoute('/')                        → { cityId: 'sf', viewId: 'home' }
 parseRoute('/crime-incidents')         → { cityId: 'sf', viewId: 'crime-incidents' }
+parseRoute('/business/chain/abc')      → { cityId: 'sf', viewId: 'business' }   // SF multi-segment detail routes are legal
 parseRoute('/oakland')                 → { cityId: 'oakland', viewId: 'home' }
 parseRoute('/oakland/crime-incidents') → { cityId: 'oakland', viewId: 'crime-incidents' }
-parseRoute('/nosuchcity/whatever')     → null                              // unknown city → catch-all (root Home)
-parseRoute('/oakland/a/b')             → { cityId: 'oakland', viewId: null } // known city, unknown view
+parseRoute('/nosuchcity/whatever')     → { cityId: 'sf', viewId: 'nosuchcity' } // parser is NOT the 404 authority —
+                                         // unknown slugs fall to the router catch-all exactly as today
 
 viewPath('sf', 'crime-incidents')      → '/crime-incidents'    // SF never prefixed
 viewPath('oakland', 'crime-incidents') → '/oakland/crime-incidents'
 ```
 
-- `App.tsx` gains a `/:city/*` layout route rendering `CityLayout` → `CityProvider`;
-  the existing root routes render inside `CityProvider cityId="sf"`. In stage 1 the
-  `/:city` branch is **dormant**: any `/oakland/*` path redirects to `/` until stage 3
-  fills it. Unknown city → root Home (catch-all). Known city + unknown view → city
-  landing once one exists (stage 4); until then root Home.
+- No provider component: `parseRoute` is pure and cheap, so `useRouteView()` /
+  `useActiveCity()` read `useLocation()` directly — one authority, nothing to keep in
+  sync. In stage 1 the `/oakland/*` route branch is **dormant** (redirects to `/`)
+  until stage 3 fills it. Known city + unknown view → city landing once one exists
+  (stage 4); until then root Home.
 - **City context is route-derived ONLY.** No `activeCity` in the Zustand store — the
   URL is the single authority (the `react-router-redirect-clobber` lesson: never two
   writers over one navigation fact). Components read `useRouteView()`/`useCity()`;
@@ -180,8 +186,9 @@ viewPath('oakland', 'crime-incidents') → '/oakland/crime-incidents'
     viewId-keyed (`DATELESS_VIEWS = {'live'}`, `REDIRECT_VIEWS = {'live-feeds'}`), so
     `/oakland/live` (future) cannot leak `?start/?end` onto Last 48's clean-URL
     contract.
-  - `AppShell` active-nav match (`AppShell.tsx:349`) — compares viewId, not full
-    pathname.
+  - `AppShell` active-nav match (`AppShell.tsx:349`) — DEFERRED to stage 3: exact
+    pathname matching still works while SF paths are unchanged, and stage 3 makes nav
+    manifest-driven anyway (zero-visible-change argues for not touching it now).
   - `ErrorBoundary`/`VendorProfile` pathname uses are prefix-safe as-is (verified);
     untouched.
 - Cross-city switch semantics (mechanism in stage 1, control in stage 4): navigate to
@@ -198,11 +205,10 @@ viewPath('oakland', 'crime-incidents') → '/oakland/crime-incidents'
   id alone is only unique per portal (`client.ts:186-197`).
 - `useNeighborhoodBoundaries(cityId?: CityId)` — defaults to the route-derived active
   city internally, so the 15 existing SF call sites compile unchanged — reads
-  `geojsonPath` + `joinProperty` from city config; the module-singleton cache becomes `Map<CityId, FeatureCollection>` (the
-  singleton would otherwise serve SF polygons to Oakland after any cross-city
-  navigation). The ~12 sites that hardcode the literal `'nhood'` property read
-  `city.areas.joinProperty` instead (SF value stays `'nhood'` — zero behavior change;
-  `DemographicUnderlay`'s `geoIdProperty` parameter is the in-repo template).
+  `geojsonPath` from city config; the module-singleton cache becomes a `Map` keyed by
+  asset URL (the singleton would otherwise serve SF polygons to Oakland after any
+  cross-city navigation). Consumer sites reading `properties.nhood` stay untouched —
+  the property is canonical across cities per the vendoring convention in §1.
 - Camera: `SF_CENTER`/`SF_DEFAULT_*` become `cities/sf` config values; `MapView`'s
   constructor fallback and `useMapCameraPresets`' falling-edge reset resolve through
   the active city (closing the "clearing an Oakland beat flies you to San Francisco"
