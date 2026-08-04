@@ -7,7 +7,7 @@ import { useDemographicUnderlay } from '@/components/maps/DemographicUnderlay'
 import UnderlayPicker from '@/components/maps/UnderlayPicker'
 import UnderlayLegend from '@/components/maps/UnderlayLegend'
 import NeighborhoodCensusContext from '@/components/ui/NeighborhoodCensusContext'
-import { UNDERLAY_PRESETS } from '@/utils/censusVariables'
+import { useViewEntry } from '@/cities/useActiveCity'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useSearchParams } from 'react-router-dom'
@@ -67,6 +67,7 @@ type MapOverlay = 'response' | 'apot'
 export default function EmergencyResponse() {
   const { dateRange, timeOfDayFilter, comparisonMode, selectedIncident, setSelectedIncident, selectedNeighborhood, setSelectedNeighborhood } = useAppStore()
   const civicIndicators = useCivicIndicators()
+  const underlayPreset = useViewEntry()?.underlayPreset ?? []
   const [searchParams, setSearchParams] = useSearchParams()
   const [serviceFilter, setServiceFilter] = useState<ServiceFilter>('all')
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('neighborhoods')
@@ -820,7 +821,7 @@ export default function EmergencyResponse() {
 
           <div className="flex flex-wrap items-center justify-end gap-2 flex-shrink-0">
               <UnderlayPicker
-                presets={UNDERLAY_PRESETS['emergency-response'] ?? []}
+                presets={underlayPreset}
                 activeVariable={underlayVariable}
                 onSelect={setUnderlayVariable}
               />

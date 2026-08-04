@@ -8,7 +8,7 @@ import { useDemographicUnderlay } from '@/components/maps/DemographicUnderlay'
 import UnderlayPicker from '@/components/maps/UnderlayPicker'
 import UnderlayLegend from '@/components/maps/UnderlayLegend'
 import NeighborhoodCensusContext from '@/components/ui/NeighborhoodCensusContext'
-import { UNDERLAY_PRESETS } from '@/utils/censusVariables'
+import { useViewEntry } from '@/cities/useActiveCity'
 import { useSearchParams } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import { useDataset } from '@/hooks/useDataset'
@@ -67,6 +67,7 @@ const RESOLUTION_HOURS = (
 export default function Cases311() {
   const { dateRange, timeOfDayFilter, comparisonMode, selected311Case, setSelected311Case } = useAppStore()
   const civicIndicators = useCivicIndicators()
+  const underlayPreset = useViewEntry()?.underlayPreset ?? []
   const [searchParams, setSearchParams] = useSearchParams()
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('categories')
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
@@ -772,7 +773,7 @@ export default function Cases311() {
               ))}
             </div>
               <UnderlayPicker
-                presets={UNDERLAY_PRESETS['311-cases'] ?? []}
+                presets={underlayPreset}
                 activeVariable={underlayVariable}
                 onSelect={setUnderlayVariable}
               />

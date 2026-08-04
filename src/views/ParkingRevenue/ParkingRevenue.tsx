@@ -8,7 +8,7 @@ import { useDemographicUnderlay } from '@/components/maps/DemographicUnderlay'
 import UnderlayPicker from '@/components/maps/UnderlayPicker'
 import UnderlayLegend from '@/components/maps/UnderlayLegend'
 import NeighborhoodCensusContext from '@/components/ui/NeighborhoodCensusContext'
-import { UNDERLAY_PRESETS } from '@/utils/censusVariables'
+import { useViewEntry } from '@/cities/useActiveCity'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useSearchParams } from 'react-router-dom'
@@ -38,6 +38,7 @@ import ScannerFeedChips from '@/components/ui/ScannerFeedChips'
 export default function ParkingRevenue() {
   const { dateRange, selectedMeter, setSelectedMeter, selectedNeighborhood, setSelectedNeighborhood } = useAppStore()
   const civicIndicators = useCivicIndicators()
+  const underlayPreset = useViewEntry()?.underlayPreset ?? []
   const [searchParams, setSearchParams] = useSearchParams()
   // Range-keyed override: null = auto-detect (matches the engine's
   // detectGranularity); a pill click pins it FOR THE RANGE IT WAS CLICKED ON.
@@ -513,7 +514,7 @@ export default function ParkingRevenue() {
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2 flex-shrink-0">
               <UnderlayPicker
-                presets={UNDERLAY_PRESETS['parking-revenue'] ?? []}
+                presets={underlayPreset}
                 activeVariable={underlayVariable}
                 onSelect={setUnderlayVariable}
               />

@@ -8,7 +8,7 @@ import { useDemographicUnderlay } from '@/components/maps/DemographicUnderlay'
 import UnderlayPicker from '@/components/maps/UnderlayPicker'
 import UnderlayLegend from '@/components/maps/UnderlayLegend'
 import NeighborhoodCensusContext from '@/components/ui/NeighborhoodCensusContext'
-import { UNDERLAY_PRESETS } from '@/utils/censusVariables'
+import { useViewEntry } from '@/cities/useActiveCity'
 import { useSearchParams } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import { useCrimeEraData } from './useCrimeEraData'
@@ -54,6 +54,7 @@ const SELECT_FIELDS = 'incident_id,incident_number,cad_number,incident_datetime,
 export default function CrimeIncidents() {
   const { dateRange, timeOfDayFilter, comparisonMode, selectedCrimeIncident, setSelectedCrimeIncident } = useAppStore()
   const civicIndicators = useCivicIndicators()
+  const underlayPreset = useViewEntry()?.underlayPreset ?? []
   const [searchParams, setSearchParams] = useSearchParams()
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('categories')
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
@@ -711,7 +712,7 @@ export default function CrimeIncidents() {
               ))}
             </div>
               <UnderlayPicker
-                presets={UNDERLAY_PRESETS['crime-incidents'] ?? []}
+                presets={underlayPreset}
                 activeVariable={underlayVariable}
                 onSelect={setUnderlayVariable}
               />

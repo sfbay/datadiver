@@ -6,7 +6,7 @@ import { useDemographicUnderlay } from '@/components/maps/DemographicUnderlay'
 import UnderlayPicker from '@/components/maps/UnderlayPicker'
 import UnderlayLegend from '@/components/maps/UnderlayLegend'
 import NeighborhoodCensusContext from '@/components/ui/NeighborhoodCensusContext'
-import { UNDERLAY_PRESETS } from '@/utils/censusVariables'
+import { useViewEntry } from '@/cities/useActiveCity'
 import { useSearchParams } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import { useDataset } from '@/hooks/useDataset'
@@ -49,6 +49,7 @@ const SF_CITY_FILTER = "city = 'San Francisco'"
 
 export default function BusinessActivity() {
   const { dateRange, setDateRange, selectedBusiness, setSelectedBusiness } = useAppStore()
+  const underlayPreset = useViewEntry()?.underlayPreset ?? []
   const [searchParams, setSearchParams] = useSearchParams()
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('sectors')
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
@@ -770,7 +771,7 @@ export default function BusinessActivity() {
             </div>
 
               <UnderlayPicker
-                presets={UNDERLAY_PRESETS['business-activity'] ?? []}
+                presets={underlayPreset}
                 activeVariable={underlayVariable}
                 onSelect={setUnderlayVariable}
               />

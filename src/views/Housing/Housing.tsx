@@ -26,7 +26,7 @@ import { useCensusData } from '@/hooks/useCensusData'
 import { useDemographicUnderlay } from '@/components/maps/DemographicUnderlay'
 import UnderlayPicker from '@/components/maps/UnderlayPicker'
 import UnderlayLegend from '@/components/maps/UnderlayLegend'
-import { UNDERLAY_PRESETS } from '@/utils/censusVariables'
+import { useViewEntry } from '@/cities/useActiveCity'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
 import MapSidebar from '@/components/layout/MapSidebar'
 import ExportButton from '@/components/export/ExportButton'
@@ -175,6 +175,7 @@ function StreamChip({ label, pigment, textClass, active, count, onClick }: {
 export default function Housing() {
   const { dateRange, comparisonMode, selectedHousingEvent, setSelectedHousingEvent, setDateRange } = useAppStore()
   const civicIndicators = useCivicIndicators()
+  const underlayPreset = useViewEntry()?.underlayPreset ?? []
   const [searchParams, setSearchParams] = useSearchParams()
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
   const [geoGapDismissed, setGeoGapDismissed] = useState(false)
@@ -1040,7 +1041,7 @@ export default function Housing() {
             )}
 
             <UnderlayPicker
-              presets={UNDERLAY_PRESETS['housing'] ?? []}
+              presets={underlayPreset}
               activeVariable={underlayVariable}
               onSelect={setUnderlayVariable}
             />
