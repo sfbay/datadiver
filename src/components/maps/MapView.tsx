@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { SF_CENTER, SF_DEFAULT_ZOOM, SF_DEFAULT_PITCH, SF_DEFAULT_BEARING } from '@/utils/geo'
+import { useActiveCity } from '@/cities/useActiveCity'
 import { useAppStore } from '@/stores/appStore'
 import { SCALE_FACTORS } from '@/stores/typeScale'
 import MapLabelTuner from './MapLabelTuner'
@@ -157,8 +157,8 @@ export interface MapHandle {
 }
 
 /** Optional per-view camera override. Any omitted field falls back to the
- *  global SF_DEFAULT_* / SF_CENTER, so views that don't pass `camera` render
- *  exactly as before. Read once at map construction — not reactive. */
+ *  active city's `camera.defaultView`, so views that don't pass `camera`
+ *  render exactly as before. Read once at map construction — not reactive. */
 export interface MapCamera {
   center?: { lat: number; lng: number }
   zoom?: number
@@ -182,6 +182,7 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
   const labelSizeCache = useRef<Map<string, unknown>>(new Map())
   const onMapReadyRef = useRef(onMapReady)
   onMapReadyRef.current = onMapReady
+  const cityDefault = useActiveCity().camera.defaultView
 
   useImperativeHandle(ref, () => ({
     getMap: () => mapRef.current,
@@ -222,10 +223,10 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
         // camera is initial-only; users can pan/tilt freely afterward).
         center: camera?.center
           ? [camera.center.lng, camera.center.lat]
-          : [SF_CENTER.lng, SF_CENTER.lat],
-        zoom: camera?.zoom ?? SF_DEFAULT_ZOOM,
-        pitch: camera?.pitch ?? SF_DEFAULT_PITCH,
-        bearing: camera?.bearing ?? SF_DEFAULT_BEARING,
+          : [cityDefault.center.lng, cityDefault.center.lat],
+        zoom: camera?.zoom ?? cityDefault.zoom,
+        pitch: camera?.pitch ?? cityDefault.pitch,
+        bearing: camera?.bearing ?? cityDefault.bearing,
         antialias: true,
         preserveDrawingBuffer: true,
         attributionControl: false,

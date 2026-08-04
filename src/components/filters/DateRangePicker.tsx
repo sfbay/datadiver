@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAppStore } from '@/stores/appStore'
 import { useEraSeries } from '@/hooks/useEraSeries'
+import { parseRoute } from '@/cities/routing'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import EraTrack from '@/components/filters/EraTrack'
 import { resizeToDays, stepWindow, moveToNow, windowDays } from '@/utils/dateWindow'
@@ -127,7 +128,8 @@ function TimelineTrack({
 export default function DateRangePicker() {
   const { dateRange, setDateRange } = useAppStore()
   const { pathname } = useLocation()
-  const era = useEraSeries(pathname)
+  const { cityId, viewId } = parseRoute(pathname)
+  const era = useEraSeries(cityId, viewId)
   const isMobile = useIsMobile()
   const [isCustomOpen, setIsCustomOpen] = useState(false)
   const [localStart, setLocalStart] = useState(dateRange.start)

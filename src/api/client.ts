@@ -1,6 +1,8 @@
 /** Socrata SODA API client with caching, pagination, and SoQL query building */
 
-import { DATASETS, type DatasetKey } from './datasets'
+import type { DatasetKey } from './datasets'
+import type { CityId } from '@/cities/routing'
+import { getDatasetConfig } from '@/cities/registry'
 
 const APP_TOKEN = import.meta.env.VITE_SOCRATA_APP_TOKEN || ''
 const DEFAULT_LIMIT = 1000
@@ -65,10 +67,9 @@ function buildQueryString(params: SoQLParams): string {
 export async function fetchDataset<T>(
   datasetKey: DatasetKey,
   params: SoQLParams = {},
-  options: { skipCache?: boolean; timeoutMs?: number; retries?: number } = {}
+  options: { skipCache?: boolean; timeoutMs?: number; retries?: number; cityId?: CityId } = {}
 ): Promise<T[]> {
-  const config = DATASETS[datasetKey]
-  if (!config) throw new Error(`Unknown dataset: ${datasetKey}`)
+  const config = getDatasetConfig(options.cityId ?? 'sf', datasetKey)
 
   // Skip default sort for aggregation queries — ordering by a non-selected field causes Socrata 400 errors
   const useDefaultSort = !params.$group && !params.$select?.match(/\b(SUM|COUNT|AVG|MIN|MAX|MEDIAN)\s*\(/i)
@@ -183,15 +184,10 @@ export async function fetchAggregation<T>(
 }
 
 /** Clear the entire cache or a specific dataset's entries */
-export function clearCache(datasetKey?: DatasetKey): void {
-  if (!datasetKey) {
-    cache.clear()
-    return
-  }
-  const config = DATASETS[datasetKey]
+export function clearCache(datasetKey?: DatasetKey, cityId: CityId = 'sf'): void {
+  if (!datasetKey) { cache.clear(); return }
+  const config = getDatasetConfig(cityId, datasetKey)
   for (const key of cache.keys()) {
-    if (key.includes(config.id)) {
-      cache.delete(key)
-    }
+    if (key.startsWith(config.endpoint)) cache.delete(key)
   }
 }

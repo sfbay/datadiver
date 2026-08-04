@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react'
 import mapboxgl, { type Map as MapboxMap } from 'mapbox-gl'
 import type { CensusVariable, CensusData } from '../../types/census'
 import { getVariableConfig } from '../../utils/censusVariables'
+import { useActiveCity } from '@/cities/useActiveCity'
 
 // ---------------------------------------------------------------------------
 // Curatorial exclusion list — neighborhoods that should NEVER count for
@@ -129,12 +130,15 @@ export function useDemographicUnderlay(options: UseDemographicUnderlayOptions): 
   const lineLayerId = `${layerPrefix}-line`
   const layerPrefixRef = useRef(layerPrefix)
   layerPrefixRef.current = layerPrefix
+  const city = useActiveCity()
 
   useEffect(() => {
     if (!map) return
 
-    // If no variable or no boundaries, remove any existing layers and bail
-    if (!variable || !boundaries) {
+    // If no variable, no boundaries, or the active city has no census
+    // pipeline (beats have no tract crosswalk), remove any existing layers
+    // and bail
+    if (!city.census || !variable || !boundaries) {
       removeLayers(map, sourceId, fillLayerId, hatchLayerId, lineLayerId)
       return
     }
@@ -320,7 +324,7 @@ export function useDemographicUnderlay(options: UseDemographicUnderlayOptions): 
       map.off('style.load', handleStyleData)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, variable, censusData, boundaries, geoIdProperty, opacity, beforeLayerId, layerPrefix, excludedGeoIds])
+  }, [map, city.census, variable, censusData, boundaries, geoIdProperty, opacity, beforeLayerId, layerPrefix, excludedGeoIds])
 
   // Cleanup on unmount
   useEffect(() => {

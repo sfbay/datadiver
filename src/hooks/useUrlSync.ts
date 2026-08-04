@@ -2,15 +2,20 @@ import { useEffect, useRef } from 'react'
 import { useSearchParams, useLocation } from 'react-router-dom'
 import { useAppStore } from '@/stores/appStore'
 import { parseComparison, serializeComparison } from '@/utils/comparisonMode'
+import { parseRoute } from '@/cities/routing'
 
-// The Last 48 (/live) ignores the global date range + filters (fixed 48h
-// window), so its URL stays clean — no ?start/?end/&tod/&compare clutter.
-const DATELESS_ROUTES = new Set(['/live'])
+// The Last 48 ignores the global date range (fixed 48h window) — its URL stays
+// clean in EVERY city ('/live', later '/oakland/live'), so classification is
+// by view identity, not pathname literal.
+const DATELESS_VIEWS = new Set(['live'])
 
-// /live-feeds is the legacy → /live redirect (see <LiveFeedsRedirect>). On it,
-// useUrlSync must NOT write params: setSearchParams preserves the current
-// pathname, which would clobber the redirect's pathname change to /live.
-const REDIRECT_ROUTES = new Set(['/live-feeds'])
+// Redirect-only locations must not sync — setSearchParams preserves the current
+// pathname, which would clobber a sibling <Navigate>'s pathname change. Two cases:
+// the legacy redirect views ('live-feeds'), and — until stage 3 renders real
+// non-SF views — every non-SF city path, whose whole route tree is a dormant
+// redirect to Home. STAGE 3 CONTRACT: when Oakland views become real, remove the
+// cityId clause so /oakland/* carries ?start/?end like any other view.
+const REDIRECT_VIEWS = new Set(['live-feeds'])
 
 /**
  * Syncs appStore date range to/from URL search params.
@@ -20,8 +25,9 @@ const REDIRECT_ROUTES = new Set(['/live-feeds'])
 export function useUrlSync() {
   const [searchParams, setSearchParams] = useSearchParams()
   const pathname = useLocation().pathname
-  const dateless = DATELESS_ROUTES.has(pathname)
-  const skipSync = REDIRECT_ROUTES.has(pathname)
+  const { cityId, viewId } = parseRoute(pathname)
+  const dateless = DATELESS_VIEWS.has(viewId)
+  const skipSync = REDIRECT_VIEWS.has(viewId) || cityId !== 'sf'
   const {
     dateRange, setDateRange,
     timeOfDayFilter, setTimeOfDayFilter,
