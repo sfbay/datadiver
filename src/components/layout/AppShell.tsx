@@ -6,154 +6,8 @@ import { useUrlSync } from '@/hooks/useUrlSync'
 import DateRangePicker from '@/components/filters/DateRangePicker'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import type { TypeScale } from '@/stores/typeScale'
-
-// Earth-tone refactor — each nav item carries a pigment from the design
-// system palette (terracotta / ochre / moss / teal / brick / indigo / plum).
-// Pigment drives: nav-tag fill, sidebar active-state corner glow, viz card
-// glow on the Overview grid, on-map detail glows. Same color = same dataset
-// across every surface; deliberately not interchangeable.
-const NAV_ITEMS = [
-  {
-    path: '/',
-    label: 'Overview',
-    shortLabel: 'OV',
-    description: 'Data stories & viz picker',
-    accentColor: '#b85a33', // terracotta-600 — primary brand
-  },
-  {
-    path: '/alerts',
-    label: 'Alerts',
-    shortLabel: 'ALRT',
-    description: 'Email me events near my places',
-    accentColor: '#b85a33', // terracotta-600 — the "alert" pigment
-  },
-  {
-    path: '/live',
-    label: 'The Last 48',
-    shortLabel: 'LIVE',
-    description: '48 hours of live civic data',
-    accentColor: '#d4a435', // ochre-500 — live / warm yellow
-  },
-  {
-    path: '/pulse',
-    label: 'Pulse',
-    shortLabel: 'PULSE',
-    description: 'Trending now in S.F.',
-    accentColor: '#b85a33', // terracotta-600 — signal / front-door surface
-  },
-  {
-    path: '/emergency-response',
-    label: 'Emergency Response',
-    shortLabel: 'ER',
-    description: 'Fire, Police, EMS response times',
-    accentColor: '#b85a33', // terracotta-600 — emergency / alert
-  },
-  {
-    path: '/crime-incidents',
-    label: 'Crime Incidents',
-    shortLabel: 'CI',
-    description: 'SFPD incidents & 911 cross-ref',
-    accentColor: '#963e30', // brick-600 — danger / critical
-  },
-  {
-    path: '/traffic-safety',
-    label: 'Traffic Safety',
-    shortLabel: 'TS',
-    description: 'Vision Zero crash & speed analysis',
-    accentColor: '#963e30', // brick-600 — danger semantic, twin to Crime
-  },
-  {
-    path: '/housing',
-    label: 'Housing',
-    shortLabel: 'HO',
-    description: 'Evictions & buyouts',
-    accentColor: '#b85a33', // terracotta-600 — kin to the primary brand pigment
-  },
-  {
-    path: '/elections',
-    label: 'Elections',
-    shortLabel: 'EL',
-    description: 'Live results, RCV & historical playback',
-    accentColor: '#616a96', // indigo-500 — civic ceremony
-  },
-  {
-    path: '/city-budget',
-    label: 'City Budget',
-    shortLabel: 'BU',
-    description: 'Budget, spending, vendor & ad tracking',
-    accentColor: '#b58620', // ochre-600 — money / traditional ledger
-  },
-  {
-    path: '/parking-revenue',
-    label: 'Parking Revenue',
-    shortLabel: 'PR',
-    description: 'Meter revenue & patterns',
-    accentColor: '#3f7573', // teal-600 — info / Dana's color
-  },
-  {
-    path: '/dispatch-911',
-    label: '911 Dispatch',
-    shortLabel: '911',
-    description: 'Sensitive call temporal patterns',
-    accentColor: '#474e74', // indigo-600 — rare cool, sensitivity
-  },
-  {
-    path: '/311-cases',
-    label: '311 Cases',
-    shortLabel: '311',
-    description: '311 service request patterns',
-    accentColor: '#5c7a3d', // moss-600 — civic upkeep / growth
-  },
-  {
-    path: '/parking-citations',
-    label: 'Parking Citations',
-    shortLabel: 'PC',
-    description: 'SFMTA citation patterns & fines',
-    accentColor: '#d47149', // terracotta-500 — kin to PR teal but warmer
-  },
-  {
-    path: '/business-activity',
-    label: 'Business Activity',
-    shortLabel: 'BA',
-    description: 'Business opening & closing trends',
-    accentColor: '#5c7a3d', // moss-600 — formation / success
-  },
-  {
-    path: '/business',
-    label: 'Business Search',
-    shortLabel: 'BS',
-    description: 'Search businesses, chains, and owners',
-    accentColor: '#3f7573', // teal-600 — info, twin to BA but cooler
-  },
-  {
-    path: '/campaign-finance',
-    label: 'Campaign Finance',
-    shortLabel: 'CF',
-    description: 'Campaign contributions & spending',
-    accentColor: '#8b6282', // plum-500 — campaign finance / agency routing
-  },
-  {
-    path: '/demographics',
-    label: 'Demographics',
-    shortLabel: 'DM',
-    description: 'Census demographics & civic correlations',
-    accentColor: '#8b6282', // plum-500 — editorial cool, civic profiling
-  },
-  {
-    path: '/neighborhood',
-    label: 'Neighborhoods',
-    shortLabel: 'NH',
-    description: 'Cross-dataset civic profiles',
-    accentColor: '#5c9693', // teal-500 — Dana's color, civic-place
-  },
-  {
-    path: '/about',
-    label: 'About',
-    shortLabel: 'AB',
-    description: 'Methods, sources & disclosure',
-    accentColor: '#a8926a', // paper-500 — the colophon/meta pigment
-  },
-] as const
+import { useActiveCity } from '@/cities/useActiveCity'
+import { viewPath } from '@/cities/routing'
 
 // Type-scale slider stops, in track order. Three stops per Jesse's
 // feedback that a plain large/default toggle wasn't enough runway — the
@@ -176,6 +30,13 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation()
   const { isDarkMode, toggleDarkMode, typeScale, setTypeScale, isSidebarOpen: deskRailOpen, toggleSidebar, dateRange } = useAppStore()
   useUrlSync()
+
+  const city = useActiveCity()
+  // Nav rows ARE the manifest, in array order — path derived, never authored.
+  const navItems = city.manifest.map((entry) => ({
+    entry,
+    path: viewPath(city.id, entry.viewId),
+  }))
 
   const [omniOpen, setOmniOpen] = useState(false)
   const isMobile = useIsMobile()
@@ -345,12 +206,12 @@ export default function AppShell({ children }: { children: ReactNode }) {
               Visualizations
             </p>
           )}
-          {NAV_ITEMS.map((item) => {
-            const isActive = location.pathname === item.path
+          {navItems.map(({ entry, path }) => {
+            const isActive = location.pathname === path
             return (
               <button
-                key={item.path}
-                onClick={() => go(item.path)}
+                key={path}
+                onClick={() => go(path)}
                 className={`
                   group w-full flex items-center rounded-lg text-left
                   transition-all duration-200
@@ -360,7 +221,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
                     : 'hover:bg-slate-50 dark:hover:bg-white/[0.03]'
                   }
                 `}
-                style={isActive ? ({ '--glow': item.accentColor } as CSSProperties) : undefined}
+                style={isActive ? ({ '--glow': entry.accentColor } as CSSProperties) : undefined}
               >
                 {/* Active-state corner glow — anchored top-left of the nav row,
                     pigment from the dataset's accentColor. */}
@@ -377,12 +238,12 @@ export default function AppShell({ children }: { children: ReactNode }) {
                   }
                 `}
                 style={isActive ? {
-                  backgroundColor: item.accentColor,
-                  boxShadow: `0 4px 12px ${item.accentColor}40`,
+                  backgroundColor: entry.accentColor,
+                  boxShadow: `0 4px 12px ${entry.accentColor}40`,
                 } : undefined}
                 >
-                  {item.shortLabel}
-                  {item.path === '/live' && (
+                  {entry.navShortLabel}
+                  {entry.navPulse && (
                     <span className="pulse-live absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-brick-500" />
                   )}
                 </div>
@@ -390,10 +251,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
                   <div className="relative flex flex-col min-w-0">
                     <span className={`text-[14px] font-semibold truncate transition-colors
                       ${isActive ? 'text-ink dark:text-white' : 'text-slate-700 dark:text-slate-300'}`}>
-                      {item.label}
+                      {entry.navLabel}
                     </span>
                     <span className="text-label text-slate-500 dark:text-slate-400 truncate">
-                      {item.description}
+                      {entry.navDescription}
                     </span>
                   </div>
                 )}
