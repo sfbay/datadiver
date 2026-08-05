@@ -62,7 +62,7 @@ function ResultRow({
     <button
       type="button"
       onClick={() => onSelect(result)}
-      className={`w-full flex items-center text-left transition-colors hover:bg-slate-100/70 dark:hover:bg-white/[0.04] ${
+      className={`w-full flex items-center text-left transition-colors hover:bg-paper-100/50 dark:hover:bg-white/[0.04] ${
         grand ? 'gap-4 px-5 py-3.5' : 'gap-3 px-3 py-2'
       }`}
     >
@@ -71,14 +71,14 @@ function ResultRow({
       </span>
       <span className="flex-1 min-w-0">
         <span
-          className={`block text-ink dark:text-slate-200 truncate ${
+          className={`block text-ink dark:text-paper-100 truncate ${
             grand ? 'text-lg desk:text-xl' : 'text-[13px]'
           }`}
         >
           {result.label}
         </span>
         <span
-          className={`block font-mono text-slate-500 dark:text-slate-400 truncate ${
+          className={`block font-mono text-paper-600 dark:text-paper-400 truncate ${
             grand ? 'text-sm mt-1' : 'text-micro mt-0.5'
           }`}
         >
@@ -86,7 +86,7 @@ function ResultRow({
         </span>
       </span>
       <span
-        className={`font-mono text-slate-500 dark:text-slate-400 uppercase shrink-0 ${
+        className={`font-mono text-paper-500 dark:text-paper-600 uppercase shrink-0 ${
           grand ? 'text-label tracking-widest' : 'text-nano tracking-wider'
         }`}
       >
@@ -131,7 +131,7 @@ function SearchBar({ query, setQuery, inputRef, cyclePlaceholder = false, size =
         grand ? 'gap-3.5 px-5 py-4 desk:py-5' : 'gap-2.5 px-3.5 py-2.5'
       }`}
     >
-      <span className="text-slate-500 dark:text-slate-400">
+      <span className="text-paper-600 dark:text-paper-400">
         <SearchIcon size={grand ? 24 : 15} />
       </span>
       <input
@@ -142,12 +142,17 @@ function SearchBar({ query, setQuery, inputRef, cyclePlaceholder = false, size =
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         placeholder={placeholder}
-        className={`flex-1 bg-transparent font-mono text-ink dark:text-slate-200 placeholder:text-slate-500 dark:placeholder:text-slate-500 outline-none min-w-0 ${
-          grand ? 'text-xl desk:text-3xl' : 'text-[13px]'
+        className={`flex-1 bg-transparent outline-none min-w-0 placeholder:text-paper-500 dark:placeholder:text-paper-600 ${
+          grand
+            ? // The Last 48's big-number face (Last48EventCard hero figure),
+              // tried here on the query itself: Fraunces italic at display
+              // scale, paper ink.
+              'font-display italic tabular-nums text-paper-900 dark:text-paper-100 text-2xl desk:text-4xl'
+            : 'font-mono text-ink dark:text-paper-100 text-[13px]'
         }`}
       />
       <span
-        className={`shrink-0 font-mono text-slate-500 dark:text-slate-400 bg-slate-200/70 dark:bg-white/[0.06] rounded ${
+        className={`shrink-0 font-mono text-paper-500 dark:text-paper-600 bg-paper-200/70 dark:bg-white/[0.06] rounded ${
           grand ? 'text-label px-2 py-1' : 'text-micro px-1.5 py-0.5'
         }`}
       >
@@ -214,10 +219,10 @@ export default function OmniSearch({ mode, isOpen, onClose }: OmniSearchProps) {
         }}
       >
         <div className="w-full max-w-3xl mx-4 h-fit">
-          <div className="rounded-2xl border border-slate-300/60 dark:border-white/10 bg-white dark:bg-slate-950/95 overflow-hidden shadow-2xl">
+          <div className="rounded-2xl border border-paper-300/60 dark:border-white/10 bg-paper-50 dark:bg-espresso-950/95 overflow-hidden shadow-2xl">
             <SearchBar query={query} setQuery={setQuery} inputRef={inputRef} size="tall" />
             {showDropdown && (
-              <div className="border-t border-slate-200/60 dark:border-white/[0.06] max-h-[60vh] overflow-y-auto">
+              <div className="border-t border-paper-200/50 dark:border-espresso-700/60 max-h-[60vh] overflow-y-auto">
                 {results.map((r) => (
                   <ResultRow key={r.id} result={r} onSelect={handleSelect} size="grand" />
                 ))}
@@ -237,7 +242,7 @@ export default function OmniSearch({ mode, isOpen, onClose }: OmniSearchProps) {
   return (
     <div
       onClick={focusInput}
-      className="cursor-text rounded-xl border border-slate-300/60 dark:border-white/[0.08] bg-white/80 dark:bg-slate-900/60 backdrop-blur-sm overflow-hidden shadow-sm transition-colors hover:border-slate-400/70 dark:hover:border-white/[0.14] focus-within:border-slate-500 dark:focus-within:border-white/30"
+      className="cursor-text rounded-xl border border-paper-300/60 dark:border-white/[0.08] bg-paper-50/80 dark:bg-espresso-900/60 backdrop-blur-sm overflow-hidden shadow-sm transition-colors hover:border-paper-400/70 dark:hover:border-white/[0.14] focus-within:border-paper-500 dark:focus-within:border-white/30"
       style={{ '--accent': '#b85a33' } as CSSProperties}
     >
       <SearchBar
@@ -248,7 +253,7 @@ export default function OmniSearch({ mode, isOpen, onClose }: OmniSearchProps) {
         size="slim"
       />
       {showDropdown && (
-        <div className="border-t border-slate-200/60 dark:border-white/[0.06]" onClick={(e) => e.stopPropagation()}>
+        <div className="border-t border-paper-200/50 dark:border-white/[0.06]" onClick={(e) => e.stopPropagation()}>
           {results.map((r) => (
             <ResultRow key={r.id} result={r} onSelect={handleSelect} />
           ))}
