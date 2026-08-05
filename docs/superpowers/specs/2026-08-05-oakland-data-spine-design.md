@@ -7,7 +7,10 @@ recorded below).
 (`2026-08-03-oakland-geography-program-design.md`). Stages 1a (geography spine,
 PR #141) + 1b (view manifest, PR #143) + the visible-fixes PR #144 are merged.
 **Gate:** ZERO user-visible change. Everything this stage ships is data, scripts,
-comments, and tests. `/oakland/*` keeps redirecting Home.
+comments, tests, and one stand-down guard (§4). `/oakland/*` keeps redirecting Home
+— no Oakland ROUTE renders; AppShell chrome paints one pre-redirect frame, and that
+frame must stay unchanged in kind from today (legacy date track, empty-nav
+tolerance, ZERO network requests — see the era stand-down guard in §4).
 
 ## Scope decisions (Jesse, 2026-08-05)
 
@@ -41,8 +44,8 @@ comments, and tests. `/oakland/*` keeps redirecting Home.
 
 | Logical key | ID | Rows | Span | Facts that shape entries |
 |---|---|---|---|---|
-| `policeIncidents` | `ppgh-7dqv` | 1,278,404 | Aug 2004 → now, ~3-day lag | dateField `datetime`; geoField `location` (point), 95.4% all-time / 96.0% 2024+; beat field `policebeat` zero-padded ('01X') — joins beats `name`, NEVER `cp_beat` (unpadded, '4X', 67.76% silent-loss trap); junk pre-2004 trickle → era clamp floor 2004 + clampNote |
-| `cases311` | `quth-gb8e` | 1,177,789 | 2013-08-01 → now, same-day | dateField `datetimeinit`; `datetimeclosed` → resolution analytics; beat field `beat` ('26Y'); **`reqaddress` lat/lng is JUNK** (observed 30.0°, −141.2°) — real coords are `srx` (lng) / `sry` (lat) strings, 98.0% all-time / 98.5% last-year |
+| `policeIncidents` | `ppgh-7dqv` | 1,278,404 | Aug 2004 → now, ~3-day lag | dateField `datetime`; geoField `location` (point), 95.4% all-time / 96.0% 2024+; beat field `policebeat` zero-padded ('01X') — joins beats `name`; `cp_beat` matches only 67.76% of rows (~32% silent loss), never join through it; junk pre-2004 trickle → era clamp floor 2004 + clampNote |
+| `cases311` | `quth-gb8e` | 1,177,789 | 2013-08-01 → now, same-day | dateField `datetimeinit`; `datetimeclosed` → resolution analytics; beat field `beat` ('26Y'); **`reqaddress` lat/lng is JUNK** (observed 30.0°, −141.2°) — real coords are `srx` (lng) / `sry` (lat), numeric columns serialized as strings over the JSON API, 98.0% all-time / 98.5% last-year |
 | `parkingCitations` | `58em-y96b` | 2,740,389 | 2018-01-01 → 2026-05-18 | dateField `ticket_iss` (date-only) + `ticket_i_1` HH:MM text time; geoField `the_geom`; ~2.5-month lag; carries a neighborhood computed region (only Oakland event set that does) |
 | beats (vendored, not a registry entry) | `78s7-673i` | 59 polygons | — | join = `name`; attrs pol_dist/pol_beat/agency; raw GeoJSON export ~534KB MultiPolygon |
 
@@ -106,8 +109,10 @@ same-origin and never touches the network for boundaries").
 `src/utils/geo.ts`; not migrated — zero-behavior churn).
 
 Wired into `oakland/index.ts`: `names: OAKLAND_BEATS`, `excluded` stays the empty set
-(its only consumer is census-gated OFF for Oakland — `census: null`; whether LKM1/PDT2
-join it is a stage-3 editorial call), `count: 59` already correct.
+— the config field currently has no consumers at all (exclusion logic still imports
+the SF constants directly; wiring it through config is parked), and Oakland's
+`census: null` gates off the demographic surfaces that would care regardless. Whether
+LKM1/PDT2 join it is a stage-3 editorial call. `count: 59` already correct.
 
 ### §3 Dataset registry — `src/cities/oakland/datasets.ts`
 
@@ -118,8 +123,9 @@ join it is a stage-3 editorial call), `count: 59` already correct.
   crime's junk-trickle + beat-join trap; 311's reqaddress-junk trap; citations' lag;
   fppc496's `exp_date` odd-one-out; fppcSchB2's emptiness.
 - `cacheTTL` always commented with its reason. Event sets follow SF siblings (crime
-  10 min like `policeIncidents`; 311 5-min default; citations longer — lag-shaped).
-  FPPC sets: 60 min (daily update cadence, filing-lump data).
+  10 min like SF `policeIncidents`; 311 10 min like SF `cases311`; citations 30 min
+  like SF `parkingCitations` — lag-shaped). FPPC sets: 60 min (daily update cadence,
+  filing-lump data).
 - `name`/`description` are reader-facing **Oakland voice**: "OPD incident reports…",
   "Oakland 311 service requests…", agency names spelled Oakland's way. This IS the
   stage-2 voice deliverable (scope call 3).
@@ -127,9 +133,9 @@ join it is a stage-3 editorial call), `count: 59` already correct.
   sets sort by their event date DESC; `fppc460Summary`/`fppcSchF` by `rpt_date DESC`.
 - `hasGeo`: true only for `policeIncidents` (geoField `location`) and
   `parkingCitations` (geoField `the_geom`). `cases311` is `hasGeo: false` at the
-  registry level — its coords are split string columns (`srx`/`sry`), not a Socrata
-  point; the stage-3 view decides how to consume them (matches how SF's geo-less sets
-  are modeled).
+  registry level — its coords are split numeric columns (`srx`/`sry`, serialized as
+  strings over the JSON API), not a Socrata point; the stage-3 view decides how to
+  consume them (matches how SF's geo-less sets are modeled).
 - `category`: 'public-safety' (crime), 'other' (311 — matches SF's `cases311`),
   'transportation' (citations), 'other' (FPPC ×16).
 
@@ -176,6 +182,27 @@ ACS affordances), no `dateless`:
 noise. Exact navDescription wording is the implementer's editorial pass within these
 registers; the beat-honesty rule binds ("police beat", never "neighborhood").
 
+**Era stand-down guard (ships WITH the manifest — the leak its absence causes):**
+`DateRangePicker` mounts in AppShell OUTSIDE Routes, so it renders one pre-redirect
+frame on `/oakland/*`. `useEraSeries` gates its fetch on `source != null` with no
+city guard and calls `useDataset` WITHOUT `cityId` — so the moment Oakland era
+sources exist, that frame would fire the Oakland-shaped query at SF's endpoint
+(same logical key `policeIncidents` → wg3w-h783, no `datetime` column → guaranteed
+Socrata 400 to data.sfgov.org), flip the picker into a transient era-strip loading
+state, and paint 4 Oakland nav rows where today's frame paints none. Fix: an
+`active = source != null && cityId === 'sf'` flag replaces `source != null` at all
+four gate sites in `useEraSeries` (both `enabled:` options, `anyLoading`,
+`available`), with a STAGE 3 CONTRACT comment — the exact mirror of `useUrlSync`'s
+`cityId !== 'sf'` skipSync clause; remove it when `useDataset` threads `cityId`.
+With the guard, the pre-redirect frame renders the legacy 730-day track and fires
+zero requests — byte-identical to today.
+
+**⌘K place-row destination (stage-3 flag):** place rows link to
+`viewPath(cityId, 'neighborhood')` → `/oakland/neighborhood`, a view no Oakland
+stage ships. The stage-2 test pins that path as-is; stage 3 must either suppress
+place rows for cities whose manifest lacks a `neighborhood` entry or retarget them
+to the city landing — recorded here so the pin isn't read as an endorsement.
+
 Era-clamp rationale (the machine-readable era facts, deliverable 3):
 - crime `[2004, null]` + clampNote — the clamp HIDES the ~1,400 junk rows (the
   clampNote contract: "set when the clamp hides published rows").
@@ -188,8 +215,9 @@ Era-clamp rationale (the machine-readable era facts, deliverable 3):
 The 1b suites were built as deliberate tripwires; stage 2 re-pins them to the new truth:
 
 1. `src/cities/registry.test.ts` — the "oakland shell" test: datasets length 0 → 19;
-   add the same generic per-entry assertions SF gets (id shape, name/description
-   non-empty), looped over Oakland's registry.
+   add NEW generic per-entry assertions for Oakland (4×4 id shape, name/description
+   non-empty — coverage SF's loop doesn't have) plus the same endpoint-derivation
+   loop SF already gets.
 2. `src/components/search/useOmniSearch.test.ts` — "oakland index is empty" → pins the
    new composition: 4 view rows + 59 place rows + dataset rows from the entries'
    omniDatasetKeys, all with `/oakland/...` paths. (Place rows derive from
@@ -209,11 +237,14 @@ The 1b suites were built as deliberate tripwires; stage 2 re-pins them to the ne
 
 ### §6 Hygiene folds (all invisible)
 
-- **STAGE 3 CONTRACT comments into code** (they currently live only in CLAUDE.md):
+- **STAGE 3 CONTRACT comments into code** (the useUrlSync skipSync contract is
+  already in code; the cityId-threading and slots.live contracts live only in
+  CLAUDE.md):
   - `src/hooks/useDataset.ts` + `src/api/client.ts`: thread `cityId` before any
     Oakland view fetches — the `'sf'` default silently queries SF; note that
-    `fetchAllPages`/`fetchAggregation` call `fetchDataset` without options and are
-    SF-hardcoded until threaded.
+    `fetchAllPages`/`fetchAggregation` call `fetchDataset` without a `cityId` option
+    (`fetchAllPages` passes only `{ skipCache: true }`) and are SF-hardcoded until
+    threaded.
   - `src/views/Last48/modes/Last48Map.tsx` (the `slots.live` read): `Record<string,
     CameraView>` types the value as present while a city with empty slots yields
     `undefined` at runtime; MapView degrades to `camera.defaultView`.
@@ -231,6 +262,12 @@ The 1b suites were built as deliberate tripwires; stage 2 re-pins them to the ne
 
 1. Beat join: always `policebeat`/`beat` → beats `nhood` (from `name`, zero-padded).
    `cp_beat` matches as text for double-digit beats and silently drops ~32% of rows.
+   AND: even the correct join leaves **~4.8% of crime rows unmapped** — `77X`
+   (34,898 rows, the dataset's 4th-most-common beat value) and `99X` (8,311) are
+   well-formed out-of-beat/unknown codes with NO polygon, plus 10,237 NULLs and a
+   malformed tail ('1X' unpadded, '30 X', 'UNKNOWN', 'BERKELEY', zip codes). Beat
+   rollups must count and disclose the unmapped share, never assume
+   `policebeat ∈ the 59 ids`.
 2. 311 coordinates: `reqaddress` is a Socrata location column whose lat/lng is
    frequently junk; `srx`/`sry` are the authoritative lng/lat (as strings), 98%
    populated.
@@ -251,6 +288,10 @@ The 1b suites were built as deliberate tripwires; stage 2 re-pins them to the ne
   Track renders on crime/311/citations SF views, `/live` clean-URL); `/oakland/*`
   still redirects Home; `/oakland/crime-incidents?start=2020-01-01` gains no params
   and lands Home.
+- **Network assertion** on the `/oakland/crime-incidents` load (devtools network
+  tab): ZERO requests to `data.sfgov.org` carrying Oakland field names
+  (`datetime`/`datetimeinit`/`ticket_iss`) and ZERO requests to
+  `data.oaklandca.gov` — the era stand-down guard's acceptance check.
 - Beats asset sanity: generator gates pass (59 features, id regex); committed file
   loads as valid GeoJSON in the integrity test.
 
