@@ -26,9 +26,10 @@ export const SF_DEFAULT_BEARING = 20.1
 /** Per-view camera override for The Last 48 only. A steeper pitch + tighter
  *  zoom frames the event stream more cinematically than the site default,
  *  with a center nudged slightly west/south to sit the densest activity
- *  (Tenderloin/SoMa/Mission) in the upper canvas. Passed to <MapView camera>
- *  by Last48Map; every other view omits the prop and keeps the SF_DEFAULT_*
- *  values above. Tuned visually via the ?debug=map overlay. */
+ *  (Tenderloin/SoMa/Mission) in the upper canvas. Wired into sfCity's
+ *  `camera.slots.live` (src/cities/sf/index.ts); Last48Map reads it via
+ *  useActiveCity(), never from here. Every other view omits the camera prop
+ *  and keeps the SF_DEFAULT_* values above. Tuned via ?debug=map. */
 export const LAST48_CAMERA = {
   center: { lat: 37.7322, lng: -122.4603 },
   zoom: 12.55,

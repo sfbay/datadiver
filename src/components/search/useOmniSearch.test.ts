@@ -1,12 +1,24 @@
 import { describe, it, expect } from 'vitest'
 import { buildSearchIndex } from './useOmniSearch'
 import { DATASETS } from '@/api/datasets'
+import { sfCity } from '@/cities/sf'
 
-// SF PARITY: these pins reproduce, element for element, what the retired
-// module-eval SEARCH_INDEX + DATASET_ROUTES table emitted — the ⌘K results
-// must be byte-identical across the refactor.
+// The place + dataset pins reproduce, element for element, what the retired
+// module-eval SEARCH_INDEX + DATASET_ROUTES table emitted. View entries are a
+// deliberate post-manifest ADDITION (visible-fixes PR): every manifest view
+// gets a row, ranked first, so 'Elections' finds Elections.
 describe('OmniSearch index (SF parity)', () => {
   const index = buildSearchIndex('sf')
+
+  it('emits one view entry per manifest view, in manifest (nav) order, at correct paths', () => {
+    const views = index.filter((r) => r.category === 'view')
+    expect(views.map((v) => v.id)).toEqual(sfCity.manifest.map((e) => `view-${e.viewId}`))
+    const elections = views.find((v) => v.id === 'view-elections')
+    expect(elections?.label).toBe('Elections')
+    expect(elections?.path).toBe('/elections')
+    const home = views.find((v) => v.id === 'view-home')
+    expect(home?.path).toBe('/')
+  })
 
   it('neighborhood results carry the nh param the Neighborhood view reads', () => {
     const places = index.filter((r) => r.category === 'place')
@@ -49,10 +61,10 @@ describe('OmniSearch index (SF parity)', () => {
     expect(ids).toEqual(expectedOrder)
   })
 
-  it('places precede datasets (section order parity)', () => {
-    const firstDataset = index.findIndex((r) => r.category === 'dataset')
-    const lastPlace = index.map((r) => r.category).lastIndexOf('place')
-    expect(lastPlace).toBeLessThan(firstDataset)
+  it('section order is views → places → datasets', () => {
+    const cats = index.map((r) => r.category)
+    expect(cats.lastIndexOf('view')).toBeLessThan(cats.indexOf('place'))
+    expect(cats.lastIndexOf('place')).toBeLessThan(cats.indexOf('dataset'))
   })
 
   it('oakland index is empty until stage 2 fills the city registry', () => {

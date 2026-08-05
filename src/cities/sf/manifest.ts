@@ -4,9 +4,8 @@
 // from the design-system palette (terracotta / ochre / moss / teal / brick /
 // indigo / plum); same color = same dataset across every surface.
 // homeCard.order is the Home grid's own historical sequence — independent of
-// nav order on purpose. homeCard copy is editorial and migrates verbatim;
-// the '/live' card's pre-rebrand text is a KNOWN stale artifact fixed in the
-// visible-fixes follow-up PR, never here (zero-visible-change gate).
+// nav order on purpose. homeCard copy is editorial: keep it in sync with the
+// view's actual identity (title = the brand name users see in nav).
 
 import type { ViewManifestEntry } from '../manifest'
 
@@ -33,7 +32,10 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     accentColor: '#d4a435', // ochre-500 — live / warm yellow
     navPulse: true,
     dateless: true,
-    homeCard: { title: 'Live Feeds', subtitle: 'Scanner Radio · SFPD, SFFD, EMS', order: 14 },
+    homeCard: { title: 'The Last 48', subtitle: 'SF 911, Fire/EMS & 311 · Live Flow Map', order: 14 },
+    // Socioeconomic context that pairs with live 911/Fire/311 streams:
+    // property values, monthly rent, household rent-stress, and elderly
+    // concentration (the last correlates with EMS demand).
     underlayPreset: ['medianHomeValue', 'medianRent', 'rentBurden', 'pctOver65'],
   },
   {
@@ -96,6 +98,11 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     accentColor: '#b85a33', // terracotta-600 — kin to the primary brand pigment
     homeCard: { title: 'Housing', subtitle: 'SF Rent Board · Evictions & Buyouts', order: 8 },
     eraSource: { datasetKey: 'evictionNotices', dateField: 'file_date', clamp: [1997, null] },
+    // evictionRate (the site's first derived census variable) leads, then the
+    // four ACS variables most directly explanatory of eviction/buyout
+    // pressure: what rent costs, how burdened renters already are, how many
+    // households are exposed (renter share), and what a bought-out unit is
+    // worth to convert.
     underlayPreset: ['evictionRate', 'medianRent', 'rentBurden', 'renterPct', 'medianHomeValue'],
     omniDatasetKeys: ['evictionNotices', 'buyoutAgreements'],
   },
