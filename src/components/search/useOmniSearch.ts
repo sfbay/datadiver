@@ -3,7 +3,7 @@ import { getCity } from '@/cities/registry'
 import { viewPath, type CityId } from '@/cities/routing'
 import { useRouteView } from '@/cities/useActiveCity'
 
-export type SearchCategory = 'place' | 'dataset' | 'vendor' | 'time'
+export type SearchCategory = 'view' | 'place' | 'dataset' | 'vendor' | 'time'
 
 export interface SearchResult {
   id: string
@@ -24,6 +24,20 @@ export function buildSearchIndex(cityId: CityId): SearchResult[] {
   if (cached) return cached
   const city = getCity(cityId)
   const results: SearchResult[] = []
+
+  // Views first — typing a view's own name ('Elections', 'Housing') is the
+  // strongest intent signal ⌘K gets, and manifest-only views (no
+  // omniDatasetKeys) previously had no row at all.
+  for (const entry of city.manifest) {
+    results.push({
+      id: `view-${entry.viewId}`,
+      category: 'view',
+      label: entry.navLabel,
+      sublabel: entry.navDescription,
+      icon: '🧭',
+      path: viewPath(cityId, entry.viewId),
+    })
+  }
 
   // Areas → place results (SF: the 41 Analysis Neighborhoods)
   for (const name of city.areas.names) {

@@ -21,12 +21,16 @@ export function useUrlSync() {
   const dateless = entry?.dateless === true
   // Redirect-only locations must not sync — setSearchParams preserves the
   // current pathname, which would clobber a sibling <Navigate>'s pathname
-  // change. Two cases: the city's registered redirect slugs ('live-feeds'),
-  // and — until stage 3 renders real non-SF views — every non-SF city path,
-  // whose whole route tree is a dormant redirect to Home. STAGE 3 CONTRACT:
-  // when Oakland views become real, remove the cityId clause so /oakland/*
-  // carries ?start/?end like any other view.
-  const skipSync = city.redirects.some((r) => r.from === viewId) || cityId !== 'sf'
+  // change. Three cases: the city's registered redirect slugs ('live-feeds');
+  // unknown slugs with no manifest entry, which belong to the router's root
+  // catch-all (its <Navigate to="/"> must win — without this, junk URLs kept
+  // their path, gained date params, and rendered an empty main); and — until
+  // stage 3 renders real non-SF views — every non-SF city path, whose whole
+  // route tree is a dormant redirect to Home. STAGE 3 CONTRACT: when Oakland
+  // views become real, remove the cityId clause so /oakland/* carries
+  // ?start/?end like any other view.
+  const skipSync =
+    city.redirects.some((r) => r.from === viewId) || entry === undefined || cityId !== 'sf'
   const {
     dateRange, setDateRange,
     timeOfDayFilter, setTimeOfDayFilter,
