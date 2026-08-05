@@ -45,29 +45,51 @@ function SearchIcon({ size = 14 }: { size?: number }) {
   )
 }
 
+/** `slim` is the ribbon dropdown's compact row; `grand` is the ⌘K modal's
+ *  command-palette scale — the modal empties the screen, so its terms must
+ *  dominate it, not whisper at dropdown size. */
 function ResultRow({
   result,
   onSelect,
+  size = 'slim',
 }: {
   result: SearchResult
   onSelect: (r: SearchResult) => void
+  size?: 'slim' | 'grand'
 }) {
+  const grand = size === 'grand'
   return (
     <button
       type="button"
       onClick={() => onSelect(result)}
-      className="w-full flex items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-slate-100/70 dark:hover:bg-white/[0.04]"
+      className={`w-full flex items-center text-left transition-colors hover:bg-slate-100/70 dark:hover:bg-white/[0.04] ${
+        grand ? 'gap-4 px-5 py-3.5' : 'gap-3 px-3 py-2'
+      }`}
     >
-      <span className="text-base leading-none shrink-0">{result.icon}</span>
+      <span className={`leading-none shrink-0 ${grand ? 'text-2xl' : 'text-base'}`}>
+        {result.icon}
+      </span>
       <span className="flex-1 min-w-0">
-        <span className="block text-[13px] text-ink dark:text-slate-200 truncate">
+        <span
+          className={`block text-ink dark:text-slate-200 truncate ${
+            grand ? 'text-lg desk:text-xl' : 'text-[13px]'
+          }`}
+        >
           {result.label}
         </span>
-        <span className="block text-micro font-mono text-slate-500 dark:text-slate-400 truncate mt-0.5">
+        <span
+          className={`block font-mono text-slate-500 dark:text-slate-400 truncate ${
+            grand ? 'text-sm mt-1' : 'text-micro mt-0.5'
+          }`}
+        >
           {result.sublabel}
         </span>
       </span>
-      <span className="text-nano font-mono text-slate-500 dark:text-slate-400 uppercase shrink-0 tracking-wider">
+      <span
+        className={`font-mono text-slate-500 dark:text-slate-400 uppercase shrink-0 ${
+          grand ? 'text-label tracking-widest' : 'text-nano tracking-wider'
+        }`}
+      >
         {result.category}
       </span>
     </button>
@@ -93,16 +115,24 @@ function SearchBar({ query, setQuery, inputRef, cyclePlaceholder = false, size =
     samples: RIBBON_SAMPLES,
     paused: !cyclePlaceholder || focused || query.length > 0,
   })
+  // The modal's placeholder is shorter — at command-palette type scale the
+  // ribbon's full sentence overflows the input on narrow viewports.
   const placeholder = cyclePlaceholder
     ? animatedPlaceholder || 'Search across time, place, vendor, dataset…'
-    : 'Search across time, place, vendor, dataset…'
+    : 'Search views, places, datasets…'
 
-  const padY = size === 'slim' ? 'py-2.5' : 'py-2'
+  // `tall` is the ⌘K modal's command-palette scale (the modal is the only
+  // caller); `slim` is the page ribbon.
+  const grand = size !== 'slim'
 
   return (
-    <div className={`flex items-center gap-2.5 px-3.5 ${padY}`}>
+    <div
+      className={`flex items-center ${
+        grand ? 'gap-3.5 px-5 py-4 desk:py-5' : 'gap-2.5 px-3.5 py-2.5'
+      }`}
+    >
       <span className="text-slate-500 dark:text-slate-400">
-        <SearchIcon size={size === 'slim' ? 15 : 14} />
+        <SearchIcon size={grand ? 24 : 15} />
       </span>
       <input
         ref={inputRef}
@@ -112,9 +142,15 @@ function SearchBar({ query, setQuery, inputRef, cyclePlaceholder = false, size =
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         placeholder={placeholder}
-        className="flex-1 bg-transparent text-[13px] font-mono text-ink dark:text-slate-200 placeholder:text-slate-500 dark:placeholder:text-slate-500 outline-none min-w-0"
+        className={`flex-1 bg-transparent font-mono text-ink dark:text-slate-200 placeholder:text-slate-500 dark:placeholder:text-slate-500 outline-none min-w-0 ${
+          grand ? 'text-xl desk:text-3xl' : 'text-[13px]'
+        }`}
       />
-      <span className="shrink-0 text-micro font-mono text-slate-500 dark:text-slate-400 bg-slate-200/70 dark:bg-white/[0.06] px-1.5 py-0.5 rounded">
+      <span
+        className={`shrink-0 font-mono text-slate-500 dark:text-slate-400 bg-slate-200/70 dark:bg-white/[0.06] rounded ${
+          grand ? 'text-label px-2 py-1' : 'text-micro px-1.5 py-0.5'
+        }`}
+      >
         ⌘K
       </span>
     </div>
@@ -164,10 +200,12 @@ export default function OmniSearch({ mode, isOpen, onClose }: OmniSearchProps) {
   if (mode === 'modal') {
     if (!isOpen) return null
 
+    // Command-palette register: the backdrop empties the screen, so the
+    // palette dominates it — wide container, display-scale terms, grand rows.
     return (
       <div
-        className="fixed inset-0 z-50 flex justify-center bg-black/60 backdrop-blur-sm"
-        style={{ paddingTop: '20vh' }}
+        className="fixed inset-0 z-50 flex justify-center bg-black/70 backdrop-blur-md"
+        style={{ paddingTop: '14vh' }}
         onClick={(e) => {
           if (e.target === e.currentTarget) {
             setQuery('')
@@ -175,13 +213,13 @@ export default function OmniSearch({ mode, isOpen, onClose }: OmniSearchProps) {
           }
         }}
       >
-        <div className="w-full max-w-lg mx-4 h-fit">
+        <div className="w-full max-w-3xl mx-4 h-fit">
           <div className="rounded-2xl border border-slate-300/60 dark:border-white/10 bg-white dark:bg-slate-950/95 overflow-hidden shadow-2xl">
             <SearchBar query={query} setQuery={setQuery} inputRef={inputRef} size="tall" />
             {showDropdown && (
-              <div className="border-t border-slate-200/60 dark:border-white/[0.06]">
+              <div className="border-t border-slate-200/60 dark:border-white/[0.06] max-h-[60vh] overflow-y-auto">
                 {results.map((r) => (
-                  <ResultRow key={r.id} result={r} onSelect={handleSelect} />
+                  <ResultRow key={r.id} result={r} onSelect={handleSelect} size="grand" />
                 ))}
               </div>
             )}
