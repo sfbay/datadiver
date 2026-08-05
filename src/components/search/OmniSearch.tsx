@@ -146,8 +146,10 @@ function SearchBar({ query, setQuery, inputRef, cyclePlaceholder = false, size =
           grand
             ? // The Last 48's big-number face (Last48EventCard hero figure),
               // tried here on the query itself: Fraunces italic at display
-              // scale, paper ink.
-              'font-display italic tabular-nums text-paper-900 dark:text-paper-100 text-2xl desk:text-4xl'
+              // scale, paper ink. leading-[1.3] overrides text-4xl's tight
+              // 1.11 line box — an input clips ink at its box edge, and
+              // Fraunces italic descenders (g, j, y) need the extra room.
+              'font-display italic tabular-nums text-paper-900 dark:text-paper-100 text-2xl desk:text-4xl leading-[1.3]'
             : 'font-mono text-ink dark:text-paper-100 text-[13px]'
         }`}
       />
