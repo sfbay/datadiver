@@ -52,11 +52,11 @@ describe('city registry', () => {
 })
 
 describe('manifest liveness (stage 3)', () => {
-  it('oakland: crime-incidents + 311-cases live; parking-citations + campaign-finance dormant', () => {
+  it('oakland: all four manifest entries live (stage 3b flip — parking-citations + campaign-finance no longer dormant)', () => {
     const live = liveManifest(CITIES.oakland.manifest).map((e) => e.viewId)
-    expect(live).toEqual(['crime-incidents', '311-cases'])
+    expect(live).toEqual(['crime-incidents', '311-cases', 'parking-citations', 'campaign-finance'])
     const dormant = CITIES.oakland.manifest.filter((e) => e.dormant).map((e) => e.viewId)
-    expect(dormant).toEqual(['parking-citations', 'campaign-finance'])
+    expect(dormant).toEqual([])
   })
   it('sf: zero dormant entries — liveManifest is the identity', () => {
     expect(liveManifest(CITIES.sf.manifest)).toEqual([...CITIES.sf.manifest])
