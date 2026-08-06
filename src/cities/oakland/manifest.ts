@@ -2,13 +2,14 @@
 import type { ViewManifestEntry } from '../manifest'
 
 /**
- * Stage-2 manifest: four dormant entries whose job is to carry Oakland's
- * per-dataset era facts and ⌘K claims — /oakland/* still redirects Home,
- * so nothing here renders. navLabels/pigments mirror SF's per-view values
- * (same dataset family = same pigment in every city); homeCard and
+ * Four entries carrying Oakland's per-dataset era facts and ⌘K claims.
+ * Stage 3 brought crime-incidents and 311-cases live — their routes now
+ * render real views. parking-citations and campaign-finance stay
+ * `dormant: true`: registered (era facts, ⌘K) but /oakland/* still
+ * redirects those slugs Home. navLabels/pigments mirror SF's per-view
+ * values (same dataset family = same pigment in every city); homeCard and
  * underlayPreset are deliberately absent (the Home grid is SF's until
- * stage 4; census: null hides every ACS affordance). Stage 3 fleshes
- * these out with Oakland copy when the views go live.
+ * stage 4; census: null hides every ACS affordance).
  */
 export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
   {
@@ -39,6 +40,7 @@ export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
   },
   {
     viewId: 'parking-citations',
+    dormant: true,
     navLabel: 'Parking Citations',
     navShortLabel: 'PC',
     navDescription: 'Oakland parking citations',
@@ -48,6 +50,7 @@ export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
   },
   {
     viewId: 'campaign-finance',
+    dormant: true,
     navLabel: 'Campaign Finance',
     navShortLabel: 'CF',
     navDescription: 'FPPC filings — contributions & spending',

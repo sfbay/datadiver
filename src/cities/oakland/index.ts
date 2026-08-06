@@ -24,6 +24,6 @@ export const oaklandCity: CityConfig = {
   },
   census: null,      // beats have no tract crosswalk — ACS affordances hide
   datasets: buildDatasets('data.oaklandca.gov', OAKLAND_DATASETS_RAW),
-  manifest: OAKLAND_MANIFEST,  // 4 dormant entries; views render in stage 3
+  manifest: OAKLAND_MANIFEST,  // stage 3: crime-incidents + 311-cases live, 2 still dormant
   redirects: [],
 }

@@ -7,7 +7,9 @@ import AppShell from '@/components/layout/AppShell'
 import { RouteErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { useRouteView } from '@/cities/useActiveCity'
 import { sfCity } from '@/cities/sf'
+import { oaklandCity } from '@/cities/oakland'
 import { viewPath } from '@/cities/routing'
+import { liveManifest } from '@/cities/manifest'
 import type { ViewId } from '@/cities/manifest'
 // Eager: ONLY the landing page. Every dataset view is route-split — including
 // The Last 48, whose import graph carries Mapbox GL (~467 KB gzip): keeping it
@@ -99,11 +101,17 @@ function CityRedirect({ to }: { to: string }) {
 function CityChangeReset() {
   const { cityId } = useRouteView()
   const setSelectedNeighborhood = useAppStore((s) => s.setSelectedNeighborhood)
+  const setSelectedCrimeIncident = useAppStore((s) => s.setSelectedCrimeIncident)
+  const setSelected311Case = useAppStore((s) => s.setSelected311Case)
   const prev = useRef(cityId)
   useEffect(() => {
-    if (prev.current !== cityId) setSelectedNeighborhood(null)
+    if (prev.current !== cityId) {
+      setSelectedNeighborhood(null)
+      setSelectedCrimeIncident(null)
+      setSelected311Case(null)
+    }
     prev.current = cityId
-  }, [cityId, setSelectedNeighborhood])
+  }, [cityId, setSelectedNeighborhood, setSelectedCrimeIncident, setSelected311Case])
   return null
 }
 
@@ -149,12 +157,25 @@ export default function App() {
         <RouteErrorBoundary>
         <Suspense fallback={<RouteFallback />}>
         <Routes>
-          {/* One row per SF manifest entry — the route table derives FROM the
-              manifest, so route↔manifest drift is impossible by construction. */}
-          {sfCity.manifest.map(({ viewId }) => {
-            const Cmp = VIEW_COMPONENTS[viewId]
-            return <Route key={viewId} path={viewPath('sf', viewId)} element={<Cmp />} />
-          })}
+          {/* One row per LIVE manifest entry, both cities — the route table
+              derives FROM the manifests, so route↔manifest drift is impossible
+              by construction. element key={city.id}: both cities mount the
+              SAME component type at the same tree position, and React would
+              otherwise keep the instance alive across a cross-city navigation
+              — per-city hook instances and city-gated effects inside the views
+              require a REMOUNT (stage-3 spec §2). */}
+          {[sfCity, oaklandCity].flatMap((city) =>
+            liveManifest(city.manifest).map(({ viewId }) => {
+              const Cmp = VIEW_COMPONENTS[viewId]
+              return (
+                <Route
+                  key={`${city.id}-${viewId}`}
+                  path={viewPath(city.id, viewId)}
+                  element={<Cmp key={city.id} />}
+                />
+              )
+            })
+          )}
           {/* Detail routes stay hand-written — deeper pages of the business
               family, not view identities (parseRoute collapses them). */}
           <Route path="/business/chain/:ban" element={<ChainProfile />} />
@@ -164,8 +185,9 @@ export default function App() {
           {sfCity.redirects.map(({ from, to }) => (
             <Route key={from} path={`/${from}`} element={<CityRedirect to={viewPath('sf', to)} />} />
           ))}
-          {/* Oakland routes are dormant until stage 3 fills them — until then
-              any /oakland/* URL lands on Home rather than 404-ing. */}
+          {/* Dormant Oakland slugs (parking-citations, campaign-finance) +
+              junk /oakland/* paths land Home. Live routes above outrank this
+              splat by v6 route ranking. */}
           <Route path="/oakland/*" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

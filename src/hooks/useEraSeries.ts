@@ -13,6 +13,7 @@ import { useDataset } from '@/hooks/useDataset'
 import { eraSourceFor, buildEraQuery, buildHistoricalEraQuery, eraDomain, type EraSeam } from '@/api/eraSources'
 import { parseYearCounts, todayIso, type YearCount } from '@/utils/eraStrip'
 import type { CityId } from '@/cities/routing'
+import { isViewLive } from '@/cities/registry'
 
 export interface UseEraSeriesResult {
   years: YearCount[]
@@ -27,11 +28,12 @@ export interface UseEraSeriesResult {
 
 export function useEraSeries(cityId: CityId, viewId: string): UseEraSeriesResult {
   const source = useMemo(() => eraSourceFor(cityId, viewId), [cityId, viewId])
-  // STAGE 3 CONTRACT: this guard is replaced by liveness in the same stage —
-  // the stand-down is permanent until the era source is wired for the city.
-  // One of three 'sf' stand-downs (useUrlSync skipSync, AppShell nav);
-  // remove all three together when era sources go live for Oakland.
-  const active = source != null && cityId === 'sf'
+  // Era queries activate only for LIVE (cityId, viewId) entries. Two reasons:
+  // (a) a dormant slug's one pre-redirect AppShell frame must not fire a
+  // 20s-timeout annual query for a view that immediately redirects; (b) this
+  // replaced the stage-2 'sf' stand-down when Oakland's first views went live
+  // (stage-3 spec §2 — liveness, not city, is the fact that matters).
+  const active = source != null && isViewLive(cityId, viewId)
   const params = useMemo(() => (source ? buildEraQuery(source) : {}), [source])
   const histParams = useMemo(
     () => (source ? buildHistoricalEraQuery(source) ?? {} : {}), [source],

@@ -8,6 +8,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import type { TypeScale } from '@/stores/typeScale'
 import { useActiveCity } from '@/cities/useActiveCity'
 import { viewPath } from '@/cities/routing'
+import { liveManifest } from '@/cities/manifest'
 
 // Type-scale slider stops, in track order. Three stops per Jesse's
 // feedback that a plain large/default toggle wasn't enough runway — the
@@ -32,14 +33,13 @@ export default function AppShell({ children }: { children: ReactNode }) {
   useUrlSync()
 
   const city = useActiveCity()
-  // Nav rows ARE the manifest, in array order — path derived, never authored.
-  // STAGE 3 CONTRACT: non-SF cities stand down — their routes are dormant
-  // redirects, but AppShell mounts outside <Routes> and renders one
-  // pre-redirect frame on /oakland/*; without this clause that frame would
-  // paint Oakland's manifest rows where today it paints none. Third of the
-  // three 'sf' stand-downs (useUrlSync skipSync, useEraSeries active);
-  // remove all three together when Oakland views go live.
-  const navItems = (city.id === 'sf' ? city.manifest : []).map((entry) => ({
+  // Nav rows ARE the city's LIVE manifest entries, in array order — path
+  // derived, never authored. Dormant entries (still redirecting) get no row;
+  // the one pre-redirect frame on a dormant slug paints the city's live rows
+  // for a single frame before <Navigate> lands Home (accepted cosmetic,
+  // stage-3 spec §2). New active-city chrome consumers still need the
+  // pre-redirect-frame check ([[preredirect-frame-standdown]]).
+  const navItems = liveManifest(city.manifest).map((entry) => ({
     entry,
     path: viewPath(city.id, entry.viewId),
   }))
@@ -177,7 +177,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
                 DataDiver
               </span>
               <span className="text-micro text-slate-400 dark:text-slate-500 font-mono uppercase tracking-widest mt-0.5">
-                SF Open Data
+                {city.abbrev} Open Data
               </span>
             </div>
           )}
