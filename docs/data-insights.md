@@ -488,6 +488,150 @@ both extracts are read — 2018 is the all-time peak at 147,448 and 2025 the
 lowest full year at 95,549, a ~35% decline that sits entirely inside the modern
 dataset and is therefore not an artifact of the seam.
 
+## Oakland
+
+Oakland went live at stage 3 (Aug 2026) with two views on `data.oaklandca.gov` —
+Crime Incidents and 311 Cases, both rendered on the vendored 59-beat polygon
+layer rather than neighborhoods. Parking Citations is registered but dormant
+(below). Probe evidence and every query URL behind these findings live in
+`docs/superpowers/specs/2026-08-05-oakland-stage3-views-design.md` (fresh
+probe tables + §3/§4) and `docs/superpowers/specs/2026-08-05-oakland-data-spine-design.md`
+(the data-spine audit that first surfaced the beat-join and pre-2004 traps).
+
+### Crime (`ppgh-7dqv`)
+
+**One row is one CHARGE, not one incident.** `casenumber` is not unique —
+a single case can file several charge rows. Measured over the recent window
+(≥2024-01-01): 133,204 rows against 112,490 distinct case numbers, ~15.5%
+duplicate rows, worst case 21 rows under one number. Every count DataDiver
+shows — stat cards, the per-beat GROUP BY, the per-category GROUP BY, the
+hourly-pattern GROUP BY, and the header's annual era strip — runs
+`count(distinct casenumber)`, not `count(*)`; a naive count overstates
+incidents by roughly the duplicate share. The map sample and the comparison
+(YoY) hook can't push a `DISTINCT` through a row fetch, so they dedupe
+client-side on `casenumber` instead, keeping the first row per case. The
+Incidents card discloses this in its subtitle: "multi-charge cases counted
+once."
+
+**No resolution column exists.** `ppgh-7dqv`'s schema is 10 fields total, and
+none of them is an open/closed status — unlike SF, where the Resolution
+Breakdown tile reads a real field. Rather than show a fabricated or
+always-empty tile, the Oakland crime view withholds it outright, along with
+the 911-linked card (Oakland has no CAD/dispatch dataset to cross-reference —
+a different reason than SF's pre-2018 gap, and the copy doesn't conflate them).
+
+**Hour 0 is inflated by a date-only cohort, not a real midnight spike.**
+7.02% of recent rows file at hour 0 against a 4.17% mean hour share — about
+2.9 percentage points of excess. These are reports where OPD recorded only a
+date, no clock time, and the missing time defaults to midnight. Left alone, a
+"Peak Hour" card would confidently read "12 AM." The Oakland hourly-pattern
+instance sets `excludePeakHour0`, so Peak Hour is computed only over hours
+1–23; the heatgrid still renders all 24 hours (nothing is hidden), with a
+footnote disclosing that ~3% of reports carry no clock time and file as
+midnight — the same footnote covers the Time-of-Day filter strip, since its
+hour-0 cell glows from the same inflated total and its Overnight preset would
+otherwise sweep the cohort into filtered queries unlabeled.
+
+**A ~1,400-row junk trickle predates real data.** `ppgh-7dqv` publishes
+scattered rows back to 1950, but the dataset doesn't actually start until
+August 2004 (2004 total 25,466; July 2004 was 557 rows, August 2004 was
+5,348). A query spanning the trickle would render a false near-empty decade
+next to a real one. Oakland's era clamp floors the header strip at 2004 with
+a clampNote ("range clamped — published dates run back to 1950"), and the
+WHERE builders additionally carry a hard query floor
+(`OAKLAND_CRIME_QUERY_FLOOR = '2004-01-01'`) — any range whose start predates
+it gets clamped before the query runs, so an out-of-domain range (a stray
+`?start=1995`, or a date carried over from a view with an earlier floor)
+returns absence, not junk rendered as incidents.
+
+**Beat joins have one correct path and one silent trap.** `policebeat` is
+zero-padded (`'01X'`) and matches the vendored beats asset's `nhood`
+property exactly — that's the only join that should ever be used. The
+dataset's OTHER beat-shaped column, `cp_beat`, is unpadded and matches only
+~68% of rows as text (~32% silent loss) — never join through it. Even the
+correct join leaves gaps: `77X` (34,898 rows) and `99X` (8,311) are
+well-formed codes with no polygon in the beats layer at all, and together
+with NULLs and a malformed tail (unpadded ids, "UNKNOWN", city names, zip
+codes) about 4.8% of crime rows never join a beat. That share is computed
+from the same per-beat GROUP BY as the ranking itself and disclosed as a line
+under the sidebar ranking and on the choropleth legend — rows with
+unmappable codes still count toward citywide totals, the ranking just can't
+place them.
+
+**`crimetype` is 49 ALL-CAPS values with an administrative tail mixed in.**
+About 3% of rows are recovered/towed-vehicle records, warrants, missing
+persons, and outside-agency rides riding inside the same field as victim
+crimes. Rather than hide or reclassify them, the app lists them individually
+and ungrouped — visible and toggleable, but belonging to none of the three
+authored quick groups (Violent / Property / Quality of Life). THREATS was
+folded into Violent and VANDALISM into Property; those are the only two
+judgment calls made, made once, and pinned by test. Raw values ride WHERE
+clauses and `?categories=`; display surfaces title-case them
+(`titleCaseCrimetype`) except for acronyms like DUI.
+
+### 311 (`quth-gb8e`)
+
+**`srx`/`sry`, not `reqaddress`, are the real coordinates.** Despite names
+that sound like a state-plane projection, `srx` (longitude) and `sry`
+(latitude) are plain WGS84 degrees, typed `number` in the schema and just
+serialized as strings over Socrata's JSON API — no cast is needed once
+parsed, and 98.4% of recent rows carry them. `reqaddress`, which Socrata
+also reports as a point column, is a constant junk value (roughly 30.01°,
+−141.22° — a spot in the open ocean) on every sampled row and must never be
+read. `oak311Coords` additionally validates against Oakland's bounding box
+(lng −122.36…−122.10, lat 37.70…37.90) — 99.978% of non-null coordinates
+fall inside it, with 62 outliers rejected rather than plotted.
+
+**`reqcategory` is a coded token with no display-name column.** All 30
+values (`ILLDUMP`, `ABANDONED AUTO`, `HOMELESS EMT`, …) are internal codes;
+nothing in the schema supplies a human label the way SF's category field
+does. DataDiver authors the label map itself (`OAK311_LABELS`, all 30 tokens,
+completeness pinned by test) — e.g. `ILLDUMP` → "Illegal dumping",
+`HOMELESS EMT` → "Homeless encampments". Raw tokens still ride WHERE clauses
+and `?categories=`; the labels are display-only.
+
+**`status` has 11 values and none of them is SF's `'Open'`.** The vocabulary
+is CLOSED (164,586) · CANCEL (50,549) · OPEN (34,113) · REFERRED (12,991) ·
+PENDING (9,876) · WOCREATE (9,470) · EVALUATED - NO FURTHER ACTION (1,894) ·
+UNFUNDED (1,740) · GONE ON ARRIVAL (818) · WAITING ON CUSTOMER (464) ·
+REQUEST COMPLETE (37). DataDiver authors an open-work set —
+`{OPEN, PENDING, WOCREATE, WAITING ON CUSTOMER}` — on the reasoning that a
+work order that's been created or is pending customer input is still city
+work in progress, while CANCEL, REFERRED, and the closed family are not.
+That grammar is disclosed in the Open card's subtitle, and every client-side
+status read (including the detail panel's open/closed badge) resolves
+through the same authored set rather than each surface inventing its own
+check.
+
+**`requestid` is the unique deep-link key.** It's a number, 100% populated,
+100% unique in the recent window — the detail-panel fetch and `?event=`-style
+deep links key off it directly, the same role `incident_id` plays for SF
+crime.
+
+**`datetimeclosed` — the resolution-histogram basis — is populated on ~57%
+of recent cases** (65.89% all-time). The resolution histogram runs over
+closed pairs only, using the same date-diff math as SF with the field names
+swapped (`resolutionHoursExpr`), and reads as a partial-coverage view rather
+than a false-complete one.
+
+**Beat vocabulary is clean; disclose the small NULL share anyway.** Unlike
+crime's `policebeat`, 311's `beat` field is perfectly clean in the recent
+window — exactly the 59 grammar-conforming beat ids plus NULL, no junk
+codes. The NULL share (2.59%) is still disclosed with the same idiom as
+crime's unmapped-beat line, rather than silently excluded from the
+denominator.
+
+### Parking Citations (`58em-y96b`, dormant)
+
+Registered in the stage-2 data spine but not yet wired to a live view. Two
+findings worth recording now, for whoever builds the view next: citations
+publish with a **~2.5-month lag** (materially worse than crime's ~3 days or
+311's same-day), and the timestamp is split the same way SF's crime
+historical extract was — a date-only field (`ticket_iss`) plus a separate
+`'HH:MM'` text time column — so any hour-level query needs the same
+zero-padded lexicographic-range treatment as SFPD's `tmnf-yvry`, not
+`date_extract_hh`.
+
 ## General Patterns
 
 ### Floating SF-Local Timestamps (all DataSF datasets)
