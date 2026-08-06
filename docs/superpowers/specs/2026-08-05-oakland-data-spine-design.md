@@ -188,14 +188,17 @@ frame on `/oakland/*`. `useEraSeries` gates its fetch on `source != null` with n
 city guard and calls `useDataset` WITHOUT `cityId` — so the moment Oakland era
 sources exist, that frame would fire the Oakland-shaped query at SF's endpoint
 (same logical key `policeIncidents` → wg3w-h783, no `datetime` column → guaranteed
-Socrata 400 to data.sfgov.org), flip the picker into a transient era-strip loading
-state, and paint 4 Oakland nav rows where today's frame paints none. Fix: an
+Socrata 400 to data.sfgov.org), and flip the picker into a transient era-strip loading
+state. (Separately, AppShell's nav derives from the active city's manifest, so the
+same frame would paint 4 Oakland nav rows — handled by AppShell's own stand-down
+clause, not by this guard.) Fix: an
 `active = source != null && cityId === 'sf'` flag replaces `source != null` at all
 four gate sites in `useEraSeries` (both `enabled:` options, `anyLoading`,
 `available`), with a STAGE 3 CONTRACT comment — the exact mirror of `useUrlSync`'s
 `cityId !== 'sf'` skipSync clause; remove it when `useDataset` threads `cityId`.
-With the guard, the pre-redirect frame renders the legacy 730-day track and fires
-zero requests — byte-identical to today.
+With the guard and AppShell's nav stand-down, the pre-redirect frame renders the
+legacy 730-day track, an empty nav, and fires zero requests — byte-identical to
+today.
 
 **⌘K place-row destination (stage-3 flag):** place rows link to
 `viewPath(cityId, 'neighborhood')` → `/oakland/neighborhood`, a view no Oakland

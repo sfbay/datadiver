@@ -31,8 +31,8 @@ export function useEraSeries(cityId: CityId, viewId: string): UseEraSeriesResult
   // thread cityId yet, so an Oakland era query would resolve its logical
   // key against SF's registry and 400 at data.sfgov.org — and AppShell
   // mounts DateRangePicker on every URL, including /oakland/*'s one
-  // pre-redirect frame. The exact mirror of useUrlSync's cityId clause;
-  // remove both when useDataset threads cityId (stage 3).
+  // pre-redirect frame. One of three 'sf' stand-downs (useUrlSync skipSync, AppShell nav);
+  // remove all three when useDataset threads cityId (stage 3).
   const active = source != null && cityId === 'sf'
   const params = useMemo(() => (source ? buildEraQuery(source) : {}), [source])
   const histParams = useMemo(
