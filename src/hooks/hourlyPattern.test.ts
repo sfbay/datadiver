@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeHourlyResult } from './useHourlyPatternFactory'
+import { computeHourlyResult, hourlySelect } from './useHourlyPatternFactory'
 import type { HourlyAggRow } from '@/types/datasets'
 
 const row = (hour: number, dow: number, n: number): HourlyAggRow =>
@@ -22,5 +22,20 @@ describe('computeHourlyResult', () => {
     expect(r.grid[6][12]).toBe(40)
     expect(r.peakHour).toBe(12)
     expect(r.hourTotals.reduce((a, b) => a + b, 0)).toBe(41)
+  })
+})
+
+describe('hourlySelect', () => {
+  // A custom countExpr (Oakland crime's count(distinct casenumber)) must
+  // actually reach the GROUP BY select — this pins that it does.
+  it('carries a custom countExpr through to the select', () => {
+    expect(hourlySelect('datetime', 'count(distinct casenumber)')).toContain(
+      'count(distinct casenumber)'
+    )
+  })
+  it('matches the legacy SF literal exactly with no countExpr', () => {
+    expect(hourlySelect('requested_datetime')).toBe(
+      'date_extract_hh(requested_datetime) as hour, date_extract_dow(requested_datetime) as dow, count(*) as call_count'
+    )
   })
 })

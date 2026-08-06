@@ -1,5 +1,5 @@
 import { useMemo, useCallback } from 'react'
-import { availableInGroup } from './categoryGroups'
+import { availableInGroup, groupDisabled } from './categoryGroups'
 
 export interface ServiceCategoryEntry {
   serviceName: string
@@ -77,8 +77,10 @@ export default function ServiceCategoryFilter({ categories, selected, onChange, 
           All
         </button>
         {Object.keys(categoryGroups).map((groupName) => {
-          const empty = categories.length > 0 &&
-            availableInGroup(categoryGroups[groupName] ?? [], allTypes).length === 0
+          const empty = groupDisabled(
+            categories.length > 0,
+            availableInGroup(categoryGroups[groupName] ?? [], allTypes)
+          )
           return (
             <button
               key={groupName}

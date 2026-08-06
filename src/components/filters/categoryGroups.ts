@@ -8,3 +8,15 @@ export function availableInGroup(
 ): string[] {
   return groupTypes.filter((t) => allTypes.has(t))
 }
+
+// Post-load disabled gate: a group only disables once categories have
+// actually loaded AND its intersection with the loaded vocabulary is empty.
+// Before load (categoriesLoaded false), every group must render enabled —
+// otherwise every quick-group button flashes disabled during the initial
+// fetch (the transient-flash bug this pin exists to prevent).
+export function groupDisabled(
+  categoriesLoaded: boolean,
+  available: readonly string[]
+): boolean {
+  return categoriesLoaded && available.length === 0
+}

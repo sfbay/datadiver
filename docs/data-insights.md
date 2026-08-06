@@ -506,8 +506,10 @@ a single case can file several charge rows. Measured over the recent window
 duplicate rows, worst case 21 rows under one number. Every count DataDiver
 shows — stat cards, the per-beat GROUP BY, the per-category GROUP BY, the
 hourly-pattern GROUP BY, and the header's annual era strip — runs
-`count(distinct casenumber)`, not `count(*)`; a naive count overstates
-incidents by roughly the duplicate share. The map sample and the comparison
+`count(distinct casenumber)`, not `count(*)`; the duplicate-row share is
+~15.5% of rows, but because those duplicates concentrate on a subset of
+cases, a naive `count(*)` overstates incidents by a larger ~18.4%
+(133,204 rows / 112,490 distinct cases). The map sample and the comparison
 (YoY) hook can't push a `DISTINCT` through a row fetch, so they dedupe
 client-side on `casenumber` instead, keeping the first row per case. The
 Incidents card discloses this in its subtitle: "multi-charge cases counted
@@ -575,7 +577,7 @@ clauses and `?categories=`; display surfaces title-case them
 that sound like a state-plane projection, `srx` (longitude) and `sry`
 (latitude) are plain WGS84 degrees, typed `number` in the schema and just
 serialized as strings over Socrata's JSON API — no cast is needed once
-parsed, and 98.4% of recent rows carry them. `reqaddress`, which Socrata
+parsed, and 98.43% of recent rows carry them. `reqaddress`, which Socrata
 also reports as a point column, is a constant junk value (roughly 30.01°,
 −141.22° — a spot in the open ocean) on every sampled row and must never be
 read. `oak311Coords` additionally validates against Oakland's bounding box

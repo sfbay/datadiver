@@ -31,6 +31,13 @@ interface HourlyPatternConfig {
   excludePeakHour0?: boolean
 }
 
+/** Pure core — node-testable. Builds the `$select` string for the hourly
+ *  GROUP BY query; verifies a custom `countExpr` (e.g. Oakland crime's
+ *  `count(distinct casenumber)`) actually reaches the select. */
+export function hourlySelect(dateField: string, countExpr?: string): string {
+  return `date_extract_hh(${dateField}) as hour, date_extract_dow(${dateField}) as dow, ${countExpr ?? 'count(*)'} as call_count`
+}
+
 /** Pure core — node-testable. */
 export function computeHourlyResult(
   rows: HourlyAggRow[],
@@ -83,7 +90,7 @@ export function createHourlyPatternHook(
     const { data: rows, isLoading, error } = useDataset<HourlyAggRow>(
       datasetKey,
       {
-        $select: `date_extract_hh(${dateField}) as hour, date_extract_dow(${dateField}) as dow, ${config.countExpr ?? 'count(*)'} as call_count`,
+        $select: hourlySelect(dateField, config.countExpr),
         $group: 'hour, dow',
         $where: where,
         $order: 'call_count DESC',

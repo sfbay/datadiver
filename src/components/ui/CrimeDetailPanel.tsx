@@ -95,13 +95,14 @@ export default function CrimeDetailPanel() {
     setIsLoading(true)
 
     if (city.id !== 'sf') {
-      // One case = MANY charge rows (up to 21 observed). Fetch them all and
-      // render the charges list — no archive fallback, no 911 section
-      // (Oakland publishes neither).
+      // One case = MANY charge rows (worst observed all-time is 52, case
+      // 13-000001; 60 covers it with headroom). Fetch them all and render
+      // the charges list — no archive fallback, no 911 section (Oakland
+      // publishes neither).
       fetchDataset<OaklandCrimeRow>('policeIncidents', {
         $where: `casenumber = '${selectedCrimeIncident.replace(/'/g, "''")}'`,
         $select: OAKLAND_CRIME_SELECT,
-        $limit: 30,
+        $limit: 60,
       }, { cityId: 'oakland' })
         .then((rows) => {
           if (cancelled || rows.length === 0) return
@@ -475,7 +476,7 @@ export default function CrimeDetailPanel() {
             <div className="mb-4">
               <p className="text-micro text-slate-700 dark:text-slate-300">{oakDetail.address || 'Unknown'}</p>
               <p className="text-micro text-slate-500 dark:text-slate-400">
-                {city.areas.formatLabel?.(oakDetail.beat) ?? oakDetail.beat}
+                {oakDetail.beat ? (city.areas.formatLabel?.(oakDetail.beat) ?? oakDetail.beat) : 'Beat unknown'}
               </p>
             </div>
 

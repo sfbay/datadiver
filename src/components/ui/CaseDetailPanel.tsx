@@ -377,7 +377,7 @@ export default function CaseDetailPanel() {
             <div className="mb-4">
               <p className="text-micro text-slate-700 dark:text-slate-300">{oakDetail.address}</p>
               <p className="text-micro text-slate-500 dark:text-slate-400">
-                {city.areas.formatLabel?.(oakDetail.beat) ?? oakDetail.beat}
+                {oakDetail.beat ? (city.areas.formatLabel?.(oakDetail.beat) ?? oakDetail.beat) : 'Beat unknown'}
               </p>
             </div>
 
