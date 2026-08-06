@@ -1,4 +1,5 @@
 import { useMemo, useCallback } from 'react'
+import { availableInGroup } from './categoryGroups'
 
 export interface IncidentCategoryEntry {
   category: string
@@ -9,15 +10,18 @@ interface IncidentCategoryFilterProps {
   categories: IncidentCategoryEntry[]
   selected: Set<string>
   onChange: (selected: Set<string>) => void
+  groups?: Record<string, string[]>
+  formatLabel?: (name: string) => string
 }
 
-const CATEGORY_GROUPS: Record<string, string[]> = {
+const SF_CATEGORY_GROUPS: Record<string, string[]> = {
   Violent: ['Assault', 'Robbery', 'Homicide', 'Weapons Carrying Etc', 'Weapons Offence', 'Rape', 'Sex Offense'],
   Property: ['Larceny Theft', 'Burglary', 'Motor Vehicle Theft', 'Vandalism', 'Arson', 'Stolen Property'],
   'Quality of Life': ['Drug Offense', 'Drug Violation', 'Disorderly Conduct', 'Liquor Laws', 'Prostitution', 'Warrant'],
 }
 
-export default function IncidentCategoryFilter({ categories, selected, onChange }: IncidentCategoryFilterProps) {
+export default function IncidentCategoryFilter({ categories, selected, onChange, groups, formatLabel }: IncidentCategoryFilterProps) {
+  const categoryGroups = groups ?? SF_CATEGORY_GROUPS
   const allTypes = useMemo(() => new Set(categories.map((c) => c.category)), [categories])
   const maxCount = useMemo(() => Math.max(...categories.map((c) => c.count), 1), [categories])
   const allSelected = selected.size === 0 || selected.size === allTypes.size
@@ -45,17 +49,16 @@ export default function IncidentCategoryFilter({ categories, selected, onChange 
   }, [onChange])
 
   const handleGroup = useCallback((groupName: string) => {
-    const groupTypes = CATEGORY_GROUPS[groupName] || []
-    const available = new Set(groupTypes.filter((t) => allTypes.has(t)))
-    onChange(available)
-  }, [allTypes, onChange])
+    const available = availableInGroup(categoryGroups[groupName] ?? [], allTypes)
+    if (available.length === 0) return // disabled — never SELECT ALL by accident
+    onChange(new Set(available))
+  }, [allTypes, categoryGroups, onChange])
 
   const isGroupActive = useCallback((groupName: string) => {
     if (allSelected) return false
-    const groupTypes = CATEGORY_GROUPS[groupName] || []
-    const available = groupTypes.filter((t) => allTypes.has(t))
+    const available = availableInGroup(categoryGroups[groupName] ?? [], allTypes)
     return available.length > 0 && available.every((t) => selected.has(t)) && selected.size === available.length
-  }, [selected, allTypes, allSelected])
+  }, [selected, allTypes, allSelected, categoryGroups])
 
   const isSelected = (name: string) => selected.size === 0 || selected.has(name)
 
@@ -73,19 +76,27 @@ export default function IncidentCategoryFilter({ categories, selected, onChange 
         >
           All
         </button>
-        {Object.keys(CATEGORY_GROUPS).map((groupName) => (
-          <button
-            key={groupName}
-            onClick={() => handleGroup(groupName)}
-            className={`px-2 py-1 rounded-md text-micro font-mono font-medium transition-all duration-150 ${
-              isGroupActive(groupName)
-                ? 'bg-brick-500/15 text-brick-500'
-                : 'bg-slate-100 dark:bg-white/[0.04] text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-white/[0.08]'
-            }`}
-          >
-            {groupName}
-          </button>
-        ))}
+        {Object.keys(categoryGroups).map((groupName) => {
+          const empty = categories.length > 0 &&
+            availableInGroup(categoryGroups[groupName] ?? [], allTypes).length === 0
+          return (
+            <button
+              key={groupName}
+              onClick={() => handleGroup(groupName)}
+              disabled={empty}
+              title={empty ? 'No matching categories in this range' : undefined}
+              className={`px-2 py-1 rounded-md text-micro font-mono font-medium transition-all duration-150 ${
+                empty
+                  ? 'bg-slate-100/50 dark:bg-white/[0.02] text-slate-300 dark:text-slate-700 cursor-not-allowed'
+                  : isGroupActive(groupName)
+                    ? 'bg-brick-500/15 text-brick-500'
+                    : 'bg-slate-100 dark:bg-white/[0.04] text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-white/[0.08]'
+              }`}
+            >
+              {groupName}
+            </button>
+          )
+        })}
       </div>
 
       {/* Category list */}
@@ -149,7 +160,7 @@ export default function IncidentCategoryFilter({ categories, selected, onChange 
                 onClick={() => handleToggle(entry.category)}
                 className="relative flex-1 min-w-0 text-label text-ink dark:text-slate-300 truncate leading-tight cursor-pointer text-left"
               >
-                {entry.category}
+                {formatLabel ? formatLabel(entry.category) : entry.category}
               </button>
 
               {/* Count badge */}
