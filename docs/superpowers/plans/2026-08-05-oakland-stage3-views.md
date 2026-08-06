@@ -2006,7 +2006,7 @@ export const useOakland311ComparisonData = createComparisonDataHook<
       const times: number[] = []
       let openCount = 0
       for (const r of records) {
-        if (r.status != null && ['OPEN', 'PENDING', 'WOCREATE', 'WAITING ON CUSTOMER'].includes(r.status)) {
+        if (isOakCaseOpen(r.status)) {
           openCount++
           continue
         }
@@ -2050,7 +2050,7 @@ export const useOakland311ComparisonData = createComparisonDataHook<
 )
 ```
 
-(The status list is inlined rather than imported — the factory module must not import from a view directory; the dialect test pins the same four values, so drift fails CI.)
+(Add `import { isOakCaseOpen } from '@/views/Cases311/dialect311'` at the top of the factory file — `dialect311.ts` is a zero-import pure leaf, so no cycle is possible, and ONE authored open-set drives every consumer: the duplicated-allowlist lesson.)
 
 Append to `src/hooks/useHourlyPatternFactory.ts`:
 
