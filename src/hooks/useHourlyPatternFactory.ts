@@ -13,6 +13,8 @@ export interface HourlyPatternResult {
   peakHour: number
   /** Hour with fewest records (0-23) */
   quietestHour: number
+  /** Rows whose bucket didn't map to a valid hour 0-23 (excluded from grid/hourTotals). */
+  unparsedCount: number
   isLoading: boolean
   error: string | null
 }
@@ -29,30 +31,53 @@ interface HourlyPatternConfig {
    *  undoctored card would confidently read "12 AM". The grid still renders
    *  all 24 hours; only the peak computation skips 0. */
   excludePeakHour0?: boolean
+  /** Replaces `date_extract_hh(dateField)` in the $select. Oakland citations
+   *  passes OAK_HOUR_EXPR (the dialect's mixed-format bucket expression). */
+  hourExpr?: string
+  /** Maps the raw grouped hour value → 0–23, or null → unparsedCount.
+   *  `string | undefined` is load-bearing: Socrata OMITS the aliased field
+   *  for a NULL-expression group, so the residual arrives as a missing key. */
+  mapHourValue?: (raw: string | undefined) => number | null
+  /** $limit for the GROUP BY (default 200). Oakland citations needs 800 —
+   *  ~58 buckets × 7 days ≈ 406 rows would silently truncate at 200. */
+  limit?: number
 }
 
 /** Pure core — node-testable. Builds the `$select` string for the hourly
  *  GROUP BY query; verifies a custom `countExpr` (e.g. Oakland crime's
  *  `count(distinct casenumber)`) actually reaches the select. */
-export function hourlySelect(dateField: string, countExpr?: string): string {
-  return `date_extract_hh(${dateField}) as hour, date_extract_dow(${dateField}) as dow, ${countExpr ?? 'count(*)'} as call_count`
+export function hourlySelect(dateField: string, countExpr?: string, hourExpr?: string): string {
+  return `${hourExpr ?? `date_extract_hh(${dateField})`} as hour, date_extract_dow(${dateField}) as dow, ${countExpr ?? 'count(*)'} as call_count`
 }
 
-/** Pure core — node-testable. */
+function defaultMapHour(raw: string | undefined): number | null {
+  if (raw == null) return null
+  const h = parseInt(raw, 10)
+  return Number.isNaN(h) ? null : h
+}
+
+/** Pure core — node-testable. `+=` (not `=`) so several buckets can fold
+ *  into one hour; SF's GROUP BY makes (hour,dow) unique, so this is
+ *  behavior-identical there. */
 export function computeHourlyResult(
   rows: HourlyAggRow[],
-  excludePeakHour0 = false
-): { grid: number[][]; hourTotals: number[]; peakHour: number; quietestHour: number } {
+  excludePeakHour0 = false,
+  mapHourValue: (raw: string | undefined) => number | null = defaultMapHour
+): { grid: number[][]; hourTotals: number[]; peakHour: number; quietestHour: number; unparsedCount: number } {
   const grid: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0))
   const hourTotals = Array(24).fill(0) as number[]
+  let unparsedCount = 0
   for (const row of rows) {
-    const hour = parseInt(row.hour, 10)
     const dow = parseInt(row.dow, 10)
     const count = parseInt(row.call_count, 10)
-    if (!isNaN(hour) && !isNaN(dow) && !isNaN(count) && hour >= 0 && hour < 24 && dow >= 0 && dow < 7) {
-      grid[dow][hour] = count
-      hourTotals[hour] += count
+    if (isNaN(dow) || isNaN(count) || dow < 0 || dow >= 7) continue
+    const hour = mapHourValue(row.hour)
+    if (hour === null || hour < 0 || hour >= 24) {
+      unparsedCount += count
+      continue
     }
+    grid[dow][hour] += count
+    hourTotals[hour] += count
   }
   const firstCandidate = excludePeakHour0 ? 1 : 0
   let peakHour = firstCandidate
@@ -61,7 +86,7 @@ export function computeHourlyResult(
     if (h > firstCandidate && hourTotals[h] > hourTotals[peakHour]) peakHour = h
     if (hourTotals[h] < hourTotals[quietestHour]) quietestHour = h
   }
-  return { grid, hourTotals, peakHour, quietestHour }
+  return { grid, hourTotals, peakHour, quietestHour, unparsedCount }
 }
 
 /**
@@ -90,18 +115,18 @@ export function createHourlyPatternHook(
     const { data: rows, isLoading, error } = useDataset<HourlyAggRow>(
       datasetKey,
       {
-        $select: hourlySelect(dateField, config.countExpr),
+        $select: hourlySelect(dateField, config.countExpr, config.hourExpr),
         $group: 'hour, dow',
         $where: where,
         $order: 'call_count DESC',
-        $limit: 200,
+        $limit: config.limit ?? 200,
       },
       [where],
       { enabled, cityId: config.cityId }
     )
 
     const result = useMemo(
-      () => computeHourlyResult(rows, config.excludePeakHour0 ?? false),
+      () => computeHourlyResult(rows, config.excludePeakHour0 ?? false, config.mapHourValue),
       [rows]
     )
 
