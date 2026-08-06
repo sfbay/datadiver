@@ -2,13 +2,20 @@ import { useState, useEffect, useCallback } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import { fetchDataset } from '@/api/client'
 import { useDispatchCrossRef } from '@/hooks/useDispatchCrossRef'
+import { useActiveCity } from '@/cities/useActiveCity'
 import type { PoliceIncident } from '@/types/datasets'
 import {
   normalizeHistoricalIncident,
   HISTORICAL_SELECT_FIELDS,
   type HistoricalIncidentRow,
 } from '@/views/CrimeIncidents/crimeEra'
+import {
+  OAKLAND_CRIME_SELECT,
+  titleCaseCrimetype,
+  type OaklandCrimeRow,
+} from '@/views/CrimeIncidents/crimeDialect'
 import { parseDateTime, formatDate, diffHours, formatResolution } from '@/utils/time'
+import { parseSfLocal } from '@/utils/sfTime'
 import { DISPOSITION_LABELS } from '@/utils/colors'
 import DetailPanelShell from '@/components/ui/DetailPanelShell'
 
@@ -27,6 +34,15 @@ interface CrimeDetail {
     incident: string | null
     report: string | null
   }
+}
+
+interface OaklandCrimeDetail {
+  casenumber: string
+  category: string          // raw crimetype; title-cased at render
+  charges: string[]         // distinct description values, published order
+  beat: string
+  address: string
+  datetime: string | null
 }
 
 function buildDetail(record: PoliceIncident): CrimeDetail {
@@ -61,19 +77,48 @@ const DISPATCH_TIMELINE = [
 ] as const
 
 export default function CrimeDetailPanel() {
+  const city = useActiveCity()
   const { selectedCrimeIncident, setSelectedCrimeIncident } = useAppStore()
   const [detail, setDetail] = useState<CrimeDetail | null>(null)
+  const [oakDetail, setOakDetail] = useState<OaklandCrimeDetail | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   // Fetch full record on selection
   useEffect(() => {
     if (!selectedCrimeIncident) {
       setDetail(null)
+      setOakDetail(null)
       return
     }
 
     let cancelled = false
     setIsLoading(true)
+
+    if (city.id !== 'sf') {
+      // One case = MANY charge rows (up to 21 observed). Fetch them all and
+      // render the charges list — no archive fallback, no 911 section
+      // (Oakland publishes neither).
+      fetchDataset<OaklandCrimeRow>('policeIncidents', {
+        $where: `casenumber = '${selectedCrimeIncident.replace(/'/g, "''")}'`,
+        $select: OAKLAND_CRIME_SELECT,
+        $limit: 30,
+      }, { cityId: 'oakland' })
+        .then((rows) => {
+          if (cancelled || rows.length === 0) return
+          const charges = [...new Set(rows.map((r) => r.description).filter(Boolean))] as string[]
+          setOakDetail({
+            casenumber: rows[0].casenumber ?? selectedCrimeIncident,
+            category: rows[0].crimetype ?? '',
+            charges,
+            beat: rows[0].policebeat ?? '',
+            address: rows[0].address ?? '',
+            datetime: rows[0].datetime ?? null,
+          })
+        })
+        .catch(() => { if (!cancelled) setOakDetail(null) })
+        .finally(() => { if (!cancelled) setIsLoading(false) })
+      return () => { cancelled = true }
+    }
 
     // A pre-2018 dot's id is a `pdid` from the historical extract and cannot
     // exist in the 2018+ dataset, so a single lookup there would leave the
@@ -106,10 +151,10 @@ export default function CrimeDetailPanel() {
       })
 
     return () => { cancelled = true }
-  }, [selectedCrimeIncident])
+  }, [selectedCrimeIncident, city.id])
 
-  // 911 cross-reference (lazy fetch)
-  const { dispatch, isLoading: dispatchLoading, error: dispatchError } = useDispatchCrossRef(detail?.cadNumber ?? null)
+  // 911 cross-reference (lazy fetch) — inert for Oakland, which has no cadNumber
+  const { dispatch, isLoading: dispatchLoading, error: dispatchError } = useDispatchCrossRef(city.id === 'sf' ? detail?.cadNumber ?? null : null)
 
   const onClose = useCallback(() => setSelectedCrimeIncident(null), [setSelectedCrimeIncident])
 
@@ -136,7 +181,7 @@ export default function CrimeDetailPanel() {
       buildShareUrl={buildShareUrl}
       shareAccentClass="text-brick-500"
     >
-      {detail && (
+      {city.id === 'sf' ? detail && (
         <>
           {/* Header */}
           <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-1">
@@ -415,6 +460,53 @@ export default function CrimeDetailPanel() {
             </div>
           )}
         </>
+      ) : (
+        oakDetail && (
+          <>
+            {/* Header */}
+            <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-1">
+              Case #{oakDetail.casenumber}
+            </p>
+            <p className="text-sm font-semibold text-ink dark:text-white mb-3">
+              {titleCaseCrimetype(oakDetail.category)}
+            </p>
+
+            {/* Location */}
+            <div className="mb-4">
+              <p className="text-micro text-slate-700 dark:text-slate-300">{oakDetail.address || 'Unknown'}</p>
+              <p className="text-micro text-slate-500 dark:text-slate-400">
+                {city.areas.formatLabel?.(oakDetail.beat) ?? oakDetail.beat}
+              </p>
+            </div>
+
+            {/* Incident time */}
+            {oakDetail.datetime && (
+              <p className="text-micro font-mono text-slate-600 dark:text-slate-300 mb-4">
+                {new Date(parseSfLocal(oakDetail.datetime)).toLocaleString('en-US', {
+                  weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
+                  hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles',
+                })}
+              </p>
+            )}
+
+            {/* Charges — one row per charge filed on the case; the reason the
+                dataset has duplicate casenumbers, surfaced as the feature. */}
+            <div className="flex items-center gap-2 mb-2">
+              <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                Charges ({oakDetail.charges.length})
+              </p>
+              <div className="flex-1 h-[1px] bg-slate-200 dark:bg-white/[0.08]" />
+            </div>
+            <ul className="space-y-1 mb-2">
+              {oakDetail.charges.map((c) => (
+                <li key={c} className="flex items-start gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-brick-500/70 mt-1.5 flex-shrink-0" />
+                  <span className="text-micro text-slate-700 dark:text-slate-300 leading-relaxed">{c}</span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )
       )}
     </DetailPanelShell>
   )
