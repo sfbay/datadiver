@@ -10,7 +10,9 @@ import type {
   CampaignSelfFundRow,
   CampaignUniqueDonorRow,
 } from '@/types/datasets'
-import { findCycleForRange, findPriorCycle } from '@/utils/electionCycles'
+import type { CityId } from '@/cities/routing'
+import { fppcBuildersFor, type FppcQuerySpec } from '@/views/CampaignFinance/fppcDialect'
+import { cityElections, findCycleForRange, findPriorCycle } from '@/utils/electionCycles'
 
 export interface CampaignFinanceStats {
   totalRaised: number
@@ -37,7 +39,8 @@ export interface UseCampaignFinanceResult {
 }
 
 export function useCampaignFinance(
-  dateRange: { start: string; end: string }
+  dateRange: { start: string; end: string },
+  cityId: CityId = 'sf'
 ): UseCampaignFinanceResult {
   const [stats, setStats] = useState<CampaignFinanceStats | null>(null)
   const [yoy, setYoY] = useState<CampaignFinanceYoY>({ totalRaisedDelta: null, smallDonorDelta: null })
@@ -61,72 +64,36 @@ export function useCampaignFinance(
     setYoY({ totalRaisedDelta: null, smallDonorDelta: null })
 
     const { start, end } = dateRange
-    const dateWhere = `calculated_date >= '${start}T00:00:00' AND calculated_date <= '${end}T23:59:59'`
-    const contribWhere = `form_type='A' AND calculated_amount > 0 AND ${dateWhere}`
+    const b = fppcBuildersFor(cityId)
+    const run = <T,>(spec: FppcQuerySpec) =>
+      fetchDataset<T>(spec.datasetKey, spec.params, { cityId })
 
+    const donorGeoSpec = b.donorGeo(start, end)
     const queries = [
       // 0: Total raised + avg
-      fetchDataset<CampaignStatTotals>('campaignFinance', {
-        $select: 'SUM(calculated_amount) as total, AVG(calculated_amount) as avg_amt',
-        $where: contribWhere,
-      }),
+      run<CampaignStatTotals>(b.totals(start, end)),
       // 1: Unique donors (GROUP BY, count rows client-side)
-      fetchDataset<CampaignUniqueDonorRow>('campaignFinance', {
-        $select: 'transaction_last_name, COUNT(*) as cnt',
-        $where: `form_type='A' AND ${dateWhere} AND transaction_last_name IS NOT NULL`,
-        $group: 'transaction_last_name',
-        $limit: 50000,
-      }),
+      run<CampaignUniqueDonorRow>(b.uniqueDonors(start, end)),
       // 2: Small donor count
-      fetchDataset<CampaignCountRow>('campaignFinance', {
-        $select: 'COUNT(*) as cnt',
-        $where: `${contribWhere} AND calculated_amount < 100`,
-      }),
+      run<CampaignCountRow>(b.smallDonorCount(start, end)),
       // 3: Total contribution count
-      fetchDataset<CampaignCountRow>('campaignFinance', {
-        $select: 'COUNT(*) as cnt',
-        $where: contribWhere,
-      }),
+      run<CampaignCountRow>(b.contributionCount(start, end)),
       // 4: Self-funding total
-      fetchDataset<CampaignSelfFundRow>('campaignFinance', {
-        $select: 'SUM(calculated_amount) as total',
-        $where: `form_type='A' AND transaction_self=true AND ${dateWhere}`,
-      }),
+      run<CampaignSelfFundRow>(b.selfFunding(start, end)),
       // 5: Top recipients
-      fetchDataset<CampaignFilerAggRow>('campaignFinance', {
-        $select: 'filer_nid, filer_name, filer_type, SUM(calculated_amount) as total',
-        $where: `form_type='A' AND ${dateWhere}`,
-        $group: 'filer_nid, filer_name, filer_type',
-        $order: 'total DESC',
-        $limit: 50,
-      }),
+      run<CampaignFilerAggRow>(b.topRecipients(start, end)),
       // 6: Contribution timeline
-      fetchDataset<CampaignTimelineRow>('campaignFinance', {
-        $select: 'date_trunc_ym(calculated_date) as period, SUM(calculated_amount) as total',
-        $where: `form_type='A' AND ${dateWhere}`,
-        $group: 'period',
-        $order: 'period',
-      }),
+      run<CampaignTimelineRow>(b.timeline(start, end)),
       // 7: Funding sources by entity_code
-      fetchDataset<CampaignSourceAggRow>('campaignFinance', {
-        $select: 'entity_code, SUM(calculated_amount) as total',
-        $where: `form_type='A' AND ${dateWhere}`,
-        $group: 'entity_code',
-        $order: 'total DESC',
-      }),
+      run<CampaignSourceAggRow>(b.fundingSources(start, end)),
       // 8: Donor geography
-      fetchDataset<CampaignDonorGeoRow>('campaignFinance', {
-        $select: 'transaction_zip, SUM(calculated_amount) as total, COUNT(*) as cnt',
-        $where: `form_type='A' AND ${dateWhere} AND transaction_zip IS NOT NULL`,
-        $group: 'transaction_zip',
-        $order: 'total DESC',
-        $limit: 50,
-      }),
+      donorGeoSpec ? run<CampaignDonorGeoRow>(donorGeoSpec) : Promise.resolve([] as CampaignDonorGeoRow[]),
     ] as const
 
     // Determine prior cycle for YoY before firing queries
-    const currentCycle = findCycleForRange(start, end)
-    const priorCycle = currentCycle ? findPriorCycle(currentCycle) : null
+    const cycles = cityElections(cityId)
+    const currentCycle = findCycleForRange(start, end, cycles)
+    const priorCycle = currentCycle ? findPriorCycle(currentCycle, cycles) : null
 
     Promise.all(queries)
       .then(async ([totalsRows, uniqueRows, smallRows, countRows, selfRows, recipients, timelineRows, sourceRows, geoRows]) => {
@@ -141,7 +108,8 @@ export function useCampaignFinance(
         const selfFundingTotal = parseFloat(selfRows[0]?.total || '0')
 
         setStats({ totalRaised, avgContribution, uniqueDonors, smallDonorPct, selfFundingTotal })
-        setTopRecipients(recipients)
+        // Oakland's aliased topRecipients rows carry no filer_type; SF rows are unchanged by the spread.
+        setTopRecipients(recipients.map((r) => ({ ...r, filer_type: r.filer_type ?? '' })))
         setTimeline(timelineRows)
         setFundingSources(sourceRows)
         setDonorGeo(geoRows)
@@ -149,22 +117,11 @@ export function useCampaignFinance(
 
         // YoY: fire inside .then() so totalRaised and smallDonorPct are in scope
         if (priorCycle) {
-          const priorWhere = `calculated_date >= '${priorCycle.start}T00:00:00' AND calculated_date <= '${priorCycle.end}T23:59:59'`
-          const priorContribWhere = `form_type='A' AND calculated_amount > 0 AND ${priorWhere}`
           try {
             const [priorTotals, priorSmall, priorCount] = await Promise.all([
-              fetchDataset<CampaignStatTotals>('campaignFinance', {
-                $select: 'SUM(calculated_amount) as total, AVG(calculated_amount) as avg_amt',
-                $where: priorContribWhere,
-              }),
-              fetchDataset<CampaignCountRow>('campaignFinance', {
-                $select: 'COUNT(*) as cnt',
-                $where: `${priorContribWhere} AND calculated_amount < 100`,
-              }),
-              fetchDataset<CampaignCountRow>('campaignFinance', {
-                $select: 'COUNT(*) as cnt',
-                $where: priorContribWhere,
-              }),
+              run<CampaignStatTotals>(b.totals(priorCycle.start, priorCycle.end)),
+              run<CampaignCountRow>(b.smallDonorCount(priorCycle.start, priorCycle.end)),
+              run<CampaignCountRow>(b.contributionCount(priorCycle.start, priorCycle.end)),
             ])
             if (id !== abortRef.current) return
             const priorTotal = parseFloat(priorTotals[0]?.total || '0')
@@ -187,7 +144,7 @@ export function useCampaignFinance(
         setError(err.message || 'Failed to load campaign finance data')
         setIsLoading(false)
       })
-  }, [dateRange.start, dateRange.end])
+  }, [dateRange.start, dateRange.end, cityId])
 
   return { stats, yoy, topRecipients, timeline, fundingSources, donorGeo, isLoading, error }
 }
