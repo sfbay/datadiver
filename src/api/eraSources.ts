@@ -35,7 +35,7 @@ export function buildEraQuery(src: EraSource): EraQuery {
   const where = [`${src.dateField} >= '${from}-01-01'`]
   if (hi != null) where.push(`${src.dateField} < '${hi + 1}-01-01'`)
   return {
-    $select: `date_extract_y(${src.dateField}) as yr, count(*) as n`,
+    $select: `date_extract_y(${src.dateField}) as yr, ${src.countExpr ?? 'count(*)'} as n`,
     $group: 'yr',
     $where: where.join(' AND '),
     $limit: 60,
@@ -48,7 +48,7 @@ export function buildHistoricalEraQuery(src: EraSource): EraQuery | null {
   if (!src.historical) return null
   const { dateField, untilYear } = src.historical
   return {
-    $select: `date_extract_y(${dateField}) as yr, count(*) as n`,
+    $select: `date_extract_y(${dateField}) as yr, ${src.countExpr ?? 'count(*)'} as n`,
     $group: 'yr',
     $where: `${dateField} >= '${src.clamp[0]}-01-01' AND ${dateField} < '${untilYear}-01-01'`,
     $limit: 60,

@@ -29,6 +29,10 @@ export interface EraSource {
   /** Key into the owning CITY's dataset registry (city.datasets). */
   datasetKey: string
   dateField: string
+  /** Count expression for the annual strip. Default count(*). Oakland crime
+   *  uses count(distinct casenumber): one row per CHARGE (~15.5% dup rows),
+   *  so a row count overstates incidents ~18%. */
+  countExpr?: string
   /** Inclusive year bounds; null upper = open to today. Guards published-range
    *  junk — this is load-bearing, not cosmetic (see parking-citations). */
   clamp: [number, number | null]

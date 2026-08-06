@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useDataset } from '@/hooks/useDataset'
 import type { DatasetKey } from '@/api/datasets'
 import type { HourlyAggRow } from '@/types/datasets'
+import type { CityId } from '@/cities/routing'
 
 export interface HourlyPatternResult {
   /** 7x24 grid: grid[dow][hour] = count */
@@ -19,6 +20,41 @@ export interface HourlyPatternResult {
 interface HourlyPatternConfig {
   datasetKey: DatasetKey
   dateField: string
+  /** Route city for the fetch. Default 'sf'. */
+  cityId?: CityId
+  /** Count expression. Default count(*). Oakland crime: count(distinct casenumber). */
+  countExpr?: string
+  /** Skip hour 0 as a Peak Hour candidate. Oakland crime files a date-only
+   *  cohort (~2.9% of rows) at midnight, making hour 0 the literal max — an
+   *  undoctored card would confidently read "12 AM". The grid still renders
+   *  all 24 hours; only the peak computation skips 0. */
+  excludePeakHour0?: boolean
+}
+
+/** Pure core — node-testable. */
+export function computeHourlyResult(
+  rows: HourlyAggRow[],
+  excludePeakHour0 = false
+): { grid: number[][]; hourTotals: number[]; peakHour: number; quietestHour: number } {
+  const grid: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0))
+  const hourTotals = Array(24).fill(0) as number[]
+  for (const row of rows) {
+    const hour = parseInt(row.hour, 10)
+    const dow = parseInt(row.dow, 10)
+    const count = parseInt(row.call_count, 10)
+    if (!isNaN(hour) && !isNaN(dow) && !isNaN(count) && hour >= 0 && hour < 24 && dow >= 0 && dow < 7) {
+      grid[dow][hour] = count
+      hourTotals[hour] += count
+    }
+  }
+  const firstCandidate = excludePeakHour0 ? 1 : 0
+  let peakHour = firstCandidate
+  let quietestHour = 0
+  for (let h = 1; h < 24; h++) {
+    if (h > firstCandidate && hourTotals[h] > hourTotals[peakHour]) peakHour = h
+    if (hourTotals[h] < hourTotals[quietestHour]) quietestHour = h
+  }
+  return { grid, hourTotals, peakHour, quietestHour }
 }
 
 /**
@@ -34,7 +70,8 @@ export function createHourlyPatternHook(
 
   const hook = (
     dateRange: { start: string; end: string },
-    extraWhereClause?: string
+    extraWhereClause?: string,
+    enabled = true
   ): HourlyPatternResult => {
     const whereConditions: string[] = []
     whereConditions.push(`${dateField} >= '${dateRange.start}T00:00:00'`)
@@ -46,39 +83,20 @@ export function createHourlyPatternHook(
     const { data: rows, isLoading, error } = useDataset<HourlyAggRow>(
       datasetKey,
       {
-        $select: `date_extract_hh(${dateField}) as hour, date_extract_dow(${dateField}) as dow, count(*) as call_count`,
+        $select: `date_extract_hh(${dateField}) as hour, date_extract_dow(${dateField}) as dow, ${config.countExpr ?? 'count(*)'} as call_count`,
         $group: 'hour, dow',
         $where: where,
         $order: 'call_count DESC',
         $limit: 200,
       },
-      [where]
+      [where],
+      { enabled, cityId: config.cityId }
     )
 
-    const result = useMemo(() => {
-      // Initialize 7x24 grid (0=Sun through 6=Sat)
-      const grid: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0))
-      const hourTotals = Array(24).fill(0) as number[]
-
-      for (const row of rows) {
-        const hour = parseInt(row.hour, 10)
-        const dow = parseInt(row.dow, 10)
-        const count = parseInt(row.call_count, 10)
-        if (!isNaN(hour) && !isNaN(dow) && !isNaN(count) && hour >= 0 && hour < 24 && dow >= 0 && dow < 7) {
-          grid[dow][hour] = count
-          hourTotals[hour] += count
-        }
-      }
-
-      let peakHour = 0
-      let quietestHour = 0
-      for (let h = 1; h < 24; h++) {
-        if (hourTotals[h] > hourTotals[peakHour]) peakHour = h
-        if (hourTotals[h] < hourTotals[quietestHour]) quietestHour = h
-      }
-
-      return { grid, hourTotals, peakHour, quietestHour }
-    }, [rows])
+    const result = useMemo(
+      () => computeHourlyResult(rows, config.excludePeakHour0 ?? false),
+      [rows]
+    )
 
     return { ...result, isLoading, error }
   }

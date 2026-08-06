@@ -43,7 +43,8 @@ export function useTrendBaseline(
   const [periodPriorYear, setPeriodPriorYear] = useState<RawPeriodRow[]>([])
   const [effectiveEnd, setEffectiveEnd] = useState<string>(dateRange.end)
 
-  const { datasetKey, dateField, neighborhoodField, metrics, baseWhere } = config
+  const { datasetKey, dateField, neighborhoodField, metrics, baseWhere, cityId, countExpr } = config
+  const cnt = countExpr ?? 'count(*)'
   // Day-bucketed granularities ('daily' AND 'weekly' — weekly is daily rows
   // aggregated client-side, see truncFn below) fetch one row per day via
   // queries 4/5's $limit: 500. Beyond 500 days, a pinned override would
@@ -61,7 +62,7 @@ export function useTrendBaseline(
   // Stable key for effect deps — granularity is included because it drives
   // truncFn inside the effect (the override changes what queries 4 & 5 ask
   // Socrata for, not just how the result is labeled).
-  const configKey = `${datasetKey}|${dateField}|${neighborhoodField ?? ''}|${baseWhere ?? ''}|${metrics?.map(m => m.alias).join(',') ?? ''}|${granularity}`
+  const configKey = `${datasetKey}|${cityId ?? 'sf'}|${cnt}|${dateField}|${neighborhoodField ?? ''}|${baseWhere ?? ''}|${metrics?.map(m => m.alias).join(',') ?? ''}|${granularity}`
 
   useEffect(() => {
     // Deferred consumer: leave isLoading at its initial `true` (the UI keeps
@@ -84,7 +85,7 @@ export function useTrendBaseline(
         const rows = await fetchDataset<{ latest: string }>(datasetKey, {
           $select: `MAX(${dateField}) as latest`,
           $limit: 1,
-        })
+        }, { cityId })
         const latest = rows[0]?.latest?.split('T')[0]
         if (latest && latest < dateRange.end && latest >= dateRange.start) {
           effEnd = latest
@@ -110,22 +111,22 @@ export function useTrendBaseline(
       if (hasNh) {
         queries.push(
           fetchDataset<RawNhRow>(datasetKey, {
-            $select: `${neighborhoodField} as neighborhood, count(*) as cnt${metricSelect}`,
+            $select: `${neighborhoodField} as neighborhood, ${cnt} as cnt${metricSelect}`,
             $where: `${dateField} >= '${dateRange.start}T00:00:00' AND ${dateField} <= '${effEnd}T23:59:59'${base}${extra}`,
             $group: neighborhoodField,
             $order: 'cnt DESC',
             $limit: 100,
-          }).then(rows => { if (!cancelled) setNhCurrent(rows) })
+          }, { cityId }).then(rows => { if (!cancelled) setNhCurrent(rows) })
         )
 
         queries.push(
           fetchDataset<RawNhRow>(datasetKey, {
-            $select: `${neighborhoodField} as neighborhood, count(*) as cnt${metricSelect}`,
+            $select: `${neighborhoodField} as neighborhood, ${cnt} as cnt${metricSelect}`,
             $where: `${dateField} >= '${priStart}T00:00:00' AND ${dateField} <= '${priEnd}T23:59:59'${base}${extra}`,
             $group: neighborhoodField,
             $order: 'cnt DESC',
             $limit: 100,
-          }).then(rows => { if (!cancelled) setNhPriorYear(rows) })
+          }, { cityId }).then(rows => { if (!cancelled) setNhPriorYear(rows) })
         )
 
         // Query 3: 12-month baseline by neighborhood × month
@@ -135,11 +136,11 @@ export function useTrendBaseline(
 
         queries.push(
           fetchDataset<RawBaselineRow>(datasetKey, {
-            $select: `${neighborhoodField} as neighborhood, date_trunc_ym(${dateField}) as month, count(*) as cnt`,
+            $select: `${neighborhoodField} as neighborhood, date_trunc_ym(${dateField}) as month, ${cnt} as cnt`,
             $where: `${dateField} >= '${baselineStartStr}T00:00:00' AND ${dateField} < '${effEnd}T23:59:59'${base}`,
             $group: `${neighborhoodField}, month`,
             $limit: 5000,
-          }).then(rows => { if (!cancelled) setBaselineRows(rows) })
+          }, { cityId }).then(rows => { if (!cancelled) setBaselineRows(rows) })
         )
       }
 
@@ -150,23 +151,23 @@ export function useTrendBaseline(
         // Query 4: Sub-period breakdown (current)
         queries.push(
           fetchDataset<RawPeriodRow>(datasetKey, {
-            $select: `${truncFn}(${dateField}) as period, count(*) as cnt${metricSelect}`,
+            $select: `${truncFn}(${dateField}) as period, ${cnt} as cnt${metricSelect}`,
             $where: `${dateField} >= '${dateRange.start}T00:00:00' AND ${dateField} <= '${effEnd}T23:59:59'${base}${extra}`,
             $group: 'period',
             $order: 'period ASC',
             $limit: 500,
-          }).then(rows => { if (!cancelled) setPeriodCurrent(rows) })
+          }, { cityId }).then(rows => { if (!cancelled) setPeriodCurrent(rows) })
         )
 
         // Query 5: Sub-period breakdown (prior year)
         queries.push(
           fetchDataset<RawPeriodRow>(datasetKey, {
-            $select: `${truncFn}(${dateField}) as period, count(*) as cnt${metricSelect}`,
+            $select: `${truncFn}(${dateField}) as period, ${cnt} as cnt${metricSelect}`,
             $where: `${dateField} >= '${priStart}T00:00:00' AND ${dateField} <= '${priEnd}T23:59:59'${base}${extra}`,
             $group: 'period',
             $order: 'period ASC',
             $limit: 500,
-          }).then(rows => { if (!cancelled) setPeriodPriorYear(rows) })
+          }, { cityId }).then(rows => { if (!cancelled) setPeriodPriorYear(rows) })
         )
       }
 

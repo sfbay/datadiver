@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { fetchDataset } from '@/api/client'
 import type { DatasetKey } from '@/api/datasets'
+import type { CityId } from '@/cities/routing'
 import type {
   FireEMSDispatch,
   Cases311Record,
@@ -43,6 +44,7 @@ interface ComparisonDataConfig<TRecord, TStats, TDeltas> {
   computeDeltas: (current: TStats, comparison: TStats) => TDeltas
   buildTrendPoint: (day: string, recs: TRecord[]) => DailyTrendPoint
   extractDate: (r: TRecord) => string
+  cityId?: CityId
 }
 
 /**
@@ -55,7 +57,7 @@ export function createComparisonDataHook<TRecord, TStats, TDeltas>(
   config: ComparisonDataConfig<TRecord, TStats, TDeltas>,
   name: string
 ) {
-  const { datasetKey, dateField, selectFields, computeStats, computeDeltas, buildTrendPoint, extractDate } = config
+  const { datasetKey, dateField, selectFields, computeStats, computeDeltas, buildTrendPoint, extractDate, cityId } = config
 
   const hook = (
     dateRange: { start: string; end: string },
@@ -88,7 +90,7 @@ export function createComparisonDataHook<TRecord, TStats, TDeltas>(
         $where: compWhere,
         $limit: 5000,
         $select: selectFields,
-      })
+      }, { cityId })
         .then((data) => {
           if (!cancelled) setCompRecords(data)
         })
