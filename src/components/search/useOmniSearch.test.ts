@@ -67,7 +67,24 @@ describe('OmniSearch index (SF parity)', () => {
     expect(cats.lastIndexOf('place')).toBeLessThan(cats.indexOf('dataset'))
   })
 
-  it('oakland index is empty until stage 2 fills the city registry', () => {
-    expect(buildSearchIndex('oakland')).toEqual([])
+  it('oakland index: 4 view rows + 59 beat places + 6 claimed datasets, oakland paths throughout', () => {
+    const oak = buildSearchIndex('oakland')
+    const byCat = (c: string) => oak.filter((r) => r.category === c)
+    expect(byCat('view').map((r) => r.id)).toEqual([
+      'view-crime-incidents', 'view-311-cases', 'view-parking-citations', 'view-campaign-finance',
+    ])
+    expect(byCat('place')).toHaveLength(59)
+    expect(byCat('place')[0]).toMatchObject({
+      label: '01X', sublabel: 'Oakland police beat',
+      path: '/oakland/neighborhood', params: { nh: '01X' },
+    })
+    // Registry order, filtered to claimed keys — fppc460Summary precedes
+    // SchA/SchE because it is authored first in the registry.
+    expect(byCat('dataset').map((r) => r.id)).toEqual([
+      'dataset-policeIncidents', 'dataset-cases311', 'dataset-parkingCitations',
+      'dataset-fppc460Summary', 'dataset-fppcSchA', 'dataset-fppcSchE',
+    ])
+    expect(oak).toHaveLength(69)
+    for (const r of oak) expect(r.path.startsWith('/oakland'), r.id).toBe(true)
   })
 })

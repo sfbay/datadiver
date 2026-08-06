@@ -64,6 +64,12 @@ function buildQueryString(params: SoQLParams): string {
  *  small backoff — important on cold-load, where the per-host connection burst
  *  makes the first attempt of a heavy query slow or stall; a retry after the
  *  burst clears usually succeeds. */
+// STAGE 3 CONTRACT: `cityId` defaults to 'sf', so an Oakland view that
+// fails to thread it SILENTLY queries SF data. Thread cityId through
+// useDataset (and every direct fetchDataset caller) BEFORE any Oakland
+// view fetches. fetchAllPages/fetchAggregation call fetchDataset without
+// a cityId option (fetchAllPages passes only { skipCache: true }) and
+// are SF-hardcoded until then.
 export async function fetchDataset<T>(
   datasetKey: DatasetKey,
   params: SoQLParams = {},

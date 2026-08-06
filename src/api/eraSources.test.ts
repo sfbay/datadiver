@@ -49,8 +49,13 @@ describe('eraSourceFor', () => {
       expect(eraSourceFor('sf', view), view).toBeUndefined()
     }
   })
-  it('returns undefined for every oakland view until stage 2 authors its entries', () => {
-    expect(eraSourceFor('oakland', 'crime-incidents')).toBeUndefined()
+  it('resolves the three Oakland era views; everything else stays undefined', () => {
+    expect(eraSourceFor('oakland', 'crime-incidents')?.clamp).toEqual([2004, null])
+    expect(eraSourceFor('oakland', '311-cases')?.datasetKey).toBe('cases311')
+    expect(eraSourceFor('oakland', 'parking-citations')?.dateField).toBe('ticket_iss')
+    for (const view of ['campaign-finance', 'live', 'home', 'housing', 'elections']) {
+      expect(eraSourceFor('oakland', view), view).toBeUndefined()
+    }
   })
 })
 
@@ -73,6 +78,10 @@ describe('buildEraQuery', () => {
     expect(buildEraQuery(eraSourceFor('sf', 'parking-citations')!).$where).toBe(
       "citation_issued_datetime >= '2012-01-01' AND citation_issued_datetime < '2027-01-01'"
     )
+  })
+  it('builds the Oakland crime query from the clamp floor with no upper bound', () => {
+    expect(buildEraQuery(eraSourceFor('oakland', 'crime-incidents')!).$where)
+      .toBe("datetime >= '2004-01-01'")
   })
 })
 
@@ -107,5 +116,10 @@ describe('clamp disclosure', () => {
     for (const view of ['crime-incidents', '311-cases', 'housing']) {
       expect(eraSourceFor('sf', view)!.clampNote, view).toBeUndefined()
     }
+  })
+  it('oakland crime discloses (junk 1950→2003 trickle); 311 and citations do not', () => {
+    expect(eraSourceFor('oakland', 'crime-incidents')!.clampNote).toBeTruthy()
+    expect(eraSourceFor('oakland', '311-cases')!.clampNote, '311').toBeUndefined()
+    expect(eraSourceFor('oakland', 'parking-citations')!.clampNote, 'citations').toBeUndefined()
   })
 })

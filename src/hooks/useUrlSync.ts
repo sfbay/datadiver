@@ -28,7 +28,8 @@ export function useUrlSync() {
   // stage 3 renders real non-SF views — every non-SF city path, whose whole
   // route tree is a dormant redirect to Home. STAGE 3 CONTRACT: when Oakland
   // views become real, remove the cityId clause so /oakland/* carries
-  // ?start/?end like any other view.
+  // ?start/?end like any other view. Joint-removal twins: useEraSeries's
+  // 'active' guard and AppShell's nav stand-down carry the same 'sf' clause.
   const skipSync =
     city.redirects.some((r) => r.from === viewId) || entry === undefined || cityId !== 'sf'
   const {

@@ -11,6 +11,9 @@ interface UseDatasetResult<T> {
   refetch: () => void
 }
 
+// STAGE 3 CONTRACT: no cityId option yet — every query resolves against
+// SF. Add cityId (default: the route-derived city) before any Oakland
+// view mounts this hook, or Oakland views will silently render SF data.
 interface UseDatasetOptions {
   /** When false, the query is not issued: the hook returns no rows and is NOT
    *  loading. For conditional sources that can't be expressed by skipping the

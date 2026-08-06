@@ -299,3 +299,18 @@ Oakland pixels of any kind; the switcher control; voice pack; beats GeoJSON; Arc
 change; any Vercel/env/backend change (the alerts stack stays SF-only until a later,
 separately-scoped decision — its SF bbox validation and sender identity are untouched
 by stage 1).
+
+---
+
+**Amended 2026-08-05 (stage 2 design; authoritative detail in
+`2026-08-05-oakland-data-spine-design.md`):** (1) The stage-2 row's "Oakland
+voice pack" is resolved as AUTHORED COPY ONLY — Oakland-worded registry
+`name`/`description` fields and manifest labels; the mechanism tables
+(glossary overrides, humanizeCivic TOKEN_MAP, stream labels) wait for their
+first consumer (stage 3+). (2) Oakland manifest entries ARE authored in
+stage 2 — four dormant entries carrying era facts + ⌘K claims — superseding
+the shell's "authored in stage 3" comment. (3) Fresh probes corrected three
+audit claims: crime has junk pre-2004 dates (clamp floor 2004 + clampNote),
+citations span 2018→present cleanly at 2.74M rows (the "junk 1951→2044"
+trap does not reproduce there), and the beat grammar includes a Z suffix
+(13Z, 31Z) plus two special areas (LKM1, PDT2).

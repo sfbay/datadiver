@@ -33,7 +33,13 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   const city = useActiveCity()
   // Nav rows ARE the manifest, in array order — path derived, never authored.
-  const navItems = city.manifest.map((entry) => ({
+  // STAGE 3 CONTRACT: non-SF cities stand down — their routes are dormant
+  // redirects, but AppShell mounts outside <Routes> and renders one
+  // pre-redirect frame on /oakland/*; without this clause that frame would
+  // paint Oakland's manifest rows where today it paints none. Third of the
+  // three 'sf' stand-downs (useUrlSync skipSync, useEraSeries active);
+  // remove all three together when Oakland views go live.
+  const navItems = (city.id === 'sf' ? city.manifest : []).map((entry) => ({
     entry,
     path: viewPath(city.id, entry.viewId),
   }))
