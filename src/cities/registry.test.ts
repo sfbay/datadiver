@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { CITIES, getDatasetConfig } from './registry'
+import { liveManifest } from './manifest'
 import { DATASETS } from '@/api/datasets'
 
 describe('city registry', () => {
@@ -47,5 +48,17 @@ describe('city registry', () => {
   })
   it('sf has a census pipeline', () => {
     expect(CITIES.sf.census).not.toBeNull()
+  })
+})
+
+describe('manifest liveness (stage 3)', () => {
+  it('oakland: crime-incidents + 311-cases live; parking-citations + campaign-finance dormant', () => {
+    const live = liveManifest(CITIES.oakland.manifest).map((e) => e.viewId)
+    expect(live).toEqual(['crime-incidents', '311-cases'])
+    const dormant = CITIES.oakland.manifest.filter((e) => e.dormant).map((e) => e.viewId)
+    expect(dormant).toEqual(['parking-citations', 'campaign-finance'])
+  })
+  it('sf: zero dormant entries — liveManifest is the identity', () => {
+    expect(liveManifest(CITIES.sf.manifest)).toEqual([...CITIES.sf.manifest])
   })
 })

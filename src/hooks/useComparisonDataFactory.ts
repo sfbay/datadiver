@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { fetchDataset } from '@/api/client'
 import type { DatasetKey } from '@/api/datasets'
+import type { CityId } from '@/cities/routing'
 import type {
   FireEMSDispatch,
   Cases311Record,
@@ -13,6 +14,7 @@ import type {
 } from '@/types/datasets'
 import { diffMinutes, diffHours, groupByDay } from '@/utils/time'
 import { addDays, rangeLengthDays } from '@/utils/comparisonMode'
+import { isOakCaseOpen } from '@/views/Cases311/dialect311'
 
 // ── Shared utility ────────────────────────────────────────────────
 
@@ -43,6 +45,7 @@ interface ComparisonDataConfig<TRecord, TStats, TDeltas> {
   computeDeltas: (current: TStats, comparison: TStats) => TDeltas
   buildTrendPoint: (day: string, recs: TRecord[]) => DailyTrendPoint
   extractDate: (r: TRecord) => string
+  cityId?: CityId
 }
 
 /**
@@ -55,7 +58,7 @@ export function createComparisonDataHook<TRecord, TStats, TDeltas>(
   config: ComparisonDataConfig<TRecord, TStats, TDeltas>,
   name: string
 ) {
-  const { datasetKey, dateField, selectFields, computeStats, computeDeltas, buildTrendPoint, extractDate } = config
+  const { datasetKey, dateField, selectFields, computeStats, computeDeltas, buildTrendPoint, extractDate, cityId } = config
 
   const hook = (
     dateRange: { start: string; end: string },
@@ -88,7 +91,7 @@ export function createComparisonDataHook<TRecord, TStats, TDeltas>(
         $where: compWhere,
         $limit: 5000,
         $select: selectFields,
-      })
+      }, { cityId })
         .then((data) => {
           if (!cancelled) setCompRecords(data)
         })
@@ -281,6 +284,74 @@ export const use311ComparisonData = createComparisonDataHook<
   'use311ComparisonData'
 )
 
+// ── Oakland 311 ───────────────────────────────────────────────────
+// Same ComparisonStats311 shape; datetimeclosed replaces closed_date and the
+// authored open-status SET replaces the 'Open' literal (stage-3 spec §4).
+
+export interface Oakland311ComparisonRow {
+  requestid?: string | number
+  datetimeinit: string
+  datetimeclosed?: string
+  status?: string
+}
+
+export const useOakland311ComparisonData = createComparisonDataHook<
+  Oakland311ComparisonRow,
+  ComparisonStats311,
+  { avgResolution: number; total: number; openPct: number }
+>(
+  {
+    datasetKey: 'cases311',
+    cityId: 'oakland',
+    dateField: 'datetimeinit',
+    selectFields: 'requestid,datetimeinit,datetimeclosed,status',
+    computeStats(records) {
+      const times: number[] = []
+      let openCount = 0
+      for (const r of records) {
+        if (isOakCaseOpen(r.status)) {
+          openCount++
+          continue
+        }
+        if (!r.datetimeclosed) continue
+        const t = diffHours(r.datetimeinit, r.datetimeclosed)
+        if (t !== null && t > 0 && t <= 720) times.push(t)
+      }
+      if (times.length === 0) return { avgResolution: 0, medianResolution: 0, total: records.length, openCount, openPct: records.length > 0 ? (openCount / records.length) * 100 : 0 }
+      times.sort((a, b) => a - b)
+      return {
+        avgResolution: times.reduce((a, b) => a + b, 0) / times.length,
+        medianResolution: times[Math.floor(times.length / 2)],
+        total: records.length, openCount,
+        openPct: records.length > 0 ? (openCount / records.length) * 100 : 0,
+      }
+    },
+    computeDeltas(current, comparison) {
+      return {
+        avgResolution: pctDelta(current.avgResolution, comparison.avgResolution),
+        total: pctDelta(current.total, comparison.total),
+        openPct: pctDelta(current.openPct, comparison.openPct),
+      }
+    },
+    buildTrendPoint(day, recs) {
+      const times: number[] = []
+      for (const r of recs) {
+        if (!r.datetimeclosed) continue
+        const t = diffHours(r.datetimeinit, r.datetimeclosed)
+        if (t !== null && t > 0 && t <= 720) times.push(t)
+      }
+      times.sort((a, b) => a - b)
+      return {
+        day, callCount: recs.length,
+        avgResponseTime: times.length > 0 ? times.reduce((a, b) => a + b, 0) / times.length : 0,
+        medianResponseTime: times.length > 0 ? times[Math.floor(times.length / 2)] : 0,
+      }
+    },
+    extractDate: (r) => r.datetimeinit,
+  },
+  'useOakland311ComparisonData'
+)
+
 // ── 911 Dispatch ──────────────────────────────────────────────────
 
 export const useDispatchComparisonData = createComparisonDataHook<
@@ -373,6 +444,51 @@ export const usePoliceComparisonData = createComparisonDataHook<
     extractDate: (r) => r.incident_datetime,
   },
   'usePoliceComparisonData'
+)
+
+// ── Oakland Police Incidents ──────────────────────────────────────
+// ppgh-7dqv rows are CHARGES (~15.5% duplicates per case). Both comparison
+// sides count via distinctCases — IDEMPOTENT dedupe, because the current
+// side arrives pre-deduped from the view while the comparison side is a raw
+// 5K fetch; asymmetric counting would fabricate a ~13% 'decline' on every
+// delta (stage-3 spec §1, verify critical #1). Cap detection deliberately
+// stays on raw compRecords.length (the shell's ≥5000 check).
+
+export interface OaklandCrimeComparisonRow {
+  casenumber?: string
+  datetime: string
+}
+
+export interface ComparisonStatsOakCrime { total: number }
+
+export function distinctCases(records: { casenumber?: string }[]): number {
+  const seen = new Set<string>()
+  let anonymous = 0
+  for (const r of records) {
+    if (r.casenumber) seen.add(r.casenumber)
+    else anonymous++
+  }
+  return seen.size + anonymous
+}
+
+export const useOaklandPoliceComparisonData = createComparisonDataHook<
+  OaklandCrimeComparisonRow,
+  ComparisonStatsOakCrime,
+  { total: number }
+>(
+  {
+    datasetKey: 'policeIncidents',
+    cityId: 'oakland',
+    dateField: 'datetime',
+    selectFields: 'casenumber,datetime',
+    computeStats: (records) => ({ total: distinctCases(records) }),
+    computeDeltas: (current, comparison) => ({ total: pctDelta(current.total, comparison.total) }),
+    buildTrendPoint: (day, recs) => ({
+      day, callCount: distinctCases(recs), avgResponseTime: 0, medianResponseTime: 0,
+    }),
+    extractDate: (r) => r.datetime,
+  },
+  'useOaklandPoliceComparisonData'
 )
 
 // ── Traffic Crashes ───────────────────────────────────────────────

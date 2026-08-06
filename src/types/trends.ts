@@ -1,4 +1,5 @@
 import type { DatasetKey } from '@/api/datasets'
+import type { CityId } from '@/cities/routing'
 
 export interface TrendConfig {
   datasetKey: DatasetKey
@@ -6,6 +7,10 @@ export interface TrendConfig {
   neighborhoodField?: string
   metrics?: { selectExpr: string; alias: string; label: string; format: (v: number) => string }[]
   baseWhere?: string
+  /** Route city for every internal fetch. Default 'sf'. */
+  cityId?: CityId
+  /** Count expression. Default count(*). Oakland crime: count(distinct casenumber). */
+  countExpr?: string
 }
 
 export interface PeriodDataPoint {

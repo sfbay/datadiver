@@ -13,6 +13,7 @@ export const sfCity: CityConfig = {
     noun: 'neighborhood', nounPlural: 'neighborhoods',
     geojsonPath: '/data/geo/sf-analysis-neighborhoods.geojson',
     names: SF_NEIGHBORHOODS, excluded: NON_RESIDENTIAL_NEIGHBORHOODS, count: 41,
+    placeDestination: { viewId: 'neighborhood', param: 'nh' },
   },
   camera: {
     defaultView: SF_DEFAULT_VIEW,

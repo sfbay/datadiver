@@ -29,6 +29,10 @@ export interface EraSource {
   /** Key into the owning CITY's dataset registry (city.datasets). */
   datasetKey: string
   dateField: string
+  /** Count expression for the annual strip. Default count(*). Oakland crime
+   *  uses count(distinct casenumber): one row per CHARGE (~15.5% dup rows),
+   *  so a row count overstates incidents ~18%. */
+  countExpr?: string
   /** Inclusive year bounds; null upper = open to today. Guards published-range
    *  junk — this is load-bearing, not cosmetic (see parking-citations). */
   clamp: [number, number | null]
@@ -69,4 +73,17 @@ export interface ViewManifestEntry {
   dateless?: true
   /** Dataset keys (into the city's registry) that surface this view in ⌘K. */
   omniDatasetKeys?: readonly string[]
+  /** Registered (era facts, ⌘K claims) but not yet routable: the city's
+   *  catch-all still redirects this slug Home. Dormant entries are excluded
+   *  from routes, nav, ⌘K, era activation, and URL param sync — one authored
+   *  fact drives all five (the stage-2 'three stand-downs' contract,
+   *  amended for partial dormancy by the stage-3 spec §2). */
+  dormant?: true
+}
+
+/** The entries a city actually routes/renders. Everything liveness-gated
+ *  (App routes, AppShell nav, ⌘K, useUrlSync, useEraSeries) derives from
+ *  this ONE filter — never re-implement the predicate inline. */
+export function liveManifest(entries: readonly ViewManifestEntry[]): ViewManifestEntry[] {
+  return entries.filter((e) => e.dormant !== true)
 }

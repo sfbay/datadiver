@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { getCity } from '@/cities/registry'
 import { viewPath, type CityId } from '@/cities/routing'
 import { useRouteView } from '@/cities/useActiveCity'
+import { liveManifest } from '@/cities/manifest'
 
 export type SearchCategory = 'view' | 'place' | 'dataset' | 'vendor' | 'time'
 
@@ -27,8 +28,8 @@ export function buildSearchIndex(cityId: CityId): SearchResult[] {
 
   // Views first — typing a view's own name ('Elections', 'Housing') is the
   // strongest intent signal ⌘K gets, and manifest-only views (no
-  // omniDatasetKeys) previously had no row at all.
-  for (const entry of city.manifest) {
+  // omniDatasetKeys) previously had no row at all. Dormant entries are excluded.
+  for (const entry of liveManifest(city.manifest)) {
     results.push({
       id: `view-${entry.viewId}`,
       category: 'view',
@@ -39,23 +40,26 @@ export function buildSearchIndex(cityId: CityId): SearchResult[] {
     })
   }
 
-  // Areas → place results (SF: the 41 Analysis Neighborhoods)
+  // Areas → place results. Destination + param come from the city config;
+  // Oakland beat ids get their reader label ('Beat 07X') while the param
+  // carries the RAW id the destination view's ?neighborhood= reads.
+  const { viewId: placeView, param: placeParam } = city.areas.placeDestination
   for (const name of city.areas.names) {
     results.push({
       id: `place-${name}`,
       category: 'place',
-      label: name,
+      label: city.areas.formatLabel?.(name) ?? name,
       sublabel: `${city.name} ${city.areas.noun}`,
       icon: '📍',
-      path: viewPath(cityId, 'neighborhood'),
-      params: { nh: name },
+      path: viewPath(cityId, placeView),
+      params: { [placeParam]: name },
     })
   }
 
   // datasetKey → owning view, inverted from the manifest's omniDatasetKeys
-  // (replaces the retired DATASET_ROUTES table).
+  // (replaces the retired DATASET_ROUTES table). Only live entries' claims count.
   const datasetView = new Map<string, string>()
-  for (const entry of city.manifest) {
+  for (const entry of liveManifest(city.manifest)) {
     for (const key of entry.omniDatasetKeys ?? []) datasetView.set(key, entry.viewId)
   }
 

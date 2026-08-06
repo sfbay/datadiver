@@ -67,24 +67,22 @@ describe('OmniSearch index (SF parity)', () => {
     expect(cats.lastIndexOf('place')).toBeLessThan(cats.indexOf('dataset'))
   })
 
-  it('oakland index: 4 view rows + 59 beat places + 6 claimed datasets, oakland paths throughout', () => {
+  it('oakland index: 2 LIVE view rows + 59 beat places landing on the crime view + 2 live-claimed datasets', () => {
     const oak = buildSearchIndex('oakland')
     const byCat = (c: string) => oak.filter((r) => r.category === c)
-    expect(byCat('view').map((r) => r.id)).toEqual([
-      'view-crime-incidents', 'view-311-cases', 'view-parking-citations', 'view-campaign-finance',
-    ])
+    // Dormant entries (parking-citations, campaign-finance) get no view row —
+    // their route is still the catch-all redirect Home.
+    expect(byCat('view').map((r) => r.id)).toEqual(['view-crime-incidents', 'view-311-cases'])
+    // No beat-profile view ships; beat rows land on the crime view with the
+    // beat pre-selected (?neighborhood=07X), reader-labeled 'Beat 07X'.
     expect(byCat('place')).toHaveLength(59)
     expect(byCat('place')[0]).toMatchObject({
-      label: '01X', sublabel: 'Oakland police beat',
-      path: '/oakland/neighborhood', params: { nh: '01X' },
+      label: 'Beat 01X', sublabel: 'Oakland police beat',
+      path: '/oakland/crime-incidents', params: { neighborhood: '01X' },
     })
-    // Registry order, filtered to claimed keys — fppc460Summary precedes
-    // SchA/SchE because it is authored first in the registry.
-    expect(byCat('dataset').map((r) => r.id)).toEqual([
-      'dataset-policeIncidents', 'dataset-cases311', 'dataset-parkingCitations',
-      'dataset-fppc460Summary', 'dataset-fppcSchA', 'dataset-fppcSchE',
-    ])
-    expect(oak).toHaveLength(69)
+    // Dataset rows only from LIVE entries' omniDatasetKeys.
+    expect(byCat('dataset').map((r) => r.id)).toEqual(['dataset-policeIncidents', 'dataset-cases311'])
+    expect(oak).toHaveLength(63)
     for (const r of oak) expect(r.path.startsWith('/oakland'), r.id).toBe(true)
   })
 })

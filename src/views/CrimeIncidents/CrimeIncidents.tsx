@@ -8,14 +8,15 @@ import { useDemographicUnderlay } from '@/components/maps/DemographicUnderlay'
 import UnderlayPicker from '@/components/maps/UnderlayPicker'
 import UnderlayLegend from '@/components/maps/UnderlayLegend'
 import NeighborhoodCensusContext from '@/components/ui/NeighborhoodCensusContext'
-import { useViewEntry } from '@/cities/useActiveCity'
+import { useViewEntry, useActiveCity } from '@/cities/useActiveCity'
 import { useSearchParams } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import { useCrimeEraData } from './useCrimeEraData'
 import { useMapLayer } from '@/hooks/useMapLayer'
 import { useMapTooltip } from '@/hooks/useMapTooltip'
-import { usePoliceHourlyPattern } from '@/hooks/useHourlyPatternFactory'
-import { usePoliceComparisonData } from '@/hooks/useComparisonDataFactory'
+import { usePoliceHourlyPattern, useOaklandPoliceHourlyPattern } from '@/hooks/useHourlyPatternFactory'
+import { usePoliceComparisonData, useOaklandPoliceComparisonData, type OaklandCrimeComparisonRow } from '@/hooks/useComparisonDataFactory'
+import { CRIME_EYEBROWS, OAKLAND_CRIME_GROUPS, OAKLAND_CRIME_QUERY_FLOOR, titleCaseCrimetype } from './crimeDialect'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useAppStore } from '@/stores/appStore'
@@ -49,11 +50,19 @@ import ScannerFeedChips from '@/components/ui/ScannerFeedChips'
 type MapMode = 'heatmap' | 'anomaly'
 type SidebarTab = 'categories' | 'neighborhoods'
 
-const SELECT_FIELDS = 'incident_id,incident_number,cad_number,incident_datetime,report_datetime,incident_category,incident_subcategory,incident_description,resolution,intersection,analysis_neighborhood,police_district,latitude,longitude,point'
-
 export default function CrimeIncidents() {
   const { dateRange, timeOfDayFilter, comparisonMode, selectedCrimeIncident, setSelectedCrimeIncident } = useAppStore()
-  const civicIndicators = useCivicIndicators()
+  const city = useActiveCity()
+  const isSF = city.id === 'sf'
+  // Reader-facing beat labels ('07X' → 'Beat 07X'); identity for SF.
+  const areaLabel = useCallback(
+    (name: string) => city.areas.formatLabel?.(name) ?? name,
+    [city],
+  )
+  // TWO-part gate: `enabled` stops the ~10-query SF fetch battery (a render
+  // gate alone would still fire it on Oakland routes and fail the network
+  // assertion in the verification gate); the render gate below hides the row.
+  const civicIndicators = useCivicIndicators({ enabled: isSF })
   const underlayPreset = useViewEntry()?.underlayPreset ?? []
   const [searchParams, setSearchParams] = useSearchParams()
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('categories')
@@ -118,8 +127,8 @@ export default function CrimeIncidents() {
   const categoryClause = useMemo(() => {
     if (selectedCategories.size === 0) return ''
     const escaped = Array.from(selectedCategories).map((c) => `'${c.replace(/'/g, "''")}'`)
-    return `incident_category IN (${escaped.join(',')})`
-  }, [selectedCategories])
+    return `${isSF ? 'incident_category' : 'crimetype'} IN (${escaped.join(',')})`
+  }, [selectedCategories, isSF])
 
   // SFPD publishes 2003–May 2018 and 2018–present as two differently-shaped
   // datasets that overlap by 4.5 months. useCrimeEraData owns the seam: it
@@ -138,19 +147,25 @@ export default function CrimeIncidents() {
    *  affordances (category filter, 911 linkage, year-over-year). */
   const hasHistorical = era.plan.era !== 'current'
 
-  const freshness = useDataFreshness('policeIncidents', 'incident_datetime', dateRange)
+  const freshness = useDataFreshness(
+    'policeIncidents',
+    isSF ? 'incident_datetime' : 'datetime',
+    dateRange,
+    { cityId: city.id },
+  )
 
-  const trendConfig = useMemo((): TrendConfig => ({
-    datasetKey: 'policeIncidents',
-    dateField: 'incident_datetime',
-    neighborhoodField: 'analysis_neighborhood',
-  }), [])
+  const trendConfig = useMemo((): TrendConfig => isSF
+    ? { datasetKey: 'policeIncidents', dateField: 'incident_datetime', neighborhoodField: 'analysis_neighborhood' }
+    : {
+        datasetKey: 'policeIncidents', dateField: 'datetime', neighborhoodField: 'policebeat',
+        cityId: 'oakland', countExpr: 'count(distinct casenumber)',
+      }, [isSF])
   const trendExtraWhere = useMemo(() => {
     const parts: string[] = []
     if (categoryClause) parts.push(categoryClause)
-    if (selectedNeighborhood) parts.push(`analysis_neighborhood = '${selectedNeighborhood.replace(/'/g, "''")}'`)
+    if (selectedNeighborhood) parts.push(`${isSF ? 'analysis_neighborhood' : 'policebeat'} = '${selectedNeighborhood.replace(/'/g, "''")}'`)
     return parts.length > 0 ? parts.join(' AND ') : undefined
-  }, [categoryClause, selectedNeighborhood])
+  }, [categoryClause, selectedNeighborhood, isSF])
   const trend = useTrendBaseline(trendConfig, dateRange, trendExtraWhere)
 
   // --- Data queries (era-routed; see useCrimeEraData) ---
@@ -171,15 +186,38 @@ export default function CrimeIncidents() {
   const extraWhere = useMemo(() => {
     const parts: string[] = []
     if (categoryClause) parts.push(categoryClause)
-    if (selectedNeighborhood) parts.push(`analysis_neighborhood = '${selectedNeighborhood.replace(/'/g, "''")}'`)
+    if (selectedNeighborhood) parts.push(`${isSF ? 'analysis_neighborhood' : 'policebeat'} = '${selectedNeighborhood.replace(/'/g, "''")}'`)
     return parts.length > 0 ? parts.join(' AND ') : undefined
-  }, [categoryClause, selectedNeighborhood])
+  }, [categoryClause, selectedNeighborhood, isSF])
 
-  const hourlyPattern = usePoliceHourlyPattern(dateRange, extraWhere)
+  // Both cities' instances run unconditionally; the inactive one is inert
+  // (enabled:false / compStart:null). NEVER select between hook FUNCTIONS
+  // conditionally — the route-level key={cityId} remount is defense in
+  // depth, not a license (stage-3 spec §1).
+  const sfHourly = usePoliceHourlyPattern(dateRange, extraWhere, isSF)
+  const oakHourly = useOaklandPoliceHourlyPattern(dateRange, extraWhere, !isSF)
+  const hourlyPattern = isSF ? sfHourly : oakHourly
 
   // Comparison data
   const compStart = useMemo(() => resolveComparisonStart(comparisonMode, dateRange), [comparisonMode, dateRange])
-  const comparison = usePoliceComparisonData(dateRange, whereClause, compStart, rawData, hitLimit)
+  // Oakland's WHERE clamps its lower bound at the query floor, which breaks
+  // the factory's literal string-replace below the floor AND means no honest
+  // comparison exists there — null the comparison start instead of clamping.
+  const effCompStart = !isSF && dateRange.start < OAKLAND_CRIME_QUERY_FLOOR ? null : compStart
+  const sfComparison = usePoliceComparisonData(dateRange, whereClause, isSF ? effCompStart : null, rawData, hitLimit)
+  // Adapted rows carry `casenumber` but their date lives in
+  // `incident_datetime`, not `datetime` — the factory's extractDate would
+  // return undefined and silently collapse the current trend into one
+  // bucket. Remap into the shape useOaklandPoliceComparisonData expects.
+  const oakCompRows = useMemo<OaklandCrimeComparisonRow[]>(
+    () => (isSF ? [] : rawData.map((r) => ({
+      casenumber: (r as unknown as { casenumber?: string }).casenumber,
+      datetime: r.incident_datetime,
+    }))),
+    [isSF, rawData],
+  )
+  const oakComparison = useOaklandPoliceComparisonData(dateRange, whereClause, isSF ? null : effCompStart, oakCompRows, hitLimit)
+  const comparison = isSF ? sfComparison : oakComparison
   const compLabel = comparisonLabel(comparisonMode, dateRange)
 
   // Neighborhood boundaries for anomaly mode
@@ -201,6 +239,7 @@ export default function CrimeIncidents() {
   })
 
   const cityAvg = useMemo(() => {
+    if (city.census === null) return undefined
     if (censusNeighborhoods.length === 0) return undefined
     const totalPop = censusNeighborhoods.reduce((s, n) => s + n.population, 0)
     if (totalPop === 0) return undefined
@@ -212,7 +251,7 @@ export default function CrimeIncidents() {
       }
     }
     return avg as any
-  }, [censusNeighborhoods])
+  }, [censusNeighborhoods, city.census])
 
   // --- Computed data ---
   const incidentData = useMemo(() => {
@@ -277,7 +316,7 @@ export default function CrimeIncidents() {
   // Card tray definitions
   const cardDefs = useMemo((): CardDef[] => {
     const totalVal = totalCount ?? stats.total
-    return [
+    const cards: CardDef[] = [
       {
         id: 'total',
         label: 'Total Incidents',
@@ -297,8 +336,10 @@ export default function CrimeIncidents() {
               : 'SFPD’s 2003–2017 archive — categories as published then')
           : comparison.deltas
             ? `${formatDelta(comparison.deltas.total)} ${compLabel}`
-            : (comparison.suppressed && comparisonMode !== null ? 'Compare needs a narrower date range' : undefined),
-        wrapSubtitle: hasHistorical,
+            : comparison.suppressed && comparisonMode !== null
+              ? 'Compare needs a narrower date range'
+              : isSF ? undefined : 'Multi-charge cases counted once',
+        wrapSubtitle: hasHistorical || !isSF,
         trend: !hasHistorical && comparison.deltas
           ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral')
           : undefined,
@@ -308,7 +349,7 @@ export default function CrimeIncidents() {
         id: 'top-category',
         label: 'Top Category',
         shortLabel: 'Top Cat',
-        value: stats.topCategory,
+        value: isSF ? stats.topCategory : titleCaseCrimetype(stats.topCategory),
         color: '#d4a435',
         delay: 80,
         info: 'top-category',
@@ -346,12 +387,18 @@ export default function CrimeIncidents() {
         defaultExpanded: false,
       },
     ]
-  }, [stats, totalCount, comparison.deltas, comparison.suppressed, compLabel, comparisonMode, trend.cityWideYoY])
+    // 911 card hidden (not "—") for Oakland: no such dataset exists, so the
+    // SF subtitle 'Not recorded before 2018' would be a lie where the field
+    // never existed.
+    return isSF ? cards : cards.filter((c) => c.id !== '911-linked')
+  }, [stats, totalCount, comparison.deltas, comparison.suppressed, compLabel, comparisonMode, trend.cityWideYoY, isSF])
 
   // Chart tray definitions (bottom-left overlay)
   const chartTiles = useMemo((): ChartTileDef[] => {
     const tiles: ChartTileDef[] = []
-    if (resolutionBarData.length > 0) {
+    // Belt: Oakland's resolutionRows is always []. Suspenders: era.plan.resolutionAvailable
+    // documents WHY (ppgh-7dqv has no resolution/disposition column at all).
+    if (era.plan.resolutionAvailable && resolutionBarData.length > 0) {
       tiles.push({
         id: 'resolution',
         label: 'Resolution Breakdown',
@@ -389,7 +436,7 @@ export default function CrimeIncidents() {
       })
     }
     return tiles
-  }, [resolutionBarData, comparisonMode, comparison])
+  }, [resolutionBarData, comparisonMode, comparison, isSF, era.plan])
 
   // Sidebar data
   const categoryEntries = useMemo(
@@ -539,6 +586,17 @@ export default function CrimeIncidents() {
     const timeStr = dt
       ? dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
       : null
+    if (!isSF) {
+      return `
+      ${dateStr ? `<div style="color:#e2e8f0">${dateStr} · ${timeStr}</div>` : ''}
+      <div class="tooltip-label" style="margin-top:6px">Category</div>
+      <div style="color:#e2e8f0">${titleCaseCrimetype(String(props.category ?? '')) || 'Unknown'}</div>
+      <div class="tooltip-label" style="margin-top:6px">Charge</div>
+      <div style="color:#94a3b8">${props.description || 'Unknown'}</div>
+      <div class="tooltip-label" style="margin-top:6px">Police beat</div>
+      <div style="color:#94a3b8">${props.neighborhood && props.neighborhood !== 'Unknown' ? areaLabel(String(props.neighborhood)) : 'Unknown'}</div>
+    `
+    }
     const linked = props.cadNumber ? '<span style="color:#8b6282;font-size:0.5625rem;margin-left:4px">911 LINKED</span>' : ''
     return `
       ${dateStr ? `<div style="color:#e2e8f0">${dateStr} · ${timeStr}${linked}</div>` : ''}
@@ -558,8 +616,8 @@ export default function CrimeIncidents() {
     const zScore = Number(props.zScore).toFixed(1)
     const sign = Number(props.zScore) >= 0 ? '+' : ''
     return `
-      <div class="tooltip-label">Neighborhood</div>
-      <div class="tooltip-value">${props.nhood || 'Unknown'}</div>
+      <div class="tooltip-label">${city.areas.noun[0].toUpperCase()}${city.areas.noun.slice(1)}</div>
+      <div class="tooltip-value">${props.nhood ? areaLabel(String(props.nhood)) : 'Unknown'}</div>
       <div class="tooltip-label" style="margin-top:6px">Crime Anomaly</div>
       <div class="tooltip-value">${sign}${zScore}\u03C3</div>
       <div class="tooltip-label" style="margin-top:6px">Incidents</div>
@@ -674,7 +732,7 @@ export default function CrimeIncidents() {
                 Crime Incidents
               </h1>
               <p className="hidden sm:block truncate text-micro font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
-                SFPD &middot; Incident Reports & 911 Cross-Ref
+                {CRIME_EYEBROWS[city.id as keyof typeof CRIME_EYEBROWS] ?? CRIME_EYEBROWS.sf}
               </p>
             </div>
             {/* Records count hidden on mobile — keeps the title column clean on a
@@ -722,18 +780,23 @@ export default function CrimeIncidents() {
       </header>
 
       {/* Cross-view ticker — signals from other datasets */}
-      <div className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-1 bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl z-10">
-        <CivicTicker
-          items={civicIndicators.items.filter(i => i.source.view !== '/crime-incidents')}
-          size="compact"
-        />
-      </div>
+      {isSF && (
+        <div className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-1 bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl z-10">
+          <CivicTicker
+            items={civicIndicators.items.filter(i => i.source.view !== '/crime-incidents')}
+            size="compact"
+          />
+        </div>
+      )}
 
       {/* Time-of-day filter sub-header */}
       {!hourlyPattern.isLoading && hourlyPattern.hourTotals.some((t) => t > 0) && (
         <div className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-2 bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl z-10">
           <div className="flex items-center gap-3">
-            <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 whitespace-nowrap">
+            <p
+              className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600 whitespace-nowrap"
+              title={isSF ? undefined : '~3% of Oakland reports carry no clock time and file as midnight — hour 0 is inflated'}
+            >
               Time of Day
             </p>
             <div className="flex-1">
@@ -796,6 +859,11 @@ export default function CrimeIncidents() {
                   <span className="text-nano font-mono text-brick-400">+3\u03C3</span>
                 </div>
                 <p className="text-nano text-slate-500 mt-1">below avg {'\u2192'} above avg</p>
+                {!isSF && era.unmappedShare != null && era.unmappedShare > 0.001 && (
+                  <p className="text-nano text-slate-500 mt-1">
+                    excludes {(era.unmappedShare * 100).toFixed(1)}% unmapped incidents
+                  </p>
+                )}
               </div>
             )}
 
@@ -808,7 +876,7 @@ export default function CrimeIncidents() {
         <MapSidebar>
           {/* Tab bar */}
           <div className="flex border-b border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
-            {([['categories', 'Categories'], ['neighborhoods', 'Neighborhoods']] as const).map(([key, label]) => (
+            {([['categories', 'Categories'], ['neighborhoods', isSF ? 'Neighborhoods' : 'Beats']] as const).map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setSidebarTab(key)}
@@ -848,6 +916,8 @@ export default function CrimeIncidents() {
                     categories={categoryEntries}
                     selected={selectedCategories}
                     onChange={setSelectedCategories}
+                    groups={isSF ? undefined : OAKLAND_CRIME_GROUPS}
+                    formatLabel={isSF ? undefined : titleCaseCrimetype}
                   />
                 )}
               </>
@@ -857,7 +927,7 @@ export default function CrimeIncidents() {
               <>
                 <div className="flex items-center gap-2 mb-4">
                   <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
-                    By Neighborhood
+                    {isSF ? 'By Neighborhood' : 'By Beat'}
                   </p>
                   <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
                 </div>
@@ -867,19 +937,21 @@ export default function CrimeIncidents() {
                     onClick={() => setSelectedNeighborhood(null)}
                     className="mb-3 text-micro font-mono text-brick-500 hover:text-brick-400 transition-colors"
                   >
-                    {'\u2190'} Clear filter: {selectedNeighborhood}
+                    {'\u2190'} Clear filter: {areaLabel(selectedNeighborhood)}
                   </button>
                 )}
 
                 {selectedNeighborhood && (
                   <>
-                    <NeighborhoodCensusContext
-                      neighborhood={selectedNeighborhood}
-                      censusData={censusNeighborhoods.find(n => n.name === selectedNeighborhood)}
-                      cityAverages={cityAvg}
-                      civicCount={neighborhoodEntries.find(n => n.neighborhood === selectedNeighborhood)?.incidentCount}
-                      civicLabel="Incidents"
-                    />
+                    {city.census !== null && (
+                      <NeighborhoodCensusContext
+                        neighborhood={selectedNeighborhood}
+                        censusData={censusNeighborhoods.find(n => n.name === selectedNeighborhood)}
+                        cityAverages={cityAvg}
+                        civicCount={neighborhoodEntries.find(n => n.neighborhood === selectedNeighborhood)?.incidentCount}
+                        civicLabel="Incidents"
+                      />
+                    )}
                     <ScannerFeedChips neighborhood={selectedNeighborhood} serviceFilter="police" />
                   </>
                 )}
@@ -892,6 +964,11 @@ export default function CrimeIncidents() {
                       Peak: <span className="text-brick-500">{formatHour(hourlyPattern.peakHour)}</span>
                       {' \u00B7 '}Quiet: <span className="text-slate-500">{formatHour(hourlyPattern.quietestHour)}</span>
                     </p>
+                    {!isSF && (
+                      <p className="text-nano text-slate-400/70 dark:text-slate-600 mt-1 leading-relaxed">
+                        ~3% of reports carry no clock time and file as midnight — hour 0 is inflated
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -935,7 +1012,7 @@ export default function CrimeIncidents() {
                         <div className="relative flex items-center justify-between">
                           <div className="min-w-0 flex-1">
                             <p className="text-[12px] font-medium text-ink dark:text-slate-200 truncate leading-tight">
-                              {ns.neighborhood}
+                              {areaLabel(ns.neighborhood)}
                             </p>
                             <p className="text-micro text-slate-400 dark:text-slate-600 font-mono italic">
                               {(() => {
@@ -962,6 +1039,12 @@ export default function CrimeIncidents() {
                     )
                   })}
                 </div>
+                {!isSF && era.unmappedShare != null && era.unmappedShare > 0.001 && (
+                  <p className="mt-3 text-nano font-mono uppercase tracking-[0.15em] text-slate-400/70 dark:text-slate-500 leading-relaxed">
+                    {(era.unmappedShare * 100).toFixed(1)}% of incidents carry no mappable beat —
+                    counted in citywide totals, absent from this ranking and the map
+                  </p>
+                )}
               </>
             )}
           </div>

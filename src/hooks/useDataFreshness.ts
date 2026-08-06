@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { fetchDataset } from '@/api/client'
 import type { DatasetKey } from '@/api/datasets'
+import type { CityId } from '@/cities/routing'
 
 interface DataFreshnessResult {
   latestDate: string | null
@@ -21,7 +22,7 @@ export function useDataFreshness(
   datasetKey: DatasetKey,
   dateField: string,
   dateRange: { start: string; end: string },
-  options?: { geoField?: string }
+  options?: { geoField?: string; cityId?: CityId }
 ): DataFreshnessResult {
   const [latestDate, setLatestDate] = useState<string | null>(null)
   const [latestGeoDate, setLatestGeoDate] = useState<string | null>(null)
@@ -38,7 +39,7 @@ export function useDataFreshness(
       fetchDataset<{ latest: string }>(datasetKey, {
         $select: `MAX(${dateField}) as latest`,
         $limit: 1,
-      }).then((rows) => {
+      }, { cityId: options?.cityId }).then((rows) => {
         if (!cancelled && rows[0]?.latest) {
           setLatestDate(rows[0].latest.split('T')[0])
         }
@@ -52,7 +53,7 @@ export function useDataFreshness(
           $select: `MAX(${dateField}) as latest`,
           $where: `${options.geoField} IS NOT NULL`,
           $limit: 1,
-        }).then((rows) => {
+        }, { cityId: options?.cityId }).then((rows) => {
           if (!cancelled && rows[0]?.latest) {
             setLatestGeoDate(rows[0].latest.split('T')[0])
           }
@@ -67,7 +68,7 @@ export function useDataFreshness(
       })
 
     return () => { cancelled = true }
-  }, [datasetKey, dateField, options?.geoField])
+  }, [datasetKey, dateField, options?.geoField, options?.cityId])
 
   const hasDataInRange = latestDate !== null && latestDate >= dateRange.start
   const staleDays = latestDate

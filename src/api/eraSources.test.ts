@@ -83,6 +83,10 @@ describe('buildEraQuery', () => {
     expect(buildEraQuery(eraSourceFor('oakland', 'crime-incidents')!).$where)
       .toBe("datetime >= '2004-01-01'")
   })
+  it('oakland crime counts distinct cases, not charge rows', () => {
+    const q = buildEraQuery(eraSourceFor('oakland', 'crime-incidents')!)
+    expect(q.$select).toBe('date_extract_y(datetime) as yr, count(distinct casenumber) as n')
+  })
 })
 
 describe('eraDomain', () => {

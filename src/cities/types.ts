@@ -35,6 +35,14 @@ export interface CityConfig {
     names: readonly string[]
     excluded: ReadonlySet<string>
     count: number
+    /** Reader-facing area label. Omit = identity (SF neighborhood names ARE
+     *  labels); Oakland turns beat ids into 'Beat 07X'. */
+    formatLabel?: (name: string) => string
+    /** Where a ⌘K place row lands: viewPath(cityId, viewId) + ?param=<name>.
+     *  SF: the Neighborhood profile view. Oakland ships no beat-profile
+     *  surface, so beat rows land on the crime view with the beat selected
+     *  (Jesse's scope call, stage-3 spec §5). */
+    placeDestination: { viewId: ViewId; param: string }
   }
   camera: {
     defaultView: CameraView            // map mount fallback + filters-clear reset

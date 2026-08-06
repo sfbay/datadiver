@@ -16,6 +16,8 @@ export const oaklandCity: CityConfig = {
     // census: null gates off the surfaces that would care; whether
     // LKM1/PDT2 join it is a stage-3 editorial call.
     names: OAKLAND_BEATS, excluded: new Set(), count: 59,
+    formatLabel: (name) => `Beat ${name}`,
+    placeDestination: { viewId: 'crime-incidents', param: 'neighborhood' },
   },
   camera: {
     // Provisional frame — visually tuned in stage 3 via ?debug=map.
@@ -24,6 +26,6 @@ export const oaklandCity: CityConfig = {
   },
   census: null,      // beats have no tract crosswalk — ACS affordances hide
   datasets: buildDatasets('data.oaklandca.gov', OAKLAND_DATASETS_RAW),
-  manifest: OAKLAND_MANIFEST,  // 4 dormant entries; views render in stage 3
+  manifest: OAKLAND_MANIFEST,  // stage 3: crime-incidents + 311-cases live, 2 still dormant
   redirects: [],
 }

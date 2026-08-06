@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { fetchDataset, type SoQLParams } from '@/api/client'
 import type { DatasetKey } from '@/api/datasets'
 import { registerQuery, completeQuery } from '@/hooks/useLoadingProgress'
+import { useRouteView } from '@/cities/useActiveCity'
+import type { CityId } from '@/cities/routing'
 
 interface UseDatasetResult<T> {
   data: T[]
@@ -11,9 +13,10 @@ interface UseDatasetResult<T> {
   refetch: () => void
 }
 
-// STAGE 3 CONTRACT: no cityId option yet — every query resolves against
-// SF. Add cityId (default: the route-derived city) before any Oakland
-// view mounts this hook, or Oakland views will silently render SF data.
+// cityId defaults to the ROUTE-DERIVED city (stage 3): an SF view mounted on
+// an SF route and an Oakland view on /oakland/* both get the right registry
+// with zero call-site churn. Pass cityId explicitly only for a deliberate
+// cross-city fetch (none exist today).
 interface UseDatasetOptions {
   /** When false, the query is not issued: the hook returns no rows and is NOT
    *  loading. For conditional sources that can't be expressed by skipping the
@@ -29,6 +32,7 @@ interface UseDatasetOptions {
   timeoutMs?: number
   /** Forwarded to `fetchDataset` — re-attempts on timeout/network/non-OK. */
   retries?: number
+  cityId?: CityId
 }
 
 /** React hook for fetching Socrata dataset data with loading/error state */
@@ -39,6 +43,8 @@ export function useDataset<T>(
   options: UseDatasetOptions = {}
 ): UseDatasetResult<T> {
   const enabled = options.enabled ?? true
+  const routeCityId = useRouteView().cityId
+  const cityId = options.cityId ?? routeCityId
   const [data, setData] = useState<T[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -70,6 +76,7 @@ export function useDataset<T>(
         const result = await fetchDataset<T>(datasetKey, params, {
           timeoutMs: options.timeoutMs,
           retries: options.retries,
+          cityId,
         })
         if (!cancelled) {
           setData(result)
@@ -95,7 +102,7 @@ export function useDataset<T>(
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [datasetKey, paramsKey, refetchKey, enabled, ...deps])
+  }, [datasetKey, paramsKey, refetchKey, enabled, cityId, ...deps])
 
   const hitLimit = !isLoading && data.length > 0 && data.length === (params.$limit ?? 1000)
 
