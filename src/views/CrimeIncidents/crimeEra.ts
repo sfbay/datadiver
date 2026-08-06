@@ -24,6 +24,8 @@
 // — is disabled whenever historical rows are in range rather than silently
 // matching nothing.
 
+import type { CityId } from '@/cities/routing'
+
 /** First day the modern dataset (wg3w-h783) owns. Historical is queried
  *  strictly BELOW this; current strictly at-or-above. */
 export const CRIME_ERA_SEAM = '2018-01-01'
@@ -47,12 +49,32 @@ export interface CrimeEraPlan {
   categoryFilterAvailable: boolean
   /** cad_number (the 911 cross-reference) exists only in the modern dataset. */
   cadLinkAvailable: boolean
+  /** ppgh-7dqv has NO resolution/disposition column of any kind — the
+   *  Resolution tile is withheld for Oakland, and the aggregate that would
+   *  400 is never issued (a missing-column 400 does NOT self-suppress). */
+  resolutionAvailable: boolean
 }
 
 /** Which source(s) cover this range, and over exactly which days.
  *  Pure string comparison — 'YYYY-MM-DD' sorts chronologically, so no Date
  *  parsing (and no host-timezone dependence) is involved. */
-export function planCrimeEra(range: DateRange): CrimeEraPlan {
+export function planCrimeEra(range: DateRange, cityId: CityId = 'sf'): CrimeEraPlan {
+  // Oakland: ONE extract, no seam. currentRange passes through VERBATIM —
+  // CRIME_ERA_SEAM/CRIME_HISTORY_MIN are SF constants that must never touch
+  // this path (routing Oakland through the SF branch clamps currentRange.start
+  // to 2018 and silently drops 2004–2017). The 2004 query floor is applied by
+  // the Oakland WHERE builders (crimeDialect.ts), not here.
+  if (cityId !== 'sf') {
+    return {
+      era: 'current',
+      currentRange: range,
+      historicalRange: null,
+      categoryFilterAvailable: true,
+      cadLinkAvailable: false,   // no 911 dataset exists — distinct from SF's pre-2018 gap
+      resolutionAvailable: false,
+    }
+  }
+
   const needsHistorical = range.start < CRIME_ERA_SEAM
   const needsCurrent = range.end >= CRIME_ERA_SEAM
 
@@ -77,6 +99,7 @@ export function planCrimeEra(range: DateRange): CrimeEraPlan {
     historicalRange,
     categoryFilterAvailable: !needsHistorical,
     cadLinkAvailable: !needsHistorical,
+    resolutionAvailable: true,
   }
 }
 
