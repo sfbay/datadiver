@@ -254,8 +254,11 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
     [histWhere],
     { enabled: wantHist },
   )
-  // $limit 70: 59 beats + junk codes (77X/99X) + the NULL row must ALL
+  // $limit 200: 59 beats + junk codes (77X/99X) + the NULL row must ALL
   // arrive — the unmapped-share disclosure is computed from this result.
+  // The malformed beat-code tail can exceed 70 groups; under DESC ordering,
+  // truncation drops the smallest (unmapped) groups first, biasing the
+  // unmappedShare disclosure LOW.
   const oakNhoods = useDataset<NeighborhoodAggRowPolice>(
     'policeIncidents',
     {
@@ -263,7 +266,7 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
       $group: 'policebeat',
       $where: oakWhere,
       $order: 'incident_count DESC',
-      $limit: 70,
+      $limit: 200,
     },
     [oakWhere],
     { enabled: wantOak },
