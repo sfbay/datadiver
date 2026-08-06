@@ -594,7 +594,7 @@ export default function CrimeIncidents() {
       <div class="tooltip-label" style="margin-top:6px">Charge</div>
       <div style="color:#94a3b8">${props.description || 'Unknown'}</div>
       <div class="tooltip-label" style="margin-top:6px">Police beat</div>
-      <div style="color:#94a3b8">${props.neighborhood ? areaLabel(String(props.neighborhood)) : 'Unknown'}</div>
+      <div style="color:#94a3b8">${props.neighborhood && props.neighborhood !== 'Unknown' ? areaLabel(String(props.neighborhood)) : 'Unknown'}</div>
     `
     }
     const linked = props.cadNumber ? '<span style="color:#8b6282;font-size:0.5625rem;margin-left:4px">911 LINKED</span>' : ''
@@ -966,7 +966,7 @@ export default function CrimeIncidents() {
                     </p>
                     {!isSF && (
                       <p className="text-nano text-slate-400/70 dark:text-slate-600 mt-1 leading-relaxed">
-                        ~3% of reports carry no clock time and file as midnight \u2014 hour 0 is inflated
+                        ~3% of reports carry no clock time and file as midnight — hour 0 is inflated
                       </p>
                     )}
                   </div>
