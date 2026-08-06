@@ -24,9 +24,10 @@ export function useUrlSync() {
   // change. Three cases: the city's registered redirect slugs ('live-feeds');
   // unknown slugs with no manifest entry (the root catch-all's <Navigate>
   // must win); and DORMANT manifest entries — registered views whose route
-  // is still the city catch-all (oakland parking-citations/campaign-finance
-  // in stage 3). Liveness replaced the old blanket cityId !== 'sf' clause
-  // when the first Oakland views went live (stage-3 spec §2).
+  // is still the city catch-all (no dormant entries exist post-stage-3b; the
+  // clause guards any future city's dormant slugs). Liveness replaced the
+  // old blanket cityId !== 'sf' clause when the first Oakland views went
+  // live (stage-3 spec §2).
   const skipSync =
     city.redirects.some((r) => r.from === viewId) || entry === undefined || entry.dormant === true
   const {

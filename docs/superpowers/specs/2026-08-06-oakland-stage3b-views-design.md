@@ -392,3 +392,45 @@ Stage 4 (city switcher + Home doorway — next cycle); 460/461/465/minor schedul
 view; donor geography; Oakland entity-level IE matching; hour normalization for any
 other dataset; Neighborhoods-region anything; Oakland Pulse/ticker/anomaly baselines;
 beat camera presets (polygon fitBounds suffices — stage-3 ruling stands).
+
+## As-built deltas (SDD, 2026-08-06)
+
+Six small divergences surfaced during implementation and review, none changing scope:
+
+1. **`CitationDetailPanel`'s numeric gate is `/^\d+(\.\d+)?$/`, not a bare-integer
+   check.** Roughly Nov 2024–Mar 2025, Socrata serializes `ticket_num` with a `.0`
+   decimal suffix (`"1749508412.0"`) — the unquoted `ticket_num = <n>` filter accepts
+   that shape fine, but a bare-integer gate would reject it and open an empty panel
+   with no fetch for every citation from that window.
+2. **`unmappedShare` (the citations unmapped-beat disclosure) guards on the
+   per-beat GROUP BY rows having arrived, not just on `totalCount`.** `totalCount`
+   (a fast `count(*)`) resolves before the 59-bucket GROUP BY does; without the
+   `neighborhoodRows.length === 0` guard the share briefly reads a transient (and
+   wrong) "100% unmapped" flash before the real query lands.
+3. **The per-beat YoY lookup converts beat CODE → region id at the lookup site, not
+   the query site.** `selectedNeighborhood` and the sidebar ranking hold the beat
+   CODE throughout (consistent with Crime/311), but `trend.neighborhoodMap` is keyed
+   by region id (the field the underlying GROUP BY actually groups on) — the
+   read (`ParkingCitations.tsx`, the per-row YoY lookup) calls `beatToRegionId(...)`
+   inline rather than storing the region id as view state. The join is fixed at the
+   read, not withheld.
+4. **`foldLateIE` keys the late-IE fold on the case-folded candidate name, not the
+   raw string.** Form 496 publishes the same candidate under multiple casings (496
+   live-probe: 142 distinct raw `cand_naml` values, 126 distinct case-folded) — a
+   fold keyed on the raw string would show `'Carroll Fife'` and `'CARROLL FIFE'` as
+   two separate late-IE targets. The fold key is the upper-cased name; the display
+   value keeps the first-seen spelling (rows arrive `$order: 'total DESC'`, so the
+   biggest filer's casing wins).
+5. **`registry.test.ts` needed a liveness re-pin the plan didn't call out.** The
+   stage-3 test asserting `oakland: crime-incidents + 311-cases live;
+   parking-citations + campaign-finance dormant` was written against the stage-3
+   state and had to be updated alongside the `dormant: true` deletion in the flip
+   commit — an acceptance-harness edit the plan's task list didn't separately list,
+   caught by the existing per-city liveness suite rather than a new test.
+6. **The `PTY` entity-code label is a disclosed, hairline-visible SF delta, not an
+   Oakland-only change.** `FundingSourcesChart` is the shared component both cities
+   render through; adding `PTY → 'Political Party'` (indigo `#616a96`) to its label
+   map for Oakland's Form 496/497 rows means SF's own Schedule A data — 67 `PTY`-coded
+   rows, previously falling through to the raw code / a generic fallback color —
+   picks up the same label. Recorded here and in data-insights.md rather than left as
+   an unremarked side effect of a same-component change.
