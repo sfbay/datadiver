@@ -70,7 +70,11 @@ export default function CitationDetailPanel() {
     } else {
       // ticket_num is a NUMBER column — unquoted, and only after a strict
       // numeric gate (the requestid idiom from stage 3's CaseDetailPanel).
-      if (!/^\d+$/.test(selectedCitation)) {
+      // Roughly Nov 2024→Mar 2025, Socrata serializes ticket_num WITH a
+      // decimal suffix ("1749508412.0") — the gate must admit that shape too
+      // (the unquoted filter accepts it fine), or every dot from that era
+      // opens an empty panel with no fetch.
+      if (!/^\d+(\.\d+)?$/.test(selectedCitation)) {
         setDetail(null)
         setIsLoading(false)
         return

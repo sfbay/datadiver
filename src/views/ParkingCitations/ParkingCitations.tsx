@@ -489,13 +489,16 @@ export default function ParkingCitations() {
       .filter((r) => r.neighborhood && r.neighborhood !== 'Unknown')
   }, [neighborhoodRows, isSF])
 
-  // Oakland disclosure: rows whose beat region is NULL/unmapped (~5.2%)
+  // Oakland disclosure: rows whose beat region is NULL/unmapped (~5.2%).
+  // totalCount (a fast count(*)) resolves before the 59-bucket GROUP BY —
+  // in that window neighborhoodRows is still empty, so without this guard
+  // the share would read a transient (and wrong) "100% unmapped".
   const unmappedShare = useMemo(() => {
-    if (isSF || totalCount === null || totalCount === 0) return null
+    if (isSF || totalCount === null || totalCount === 0 || neighborhoodRows.length === 0) return null
     const mapped = neighborhoodEntries.reduce((s, n) => s + n.citationCount, 0)
     const unmapped = totalCount - mapped
     return unmapped > 0 ? (unmapped / totalCount) * 100 : null
-  }, [isSF, totalCount, neighborhoodEntries])
+  }, [isSF, totalCount, neighborhoodEntries, neighborhoodRows])
 
   // Z-score computation for anomaly mode
   const neighborhoodAnomalies = useMemo(() => {
@@ -1085,7 +1088,11 @@ export default function ParkingCitations() {
                     const barWidth = (ns.citationCount / maxCount) * 100
                     const isActive = selectedNeighborhood === ns.neighborhood
                     const zScore = neighborhoodAnomalies.get(ns.neighborhood)
-                    const nhTrend = trend.neighborhoodMap.get(ns.neighborhood)
+                    // trend.neighborhoodMap is keyed on the RAW grouped
+                    // value from the trend query — for Oakland that's the
+                    // numeric region id (trendConfig.neighborhoodField =
+                    // OAK_BEAT_REGION_FIELD), not the beat code ns holds.
+                    const nhTrend = trend.neighborhoodMap.get(isSF ? ns.neighborhood : (beatToRegionId(ns.neighborhood) ?? ''))
                     return (
                       <div
                         key={ns.neighborhood}
