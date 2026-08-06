@@ -1,12 +1,11 @@
 /** Socrata SODA API client with caching, pagination, and SoQL query building */
 
 import type { DatasetKey } from './datasets'
-import type { CityId } from '@/cities/routing'
+import { parseRoute, type CityId } from '@/cities/routing'
 import { getDatasetConfig } from '@/cities/registry'
 
 const APP_TOKEN = import.meta.env.VITE_SOCRATA_APP_TOKEN || ''
 const DEFAULT_LIMIT = 1000
-const MAX_LIMIT = 50_000
 const DEFAULT_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 
 interface CacheEntry<T> {
@@ -64,18 +63,26 @@ function buildQueryString(params: SoQLParams): string {
  *  small backoff — important on cold-load, where the per-host connection burst
  *  makes the first attempt of a heavy query slow or stall; a retry after the
  *  burst clears usually succeeds. */
-// STAGE 3 CONTRACT: `cityId` defaults to 'sf', so an Oakland view that
-// fails to thread it SILENTLY queries SF data. Thread cityId through
-// useDataset (and every direct fetchDataset caller) BEFORE any Oakland
-// view fetches. fetchAllPages/fetchAggregation call fetchDataset without
-// a cityId option (fetchAllPages passes only { skipCache: true }) and
-// are SF-hardcoded until then.
+/** DEV-only wrong-city tripwire: shared logical keys (policeIncidents,
+ *  cases311, parkingCitations) exist in BOTH registries, so an unthreaded
+ *  Oakland call silently returns SF data — no error, plausible numbers.
+ *  The one-time network-walk gate protects only the initial ship; this
+ *  detector is permanent. Production builds carry no check. */
 export async function fetchDataset<T>(
   datasetKey: DatasetKey,
   params: SoQLParams = {},
   options: { skipCache?: boolean; timeoutMs?: number; retries?: number; cityId?: CityId } = {}
 ): Promise<T[]> {
   const config = getDatasetConfig(options.cityId ?? 'sf', datasetKey)
+
+  if (import.meta.env.DEV && typeof window !== 'undefined') {
+    const routeCity = parseRoute(window.location.pathname).cityId
+    if (routeCity !== 'sf' && (options.cityId ?? 'sf') === 'sf') {
+      console.error(
+        `[datadiver] WRONG-CITY FETCH: '${datasetKey}' resolved against SF while the route is '${routeCity}' — thread cityId (see stage-3 spec §1)`
+      )
+    }
+  }
 
   // Skip default sort for aggregation queries — ordering by a non-selected field causes Socrata 400 errors
   const useDefaultSort = !params.$group && !params.$select?.match(/\b(SUM|COUNT|AVG|MIN|MAX|MEDIAN)\s*\(/i)
@@ -143,52 +150,6 @@ export async function fetchDataset<T>(
 
   throw lastErr instanceof Error ? lastErr : new Error(String(lastErr))
 }
-
-/** Fetch all pages of a dataset (auto-paginate) */
-export async function fetchAllPages<T>(
-  datasetKey: DatasetKey,
-  params: SoQLParams = {},
-  maxRecords: number = MAX_LIMIT
-): Promise<T[]> {
-  const pageSize = Math.min(params.$limit ?? DEFAULT_LIMIT, MAX_LIMIT)
-  const allData: T[] = []
-  let offset = params.$offset ?? 0
-
-  while (allData.length < maxRecords) {
-    const pageParams: SoQLParams = {
-      ...params,
-      $limit: pageSize,
-      $offset: offset,
-    }
-
-    const page = await fetchDataset<T>(datasetKey, pageParams, { skipCache: true })
-    allData.push(...page)
-
-    if (page.length < pageSize) break // Last page
-    offset += pageSize
-  }
-
-  return allData.slice(0, maxRecords)
-}
-
-/** Fetch aggregated data (using $group and aggregate functions) */
-export async function fetchAggregation<T>(
-  datasetKey: DatasetKey,
-  select: string,
-  group: string,
-  where?: string,
-  order?: string,
-  limit?: number
-): Promise<T[]> {
-  return fetchDataset<T>(datasetKey, {
-    $select: select,
-    $group: group,
-    $where: where,
-    $order: order ?? `count(*) DESC`,
-    $limit: limit ?? 1000,
-  })
-}
-
 /** Clear the entire cache or a specific dataset's entries */
 export function clearCache(datasetKey?: DatasetKey, cityId: CityId = 'sf'): void {
   if (!datasetKey) { cache.clear(); return }

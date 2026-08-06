@@ -27,12 +27,10 @@ export interface UseEraSeriesResult {
 
 export function useEraSeries(cityId: CityId, viewId: string): UseEraSeriesResult {
   const source = useMemo(() => eraSourceFor(cityId, viewId), [cityId, viewId])
-  // STAGE 3 CONTRACT: stand down for non-SF cities. useDataset does not
-  // thread cityId yet, so an Oakland era query would resolve its logical
-  // key against SF's registry and 400 at data.sfgov.org — and AppShell
-  // mounts DateRangePicker on every URL, including /oakland/*'s one
-  // pre-redirect frame. One of three 'sf' stand-downs (useUrlSync skipSync, AppShell nav);
-  // remove all three when useDataset threads cityId (stage 3).
+  // STAGE 3 CONTRACT: this guard is replaced by liveness in the same stage —
+  // the stand-down is permanent until the era source is wired for the city.
+  // One of three 'sf' stand-downs (useUrlSync skipSync, AppShell nav);
+  // remove all three together when era sources go live for Oakland.
   const active = source != null && cityId === 'sf'
   const params = useMemo(() => (source ? buildEraQuery(source) : {}), [source])
   const histParams = useMemo(
@@ -48,7 +46,7 @@ export function useEraSeries(cityId: CityId, viewId: string): UseEraSeriesResult
     // These are the app's heaviest queries (parking-citations measured at
     // 34.9s cold) — timeoutMs/retries keep one from holding a per-host
     // connection slot for a whole view's cold load. See useDataset.ts.
-    { enabled: active, timeoutMs: 20_000, retries: 1 },
+    { enabled: active, timeoutMs: 20_000, retries: 1, cityId },
   )
 
   // The second extract, for the one source that has one (SFPD 2003-2017).
@@ -56,7 +54,7 @@ export function useEraSeries(cityId: CityId, viewId: string): UseEraSeriesResult
     source?.historical?.datasetKey ?? 'policeIncidents',
     histParams,
     [JSON.stringify(histParams)],
-    { enabled: active && source?.historical != null, timeoutMs: 20_000, retries: 1 },
+    { enabled: active && source?.historical != null, timeoutMs: 20_000, retries: 1, cityId },
   )
 
   const years = useMemo(
