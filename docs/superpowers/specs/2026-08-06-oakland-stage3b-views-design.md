@@ -34,7 +34,7 @@ byte-identical (zero-visible-change gate, same as every prior stage).
 | Geo coverage | `the_geom` **100.0%** all-time AND 2024+ — no geo gap (better than SF, whose coords die after Oct 2025). No `geoField` gap alert needed. |
 | Beats region | 94.8% all-time / 95.6% 2024+ coverage; values are **internal region IDs (integers ~1–59)**, NOT beat codes. 142,417 rows unmatched (the null bucket). The curated-region dataset `fus4-casw` serves the crosswalk directly: `_feature_id` → `name` where name IS the beat code (`34X`, `22Y`, `13Z`, `PDT2`…). |
 | Violation vocabulary | `violatio_1` is corrupted by a **hard 10-char truncation era** (~2.0M rows at exactly length 10: `NON DISPLA` vs the untruncated `NON DISP PKG RECEIPT` for the same violation). `violation` CODE is clean municipal-code cites. Top codes: `10.28.240` (1,380,615) · `10.36.030B` (277,897) · `10.36.050` (271,842) · `10.40.020A1` (221,176) · `10.44.120A` (65,014) · `22500.F` (60,497, CVC) · `5204` (53,481) · `10.28.250` · `10.28.190` · `10.40.060`. |
-| Time formats | `ticket_i_1` mixes THREE formats: zero-padded `HH:MM` (~1.69M), unpadded `H:MM` (976,792), 12-hour `H:MM:SS AM/PM` (71,323). Lexicographic min/max returns `0:00`/`9:59:00 AM` — a raw string range filter is INVALID. |
+| Time formats | `ticket_i_1` mixes THREE formats plus NULL: zero-padded `HH:MM` (1,723,581), unpadded `H:MM` (926,629), 12-hour `H:MM:SS AM/PM` (71,323), **NULL 18,856 (0.69%)** — the null population IS the guaranteed residual the hardened design must count. Lexicographic min/max returns `0:00`/`9:59:00 AM` — a raw string range filter is INVALID. (Corrected 2026-08-06 by the verify pass: the first probe's `H:MM` figure double-counted ~50K AM rows via a prefix LIKE.) |
 | Fine amount | numeric, min 0 / max 576 / avg $73.02; zero nulls; 51,977 zero-dollar rows (~1.9%). |
 | Plate state | **No column exists** — SF's Out-of-State card has nothing to read. |
 | Years | clean 2018→now, no junk endpoints (2020 COVID dip 195,458; 2025 = 412,104). Era clamp `[2018, null]` already authored (stage 2) and stands. |
@@ -88,9 +88,15 @@ time-of-day.
   Emits a closed bucket vocabulary (~58 values): bare `'00'`–`'23'`, unpadded `'0:'`–`'9:'`,
   and `A`/`P`-prefixed `'A12'`,`'A1:'`…`'A11'`, `'P12'`…`'P11'` (both padded and unpadded
   12-hour variants).
-- `bucketToHour(bucket: string): number | null` — strips the prefix and `:`, parses,
-  applies 12-hour arithmetic (`A12`→0, `P12`→12, P+12 otherwise), range-validates.
-  Anything unrecognized → `null` (the residual).
+- `bucketToHour(bucket: string | undefined): number | null` — **null-guard FIRST**
+  (`if (bucket == null) return null`), then strips the prefix and `:`, parses, applies
+  12-hour arithmetic (`A12`→0, `P12`→12, P+12 otherwise), range-validates. Anything
+  unrecognized → `null` (the residual). The `undefined` case is not defensive garnish:
+  the 18,856 NULL-time rows form a real GROUP BY bucket whose aliased field **Socrata
+  omits from the JSON entirely** (verified live — the group arrives with no `hour` key
+  at all), so the residual reaches this function as `undefined`, never as a weird
+  string. A string-only implementation throws on the exact population the hardening
+  exists for.
 - `bucketsForHours(hours: number[]): string[]` — the inverse, derived by filtering the
   closed vocabulary through `bucketToHour` (one logic source, no dual mapping).
 - `buildOakTodClause(startHour, endHour): string` — `(${OAK_HOUR_EXPR}) IN ('…')` via
@@ -115,8 +121,9 @@ published time string verbatim — no fake parsing in display), label via
 `HourlyPatternConfig` gains:
 - `hourExpr?: string` — replaces `date_extract_hh(dateField)` in `hourlySelect` (which
   gains a third optional param; SF output byte-pinned unchanged).
-- `mapHourValue?: (raw: string) => number | null` — default `parseInt` behavior; Oakland
-  citations passes `bucketToHour`.
+- `mapHourValue?: (raw: string | undefined) => number | null` — default `parseInt`
+  behavior; Oakland citations passes `bucketToHour`. The `undefined` in the signature is
+  load-bearing (see the null-bucket note above).
 - `limit?: number` — default 200 (unchanged); Oakland citations passes 800 (~58 buckets
   × 7 days ≈ 406 rows would silently truncate at 200 — the stage-3 `$limit` lesson).
 
@@ -126,9 +133,11 @@ identical — a test pins both facts) and returns `unparsedCount` (sum of rows w
 mapped hour is null). The concrete Oakland hook `useOaklandCitationHourlyPattern` is declared in the
 VIEW layer (`ParkingCitations` folder), calling `createHourlyPatternHook` with
 `{ datasetKey: 'parkingCitations', dateField: 'ticket_iss', cityId: 'oakland',
-hourExpr: OAK_HOUR_EXPR, mapHourValue: bucketToHour, limit: 800 }` — the factory file
-itself never imports the dialect (keeps it leaf-clean, mirrors how the Oakland crime
-hook threads its `countExpr`). The heatgrid renders a one-line residual disclosure when
+hourExpr: OAK_HOUR_EXPR, mapHourValue: bucketToHour, limit: 800 }`. Unlike the Oakland
+crime hook — which stays in the factory file because its `countExpr` is a literal string
+needing no import — citations' hook consumes real dialect values, so it must live
+outside the factory to keep the factory dialect-import-free. This is a NEW placement,
+not existing precedent. The heatgrid renders a one-line residual disclosure when
 `unparsedCount > 0` ("N citations carry unparseable times — excluded here").
 
 ### View wiring — `ParkingCitations.tsx`
@@ -144,7 +153,26 @@ metrics keep `fine_amount`, same name both cities), freshness
 `ticket_num` is row-unique), hourly (above). Sidebar ranking groups the region field
 (`$limit: 200` — 59 beats + null bucket; never 50), translates ids through the
 crosswalk, renders beat labels via `city.areas.formatLabel` ("Beat 07X"), and the
-inline z-score ranking ports untouched. `ViolationTypeFilter` gains `groups?:
+inline z-score ranking ports untouched.
+
+**Beat identity ruling (join-drift class):** `selectedNeighborhood` and every other
+piece of Oakland citations state canonically holds the beat CODE string (`'01X'`) —
+matching the crime convention AND the boundary GeoJSON's `nhood` property, so the
+anomaly fill, click-to-select, and camera flights join for free. The ONLY place the
+integer region id exists is inside `buildOakCitationWheres`, which calls
+`beatToRegionId()` internally — call sites never pre-convert (a code string in the
+region filter is a hard Socrata 400, verified live; centralizing the conversion makes
+that unreachable).
+
+**Three SF-parsing sites MUST branch** (the wiring list above is not complete without
+them): the `citationData` row-assembly memo, the `heatmapGeojson` property copy, and
+the `useMapTooltip` render callbacks all read SF field names and format time via
+`parseSfLocal` + `America/Los_Angeles`. Oakland's `ticket_iss` is a date-only column
+that Socrata serializes with a synthetic midnight (`'2023-09-09T00:00:00.000'`) which
+MATCHES `parseSfLocal`'s floating-string regex — piping it through the SF tooltip path
+renders a confident, fabricated "12:00 AM" on every dot. The Oakland branch carries
+`ticket_i_1` alongside the date and the tooltip renders it VERBATIM (raw published
+string, no parsing, no timezone) next to the AP-style date. `ViolationTypeFilter` gains `groups?:
 Record<string, string[]>` (default: today's `VIOLATION_GROUPS`) and `formatLabel?:
 (key: string) => string` (default identity) — Oakland passes its groups + label map;
 the entry key field keeps its name (`violationDesc`) and semantically becomes "the
@@ -152,7 +180,9 @@ filter key" (codes for Oakland).
 
 **Withheld (not faked):** Out-of-State card is FILTERED OUT of the card defs (nothing
 approximates it — no '—' placeholder), census context + underlay (census null gates,
-free), CivicTicker (two-part gate `{enabled: isSF}` + render, same as crime).
+free), CivicTicker (two-part gate `{enabled: isSF}` + render, same as crime),
+ScannerFeedChips (already returns `null` for non-SF area names — degrades safely, but
+gate it explicitly so the withholding is authored, not accidental).
 **Disclosures:** unmatched-beat share live-computed from the null bucket of the ranking
 query (~5.2% — crime's unmapped-beat idiom, on the ranking header + anomaly legend if
 shown), hourly residual (above), and the ~1.9% zero-dollar fines noted in
@@ -172,6 +202,7 @@ interface FppcRoute {
   amountField: string        // SF 'calculated_amount' · Sch A 'tran_amt1' · Sch E/496/497 'amount'
   filerIdField: string       // SF 'filer_nid' · OAK 'filer_id'
   filerNameField: string     // SF 'filer_name' · OAK 'filer_naml'
+  filerTypeField?: string    // SF 'filer_type' · OAK undefined (no such column) — gates the sidebar split, the type chip, AND the entity IE match; every hardcoded filer_type read routes through this
   donorNameField?: string    // SF 'transaction_last_name' · Sch A 'tran_naml' · 497 'enty_naml'
   selfField?: string         // SF 'transaction_self' · Sch A 'tran_self' (semantics = plan-probe item)
   entityCodeField?: string   // SF 'entity_code' · Sch A 'entity_cd'
@@ -207,8 +238,15 @@ Oakland concept mapping:
   (probe writes the verdict into the plan).
 - **Unique donors** → `GROUP BY tran_naml`, `$limit: 50000` (75K-row set — safe).
 - **Top recipients** → `filer_id, filer_naml, SUM(tran_amt1)`. Oakland has **no
-  `filer_type` column**: `SelectedEntity.filerType` is `''` for Oakland, the type chip
-  hides, and the measure-vs-candidate IE match logic never runs (see withheld below).
+  `filer_type` column** (`filerTypeField` undefined): `SelectedEntity.filerType` is `''`,
+  the type chip hides, and the measure-vs-candidate IE match logic never runs (see
+  withheld below). **Sidebar consequence, authored not accidental:** the SF sidebar
+  splits `topRecipients` into Candidates/Measures/Committees via strict `===` on
+  `filer_type` literals with no fallback — for Oakland all three buckets would be
+  forever empty, silently killing the view's primary browse/search surface. When the
+  route's `filerTypeField` is undefined, the view renders ONE ungrouped "Filers" list
+  (all `topRecipients`, same row treatment) and the search box filters it — the browse
+  surface survives, only the categorization is withheld.
 - **Timeline** → `date_trunc_ym(tran_date)`.
 - **Funding sources** → `entity_cd` (standard FPPC entity codes; plan-probe checks the
   value inventory against `FundingSourcesChart`'s label map and the dialect carries any
@@ -246,12 +284,22 @@ are excluded from all date-filtered figures."
 ### Election cycles
 
 `electionCycles.ts` gains `OAKLAND_ELECTIONS` (same `ElectionCycle` shape; newest
-first): Nov 2026 (`2026-11-03`, start `2026-01-01`) · **Apr 2025 special mayoral**
-(`2025-04-15`, start `2025-01-01`) · Nov 2024 (`2024-11-05`) · Nov 2022 (`2022-11-08`)
-· Nov 2020 (`2020-11-03`) · Nov 2018 (`2018-11-06`) · Nov 2016 (`2016-11-08`) · Nov
-2014 (`2014-11-04`) · Nov 2012 (`2012-11-06`) — each even-year cycle starting Jan 1 of
-its year (the probe's annual lumping confirms these are the real cycles; `getDefaultCycle`
-naturally skips the future Nov 2026 row until it happens). `findPriorCycle`,
+first). **Windows TILE — each cycle starts the day after the previous election in the
+table** — because the verify pass measured that pre-window fundraising is the NORM, not
+the exception (Loren Taylor raised $50,665 across Nov–Dec 2024, before a Jan-1 Apr-2025
+window would open, while Barbara Lee's committee started Jan 8 — a Jan-1 convention
+undercounts one side of the marquee race; Nov-2024 candidates likewise show sustained
+2023 fundraising). Tiling means no dollar can fall between windows and no candidate is
+asymmetrically clipped. The table: Nov 2026 (`2026-11-03`, start `2025-04-16`) ·
+**Apr 2025 special mayoral** (`2025-04-15`, start `2024-11-06`) · Nov 2024
+(`2024-11-05`, start `2022-11-09`) · Nov 2022 (`2022-11-08`, start `2020-11-04`) · Nov
+2020 (`2020-11-03`, start `2018-11-07`) · Nov 2018 (`2018-11-06`, start `2016-11-09`) ·
+Nov 2016 (`2016-11-08`, start `2014-11-05`) · Nov 2014 (`2014-11-04`, start
+`2012-11-07`) · Nov 2012 (`2012-11-06`, start `2010-10-01`, the dataset's onset month).
+Windows are deliberately UNEVEN (a special's window is 5 months, a regular's ~24) —
+cycle totals are cycle totals, and the prior-cycle YoY compares whole cycles exactly as
+SF's uneven windows already do. `getDefaultCycle` naturally skips the future Nov 2026
+row until it happens. `findPriorCycle`,
 `getDefaultCycle`, `findCycleForRange` gain a trailing `cycles: ElectionCycle[] =
 SF_ELECTIONS` param (zero churn for SF callers; `findPriorCycle` indexes the PASSED
 array, not the module const). The Apr 2025 special has no prior same-month cycle → YoY
@@ -268,7 +316,13 @@ not a UI change.
 ## §3 Liveness flip + chrome
 
 Delete `dormant: true` from both Oakland manifest entries — the stage-3 machinery does
-the rest (routes via `liveManifest`, nav, ⌘K, `useUrlSync`, era activation). No
+the rest (routes via `liveManifest`, nav, ⌘K, `useUrlSync`, era activation). **One
+authored correction rides the flip:** the campaign-finance entry's `omniDatasetKeys`
+changes from the stage-2 guess `['fppcSchA', 'fppcSchE', 'fppc460Summary']` to
+`['fppcSchA', 'fppcSchE', 'fppc496', 'fppc497']` — the sets the view actually reads.
+Leaving it would put a ⌘K row on the 460 summaries (the dataset this spec excludes as
+fabricating money when summed) while omitting the two datasets behind the late-filings
+headline feature. No
 `App.tsx` edits: `VIEW_COMPONENTS` already maps both viewIds to the shared components.
 The slugs' redirect-clobber protection WAS the `entry.dormant` skipSync clause —
 flipping it replaces protection with real routes; nothing to unregister (implementer
@@ -281,17 +335,24 @@ era-free (test-pinned parity with SF — the cycle picker is its time system).
 - `citationsDialect.test.ts` — crosswalk integrity (count, bijective, values ∈
   `OAKLAND_BEATS`); hour module: `OAK_HOUR_EXPR` string pin, `bucketToHour` table
   (`'A12'`→0, `'P12'`→12, `'P09'`→21, `'A9:'`→9, `'0:'`→0, `'00'`→0, `'23'`→23, junk→
-  null, `'24'`→null), `bucketsForHours` round-trip (∀h∈0–23: every returned bucket maps
-  back to h; union over all hours = the full parseable vocabulary); SF WHERE builders
-  byte-pinned to today's literals; Oakland WHERE forms; label-map keys look like codes.
+  null, `'24'`→null, **and `undefined`→null as its own case** — it exercises the
+  missing-key path Socrata actually produces, a different code path than a junk
+  string), `bucketsForHours` round-trip (∀h∈0–23: every returned bucket maps back to h;
+  union over all hours = the full parseable vocabulary); SF WHERE builders byte-pinned
+  to today's literals; Oakland WHERE forms (including that `buildOakCitationWheres`
+  accepts a beat CODE and emits the region-id filter — the internal conversion is the
+  contract); label-map keys look like codes.
 - `useHourlyPatternFactory` tests — `+=` folding (two buckets, one hour), SF
   `hourlySelect` byte-pin unchanged, `unparsedCount` accounting.
 - `fppcDialect.test.ts` — every SF query-param builder byte-pinned to the current
   inline literals; Oakland routes reference real registry keys (imports the Oakland
   registry in the TEST only); `OAKLAND_ELECTIONS` sanity (descending dates, start <
-  end, `findPriorCycle(Nov 2024, OAKLAND_ELECTIONS)` → Nov 2022, Apr 2025 → null).
+  end, **the tiling invariant: every cycle's start = the next-older row's election date
+  + 1 day**, `findPriorCycle(Nov 2024, OAKLAND_ELECTIONS)` → Nov 2022, Apr 2025 →
+  null).
 - Re-pins the stage-1b/3 tripwires force: ⌘K oakland index row count (4 view rows + 59
-  places + 6 dataset rows), any live-view-count pins.
+  places + **7 dataset rows** = 70 total — crime 1 + 311 1 + citations 1 + the corrected
+  campaign-finance 4), any live-view-count pins.
 - Existing suites that iterate per-city (era integrity, registry, manifest) pass
   unchanged — they are the acceptance harness.
 
@@ -316,9 +377,12 @@ citations beat count, one Sch A cycle total, one 496 oppose total).
 2. `entity_cd` value inventory vs `FundingSourcesChart`'s label map.
 3. The authored `OAK_VIOLATION_LABELS` + `OAK_VIOLATION_GROUPS` tables (generation rule
    in §1).
-4. One live confirmation that `||` concat + `case()` + `substring()` compose in BOTH
-   `$select` and `$where` on data.oaklandca.gov (the TOD `IN` clause depends on it).
-5. The exact crosswalk table from `fus4-casw` (and its true row count — "~59").
+4. ~~`||` concat + `case()` + `substring()` in `$select` and `$where`~~ — **already
+   verified live 2026-08-06** by two independent verify-pass agents (works in both,
+   including the `(case(...)) IN (...)` where-form). Keep only as a smoke-check in the
+   implementer's first probe.
+5. The exact crosswalk table from `fus4-casw` — verified 2026-08-06: exactly 59 rows,
+   bijective, all names in the beat grammar. The plan commits the fetched values.
 6. 496 `cand_naml`/`bal_name` coverage shares (how many rows name neither — the
    late-IE section's "unattributed" bucket).
 
