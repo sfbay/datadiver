@@ -287,7 +287,7 @@ export default function ParkingCitations() {
   // Comparison data
   const compStart = useMemo(() => resolveComparisonStart(comparisonMode, dateRange), [comparisonMode, dateRange])
   const sfComparison = useCitationComparisonData(dateRange, statsWhere, isSF ? compStart : null, rawData as ParkingCitationRecord[], hitLimit)
-  const oakComparison = useOaklandCitationComparisonData(dateRange, statsWhere, isSF ? null : compStart, rawData as never, hitLimit)
+  const oakComparison = useOaklandCitationComparisonData(dateRange, statsWhere, isSF ? null : compStart, rawData as OakCitationRecord[], hitLimit)
   const comparison = isSF ? sfComparison : oakComparison
   const compLabel = comparisonLabel(comparisonMode, dateRange)
 

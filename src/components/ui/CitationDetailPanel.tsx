@@ -4,7 +4,7 @@ import { fetchDataset } from '@/api/client'
 import type { ParkingCitationRecord } from '@/types/datasets'
 import { formatDate, formatCurrency } from '@/utils/time'
 import DetailPanelShell from '@/components/ui/DetailPanelShell'
-import { useRouteView } from '@/cities/useActiveCity'
+import { useRouteView, useActiveCity } from '@/cities/useActiveCity'
 import { oakViolationLabel, regionToBeat, OAK_CITATION_SELECT, type OakCitationRecord } from '@/views/ParkingCitations/citationsDialect'
 
 interface CitationDetail {
@@ -38,6 +38,7 @@ function buildDetail(record: ParkingCitationRecord): CitationDetail {
 export default function CitationDetailPanel() {
   const { selectedCitation, setSelectedCitation } = useAppStore()
   const { cityId } = useRouteView()
+  const city = useActiveCity()
   const isSF = cityId === 'sf'
   const [detail, setDetail] = useState<CitationDetail | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -158,7 +159,10 @@ export default function CitationDetailPanel() {
           <div className="mb-3">
             <p className="text-micro text-slate-700 dark:text-slate-300">{detail.location}</p>
             <p className="text-micro text-slate-500 dark:text-slate-400">
-              {detail.neighborhood}{detail.district ? <> &middot; District {detail.district}</> : null}
+              {detail.neighborhood !== 'Unknown'
+                ? (city.areas.formatLabel?.(detail.neighborhood) ?? detail.neighborhood)
+                : detail.neighborhood}
+              {detail.district ? <> &middot; District {detail.district}</> : null}
             </p>
           </div>
 

@@ -159,9 +159,9 @@ const OAK_BUILDERS: FppcQueryBuilders = {
   ballotNumberLookup: () => null,
   ieQueries: () => null,
   lateIEByTarget: (s, e) => ({ datasetKey: 'fppc496', params: {
-    $select: 'cand_naml, bal_name, sup_opp_cd, SUM(amount) as total',
+    $select: 'cand_naml, cand_namf, bal_name, sup_opp_cd, SUM(amount) as total',
     $where: dw('exp_date', s, e),
-    $group: 'cand_naml, bal_name, sup_opp_cd', $order: 'total DESC', $limit: 200 } }),
+    $group: 'cand_naml, cand_namf, bal_name, sup_opp_cd', $order: 'total DESC', $limit: 200 } }),
   lateContribsSummary: (s, e) => ({ datasetKey: 'fppc497', params: {
     $select: 'SUM(amount) as total, COUNT(*) as cnt', $where: dw('ctrib_date', s, e) } }),
   nullDateDisclosure: () => ({ datasetKey: 'fppcSchE', params: {

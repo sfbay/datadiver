@@ -38,7 +38,7 @@ export default function LateFilingsSection({ data }: { data: LateFilingsResult }
               </div>
               <div className="flex w-full h-2 rounded-full overflow-hidden bg-slate-200/50 dark:bg-slate-800/50">
                 <div className="h-full" style={{ width: `${(t.support / maxTotal) * 100}%`, backgroundColor: '#7a9954' }} />
-                <div className="h-full" style={{ width: `${(t.oppose / maxTotal) * 100}%`, backgroundColor: '#963e30' }} />
+                <div className="h-full" style={{ width: `${(t.oppose / maxTotal) * 100}%`, backgroundColor: '#b85545' }} />
               </div>
               <div className="flex justify-between text-nano font-mono mt-0.5">
                 <span className="text-moss-500">for {formatCurrency(t.support)}</span>

@@ -395,7 +395,7 @@ beat camera presets (polygon fitBounds suffices — stage-3 ruling stands).
 
 ## As-built deltas (SDD, 2026-08-06)
 
-Six small divergences surfaced during implementation and review, none changing scope:
+Seven small divergences surfaced during implementation and review, none changing scope:
 
 1. **`CitationDetailPanel`'s numeric gate is `/^\d+(\.\d+)?$/`, not a bare-integer
    check.** Roughly Nov 2024–Mar 2025, Socrata serializes `ticket_num` with a `.0`
@@ -434,3 +434,10 @@ Six small divergences surfaced during implementation and review, none changing s
    rows, previously falling through to the raw code / a generic fallback color —
    picks up the same label. Recorded here and in data-insights.md rather than left as
    an unremarked side effect of a same-component change.
+7. **`ParkingCitations`'s violation sidebar now filters out NULL-description group
+   rows** (`.filter((r) => r.violationDesc)`) — the same class of hairline, visible
+   SF improvement as the PTY label above: a component shared across both cities
+   picked up a fix while being touched for Oakland, and it changes SF's own
+   rendering. A formerly clickable-but-blank filter row (empty `violation_desc`
+   groups, most noticeable at narrow sidebar widths) simply disappears now instead
+   of rendering as an empty label.

@@ -58,7 +58,7 @@ describe('stage-3b hourly extensions', () => {
     ]
     const map = (raw: string | undefined) =>
       raw == null ? null : parseInt(raw.replace(':', ''), 10)
-    const r = computeHourlyResult(rows as never, false, map)
+    const r = computeHourlyResult(rows, false, map)
     expect(r.grid[1][7]).toBe(15)
     expect(r.hourTotals[7]).toBe(15)
     expect(r.unparsedCount).toBe(0)
@@ -69,7 +69,7 @@ describe('stage-3b hourly extensions', () => {
       { dow: '2', call_count: '9' }, // Socrata omits the aliased key for the NULL group
     ]
     const map = (raw: string | undefined) => (raw === '07' ? 7 : null)
-    const r = computeHourlyResult(rows as never, false, map)
+    const r = computeHourlyResult(rows, false, map)
     expect(r.grid[2][7]).toBe(4)
     expect(r.unparsedCount).toBe(9)
   })

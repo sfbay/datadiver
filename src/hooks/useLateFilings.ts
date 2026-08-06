@@ -5,6 +5,7 @@ import { fppcBuildersFor } from '@/views/CampaignFinance/fppcDialect'
 
 interface LateIERow {
   cand_naml?: string
+  cand_namf?: string
   bal_name?: string
   sup_opp_cd?: string
   total: string
@@ -32,16 +33,22 @@ export interface LateFilingsResult {
 export function foldLateIE(rows: LateIERow[]): LateIETarget[] {
   const byTarget = new Map<string, LateIETarget>()
   for (const r of rows) {
-    const name = (r.cand_naml || '').trim() || (r.bal_name || '').trim()
-    const kind: LateIETarget['kind'] = (r.cand_naml || '').trim()
+    // Oakland's 496 dataset files the same candidate two ways: bare surname
+    // with the first name in cand_namf ('Lee' / 'Barbara'), AND a full-caps
+    // full name jammed into cand_naml alone ('BARBARA LEE', cand_namf blank).
+    // Assemble the display name from both columns so both shapes normalize
+    // to the same string before folding.
+    const assembled = [r.cand_namf, r.cand_naml].map((s) => (s || '').trim()).filter(Boolean).join(' ')
+    const name = assembled || (r.bal_name || '').trim()
+    const kind: LateIETarget['kind'] = assembled
       ? 'candidate'
       : (r.bal_name || '').trim() ? 'measure' : 'unattributed'
     // Oakland's 496 dataset publishes the same candidate under multiple
     // casings (count(distinct cand_naml)=142 vs count(distinct upper(...))=126,
     // live-probed) — key the fold on the case-folded name so "Carroll Fife"
-    // and "CARROLL FIFE" merge into one target, but keep the first-seen
-    // spelling for display. Rows arrive $order: 'total DESC', so the
-    // biggest filer's spelling wins.
+    // and "CARROLL FIFE" (or "Lee"/"Barbara" vs "BARBARA LEE") merge into
+    // one target, but keep the first-seen spelling for display. Rows arrive
+    // $order: 'total DESC', so the biggest filer's spelling wins.
     const key = (name || 'Unattributed').trim().toUpperCase()
     const entry = byTarget.get(key) ?? { target: name || 'Unattributed', kind, support: 0, oppose: 0 }
     const amt = parseFloat(r.total) || 0
@@ -96,7 +103,10 @@ export function useLateFilings(
       })
       .catch(() => {
         if (id === abortRef.current) {
-          setResult({ targets: [], lateContribTotal: 0, lateContribCount: 0, nullDateCount: 0, nullDateTotal: 0 })
+          // null (not []) — a network failure is absence-of-data, not a
+          // proven-empty result. `targets: []` would render "No late
+          // independent expenditures in this cycle," a fabricated claim.
+          setResult({ targets: null, lateContribTotal: 0, lateContribCount: 0, nullDateCount: 0, nullDateTotal: 0 })
         }
       })
       .finally(() => {

@@ -111,9 +111,9 @@ describe('Oakland builders', () => {
   })
   it('late-filings routes: 496 uses exp_date (no n!), 497 ctrib_date, Sch E null-date disclosure', () => {
     expect(b.lateIEByTarget(S, E)).toEqual({ datasetKey: 'fppc496', params: {
-      $select: 'cand_naml, bal_name, sup_opp_cd, SUM(amount) as total',
+      $select: 'cand_naml, cand_namf, bal_name, sup_opp_cd, SUM(amount) as total',
       $where: "exp_date >= '2024-01-01T00:00:00' AND exp_date <= '2024-11-05T23:59:59'",
-      $group: 'cand_naml, bal_name, sup_opp_cd', $order: 'total DESC', $limit: 200 } })
+      $group: 'cand_naml, cand_namf, bal_name, sup_opp_cd', $order: 'total DESC', $limit: 200 } })
     expect(b.lateContribsSummary(S, E)).toEqual({ datasetKey: 'fppc497', params: {
       $select: 'SUM(amount) as total, COUNT(*) as cnt',
       $where: "ctrib_date >= '2024-01-01T00:00:00' AND ctrib_date <= '2024-11-05T23:59:59'" } })
