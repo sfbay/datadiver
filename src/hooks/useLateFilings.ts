@@ -36,8 +36,14 @@ export function foldLateIE(rows: LateIERow[]): LateIETarget[] {
     const kind: LateIETarget['kind'] = (r.cand_naml || '').trim()
       ? 'candidate'
       : (r.bal_name || '').trim() ? 'measure' : 'unattributed'
-    const key = name || 'Unattributed'
-    const entry = byTarget.get(key) ?? { target: key, kind, support: 0, oppose: 0 }
+    // Oakland's 496 dataset publishes the same candidate under multiple
+    // casings (count(distinct cand_naml)=142 vs count(distinct upper(...))=126,
+    // live-probed) — key the fold on the case-folded name so "Carroll Fife"
+    // and "CARROLL FIFE" merge into one target, but keep the first-seen
+    // spelling for display. Rows arrive $order: 'total DESC', so the
+    // biggest filer's spelling wins.
+    const key = (name || 'Unattributed').trim().toUpperCase()
+    const entry = byTarget.get(key) ?? { target: name || 'Unattributed', kind, support: 0, oppose: 0 }
     const amt = parseFloat(r.total) || 0
     if (r.sup_opp_cd === 'O') entry.oppose += amt
     else entry.support += amt // 'S' and blank both count as support-side money
