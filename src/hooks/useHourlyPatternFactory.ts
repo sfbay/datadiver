@@ -136,3 +136,11 @@ export const useCitationHourlyPattern = createHourlyPatternHook(
   { datasetKey: 'parkingCitations', dateField: 'citation_issued_datetime' },
   'useCitationHourlyPattern'
 )
+
+export const useOaklandPoliceHourlyPattern = createHourlyPatternHook(
+  {
+    datasetKey: 'policeIncidents', dateField: 'datetime', cityId: 'oakland',
+    countExpr: 'count(distinct casenumber)', excludePeakHour0: true,
+  },
+  'useOaklandPoliceHourlyPattern'
+)

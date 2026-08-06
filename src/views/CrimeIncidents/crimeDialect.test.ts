@@ -5,6 +5,7 @@ import {
   buildSfCrimeWhere, buildOaklandCrimeWhere,
 } from './crimeDialect'
 import { planCrimeEra } from './crimeEra'
+import { distinctCases } from '@/hooks/useComparisonDataFactory'
 
 // Probe-pinned recent crimetype vocabulary (top 40, 2026-08-05 —
 // stage-3 spec, Fresh probe facts). Group membership must stay inside it.
@@ -115,5 +116,24 @@ describe('adaptOaklandIncident', () => {
   })
   it('count expression is the distinct-case aggregate', () => {
     expect(OAKLAND_CRIME_COUNT).toBe('count(distinct casenumber)')
+  })
+})
+
+describe('distinctCases (symmetric dedupe fence)', () => {
+  // Verify critical #1: the current side arrives PRE-deduped from the view
+  // while the comparison side is a raw charge-row fetch. Both sides go
+  // through distinctCases, which must be IDEMPOTENT — same answer for raw
+  // and pre-deduped inputs, or every Oakland delta fabricates a decline.
+  it('is idempotent: raw charge rows and pre-deduped rows agree', () => {
+    const raw = [
+      { casenumber: 'A' }, { casenumber: 'A' }, { casenumber: 'A' },
+      { casenumber: 'B' }, { casenumber: 'C' },
+    ]
+    const deduped = [{ casenumber: 'A' }, { casenumber: 'B' }, { casenumber: 'C' }]
+    expect(distinctCases(raw)).toBe(3)
+    expect(distinctCases(raw)).toBe(distinctCases(deduped))
+  })
+  it('rows without a casenumber count individually', () => {
+    expect(distinctCases([{ casenumber: 'A' }, {}, {}])).toBe(3)
   })
 })

@@ -377,6 +377,51 @@ export const usePoliceComparisonData = createComparisonDataHook<
   'usePoliceComparisonData'
 )
 
+// ── Oakland Police Incidents ──────────────────────────────────────
+// ppgh-7dqv rows are CHARGES (~15.5% duplicates per case). Both comparison
+// sides count via distinctCases — IDEMPOTENT dedupe, because the current
+// side arrives pre-deduped from the view while the comparison side is a raw
+// 5K fetch; asymmetric counting would fabricate a ~13% 'decline' on every
+// delta (stage-3 spec §1, verify critical #1). Cap detection deliberately
+// stays on raw compRecords.length (the shell's ≥5000 check).
+
+export interface OaklandCrimeComparisonRow {
+  casenumber?: string
+  datetime: string
+}
+
+export interface ComparisonStatsOakCrime { total: number }
+
+export function distinctCases(records: { casenumber?: string }[]): number {
+  const seen = new Set<string>()
+  let anonymous = 0
+  for (const r of records) {
+    if (r.casenumber) seen.add(r.casenumber)
+    else anonymous++
+  }
+  return seen.size + anonymous
+}
+
+export const useOaklandPoliceComparisonData = createComparisonDataHook<
+  OaklandCrimeComparisonRow,
+  ComparisonStatsOakCrime,
+  { total: number }
+>(
+  {
+    datasetKey: 'policeIncidents',
+    cityId: 'oakland',
+    dateField: 'datetime',
+    selectFields: 'casenumber,datetime',
+    computeStats: (records) => ({ total: distinctCases(records) }),
+    computeDeltas: (current, comparison) => ({ total: pctDelta(current.total, comparison.total) }),
+    buildTrendPoint: (day, recs) => ({
+      day, callCount: distinctCases(recs), avgResponseTime: 0, medianResponseTime: 0,
+    }),
+    extractDate: (r) => r.datetime,
+  },
+  'useOaklandPoliceComparisonData'
+)
+
 // ── Traffic Crashes ───────────────────────────────────────────────
 
 export const useCrashComparisonData = createComparisonDataHook<
