@@ -14,6 +14,7 @@ import type {
 } from '@/types/datasets'
 import { diffMinutes, diffHours, groupByDay } from '@/utils/time'
 import { addDays, rangeLengthDays } from '@/utils/comparisonMode'
+import { isOakCaseOpen } from '@/views/Cases311/dialect311'
 
 // ── Shared utility ────────────────────────────────────────────────
 
@@ -281,6 +282,74 @@ export const use311ComparisonData = createComparisonDataHook<
     extractDate: (r) => r.requested_datetime,
   },
   'use311ComparisonData'
+)
+
+// ── Oakland 311 ───────────────────────────────────────────────────
+// Same ComparisonStats311 shape; datetimeclosed replaces closed_date and the
+// authored open-status SET replaces the 'Open' literal (stage-3 spec §4).
+
+export interface Oakland311ComparisonRow {
+  requestid?: string | number
+  datetimeinit: string
+  datetimeclosed?: string
+  status?: string
+}
+
+export const useOakland311ComparisonData = createComparisonDataHook<
+  Oakland311ComparisonRow,
+  ComparisonStats311,
+  { avgResolution: number; total: number; openPct: number }
+>(
+  {
+    datasetKey: 'cases311',
+    cityId: 'oakland',
+    dateField: 'datetimeinit',
+    selectFields: 'requestid,datetimeinit,datetimeclosed,status',
+    computeStats(records) {
+      const times: number[] = []
+      let openCount = 0
+      for (const r of records) {
+        if (isOakCaseOpen(r.status)) {
+          openCount++
+          continue
+        }
+        if (!r.datetimeclosed) continue
+        const t = diffHours(r.datetimeinit, r.datetimeclosed)
+        if (t !== null && t > 0 && t <= 720) times.push(t)
+      }
+      if (times.length === 0) return { avgResolution: 0, medianResolution: 0, total: records.length, openCount, openPct: records.length > 0 ? (openCount / records.length) * 100 : 0 }
+      times.sort((a, b) => a - b)
+      return {
+        avgResolution: times.reduce((a, b) => a + b, 0) / times.length,
+        medianResolution: times[Math.floor(times.length / 2)],
+        total: records.length, openCount,
+        openPct: records.length > 0 ? (openCount / records.length) * 100 : 0,
+      }
+    },
+    computeDeltas(current, comparison) {
+      return {
+        avgResolution: pctDelta(current.avgResolution, comparison.avgResolution),
+        total: pctDelta(current.total, comparison.total),
+        openPct: pctDelta(current.openPct, comparison.openPct),
+      }
+    },
+    buildTrendPoint(day, recs) {
+      const times: number[] = []
+      for (const r of recs) {
+        if (!r.datetimeclosed) continue
+        const t = diffHours(r.datetimeinit, r.datetimeclosed)
+        if (t !== null && t > 0 && t <= 720) times.push(t)
+      }
+      times.sort((a, b) => a - b)
+      return {
+        day, callCount: recs.length,
+        avgResponseTime: times.length > 0 ? times.reduce((a, b) => a + b, 0) / times.length : 0,
+        medianResponseTime: times.length > 0 ? times[Math.floor(times.length / 2)] : 0,
+      }
+    },
+    extractDate: (r) => r.datetimeinit,
+  },
+  'useOakland311ComparisonData'
 )
 
 // ── 911 Dispatch ──────────────────────────────────────────────────

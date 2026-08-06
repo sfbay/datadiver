@@ -117,6 +117,11 @@ export const use311HourlyPattern = createHourlyPatternHook(
   'use311HourlyPattern'
 )
 
+export const useOakland311HourlyPattern = createHourlyPatternHook(
+  { datasetKey: 'cases311', dateField: 'datetimeinit', cityId: 'oakland' },
+  'useOakland311HourlyPattern'
+)
+
 export const useDispatchHourlyPattern = createHourlyPatternHook(
   { datasetKey: 'dispatch911Historical', dateField: 'received_datetime' },
   'useDispatchHourlyPattern'
