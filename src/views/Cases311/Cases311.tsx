@@ -8,14 +8,19 @@ import { useDemographicUnderlay } from '@/components/maps/DemographicUnderlay'
 import UnderlayPicker from '@/components/maps/UnderlayPicker'
 import UnderlayLegend from '@/components/maps/UnderlayLegend'
 import NeighborhoodCensusContext from '@/components/ui/NeighborhoodCensusContext'
-import { useViewEntry } from '@/cities/useActiveCity'
+import { useViewEntry, useActiveCity } from '@/cities/useActiveCity'
 import { useSearchParams } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import { useDataset } from '@/hooks/useDataset'
 import { useMapLayer } from '@/hooks/useMapLayer'
 import { useMapTooltip } from '@/hooks/useMapTooltip'
-import { use311HourlyPattern } from '@/hooks/useHourlyPatternFactory'
-import { use311ComparisonData } from '@/hooks/useComparisonDataFactory'
+import { use311HourlyPattern, useOakland311HourlyPattern } from '@/hooks/useHourlyPatternFactory'
+import { use311ComparisonData, useOakland311ComparisonData, type Oakland311ComparisonRow } from '@/hooks/useComparisonDataFactory'
+import {
+  EYEBROWS_311, OAK311_GROUPS, OAK311_SELECT, OAK311_OPEN_CLAUSE,
+  buildSf311Where, buildSf311DateOnly, buildOak311Where, buildOak311DateOnly,
+  resolutionHoursExpr, displayCategory311, isOakCaseOpen, oak311Coords,
+} from './dialect311'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useAppStore } from '@/stores/appStore'
@@ -52,21 +57,18 @@ type SidebarTab = 'categories' | 'neighborhoods'
 
 const SELECT_FIELDS = 'service_request_id,requested_datetime,closed_date,status_description,service_name,service_subtype,address,lat,long,analysis_neighborhood,supervisor_district,source,point'
 
-// Socrata's SoQL on the 311 dataset exposes date_diff_d but not date_diff_ss,
-// and date_diff_d truncates to whole 24h periods (NOT calendar days — verified
-// live: 20:20 → next-day 09:43 returns 0). Mirror the client-side ms-diff math
-// exactly: whole 24h periods + the time-of-day remainder recovered mod 86400,
-// converted to fractional hours.
-const RESOLUTION_HOURS = (
-  '(date_diff_d(closed_date, requested_datetime) * 86400 + ' +
-  '((date_extract_hh(closed_date) - date_extract_hh(requested_datetime)) * 3600 + ' +
-  '(date_extract_mm(closed_date) - date_extract_mm(requested_datetime)) * 60 + ' +
-  '(date_extract_ss(closed_date) - date_extract_ss(requested_datetime)) + 86400) % 86400) / 3600'
-)
-
 export default function Cases311() {
   const { dateRange, timeOfDayFilter, comparisonMode, selected311Case, setSelected311Case } = useAppStore()
-  const civicIndicators = useCivicIndicators()
+  const city = useActiveCity()
+  const isSF = city.id === 'sf'
+  // Reader-facing beat labels ('07X' → 'Beat 07X'); identity for SF.
+  const areaLabel = useCallback(
+    (name: string) => city.areas.formatLabel?.(name) ?? name,
+    [city],
+  )
+  // TWO-part gate: `enabled` stops the SF fetch battery (a render gate alone
+  // would still fire it on Oakland routes); the render gate below hides the row.
+  const civicIndicators = useCivicIndicators({ enabled: isSF })
   const underlayPreset = useViewEntry()?.underlayPreset ?? []
   const [searchParams, setSearchParams] = useSearchParams()
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('categories')
@@ -131,64 +133,43 @@ export default function Cases311() {
   const categoryClause = useMemo(() => {
     if (selectedCategories.size === 0) return ''
     const escaped = Array.from(selectedCategories).map((c) => `'${c.replace(/'/g, "''")}'`)
-    return `service_name IN (${escaped.join(',')})`
-  }, [selectedCategories])
+    return `${isSF ? 'service_name' : 'reqcategory'} IN (${escaped.join(',')})`
+  }, [selectedCategories, isSF])
 
-  const whereClause = useMemo(() => {
-    const conditions: string[] = []
-    conditions.push(`requested_datetime >= '${dateRange.start}T00:00:00'`)
-    conditions.push(`requested_datetime <= '${dateRange.end}T23:59:59'`)
-    if (categoryClause) conditions.push(categoryClause)
-    if (selectedNeighborhood) {
-      conditions.push(`analysis_neighborhood = '${selectedNeighborhood.replace(/'/g, "''")}'`)
-    }
-    if (timeOfDayFilter) {
-      const { startHour, endHour } = timeOfDayFilter
-      if (startHour <= endHour) {
-        conditions.push(`date_extract_hh(requested_datetime) >= ${startHour} AND date_extract_hh(requested_datetime) <= ${endHour}`)
-      } else {
-        conditions.push(`(date_extract_hh(requested_datetime) >= ${startHour} OR date_extract_hh(requested_datetime) <= ${endHour})`)
-      }
-    }
-    return conditions.join(' AND ')
-  }, [dateRange, categoryClause, selectedNeighborhood, timeOfDayFilter])
-
+  const whereOpts = { dateRange, categoryClause, selectedNeighborhood, timeOfDayFilter }
+  const whereClause = useMemo(
+    () => (isSF ? buildSf311Where(whereOpts) : buildOak311Where(whereOpts)),
+    [dateRange, categoryClause, selectedNeighborhood, timeOfDayFilter, isSF], // eslint-disable-line react-hooks/exhaustive-deps
+  )
   // Date-only clause (for category aggregation — excludes category filter)
-  const dateOnlyClause = useMemo(() => {
-    const conditions: string[] = []
-    conditions.push(`requested_datetime >= '${dateRange.start}T00:00:00'`)
-    conditions.push(`requested_datetime <= '${dateRange.end}T23:59:59'`)
-    if (timeOfDayFilter) {
-      const { startHour, endHour } = timeOfDayFilter
-      if (startHour <= endHour) {
-        conditions.push(`date_extract_hh(requested_datetime) >= ${startHour} AND date_extract_hh(requested_datetime) <= ${endHour}`)
-      } else {
-        conditions.push(`(date_extract_hh(requested_datetime) >= ${startHour} OR date_extract_hh(requested_datetime) <= ${endHour})`)
-      }
-    }
-    return conditions.join(' AND ')
-  }, [dateRange, timeOfDayFilter])
+  const dateOnlyClause = useMemo(
+    () => (isSF ? buildSf311DateOnly({ dateRange, timeOfDayFilter }) : buildOak311DateOnly({ dateRange, timeOfDayFilter })),
+    [dateRange, timeOfDayFilter, isSF],
+  )
 
-  const freshness = useDataFreshness('cases311', 'requested_datetime', dateRange)
+  const resolutionHours = isSF
+    ? resolutionHoursExpr('closed_date', 'requested_datetime')
+    : resolutionHoursExpr('datetimeclosed', 'datetimeinit')
 
-  const trendConfig = useMemo((): TrendConfig => ({
-    datasetKey: 'cases311',
-    dateField: 'requested_datetime',
-    neighborhoodField: 'analysis_neighborhood',
-  }), [])
+  const freshness = useDataFreshness('cases311', isSF ? 'requested_datetime' : 'datetimeinit', dateRange, { cityId: city.id })
+
+  const trendConfig = useMemo((): TrendConfig => isSF
+    ? { datasetKey: 'cases311', dateField: 'requested_datetime', neighborhoodField: 'analysis_neighborhood' }
+    : { datasetKey: 'cases311', dateField: 'datetimeinit', neighborhoodField: 'beat', cityId: 'oakland' },
+    [isSF])
   const trendExtraWhere = useMemo(() => {
     const parts: string[] = []
     if (categoryClause) parts.push(categoryClause)
-    if (selectedNeighborhood) parts.push(`analysis_neighborhood = '${selectedNeighborhood.replace(/'/g, "''")}'`)
+    if (selectedNeighborhood) parts.push(`${isSF ? 'analysis_neighborhood' : 'beat'} = '${selectedNeighborhood.replace(/'/g, "''")}'`)
     return parts.length > 0 ? parts.join(' AND ') : undefined
-  }, [categoryClause, selectedNeighborhood])
+  }, [categoryClause, selectedNeighborhood, isSF])
   const trend = useTrendBaseline(trendConfig, dateRange, trendExtraWhere)
 
   // --- Data queries ---
   const { data: rawData, isLoading, error, hitLimit, refetch } = useDataset<Cases311Record>(
     'cases311',
-    { $where: whereClause, $limit: 5000, $select: SELECT_FIELDS },
-    [whereClause]
+    { $where: whereClause, $limit: 5000, $select: isSF ? SELECT_FIELDS : OAK311_SELECT },
+    [whereClause, isSF]
   )
 
   // Total count query (lightweight, for truncation indicator)
@@ -203,77 +184,94 @@ export default function Cases311() {
   // undercounts both totals whenever the range exceeds the row cap.
   const { data: openCountRows } = useDataset<{ count: string }>(
     'cases311',
-    { $select: 'count(*) as count', $where: `${whereClause} AND status_description = 'Open'` },
-    [whereClause]
+    { $select: 'count(*) as count', $where: `${whereClause} AND ${isSF ? "status_description = 'Open'" : OAK311_OPEN_CLAUSE}` },
+    [whereClause, isSF]
   )
   const openCount = openCountRows[0] ? parseInt(openCountRows[0].count, 10) : null
 
   // Citywide-true resolution stats — bypasses the 5K row cap on rawData.
   // Mirrors the client-side validity filter (closed cases, 0–720h window).
   const resolutionWhere = useMemo(
-    () => `${whereClause} AND closed_date IS NOT NULL AND closed_date >= requested_datetime AND ${RESOLUTION_HOURS} <= 720`,
-    [whereClause]
+    () => `${whereClause} AND ${isSF ? 'closed_date' : 'datetimeclosed'} IS NOT NULL AND ${isSF ? 'closed_date >= requested_datetime' : 'datetimeclosed >= datetimeinit'} AND ${resolutionHours} <= 720`,
+    [whereClause, isSF, resolutionHours]
   )
 
   const { data: resolutionStatsRows } = useDataset<{ avg_hours: string; case_count: string }>(
     'cases311',
     {
-      $select: `AVG(${RESOLUTION_HOURS}) as avg_hours, COUNT(*) as case_count`,
+      $select: `AVG(${resolutionHours}) as avg_hours, COUNT(*) as case_count`,
       $where: resolutionWhere,
       $limit: 1,
     },
-    [resolutionWhere]
+    [resolutionWhere, resolutionHours]
   )
 
   const { data: resolutionHistogramRows } = useDataset<{ hour_bucket: string; case_count: string }>(
     'cases311',
     {
-      $select: `floor(${RESOLUTION_HOURS}) as hour_bucket, COUNT(*) as case_count`,
+      $select: `floor(${resolutionHours}) as hour_bucket, COUNT(*) as case_count`,
       $where: resolutionWhere,
       $group: 'hour_bucket',
       $order: 'hour_bucket',
       $limit: 1000,
     },
-    [resolutionWhere]
+    [resolutionWhere, resolutionHours]
   )
 
   const { data: categoryRows } = useDataset<ServiceCategoryAggRow>(
     'cases311',
     {
-      $select: 'service_name, count(*) as case_count',
-      $group: 'service_name',
+      $select: isSF ? 'service_name, count(*) as case_count' : 'reqcategory as service_name, count(*) as case_count',
+      $group: isSF ? 'service_name' : 'reqcategory',
       $where: dateOnlyClause,
       $order: 'case_count DESC',
       $limit: 50,
     },
-    [dateOnlyClause]
+    [dateOnlyClause, isSF]
   )
 
   const { data: neighborhoodRows } = useDataset<NeighborhoodAggRow311>(
     'cases311',
     {
-      $select: 'analysis_neighborhood, count(*) as case_count',
-      $group: 'analysis_neighborhood',
+      $select: isSF ? 'analysis_neighborhood, count(*) as case_count' : 'beat as analysis_neighborhood, count(*) as case_count',
+      $group: isSF ? 'analysis_neighborhood' : 'beat',
       $where: whereClause,
       $order: 'case_count DESC',
       $limit: 50,
     },
-    [whereClause]
+    [whereClause, isSF]
   )
 
   // Hourly pattern
   const extraWhere = useMemo(() => {
     const parts: string[] = []
     if (categoryClause) parts.push(categoryClause)
-    if (selectedNeighborhood) parts.push(`analysis_neighborhood = '${selectedNeighborhood.replace(/'/g, "''")}'`)
+    if (selectedNeighborhood) parts.push(`${isSF ? 'analysis_neighborhood' : 'beat'} = '${selectedNeighborhood.replace(/'/g, "''")}'`)
     return parts.length > 0 ? parts.join(' AND ') : undefined
-  }, [categoryClause, selectedNeighborhood])
+  }, [categoryClause, selectedNeighborhood, isSF])
 
-  const hourlyPattern = use311HourlyPattern(dateRange, extraWhere)
+  // Both cities' instances run unconditionally; the inactive one is inert
+  // (enabled:false / compStart:null) — never select between hook FUNCTIONS
+  // conditionally.
+  const sfHourly = use311HourlyPattern(dateRange, extraWhere, isSF)
+  const oakHourly = useOakland311HourlyPattern(dateRange, extraWhere, !isSF)
+  const hourlyPattern = isSF ? sfHourly : oakHourly
 
   // Comparison data
   const compStart = useMemo(() => resolveComparisonStart(comparisonMode, dateRange), [comparisonMode, dateRange])
-  const comparison = use311ComparisonData(dateRange, whereClause, compStart, rawData, hitLimit)
+  const sfComparison = use311ComparisonData(dateRange, whereClause, isSF ? compStart : null, rawData, hitLimit)
+  // The Oakland SELECT (OAK311_SELECT) already returns exactly the fields
+  // Oakland311ComparisonRow expects (requestid/datetimeinit/datetimeclosed/
+  // status) — unlike crime, no remap is needed; the raw-row cast is correct.
+  const oakCompRows = useMemo<Oakland311ComparisonRow[]>(
+    () => (isSF ? [] : (rawData as unknown as Oakland311ComparisonRow[])),
+    [isSF, rawData],
+  )
+  const oakComparison = useOakland311ComparisonData(
+    dateRange, whereClause, isSF ? null : compStart,
+    oakCompRows, hitLimit,
+  )
+  const comparison = isSF ? sfComparison : oakComparison
   const compLabel = comparisonLabel(comparisonMode, dateRange)
 
   // Neighborhood boundaries for anomaly mode
@@ -295,6 +293,7 @@ export default function Cases311() {
   })
 
   const cityAvg = useMemo(() => {
+    if (city.census === null) return undefined
     if (censusNeighborhoods.length === 0) return undefined
     const totalPop = censusNeighborhoods.reduce((s, n) => s + n.population, 0)
     if (totalPop === 0) return undefined
@@ -306,34 +305,36 @@ export default function Cases311() {
       }
     }
     return avg as any
-  }, [censusNeighborhoods])
+  }, [censusNeighborhoods, city.census])
 
   // --- Computed data ---
   const caseData = useMemo(() => {
     return rawData
       .map((record) => {
-        const coords = coordsFromFields(record.lat, record.long) || extractCoordinates(record.point)
+        const coords = isSF
+          ? coordsFromFields(record.lat, record.long) || extractCoordinates(record.point)
+          : oak311Coords(record as { srx?: string; sry?: string })
         if (!coords) return null
-        const resolutionHours = record.closed_date
-          ? diffHours(record.requested_datetime, record.closed_date)
-          : null
-        if (resolutionHours !== null && (resolutionHours < 0 || resolutionHours > 720)) return null
+        const requestedAt = isSF ? record.requested_datetime : (record as unknown as Record<string, string>).datetimeinit
+        const closedAt = (isSF ? record.closed_date : (record as unknown as Record<string, string>).datetimeclosed) || null
+        const resolutionHrs = closedAt ? diffHours(requestedAt, closedAt) : null
+        if (resolutionHrs !== null && (resolutionHrs < 0 || resolutionHrs > 720)) return null
         return {
-          requestId: record.service_request_id,
-          requestedAt: record.requested_datetime,
-          closedAt: record.closed_date || null,
-          status: record.status_description || 'Unknown',
-          serviceName: record.service_name || 'Unknown',
-          serviceSubtype: record.service_subtype || '',
-          neighborhood: record.analysis_neighborhood || 'Unknown',
+          requestId: String(isSF ? record.service_request_id : (record as unknown as Record<string, unknown>).requestid ?? ''),
+          requestedAt,
+          closedAt,
+          status: (isSF ? record.status_description : (record as unknown as Record<string, string>).status) || 'Unknown',
+          serviceName: (isSF ? record.service_name : (record as unknown as Record<string, string>).reqcategory) || 'Unknown',
+          serviceSubtype: (isSF ? record.service_subtype : (record as unknown as Record<string, string>).description) || '',
+          neighborhood: (isSF ? record.analysis_neighborhood : (record as unknown as Record<string, string>).beat) || 'Unknown',
           source: record.source || 'Unknown',
-          resolutionHours,
+          resolutionHours: resolutionHrs,
           lat: coords.lat,
           lng: coords.lng,
         }
       })
       .filter((r): r is NonNullable<typeof r> => r !== null)
-  }, [rawData])
+  }, [rawData, isSF])
 
   const stats = useMemo(() => {
     if (caseData.length === 0 && totalCount === null) return { totalCases: 0, avgResolution: 0, openCases: 0, peakHour: 0 }
@@ -341,14 +342,14 @@ export default function Cases311() {
     const sampleAvg = closedTimes.length > 0 ? closedTimes.reduce((a, b) => a + b, 0) / closedTimes.length : 0
     const serverAvg = resolutionStatsRows[0] ? parseFloat(resolutionStatsRows[0].avg_hours) : NaN
     const avgResolution = Number.isFinite(serverAvg) ? serverAvg : sampleAvg
-    const sampleOpen = caseData.filter((c) => c.status === 'Open').length
+    const sampleOpen = caseData.filter((c) => isSF ? c.status === 'Open' : isOakCaseOpen(c.status)).length
     return {
       totalCases: totalCount ?? caseData.length,
       avgResolution,
       openCases: openCount ?? sampleOpen,
       peakHour: hourlyPattern.peakHour,
     }
-  }, [caseData, resolutionStatsRows, hourlyPattern.peakHour, totalCount, openCount])
+  }, [caseData, resolutionStatsRows, hourlyPattern.peakHour, totalCount, openCount, isSF])
 
   // Citywide histogram: expand server bucket counts back to a flat number[]
   // of hour values so the existing ResolutionHistogram (D3-bin-based) renders
@@ -417,6 +418,22 @@ export default function Cases311() {
       }))
       .filter((r) => r.neighborhood)
   }, [neighborhoodRows])
+
+  // Null-beat disclosure — Oakland's reqcategory vocabulary is clean (no junk
+  // tokens like crime's unmapped-beat problem), so unmapped here means only
+  // NULL beats. Computed from the raw aggregation rows (not neighborhoodEntries,
+  // which filters nulls out) so the share reflects the true total.
+  const nullBeatShare = useMemo(() => {
+    if (isSF || neighborhoodRows.length === 0) return null
+    let mapped = 0, unmapped = 0
+    for (const r of neighborhoodRows) {
+      const n = parseInt(r.case_count, 10) || 0
+      if (r.analysis_neighborhood) mapped += n
+      else unmapped += n
+    }
+    const total = mapped + unmapped
+    return total > 0 ? unmapped / total : null
+  }, [isSF, neighborhoodRows])
 
   // Z-score computation for anomaly mode
   const neighborhoodAnomalies = useMemo(() => {
@@ -553,6 +570,17 @@ export default function Cases311() {
       : null
     const resHours = props.resolutionHours ? Number(props.resolutionHours) : null
     const resLabel = resHours !== null ? formatResolution(resHours) : null
+    if (!isSF) {
+      return `
+      ${filedDate ? `<div class="tooltip-label">Filed</div><div style="color:#e2e8f0">${filedDate} · ${filedTime}</div>` : ''}
+      <div class="tooltip-label" style="margin-top:6px">Service</div>
+      <div style="color:#e2e8f0">${displayCategory311(String(props.serviceName ?? '')) || 'Unknown'}</div>
+      <div class="tooltip-label" style="margin-top:6px">Police beat</div>
+      <div style="color:#94a3b8">${props.neighborhood && props.neighborhood !== 'Unknown' ? areaLabel(String(props.neighborhood)) : 'Unknown'}</div>
+      <div class="tooltip-label" style="margin-top:6px">Status</div>
+      <div style="color:#94a3b8">${props.status || 'Unknown'}${resLabel ? ` · Resolved in ${resLabel}` : ''}</div>
+    `
+    }
     return `
       ${filedDate ? `<div class="tooltip-label">Filed</div><div style="color:#e2e8f0">${filedDate} · ${filedTime}</div>` : ''}
       <div class="tooltip-label" style="margin-top:6px">Service</div>
@@ -569,8 +597,8 @@ export default function Cases311() {
     const zScore = Number(props.zScore).toFixed(1)
     const sign = Number(props.zScore) >= 0 ? '+' : ''
     return `
-      <div class="tooltip-label">Neighborhood</div>
-      <div class="tooltip-value">${props.nhood || 'Unknown'}</div>
+      <div class="tooltip-label">${city.areas.noun[0].toUpperCase()}${city.areas.noun.slice(1)}</div>
+      <div class="tooltip-value">${props.nhood ? areaLabel(String(props.nhood)) : 'Unknown'}</div>
       <div class="tooltip-label" style="margin-top:6px">Complaint Anomaly</div>
       <div class="tooltip-value">${sign}${zScore}σ</div>
       <div class="tooltip-label" style="margin-top:6px">Cases</div>
@@ -708,6 +736,8 @@ export default function Cases311() {
       delay: 160,
       info: 'open-cases',
       defaultExpanded: true,
+      subtitle: isSF ? undefined : 'Open / in progress — includes pending & created work orders',
+      wrapSubtitle: !isSF,
     },
     {
       id: 'peak-hour',
@@ -719,7 +749,7 @@ export default function Cases311() {
       info: 'peak-hour',
       defaultExpanded: false,
     },
-  ], [stats, comparison.deltas, comparison.suppressed, compLabel, comparisonMode, trend.cityWideYoY])
+  ], [stats, comparison.deltas, comparison.suppressed, compLabel, comparisonMode, trend.cityWideYoY, isSF])
 
   useProgressScope()
 
@@ -737,7 +767,7 @@ export default function Cases311() {
                 311 Cases
               </h1>
               <p className="hidden sm:block truncate text-micro font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
-                SF311 &middot; Civic Complaint Analysis
+                {EYEBROWS_311[city.id as keyof typeof EYEBROWS_311] ?? EYEBROWS_311.sf}
               </p>
             </div>
             {!isLoading && caseData.length > 0 && (
@@ -783,12 +813,14 @@ export default function Cases311() {
       </header>
 
       {/* Cross-view ticker — signals from other datasets */}
-      <div className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-1 bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl z-10">
-        <CivicTicker
-          items={civicIndicators.items.filter(i => i.source.view !== '/311-cases')}
-          size="compact"
-        />
-      </div>
+      {isSF && (
+        <div className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-1 bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl z-10">
+          <CivicTicker
+            items={civicIndicators.items.filter(i => i.source.view !== '/311-cases')}
+            size="compact"
+          />
+        </div>
+      )}
 
       {/* Time-of-day filter sub-header */}
       {!hourlyPattern.isLoading && hourlyPattern.hourTotals.some((t) => t > 0) && (
@@ -853,6 +885,11 @@ export default function Cases311() {
                   <span className="text-nano font-mono text-brick-400">+3σ</span>
                 </div>
                 <p className="text-nano text-slate-500 mt-1">below avg → above avg</p>
+                {!isSF && nullBeatShare != null && nullBeatShare > 0.001 && (
+                  <p className="text-nano text-slate-500 mt-1">
+                    {(nullBeatShare * 100).toFixed(1)}% of cases carry no beat assignment
+                  </p>
+                )}
               </div>
             )}
 
@@ -865,7 +902,7 @@ export default function Cases311() {
         <MapSidebar>
           {/* Tab bar */}
           <div className="flex border-b border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
-            {([['categories', 'Categories'], ['neighborhoods', 'Neighborhoods']] as const).map(([key, label]) => (
+            {([['categories', 'Categories'], ['neighborhoods', isSF ? 'Neighborhoods' : 'Beats']] as const).map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setSidebarTab(key)}
@@ -893,6 +930,8 @@ export default function Cases311() {
                   categories={categoryEntries}
                   selected={selectedCategories}
                   onChange={setSelectedCategories}
+                  groups={isSF ? undefined : OAK311_GROUPS}
+                  formatLabel={isSF ? undefined : displayCategory311}
                 />
               </>
             )}
@@ -901,7 +940,7 @@ export default function Cases311() {
               <>
                 <div className="flex items-center gap-2 mb-4">
                   <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
-                    By Neighborhood
+                    {isSF ? 'By Neighborhood' : 'By Beat'}
                   </p>
                   <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
                 </div>
@@ -911,19 +950,21 @@ export default function Cases311() {
                     onClick={() => setSelectedNeighborhood(null)}
                     className="mb-3 text-micro font-mono text-moss-500 hover:text-moss-400 transition-colors"
                   >
-                    ← Clear filter: {selectedNeighborhood}
+                    ← Clear filter: {areaLabel(selectedNeighborhood)}
                   </button>
                 )}
 
                 {selectedNeighborhood && (
                   <>
-                    <NeighborhoodCensusContext
-                      neighborhood={selectedNeighborhood}
-                      censusData={censusNeighborhoods.find(n => n.name === selectedNeighborhood)}
-                      cityAverages={cityAvg}
-                      civicCount={neighborhoodEntries.find(n => n.neighborhood === selectedNeighborhood)?.caseCount}
-                      civicLabel="Cases"
-                    />
+                    {city.census !== null && (
+                      <NeighborhoodCensusContext
+                        neighborhood={selectedNeighborhood}
+                        censusData={censusNeighborhoods.find(n => n.name === selectedNeighborhood)}
+                        cityAverages={cityAvg}
+                        civicCount={neighborhoodEntries.find(n => n.neighborhood === selectedNeighborhood)?.caseCount}
+                        civicLabel="Cases"
+                      />
+                    )}
                     <ScannerFeedChips neighborhood={selectedNeighborhood} serviceFilter={['police', 'fire']} />
                   </>
                 )}
@@ -979,7 +1020,7 @@ export default function Cases311() {
                         <div className="relative flex items-center justify-between">
                           <div className="min-w-0 flex-1">
                             <p className="text-[12px] font-medium text-ink dark:text-slate-200 truncate leading-tight">
-                              {ns.neighborhood}
+                              {areaLabel(ns.neighborhood)}
                             </p>
                             <p className="text-micro text-slate-400 dark:text-slate-600 font-mono italic">
                               {(() => {
@@ -1006,6 +1047,12 @@ export default function Cases311() {
                     )
                   })}
                 </div>
+                {!isSF && nullBeatShare != null && nullBeatShare > 0.001 && (
+                  <p className="mt-3 text-nano font-mono uppercase tracking-[0.15em] text-slate-400/70 dark:text-slate-500 leading-relaxed">
+                    {(nullBeatShare * 100).toFixed(1)}% of cases carry no beat assignment —
+                    counted in citywide totals, absent from this ranking and the map
+                  </p>
+                )}
               </>
             )}
           </div>
