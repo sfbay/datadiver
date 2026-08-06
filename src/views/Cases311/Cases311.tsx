@@ -230,6 +230,12 @@ export default function Cases311() {
     [dateOnlyClause, isSF]
   )
 
+  // $limit 200 for Oakland: 59 beats + the NULL group = 60 rows must ALL
+  // arrive — nullBeatShare's denominator (and the ranking/anomaly map) is
+  // computed from this result. Under DESC ordering, a $limit of 50 would
+  // truncate the ten smallest beats first, dropping them from the ranking
+  // and map while biasing the disclosure high (mirrors useCrimeEraData.ts's
+  // oakNhoods limit). SF's query string stays byte-identical via the ternary.
   const { data: neighborhoodRows } = useDataset<NeighborhoodAggRow311>(
     'cases311',
     {
@@ -237,7 +243,7 @@ export default function Cases311() {
       $group: isSF ? 'analysis_neighborhood' : 'beat',
       $where: whereClause,
       $order: 'case_count DESC',
-      $limit: 50,
+      $limit: isSF ? 50 : 200,
     },
     [whereClause, isSF]
   )
