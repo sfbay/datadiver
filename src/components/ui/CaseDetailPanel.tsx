@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import { fetchDataset } from '@/api/client'
+import { useActiveCity } from '@/cities/useActiveCity'
 import type { Cases311Record } from '@/types/datasets'
 import { parseDateTime, formatDate, formatResolution, diffHours } from '@/utils/time'
 import { classifyCaseMedia } from '@/utils/caseMedia'
+import { displayCategory311, isOakCaseOpen } from '@/views/Cases311/dialect311'
 import DetailPanelShell from '@/components/ui/DetailPanelShell'
 
 interface CaseDetail {
@@ -54,20 +56,70 @@ const TIMELINE_STEPS = [
   { key: 'closed', label: 'Closed' },
 ] as const
 
+interface OakCaseDetail {
+  requestId: string
+  categoryLabel: string
+  description: string
+  status: string
+  address: string
+  beat: string
+  source: string
+  referredTo: string
+  timestamps: { requested: string | null; closed: string | null }
+}
+
+function buildOakDetail(r: Record<string, string>): OakCaseDetail {
+  return {
+    requestId: r.requestid ?? '',
+    categoryLabel: displayCategory311(r.reqcategory ?? ''),
+    description: r.description ?? '',
+    status: r.status ?? 'Unknown',
+    address: r.probaddress || r.reqaddress_address || 'Unknown',
+    beat: r.beat ?? '',
+    source: r.source ?? 'Unknown',
+    referredTo: r.referredto ?? '',
+    timestamps: { requested: r.datetimeinit ?? null, closed: r.datetimeclosed ?? null },
+  }
+}
+
+const OAK_TIMELINE_STEPS = [
+  { key: 'requested', label: 'Filed' },
+  { key: 'closed', label: 'Closed' },
+] as const
+
 export default function CaseDetailPanel() {
+  const city = useActiveCity()
   const { selected311Case, setSelected311Case } = useAppStore()
   const [detail, setDetail] = useState<CaseDetail | null>(null)
+  const [oakDetail, setOakDetail] = useState<OakCaseDetail | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   // Fetch full record on selection (no $select restriction — get all fields)
   useEffect(() => {
     if (!selected311Case) {
       setDetail(null)
+      setOakDetail(null)
       return
     }
 
     let cancelled = false
     setIsLoading(true)
+
+    if (city.id !== 'sf') {
+      // requestid is numeric — validate, interpolate unquoted. No $select:
+      // the single-record fetch takes the full row (matches the SF branch).
+      if (!/^\d+$/.test(selected311Case)) { setOakDetail(null); setIsLoading(false); return }
+      fetchDataset<Record<string, string>>('cases311', {
+        $where: `requestid = ${selected311Case}`,
+        $limit: 1,
+      }, { cityId: 'oakland' })
+        .then((records) => {
+          if (!cancelled && records.length > 0) setOakDetail(buildOakDetail(records[0]))
+        })
+        .catch(() => { if (!cancelled) setOakDetail(null) })
+        .finally(() => { if (!cancelled) setIsLoading(false) })
+      return () => { cancelled = true }
+    }
 
     fetchDataset<Cases311Record>('cases311', {
       $where: `service_request_id = '${selected311Case}'`,
@@ -86,7 +138,7 @@ export default function CaseDetailPanel() {
       })
 
     return () => { cancelled = true }
-  }, [selected311Case])
+  }, [selected311Case, city.id])
 
   const onClose = useCallback(() => setSelected311Case(null), [setSelected311Case])
 
@@ -96,9 +148,12 @@ export default function CaseDetailPanel() {
     return url.toString()
   }, [selected311Case])
 
-  const isOpen = detail?.status === 'Open'
+  const isOpen = city.id === 'sf' ? detail?.status === 'Open' : isOakCaseOpen(oakDetail?.status)
   const resolutionHours = detail?.timestamps.requested && detail?.timestamps.closed
     ? diffHours(detail.timestamps.requested, detail.timestamps.closed)
+    : null
+  const oakResolutionHours = oakDetail?.timestamps.requested && oakDetail?.timestamps.closed
+    ? diffHours(oakDetail.timestamps.requested, oakDetail.timestamps.closed)
     : null
 
   return (
@@ -111,7 +166,7 @@ export default function CaseDetailPanel() {
       buildShareUrl={buildShareUrl}
       shareAccentClass="text-moss-500"
     >
-      {detail && (
+      {city.id === 'sf' ? detail && (
         <>
           {/* Header info */}
           <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-1">
@@ -290,6 +345,119 @@ export default function CaseDetailPanel() {
             })()}
           </div>
         </>
+      ) : (
+        oakDetail && (
+          <>
+            {/* Header info */}
+            <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-1">
+              Case #{oakDetail.requestId}
+            </p>
+            <p className="text-sm font-semibold text-ink dark:text-white mb-0.5">
+              {oakDetail.categoryLabel}
+            </p>
+            {oakDetail.description && (
+              <p className="text-micro text-slate-600 dark:text-slate-300 font-mono mb-1">
+                {oakDetail.description}
+              </p>
+            )}
+
+            {/* Status badge — dialect-driven open/closed, never the SF 'Open' literal */}
+            <div className="mb-3">
+              <span className={`inline-flex items-center gap-1 text-micro font-mono px-2 py-0.5 rounded-full ${
+                isOpen
+                  ? 'bg-ochre-500/10 text-ochre-500'
+                  : 'bg-moss-500/10 text-moss-500'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${isOpen ? 'bg-ochre-500' : 'bg-moss-500'}`} />
+                {oakDetail.status}
+              </span>
+            </div>
+
+            {/* Location */}
+            <div className="mb-4">
+              <p className="text-micro text-slate-700 dark:text-slate-300">{oakDetail.address}</p>
+              <p className="text-micro text-slate-500 dark:text-slate-400">
+                {city.areas.formatLabel?.(oakDetail.beat) ?? oakDetail.beat}
+              </p>
+            </div>
+
+            {/* Case Timeline */}
+            <div className="flex items-center gap-2 mb-3">
+              <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                Case Timeline
+              </p>
+              <div className="flex-1 h-[1px] bg-slate-200 dark:bg-white/[0.08]" />
+            </div>
+
+            <div className="space-y-0">
+              {OAK_TIMELINE_STEPS.map((step, i) => {
+                const ts = oakDetail.timestamps[step.key]
+                const prevTs = i > 0 ? oakDetail.timestamps[OAK_TIMELINE_STEPS[i - 1].key] : null
+                const elapsed = ts && prevTs ? diffHours(prevTs, ts) : null
+                const time = parseDateTime(ts)
+
+                return (
+                  <div key={step.key} className="flex items-start gap-2.5 relative">
+                    {/* Vertical line */}
+                    <div className="flex flex-col items-center w-3 flex-shrink-0">
+                      <div
+                        className={`w-2 h-2 rounded-full flex-shrink-0 ${ts ? 'bg-moss-500' : 'bg-slate-600/30'}`}
+                      />
+                      {i < OAK_TIMELINE_STEPS.length - 1 && (
+                        <div className={`w-px h-6 ${ts ? 'bg-moss-500/30' : 'bg-slate-600/10'}`} />
+                      )}
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 pb-1 -mt-0.5">
+                      <div className="flex items-baseline justify-between">
+                        <p className={`text-label font-medium ${ts ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400 dark:text-slate-600'}`}>
+                          {step.label}
+                        </p>
+                        {time && (
+                          <p className="text-micro font-mono text-slate-700 dark:text-slate-300 tabular-nums">
+                            {formatDate(time, 'short')}
+                          </p>
+                        )}
+                      </div>
+                      {elapsed !== null && elapsed > 0 && (
+                        <p className="text-nano font-mono text-moss-500/70">
+                          +{formatResolution(elapsed)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Resolution summary */}
+            {oakResolutionHours !== null && oakResolutionHours > 0 && (
+              <div className="mt-3 pt-2 border-t border-slate-200 dark:border-white/[0.08]">
+                <div className="flex items-baseline justify-between">
+                  <p className="text-micro font-mono uppercase tracking-wider text-slate-600 dark:text-slate-300">Total Resolution</p>
+                  <p className="text-sm font-bold font-mono text-moss-500">
+                    {formatResolution(oakResolutionHours)}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Details section — no media affordance (Oakland publishes no such column) */}
+            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-white/[0.08] space-y-1.5">
+              <div className="flex items-baseline justify-between">
+                <p className="text-nano font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Source</p>
+                <p className="text-micro text-slate-700 dark:text-slate-300">{oakDetail.source}</p>
+              </div>
+              {oakDetail.referredTo && (
+                <div className="flex items-baseline justify-between">
+                  <p className="text-nano font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Referred to</p>
+                  <p className="text-micro text-slate-700 dark:text-slate-300">{oakDetail.referredTo}</p>
+                </div>
+              )}
+            </div>
+          </>
+        )
       )}
     </DetailPanelShell>
   )
