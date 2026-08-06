@@ -16,6 +16,8 @@ export const oaklandCity: CityConfig = {
     // census: null gates off the surfaces that would care; whether
     // LKM1/PDT2 join it is a stage-3 editorial call.
     names: OAKLAND_BEATS, excluded: new Set(), count: 59,
+    formatLabel: (name) => `Beat ${name}`,
+    placeDestination: { viewId: 'crime-incidents', param: 'neighborhood' },
   },
   camera: {
     // Provisional frame — visually tuned in stage 3 via ?debug=map.
