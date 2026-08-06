@@ -1,4 +1,5 @@
 import type { CityConfig } from '../types'
+import { OAKLAND_BEATS } from './beats'
 
 export const oaklandCity: CityConfig = {
   id: 'oakland',
@@ -6,8 +7,12 @@ export const oaklandCity: CityConfig = {
   portal: { name: 'OakData', host: 'data.oaklandca.gov' },
   areas: {
     noun: 'police beat', nounPlural: 'police beats',
-    geojsonPath: '/data/geo/oakland-beats.geojson',  // vendored in stage 2
-    names: [], excluded: new Set(), count: 59,
+    geojsonPath: '/data/geo/oakland-beats.geojson',
+    // excluded stays empty: the config field has no consumers yet
+    // (exclusion logic still imports the SF constants directly), and
+    // census: null gates off the surfaces that would care; whether
+    // LKM1/PDT2 join it is a stage-3 editorial call.
+    names: OAKLAND_BEATS, excluded: new Set(), count: 59,
   },
   camera: {
     // Provisional frame — visually tuned in stage 3 via ?debug=map.

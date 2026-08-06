@@ -67,7 +67,13 @@ describe('OmniSearch index (SF parity)', () => {
     expect(cats.lastIndexOf('place')).toBeLessThan(cats.indexOf('dataset'))
   })
 
-  it('oakland index is empty until stage 2 fills the city registry', () => {
-    expect(buildSearchIndex('oakland')).toEqual([])
+  it('oakland index: 59 beat place rows; views/datasets arrive with the stage-2 manifest', () => {
+    const oak = buildSearchIndex('oakland')
+    expect(oak).toHaveLength(59)
+    expect(oak.every((r) => r.category === 'place')).toBe(true)
+    expect(oak[0]).toMatchObject({
+      label: '01X', sublabel: 'Oakland police beat',
+      path: '/oakland/neighborhood', params: { nh: '01X' },
+    })
   })
 })
