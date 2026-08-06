@@ -36,6 +36,10 @@ interface Props {
 export default function Last48Map({ mapOverlay, rail }: Props) {
   const [map, setMap] = useState<mapboxgl.Map | null>(null)
   const handleReady = useCallback((m: mapboxgl.Map) => setMap(m), [])
+  // slots is Record<string, CameraView>, so TS types this as present — but
+  // a city with empty slots (Oakland) yields undefined at runtime. MapView
+  // falls back to camera.defaultView. STAGE 3: wire an Oakland slot or
+  // widen this read when a live-equivalent view mounts there.
   const camera = useActiveCity().camera.slots.live
 
   return (
