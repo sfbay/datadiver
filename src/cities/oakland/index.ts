@@ -2,6 +2,7 @@ import type { CityConfig } from '../types'
 import { buildDatasets } from '../buildDatasets'
 import { OAKLAND_BEATS } from './beats'
 import { OAKLAND_DATASETS_RAW } from './datasets'
+import { OAKLAND_MANIFEST } from './manifest'
 
 export const oaklandCity: CityConfig = {
   id: 'oakland',
@@ -23,6 +24,6 @@ export const oaklandCity: CityConfig = {
   },
   census: null,      // beats have no tract crosswalk — ACS affordances hide
   datasets: buildDatasets('data.oaklandca.gov', OAKLAND_DATASETS_RAW),
-  manifest: [],  // authored in stage 3 — Oakland's views, Oakland's copy
+  manifest: OAKLAND_MANIFEST,  // 4 dormant entries; views render in stage 3
   redirects: [],
 }
