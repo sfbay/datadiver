@@ -2,6 +2,7 @@ import type { CityConfig } from '../types'
 import { buildDatasets } from '../buildDatasets'
 import { OAKLAND_BEATS } from './beats'
 import { OAKLAND_BEAT_NAMES } from './beatNames'
+import { OAKLAND_BEAT_VIEWS } from './beatViews'
 import { OAKLAND_DATASETS_RAW } from './datasets'
 import { OAKLAND_MANIFEST } from './manifest'
 
@@ -30,6 +31,7 @@ export const oaklandCity: CityConfig = {
     // Provisional frame — visually tuned in stage 3 via ?debug=map.
     defaultView: { center: { lat: 37.8004, lng: -122.2712 }, zoom: 11.6, pitch: 48, bearing: 0 },
     slots: {},
+    areaViews: OAKLAND_BEAT_VIEWS,
   },
   census: null,      // beats have no tract crosswalk — ACS affordances hide
   datasets: buildDatasets('data.oaklandca.gov', OAKLAND_DATASETS_RAW),

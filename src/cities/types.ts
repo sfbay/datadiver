@@ -56,6 +56,12 @@ export interface CityConfig {
   camera: {
     defaultView: CameraView            // map mount fallback + filters-clear reset
     slots: Record<string, CameraView>  // named per-view overrides (sf: live, …)
+    /** Hand-tuned per-area presets keyed by area id (oakland: beat CODES).
+     *  Consulted by useMapCameraPresets before its fitBounds fallback, so
+     *  the table may be partial — absent areas fall back gracefully. SF's
+     *  presets predate the cities layer and stay in mapDefaults.ts
+     *  (NEIGHBORHOOD_VIEWS), reached by the hook's global fallback lookup. */
+    areaViews?: Record<string, CameraView>
   }
   /** null = city has no ACS pipeline; consumers HIDE census affordances. */
   census: { stateFips: string; countyFips: string } | null
