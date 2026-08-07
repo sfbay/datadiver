@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - **New chrome gates on LIVENESS (`isViewLive`/`liveManifest`), never `city.id`** — except inside routed view components (the dialect pattern; `HomeRouter` runs inside a route with `key={city.id}` remount).
-- **Every count window ends at the stream's completeness edge, never at `max(dateField)`** — the measured constants are pinned in Task 1 and must be used verbatim (crime edge 8d / suppress 14d; 311 edge 1d / suppress 3d; citations edge 3d).
+- **Every count window ends at the stream's completeness edge, never at `max(dateField)`** — the measured constants are pinned in Task 1 and must be used verbatim (crime edge 8d / suppress 14d; 311 edge 1d / suppress 3d; citations edge 1d).
 - **Every direct `fetchDataset` call in the new hook passes explicit `cityId: 'oakland'`**; datetimes parse via `parseSfLocal` (never `Date.parse`); WHERE cutoffs are built from date-only strings, never `toISOString()`.
 - **No new store fields.** `setSelectedCitation` already exists; the switcher writes nothing to the store (navigation only — the URL is the city authority).
 - **The status chip never says "Live"** and never navigates (Oakland has no `/live`). The landing renders no investigation cards, no PulseTeaser, no Neighborhood Profiles, no AlertsRibbon, no Dana comic row.
