@@ -33,7 +33,8 @@
 - Create: `src/views/Home/oaklandIndicators.ts`
 - Create: `src/stores/citySelections.ts`
 - Modify: `src/cities/registry.ts` (append `crossCityPath`)
-- Test: `src/views/Home/oaklandIndicators.test.ts`, `src/stores/citySelections.test.ts`, `src/cities/registry.test.ts` (append two describes)
+- Modify: `src/utils/comparisonMode.ts` (add `export` to the existing private `apMonthDay` — one word, nothing else)
+- Test: `src/views/Home/oaklandIndicators.test.ts`, `src/stores/citySelections.test.ts`, `src/cities/registry.test.ts` (append the crossCityPath describe)
 
 **Interfaces:**
 - Produces: `OAK_TICKER_EDGES` (const table), `completeWindow(maxLocal, edgeDays, spanDays)`, `isStaleLocal(maxLocal, maxAgeDays, nowMs)`, `apDate(isoDate, nowYear?)`, `crimeCopy/threeOneOneCopy/citationsCopy/cfCopy` (copy builders) — consumed by Task 2's hook. `CITY_SELECTION_FIELDS`/`CitySelectionField` — consumed by Task 5. `crossCityPath(target, currentViewId)` — consumed by Tasks 5 + 6.
@@ -62,7 +63,7 @@ describe('OAK_TICKER_EDGES (measured 2026-08-07 — see spec §B2 + plan Task 1)
       crimeSuppressMaxAgeDays: 14,
       threeOneOneEdgeDays: 1,
       threeOneOneSuppressMaxAgeDays: 3,
-      citationsEdgeDays: 3,
+      citationsEdgeDays: 1,
     })
   })
 })
@@ -92,7 +93,7 @@ describe('isStaleLocal', () => {
 })
 
 describe('apDate', () => {
-  it('AP month style: spelled March–July, abbreviated otherwise', () => {
+  it('AP month style via the comparisonMode authority', () => {
     expect(apDate('2026-07-27', 2026)).toBe('July 27')
     expect(apDate('2026-05-15', 2026)).toBe('May 15')
     expect(apDate('2026-08-04', 2026)).toBe('Aug. 4')
@@ -103,38 +104,41 @@ describe('apDate', () => {
   })
 })
 
-describe('copy builders (dated, jargon-free)', () => {
+// The DATE RIDES THE HEADLINE (plan-verify C1: the hero + standard tickers
+// never render `detail`, so a detail-borne date would be invisible exactly
+// where the landing shows the item). `value` is the bare big-figure
+// (C2: TickerCard renders value under the headline — a duplicated headline
+// there was the rejected form).
+describe('copy builders (self-dating headlines, bare values)', () => {
   it('crime: dated complete week', () => {
     expect(crimeCopy(382, '2026-07-27', 2026)).toEqual({
-      headline: '382 crime incidents',
-      detail: 'week ending July 27',
+      headline: '382 crime incidents · week ending July 27',
+      value: '382',
     })
   })
   it('311: dated complete week', () => {
     expect(threeOneOneCopy(2149, '2026-08-05', 2026)).toEqual({
-      headline: '2,149 311 requests',
-      detail: 'week ending Aug. 5',
+      headline: '2,149 311 requests · week ending Aug. 5',
+      value: '2,149',
     })
   })
   it('citations: 30 days through the edge date', () => {
-    expect(citationsCopy(41876, '2026-05-15', 2026)).toEqual({
-      headline: '41,876 parking citations',
-      detail: '30 days through May 15',
+    expect(citationsCopy(41876, '2026-05-17', 2026)).toEqual({
+      headline: '41,876 parking citations · 30 days through May 17',
+      value: '41,876',
     })
   })
   it('campaign finance: names the concluded cycle, no "filed through" claim', () => {
-    expect(cfCopy(3932083.76, 'Apr 2025')).toEqual({
-      headline: '$3.9M raised',
-      detail: 'Apr 2025 cycle',
+    // $3,993,223.68 is the LIVE Apr-2025 sum under the OAK totals builder's
+    // exact WHERE (incl. tran_amt1 > 0 — the earlier $3.93M probe lacked
+    // that filter and crosses the toFixed(1) boundary; plan-verify I1).
+    expect(cfCopy(3993223.68, 'Apr 2025')).toEqual({
+      headline: '$4.0M raised · Apr 2025 cycle',
+      value: '$4.0M',
     })
-    expect(cfCopy(8592930.96, 'Nov 2024')).toEqual({
-      headline: '$8.6M raised',
-      detail: 'Nov 2024 cycle',
-    })
-    expect(cfCopy(950_000, 'Apr 2025')).toEqual({
-      headline: '$950K raised',
-      detail: 'Apr 2025 cycle',
-    })
+    // pure rounding vectors, not live pins:
+    expect(cfCopy(8592930.96, 'Nov 2024').value).toBe('$8.6M')
+    expect(cfCopy(950_000, 'Apr 2025').value).toBe('$950K')
   })
 })
 ```
@@ -172,6 +176,7 @@ Expected: FAIL — modules not found.
 
 ```ts
 import { parseSfLocal } from '@/utils/sfTime'
+import { apMonthDay } from '@/utils/comparisonMode'
 
 /**
  * Pure framing logic for the Oakland landing ticker (spec §B2).
@@ -182,13 +187,16 @@ import { parseSfLocal } from '@/utils/sfTime'
  * max(datetime) was only 2 days old (the banked ticker-freshness class).
  * Edges below were measured 2026-08-07 from live fill-in curves (full
  * method + tables: the 4b plan, Task 1):
- *  - crime (ppgh-7dqv): offsets 0–7 before max run 1.6%→56% of the 63/day
- *    steady median; offset 8 is the first ≥85% day → edge 8.
+ *  - crime (ppgh-7dqv): offsets 0–7 before max run ~2%→56% of the steady
+ *    daily median (~55–63/day depending on window); offset 8 is the first
+ *    day clearing 85% of it → edge 8.
  *  - 311 (quth-gb8e): day max−1 sits at the TOP of the weekday band —
  *    next-day-complete → edge 1.
- *  - citations (58em-y96b): offsets 0–2 are trickle/weekend-ambiguous;
- *    offset 3 is the first day squarely in the 1,700–2,000 weekday band
- *    → edge 3 (layered ON TOP of the ~11-week base publishing lag).
+ *  - citations (58em-y96b): offset 0 (a Monday at ~10% of the Monday norm)
+ *    is incomplete; offsets 1–2 were VERIFIED complete weekend days against
+ *    their own day-matched floors → edge 1. Note the edge is day-of-week
+ *    dependent and layered ON TOP of the ~11-week base publishing lag —
+ *    the dated copy carries the truth either way.
  * Campaign finance uses no edge: the item shows a CONCLUDED cycle's total
  * (complete by construction) and names the cycle — "filed through
  * max(tran_date)" was rejected as fabricated completeness (the current
@@ -199,7 +207,7 @@ export const OAK_TICKER_EDGES = {
   crimeSuppressMaxAgeDays: 14,
   threeOneOneEdgeDays: 1,
   threeOneOneSuppressMaxAgeDays: 3,
-  citationsEdgeDays: 3,
+  citationsEdgeDays: 1,
 } as const
 
 /** Date-only window [end − spanDays + 1, end] where end = max − edgeDays.
@@ -225,39 +233,40 @@ export function isStaleLocal(maxLocal: string, maxAgeDays: number, nowMs: number
   return nowMs - parseSfLocal(maxLocal) > maxAgeDays * 86_400_000
 }
 
-const AP_MONTHS = [
-  'Jan.', 'Feb.', 'March', 'April', 'May', 'June',
-  'July', 'Aug.', 'Sept.', 'Oct.', 'Nov.', 'Dec.',
-]
-
-/** AP-style date from a date-only ISO string; year appended only when it
- *  differs from nowYear. */
+/** AP-style date; year appended only when it differs from nowYear.
+ *  Month styling delegates to comparisonMode's apMonthDay — the repo's ONE
+ *  AP-month authority (a second private table is the duplicated-allowlist
+ *  class). Task step: export apMonthDay from src/utils/comparisonMode.ts
+ *  (it is currently module-private; add `export` to the existing function,
+ *  nothing else changes). */
 export function apDate(isoDate: string, nowYear: number): string {
-  const [y, m, d] = isoDate.slice(0, 10).split('-').map(Number)
-  const base = `${AP_MONTHS[m - 1]} ${d}`
+  const y = Number(isoDate.slice(0, 4))
+  const base = apMonthDay(isoDate.slice(0, 10))
   return y === nowYear ? base : `${base}, ${y}`
 }
 
 const n = (v: number) => v.toLocaleString('en-US')
 
-/** Compact money: $3.9M / $950K / $412 — headline register. */
+/** Compact money: $4.0M / $950K / $412 — headline register. */
 function money(v: number): string {
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`
   if (v >= 1_000) return `$${Math.round(v / 1_000)}K`
   return `$${Math.round(v)}`
 }
 
+// Headlines SELF-DATE (the hero/standard tickers never render `detail`);
+// values are bare big-figures (TickerCard renders value under the headline).
 export function crimeCopy(count: number, weekEnd: string, nowYear: number) {
-  return { headline: `${n(count)} crime incidents`, detail: `week ending ${apDate(weekEnd, nowYear)}` }
+  return { headline: `${n(count)} crime incidents · week ending ${apDate(weekEnd, nowYear)}`, value: n(count) }
 }
 export function threeOneOneCopy(count: number, weekEnd: string, nowYear: number) {
-  return { headline: `${n(count)} 311 requests`, detail: `week ending ${apDate(weekEnd, nowYear)}` }
+  return { headline: `${n(count)} 311 requests · week ending ${apDate(weekEnd, nowYear)}`, value: n(count) }
 }
 export function citationsCopy(count: number, throughDate: string, nowYear: number) {
-  return { headline: `${n(count)} parking citations`, detail: `30 days through ${apDate(throughDate, nowYear)}` }
+  return { headline: `${n(count)} parking citations · 30 days through ${apDate(throughDate, nowYear)}`, value: n(count) }
 }
 export function cfCopy(total: number, cycleLabel: string) {
-  return { headline: `${money(total)} raised`, detail: `${cycleLabel} cycle` }
+  return { headline: `${money(total)} raised · ${cycleLabel} cycle`, value: money(total) }
 }
 ```
 
@@ -314,31 +323,22 @@ describe('crossCityPath (switch semantics)', () => {
     expect(crossCityPath('sf', 'home')).toBe('/')
   })
 })
-
-describe('the /oakland/* catch-all target stays alive', () => {
-  // Activates when Task 3 lands the manifest home entry (the route splat
-  // retargets to /oakland in the same task); skipIf keeps this suite green
-  // in the Task 1–2 window and the pin can never silently rot afterward.
-  it.skipIf(!isViewLive('oakland', 'home'))(
-    "isViewLive('oakland','home') — if home ever went dormant the App.tsx splat would self-target a blank",
-    () => {
-      expect(isViewLive('oakland', 'home')).toBe(true)
-    }
-  )
-})
 ```
 
-(add `crossCityPath` to the test file's registry import)
+(the test file's registry import — currently `{ CITIES, getDatasetConfig }` —
+gains `crossCityPath`. The catch-all liveness pin lands in TASK 3 with the
+manifest entry it pins — a skipIf form here was rejected as vacuous: skipping
+when the invariant breaks is the opposite of pinning it.)
 
 - [ ] **Step 7: Run tests**
 
 Run: `npx vitest run src/views/Home/oaklandIndicators.test.ts src/stores/citySelections.test.ts src/cities/registry.test.ts && npx tsc -b`
-Expected: all suites green with the catch-all pin reported as SKIPPED (it self-activates in Task 3); typecheck clean.
+Expected: all suites green; typecheck clean.
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add src/views/Home/oaklandIndicators.ts src/views/Home/oaklandIndicators.test.ts src/stores/citySelections.ts src/stores/citySelections.test.ts src/cities/registry.ts src/cities/registry.test.ts docs/superpowers/plans/2026-08-07-oakland-front-door.md
+git add src/views/Home/oaklandIndicators.ts src/views/Home/oaklandIndicators.test.ts src/stores/citySelections.ts src/stores/citySelections.test.ts src/cities/registry.ts src/cities/registry.test.ts src/utils/comparisonMode.ts docs/superpowers/plans/2026-08-07-oakland-front-door.md
 git commit -m "feat(oakland): 4b pure leaves — ticker completeness edges, city-selection reset contract, crossCityPath"
 ```
 
@@ -384,7 +384,9 @@ import {
  * DISCLOSE (dated copy / named cycle) because their lag is structural.
  */
 
-const OAK = { cityId: 'oakland' as const }
+// timeoutMs is load-bearing: a query without it cannot be aborted at all
+// and holds one of the browser's ~6 per-host connection slots for its life.
+const OAK = { cityId: 'oakland' as const, timeoutMs: 15_000, retries: 1 }
 
 async function probeMax(datasetKey: string, dateField: string): Promise<string | null> {
   const rows = await fetchDataset<Record<string, string>>(datasetKey, {
@@ -413,7 +415,6 @@ async function fetchCrime(nowMs: number, nowYear: number): Promise<TickerItem | 
   return {
     id: 'oak-crime',
     headline: copy.headline,
-    detail: copy.detail,
     category: 'trend',
     severity: 'neutral',
     source: {
@@ -421,7 +422,7 @@ async function fetchCrime(nowMs: number, nowYear: number): Promise<TickerItem | 
       label: 'Crime Incidents · OPD',
       datasetId: 'ppgh-7dqv',
     },
-    value: copy.headline,
+    value: copy.value,
     freshness: 'daily',
     computedAt: new Date(),
     priority: 70,
@@ -442,7 +443,6 @@ async function fetch311(nowMs: number, nowYear: number): Promise<TickerItem | nu
   return {
     id: 'oak-311',
     headline: copy.headline,
-    detail: copy.detail,
     category: 'trend',
     severity: 'neutral',
     source: {
@@ -450,6 +450,7 @@ async function fetch311(nowMs: number, nowYear: number): Promise<TickerItem | nu
       label: '311 Cases · OAK 311',
       datasetId: 'quth-gb8e',
     },
+    value: copy.value,
     freshness: 'daily',
     computedAt: new Date(),
     priority: 60,
@@ -472,7 +473,6 @@ async function fetchCitations(nowYear: number): Promise<TickerItem | null> {
   return {
     id: 'oak-citations',
     headline: copy.headline,
-    detail: copy.detail,
     category: 'trend',
     severity: 'neutral',
     source: {
@@ -480,6 +480,7 @@ async function fetchCitations(nowYear: number): Promise<TickerItem | null> {
       label: 'Parking Citations',
       datasetId: '58em-y96b',
     },
+    value: copy.value,
     freshness: 'weekly',
     computedAt: new Date(),
     priority: 50,
@@ -499,7 +500,6 @@ async function fetchCampaignFinance(): Promise<TickerItem | null> {
   return {
     id: 'oak-cf',
     headline: copy.headline,
-    detail: copy.detail,
     category: 'milestone',
     severity: 'neutral',
     source: {
@@ -507,7 +507,7 @@ async function fetchCampaignFinance(): Promise<TickerItem | null> {
       label: `Campaign Finance · ${cycle.label}`,
       datasetId: '3xq4-ermg',
     },
-    value: copy.headline,
+    value: copy.value,
     freshness: 'monthly',
     computedAt: new Date(),
     priority: 40,
@@ -518,7 +518,6 @@ export function useOaklandIndicators({ enabled }: { enabled: boolean }) {
   const [items, setItems] = useState<TickerItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
-  const [error, setError] = useState(false)
   const ran = useRef(false)
 
   useEffect(() => {
@@ -541,14 +540,16 @@ export function useOaklandIndicators({ enabled }: { enabled: boolean }) {
         .filter((v): v is TickerItem => v !== null)
         .sort((a, b) => b.priority - a.priority)
       setItems(ok)
-      setError(ok.length === 0)
       setLastUpdated(new Date())
       setIsLoading(false)
     })
     return () => { cancelled = true }
   }, [enabled])
 
-  return { items, isLoading, lastUpdated, error }
+  // items:[] with isLoading:false is HONEST ABSENCE (every stream
+  // suppressed/failed) — the landing renders its empty-state note, never
+  // the ticker (whose skeleton would spin forever on an empty array).
+  return { items, isLoading, lastUpdated }
 }
 ```
 
@@ -569,10 +570,11 @@ git commit -m "feat(oakland): landing ticker hook — completeness-edge windows,
 ### Task 3: The landing — manifest entry, `HomeRouter`, `CityLanding`, route retarget, re-pins
 
 **Files:**
-- Modify: `src/cities/oakland/manifest.ts` (home entry + 4 `homeCard`s)
+- Modify: `src/cities/oakland/manifest.ts` (home entry + 4 `homeCard`s), `src/cities/oakland/index.ts` (portal.name)
 - Create: `src/views/Home/HomeRouter.tsx`, `src/views/Home/CityLanding.tsx`
+- Modify: `src/components/ui/CivicTicker.tsx` (optional `heroHeader` prop — default byte-preserves today's render)
 - Modify: `src/App.tsx` (import swap, `VIEW_COMPONENTS.home`, catch-all retarget + comment fix)
-- Test: `src/components/search/useOmniSearch.test.ts` (re-pins), `src/cities/registry.test.ts` (the skipIf pin now activates)
+- Test: `src/components/search/useOmniSearch.test.ts` (re-pins), `src/cities/registry.test.ts` (gains the catch-all liveness pin)
 
 **Interfaces:**
 - Consumes: `useOaklandIndicators` (Task 2); `CivicTicker`/`useResponsiveTickerSize`; `VizCard`; `formatApTime`; `liveManifest`; `viewPath`.
@@ -656,12 +658,31 @@ export default function HomeRouter() {
 }
 ```
 
-- [ ] **Step 3: `CityLanding`**
+- [ ] **Step 3a: `CivicTicker` hero header prop**
+
+In `src/components/ui/CivicTicker.tsx` (plan-verify I2 — the hero header
+hardcodes "Live Civic Data" + an `animate-ping` dot, which would sit directly
+above a battery whose slowest stream is ~11 weeks stale): add to
+`CivicTickerProps`:
+
+```ts
+  /** Hero-size header override. Default reproduces today's render exactly
+   *  ("Live Civic Data" + pinging dot) — SF byte-identical. A city whose
+   *  streams aren't live passes a static label and live: false. */
+  heroHeader?: { label: string; live?: boolean }
+```
+
+Thread it into `HeroTicker` and, at the header render (~lines 146-155),
+use `heroHeader?.label ?? 'Live Civic Data'` for the text and render the
+`animate-ping` span only when `heroHeader?.live ?? true` (a static dot span
+remains either way). No other ticker size changes.
+
+- [ ] **Step 3b: `CityLanding`**
 
 Create `src/views/Home/CityLanding.tsx`:
 
 ```tsx
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useEffect, useState, type CSSProperties } from 'react'
 import { useActiveCity } from '@/cities/useActiveCity'
 import { viewPath } from '@/cities/routing'
@@ -684,11 +705,15 @@ export default function CityLanding() {
   const city = useActiveCity()
   const isDarkMode = useAppStore((s) => s.isDarkMode)
   const [mounted, setMounted] = useState(false)
+  const [showTicker, setShowTicker] = useState(false)
   const tickerSize = useResponsiveTickerSize('hero')
-  const indicators = useOaklandIndicators({ enabled: true })
+  // Deferred like SF's ticker: the hero paints before the 8-query battery.
+  const indicators = useOaklandIndicators({ enabled: showTicker })
 
   useEffect(() => {
     requestAnimationFrame(() => setMounted(true))
+    const t = setTimeout(() => setShowTicker(true), 300)
+    return () => clearTimeout(t)
   }, [])
 
   const heroBg = isDarkMode ? '/dana-dark-hero-bg.png' : '/dana-light-hero-bg.png'
@@ -724,8 +749,8 @@ export default function CityLanding() {
             </h1>
             <p className="text-[1.0625rem] leading-relaxed text-slate-600 dark:text-slate-300 max-w-xl mb-6">
               Crime, 311, parking and campaign money across {city.areas.count}{' '}
-              {city.areas.nounPlural} — live from the City of Oakland&rsquo;s open
-              data portal, named the way Oaklanders know their neighborhoods.
+              {city.areas.nounPlural} — straight from {city.portal.name}, named
+              the way Oaklanders know their neighborhoods.
             </p>
             <div className="flex flex-wrap items-center gap-4">
               <a
@@ -757,14 +782,26 @@ export default function CityLanding() {
           </div>
         </header>
 
-        {/* Ticker — four completeness-edged items (or their honest absence) */}
+        {/* Ticker — four completeness-edged items, or their HONEST ABSENCE.
+            CivicTicker renders a skeleton whenever items is empty (even with
+            isLoading false), so a fully-suppressed day gets the note, never a
+            forever-skeleton (plan-verify C4). */}
         <div className={`mb-14 transition-opacity duration-700 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
-          <CivicTicker
-            items={indicators.items}
-            size={tickerSize}
-            isLoading={indicators.isLoading}
-            lastUpdated={indicators.lastUpdated ?? undefined}
-          />
+          {showTicker && !indicators.isLoading && indicators.items.length === 0 ? (
+            <p className="text-micro font-mono text-slate-500 dark:text-slate-400 py-4">
+              No stream is current enough to quote right now — every figure on
+              this page waits for its feed&rsquo;s completeness edge, and parking
+              citations alone run ~11 weeks behind. The four views below are live.
+            </p>
+          ) : (
+            <CivicTicker
+              items={indicators.items}
+              size={tickerSize}
+              isLoading={indicators.isLoading || !showTicker}
+              lastUpdated={indicators.lastUpdated ?? undefined}
+              heroHeader={{ label: 'Civic Data · Oakland', live: false }}
+            />
+          )}
         </div>
 
         {/* View cards + the SF doorway */}
@@ -812,12 +849,12 @@ export default function CityLanding() {
             </a>{' '}
             via the Socrata SODA API · beat names are DataDiver&rsquo;s synthesis of
             official City boundaries and community policing names —{' '}
-            <a
-              href="/about"
+            <Link
+              to="/about"
               className="underline underline-offset-2 hover:text-slate-500 dark:hover:text-slate-400 transition-colors"
             >
               method in About
-            </a>
+            </Link>
           </p>
         </footer>
       </div>
@@ -852,17 +889,25 @@ In `src/components/search/useOmniSearch.test.ts`, the oakland test: view rows no
       'view-home', 'view-crime-incidents', 'view-311-cases', 'view-parking-citations', 'view-campaign-finance',
     ])
 ```
-and `expect(oak).toHaveLength(69)`. Also `registry.test.ts:57`-area oakland view-id pin (it asserts the manifest's viewId list): prepend `'home'`.
+and `expect(oak).toHaveLength(69)`. Also `registry.test.ts:57`-area oakland view-id pin (it asserts the manifest's viewId list): prepend `'home'`. And append the catch-all liveness pin to `registry.test.ts` (unconditional — it lands WITH the manifest entry it pins; add `isViewLive` to the test's registry import):
+
+```ts
+describe('the /oakland/* catch-all target stays alive', () => {
+  it("isViewLive('oakland','home') — if home ever went dormant the App.tsx splat would self-target a blank", () => {
+    expect(isViewLive('oakland', 'home')).toBe(true)
+  })
+})
+```
 
 - [ ] **Step 6: Run + verify**
 
 Run: `npx vitest run src && npx tsc -b`
-Expected: all green — including the Task 1 skipIf pin, which now ACTIVATES (confirm it ran, not skipped: `npx vitest run src/cities/registry.test.ts --reporter=verbose | grep -i "catch-all"`).
+Expected: all green, typecheck clean.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/cities/oakland/manifest.ts src/views/Home/HomeRouter.tsx src/views/Home/CityLanding.tsx src/App.tsx src/components/search/useOmniSearch.test.ts src/cities/registry.test.ts
+git add src/cities/oakland/manifest.ts src/cities/oakland/index.ts src/views/Home/HomeRouter.tsx src/views/Home/CityLanding.tsx src/components/ui/CivicTicker.tsx src/App.tsx src/components/search/useOmniSearch.test.ts src/cities/registry.test.ts
 git commit -m "feat(oakland): the /oakland landing — HomeRouter, CityLanding, manifest home entry, catch-all retarget"
 ```
 
@@ -882,7 +927,9 @@ In the `homeCards` memo (line 30), change `city.manifest` → `liveManifest(city
 
 - [ ] **Step 2: Doorway card in BOTH grids**
 
-In each of the two grids that map `homeCards` to `<VizCard>` (mobile Explorations rail and desktop Explorations grid — find both `homeCards.map` JSX sites), append AFTER the map, inside the same grid container, mirroring the mapped cards' exact prop usage (including whatever `delay`/`mounted` idiom that grid uses):
+The two grids use DIFFERENT idioms (plan-verify I6/M1 — mirror each exactly):
+
+**Desktop Explorations grid** (~L515-544; mapped cards use `delay={600 + idx * 60}`): append after the map, inside the grid container:
 
 ```tsx
               <VizCard
@@ -891,12 +938,28 @@ In each of the two grids that map `homeCards` to `<VizCard>` (mobile Exploration
                 badge="OAK"
                 accentColor="#b85a33"
                 onClick={() => navigate('/oakland')}
-                delay={homeCards.length * 60}
+                delay={600 + homeCards.length * 60}
                 mounted={mounted}
               />
 ```
 
-(If a grid's mapped cards don't pass `delay`/`mounted`, drop those props there too — mirror, don't invent.)
+**Mobile Explorations rail** (~L222-245; every card sits in a snap wrapper `<div className="w-[13.4375rem] shrink-0 snap-start">` and uses `delay={0}`): append after the map, WRAPPED:
+
+```tsx
+              <div className="w-[13.4375rem] shrink-0 snap-start">
+                <VizCard
+                  title="Oakland"
+                  subtitle="Crime, 311, citations & campaign money on 59 named beats"
+                  badge="OAK"
+                  accentColor="#b85a33"
+                  onClick={() => navigate('/oakland')}
+                  delay={0}
+                  mounted={mounted}
+                />
+              </div>
+```
+
+(In both cases, if the adjacent mapped cards' actual props differ from the above idioms, mirror the adjacent cards — never invent.)
 
 - [ ] **Step 3: Verify + commit**
 
@@ -929,7 +992,9 @@ import { useEffect, useRef, useState } from 'react'
 import { CITIES, crossCityPath } from '@/cities/registry'
 import type { CityId } from '@/cities/routing'
 
-const CITY_ORDER: CityId[] = ['sf', 'oakland']
+// The registry's own insertion order (sf first) — never a second hand-kept
+// list (spec §B3: "the registry's cities"; duplicated-allowlist class).
+const CITY_ORDER = Object.keys(CITIES) as CityId[]
 
 /**
  * The brand-row city control (program-spec decision 3): the subtitle line
@@ -1178,7 +1243,16 @@ git commit -m "feat(search): ⌘K city rows — Switch to Oakland / San Francisc
 
 - [ ] **Step 1: Sources restructure**
 
-(a) Rename `SOURCES` → `SF_SOURCES` (and its single render usage). Add below it:
+(a) Rename `SOURCES` → `SF_SOURCES` (and its single render usage). Update
+`SourceRow.url`'s doc comment — the FPPC roll-up row is about to use it, so
+"Election results are the only one" goes stale:
+
+```ts
+  /** Absolute link override (non-portal sources; the Oakland FPPC roll-up). */
+  url?: string
+```
+
+Add below the SF array:
 
 ```ts
 const OAKLAND_SOURCES: SourceRow[] = [
@@ -1280,13 +1354,13 @@ Insert immediately AFTER the closing `</Finding>` of the 4a "Oakland police beat
             <Finding title="Oakland crime counts dedupe charge-level rows">
               <p>
                 OPD&rsquo;s crime dataset publishes one row per <em>charge</em>, not per
-                incident &mdash; about one row in seven shares its case number with
-                another. Every count DataDiver shows deduplicates by case number, on
-                the server where possible and on both sides of any comparison
-                (deduplicating only one side would fabricate a decline). Published
-                dates run back to 1950, but everything before 2004 is a junk trickle,
-                so queries are floored there. Roughly 3.9% of rows carry the
-                no-location codes 77X/99X &mdash; they appear as &ldquo;Unmapped
+                incident &mdash; more than one row in five belongs to a case with
+                multiple rows. Every count DataDiver shows deduplicates by case
+                number, on the server where possible and on both sides of any
+                comparison (deduplicating only one side would fabricate a decline).
+                Published dates run back to 1950, but everything before 2004 is a
+                junk trickle, so queries are floored there. About 3.4% of rows carry
+                the no-location codes 77X/99X &mdash; they appear as &ldquo;Unmapped
                 beat,&rdquo; never silently dropped.
               </p>
             </Finding>
@@ -1348,4 +1422,5 @@ git commit -m "feat(about): per-portal sources tables, two-portal framing, four 
 1. `~/dev/devman/tools/devman-build.mjs pnpm build` + `npx vitest run src`.
 2. Browser gate (vite preview, FOREGROUNDED tab — the hidden-tab ceiling from 4a applies): `/oakland` renders hero/chip ("Updated … · data.oaklandca.gov", no "Live"), ticker items with dated copy (or honest absence), 4 view cards + SF doorway, footer disclosure link → `/about`; switcher both directions incl. fallback (`/housing` → Oakland lands `/oakland`) and the citation-selection reset (open an SF citation, switch, panel closed); ⌘K "switch" rows both cities; `/oakland/junk-slug` → `/oakland`; About sections + findings; SF Home unchanged except the doorway card; date picker absent-of-effect on `/oakland` links (dateless — no `?start=` on shared URLs).
 3. Network isolation: zero SF-resolved fetches from `/oakland` (DEV tripwire clean — `usePreloadCache` must never mount there).
-4. Ticker sanity vs pinned probe values: CF item reads "$3.9M raised · Apr 2025 cycle" (matches the live $3,932,083.76); crime item's week-ending count within same order of magnitude as 382.
+4. Ticker sanity vs pinned probe values: CF item reads "$4.0M raised · Apr 2025 cycle" (the live sum under the OAK totals builder's exact WHERE incl. `tran_amt1 > 0` is **$3,993,223.68** / 5,883 rows — NOT the $3.93M no-filter probe figure); crime item's week-ending count within the same order of magnitude as 382; every hero card shows its date IN the headline (the hero renders no `detail`); the hero header reads "Civic Data · Oakland" with a static dot (no ping, no "Live").
+5. Declared limitation (ledgered, not built): a citations 30-day window that spans an enforcement-holiday day-hole (e.g. 2026-03-31, absent from GROUP BY entirely) reads low with no per-window disclosure — the dated copy and About's lag finding carry it; today's window is clean.
