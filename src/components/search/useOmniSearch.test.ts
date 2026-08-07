@@ -67,27 +67,66 @@ describe('OmniSearch index (SF parity)', () => {
     expect(cats.lastIndexOf('place')).toBeLessThan(cats.indexOf('dataset'))
   })
 
-  it('oakland index: 4 LIVE view rows + 59 beat places landing on the crime view + 7 live-claimed datasets', () => {
+  it('oakland index: 4 LIVE view rows + 57 beat places (named · coded) + 7 live-claimed datasets', () => {
     const oak = buildSearchIndex('oakland')
     const byCat = (c: string) => oak.filter((r) => r.category === c)
     // All four entries are live — each gets a view row.
     expect(byCat('view').map((r) => r.id)).toEqual([
       'view-crime-incidents', 'view-311-cases', 'view-parking-citations', 'view-campaign-finance',
     ])
-    // No beat-profile view ships; beat rows land on the crime view with the
-    // beat pre-selected (?neighborhood=07X), reader-labeled 'Beat 07X'.
-    expect(byCat('place')).toHaveLength(59)
-    expect(byCat('place')[0]).toMatchObject({
-      label: 'Beat 01X', sublabel: 'Oakland police beat',
+    // 59 beats minus searchExcluded (LKM1, PDT2) = 57 place rows. Labels are
+    // the composed editorial form; the sublabel keeps the literal word
+    // 'beat' + the code so the legacy query shape 'beat 12y' still matches
+    // (the filter is a label||sublabel substring test — no terms array).
+    const places = byCat('place')
+    expect(places).toHaveLength(57)
+    expect(places[0]).toMatchObject({
+      label: 'Jack London & Waterfront · 01X', sublabel: 'Police beat 01X',
       path: '/oakland/crime-incidents', params: { neighborhood: '01X' },
     })
+    expect(places.some((p) => p.id === 'place-LKM1' || p.id === 'place-PDT2')).toBe(false)
     // Dataset rows from every entry's omniDatasetKeys: crime 1 + 311 1 +
     // citations 1 + campaign-finance 4 (the read set) = 7.
     expect(byCat('dataset').map((r) => r.id)).toEqual([
       'dataset-policeIncidents', 'dataset-cases311', 'dataset-parkingCitations',
       'dataset-fppcSchA', 'dataset-fppcSchE', 'dataset-fppc496', 'dataset-fppc497',
     ])
-    expect(oak).toHaveLength(70)
+    expect(oak).toHaveLength(68)
     for (const r of oak) expect(r.path.startsWith('/oakland'), r.id).toBe(true)
+  })
+
+  // The hook's filter is `label.includes(q) || sublabel.includes(q)`
+  // (lowercased). These pins replicate that predicate against the index so
+  // the query behaviors the labels were DESIGNED for can't regress.
+  describe('oakland query behavior (filter-predicate pins)', () => {
+    const oak = buildSearchIndex('oakland')
+    const matches = (q: string) =>
+      oak.filter(
+        (r) =>
+          r.label.toLowerCase().includes(q) || r.sublabel.toLowerCase().includes(q)
+      )
+
+    it("'beat 12y' still matches (via the sublabel)", () => {
+      expect(matches('beat 12y').map((r) => r.id)).toContain('place-12Y')
+    })
+
+    it("bare '12y' matches (spec §A8's third query pin)", () => {
+      expect(matches('12y').map((r) => r.id)).toContain('place-12Y')
+    })
+
+    it("'rockridge' finds both Rockridge beats", () => {
+      const ids = matches('rockridge').map((r) => r.id)
+      expect(ids).toContain('place-12Y')
+      expect(ids).toContain('place-13X')
+    })
+
+    it("'fruitvale' resolves to 23X — the beat that actually owns Fruitvale", () => {
+      const ids = matches('fruitvale').filter((r) => r.category === 'place').map((r) => r.id)
+      expect(ids).toEqual(['place-23X'])
+    })
+
+    it("'lake merritt' offers no place row (LKM1 is searchExcluded)", () => {
+      expect(matches('lake merritt').filter((r) => r.category === 'place')).toHaveLength(0)
+    })
   })
 })

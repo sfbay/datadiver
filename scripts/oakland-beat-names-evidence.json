@@ -1,0 +1,1609 @@
+{
+ "01X": {
+  "coverage": 0.8203,
+  "overlay": [
+   {
+    "name": "Produce and Waterfront",
+    "forwardShare": 0.8203,
+    "reverseShare": 0.6235
+   }
+  ],
+  "dispatchName": "Jack London NC",
+  "fullname": ""
+ },
+ "02X": {
+  "coverage": 0.5608,
+  "overlay": [
+   {
+    "name": "Acorn Industrial",
+    "forwardShare": 0.2195,
+    "reverseShare": 0.9994
+   },
+   {
+    "name": "Acorn",
+    "forwardShare": 0.1752,
+    "reverseShare": 0.9131
+   },
+   {
+    "name": "Oak Center",
+    "forwardShare": 0.1554,
+    "reverseShare": 0.4424
+   },
+   {
+    "name": "Produce and Waterfront",
+    "forwardShare": 0.0107,
+    "reverseShare": 0.0165
+   }
+  ],
+  "dispatchName": "Acorn & Oak Community",
+  "fullname": ""
+ },
+ "02Y": {
+  "coverage": 0.1603,
+  "overlay": [
+   {
+    "name": "Prescott",
+    "forwardShare": 0.092,
+    "reverseShare": 0.4762
+   },
+   {
+    "name": "South Prescott",
+    "forwardShare": 0.0683,
+    "reverseShare": 0.9864
+   }
+  ],
+  "dispatchName": "Prescott NC",
+  "fullname": ""
+ },
+ "03X": {
+  "coverage": 0.986,
+  "overlay": [
+   {
+    "name": "Chinatown",
+    "forwardShare": 0.4064,
+    "reverseShare": 0.9972
+   },
+   {
+    "name": "Civic Center",
+    "forwardShare": 0.2361,
+    "reverseShare": 0.9968
+   },
+   {
+    "name": "Peralta/Laney",
+    "forwardShare": 0.1661,
+    "reverseShare": 0.3797
+   },
+   {
+    "name": "Downtown",
+    "forwardShare": 0.0913,
+    "reverseShare": 0.1194
+   },
+   {
+    "name": "Produce and Waterfront",
+    "forwardShare": 0.0861,
+    "reverseShare": 0.0519
+   }
+  ],
+  "dispatchName": "Chinatown NC",
+  "fullname": ""
+ },
+ "03Y": {
+  "coverage": 0.9979,
+  "overlay": [
+   {
+    "name": "Old City",
+    "forwardShare": 0.4528,
+    "reverseShare": 0.9965
+   },
+   {
+    "name": "Downtown",
+    "forwardShare": 0.3002,
+    "reverseShare": 0.2135
+   },
+   {
+    "name": "Produce and Waterfront",
+    "forwardShare": 0.0956,
+    "reverseShare": 0.0313
+   },
+   {
+    "name": "Acorn",
+    "forwardShare": 0.0784,
+    "reverseShare": 0.0869
+   },
+   {
+    "name": "Oak Center",
+    "forwardShare": 0.0709,
+    "reverseShare": 0.0429
+   }
+  ],
+  "dispatchName": "Old Oakland Neighbors",
+  "fullname": ""
+ },
+ "04X": {
+  "coverage": 0.9624,
+  "overlay": [
+   {
+    "name": "Downtown",
+    "forwardShare": 0.4104,
+    "reverseShare": 0.6658
+   },
+   {
+    "name": "San Pablo Gateway",
+    "forwardShare": 0.2836,
+    "reverseShare": 0.9968
+   },
+   {
+    "name": "Lakeside",
+    "forwardShare": 0.2118,
+    "reverseShare": 0.997
+   },
+   {
+    "name": "Oak Center",
+    "forwardShare": 0.0301,
+    "reverseShare": 0.0415
+   },
+   {
+    "name": "Ralph Bunche",
+    "forwardShare": 0.0265,
+    "reverseShare": 0.0586
+   }
+  ],
+  "dispatchName": "Uptown/Gold Coast NC",
+  "fullname": ""
+ },
+ "05X": {
+  "coverage": 0.9935,
+  "overlay": [
+   {
+    "name": "Ralph Bunche",
+    "forwardShare": 0.5475,
+    "reverseShare": 0.9268
+   },
+   {
+    "name": "Oak Center",
+    "forwardShare": 0.446,
+    "reverseShare": 0.4716
+   }
+  ],
+  "dispatchName": "Acorn & Oak Community",
+  "fullname": ""
+ },
+ "05Y": {
+  "coverage": 0.0822,
+  "overlay": [
+   {
+    "name": "Prescott",
+    "forwardShare": 0.0822,
+    "reverseShare": 0.3602
+   }
+  ],
+  "dispatchName": "Prescott NC",
+  "fullname": ""
+ },
+ "06X": {
+  "coverage": 0.9945,
+  "overlay": [
+   {
+    "name": "Hoover/Foster",
+    "forwardShare": 0.5865,
+    "reverseShare": 0.9675
+   },
+   {
+    "name": "Longfellow",
+    "forwardShare": 0.401,
+    "reverseShare": 0.477
+   },
+   {
+    "name": "Northgate/Waverly",
+    "forwardShare": 0.007,
+    "reverseShare": 0.0197
+   }
+  ],
+  "dispatchName": "Hoover Durant",
+  "fullname": ""
+ },
+ "07X": {
+  "coverage": 0.1322,
+  "overlay": [
+   {
+    "name": "McClymonds",
+    "forwardShare": 0.0609,
+    "reverseShare": 0.9963
+   },
+   {
+    "name": "Clawson",
+    "forwardShare": 0.0509,
+    "reverseShare": 1.0
+   },
+   {
+    "name": "Prescott",
+    "forwardShare": 0.0204,
+    "reverseShare": 0.1613
+   }
+  ],
+  "dispatchName": "Beat 7 NC / West Oakland Neighbors",
+  "fullname": ""
+ },
+ "08X": {
+  "coverage": 0.9974,
+  "overlay": [
+   {
+    "name": "Pill Hill",
+    "forwardShare": 0.2765,
+    "reverseShare": 0.9899
+   },
+   {
+    "name": "Mosswood",
+    "forwardShare": 0.2599,
+    "reverseShare": 0.9993
+   },
+   {
+    "name": "Oakland Avenue/Harrison Street",
+    "forwardShare": 0.2426,
+    "reverseShare": 0.6873
+   },
+   {
+    "name": "Northgate/Waverly",
+    "forwardShare": 0.2028,
+    "reverseShare": 0.9301
+   },
+   {
+    "name": "Longfellow",
+    "forwardShare": 0.0078,
+    "reverseShare": 0.015
+   },
+   {
+    "name": "Hoover/Foster",
+    "forwardShare": 0.0078,
+    "reverseShare": 0.0208
+   }
+  ],
+  "dispatchName": "Ujima Friends",
+  "fullname": ""
+ },
+ "09X": {
+  "coverage": 0.9623,
+  "overlay": [
+   {
+    "name": "Piedmont Avenue",
+    "forwardShare": 0.7911,
+    "reverseShare": 0.9903
+   },
+   {
+    "name": "Oakland Avenue/Harrison Street",
+    "forwardShare": 0.0736,
+    "reverseShare": 0.15
+   },
+   {
+    "name": "Rockridge",
+    "forwardShare": 0.0616,
+    "reverseShare": 0.0774
+   },
+   {
+    "name": "Grand Lake",
+    "forwardShare": 0.036,
+    "reverseShare": 0.062
+   }
+  ],
+  "dispatchName": "PANIL NC",
+  "fullname": ""
+ },
+ "10X": {
+  "coverage": 0.9776,
+  "overlay": [
+   {
+    "name": "Paradise Park",
+    "forwardShare": 0.3259,
+    "reverseShare": 0.9525
+   },
+   {
+    "name": "Golden Gate",
+    "forwardShare": 0.299,
+    "reverseShare": 0.9892
+   },
+   {
+    "name": "Gaskill",
+    "forwardShare": 0.2398,
+    "reverseShare": 0.9698
+   },
+   {
+    "name": "Santa Fe",
+    "forwardShare": 0.1129,
+    "reverseShare": 0.2041
+   }
+  ],
+  "dispatchName": "Golden Gate NC",
+  "fullname": ""
+ },
+ "10Y": {
+  "coverage": 0.9964,
+  "overlay": [
+   {
+    "name": "Santa Fe",
+    "forwardShare": 0.5256,
+    "reverseShare": 0.7851
+   },
+   {
+    "name": "Longfellow",
+    "forwardShare": 0.4649,
+    "reverseShare": 0.4946
+   },
+   {
+    "name": "Bushrod",
+    "forwardShare": 0.0059,
+    "reverseShare": 0.0056
+   }
+  ],
+  "dispatchName": "10Y NC",
+  "fullname": ""
+ },
+ "11X": {
+  "coverage": 0.965,
+  "overlay": [
+   {
+    "name": "Bushrod",
+    "forwardShare": 0.8984,
+    "reverseShare": 0.9586
+   },
+   {
+    "name": "Shafter",
+    "forwardShare": 0.0666,
+    "reverseShare": 0.0936
+   }
+  ],
+  "dispatchName": "Shattuck NC",
+  "fullname": ""
+ },
+ "12X": {
+  "coverage": 0.9999,
+  "overlay": [
+   {
+    "name": "Temescal",
+    "forwardShare": 0.8588,
+    "reverseShare": 0.9959
+   },
+   {
+    "name": "Shafter",
+    "forwardShare": 0.0989,
+    "reverseShare": 0.1156
+   },
+   {
+    "name": "Bushrod",
+    "forwardShare": 0.0372,
+    "reverseShare": 0.033
+   },
+   {
+    "name": "Longfellow",
+    "forwardShare": 0.005,
+    "reverseShare": 0.0049
+   }
+  ],
+  "dispatchName": "Temescal Neighbors",
+  "fullname": ""
+ },
+ "12Y": {
+  "coverage": 0.9842,
+  "overlay": [
+   {
+    "name": "Rockridge",
+    "forwardShare": 0.3423,
+    "reverseShare": 0.8009
+   },
+   {
+    "name": "Shafter",
+    "forwardShare": 0.2564,
+    "reverseShare": 0.7907
+   },
+   {
+    "name": "Fairview Park",
+    "forwardShare": 0.2538,
+    "reverseShare": 0.9858
+   },
+   {
+    "name": "Upper Rockridge",
+    "forwardShare": 0.1317,
+    "reverseShare": 0.1218
+   }
+  ],
+  "dispatchName": "Greater Rockridge NC",
+  "fullname": ""
+ },
+ "13X": {
+  "coverage": 0.6885,
+  "overlay": [
+   {
+    "name": "Upper Rockridge",
+    "forwardShare": 0.6268,
+    "reverseShare": 0.8424
+   },
+   {
+    "name": "Rockridge",
+    "forwardShare": 0.0358,
+    "reverseShare": 0.1217
+   },
+   {
+    "name": "Montclair",
+    "forwardShare": 0.0259,
+    "reverseShare": 0.0384
+   }
+  ],
+  "dispatchName": "Greater Rockridge NC",
+  "fullname": ""
+ },
+ "13Y": {
+  "coverage": 0.5775,
+  "overlay": [
+   {
+    "name": "Claremont",
+    "forwardShare": 0.2256,
+    "reverseShare": 0.9937
+   },
+   {
+    "name": "Merriwood",
+    "forwardShare": 0.0979,
+    "reverseShare": 0.7133
+   },
+   {
+    "name": "Forestland",
+    "forwardShare": 0.084,
+    "reverseShare": 0.5738
+   },
+   {
+    "name": "Glen Highlands",
+    "forwardShare": 0.0541,
+    "reverseShare": 1.0
+   },
+   {
+    "name": "Hiller Highlands",
+    "forwardShare": 0.054,
+    "reverseShare": 1.0
+   },
+   {
+    "name": "Panoramic Hill",
+    "forwardShare": 0.0483,
+    "reverseShare": 1.0
+   },
+   {
+    "name": "Upper Rockridge",
+    "forwardShare": 0.0082,
+    "reverseShare": 0.0318
+   },
+   {
+    "name": "Montclair",
+    "forwardShare": 0.0054,
+    "reverseShare": 0.0231
+   }
+  ],
+  "dispatchName": "North Hills Public Safety Committee",
+  "fullname": ""
+ },
+ "13Z": {
+  "coverage": 0.984,
+  "overlay": [
+   {
+    "name": "Montclair",
+    "forwardShare": 0.3502,
+    "reverseShare": 0.9074
+   },
+   {
+    "name": "Piedmont Pines",
+    "forwardShare": 0.3154,
+    "reverseShare": 0.8268
+   },
+   {
+    "name": "Shepherd Canyon",
+    "forwardShare": 0.1272,
+    "reverseShare": 0.9967
+   },
+   {
+    "name": "Forestland",
+    "forwardShare": 0.1031,
+    "reverseShare": 0.425
+   },
+   {
+    "name": "Merriwood",
+    "forwardShare": 0.0652,
+    "reverseShare": 0.2867
+   },
+   {
+    "name": "Montclair Business",
+    "forwardShare": 0.0229,
+    "reverseShare": 1.0
+   }
+  ],
+  "dispatchName": "Montclair NC (MNC)",
+  "fullname": ""
+ },
+ "14X": {
+  "coverage": 0.7266,
+  "overlay": [
+   {
+    "name": "Adams Point",
+    "forwardShare": 0.5577,
+    "reverseShare": 1.0
+   },
+   {
+    "name": "Oakland Avenue/Harrison Street",
+    "forwardShare": 0.106,
+    "reverseShare": 0.1627
+   },
+   {
+    "name": "Cleveland Heights",
+    "forwardShare": 0.0242,
+    "reverseShare": 0.0237
+   },
+   {
+    "name": "Grand Lake",
+    "forwardShare": 0.02,
+    "reverseShare": 0.0259
+   },
+   {
+    "name": "Northgate/Waverly",
+    "forwardShare": 0.0187,
+    "reverseShare": 0.0464
+   }
+  ],
+  "dispatchName": "Adams Point Neighborhood Group",
+  "fullname": ""
+ },
+ "14Y": {
+  "coverage": 0.9653,
+  "overlay": [
+   {
+    "name": "Grand Lake",
+    "forwardShare": 0.6895,
+    "reverseShare": 0.9113
+   },
+   {
+    "name": "Lakeshore",
+    "forwardShare": 0.2758,
+    "reverseShare": 0.4343
+   }
+  ],
+  "dispatchName": "Grand Lake Neighbors",
+  "fullname": ""
+ },
+ "15X": {
+  "coverage": 0.9717,
+  "overlay": [
+   {
+    "name": "Cleveland Heights",
+    "forwardShare": 0.8916,
+    "reverseShare": 0.9398
+   },
+   {
+    "name": "Merritt",
+    "forwardShare": 0.0537,
+    "reverseShare": 0.1637
+   },
+   {
+    "name": "Trestle Glen",
+    "forwardShare": 0.0264,
+    "reverseShare": 0.0295
+   }
+  ],
+  "dispatchName": "Friends of Cleveland Heights NC",
+  "fullname": ""
+ },
+ "16X": {
+  "coverage": 0.9994,
+  "overlay": [
+   {
+    "name": "Trestle Glen",
+    "forwardShare": 0.4743,
+    "reverseShare": 0.633
+   },
+   {
+    "name": "Lakeshore",
+    "forwardShare": 0.2768,
+    "reverseShare": 0.5491
+   },
+   {
+    "name": "Crocker Highland",
+    "forwardShare": 0.2483,
+    "reverseShare": 0.9186
+   }
+  ],
+  "dispatchName": "Grand Lake Neighbors",
+  "fullname": ""
+ },
+ "16Y": {
+  "coverage": 0.9982,
+  "overlay": [
+   {
+    "name": "Glenview",
+    "forwardShare": 0.7183,
+    "reverseShare": 0.9449
+   },
+   {
+    "name": "Trestle Glen",
+    "forwardShare": 0.2186,
+    "reverseShare": 0.3374
+   },
+   {
+    "name": "Oakmore",
+    "forwardShare": 0.0562,
+    "reverseShare": 0.0638
+   },
+   {
+    "name": "Reservoir Hill",
+    "forwardShare": 0.0051,
+    "reverseShare": 0.0198
+   }
+  ],
+  "dispatchName": "Glenview NC",
+  "fullname": ""
+ },
+ "17X": {
+  "coverage": 0.9988,
+  "overlay": [
+   {
+    "name": "Clinton",
+    "forwardShare": 0.7151,
+    "reverseShare": 0.4875
+   },
+   {
+    "name": "Ivy Hill",
+    "forwardShare": 0.2112,
+    "reverseShare": 0.3778
+   },
+   {
+    "name": "Merritt",
+    "forwardShare": 0.0665,
+    "reverseShare": 0.0988
+   },
+   {
+    "name": "Rancho San Antonio",
+    "forwardShare": 0.006,
+    "reverseShare": 0.0046
+   }
+  ],
+  "dispatchName": "Neighborhood Coalition for Peace and Community",
+  "fullname": ""
+ },
+ "17Y": {
+  "coverage": 0.9378,
+  "overlay": [
+   {
+    "name": "Lynn",
+    "forwardShare": 0.2035,
+    "reverseShare": 0.9879
+   },
+   {
+    "name": "Clinton",
+    "forwardShare": 0.1999,
+    "reverseShare": 0.2636
+   },
+   {
+    "name": "Bella Vista",
+    "forwardShare": 0.1933,
+    "reverseShare": 1.0
+   },
+   {
+    "name": "Ivy Hill",
+    "forwardShare": 0.1774,
+    "reverseShare": 0.6137
+   },
+   {
+    "name": "Highland Park",
+    "forwardShare": 0.108,
+    "reverseShare": 0.9965
+   },
+   {
+    "name": "Cleveland Heights",
+    "forwardShare": 0.0362,
+    "reverseShare": 0.036
+   },
+   {
+    "name": "Glenview",
+    "forwardShare": 0.0195,
+    "reverseShare": 0.0175
+   }
+  ],
+  "dispatchName": "Neighborhood Coalition for Peace and Community",
+  "fullname": ""
+ },
+ "18X": {
+  "coverage": 0.9993,
+  "overlay": [
+   {
+    "name": "Rancho San Antonio",
+    "forwardShare": 0.9993,
+    "reverseShare": 0.6426
+   }
+  ],
+  "dispatchName": "Greater San Antonio NC",
+  "fullname": ""
+ },
+ "18Y": {
+  "coverage": 0.9915,
+  "overlay": [
+   {
+    "name": "Highland Terrace",
+    "forwardShare": 0.6338,
+    "reverseShare": 0.9935
+   },
+   {
+    "name": "Tuxedo",
+    "forwardShare": 0.3577,
+    "reverseShare": 0.9637
+   }
+  ],
+  "dispatchName": "Greater San Antonio NC",
+  "fullname": ""
+ },
+ "19X": {
+  "coverage": 0.5485,
+  "overlay": [
+   {
+    "name": "Produce and Waterfront",
+    "forwardShare": 0.1332,
+    "reverseShare": 0.2768
+   },
+   {
+    "name": "East Peralta",
+    "forwardShare": 0.1005,
+    "reverseShare": 1.0
+   },
+   {
+    "name": "Merritt",
+    "forwardShare": 0.0858,
+    "reverseShare": 0.736
+   },
+   {
+    "name": "Rancho San Antonio",
+    "forwardShare": 0.0786,
+    "reverseShare": 0.3504
+   },
+   {
+    "name": "Peralta/Laney",
+    "forwardShare": 0.0786,
+    "reverseShare": 0.6203
+   },
+   {
+    "name": "Clinton",
+    "forwardShare": 0.0633,
+    "reverseShare": 0.249
+   },
+   {
+    "name": "North Kennedy Tract",
+    "forwardShare": 0.0085,
+    "reverseShare": 0.0574
+   }
+  ],
+  "dispatchName": "Greater San Antonio NC",
+  "fullname": ""
+ },
+ "20X": {
+  "coverage": 0.9,
+  "overlay": [
+   {
+    "name": "North Kennedy Tract",
+    "forwardShare": 0.312,
+    "reverseShare": 0.9417
+   },
+   {
+    "name": "Hawthorne",
+    "forwardShare": 0.2588,
+    "reverseShare": 0.998
+   },
+   {
+    "name": "Oak Tree",
+    "forwardShare": 0.1864,
+    "reverseShare": 0.9981
+   },
+   {
+    "name": "South Kennedy",
+    "forwardShare": 0.1428,
+    "reverseShare": 0.7104
+   }
+  ],
+  "dispatchName": "Fruitvale Unity",
+  "fullname": ""
+ },
+ "21X": {
+  "coverage": 0.998,
+  "overlay": [
+   {
+    "name": "Meadow Brook",
+    "forwardShare": 0.5951,
+    "reverseShare": 0.9472
+   },
+   {
+    "name": "Reservoir Hill",
+    "forwardShare": 0.3895,
+    "reverseShare": 0.9555
+   },
+   {
+    "name": "Tuxedo",
+    "forwardShare": 0.0073,
+    "reverseShare": 0.0246
+   },
+   {
+    "name": "Sausal Creek",
+    "forwardShare": 0.0061,
+    "reverseShare": 0.0239
+   }
+  ],
+  "dispatchName": "21XY NC - Neighbors Connecting for Positive Change",
+  "fullname": ""
+ },
+ "21Y": {
+  "coverage": 0.9931,
+  "overlay": [
+   {
+    "name": "Upper Peralta Creek",
+    "forwardShare": 0.2525,
+    "reverseShare": 0.9778
+   },
+   {
+    "name": "Patten",
+    "forwardShare": 0.2183,
+    "reverseShare": 0.9992
+   },
+   {
+    "name": "School",
+    "forwardShare": 0.2108,
+    "reverseShare": 0.982
+   },
+   {
+    "name": "Sausal Creek",
+    "forwardShare": 0.1801,
+    "reverseShare": 0.9641
+   },
+   {
+    "name": "Peralta Hacienda",
+    "forwardShare": 0.0919,
+    "reverseShare": 0.459
+   },
+   {
+    "name": "Meadow Brook",
+    "forwardShare": 0.0231,
+    "reverseShare": 0.0499
+   },
+   {
+    "name": "Bartlett",
+    "forwardShare": 0.0091,
+    "reverseShare": 0.0491
+   },
+   {
+    "name": "Reservoir Hill",
+    "forwardShare": 0.0073,
+    "reverseShare": 0.0244
+   }
+  ],
+  "dispatchName": "21XY NC - Neighbors Connecting for Positive Change",
+  "fullname": ""
+ },
+ "22X": {
+  "coverage": 0.9943,
+  "overlay": [
+   {
+    "name": "Oakmore",
+    "forwardShare": 0.41,
+    "reverseShare": 0.9357
+   },
+   {
+    "name": "Upper Diamond",
+    "forwardShare": 0.2691,
+    "reverseShare": 0.5136
+   },
+   {
+    "name": "Piedmont Pines",
+    "forwardShare": 0.1295,
+    "reverseShare": 0.1614
+   },
+   {
+    "name": "Lincoln Highlands",
+    "forwardShare": 0.1208,
+    "reverseShare": 0.6138
+   },
+   {
+    "name": "Dimond",
+    "forwardShare": 0.0553,
+    "reverseShare": 0.5177
+   },
+   {
+    "name": "Glenview",
+    "forwardShare": 0.0096,
+    "reverseShare": 0.0254
+   }
+  ],
+  "dispatchName": "22X NC",
+  "fullname": ""
+ },
+ "22Y": {
+  "coverage": 0.674,
+  "overlay": [
+   {
+    "name": "Woodminster",
+    "forwardShare": 0.2145,
+    "reverseShare": 0.9996
+   },
+   {
+    "name": "Upper Diamond",
+    "forwardShare": 0.1516,
+    "reverseShare": 0.4852
+   },
+   {
+    "name": "Crestmont",
+    "forwardShare": 0.1422,
+    "reverseShare": 0.9813
+   },
+   {
+    "name": "Redwood Heights",
+    "forwardShare": 0.0733,
+    "reverseShare": 0.161
+   },
+   {
+    "name": "Lincoln Highlands",
+    "forwardShare": 0.0453,
+    "reverseShare": 0.3862
+   },
+   {
+    "name": "Dimond",
+    "forwardShare": 0.03,
+    "reverseShare": 0.4702
+   },
+   {
+    "name": "Laurel",
+    "forwardShare": 0.0171,
+    "reverseShare": 0.3008
+   }
+  ],
+  "dispatchName": "Bret Harte/Joaquin Miller Neighborhood Action Council",
+  "fullname": ""
+ },
+ "23X": {
+  "coverage": 0.7873,
+  "overlay": [
+   {
+    "name": "Saint Elizabeth",
+    "forwardShare": 0.3908,
+    "reverseShare": 0.9983
+   },
+   {
+    "name": "Fruitvale Station",
+    "forwardShare": 0.2634,
+    "reverseShare": 0.9997
+   },
+   {
+    "name": "South Kennedy",
+    "forwardShare": 0.0514,
+    "reverseShare": 0.2887
+   },
+   {
+    "name": "Fremont",
+    "forwardShare": 0.0286,
+    "reverseShare": 0.0731
+   },
+   {
+    "name": "Coliseum Industrial Complex",
+    "forwardShare": 0.027,
+    "reverseShare": 0.0096
+   },
+   {
+    "name": "Melrose",
+    "forwardShare": 0.0177,
+    "reverseShare": 0.0705
+   },
+   {
+    "name": "East 14th Street Business",
+    "forwardShare": 0.0084,
+    "reverseShare": 0.0168
+   }
+  ],
+  "dispatchName": "Fruitvale Unity",
+  "fullname": ""
+ },
+ "24X": {
+  "coverage": 0.9976,
+  "overlay": [
+   {
+    "name": "Jefferson",
+    "forwardShare": 0.5079,
+    "reverseShare": 0.9975
+   },
+   {
+    "name": "Harrington",
+    "forwardShare": 0.4025,
+    "reverseShare": 0.9982
+   },
+   {
+    "name": "Peralta Hacienda",
+    "forwardShare": 0.0726,
+    "reverseShare": 0.2879
+   },
+   {
+    "name": "Fremont",
+    "forwardShare": 0.0146,
+    "reverseShare": 0.0246
+   }
+  ],
+  "dispatchName": "Fruitvale Unity",
+  "fullname": ""
+ },
+ "24Y": {
+  "coverage": 0.9955,
+  "overlay": [
+   {
+    "name": "Allendale",
+    "forwardShare": 0.665,
+    "reverseShare": 0.9966
+   },
+   {
+    "name": "Bartlett",
+    "forwardShare": 0.2516,
+    "reverseShare": 0.944
+   },
+   {
+    "name": "Peralta Hacienda",
+    "forwardShare": 0.0702,
+    "reverseShare": 0.244
+   },
+   {
+    "name": "Laurel",
+    "forwardShare": 0.0087,
+    "reverseShare": 0.0267
+   }
+  ],
+  "dispatchName": "Allendale Park Community Council (APCC NC)",
+  "fullname": ""
+ },
+ "25X": {
+  "coverage": 0.9936,
+  "overlay": [
+   {
+    "name": "Redwood Heights",
+    "forwardShare": 0.6133,
+    "reverseShare": 0.8341
+   },
+   {
+    "name": "Leona Heights",
+    "forwardShare": 0.2207,
+    "reverseShare": 0.9965
+   },
+   {
+    "name": "Caballo Hills",
+    "forwardShare": 0.0908,
+    "reverseShare": 0.0742
+   },
+   {
+    "name": "Laurel",
+    "forwardShare": 0.06,
+    "reverseShare": 0.6516
+   },
+   {
+    "name": "Mills College",
+    "forwardShare": 0.0088,
+    "reverseShare": 0.0417
+   }
+  ],
+  "dispatchName": "Laurel/Redwood/Leona Heights NC",
+  "fullname": ""
+ },
+ "25Y": {
+  "coverage": 0.6467,
+  "overlay": [
+   {
+    "name": "Caballo Hills",
+    "forwardShare": 0.3095,
+    "reverseShare": 0.9256
+   },
+   {
+    "name": "Skyline-Hillcrest Estates",
+    "forwardShare": 0.1832,
+    "reverseShare": 0.9997
+   },
+   {
+    "name": "Sequoyah",
+    "forwardShare": 0.154,
+    "reverseShare": 0.2779
+   }
+  ],
+  "dispatchName": "Beat 25Y NC",
+  "fullname": ""
+ },
+ "26X": {
+  "coverage": 0.5035,
+  "overlay": [
+   {
+    "name": "Coliseum Industrial Complex",
+    "forwardShare": 0.3601,
+    "reverseShare": 0.2301
+   },
+   {
+    "name": "Melrose",
+    "forwardShare": 0.1235,
+    "reverseShare": 0.8893
+   },
+   {
+    "name": "East 14th Street Business",
+    "forwardShare": 0.0199,
+    "reverseShare": 0.0721
+   }
+  ],
+  "dispatchName": "Coliseum Melrose",
+  "fullname": ""
+ },
+ "26Y": {
+  "coverage": 1.0,
+  "overlay": [
+   {
+    "name": "Coliseum Industrial Complex",
+    "forwardShare": 0.3416,
+    "reverseShare": 0.1483
+   },
+   {
+    "name": "Coliseum",
+    "forwardShare": 0.2332,
+    "reverseShare": 1.0
+   },
+   {
+    "name": "Fitchburg",
+    "forwardShare": 0.1615,
+    "reverseShare": 1.0
+   },
+   {
+    "name": "Lockwood-Tevis",
+    "forwardShare": 0.139,
+    "reverseShare": 1.0
+   },
+   {
+    "name": "East 14th Street Business",
+    "forwardShare": 0.0925,
+    "reverseShare": 0.2277
+   },
+   {
+    "name": "Woodland",
+    "forwardShare": 0.024,
+    "reverseShare": 0.1518
+   },
+   {
+    "name": "Melrose",
+    "forwardShare": 0.0082,
+    "reverseShare": 0.0402
+   }
+  ],
+  "dispatchName": "Coliseum Melrose",
+  "fullname": ""
+ },
+ "27X": {
+  "coverage": 0.9989,
+  "overlay": [
+   {
+    "name": "Fremont",
+    "forwardShare": 0.444,
+    "reverseShare": 0.7689
+   },
+   {
+    "name": "Fairfax",
+    "forwardShare": 0.3695,
+    "reverseShare": 1.0
+   },
+   {
+    "name": "Maxwell Park",
+    "forwardShare": 0.0999,
+    "reverseShare": 0.0833
+   },
+   {
+    "name": "Fairfax Business",
+    "forwardShare": 0.0692,
+    "reverseShare": 0.9786
+   },
+   {
+    "name": "East 14th Street Business",
+    "forwardShare": 0.0163,
+    "reverseShare": 0.0222
+   }
+  ],
+  "dispatchName": "Melrose 27X NC",
+  "fullname": ""
+ },
+ "27Y": {
+  "coverage": 0.9989,
+  "overlay": [
+   {
+    "name": "Seminary",
+    "forwardShare": 0.4472,
+    "reverseShare": 0.9986
+   },
+   {
+    "name": "Havenscourt",
+    "forwardShare": 0.2248,
+    "reverseShare": 0.3384
+   },
+   {
+    "name": "Wentworth Holland",
+    "forwardShare": 0.1574,
+    "reverseShare": 0.9971
+   },
+   {
+    "name": "East 14th Street Business",
+    "forwardShare": 0.1043,
+    "reverseShare": 0.1673
+   },
+   {
+    "name": "Fremont",
+    "forwardShare": 0.0652,
+    "reverseShare": 0.1334
+   }
+  ],
+  "dispatchName": "Rainbow NC",
+  "fullname": ""
+ },
+ "28X": {
+  "coverage": 0.9978,
+  "overlay": [
+   {
+    "name": "Maxwell Park",
+    "forwardShare": 0.6398,
+    "reverseShare": 0.9142
+   },
+   {
+    "name": "Mills College",
+    "forwardShare": 0.3517,
+    "reverseShare": 0.9522
+   },
+   {
+    "name": "Redwood Heights",
+    "forwardShare": 0.0063,
+    "reverseShare": 0.0049
+   }
+  ],
+  "dispatchName": "Maxwell Park NC",
+  "fullname": ""
+ },
+ "29X": {
+  "coverage": 0.9978,
+  "overlay": [
+   {
+    "name": "Millsmont",
+    "forwardShare": 0.5296,
+    "reverseShare": 0.9748
+   },
+   {
+    "name": "Frick",
+    "forwardShare": 0.3326,
+    "reverseShare": 0.9969
+   },
+   {
+    "name": "Bancroft Business",
+    "forwardShare": 0.0724,
+    "reverseShare": 0.4594
+   },
+   {
+    "name": "Eastmont Hills",
+    "forwardShare": 0.0632,
+    "reverseShare": 0.1046
+   }
+  ],
+  "dispatchName": "Millsmont, Evergreen, Millsbrae NC",
+  "fullname": ""
+ },
+ "30X": {
+  "coverage": 0.9968,
+  "overlay": [
+   {
+    "name": "Arroyo Viejo",
+    "forwardShare": 0.471,
+    "reverseShare": 0.9961
+   },
+   {
+    "name": "Havenscourt",
+    "forwardShare": 0.3535,
+    "reverseShare": 0.6469
+   },
+   {
+    "name": "Hegenberger",
+    "forwardShare": 0.1133,
+    "reverseShare": 1.0
+   },
+   {
+    "name": "East 14th Street Business",
+    "forwardShare": 0.059,
+    "reverseShare": 0.115
+   }
+  ],
+  "dispatchName": "66-82",
+  "fullname": ""
+ },
+ "30Y": {
+  "coverage": 0.9992,
+  "overlay": [
+   {
+    "name": "Eastmont Hills",
+    "forwardShare": 0.5979,
+    "reverseShare": 0.8393
+   },
+   {
+    "name": "Eastmont",
+    "forwardShare": 0.2849,
+    "reverseShare": 0.9415
+   },
+   {
+    "name": "Bancroft Business",
+    "forwardShare": 0.1001,
+    "reverseShare": 0.539
+   },
+   {
+    "name": "Oak Knoll-Golf Links",
+    "forwardShare": 0.0097,
+    "reverseShare": 0.0121
+   },
+   {
+    "name": "Havenscourt",
+    "forwardShare": 0.0066,
+    "reverseShare": 0.0139
+   }
+  ],
+  "dispatchName": "Eastmont 30Y NC",
+  "fullname": ""
+ },
+ "31X": {
+  "coverage": 0.0173,
+  "overlay": [
+   {
+    "name": "Coliseum Industrial Complex",
+    "forwardShare": 0.0173,
+    "reverseShare": 0.201
+   }
+  ],
+  "dispatchName": "Coliseum Business Alert",
+  "fullname": ""
+ },
+ "31Y": {
+  "coverage": 0.8326,
+  "overlay": [
+   {
+    "name": "Coliseum Industrial Complex",
+    "forwardShare": 0.4668,
+    "reverseShare": 0.2906
+   },
+   {
+    "name": "Brookfield Village",
+    "forwardShare": 0.2476,
+    "reverseShare": 0.747
+   },
+   {
+    "name": "Columbia Gardens",
+    "forwardShare": 0.1096,
+    "reverseShare": 0.918
+   },
+   {
+    "name": "Sobrante Park",
+    "forwardShare": 0.0086,
+    "reverseShare": 0.0361
+   }
+  ],
+  "dispatchName": "",
+  "fullname": ""
+ },
+ "31Z": {
+  "coverage": 0.9934,
+  "overlay": [
+   {
+    "name": "Sobrante Park",
+    "forwardShare": 0.5249,
+    "reverseShare": 0.8877
+   },
+   {
+    "name": "South Stonehurst",
+    "forwardShare": 0.2377,
+    "reverseShare": 0.9545
+   },
+   {
+    "name": "Brookfield Village",
+    "forwardShare": 0.2074,
+    "reverseShare": 0.2529
+   },
+   {
+    "name": "Columbia Gardens",
+    "forwardShare": 0.0234,
+    "reverseShare": 0.0793
+   }
+  ],
+  "dispatchName": "",
+  "fullname": ""
+ },
+ "32X": {
+  "coverage": 0.7853,
+  "overlay": [
+   {
+    "name": "North Stonehurst",
+    "forwardShare": 0.4236,
+    "reverseShare": 0.9562
+   },
+   {
+    "name": "Iveywood",
+    "forwardShare": 0.2174,
+    "reverseShare": 0.5421
+   },
+   {
+    "name": "East 14th Street Business",
+    "forwardShare": 0.0823,
+    "reverseShare": 0.1342
+   },
+   {
+    "name": "Durant Manor",
+    "forwardShare": 0.062,
+    "reverseShare": 0.3757
+   }
+  ],
+  "dispatchName": "32X NC",
+  "fullname": ""
+ },
+ "32Y": {
+  "coverage": 0.9935,
+  "overlay": [
+   {
+    "name": "Las Palmas",
+    "forwardShare": 0.2994,
+    "reverseShare": 0.9944
+   },
+   {
+    "name": "Foothill Square",
+    "forwardShare": 0.267,
+    "reverseShare": 0.9682
+   },
+   {
+    "name": "Iveywood",
+    "forwardShare": 0.1636,
+    "reverseShare": 0.4579
+   },
+   {
+    "name": "Toler Heights",
+    "forwardShare": 0.1494,
+    "reverseShare": 0.398
+   },
+   {
+    "name": "Durant Manor",
+    "forwardShare": 0.0918,
+    "reverseShare": 0.6243
+   },
+   {
+    "name": "Oak Knoll-Golf Links",
+    "forwardShare": 0.0151,
+    "reverseShare": 0.0155
+   },
+   {
+    "name": "Chabot Park",
+    "forwardShare": 0.0072,
+    "reverseShare": 0.0045
+   }
+  ],
+  "dispatchName": "MacArthur Corridor",
+  "fullname": ""
+ },
+ "33X": {
+  "coverage": 0.9987,
+  "overlay": [
+   {
+    "name": "Coliseum Industrial Complex",
+    "forwardShare": 0.3155,
+    "reverseShare": 0.1197
+   },
+   {
+    "name": "Highland",
+    "forwardShare": 0.271,
+    "reverseShare": 1.0
+   },
+   {
+    "name": "Elmhurst Park",
+    "forwardShare": 0.1933,
+    "reverseShare": 0.9993
+   },
+   {
+    "name": "Woodland",
+    "forwardShare": 0.1538,
+    "reverseShare": 0.8482
+   },
+   {
+    "name": "East 14th Street Business",
+    "forwardShare": 0.0651,
+    "reverseShare": 0.14
+   }
+  ],
+  "dispatchName": "Beat 33X/34X Neighborhood Improvement Council",
+  "fullname": ""
+ },
+ "34X": {
+  "coverage": 0.9988,
+  "overlay": [
+   {
+    "name": "Webster",
+    "forwardShare": 0.5177,
+    "reverseShare": 0.982
+   },
+   {
+    "name": "Cox",
+    "forwardShare": 0.4144,
+    "reverseShare": 0.9809
+   },
+   {
+    "name": "East 14th Street Business",
+    "forwardShare": 0.0667,
+    "reverseShare": 0.1034
+   }
+  ],
+  "dispatchName": "Beat 33X/34X Neighborhood Improvement Council",
+  "fullname": ""
+ },
+ "35X": {
+  "coverage": 0.9907,
+  "overlay": [
+   {
+    "name": "Oak Knoll-Golf Links",
+    "forwardShare": 0.567,
+    "reverseShare": 0.9719
+   },
+   {
+    "name": "Castlemont",
+    "forwardShare": 0.2557,
+    "reverseShare": 0.9988
+   },
+   {
+    "name": "Toler Heights",
+    "forwardShare": 0.1348,
+    "reverseShare": 0.6017
+   },
+   {
+    "name": "Sequoyah",
+    "forwardShare": 0.0221,
+    "reverseShare": 0.0082
+   },
+   {
+    "name": "Eastmont",
+    "forwardShare": 0.0111,
+    "reverseShare": 0.0503
+   }
+  ],
+  "dispatchName": "35X NC",
+  "fullname": ""
+ },
+ "35Y": {
+  "coverage": 0.7229,
+  "overlay": [
+   {
+    "name": "Sequoyah",
+    "forwardShare": 0.4453,
+    "reverseShare": 0.7129
+   },
+   {
+    "name": "Chabot Park",
+    "forwardShare": 0.2216,
+    "reverseShare": 0.9882
+   },
+   {
+    "name": "Sheffield",
+    "forwardShare": 0.056,
+    "reverseShare": 0.9131
+   }
+  ],
+  "dispatchName": "South Hills NC",
+  "fullname": ""
+ },
+ "LKM1": {
+  "coverage": 0,
+  "overlay": [],
+  "dispatchName": "",
+  "fullname": "LAKE MERRIT"
+ },
+ "PDT2": {
+  "coverage": 0.0256,
+  "overlay": [
+   {
+    "name": "Montclair",
+    "forwardShare": 0.0188,
+    "reverseShare": 0.0308
+   },
+   {
+    "name": "Crocker Highland",
+    "forwardShare": 0.0068,
+    "reverseShare": 0.0778
+   }
+  ],
+  "dispatchName": "",
+  "fullname": "PIEDMONT"
+ }
+}

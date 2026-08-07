@@ -9,6 +9,8 @@ import UnderlayPicker from '@/components/maps/UnderlayPicker'
 import UnderlayLegend from '@/components/maps/UnderlayLegend'
 import NeighborhoodCensusContext from '@/components/ui/NeighborhoodCensusContext'
 import { useViewEntry, useActiveCity } from '@/cities/useActiveCity'
+import { composeAreaLabel } from '@/cities/areaLabel'
+import { AreaRowLabel } from '@/components/ui/AreaLabel'
 import { useSearchParams } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import { useDataset } from '@/hooks/useDataset'
@@ -61,10 +63,9 @@ export default function Cases311() {
   const { dateRange, timeOfDayFilter, comparisonMode, selected311Case, setSelected311Case } = useAppStore()
   const city = useActiveCity()
   const isSF = city.id === 'sf'
-  // Reader-facing beat labels ('07X' → 'Beat 07X'); identity for SF.
   const areaLabel = useCallback(
-    (name: string) => city.areas.formatLabel?.(name) ?? name,
-    [city],
+    (name: string) => composeAreaLabel(city.areas, name),
+    [city]
   )
   // TWO-part gate: `enabled` stops the SF fetch battery (a render gate alone
   // would still fire it on Oakland routes); the render gate below hides the row.
@@ -1025,8 +1026,8 @@ export default function Cases311() {
                         />
                         <div className="relative flex items-center justify-between">
                           <div className="min-w-0 flex-1">
-                            <p className="text-[12px] font-medium text-ink dark:text-slate-200 truncate leading-tight">
-                              {areaLabel(ns.neighborhood)}
+                            <p className="text-[12px] font-medium text-ink dark:text-slate-200 leading-tight flex items-baseline gap-1.5 min-w-0">
+                              <AreaRowLabel areas={city.areas} id={ns.neighborhood} />
                             </p>
                             <p className="text-micro text-slate-400 dark:text-slate-600 font-mono italic">
                               {(() => {

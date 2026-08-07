@@ -1,6 +1,7 @@
 import type { CityConfig } from '../types'
 import { buildDatasets } from '../buildDatasets'
 import { OAKLAND_BEATS } from './beats'
+import { OAKLAND_BEAT_NAMES } from './beatNames'
 import { OAKLAND_DATASETS_RAW } from './datasets'
 import { OAKLAND_MANIFEST } from './manifest'
 
@@ -11,12 +12,18 @@ export const oaklandCity: CityConfig = {
   areas: {
     noun: 'police beat', nounPlural: 'police beats',
     geojsonPath: '/data/geo/oakland-beats.geojson',
-    // excluded stays empty: the config field has no consumers yet
-    // (exclusion logic still imports the SF constants directly), and
-    // census: null gates off the surfaces that would care; whether
-    // LKM1/PDT2 join it is a stage-3 editorial call.
+    // excluded stays empty: the config field has census semantics and no
+    // Oakland consumer (census: null gates those surfaces off). ⌘K exclusion
+    // is the separate searchExcluded field below.
     names: OAKLAND_BEATS, excluded: new Set(), count: 59,
-    formatLabel: (name) => `Beat ${name}`,
+    // Editorial labels (beatNames.ts). Unknown codes are the real
+    // no-polygon buckets 77X/99X (~3.9% of crime rows) — they must read as
+    // the administrative bucket they are, never as a place.
+    displayName: (id) => OAKLAND_BEAT_NAMES[id] ?? 'Unmapped beat',
+    // LKM1: 3 crime cases all-time (2005). PDT2: the Piedmont enclave —
+    // OPD isn't its police force. A ⌘K row for either navigates a reader
+    // to near-certain emptiness under a famous name.
+    searchExcluded: new Set(['LKM1', 'PDT2']),
     placeDestination: { viewId: 'crime-incidents', param: 'neighborhood' },
   },
   camera: {
