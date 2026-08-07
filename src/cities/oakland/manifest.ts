@@ -7,16 +7,28 @@ import type { ViewManifestEntry } from '../manifest'
  * first; stage 3b flips parking-citations and campaign-finance, so every
  * /oakland/* slug renders a real view. navLabels/pigments mirror SF's
  * per-view values (same dataset family = same pigment in every city);
- * homeCard and underlayPreset are deliberately absent (the Home grid is
- * SF's until stage 4; census: null hides every ACS affordance).
+ * homeCard fields drive the /oakland landing grid (stage 4b);
+ * underlayPreset stays absent (census: null hides every ACS affordance).
  */
 export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
+  {
+    viewId: 'home',
+    navLabel: 'Overview',
+    navShortLabel: 'OV',
+    navDescription: 'Oakland overview & view picker',
+    accentColor: '#b85a33', // terracotta-600 — primary brand
+    // A landing page consumes nothing date-scoped — without this flag the
+    // header picker would be inert while ?start=&end= dirties every shared
+    // link (declared delta from SF Home, which consumes dateRange).
+    dateless: true,
+  },
   {
     viewId: 'crime-incidents',
     navLabel: 'Crime Incidents',
     navShortLabel: 'CI',
     navDescription: 'OPD incident reports on police beats',
     accentColor: '#963e30', // brick-600 — same pigment as SF crime
+    homeCard: { title: 'Crime Incidents', subtitle: 'OPD reports across 59 named beats', order: 1 },
     eraSource: {
       datasetKey: 'policeIncidents',
       dateField: 'datetime',
@@ -34,6 +46,7 @@ export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
     navShortLabel: '311',
     navDescription: 'Oakland 311 service requests',
     accentColor: '#5c7a3d', // moss-600 — same as SF 311
+    homeCard: { title: '311 Service Requests', subtitle: 'Next-day civic maintenance signals', order: 2 },
     eraSource: { datasetKey: 'cases311', dateField: 'datetimeinit', clamp: [2013, null] },
     omniDatasetKeys: ['cases311'],
   },
@@ -43,6 +56,7 @@ export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
     navShortLabel: 'PC',
     navDescription: 'Oakland parking citations',
     accentColor: '#d47149', // terracotta-500 — same as SF parking citations
+    homeCard: { title: 'Parking Citations', subtitle: 'Enforcement patterns, beat by beat', order: 3 },
     eraSource: { datasetKey: 'parkingCitations', dateField: 'ticket_iss', clamp: [2018, null] },
     omniDatasetKeys: ['parkingCitations'],
   },
@@ -52,6 +66,7 @@ export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
     navShortLabel: 'CF',
     navDescription: 'FPPC filings — contributions & spending',
     accentColor: '#8b6282', // plum-500 — same as SF campaign finance
+    homeCard: { title: 'Campaign Finance', subtitle: 'FPPC money in Oakland elections', order: 4 },
     // No eraSource — parity with SF's entry (no era track on this view).
     // ⌘K claims the four sets the view READS. fppc460Summary is deliberately
     // absent — its amount_a is cumulative-ish (10–20× transaction sums;

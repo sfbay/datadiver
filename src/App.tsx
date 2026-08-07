@@ -17,7 +17,7 @@ import type { ViewId } from '@/cities/manifest'
 // vite.config.ts only helps if no EAGER module reaches mapbox-gl). The
 // flagship still feels instant: an idle-time prefetch in App() warms its
 // chunks once the landing page has painted and gone quiet.
-import Home from '@/views/Home/Home'
+import HomeRouter from '@/views/Home/HomeRouter'
 
 const Last48 = lazy(() => import('@/views/Last48/Last48'))
 const EmergencyResponse = lazy(() => import('@/views/EmergencyResponse/EmergencyResponse'))
@@ -49,7 +49,7 @@ const Housing = lazy(() => import('@/views/Housing/Housing'))
  *  meets code. Components are city-agnostic; the manifest decides which
  *  cities mount them. */
 const VIEW_COMPONENTS: Record<ViewId, ComponentType> = {
-  home: Home,
+  home: HomeRouter,
   alerts: Alerts,
   live: Last48,
   pulse: Pulse,
@@ -185,10 +185,11 @@ export default function App() {
           {sfCity.redirects.map(({ from, to }) => (
             <Route key={from} path={`/${from}`} element={<CityRedirect to={viewPath('sf', to)} />} />
           ))}
-          {/* Dormant Oakland slugs (parking-citations, campaign-finance) +
-              junk /oakland/* paths land Home. Live routes above outrank this
-              splat by v6 route ranking. */}
-          <Route path="/oakland/*" element={<Navigate to="/" replace />} />
+          {/* Unknown /oakland/* slugs land on Oakland's own front door (the
+              exact /oakland route above outranks this splat by v6 ranking;
+              registry.test.ts pins the home entry live so the splat can
+              never self-target a blank). */}
+          <Route path="/oakland/*" element={<Navigate to="/oakland" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         </Suspense>

@@ -8,7 +8,7 @@ import { OAKLAND_MANIFEST } from './manifest'
 export const oaklandCity: CityConfig = {
   id: 'oakland',
   name: 'Oakland', short: 'Oak.', abbrev: 'OAK',
-  portal: { name: 'OakData', host: 'data.oaklandca.gov' },
+  portal: { name: 'Oakland Open Data', host: 'data.oaklandca.gov' },
   areas: {
     noun: 'police beat', nounPlural: 'police beats',
     geojsonPath: '/data/geo/oakland-beats.geojson',
