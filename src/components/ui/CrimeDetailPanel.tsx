@@ -3,6 +3,7 @@ import { useAppStore } from '@/stores/appStore'
 import { fetchDataset } from '@/api/client'
 import { useDispatchCrossRef } from '@/hooks/useDispatchCrossRef'
 import { useActiveCity } from '@/cities/useActiveCity'
+import { BeatPanelLabel } from './AreaLabel'
 import type { PoliceIncident } from '@/types/datasets'
 import {
   normalizeHistoricalIncident,
@@ -476,7 +477,7 @@ export default function CrimeDetailPanel() {
             <div className="mb-4">
               <p className="text-micro text-slate-700 dark:text-slate-300">{oakDetail.address || 'Unknown'}</p>
               <p className="text-micro text-slate-500 dark:text-slate-400">
-                {oakDetail.beat ? (city.areas.formatLabel?.(oakDetail.beat) ?? oakDetail.beat) : 'Beat unknown'}
+                {oakDetail.beat ? <BeatPanelLabel areas={city.areas} id={oakDetail.beat} /> : 'Beat unknown'}
               </p>
             </div>
 
