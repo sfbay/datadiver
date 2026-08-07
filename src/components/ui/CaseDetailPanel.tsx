@@ -7,6 +7,7 @@ import { parseDateTime, formatDate, formatResolution, diffHours } from '@/utils/
 import { classifyCaseMedia } from '@/utils/caseMedia'
 import { displayCategory311, isOakCaseOpen } from '@/views/Cases311/dialect311'
 import DetailPanelShell from '@/components/ui/DetailPanelShell'
+import { BeatPanelLabel } from './AreaLabel'
 
 interface CaseDetail {
   requestId: string
@@ -377,7 +378,7 @@ export default function CaseDetailPanel() {
             <div className="mb-4">
               <p className="text-micro text-slate-700 dark:text-slate-300">{oakDetail.address}</p>
               <p className="text-micro text-slate-500 dark:text-slate-400">
-                {oakDetail.beat ? (city.areas.formatLabel?.(oakDetail.beat) ?? oakDetail.beat) : 'Beat unknown'}
+                {oakDetail.beat ? <BeatPanelLabel areas={city.areas} id={oakDetail.beat} /> : 'Beat unknown'}
               </p>
             </div>
 

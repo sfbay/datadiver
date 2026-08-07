@@ -9,6 +9,8 @@ import UnderlayPicker from '@/components/maps/UnderlayPicker'
 import UnderlayLegend from '@/components/maps/UnderlayLegend'
 import NeighborhoodCensusContext from '@/components/ui/NeighborhoodCensusContext'
 import { useViewEntry, useRouteView, useActiveCity } from '@/cities/useActiveCity'
+import { composeAreaLabel } from '@/cities/areaLabel'
+import { AreaRowLabel } from '@/components/ui/AreaLabel'
 import { useSearchParams } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import { useDataset } from '@/hooks/useDataset'
@@ -65,7 +67,7 @@ export default function ParkingCitations() {
   const { cityId } = useRouteView()
   const isSF = cityId === 'sf'
   const city = useActiveCity()
-  const areaLabel = (name: string) => city.areas.formatLabel ? city.areas.formatLabel(name) : name
+  const areaLabel = (name: string) => composeAreaLabel(city.areas, name)
   // TWO-part gate: `enabled` stops the SF fetch battery on Oakland routes;
   // the render gate below hides the row (crime-idiom parity).
   const civicIndicators = useCivicIndicators({ enabled: isSF })
@@ -1109,8 +1111,8 @@ export default function ParkingCitations() {
                         />
                         <div className="relative flex items-center justify-between">
                           <div className="min-w-0 flex-1">
-                            <p className="text-[12px] font-medium text-ink dark:text-slate-200 truncate leading-tight">
-                              {isSF ? ns.neighborhood : areaLabel(ns.neighborhood)}
+                            <p className="text-[12px] font-medium text-ink dark:text-slate-200 leading-tight flex items-baseline gap-1.5 min-w-0">
+                              <AreaRowLabel areas={city.areas} id={ns.neighborhood} />
                             </p>
                             <p className="text-micro text-slate-400 dark:text-slate-600 font-mono italic">
                               {nhTrend?.priorYearCount ? (

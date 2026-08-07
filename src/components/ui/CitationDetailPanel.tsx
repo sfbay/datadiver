@@ -6,6 +6,7 @@ import { formatDate, formatCurrency } from '@/utils/time'
 import DetailPanelShell from '@/components/ui/DetailPanelShell'
 import { useRouteView, useActiveCity } from '@/cities/useActiveCity'
 import { oakViolationLabel, regionToBeat, OAK_CITATION_SELECT, type OakCitationRecord } from '@/views/ParkingCitations/citationsDialect'
+import { BeatPanelLabel } from './AreaLabel'
 
 interface CitationDetail {
   citationNumber: string
@@ -160,7 +161,7 @@ export default function CitationDetailPanel() {
             <p className="text-micro text-slate-700 dark:text-slate-300">{detail.location}</p>
             <p className="text-micro text-slate-500 dark:text-slate-400">
               {detail.neighborhood !== 'Unknown'
-                ? (city.areas.formatLabel?.(detail.neighborhood) ?? detail.neighborhood)
+                ? <BeatPanelLabel areas={city.areas} id={detail.neighborhood} />
                 : detail.neighborhood}
               {detail.district ? <> &middot; District {detail.district}</> : null}
             </p>
