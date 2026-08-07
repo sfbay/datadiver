@@ -393,6 +393,28 @@ export default function About() {
               </p>
             </Finding>
 
+            <Finding title="Oakland police beats get their names from an overlay, not from OPD">
+              <p>
+                Oakland's crime, 311, and parking datasets locate events by police
+                beat &mdash; codes like 12Y &mdash; and the city names exactly two of
+                the 59 beat polygons. The neighborhood names DataDiver shows beside
+                each code (&ldquo;Rockridge &amp; Shafter &middot; 12Y&rdquo;) are our
+                synthesis: we overlay the city&rsquo;s official neighborhood boundary
+                layer on the beat polygons and measure how much of each beat every
+                named neighborhood covers, cross-check the result against the names
+                Oakland&rsquo;s 911 dispatch layer and Neighborhood Crime Prevention
+                Councils use, and edit for clarity. A few labels are geographic facts
+                rather than neighborhood names (Airport &amp; Coliseum Complex; Outer
+                Harbor &amp; Army Base; Lake Merritt; Piedmont &mdash; an enclave city
+                with its own police force, which is why its numbers sit near zero).
+                The beat code is always shown: it is the precise unit the data
+                actually uses, and the name is the human handle. Events whose records
+                carry the no-location codes 77X/99X appear as &ldquo;Unmapped
+                beat.&rdquo; The full method and per-beat evidence shares are
+                committed to the project repository.
+              </p>
+            </Finding>
+
             <div id="elections" className="scroll-mt-4">
               <Finding title="San Francisco doesn't publish election results as open data">
                 <p className="mb-3">

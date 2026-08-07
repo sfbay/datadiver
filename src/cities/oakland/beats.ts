@@ -3,7 +3,11 @@
  * SF_NEIGHBORHOODS). Ids are the ZERO-PADDED beat codes that match the
  * vendored asset's `nhood` property and the event datasets' beat fields
  * (`policebeat` on crime, `beat` on 311). 57 standard NN[X/Y/Z] beats
- * plus two special patrol areas: LKM1 (Lake Merritt) and PDT2 (Port).
+ * plus two special dispatch carve-outs: LKM1 (Lake Merritt — the lake
+ * itself) and PDT2 (Piedmont, the enclave city; NOT the Port — the Port's
+ * terminals sit inside beats 02Y/05Y, verified by landmark containment).
+ * Reader-facing labels live in beatNames.ts (display-only; codes are
+ * canonical everywhere).
  * beats.test.ts pins this list against the committed GeoJSON.
  */
 export const OAKLAND_BEATS = [

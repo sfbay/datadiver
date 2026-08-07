@@ -503,6 +503,52 @@ probe tables + §3/§4), `docs/superpowers/specs/2026-08-05-oakland-data-spine-d
 and `docs/superpowers/specs/2026-08-06-oakland-stage3b-views-design.md`
 (citations + campaign-finance design + as-built deltas).
 
+### How beats get their names (display vocabulary, stage 4a)
+
+Oakland's event data joins to 59 police beats, and no official beat→name
+crosswalk exists anywhere: the city's beat layer (`78s7-673i`) fills its
+`fullname` column for exactly 2 of 59 polygons (`LKM1` → "LAKE MERRIT" [sic],
+`PDT2` → "PIEDMONT"). The labels DataDiver ships
+(`src/cities/oakland/beatNames.ts`) are an **editorial synthesis** with a
+committed audit trail (`scripts/oakland-beat-names-evidence.json`, regenerated
+by `scripts/build-oakland-beat-names.py`):
+
+- **Overlay leg (official):** the city's live neighborhoods layer
+  (`sb4q-6bkc`, 131 polygons / 129 names after merging the two split names,
+  refreshed 2024-07) intersected with the vendored beat polygons. Forward
+  share = how much of the beat a name covers; **reverse share** = how much of
+  the neighborhood lives in the beat. Label order follows forward-share order
+  except declared promotions: a name may lead when its reverse share is a
+  majority (Laurel 65% → 25X, Melrose 89% → 26X) or the dispatch leg attests
+  it. (`b5ya-f7qx` is a frozen 2021 copy of the same layer — it backs the
+  citations dataset's neighborhood computed region; name sets verified
+  identical.)
+- **Dispatch leg (operational):** the ArcGIS `Police_Beats_NCPC` layer that
+  feeds Oakland's 911 dispatch — same 59 codes with an NCPC name field.
+  ~43/59 carry real place names; ~16 are junk (tautologies, a street range,
+  blanks). **10 names span 2–3 beats (22 beats) and 4 are blank, so for 26
+  of 59 beats this leg corroborates place identity only, never a per-beat
+  name.** Where several names clear the promotion bar (25X: Leona Heights
+  is majority-contained too), the editorial pick among qualifiers leans on
+  the dispatch attestation and name recognition — disclosed by the spec
+  table's † marker beside the evidence shares.
+- **Authored tier (landmark-verified):** Airport & Coliseum Complex (31X —
+  the stadium; the *neighborhood* named Coliseum is 100% inside 26Y),
+  Prescott & Port of Oakland (02Y — the container terminals), Outer Harbor &
+  Army Base (05Y), Lake Merritt (LKM1 — 0% neighborhood coverage, it IS the
+  lake), Piedmont (PDT2 — the enclave city OPD doesn't police: 182 crime
+  cases all-time; excluded from ⌘K along with LKM1, which has 3 cases, all
+  2005).
+- **Spelling curations** (each commented in beatNames.ts): Lake Merritt
+  (city typo), Crocker Highlands, Upper Dimond (the layer contains BOTH
+  "Dimond" and "Upper Diamond"), Hoover-Foster.
+- **Traps for future work:** Fruitvale is beat 23X, not 20X (the dispatch
+  name "Fruitvale Unity" spans 20X/23X/24X and cannot name a beat; Fruitvale
+  BART and 100% of the Fruitvale Station polygon are in 23X). 77X/99X are
+  real no-polygon codes (~3.9% of crime rows) and render "Unmapped beat".
+  Codes stay canonical in state/URL/queries — names are display-only via
+  `areas.displayName` + `composeAreaLabel`.
+
 ### Crime (`ppgh-7dqv`)
 
 **One row is one CHARGE, not one incident.** `casenumber` is not unique —
