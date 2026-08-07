@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildSearchIndex } from './useOmniSearch'
+import { buildSearchIndex, buildCityRows } from './useOmniSearch'
 import { DATASETS } from '@/api/datasets'
 import { sfCity } from '@/cities/sf'
 
@@ -128,5 +128,33 @@ describe('OmniSearch index (SF parity)', () => {
     it("'lake merritt' offers no place row (LKM1 is searchExcluded)", () => {
       expect(matches('lake merritt').filter((r) => r.category === 'place')).toHaveLength(0)
     })
+  })
+})
+
+describe('buildCityRows (⌘K city switching)', () => {
+  it('one row per OTHER city, same-view path when live there', () => {
+    expect(buildCityRows('sf', 'crime-incidents')).toEqual([
+      expect.objectContaining({
+        id: 'city-oakland',
+        category: 'city',
+        label: 'Switch to Oakland',
+        path: '/oakland/crime-incidents',
+      }),
+    ])
+  })
+  it('falls back to the target home when the view is not live there', () => {
+    expect(buildCityRows('sf', 'housing')[0].path).toBe('/oakland')
+    expect(buildCityRows('oakland', 'campaign-finance')[0]).toMatchObject({
+      id: 'city-sf',
+      label: 'Switch to San Francisco',
+      path: '/campaign-finance',
+    })
+  })
+  it("matches the filter on 'oakland' and on 'switch'", () => {
+    const rows = buildCityRows('sf', 'home')
+    const q1 = 'oakland', q2 = 'switch'
+    for (const q of [q1, q2]) {
+      expect(rows.some((r) => r.label.toLowerCase().includes(q) || r.sublabel.toLowerCase().includes(q))).toBe(true)
+    }
   })
 })

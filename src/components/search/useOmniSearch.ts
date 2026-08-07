@@ -1,11 +1,11 @@
 import { useState, useMemo } from 'react'
-import { getCity } from '@/cities/registry'
+import { getCity, CITIES, crossCityPath } from '@/cities/registry'
 import { viewPath, type CityId } from '@/cities/routing'
 import { useRouteView } from '@/cities/useActiveCity'
 import { liveManifest } from '@/cities/manifest'
 import { composeAreaLabel } from '@/cities/areaLabel'
 
-export type SearchCategory = 'view' | 'place' | 'dataset' | 'vendor' | 'time'
+export type SearchCategory = 'view' | 'place' | 'dataset' | 'vendor' | 'time' | 'city'
 
 export interface SearchResult {
   id: string
@@ -90,22 +90,38 @@ export function buildSearchIndex(cityId: CityId): SearchResult[] {
   return results
 }
 
+/** One "Switch to {city}" row per OTHER city — same-view path when live
+ *  there, else that city's home (crossCityPath). Built per-render, never
+ *  cached: the target moves with the current view. */
+export function buildCityRows(currentCityId: CityId, currentViewId: string): SearchResult[] {
+  return (Object.keys(CITIES) as CityId[])
+    .filter((id) => id !== currentCityId)
+    .map((id) => ({
+      id: `city-${id}`,
+      category: 'city' as const,
+      label: `Switch to ${CITIES[id].name}`,
+      sublabel: `${CITIES[id].name} civic data`,
+      icon: '🌉',
+      path: crossCityPath(id, currentViewId),
+    }))
+}
+
 export function useOmniSearch() {
-  const { cityId } = useRouteView()
+  const { cityId, viewId } = useRouteView()
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
 
   const results = useMemo<SearchResult[]>(() => {
     const q = query.trim().toLowerCase()
     if (!q) return []
-    return buildSearchIndex(cityId)
+    return [...buildSearchIndex(cityId), ...buildCityRows(cityId, viewId)]
       .filter(
         (r) =>
           r.label.toLowerCase().includes(q) ||
           r.sublabel.toLowerCase().includes(q)
       )
       .slice(0, 8)
-  }, [query, cityId])
+  }, [query, cityId, viewId])
 
   const open = () => setIsOpen(true)
   const close = () => {
