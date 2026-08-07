@@ -3,6 +3,7 @@ import { getCity } from '@/cities/registry'
 import { viewPath, type CityId } from '@/cities/routing'
 import { useRouteView } from '@/cities/useActiveCity'
 import { liveManifest } from '@/cities/manifest'
+import { composeAreaLabel } from '@/cities/areaLabel'
 
 export type SearchCategory = 'view' | 'place' | 'dataset' | 'vendor' | 'time'
 
@@ -41,15 +42,23 @@ export function buildSearchIndex(cityId: CityId): SearchResult[] {
   }
 
   // Areas → place results. Destination + param come from the city config;
-  // Oakland beat ids get their reader label ('Beat 07X') while the param
-  // carries the RAW id the destination view's ?neighborhood= reads.
+  // labels are the composed editorial form ('Rockridge & Shafter · 12Y' —
+  // composeAreaLabel is identity for SF). The sublabel keeps the literal
+  // word 'beat' + the code so the legacy query shape 'beat 12y' keeps
+  // matching the label||sublabel substring filter. searchExcluded ids
+  // (LKM1/PDT2) get no row — a famous name over a near-empty destination
+  // is absence rendered as presence. The param carries the RAW id the
+  // destination view's ?neighborhood= reads.
   const { viewId: placeView, param: placeParam } = city.areas.placeDestination
   for (const name of city.areas.names) {
+    if (city.areas.searchExcluded?.has(name)) continue
     results.push({
       id: `place-${name}`,
       category: 'place',
-      label: city.areas.formatLabel?.(name) ?? name,
-      sublabel: `${city.name} ${city.areas.noun}`,
+      label: composeAreaLabel(city.areas, name),
+      sublabel: city.areas.displayName
+        ? `Police beat ${name}`
+        : `${city.name} ${city.areas.noun}`,
       icon: '📍',
       path: viewPath(cityId, placeView),
       params: { [placeParam]: name },
