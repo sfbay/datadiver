@@ -28,4 +28,13 @@ describe('OAKLAND_BEAT_NAMES', () => {
       expect(label.split(' & ').length, code).toBeLessThanOrEqual(2)
     }
   })
+
+  it('labels stay on the popup-safe charset (unescaped innerHTML path)', () => {
+    // & is safe only because no label can form an entity reference or tag:
+    // charset excludes < > " ' ; entirely. Widen ONLY with a review of
+    // every innerHTML consumer.
+    for (const [code, label] of Object.entries(OAKLAND_BEAT_NAMES)) {
+      expect(label, code).toMatch(/^[A-Za-z &-]+$/)
+    }
+  })
 })

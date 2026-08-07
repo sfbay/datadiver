@@ -408,10 +408,11 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
   }, [wantOak, modernRes.data, histRes.data, wantModern, wantHist])
 
   /** Oakland: share of counted incidents whose beat is NULL or an
-   *  out-of-beat code with no polygon (77X, 99X — ~4.8% together). These
-   *  rows count in citywide totals but can't appear on the beat ranking or
-   *  choropleth; the view MUST disclose the share (stage-2 spec hard
-   *  requirement). null for SF. */
+   *  out-of-beat code with no polygon (77X, 99X alone are ~3.9%; adding
+   *  NULLs and the malformed tail — unpadded ids, "UNKNOWN", city names,
+   *  zip codes — brings the total to ~4.8%). These rows count in citywide
+   *  totals but can't appear on the beat ranking or choropleth; the view
+   *  MUST disclose the share (stage-2 spec hard requirement). null for SF. */
   const unmappedShare = useMemo(() => {
     if (!wantOak || oakNhoods.data.length === 0) return null
     let mapped = 0

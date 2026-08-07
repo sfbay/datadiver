@@ -44,11 +44,11 @@ export function buildSearchIndex(cityId: CityId): SearchResult[] {
   // Areas → place results. Destination + param come from the city config;
   // labels are the composed editorial form ('Rockridge & Shafter · 12Y' —
   // composeAreaLabel is identity for SF). The sublabel keeps the literal
-  // word 'beat' + the code so the legacy query shape 'beat 12y' keeps
-  // matching the label||sublabel substring filter. searchExcluded ids
-  // (LKM1/PDT2) get no row — a famous name over a near-empty destination
-  // is absence rendered as presence. The param carries the RAW id the
-  // destination view's ?neighborhood= reads.
+  // area noun (from city.areas.noun, e.g. 'police beat') + the code so the
+  // legacy query shape 'beat 12y' keeps matching the label||sublabel
+  // substring filter. searchExcluded ids (LKM1/PDT2) get no row — a famous
+  // name over a near-empty destination is absence rendered as presence.
+  // The param carries the RAW id the destination view's ?neighborhood= reads.
   const { viewId: placeView, param: placeParam } = city.areas.placeDestination
   for (const name of city.areas.names) {
     if (city.areas.searchExcluded?.has(name)) continue
@@ -57,7 +57,7 @@ export function buildSearchIndex(cityId: CityId): SearchResult[] {
       category: 'place',
       label: composeAreaLabel(city.areas, name),
       sublabel: city.areas.displayName
-        ? `Police beat ${name}`
+        ? `${city.areas.noun[0].toUpperCase()}${city.areas.noun.slice(1)} ${name}`
         : `${city.name} ${city.areas.noun}`,
       icon: '📍',
       path: viewPath(cityId, placeView),

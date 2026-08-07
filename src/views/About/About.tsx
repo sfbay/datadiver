@@ -395,7 +395,7 @@ export default function About() {
 
             <Finding title="Oakland police beats get their names from an overlay, not from OPD">
               <p>
-                Oakland's crime, 311, and parking datasets locate events by police
+                Oakland&rsquo;s crime, 311, and parking datasets locate events by police
                 beat &mdash; codes like 12Y &mdash; and the city names exactly two of
                 the 59 beat polygons. The neighborhood names DataDiver shows beside
                 each code (&ldquo;Rockridge &amp; Shafter &middot; 12Y&rdquo;) are our
@@ -404,8 +404,8 @@ export default function About() {
                 named neighborhood covers, cross-check the result against the names
                 Oakland&rsquo;s 911 dispatch layer and Neighborhood Crime Prevention
                 Councils use, and edit for clarity. A few labels are geographic facts
-                rather than neighborhood names (Airport &amp; Coliseum Complex; Outer
-                Harbor &amp; Army Base; Lake Merritt; Piedmont &mdash; an enclave city
+                rather than neighborhood names (Airport &amp; Coliseum Complex; Prescott
+                &amp; Port of Oakland; Outer Harbor &amp; Army Base; Lake Merritt; Piedmont &mdash; an enclave city
                 with its own police force, which is why its numbers sit near zero).
                 The beat code is always shown: it is the precise unit the data
                 actually uses, and the name is the human handle. Events whose records
