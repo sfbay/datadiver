@@ -6,6 +6,7 @@ import { syncViewportMode } from '@/hooks/effectiveViewport'
 import AppShell from '@/components/layout/AppShell'
 import { RouteErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { useRouteView } from '@/cities/useActiveCity'
+import { CITY_SELECTION_FIELDS, type CitySelectionField } from '@/stores/citySelections'
 import { sfCity } from '@/cities/sf'
 import { oaklandCity } from '@/cities/oakland'
 import { viewPath } from '@/cities/routing'
@@ -97,21 +98,28 @@ function CityRedirect({ to }: { to: string }) {
 }
 
 /** Clears cross-city selection state when the URL's city changes. The store
- *  holds no city — the URL is the only authority (see spec §2). */
+ *  holds no city — the URL is the only authority (see spec §2). The field
+ *  list is the pinned CITY_SELECTION_FIELDS contract; the exhaustive Record
+ *  makes "added to the list but not wired" a compile error. */
 function CityChangeReset() {
   const { cityId } = useRouteView()
   const setSelectedNeighborhood = useAppStore((s) => s.setSelectedNeighborhood)
   const setSelectedCrimeIncident = useAppStore((s) => s.setSelectedCrimeIncident)
   const setSelected311Case = useAppStore((s) => s.setSelected311Case)
+  const setSelectedCitation = useAppStore((s) => s.setSelectedCitation)
   const prev = useRef(cityId)
   useEffect(() => {
     if (prev.current !== cityId) {
-      setSelectedNeighborhood(null)
-      setSelectedCrimeIncident(null)
-      setSelected311Case(null)
+      const setters: Record<CitySelectionField, (v: null) => void> = {
+        selectedNeighborhood: setSelectedNeighborhood,
+        selectedCrimeIncident: setSelectedCrimeIncident,
+        selected311Case: setSelected311Case,
+        selectedCitation: setSelectedCitation,
+      }
+      for (const field of CITY_SELECTION_FIELDS) setters[field](null)
     }
     prev.current = cityId
-  }, [cityId, setSelectedNeighborhood, setSelectedCrimeIncident, setSelected311Case])
+  }, [cityId, setSelectedNeighborhood, setSelectedCrimeIncident, setSelected311Case, setSelectedCitation])
   return null
 }
 

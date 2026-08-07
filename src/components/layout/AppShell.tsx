@@ -6,9 +6,10 @@ import { useUrlSync } from '@/hooks/useUrlSync'
 import DateRangePicker from '@/components/filters/DateRangePicker'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import type { TypeScale } from '@/stores/typeScale'
-import { useActiveCity } from '@/cities/useActiveCity'
+import { useActiveCity, useRouteView } from '@/cities/useActiveCity'
 import { viewPath } from '@/cities/routing'
 import { liveManifest } from '@/cities/manifest'
+import CitySwitcher from '@/components/layout/CitySwitcher'
 
 // Type-scale slider stops, in track order. Three stops per Jesse's
 // feedback that a plain large/default toggle wasn't enough runway — the
@@ -33,6 +34,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   useUrlSync()
 
   const city = useActiveCity()
+  const { viewId } = useRouteView()
   // Nav rows ARE the city's LIVE manifest entries, in array order — path
   // derived, never authored. Dormant entries (still redirecting) get no row;
   // the one pre-redirect frame on a dormant slug paints the city's live rows
@@ -176,9 +178,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
               <span className="font-display text-xl italic text-ink dark:text-white leading-none tracking-tight">
                 DataDiver
               </span>
-              <span className="text-micro text-slate-400 dark:text-slate-500 font-mono uppercase tracking-widest mt-0.5">
-                {city.abbrev} Open Data
-              </span>
+              <CitySwitcher currentCityId={city.id} currentViewId={viewId} onNavigate={go} />
             </div>
           )}
         </div>
