@@ -125,10 +125,10 @@ const SF_SOURCES: SourceRow[] = [
 
 const OAKLAND_SOURCES: SourceRow[] = [
   { name: 'Crime Reports (OPD)', id: 'ppgh-7dqv', dateField: 'datetime', note: 'Charge-level rows — every count dedupes by case number; ~3.9% carry no-location beat codes (77X/99X); clamped to 2004+ (earlier rows are a junk trickle)' },
-  { name: '311 Service Requests', id: 'quth-gb8e', dateField: 'datetimeinit', note: "Coordinates from the srx/sry fields — the dataset's own address point is junk; publishes next-day" },
+  { name: '311 Service Requests', id: 'quth-gb8e', dateField: 'datetimeinit', note: 'Coordinates from the srx/sry fields — the dataset’s own address point is junk; publishes next-day' },
   { name: 'Parking Citations', id: '58em-y96b', dateField: 'ticket_iss', note: 'Publishes ~11 weeks behind; violation descriptions carry a 10-character truncation era, so codes are grouped instead' },
   { name: 'Police Beats (boundaries)', id: '78s7-673i', note: 'Vendored as the 59-beat spine; the layer names only 2 of its 59 polygons' },
-  { name: 'Neighborhoods (boundaries)', id: 'sb4q-6bkc', note: "The official 131-polygon layer behind DataDiver's beat labels — see findings" },
+  { name: 'Neighborhoods (boundaries)', id: 'sb4q-6bkc', note: 'The official 131-polygon layer behind DataDiver’s beat labels — see findings' },
   { name: 'Campaign Finance — Sch A contributions', id: '3xq4-ermg', dateField: 'tran_date', note: 'FPPC filings arrive in semiannual lumps — recent months are structurally incomplete until the next deadline' },
   { name: 'Campaign Finance — Sch E expenditures', id: 'bvfu-nq99', dateField: 'expn_date', note: '1,553 rows carry no date ($3.39M) — disclosed in the view' },
   { name: 'Campaign Finance — 496 late IEs', id: 'jkj3-8yq3', dateField: 'exp_date', note: 'Its date field differs from every sibling schedule (exp_date, not expn_date)' },
@@ -257,15 +257,21 @@ export default function About() {
               re-queried. Update frequency varies by dataset and is constrained by each
               publishing agency; no dataset here is truly real-time.
             </p>
+            <p className="mb-5">
+              Election results are the exception: the Department of Elections publishes none of
+              its results to the open data portal, so those figures are read from the
+              Department's own certified reports. That source is listed below alongside the
+              rest, and what it costs us is described in the findings.
+            </p>
           </Prose>
-            <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/80 dark:text-slate-600 mb-3 mt-2">
-              {'──'} San Francisco · data.sfgov.org
-            </p>
-            <SourcesTable rows={SF_SOURCES} host="data.sfgov.org" />
-            <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/80 dark:text-slate-600 mb-3 mt-8">
-              {'──'} Oakland · data.oaklandca.gov
-            </p>
-            <SourcesTable rows={OAKLAND_SOURCES} host="data.oaklandca.gov" />
+          <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/80 dark:text-slate-600 mb-3 mt-2">
+            {'──'} San Francisco · data.sfgov.org
+          </p>
+          <SourcesTable rows={SF_SOURCES} host="data.sfgov.org" />
+          <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/80 dark:text-slate-600 mb-3 mt-8">
+            {'──'} Oakland · data.oaklandca.gov
+          </p>
+          <SourcesTable rows={OAKLAND_SOURCES} host="data.oaklandca.gov" />
         </section>
 
         {/* ── Findings ───────────────────────────────────── */}
