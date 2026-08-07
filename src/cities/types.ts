@@ -29,9 +29,6 @@ export interface CityAreas {
   names: readonly string[]
   excluded: ReadonlySet<string>
   count: number
-  /** Reader-facing area label. Omit = identity (SF neighborhood names ARE
-   *  labels); Oakland turns beat ids into 'Beat 07X'. */
-  formatLabel?: (name: string) => string
   /** Human display name for an area id. Omit = the id IS the name (SF).
    *  Oakland maps beat codes to the editorial labels in beatNames.ts;
    *  unknown codes (77X/99X — real no-polygon buckets) return
