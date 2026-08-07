@@ -351,7 +351,7 @@ git commit -m "feat(oakland): 4b pure leaves — ticker completeness edges, city
 
 **Interfaces:**
 - Consumes: Task 1's leaf; `fetchDataset` (`@/api/client`); `OAKLAND_CRIME_COUNT` from `@/views/CrimeIncidents/crimeDialect`; `fppcBuildersFor` from `@/views/CampaignFinance/fppcDialect`; `cityElections`, `getDefaultCycle` from `@/utils/electionCycles`; `TickerItem` from `@/types/ticker`; `viewPath` from `@/cities/routing`.
-- Produces: `useOaklandIndicators(opts: { enabled: boolean }): { items: TickerItem[]; isLoading: boolean; lastUpdated: Date | null; error: boolean }` — consumed by Task 3's CityLanding. No `.ts` unit test (fetch orchestration; the leaf carries the logic) — `tsc -b` + the final gate cover it.
+- Produces: `useOaklandIndicators(opts: { enabled: boolean }): { items: TickerItem[]; isLoading: boolean; lastUpdated: Date | null }` — consumed by Task 3's CityLanding (no `error` field: `items: []` with `isLoading: false` IS the honest-absence signal). No `.ts` unit test (fetch orchestration; the leaf carries the logic) — `tsc -b` + the final gate cover it.
 
 - [ ] **Step 1: Write the hook**
 
