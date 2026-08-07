@@ -3,13 +3,12 @@ import type { ViewManifestEntry } from '../manifest'
 
 /**
  * Four entries carrying Oakland's per-dataset era facts and ⌘K claims.
- * Stage 3 brought crime-incidents and 311-cases live — their routes now
- * render real views. parking-citations and campaign-finance stay
- * `dormant: true`: registered (era facts, ⌘K) but /oakland/* still
- * redirects those slugs Home. navLabels/pigments mirror SF's per-view
- * values (same dataset family = same pigment in every city); homeCard and
- * underlayPreset are deliberately absent (the Home grid is SF's until
- * stage 4; census: null hides every ACS affordance).
+ * All four are now LIVE — stage 3 brought crime-incidents and 311-cases up
+ * first; stage 3b flips parking-citations and campaign-finance, so every
+ * /oakland/* slug renders a real view. navLabels/pigments mirror SF's
+ * per-view values (same dataset family = same pigment in every city);
+ * homeCard and underlayPreset are deliberately absent (the Home grid is
+ * SF's until stage 4; census: null hides every ACS affordance).
  */
 export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
   {
@@ -40,7 +39,6 @@ export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
   },
   {
     viewId: 'parking-citations',
-    dormant: true,
     navLabel: 'Parking Citations',
     navShortLabel: 'PC',
     navDescription: 'Oakland parking citations',
@@ -50,13 +48,14 @@ export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
   },
   {
     viewId: 'campaign-finance',
-    dormant: true,
     navLabel: 'Campaign Finance',
     navShortLabel: 'CF',
     navDescription: 'FPPC filings — contributions & spending',
     accentColor: '#8b6282', // plum-500 — same as SF campaign finance
     // No eraSource — parity with SF's entry (no era track on this view).
-    // ⌘K claims the core three of the 16 FPPC sets; 16 rows would be noise.
-    omniDatasetKeys: ['fppcSchA', 'fppcSchE', 'fppc460Summary'],
+    // ⌘K claims the four sets the view READS. fppc460Summary is deliberately
+    // absent — its amount_a is cumulative-ish (10–20× transaction sums;
+    // summing it fabricates money).
+    omniDatasetKeys: ['fppcSchA', 'fppcSchE', 'fppc496', 'fppc497'],
   },
 ]

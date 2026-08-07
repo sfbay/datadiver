@@ -8,22 +8,30 @@ import { useDemographicUnderlay } from '@/components/maps/DemographicUnderlay'
 import UnderlayPicker from '@/components/maps/UnderlayPicker'
 import UnderlayLegend from '@/components/maps/UnderlayLegend'
 import NeighborhoodCensusContext from '@/components/ui/NeighborhoodCensusContext'
-import { useViewEntry } from '@/cities/useActiveCity'
+import { useViewEntry, useRouteView, useActiveCity } from '@/cities/useActiveCity'
 import { useSearchParams } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import { useDataset } from '@/hooks/useDataset'
 import { useMapLayer } from '@/hooks/useMapLayer'
 import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { useCitationHourlyPattern } from '@/hooks/useHourlyPatternFactory'
-import { useCitationComparisonData } from '@/hooks/useComparisonDataFactory'
+import { useCitationComparisonData, useOaklandCitationComparisonData } from '@/hooks/useComparisonDataFactory'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useAppStore } from '@/stores/appStore'
 import { resolveComparisonStart, comparisonLabel } from '@/utils/comparisonMode'
-import type { ParkingCitationRecord, ViolationTypeAggRow, NeighborhoodAggRowCitations } from '@/types/datasets'
+import type { ParkingCitationRecord, ViolationTypeAggRow } from '@/types/datasets'
 import { formatCurrency, formatDelta, formatNumber, formatHour } from '@/utils/time'
 import { parseSfLocal } from '@/utils/sfTime'
 import { extractCoordinates } from '@/utils/geo'
+import {
+  OAK_BEAT_REGION_FIELD, OAK_CITATION_SELECT, OAK_VIOLATION_GROUPS,
+  oakViolationClause, oakTodClause, oakStatsWhere, oakDateOnlyClause,
+  sfViolationClause, sfTodFragment, sfStatsWhere, sfDateOnlyClause,
+  oakViolationLabel, regionToBeat, OAK_VIOLATION_LABELS, beatToRegionId,
+  type OakCitationRecord,
+} from './citationsDialect'
+import { useOaklandCitationHourlyPattern } from './oakCitationHooks'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
 import MapSidebar from '@/components/layout/MapSidebar'
 import CardTray, { type CardDef } from '@/components/ui/CardTray'
@@ -54,7 +62,13 @@ const SELECT_FIELDS = 'citation_number,citation_issued_datetime,violation,violat
 
 export default function ParkingCitations() {
   const { dateRange, timeOfDayFilter, comparisonMode, selectedCitation, setSelectedCitation } = useAppStore()
-  const civicIndicators = useCivicIndicators()
+  const { cityId } = useRouteView()
+  const isSF = cityId === 'sf'
+  const city = useActiveCity()
+  const areaLabel = (name: string) => city.areas.formatLabel ? city.areas.formatLabel(name) : name
+  // TWO-part gate: `enabled` stops the SF fetch battery on Oakland routes;
+  // the render gate below hides the row (crime-idiom parity).
+  const civicIndicators = useCivicIndicators({ enabled: isSF })
   const underlayPreset = useViewEntry()?.underlayPreset ?? []
   const [searchParams, setSearchParams] = useSearchParams()
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('violations')
@@ -117,69 +131,63 @@ export default function ParkingCitations() {
   }, [setSearchParams])
 
   // --- WHERE clause construction ---
-  const violationClause = useMemo(() => {
-    if (selectedViolations.size === 0) return ''
-    const escaped = Array.from(selectedViolations).map((c) => `'${c.replace(/'/g, "''")}'`)
-    return `violation_desc IN (${escaped.join(',')})`
-  }, [selectedViolations])
+  // (`selectedNeighborhood` — the URL param — canonically holds the beat
+  // CODE for Oakland; only the builder converts to the numeric region id.)
+  const violationClause = useMemo(
+    () => (isSF ? sfViolationClause(selectedViolations) : oakViolationClause(selectedViolations)),
+    [isSF, selectedViolations]
+  )
 
   // Build shared time-of-day fragment
-  const todFragment = useMemo(() => {
-    if (!timeOfDayFilter) return ''
-    const { startHour, endHour } = timeOfDayFilter
-    if (startHour <= endHour) {
-      return `date_extract_hh(citation_issued_datetime) >= ${startHour} AND date_extract_hh(citation_issued_datetime) <= ${endHour}`
-    }
-    return `(date_extract_hh(citation_issued_datetime) >= ${startHour} OR date_extract_hh(citation_issued_datetime) <= ${endHour})`
-  }, [timeOfDayFilter])
+  const todFragment = useMemo(
+    () => (isSF ? sfTodFragment(timeOfDayFilter) : oakTodClause(timeOfDayFilter)),
+    [isSF, timeOfDayFilter]
+  )
 
   // statsWhere: no geo filter — for stat cards, aggregation, comparison
-  const statsWhere = useMemo(() => {
-    const conditions: string[] = []
-    conditions.push(`citation_issued_datetime >= '${dateRange.start}T00:00:00'`)
-    conditions.push(`citation_issued_datetime <= '${dateRange.end}T23:59:59'`)
-    if (violationClause) conditions.push(violationClause)
-    if (selectedNeighborhood) {
-      conditions.push(`analysis_neighborhood = '${selectedNeighborhood.replace(/'/g, "''")}'`)
-    }
-    if (todFragment) conditions.push(todFragment)
-    return conditions.join(' AND ')
-  }, [dateRange, violationClause, selectedNeighborhood, todFragment])
+  const statsWhere = useMemo(
+    () => (isSF
+      ? sfStatsWhere({ dateRange, violationClause, selectedNeighborhood, todFragment })
+      : oakStatsWhere({ dateRange, violationClause, selectedBeat: selectedNeighborhood, todClause: todFragment })),
+    [isSF, dateRange, violationClause, selectedNeighborhood, todFragment]
+  )
 
   // mapWhere: with geo filter — for heatmap/point GeoJSON data
-  const mapWhere = useMemo(() => {
-    return statsWhere + ' AND the_geom IS NOT NULL'
-  }, [statsWhere])
+  const mapWhere = useMemo(() => statsWhere + ' AND the_geom IS NOT NULL', [statsWhere])
 
   // dateOnlyClause: for violation agg (no violation/neighborhood filter)
-  const dateOnlyClause = useMemo(() => {
-    const conditions: string[] = []
-    conditions.push(`citation_issued_datetime >= '${dateRange.start}T00:00:00'`)
-    conditions.push(`citation_issued_datetime <= '${dateRange.end}T23:59:59'`)
-    if (todFragment) conditions.push(todFragment)
-    return conditions.join(' AND ')
-  }, [dateRange, todFragment])
+  const dateOnlyClause = useMemo(
+    () => (isSF ? sfDateOnlyClause(dateRange, todFragment) : oakDateOnlyClause(dateRange, todFragment)),
+    [isSF, dateRange, todFragment]
+  )
 
-  // Data freshness detection
-  const freshness = useDataFreshness('parkingCitations', 'citation_issued_datetime', dateRange, { geoField: 'the_geom' })
+  // Data freshness detection. Oakland has 100% geo coverage — no geoField,
+  // so the geo-gap alert machinery stands down naturally.
+  const freshness = useDataFreshness(
+    'parkingCitations',
+    isSF ? 'citation_issued_datetime' : 'ticket_iss',
+    dateRange,
+    isSF ? { geoField: 'the_geom' } : { cityId }
+  )
   useEffect(() => { setGeoGapDismissed(false) }, [dateRange.start, dateRange.end])
 
   const trendConfig = useMemo((): TrendConfig => ({
     datasetKey: 'parkingCitations',
-    dateField: 'citation_issued_datetime',
-    neighborhoodField: 'analysis_neighborhood',
+    dateField: isSF ? 'citation_issued_datetime' : 'ticket_iss',
+    neighborhoodField: isSF ? 'analysis_neighborhood' : OAK_BEAT_REGION_FIELD,
+    cityId,
     metrics: [
       { selectExpr: 'AVG(fine_amount)', alias: 'avg_fine', label: 'Avg Fine', format: (v) => formatCurrency(v) },
       { selectExpr: 'SUM(fine_amount)', alias: 'total_fines', label: 'Total Fines', format: (v) => formatCurrency(v) },
     ],
-  }), [])
+  }), [isSF, cityId])
   const trend = useTrendBaseline(trendConfig, dateRange, violationClause || undefined)
 
   // --- Data queries ---
   // Map data: requires geo
-  const { data: rawData, isLoading, error, hitLimit, refetch } = useDataset<ParkingCitationRecord>(
+  const { data: rawData, isLoading, error, hitLimit, refetch } = useDataset<ParkingCitationRecord | OakCitationRecord>(
     'parkingCitations',
-    { $where: mapWhere, $limit: 5000, $select: SELECT_FIELDS },
+    { $where: mapWhere, $limit: 5000, $select: isSF ? SELECT_FIELDS : OAK_CITATION_SELECT },
     [mapWhere]
   )
 
@@ -208,51 +216,79 @@ export default function ParkingCitations() {
   )
   const serverAvgFine = avgFineRows[0] ? parseFloat(avgFineRows[0].avg_fine) : NaN
 
+  // Gated off for Oakland: no vehicle_plate_state column exists there, and
+  // the Out-of-State card is withheld for that city (no request fires).
   const { data: oosCountRows } = useDataset<{ count: string }>(
     'parkingCitations',
     { $select: 'count(*) as count', $where: `${statsWhere} AND vehicle_plate_state IS NOT NULL AND vehicle_plate_state != 'CA'` },
-    [statsWhere]
+    [statsWhere],
+    { enabled: isSF }
   )
   const serverOosCount = oosCountRows[0] ? parseInt(oosCountRows[0].count, 10) : null
 
   const { data: violationRows } = useDataset<ViolationTypeAggRow>(
     'parkingCitations',
-    {
-      $select: 'violation_desc, count(*) as citation_count, SUM(fine_amount) as total_fines, AVG(fine_amount) as avg_fine',
-      $group: 'violation_desc',
-      $where: dateOnlyClause,
-      $order: 'citation_count DESC',
-      $limit: 50,
-    },
-    [dateOnlyClause]
+    isSF
+      ? {
+          $select: 'violation_desc, count(*) as citation_count, SUM(fine_amount) as total_fines, AVG(fine_amount) as avg_fine',
+          $group: 'violation_desc',
+          $where: dateOnlyClause,
+          $order: 'citation_count DESC',
+          $limit: 50,
+        }
+      : {
+          $select: 'violation, count(*) as citation_count, SUM(fine_amount) as total_fines, AVG(fine_amount) as avg_fine',
+          $group: 'violation',
+          $where: dateOnlyClause,
+          $order: 'citation_count DESC',
+          $limit: 50,
+        },
+    [isSF, dateOnlyClause]
   )
 
   // Neighborhood agg: no geo filter
-  const { data: neighborhoodRows } = useDataset<NeighborhoodAggRowCitations>(
+  const { data: neighborhoodRows } = useDataset<Record<string, string>>(
     'parkingCitations',
-    {
-      $select: 'analysis_neighborhood, count(*) as citation_count, SUM(fine_amount) as total_fines, AVG(fine_amount) as avg_fine',
-      $group: 'analysis_neighborhood',
-      $where: statsWhere,
-      $order: 'citation_count DESC',
-      $limit: 50,
-    },
-    [statsWhere]
+    isSF
+      ? {
+          $select: 'analysis_neighborhood, count(*) as citation_count, SUM(fine_amount) as total_fines, AVG(fine_amount) as avg_fine',
+          $group: 'analysis_neighborhood',
+          $where: statsWhere,
+          $order: 'citation_count DESC',
+          $limit: 50,
+        }
+      : {
+          $select: `${OAK_BEAT_REGION_FIELD} as region, count(*) as citation_count, SUM(fine_amount) as total_fines, AVG(fine_amount) as avg_fine`,
+          $group: 'region',
+          $where: statsWhere,
+          $order: 'citation_count DESC',
+          $limit: 200,
+        },
+    [isSF, statsWhere]
   )
 
-  // Hourly pattern
+  // Hourly pattern — dual instances (stage-3 idiom): hooks called
+  // unconditionally, the inactive one disabled/empty.
   const extraWhere = useMemo(() => {
     const parts: string[] = []
     if (violationClause) parts.push(violationClause)
-    if (selectedNeighborhood) parts.push(`analysis_neighborhood = '${selectedNeighborhood.replace(/'/g, "''")}'`)
+    if (selectedNeighborhood) {
+      parts.push(isSF
+        ? `analysis_neighborhood = '${selectedNeighborhood.replace(/'/g, "''")}'`
+        : `${OAK_BEAT_REGION_FIELD} = ${beatToRegionId(selectedNeighborhood) ?? -1}`)
+    }
     return parts.length > 0 ? parts.join(' AND ') : undefined
-  }, [violationClause, selectedNeighborhood])
+  }, [isSF, violationClause, selectedNeighborhood])
 
-  const hourlyPattern = useCitationHourlyPattern(dateRange, extraWhere)
+  const sfHourly = useCitationHourlyPattern(dateRange, extraWhere, isSF)
+  const oakHourly = useOaklandCitationHourlyPattern(dateRange, extraWhere, !isSF)
+  const hourlyPattern = isSF ? sfHourly : oakHourly
 
   // Comparison data
   const compStart = useMemo(() => resolveComparisonStart(comparisonMode, dateRange), [comparisonMode, dateRange])
-  const comparison = useCitationComparisonData(dateRange, statsWhere, compStart, rawData, hitLimit)
+  const sfComparison = useCitationComparisonData(dateRange, statsWhere, isSF ? compStart : null, rawData as ParkingCitationRecord[], hitLimit)
+  const oakComparison = useOaklandCitationComparisonData(dateRange, statsWhere, isSF ? null : compStart, rawData as OakCitationRecord[], hitLimit)
+  const comparison = isSF ? sfComparison : oakComparison
   const compLabel = comparisonLabel(comparisonMode, dateRange)
 
   // Neighborhood boundaries for anomaly mode
@@ -289,26 +325,48 @@ export default function ParkingCitations() {
 
   // --- Computed data ---
   const citationData = useMemo(() => {
-    return rawData
-      .map((record) => {
-        const coords = extractCoordinates(record.the_geom)
+    if (isSF) {
+      return (rawData as ParkingCitationRecord[])
+        .map((record) => {
+          const coords = extractCoordinates(record.the_geom)
+          if (!coords) return null
+          const fineAmount = parseFloat(record.fine_amount) || 0
+          return {
+            citationNumber: record.citation_number,
+            issuedAt: record.citation_issued_datetime,
+            issuedTimeRaw: '',
+            violation: record.violation || '',
+            violationDesc: record.violation_desc || 'Unknown',
+            location: record.citation_location || 'Unknown',
+            fineAmount,
+            plateState: record.vehicle_plate_state || 'Unknown',
+            neighborhood: record.analysis_neighborhood || 'Unknown',
+            lat: coords.lat,
+            lng: coords.lng,
+          }
+        })
+        .filter((r): r is NonNullable<typeof r> => r !== null)
+    }
+    return (rawData as OakCitationRecord[])
+      .map((r) => {
+        const coords = extractCoordinates(r.the_geom)
         if (!coords) return null
-        const fineAmount = parseFloat(record.fine_amount) || 0
         return {
-          citationNumber: record.citation_number,
-          issuedAt: record.citation_issued_datetime,
-          violation: record.violation || '',
-          violationDesc: record.violation_desc || 'Unknown',
-          location: record.citation_location || 'Unknown',
-          fineAmount,
-          plateState: record.vehicle_plate_state || 'Unknown',
-          neighborhood: record.analysis_neighborhood || 'Unknown',
+          citationNumber: r.ticket_num,
+          issuedAt: r.ticket_iss,
+          issuedTimeRaw: r.ticket_i_1 || '',
+          violation: r.violation || '',
+          violationDesc: oakViolationLabel(r.violation, r.violatio_1),
+          location: r.location || 'Unknown',
+          fineAmount: parseFloat(r.fine_amount) || 0,
+          plateState: 'Unknown',
+          neighborhood: regionToBeat(r[':@computed_region_fus4_casw']),
           lat: coords.lat,
           lng: coords.lng,
         }
       })
       .filter((r): r is NonNullable<typeof r> => r !== null)
-  }, [rawData])
+  }, [rawData, isSF])
 
   const stats = useMemo(() => {
     const fines = citationData.map((c) => c.fineAmount).filter((f) => f > 0)
@@ -330,12 +388,14 @@ export default function ParkingCitations() {
 
   // Sidebar data
   const violationEntries = useMemo(
-    () => violationRows.map((r) => ({
-      violationDesc: r.violation_desc,
-      count: parseInt(r.citation_count, 10) || 0,
-      totalFines: parseFloat(r.total_fines) || 0,
-    })),
-    [violationRows]
+    () => violationRows
+      .map((r) => ({
+        violationDesc: isSF ? r.violation_desc : ((r as { violation?: string }).violation ?? ''),
+        count: parseInt(r.citation_count, 10) || 0,
+        totalFines: parseFloat(r.total_fines) || 0,
+      }))
+      .filter((r) => r.violationDesc),
+    [violationRows, isSF]
   )
 
   const topViolationBars = useMemo(() => {
@@ -343,11 +403,13 @@ export default function ParkingCitations() {
       ? [...violationEntries].sort((a, b) => b.totalFines - a.totalFines).slice(0, 8)
       : violationEntries.slice(0, 8)
     return sliced.map((v) => ({
-      label: v.violationDesc,
+      // The fallback is the CODE ITSELF, never oakViolationLabel(code, null)
+      // — that would collapse every tail code into one 'Unknown' label.
+      label: isSF ? v.violationDesc : (OAK_VIOLATION_LABELS[v.violationDesc] ?? v.violationDesc),
       value: sortByRevenue ? v.totalFines : v.count,
       color: '#d47149',
     }))
-  }, [violationEntries, sortByRevenue])
+  }, [violationEntries, sortByRevenue, isSF])
 
   const chartTiles = useMemo((): ChartTileDef[] => {
     const tiles: ChartTileDef[] = []
@@ -420,12 +482,23 @@ export default function ParkingCitations() {
   const neighborhoodEntries = useMemo(() => {
     return neighborhoodRows
       .map((r) => ({
-        neighborhood: r.analysis_neighborhood,
+        neighborhood: isSF ? r.analysis_neighborhood : regionToBeat(r.region),
         citationCount: parseInt(r.citation_count, 10) || 0,
         totalFines: parseFloat(r.total_fines) || 0,
       }))
-      .filter((r) => r.neighborhood)
-  }, [neighborhoodRows])
+      .filter((r) => r.neighborhood && r.neighborhood !== 'Unknown')
+  }, [neighborhoodRows, isSF])
+
+  // Oakland disclosure: rows whose beat region is NULL/unmapped (~5.2%).
+  // totalCount (a fast count(*)) resolves before the 59-bucket GROUP BY —
+  // in that window neighborhoodRows is still empty, so without this guard
+  // the share would read a transient (and wrong) "100% unmapped".
+  const unmappedShare = useMemo(() => {
+    if (isSF || totalCount === null || totalCount === 0 || neighborhoodRows.length === 0) return null
+    const mapped = neighborhoodEntries.reduce((s, n) => s + n.citationCount, 0)
+    const unmapped = totalCount - mapped
+    return unmapped > 0 ? (unmapped / totalCount) * 100 : null
+  }, [isSF, totalCount, neighborhoodEntries, neighborhoodRows])
 
   // Z-score computation for anomaly mode
   const neighborhoodAnomalies = useMemo(() => {
@@ -456,6 +529,7 @@ export default function ParkingCitations() {
           location: r.location,
           neighborhood: r.neighborhood,
           issuedAt: r.issuedAt,
+          issuedTimeRaw: r.issuedTimeRaw,
         },
       })),
     }
@@ -554,9 +628,11 @@ export default function ParkingCitations() {
       // in the viewer's host TZ (wrong for any non-Pacific reader).
       ? new Date(parseSfLocal(String(props.issuedAt))).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' })
       : null
-    const issuedTime = props.issuedAt
-      ? new Date(parseSfLocal(String(props.issuedAt))).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' })
-      : null
+    const issuedTime = props.issuedTimeRaw
+      ? String(props.issuedTimeRaw) // Oakland: published string VERBATIM — parsing the date-only column fabricates "12:00 AM"
+      : props.issuedAt
+        ? new Date(parseSfLocal(String(props.issuedAt))).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' })
+        : null
     const fine = props.fineAmount ? `$${Number(props.fineAmount).toFixed(2)}` : null
     return `
       ${issuedDate ? `<div style="color:#e2e8f0">${issuedDate} · ${issuedTime}</div>` : ''}
@@ -565,8 +641,12 @@ export default function ParkingCitations() {
       ${fine ? `<div class="tooltip-label" style="margin-top:6px">Fine</div><div style="color:#d47149;font-weight:600">${fine}</div>` : ''}
       <div class="tooltip-label" style="margin-top:6px">Location</div>
       <div style="color:#94a3b8">${props.location || 'Unknown'}</div>
-      <div class="tooltip-label" style="margin-top:4px">Neighborhood</div>
-      <div style="color:#94a3b8">${props.neighborhood || 'Unknown'}</div>
+      <div class="tooltip-label" style="margin-top:4px">${isSF ? 'Neighborhood' : 'Beat'}</div>
+      <div style="color:#94a3b8">${
+        isSF
+          ? (props.neighborhood || 'Unknown')
+          : (props.neighborhood && props.neighborhood !== 'Unknown' ? areaLabel(String(props.neighborhood)) : 'Unknown')
+      }</div>
     `
   })
 
@@ -575,8 +655,8 @@ export default function ParkingCitations() {
     const zScore = Number(props.zScore).toFixed(1)
     const sign = Number(props.zScore) >= 0 ? '+' : ''
     return `
-      <div class="tooltip-label">Neighborhood</div>
-      <div class="tooltip-value">${props.nhood || 'Unknown'}</div>
+      <div class="tooltip-label">${isSF ? 'Neighborhood' : 'Beat'}</div>
+      <div class="tooltip-value">${props.nhood && props.nhood !== 'Unknown' ? areaLabel(String(props.nhood)) : 'Unknown'}</div>
       <div class="tooltip-label" style="margin-top:6px">Citation Anomaly</div>
       <div class="tooltip-value">${sign}${zScore}σ</div>
       <div class="tooltip-label" style="margin-top:6px">Citations</div>
@@ -701,6 +781,7 @@ export default function ParkingCitations() {
       info: 'total-citations',
       defaultExpanded: true,
       yoyDelta: !comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null,
+      subtitle: !isSF && unmappedShare !== null ? `${unmappedShare.toFixed(1)}% of citations have no beat` : undefined,
     },
     {
       id: 'avg-fine',
@@ -734,7 +815,9 @@ export default function ParkingCitations() {
       info: 'peak-hour',
       defaultExpanded: false,
     },
-  ], [totalRevenue, totalCount, stats, comparison.deltas, comparison.suppressed, compLabel, comparisonMode, trend.cityWideYoY])
+  ], [totalRevenue, totalCount, stats, comparison.deltas, comparison.suppressed, compLabel, comparisonMode, trend.cityWideYoY, isSF, unmappedShare])
+
+  const cards = isSF ? cardDefs : cardDefs.filter((c) => c.id !== 'out-of-state')
 
   useProgressScope()
 
@@ -752,7 +835,7 @@ export default function ParkingCitations() {
                 Parking Citations
               </h1>
               <p className="hidden sm:block truncate text-micro font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
-                SFMTA &middot; Citation Patterns & Fines
+                {isSF ? 'SFMTA' : 'OakDOT'} &middot; Citation Patterns & Fines
               </p>
             </div>
             {!isLoading && citationData.length > 0 && (
@@ -797,12 +880,14 @@ export default function ParkingCitations() {
       </header>
 
       {/* Cross-view ticker — signals from other datasets */}
-      <div className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-1 bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl z-10">
-        <CivicTicker
-          items={civicIndicators.items.filter(i => i.source.view !== '/parking-citations')}
-          size="compact"
-        />
-      </div>
+      {isSF && (
+        <div className="flex-shrink-0 border-b border-slate-200/50 dark:border-white/[0.04] px-6 py-1 bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl z-10">
+          <CivicTicker
+            items={civicIndicators.items.filter(i => i.source.view !== '/parking-citations')}
+            size="compact"
+          />
+        </div>
+      )}
 
       {/* Time-of-day filter sub-header */}
       {!hourlyPattern.isLoading && hourlyPattern.hourTotals.some((t) => t > 0) && (
@@ -852,7 +937,7 @@ export default function ParkingCitations() {
                 alone hid the server-true cards inside the gap they exist
                 to survive. */}
             {!isLoading && (citationData.length > 0 || totalCount !== null) && (
-              <CardTray viewId="parkingCitations" cards={cardDefs} />
+              <CardTray viewId="parkingCitations" cards={cards} />
             )}
 
             {/* Charts — bottom left */}
@@ -887,7 +972,7 @@ export default function ParkingCitations() {
         {/* Sidebar */}
         <MapSidebar>
           <div className="flex border-b border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
-            {([['violations', 'Violations'], ['neighborhoods', 'Neighborhoods']] as const).map(([key, label]) => (
+            {([['violations', 'Violations'], ['neighborhoods', isSF ? 'Neighborhoods' : 'Beats']] as const).map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setSidebarTab(key)}
@@ -922,6 +1007,8 @@ export default function ParkingCitations() {
                   selected={selectedViolations}
                   onChange={setSelectedViolations}
                   sortByRevenue={sortByRevenue}
+                  groups={isSF ? undefined : OAK_VIOLATION_GROUPS}
+                  formatLabel={isSF ? undefined : (code: string) => OAK_VIOLATION_LABELS[code] ?? code}
                 />
               </>
             )}
@@ -930,21 +1017,27 @@ export default function ParkingCitations() {
               <>
                 <div className="flex items-center gap-2 mb-4">
                   <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
-                    By Neighborhood
+                    {isSF ? 'By Neighborhood' : 'By Beat'}
                   </p>
                   <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
                 </div>
+
+                {unmappedShare !== null && (
+                  <p className="text-nano font-mono text-slate-400/70 dark:text-slate-600 mb-2">
+                    {unmappedShare.toFixed(1)}% of citations in range have no beat and are excluded from this ranking
+                  </p>
+                )}
 
                 {selectedNeighborhood && (
                   <button
                     onClick={() => setSelectedNeighborhood(null)}
                     className="mb-3 text-micro font-mono text-terracotta-500 hover:text-terracotta-500 transition-colors"
                   >
-                    ← Clear filter: {selectedNeighborhood}
+                    ← Clear filter: {isSF ? selectedNeighborhood : areaLabel(selectedNeighborhood)}
                   </button>
                 )}
 
-                {selectedNeighborhood && (
+                {selectedNeighborhood && isSF && (
                   <>
                     <NeighborhoodCensusContext
                       neighborhood={selectedNeighborhood}
@@ -964,6 +1057,11 @@ export default function ParkingCitations() {
                       Peak: <span className="text-terracotta-500">{formatHour(hourlyPattern.peakHour)}</span>
                       {' · '}Quiet: <span className="text-slate-500">{formatHour(hourlyPattern.quietestHour)}</span>
                     </p>
+                    {hourlyPattern.unparsedCount > 0 && (
+                      <p className="text-nano font-mono text-slate-400/70 dark:text-slate-600 mt-1">
+                        {hourlyPattern.unparsedCount.toLocaleString()} citations carry unparseable times — excluded here
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -990,7 +1088,11 @@ export default function ParkingCitations() {
                     const barWidth = (ns.citationCount / maxCount) * 100
                     const isActive = selectedNeighborhood === ns.neighborhood
                     const zScore = neighborhoodAnomalies.get(ns.neighborhood)
-                    const nhTrend = trend.neighborhoodMap.get(ns.neighborhood)
+                    // trend.neighborhoodMap is keyed on the RAW grouped
+                    // value from the trend query — for Oakland that's the
+                    // numeric region id (trendConfig.neighborhoodField =
+                    // OAK_BEAT_REGION_FIELD), not the beat code ns holds.
+                    const nhTrend = trend.neighborhoodMap.get(isSF ? ns.neighborhood : (beatToRegionId(ns.neighborhood) ?? ''))
                     return (
                       <div
                         key={ns.neighborhood}
@@ -1008,7 +1110,7 @@ export default function ParkingCitations() {
                         <div className="relative flex items-center justify-between">
                           <div className="min-w-0 flex-1">
                             <p className="text-[12px] font-medium text-ink dark:text-slate-200 truncate leading-tight">
-                              {ns.neighborhood}
+                              {isSF ? ns.neighborhood : areaLabel(ns.neighborhood)}
                             </p>
                             <p className="text-micro text-slate-400 dark:text-slate-600 font-mono italic">
                               {nhTrend?.priorYearCount ? (

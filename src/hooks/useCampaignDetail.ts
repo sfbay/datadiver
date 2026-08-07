@@ -10,6 +10,8 @@ import type {
 } from '@/types/datasets'
 import { escapeSoQL } from '@/utils/electionCycles'
 import { categorizeSpending, type SpendingCategory } from '@/utils/spendingCategories'
+import type { CityId } from '@/cities/routing'
+import { fppcBuildersFor, type FppcQuerySpec } from '@/views/CampaignFinance/fppcDialect'
 
 export interface SelectedEntity {
   filerName: string
@@ -38,7 +40,8 @@ export interface UseCampaignDetailResult {
 
 export function useCampaignDetail(
   entity: SelectedEntity | null,
-  dateRange: { start: string; end: string }
+  dateRange: { start: string; end: string },
+  cityId: CityId = 'sf'
 ): UseCampaignDetailResult {
   const [sourceBreakdown, setSourceBreakdown] = useState<CampaignSourceAggRow[]>([])
   const [topDonors, setTopDonors] = useState<CampaignDonorRow[]>([])
@@ -73,26 +76,26 @@ export function useCampaignDetail(
     setError(null)
 
     const { start, end } = dateRange
-    const dateWhere = `calculated_date >= '${start}T00:00:00' AND calculated_date <= '${end}T23:59:59'`
-    const filerNid = escapeSoQL(entity.filerNid)
-    const filerWhere = `filer_nid='${filerNid}'`
+    const b = fppcBuildersFor(cityId)
+    const run = <T,>(spec: FppcQuerySpec) =>
+      fetchDataset<T>(spec.datasetKey, spec.params, { cityId })
 
     // Build IE match clause — for measures, do a secondary lookup if ballotNumber not provided
     const isMeasure = entity.filerType === 'Primarily Formed Measure'
 
     async function resolveIeMatchWhere(): Promise<string | null> {
+      if (b.lateIEScope !== 'entity') return null // Oakland: entity IE withheld (no reliable filer→candidate join)
       if (isMeasure) {
         // Use provided ballotNumber, or look it up from IE records
         const bn = entity!.ballotNumber
         if (bn) return `ballot_number='${escapeSoQL(bn)}'`
         // Secondary lookup: find ballot_number from this filer's IE-related records
-        const rows = await fetchDataset<{ ballot_number: string }>('campaignFinance', {
-          $select: 'ballot_number',
-          $where: `${filerWhere} AND ballot_number IS NOT NULL AND ${dateWhere}`,
-          $limit: 1,
-        })
-        if (rows.length > 0 && rows[0].ballot_number) {
-          return `ballot_number='${escapeSoQL(rows[0].ballot_number)}'`
+        const spec = b.ballotNumberLookup(entity!.filerNid, start, end)
+        if (spec) {
+          const rows = await run<{ ballot_number: string }>(spec)
+          if (rows.length > 0 && rows[0].ballot_number) {
+            return `ballot_number='${escapeSoQL(rows[0].ballot_number)}'`
+          }
         }
         // Fallback: try parsing from filer name (e.g., "Yes on D" → "D")
         const match = entity!.filerName.match(/\b(?:Yes|No|Support|Oppose)\s+(?:on\s+)?(?:Prop(?:osition)?\s+)?([A-Z])\b/i)
@@ -107,42 +110,18 @@ export function useCampaignDetail(
 
     const queries: Promise<unknown>[] = [
       // 0: Source breakdown
-      fetchDataset<CampaignSourceAggRow>('campaignFinance', {
-        $select: 'entity_code, SUM(calculated_amount) as total, COUNT(*) as cnt',
-        $where: `form_type='A' AND ${filerWhere} AND ${dateWhere}`,
-        $group: 'entity_code',
-      }),
+      run<CampaignSourceAggRow>(b.sourceBreakdown(entity.filerNid, start, end)),
       // 1: Top donors
-      fetchDataset<CampaignDonorRow>('campaignFinance', {
-        $select: 'transaction_last_name, SUM(calculated_amount) as total',
-        $where: `form_type='A' AND ${filerWhere} AND ${dateWhere}`,
-        $group: 'transaction_last_name',
-        $order: 'total DESC',
-        $limit: 10,
-      }),
+      run<CampaignDonorRow>(b.topDonors(entity.filerNid, start, end)),
       // 2: Entity timeline
-      fetchDataset<CampaignTimelineRow>('campaignFinance', {
-        $select: 'date_trunc_ym(calculated_date) as period, SUM(calculated_amount) as total',
-        $where: `form_type='A' AND ${filerWhere} AND ${dateWhere}`,
-        $group: 'period',
-        $order: 'period',
-      }),
+      run<CampaignTimelineRow>(b.entityTimeline(entity.filerNid, start, end)),
       // 3: Spending categories (grouped by FPPC transaction_code)
-      fetchDataset<CampaignSpendRow>('campaignFinance', {
-        $select: 'transaction_code, SUM(calculated_amount) as total',
-        $where: `form_type='E' AND ${filerWhere} AND ${dateWhere}`,
-        $group: 'transaction_code',
-        $order: 'total DESC',
-        $limit: 50,
-      }),
+      run<CampaignSpendRow>(b.spendingCategories(entity.filerNid, start, end)),
       // 4: Entity donor geography
-      fetchDataset<CampaignDonorGeoRow>('campaignFinance', {
-        $select: 'transaction_zip, SUM(calculated_amount) as total, COUNT(*) as cnt',
-        $where: `form_type='A' AND ${filerWhere} AND ${dateWhere} AND transaction_zip IS NOT NULL`,
-        $group: 'transaction_zip',
-        $order: 'total DESC',
-        $limit: 50,
-      }),
+      (() => {
+        const geoSpec = b.entityDonorGeo(entity.filerNid, start, end)
+        return geoSpec ? run<CampaignDonorGeoRow>(geoSpec) : Promise.resolve([] as CampaignDonorGeoRow[])
+      })(),
     ]
 
     // Fire base queries + resolve IE match in parallel, then fire IE queries
@@ -162,23 +141,12 @@ export function useCampaignDetail(
         setEntityDonorGeo(geo)
 
         // Fire IE queries now that we have the match clause
-        if (ieMatchWhere) {
+        const ieSpecs = ieMatchWhere ? b.ieQueries(ieMatchWhere, start, end) : null
+        if (ieSpecs) {
           try {
             const [supportRows, opposeRows] = await Promise.all([
-              fetchDataset<CampaignIERow>('campaignFinance', {
-                $select: 'filer_name, SUM(calculated_amount) as total',
-                $where: `(form_type='F496' OR form_type='F496P3' OR form_type='F465P3') AND support_oppose_code='S' AND ${ieMatchWhere} AND ${dateWhere}`,
-                $group: 'filer_name',
-                $order: 'total DESC',
-                $limit: 10,
-              }),
-              fetchDataset<CampaignIERow>('campaignFinance', {
-                $select: 'filer_name, SUM(calculated_amount) as total',
-                $where: `(form_type='F496' OR form_type='F496P3' OR form_type='F465P3') AND support_oppose_code='O' AND ${ieMatchWhere} AND ${dateWhere}`,
-                $group: 'filer_name',
-                $order: 'total DESC',
-                $limit: 10,
-              }),
+              run<CampaignIERow>(ieSpecs.support),
+              run<CampaignIERow>(ieSpecs.oppose),
             ])
             if (id !== abortRef.current) return
             setIeSupport(supportRows)
@@ -202,7 +170,7 @@ export function useCampaignDetail(
         setError(err.message || 'Failed to load entity detail')
         setIsLoading(false)
       })
-  }, [entity?.filerNid, entity?.filerType, entity?.candidateLastName, entity?.ballotNumber, dateRange.start, dateRange.end])
+  }, [entity?.filerNid, entity?.filerType, entity?.candidateLastName, entity?.ballotNumber, dateRange.start, dateRange.end, cityId])
 
   return {
     sourceBreakdown, topDonors, ieSupport, ieOppose,

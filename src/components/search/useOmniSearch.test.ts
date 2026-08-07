@@ -67,12 +67,13 @@ describe('OmniSearch index (SF parity)', () => {
     expect(cats.lastIndexOf('place')).toBeLessThan(cats.indexOf('dataset'))
   })
 
-  it('oakland index: 2 LIVE view rows + 59 beat places landing on the crime view + 2 live-claimed datasets', () => {
+  it('oakland index: 4 LIVE view rows + 59 beat places landing on the crime view + 7 live-claimed datasets', () => {
     const oak = buildSearchIndex('oakland')
     const byCat = (c: string) => oak.filter((r) => r.category === c)
-    // Dormant entries (parking-citations, campaign-finance) get no view row —
-    // their route is still the catch-all redirect Home.
-    expect(byCat('view').map((r) => r.id)).toEqual(['view-crime-incidents', 'view-311-cases'])
+    // All four entries are live — each gets a view row.
+    expect(byCat('view').map((r) => r.id)).toEqual([
+      'view-crime-incidents', 'view-311-cases', 'view-parking-citations', 'view-campaign-finance',
+    ])
     // No beat-profile view ships; beat rows land on the crime view with the
     // beat pre-selected (?neighborhood=07X), reader-labeled 'Beat 07X'.
     expect(byCat('place')).toHaveLength(59)
@@ -80,9 +81,13 @@ describe('OmniSearch index (SF parity)', () => {
       label: 'Beat 01X', sublabel: 'Oakland police beat',
       path: '/oakland/crime-incidents', params: { neighborhood: '01X' },
     })
-    // Dataset rows only from LIVE entries' omniDatasetKeys.
-    expect(byCat('dataset').map((r) => r.id)).toEqual(['dataset-policeIncidents', 'dataset-cases311'])
-    expect(oak).toHaveLength(63)
+    // Dataset rows from every entry's omniDatasetKeys: crime 1 + 311 1 +
+    // citations 1 + campaign-finance 4 (the read set) = 7.
+    expect(byCat('dataset').map((r) => r.id)).toEqual([
+      'dataset-policeIncidents', 'dataset-cases311', 'dataset-parkingCitations',
+      'dataset-fppcSchA', 'dataset-fppcSchE', 'dataset-fppc496', 'dataset-fppc497',
+    ])
+    expect(oak).toHaveLength(70)
     for (const r of oak) expect(r.path.startsWith('/oakland'), r.id).toBe(true)
   })
 })

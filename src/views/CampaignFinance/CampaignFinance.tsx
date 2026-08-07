@@ -3,7 +3,11 @@ import { useAppStore } from '@/stores/appStore'
 import { useDataFreshness } from '@/hooks/useDataFreshness'
 import { useCampaignFinance } from '@/hooks/useCampaignFinance'
 import { useCampaignDetail, type SelectedEntity } from '@/hooks/useCampaignDetail'
-import { SF_ELECTIONS, getDefaultCycle, findCycleForRange } from '@/utils/electionCycles'
+import { cityElections, getDefaultCycle, findCycleForRange } from '@/utils/electionCycles'
+import { useRouteView } from '@/cities/useActiveCity'
+import { fppcBuildersFor } from './fppcDialect'
+import { useLateFilings } from '@/hooks/useLateFilings'
+import LateFilingsSection from './LateFilingsSection'
 import StatCard from '@/components/ui/StatCard'
 import DataFreshnessAlert from '@/components/ui/DataFreshnessAlert'
 import ExportButton from '@/components/export/ExportButton'
@@ -19,19 +23,25 @@ export default function CampaignFinance() {
   const [selectedEntity, setSelectedEntity] = useState<SelectedEntity | null>(null)
   const [searchFilter, setSearchFilter] = useState('')
 
+  const { cityId } = useRouteView()
+  const isSF = cityId === 'sf'
+  const cycles = cityElections(cityId)
+  const builders = fppcBuildersFor(cityId)
+
   // Use global dateRange but default to most recent election if it doesn't match any cycle
   const effectiveRange = useMemo(() => {
-    const cycle = findCycleForRange(dateRange.start, dateRange.end)
+    const cycle = findCycleForRange(dateRange.start, dateRange.end, cycles)
     if (cycle) return dateRange
-    const defaultCycle = getDefaultCycle()
+    const defaultCycle = getDefaultCycle(cycles)
     return { start: defaultCycle.start, end: defaultCycle.end }
-  }, [dateRange])
+  }, [dateRange, cycles])
 
-  const currentCycle = findCycleForRange(effectiveRange.start, effectiveRange.end)
+  const currentCycle = findCycleForRange(effectiveRange.start, effectiveRange.end, cycles)
 
-  const freshness = useDataFreshness('campaignFinance', 'calculated_date', effectiveRange)
-  const cfData = useCampaignFinance(effectiveRange)
-  const detail = useCampaignDetail(selectedEntity, effectiveRange)
+  const freshness = useDataFreshness(builders.freshness.datasetKey, builders.freshness.dateField, effectiveRange, { cityId })
+  const cfData = useCampaignFinance(effectiveRange, cityId)
+  const detail = useCampaignDetail(selectedEntity, effectiveRange, cityId)
+  const late = useLateFilings(effectiveRange, cityId)
 
   // Transform top recipients for chart
   const recipientData: RecipientDatum[] = useMemo(() =>
@@ -83,6 +93,16 @@ export default function CampaignFinance() {
         r.filer_type === 'Independent Expenditure'
       ),
     }
+  }, [cfData.topRecipients, searchFilter])
+
+  // Oakland's normalized filer_type is always '' — none of the three buckets above
+  // ever match, so the sidebar falls back to one ungrouped "Filers" list.
+  const ungrouped = !isSF
+  const filteredFilers = useMemo(() => {
+    const filter = searchFilter.toLowerCase()
+    return filter
+      ? cfData.topRecipients.filter(r => r.filer_name.toLowerCase().includes(filter))
+      : cfData.topRecipients
   }, [cfData.topRecipients, searchFilter])
 
   const maxFilerTotal = useMemo(() =>
@@ -139,7 +159,7 @@ export default function CampaignFinance() {
                 )}
               </div>
               <p className="text-micro font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
-                SF Ethics Commission · {cycleName}
+                {isSF ? 'SF Ethics Commission' : 'City of Oakland FPPC filings'} · {cycleName}
               </p>
             </div>
             {!cfData.isLoading && cfData.stats && (
@@ -152,7 +172,7 @@ export default function CampaignFinance() {
           <div className="flex items-center gap-2">
             {/* Election cycle quick-select — dates are controlled here, not sidebar picker */}
             <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-lg p-0.5" title="Campaign finance data is organized by election cycle">
-              {SF_ELECTIONS.slice(0, 4).map((e) => (
+              {cycles.slice(0, 4).map((e) => (
                 <button
                   key={e.date}
                   onClick={() => setDateRange(e.start, e.end)}
@@ -253,7 +273,7 @@ export default function CampaignFinance() {
                     </button>
                     <h2 className="text-lg font-semibold text-ink dark:text-white">{selectedEntity.filerName}</h2>
                     <p className="text-micro font-mono text-slate-400">
-                      {selectedEntity.filerType} · {formatCurrency(selectedEntity.total)} raised
+                      {selectedEntity.filerType && <>{selectedEntity.filerType} · </>}{formatCurrency(selectedEntity.total)} raised
                     </p>
                   </div>
 
@@ -261,15 +281,33 @@ export default function CampaignFinance() {
                     <SkeletonChart width={640} height={200} />
                   ) : (
                     <>
-                      {/* For/Against split */}
-                      <ForAgainstSplit
-                        supportTotal={detail.ieSupportTotal}
-                        opposeTotal={detail.ieOpposeTotal}
-                        directContribTotal={selectedEntity.total}
-                        topDonors={detail.topDonors}
-                        ieSupport={detail.ieSupport}
-                        ieOppose={detail.ieOppose}
-                      />
+                      {/* For/Against split (SF) or Top Donors fallback (Oakland — no IE join) */}
+                      {builders.lateIEScope === 'entity' ? (
+                        <ForAgainstSplit
+                          supportTotal={detail.ieSupportTotal}
+                          opposeTotal={detail.ieOpposeTotal}
+                          directContribTotal={selectedEntity.total}
+                          topDonors={detail.topDonors}
+                          ieSupport={detail.ieSupport}
+                          ieOppose={detail.ieOppose}
+                        />
+                      ) : (
+                        detail.topDonors.length > 0 && (
+                          <div className="glass-card rounded-xl p-4">
+                            <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                              Top Donors
+                            </p>
+                            <div className="space-y-1">
+                              {detail.topDonors.map((d, i) => (
+                                <div key={i} className="flex justify-between text-micro">
+                                  <span className="text-slate-600 dark:text-slate-300 truncate max-w-[70%]">{d.transaction_last_name}</span>
+                                  <span className="font-mono text-slate-400">{formatCurrency(parseFloat(d.total) || 0)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )
+                      )}
 
                       {/* Entity charts */}
                       <div className="grid grid-cols-1 desk:grid-cols-2 gap-4">
@@ -356,6 +394,8 @@ export default function CampaignFinance() {
                       </div>
                     )}
                   </div>
+
+                  {!selectedEntity && <LateFilingsSection data={late} />}
                 </>
               )}
             </div>
@@ -388,6 +428,24 @@ export default function CampaignFinance() {
 
             {cfData.isLoading ? (
               <SkeletonSidebarRows count={8} />
+            ) : ungrouped ? (
+              <>
+                {/* Oakland fallback: filer_type is normalized to '', so one ungrouped list */}
+                <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
+                  Filers ({filteredFilers.length})
+                </p>
+                <div className="space-y-0.5 mb-4">
+                  {filteredFilers.map((r) => (
+                    <FilerRow
+                      key={r.filer_nid}
+                      filer={r}
+                      maxTotal={maxFilerTotal}
+                      isSelected={selectedEntity?.filerNid === r.filer_nid}
+                      onSelect={() => handleSelectFiler(r)}
+                    />
+                  ))}
+                </div>
+              </>
             ) : (
               <>
                 {/* Candidates section */}
@@ -471,9 +529,9 @@ export default function CampaignFinance() {
 
       {/* Data source attribution */}
       <div className="px-6 py-2 text-[8px] font-mono text-slate-400/50 dark:text-slate-600 border-t border-slate-200/30 dark:border-white/[0.03]">
-        Source: SF Ethics Commission via data.sfgov.org (dataset pitq-e56w).
-        Local filings only — state-level FPPC/CAL-ACCESS filings not included.
-        Figures may differ from statewide totals reported by news organizations.
+        {isSF
+          ? <>Source: SF Ethics Commission via data.sfgov.org (dataset pitq-e56w). Local filings only — state-level FPPC/CAL-ACCESS filings not included. Figures may differ from statewide totals reported by news organizations.</>
+          : <>Source: City of Oakland FPPC filings via data.oaklandca.gov (view reads Sch A, Sch E, 496, 497 of 16 published sets). Local filings only — state CAL-ACCESS filings not included.</>}
       </div>
     </div>
   )

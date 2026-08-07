@@ -47,7 +47,7 @@ export function useDispatchHourlyPattern(
     const hourTotals = Array(24).fill(0) as number[]
 
     for (const row of rows) {
-      const hour = parseInt(row.hour, 10)
+      const hour = parseInt(row.hour ?? '', 10)
       const dow = parseInt(row.dow, 10)
       const count = parseInt(row.call_count, 10)
       if (!isNaN(hour) && !isNaN(dow) && !isNaN(count) && hour >= 0 && hour < 24 && dow >= 0 && dow < 7) {

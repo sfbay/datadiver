@@ -11,6 +11,10 @@ interface ViolationTypeFilterProps {
   selected: Set<string>
   onChange: (selected: Set<string>) => void
   sortByRevenue?: boolean
+  /** Quick-group definitions over entry KEYS. Default: the SF description groups. */
+  groups?: Record<string, string[]>
+  /** Display transform for entry keys (Oakland passes code→label). Default: identity. */
+  formatLabel?: (key: string) => string
 }
 
 const VIOLATION_GROUPS: Record<string, string[]> = {
@@ -21,7 +25,14 @@ const VIOLATION_GROUPS: Record<string, string[]> = {
   'Safety': ['DBL PARK', 'ON SIDEWLK', 'DRIVEWAY', 'OBSTRCT TF'],
 }
 
-export default function ViolationTypeFilter({ categories, selected, onChange, sortByRevenue = false }: ViolationTypeFilterProps) {
+export default function ViolationTypeFilter({
+  categories,
+  selected,
+  onChange,
+  sortByRevenue = false,
+  groups = VIOLATION_GROUPS,
+  formatLabel = (k: string) => k,
+}: ViolationTypeFilterProps) {
   const sortedCategories = useMemo(() => {
     if (sortByRevenue) return [...categories].sort((a, b) => b.totalFines - a.totalFines)
     return categories
@@ -51,17 +62,17 @@ export default function ViolationTypeFilter({ categories, selected, onChange, so
   }, [onChange])
 
   const handleGroup = useCallback((groupName: string) => {
-    const groupTypes = VIOLATION_GROUPS[groupName] || []
+    const groupTypes = groups[groupName] || []
     const available = new Set(groupTypes.filter((t) => allTypes.has(t)))
     onChange(available)
-  }, [allTypes, onChange])
+  }, [allTypes, onChange, groups])
 
   const isGroupActive = useCallback((groupName: string) => {
     if (allSelected) return false
-    const groupTypes = VIOLATION_GROUPS[groupName] || []
+    const groupTypes = groups[groupName] || []
     const available = groupTypes.filter((t) => allTypes.has(t))
     return available.length > 0 && available.every((t) => selected.has(t)) && selected.size === available.length
-  }, [selected, allTypes, allSelected])
+  }, [selected, allTypes, allSelected, groups])
 
   const isSelected = (name: string) => selected.size === 0 || selected.has(name)
 
@@ -79,7 +90,7 @@ export default function ViolationTypeFilter({ categories, selected, onChange, so
         >
           All
         </button>
-        {Object.keys(VIOLATION_GROUPS).map((groupName) => (
+        {Object.keys(groups).map((groupName) => (
           <button
             key={groupName}
             onClick={() => handleGroup(groupName)}
@@ -149,7 +160,7 @@ export default function ViolationTypeFilter({ categories, selected, onChange, so
                 onClick={() => handleToggle(entry.violationDesc)}
                 className="relative flex-1 min-w-0 text-label text-ink dark:text-slate-300 truncate leading-tight cursor-pointer text-left"
               >
-                {entry.violationDesc}
+                {formatLabel(entry.violationDesc)}
               </button>
 
               <span className="relative text-micro font-mono text-slate-400 dark:text-slate-500 tabular-nums flex-shrink-0">

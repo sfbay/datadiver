@@ -15,6 +15,7 @@ import type {
 import { diffMinutes, diffHours, groupByDay } from '@/utils/time'
 import { addDays, rangeLengthDays } from '@/utils/comparisonMode'
 import { isOakCaseOpen } from '@/views/Cases311/dialect311'
+import type { OakCitationRecord } from '@/views/ParkingCitations/citationsDialect'
 
 // ── Shared utility ────────────────────────────────────────────────
 
@@ -598,6 +599,60 @@ export const useCitationComparisonData = createComparisonDataHook<
     extractDate: (r) => r.citation_issued_datetime,
   },
   'useCitationComparisonData'
+)
+
+// ── Oakland Parking Citations ─────────────────────────────────────
+
+export const useOaklandCitationComparisonData = createComparisonDataHook<
+  OakCitationRecord,
+  ComparisonStatsCitations,
+  { total: number; avgFine: number; outOfStatePct: number }
+>(
+  {
+    datasetKey: 'parkingCitations',
+    dateField: 'ticket_iss',
+    selectFields: 'ticket_num,ticket_iss,fine_amount',
+    cityId: 'oakland',
+    computeStats(records) {
+      let totalFines = 0
+      let fineCount = 0
+      for (const r of records) {
+        const fine = parseFloat(r.fine_amount)
+        if (!isNaN(fine) && fine > 0) {
+          totalFines += fine
+          fineCount++
+        }
+      }
+      return {
+        total: records.length,
+        avgFine: fineCount > 0 ? totalFines / fineCount : 0,
+        outOfStatePct: 0, // no plate-state column exists — the OOS card is withheld for Oakland
+        totalFines,
+      }
+    },
+    computeDeltas(current, comparison) {
+      return {
+        total: pctDelta(current.total, comparison.total),
+        avgFine: pctDelta(current.avgFine, comparison.avgFine),
+        outOfStatePct: 0,
+      }
+    },
+    buildTrendPoint(day, recs) {
+      let totalFines = 0
+      for (const r of recs) {
+        const f = parseFloat(r.fine_amount)
+        if (!isNaN(f)) totalFines += f
+      }
+      return {
+        day,
+        callCount: recs.length,
+        avgResponseTime: recs.length > 0 ? totalFines / recs.length : 0,
+        medianResponseTime: 0,
+      }
+    },
+    extractDate: (r) => r.ticket_iss,
+  },
+  'useOaklandCitationComparisonData'
 )
 
 // ── Eviction Notices ──────────────────────────────────────────────

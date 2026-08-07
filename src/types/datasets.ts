@@ -259,9 +259,10 @@ export interface DailyTrendPoint {
   medianResponseTime: number
 }
 
-/** Hourly aggregation row from Socrata server-side query */
+/** Hourly aggregation row from Socrata server-side query. `hour` is optional
+ *  — Socrata omits the aliased key entirely for a NULL-expression group. */
 export interface HourlyAggRow {
-  hour: string
+  hour?: string
   dow: string
   call_count: string
 }
@@ -389,14 +390,6 @@ export interface ParkingCitationRecord {
 /** Server-side aggregation row for violation type counts + revenue */
 export interface ViolationTypeAggRow {
   violation_desc: string
-  citation_count: string
-  total_fines: string
-  avg_fine: string
-}
-
-/** Server-side aggregation row for citation neighborhood counts + revenue */
-export interface NeighborhoodAggRowCitations {
-  analysis_neighborhood: string
   citation_count: string
   total_fines: string
   avg_fine: string

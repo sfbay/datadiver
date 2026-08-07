@@ -39,3 +39,38 @@ describe('hourlySelect', () => {
     )
   })
 })
+
+describe('stage-3b hourly extensions', () => {
+  it('hourlySelect: SF output BYTE-UNCHANGED with no hourExpr', () => {
+    expect(hourlySelect('citation_issued_datetime')).toBe(
+      'date_extract_hh(citation_issued_datetime) as hour, date_extract_dow(citation_issued_datetime) as dow, count(*) as call_count'
+    )
+  })
+  it('hourlySelect: hourExpr replaces the extraction, dow keeps the date field', () => {
+    expect(hourlySelect('ticket_iss', undefined, "case(x, 'A')")).toBe(
+      "case(x, 'A') as hour, date_extract_dow(ticket_iss) as dow, count(*) as call_count"
+    )
+  })
+  it('computeHourlyResult FOLDS multiple buckets into one hour (+= not =)', () => {
+    const rows = [
+      { hour: '07', dow: '1', call_count: '10' },
+      { hour: '7:', dow: '1', call_count: '5' },
+    ]
+    const map = (raw: string | undefined) =>
+      raw == null ? null : parseInt(raw.replace(':', ''), 10)
+    const r = computeHourlyResult(rows, false, map)
+    expect(r.grid[1][7]).toBe(15)
+    expect(r.hourTotals[7]).toBe(15)
+    expect(r.unparsedCount).toBe(0)
+  })
+  it('null-mapped rows land in unparsedCount, not the grid', () => {
+    const rows = [
+      { hour: '07', dow: '2', call_count: '4' },
+      { dow: '2', call_count: '9' }, // Socrata omits the aliased key for the NULL group
+    ]
+    const map = (raw: string | undefined) => (raw === '07' ? 7 : null)
+    const r = computeHourlyResult(rows, false, map)
+    expect(r.grid[2][7]).toBe(4)
+    expect(r.unparsedCount).toBe(9)
+  })
+})

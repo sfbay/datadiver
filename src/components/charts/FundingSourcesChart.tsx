@@ -20,6 +20,7 @@ const SOURCE_COLORS: Record<string, string> = {
   Committee: '#8b6282',
   Other: '#64748b',
   Self: '#d4a435',
+  'Political Party': '#616a96',
 }
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -27,6 +28,7 @@ const SOURCE_LABELS: Record<string, string> = {
   COM: 'Committee',
   OTH: 'Other',
   SCC: 'Small Committee',
+  PTY: 'Political Party',
 }
 
 /** Transform raw source agg rows + self-funding total into chart data. */

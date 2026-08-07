@@ -492,11 +492,16 @@ dataset and is therefore not an artifact of the seam.
 
 Oakland went live at stage 3 (Aug 2026) with two views on `data.oaklandca.gov` —
 Crime Incidents and 311 Cases, both rendered on the vendored 59-beat polygon
-layer rather than neighborhoods. Parking Citations is registered but dormant
-(below). Probe evidence and every query URL behind these findings live in
+layer rather than neighborhoods. Stage 3b (Aug 6 2026) flipped the two
+remaining registered views live: Parking Citations (also on the 59-beat
+layer) and Campaign Finance (on the shared FPPC ledger components, city
+cycles instead of SF's). All four Oakland manifest entries are live; none is
+dormant. Probe evidence and every query URL behind these findings live in
 `docs/superpowers/specs/2026-08-05-oakland-stage3-views-design.md` (fresh
-probe tables + §3/§4) and `docs/superpowers/specs/2026-08-05-oakland-data-spine-design.md`
-(the data-spine audit that first surfaced the beat-join and pre-2004 traps).
+probe tables + §3/§4), `docs/superpowers/specs/2026-08-05-oakland-data-spine-design.md`
+(the data-spine audit that first surfaced the beat-join and pre-2004 traps),
+and `docs/superpowers/specs/2026-08-06-oakland-stage3b-views-design.md`
+(citations + campaign-finance design + as-built deltas).
 
 ### Crime (`ppgh-7dqv`)
 
@@ -623,16 +628,111 @@ codes. The NULL share (2.59%) is still disclosed with the same idiom as
 crime's unmapped-beat line, rather than silently excluded from the
 denominator.
 
-### Parking Citations (`58em-y96b`, dormant)
+### Parking Citations (`58em-y96b`)
 
-Registered in the stage-2 data spine but not yet wired to a live view. Two
-findings worth recording now, for whoever builds the view next: citations
-publish with a **~2.5-month lag** (materially worse than crime's ~3 days or
-311's same-day), and the timestamp is split the same way SF's crime
-historical extract was — a date-only field (`ticket_iss`) plus a separate
-`'HH:MM'` text time column — so any hour-level query needs the same
-zero-padded lexicographic-range treatment as SFPD's `tmnf-yvry`, not
-`date_extract_hh`.
+Went live in stage 3b (Aug 6 2026), on the same vendored 59-beat layer as
+Crime and 311. Citations publish with a **~11-week lag** (materially worse
+than crime's ~3 days or 311's same-day) — `the_geom` itself is 100%
+populated on published rows (no SF-style geo gap), the lag is purely a
+publishing-latency problem, and the view's freshness alert discloses it.
+
+**The beat column is a computed REGION, not the beat code itself.** The
+dataset's beat field arrives as an integer region id, not the `'01X'`-style
+code the other two Oakland views join on. DataDiver ships an authored
+crosswalk (`OAK_CITATION_BEAT_REGIONS`, regenerable from `fus4-casw`) that
+converts in both directions — the view's URL/selection state still holds the
+beat CODE (consistent with Crime and 311), converting to the region id only
+at the query boundary. Coverage is 94.8%; the unmatched share is computed
+from the same GROUP BY as the ranking and disclosed in-view, the same idiom
+as crime's unmapped-beat line.
+
+**`violatio_1` carries a 10-char truncation era.** About 2 million rows have
+a hard-truncated free-text violation description — e.g. `"NON DISPLA"` for
+what should read `"NON DISP PKG RECEIPT"`. Grouping or filtering on the
+truncated text would silently fragment one violation into several buckets.
+The view instead groups and filters on the clean, untruncated `violation`
+CODE column, with an authored label map (`OAK_VIOLATION_LABELS`) supplying
+the display text.
+
+**`ticket_i_1` (the citation time) mixes three time formats plus 18,856
+NULLs — a lexicographic hour range is invalid here**, unlike SFPD's
+`tmnf-yvry` where a zero-padded `'HH:MM'` string sorts correctly. Oakland's
+field mixes formats within the same column, so DataDiver buckets it through
+`OAK_HOUR_EXPR` + `bucketToHour` (the same bucket-folding machinery built for
+the citations hourly pattern) rather than a range filter; the unparseable
+residual is counted and disclosed rather than silently dropped. Socrata
+returns the NULL group as a **missing key**, not a null-valued string — code
+reading the GROUP BY result has to check for the key's absence, not for
+`row.ticket_i_1 === null`.
+
+**No plate-state column exists.** Unlike SF's citations (which carry an
+out-of-state plate field), `58em-y96b` has none — the Out-of-State card is
+withheld for Oakland rather than shown empty or fabricated.
+
+**51,977 zero-dollar fines (~1.9%) are ordinary voided/dismissed citations,
+not a data error.** They're included in counts (a citation was issued) but
+naturally don't move the revenue total.
+
+### Campaign Finance (FPPC sets)
+
+Went live in stage 3b (Aug 6 2026), on the same view components as SF's
+Campaign Finance, parameterized through a per-city FPPC dialect. The view
+reads four of Oakland's 16 registered FPPC sets: Schedule A (monetary
+contributions), Schedule E (expenditures), Form 496 (late independent
+expenditures), and Form 497 (late contributions) — not the 460 summary
+filings, whose `amount_a` field is cumulative-ish (10–20× the sum of
+matching transactions) and would fabricate money if summed as a total.
+
+**`fppc496` uses `exp_date`, not `expn_date`.** The field name is
+sibling-divergent from every other FPPC set DataDiver reads — querying
+`expn_date` against 496 is a 400, not a typo waiting to be "fixed" back to
+the pattern the other sets share.
+
+**Schedule E has 1,553 NULL-date rows, worth $3.39M (5.3% of the
+schedule).** These rows are invisible to any date-range filter, so a
+date-scoped expenditure total silently excludes them — disclosed in-view
+rather than left as an unexplained gap between a card total and a manual
+tally.
+
+**`tran_self` (the self-funding flag on Schedule A) is lowercase text —
+`'y'`/`'n'`, not a boolean.** `tran_self = true` 400s; the comparison has to
+be a string match against the lowercase literal.
+
+**460 summary filings' `amount_a` is cumulative-ish, not a period total** —
+measured 10–20× the sum of the transactions it nominally summarizes. This is
+the reason the 460 set is excluded from the view's reads entirely (see
+above), and why its `omniDatasetKeys` entry was corrected in the stage-3b
+flip rather than carried over from the stage-2 placeholder.
+
+**No `filer_type` column exists.** SF's sidebar splits filers into
+categories; Oakland's FPPC sets carry no equivalent field, so the withheld
+affordance is a single, uncategorized Filers list rather than a fabricated
+split.
+
+**Candidate names arrive in mixed casing on Form 496 — 142 distinct raw
+values fold to 126 case-folded ones.** The same candidate can appear as
+`'Carroll Fife'` on one row and `'CARROLL FIFE'` on another. The late
+independent-expenditure fold (`foldLateIE`) keys on the case-folded name so
+those rows merge into one target, but displays the first-seen spelling
+(rows arrive `$order: 'total DESC'`, so the biggest filer's casing wins) —
+folding on the raw string would double the same candidate into two rows in
+the late-IE section.
+
+**Oakland's election cycles TILE — each cycle starts the day after the
+prior election, not on a calendar-year boundary.** Pre-window fundraising is
+the norm for Oakland committees, and a Jan-1 convention would undercount it:
+computed against a naive calendar-year cutoff, Taylor's total in the Apr
+2025 special would read about $50K under Lee's for money that was actually
+raised and spent inside the real campaign window. `OAKLAND_ELECTIONS`
+encodes the tiling invariant directly (each cycle's start = the prior
+cycle's election date + 1 day) rather than deriving cutoffs at query time.
+
+**The FPPC `PTY` entity code (political party) now carries an authored
+label** — "Political Party", indigo (`#616a96`) — in the shared
+`FundingSourcesChart` component both cities render through. This is a
+disclosed, hairline-visible improvement to the SF view too: SF's own
+Schedule A data includes 67 `PTY`-coded rows that previously fell through to
+the raw code / a generic fallback color rather than a labeled bucket.
 
 ## General Patterns
 

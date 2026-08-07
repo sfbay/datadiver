@@ -4,6 +4,8 @@ import { fetchDataset } from '@/api/client'
 import type { ParkingCitationRecord } from '@/types/datasets'
 import { formatDate, formatCurrency } from '@/utils/time'
 import DetailPanelShell from '@/components/ui/DetailPanelShell'
+import { useRouteView, useActiveCity } from '@/cities/useActiveCity'
+import { oakViolationLabel, regionToBeat, OAK_CITATION_SELECT, type OakCitationRecord } from '@/views/ParkingCitations/citationsDialect'
 
 interface CitationDetail {
   citationNumber: string
@@ -14,6 +16,7 @@ interface CitationDetail {
   neighborhood: string
   district: string
   issuedDatetime: string
+  issuedTimeRaw: string
   plateState: string
 }
 
@@ -27,12 +30,16 @@ function buildDetail(record: ParkingCitationRecord): CitationDetail {
     neighborhood: record.analysis_neighborhood || 'Unknown',
     district: record.supervisor_districts || 'Unknown',
     issuedDatetime: record.citation_issued_datetime || '',
+    issuedTimeRaw: '',
     plateState: record.vehicle_plate_state || 'Unknown',
   }
 }
 
 export default function CitationDetailPanel() {
   const { selectedCitation, setSelectedCitation } = useAppStore()
+  const { cityId } = useRouteView()
+  const city = useActiveCity()
+  const isSF = cityId === 'sf'
   const [detail, setDetail] = useState<CitationDetail | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -45,24 +52,66 @@ export default function CitationDetailPanel() {
     let cancelled = false
     setIsLoading(true)
 
-    fetchDataset<ParkingCitationRecord>('parkingCitations', {
-      $where: `citation_number = '${selectedCitation}'`,
-      $limit: 1,
-    })
-      .then((records) => {
-        if (!cancelled && records.length > 0) {
-          setDetail(buildDetail(records[0]))
-        }
+    if (isSF) {
+      fetchDataset<ParkingCitationRecord>('parkingCitations', {
+        $where: `citation_number = '${selectedCitation}'`,
+        $limit: 1,
       })
-      .catch(() => {
-        if (!cancelled) setDetail(null)
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false)
-      })
+        .then((records) => {
+          if (!cancelled && records.length > 0) {
+            setDetail(buildDetail(records[0]))
+          }
+        })
+        .catch(() => {
+          if (!cancelled) setDetail(null)
+        })
+        .finally(() => {
+          if (!cancelled) setIsLoading(false)
+        })
+    } else {
+      // ticket_num is a NUMBER column — unquoted, and only after a strict
+      // numeric gate (the requestid idiom from stage 3's CaseDetailPanel).
+      // Roughly Nov 2024→Mar 2025, Socrata serializes ticket_num WITH a
+      // decimal suffix ("1749508412.0") — the gate must admit that shape too
+      // (the unquoted filter accepts it fine), or every dot from that era
+      // opens an empty panel with no fetch.
+      if (!/^\d+(\.\d+)?$/.test(selectedCitation)) {
+        setDetail(null)
+        setIsLoading(false)
+        return
+      }
+      fetchDataset<OakCitationRecord>('parkingCitations', {
+        $select: OAK_CITATION_SELECT,
+        $where: `ticket_num = ${selectedCitation}`,
+        $limit: 1,
+      }, { cityId })
+        .then((records) => {
+          if (!cancelled && records.length > 0) {
+            const r = records[0]
+            setDetail({
+              citationNumber: r.ticket_num,
+              violation: r.violation || '',
+              violationDesc: oakViolationLabel(r.violation, r.violatio_1),
+              fineAmount: parseFloat(r.fine_amount) || 0,
+              location: r.location || 'Unknown',
+              neighborhood: regionToBeat(r[':@computed_region_fus4_casw']),
+              district: '',
+              issuedDatetime: r.ticket_iss || '',
+              issuedTimeRaw: r.ticket_i_1 || '',
+              plateState: '',
+            })
+          }
+        })
+        .catch(() => {
+          if (!cancelled) setDetail(null)
+        })
+        .finally(() => {
+          if (!cancelled) setIsLoading(false)
+        })
+    }
 
     return () => { cancelled = true }
-  }, [selectedCitation])
+  }, [selectedCitation, cityId, isSF])
 
   const onClose = useCallback(() => setSelectedCitation(null), [setSelectedCitation])
 
@@ -87,7 +136,7 @@ export default function CitationDetailPanel() {
       {detail && (
         <>
           <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-1">
-            Citation #{detail.citationNumber}
+            {isSF ? 'Citation' : 'Ticket'} #{detail.citationNumber}
           </p>
           <p className="text-sm font-semibold text-ink dark:text-white mb-0.5">
             {detail.violationDesc}
@@ -110,7 +159,10 @@ export default function CitationDetailPanel() {
           <div className="mb-3">
             <p className="text-micro text-slate-700 dark:text-slate-300">{detail.location}</p>
             <p className="text-micro text-slate-500 dark:text-slate-400">
-              {detail.neighborhood} &middot; District {detail.district}
+              {detail.neighborhood !== 'Unknown'
+                ? (city.areas.formatLabel?.(detail.neighborhood) ?? detail.neighborhood)
+                : detail.neighborhood}
+              {detail.district ? <> &middot; District {detail.district}</> : null}
             </p>
           </div>
 
@@ -123,28 +175,36 @@ export default function CitationDetailPanel() {
               <p className="text-micro font-mono text-slate-600 dark:text-slate-300">
                 {formatDate(detail.issuedDatetime, 'long')}
               </p>
-              <p className="text-micro font-mono text-slate-800 dark:text-slate-200 font-semibold">
-                {new Date(detail.issuedDatetime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-              </p>
+              {detail.issuedTimeRaw ? (
+                <p className="text-micro font-mono text-slate-800 dark:text-slate-200 font-semibold">
+                  {detail.issuedTimeRaw}
+                </p>
+              ) : isSF ? (
+                <p className="text-micro font-mono text-slate-800 dark:text-slate-200 font-semibold">
+                  {new Date(detail.issuedDatetime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                </p>
+              ) : null}
             </div>
           )}
 
           {/* Plate state */}
-          <div className="pt-2 border-t border-slate-200 dark:border-white/[0.08]">
-            <div className="flex items-center justify-between">
-              <p className="text-nano font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                Plate State
-              </p>
-              <span className={`inline-flex items-center gap-1 text-micro font-mono px-2 py-0.5 rounded-full ${
-                isOutOfState
-                  ? 'bg-teal-500/10 text-teal-500'
-                  : 'bg-slate-100 dark:bg-white/[0.04] text-slate-500'
-              }`}>
-                {detail.plateState}
-                {isOutOfState && ' (Out of State)'}
-              </span>
+          {detail.plateState && (
+            <div className="pt-2 border-t border-slate-200 dark:border-white/[0.08]">
+              <div className="flex items-center justify-between">
+                <p className="text-nano font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Plate State
+                </p>
+                <span className={`inline-flex items-center gap-1 text-micro font-mono px-2 py-0.5 rounded-full ${
+                  isOutOfState
+                    ? 'bg-teal-500/10 text-teal-500'
+                    : 'bg-slate-100 dark:bg-white/[0.04] text-slate-500'
+                }`}>
+                  {detail.plateState}
+                  {isOutOfState && ' (Out of State)'}
+                </span>
+              </div>
             </div>
-          </div>
+          )}
         </>
       )}
     </DetailPanelShell>
