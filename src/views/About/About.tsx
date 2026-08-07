@@ -48,17 +48,49 @@ function Finding({ title, children }: { title: string; children: ReactNode }) {
   )
 }
 
+function SourcesTable({ rows, host }: { rows: SourceRow[]; host: string }) {
+  return (
+    <div className="glass-card rounded-xl overflow-x-auto">
+      <table className="w-full text-left min-w-[42.5rem]">
+        <thead>
+          <tr className="border-b-2 border-slate-300/50 dark:border-white/[0.08]">
+            <th className="px-4 py-2.5 text-[0.625rem] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Dataset</th>
+            <th className="px-4 py-2.5 text-[0.625rem] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Source ID</th>
+            <th className="px-4 py-2.5 text-[0.625rem] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Date field</th>
+            <th className="px-4 py-2.5 text-[0.625rem] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Known limitations</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((s) => (
+            <tr key={s.id + s.name} className="border-t border-slate-200/40 dark:border-white/[0.03]">
+              <td className="px-4 py-2.5 text-[0.8125rem] text-slate-700 dark:text-slate-200">{s.name}</td>
+              <td className="px-4 py-2.5 text-[0.75rem] font-mono text-slate-500 dark:text-slate-400">
+                <a href={s.url ?? `https://${host}/d/${s.id}`} target="_blank" rel="noopener noreferrer"
+                   className="hover:text-ink dark:hover:text-white underline decoration-slate-400/30 underline-offset-2 transition-colors">
+                  {s.id}
+                </a>
+              </td>
+              <td className="px-4 py-2.5 text-[0.75rem] font-mono text-slate-500 dark:text-slate-400">{s.dateField ?? '—'}</td>
+              <td className="px-4 py-2.5 text-[0.75rem] text-slate-500 dark:text-slate-400">{s.note ?? ''}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 interface SourceRow {
   name: string
   id: string
   dateField?: string
   note?: string
-  /** Non-DataSF source. Election results are the only one — see findings. */
+  /** Absolute link override (non-portal sources; the Oakland FPPC roll-up). */
   url?: string
 }
 
 // Mirrors src/api/datasets.ts — update both when the registry changes.
-const SOURCES: SourceRow[] = [
+const SF_SOURCES: SourceRow[] = [
   { name: 'Fire/EMS Dispatched Calls', id: 'nuek-vuh3', dateField: 'received_dttm', note: 'Publishes with ~12h intrinsic lag' },
   { name: 'Fire Incidents', id: 'wr8u-xric', dateField: 'alarm_dttm' },
   { name: '911 Dispatch (Real-Time)', id: 'gnap-fj3t', dateField: 'received_datetime', note: 'Rolling 48h window; ~30min lag; no coordinates' },
@@ -89,6 +121,19 @@ const SOURCES: SourceRow[] = [
   },
   { name: 'Election Precincts — Current (2022)', id: 'd6x4-hefw', note: 'Precinct geometry, Nov 2022 onward' },
   { name: 'Election Precincts — Historical (2012)', id: 'bsfq-aeyw', note: 'Precinct geometry through Jun 2022 — precinct numbers are NOT comparable across the 2022 renumbering (see findings)' },
+]
+
+const OAKLAND_SOURCES: SourceRow[] = [
+  { name: 'Crime Reports (OPD)', id: 'ppgh-7dqv', dateField: 'datetime', note: 'Charge-level rows — every count dedupes by case number; ~3.4% carry no-location beat codes (77X/99X); clamped to 2004+ (earlier rows are a junk trickle)' },
+  { name: '311 Service Requests', id: 'quth-gb8e', dateField: 'datetimeinit', note: 'Coordinates from the srx/sry fields — the dataset’s own address point is junk; publishes next-day' },
+  { name: 'Parking Citations', id: '58em-y96b', dateField: 'ticket_iss', note: 'Publishes ~11 weeks behind; violation descriptions carry a 10-character truncation era, so codes are grouped instead' },
+  { name: 'Police Beats (boundaries)', id: '78s7-673i', note: 'Vendored as the 59-beat spine; the layer names only 2 of its 59 polygons' },
+  { name: 'Neighborhoods (boundaries)', id: 'sb4q-6bkc', note: 'The official 131-polygon layer behind DataDiver’s beat labels — see findings' },
+  { name: 'Campaign Finance — Sch A contributions', id: '3xq4-ermg', dateField: 'tran_date', note: 'FPPC filings arrive in semiannual lumps — recent months are structurally incomplete until the next deadline' },
+  { name: 'Campaign Finance — Sch E expenditures', id: 'bvfu-nq99', dateField: 'expn_date', note: '1,553 rows carry no date ($3.39M) — disclosed in the view' },
+  { name: 'Campaign Finance — 496 late IEs', id: 'jkj3-8yq3', dateField: 'exp_date', note: 'Its date field differs from every sibling schedule (exp_date, not expn_date)' },
+  { name: 'Campaign Finance — 497 late contributions', id: 'qact-u8hq', dateField: 'ctrib_date' },
+  { name: 'FPPC filings — 12 further schedules', id: 'various', note: 'Registered, not yet read. Sch B2 is published empty; the 460 summary is deliberately never summed (its cumulative-ish figures fabricate money)', url: 'https://data.oaklandca.gov/browse?q=FPPC' },
 ]
 
 const STACK: { area: string; tools: string }[] = [
@@ -197,16 +242,20 @@ export default function About() {
           <SectionHead label="Data Sources" glow="#d4a435" />
           <Prose>
             <p className="mb-5">
-              Nearly all data comes from{' '}
+              Nearly all data comes from two municipal open-data portals —{' '}
               <a href="https://data.sfgov.org" target="_blank" rel="noopener noreferrer"
                  className="underline decoration-slate-400/50 underline-offset-2 hover:text-ink dark:hover:text-white transition-colors">
                 DataSF
               </a>{' '}
-              (data.sfgov.org), the City &amp; County of San Francisco&rsquo;s open data portal,
-              queried live via the Socrata SODA API. Dataset identifiers are listed so any
-              figure on this site can be independently re-queried. Update frequency varies by
-              dataset and is constrained by each publishing agency; no SF dataset is truly
-              real-time.
+              (data.sfgov.org) and the{' '}
+              <a href="https://data.oaklandca.gov" target="_blank" rel="noopener noreferrer"
+                 className="underline decoration-slate-400/50 underline-offset-2 hover:text-ink dark:hover:text-white transition-colors">
+                City of Oakland&rsquo;s open data portal
+              </a>{' '}
+              (data.oaklandca.gov) — queried live via the Socrata SODA API. Dataset
+              identifiers are listed so any figure on this site can be independently
+              re-queried. Update frequency varies by dataset and is constrained by each
+              publishing agency; no dataset here is truly real-time.
             </p>
             <p className="mb-5">
               Election results are the exception: the Department of Elections publishes none of
@@ -215,33 +264,14 @@ export default function About() {
               rest, and what it costs us is described in the findings.
             </p>
           </Prose>
-          <div className="glass-card rounded-xl overflow-x-auto">
-            <table className="w-full text-left min-w-[42.5rem]">
-              <thead>
-                <tr className="border-b-2 border-slate-300/50 dark:border-white/[0.08]">
-                  <th className="px-4 py-2.5 text-[0.625rem] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Dataset</th>
-                  <th className="px-4 py-2.5 text-[0.625rem] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Source ID</th>
-                  <th className="px-4 py-2.5 text-[0.625rem] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Date field</th>
-                  <th className="px-4 py-2.5 text-[0.625rem] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Known limitations</th>
-                </tr>
-              </thead>
-              <tbody>
-                {SOURCES.map((s) => (
-                  <tr key={s.id} className="border-t border-slate-200/40 dark:border-white/[0.03]">
-                    <td className="px-4 py-2.5 text-[0.8125rem] text-slate-700 dark:text-slate-200">{s.name}</td>
-                    <td className="px-4 py-2.5 text-[0.75rem] font-mono text-slate-500 dark:text-slate-400">
-                      <a href={s.url ?? `https://data.sfgov.org/d/${s.id}`} target="_blank" rel="noopener noreferrer"
-                         className="hover:text-ink dark:hover:text-white underline decoration-slate-400/30 underline-offset-2 transition-colors">
-                        {s.id}
-                      </a>
-                    </td>
-                    <td className="px-4 py-2.5 text-[0.75rem] font-mono text-slate-500 dark:text-slate-400">{s.dateField ?? '—'}</td>
-                    <td className="px-4 py-2.5 text-[0.75rem] text-slate-500 dark:text-slate-400">{s.note ?? ''}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/80 dark:text-slate-600 mb-3 mt-2">
+            {'──'} San Francisco · data.sfgov.org
+          </p>
+          <SourcesTable rows={SF_SOURCES} host="data.sfgov.org" />
+          <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/80 dark:text-slate-600 mb-3 mt-8">
+            {'──'} Oakland · data.oaklandca.gov
+          </p>
+          <SourcesTable rows={OAKLAND_SOURCES} host="data.oaklandca.gov" />
         </section>
 
         {/* ── Findings ───────────────────────────────────── */}
@@ -393,32 +423,88 @@ export default function About() {
               </p>
             </Finding>
 
-            <Finding title="Oakland police beats get their names from an overlay, not from OPD">
+            <div id="oakland-beats" className="scroll-mt-4">
+              <Finding title="Oakland police beats get their names from an overlay, not from OPD">
+                <p>
+                  Oakland&rsquo;s crime, 311, and parking datasets locate events by police
+                  beat &mdash; codes like 12Y &mdash; and the city names exactly two of
+                  the 59 beat polygons. The neighborhood names DataDiver shows beside
+                  each code (&ldquo;Rockridge &amp; Shafter &middot; 12Y&rdquo;) are our
+                  synthesis: we overlay the city&rsquo;s official neighborhood boundary
+                  layer on the beat polygons and measure how much of each beat every
+                  named neighborhood covers, cross-check the result against the names
+                  Oakland&rsquo;s 911 dispatch layer and Neighborhood Crime Prevention
+                  Councils use, and edit for clarity. A few labels are geographic facts
+                  rather than neighborhood names (Airport &amp; Coliseum Complex; Prescott
+                  &amp; Port of Oakland; Outer Harbor &amp; Army Base; Lake Merritt; Piedmont &mdash; an enclave city
+                  with its own police force, which is why its numbers sit near zero).
+                  The beat code is always shown: it is the precise unit the data
+                  actually uses, and the name is the human handle. Events whose records
+                  carry the no-location codes 77X/99X appear as &ldquo;Unmapped
+                  beat.&rdquo; The full method and per-beat evidence shares are
+                  committed to the project repository.
+                </p>
+              </Finding>
+            </div>
+
+            <Finding title="Oakland crime counts dedupe charge-level rows">
               <p>
-                Oakland&rsquo;s crime, 311, and parking datasets locate events by police
-                beat &mdash; codes like 12Y &mdash; and the city names exactly two of
-                the 59 beat polygons. The neighborhood names DataDiver shows beside
-                each code (&ldquo;Rockridge &amp; Shafter &middot; 12Y&rdquo;) are our
-                synthesis: we overlay the city&rsquo;s official neighborhood boundary
-                layer on the beat polygons and measure how much of each beat every
-                named neighborhood covers, cross-check the result against the names
-                Oakland&rsquo;s 911 dispatch layer and Neighborhood Crime Prevention
-                Councils use, and edit for clarity. A few labels are geographic facts
-                rather than neighborhood names (Airport &amp; Coliseum Complex; Prescott
-                &amp; Port of Oakland; Outer Harbor &amp; Army Base; Lake Merritt; Piedmont &mdash; an enclave city
-                with its own police force, which is why its numbers sit near zero).
-                The beat code is always shown: it is the precise unit the data
-                actually uses, and the name is the human handle. Events whose records
-                carry the no-location codes 77X/99X appear as &ldquo;Unmapped
-                beat.&rdquo; The full method and per-beat evidence shares are
-                committed to the project repository.
+                OPD&rsquo;s crime dataset publishes one row per <em>charge</em>, not per
+                incident &mdash; more than one row in five belongs to a case with
+                multiple rows. Every count DataDiver shows deduplicates by case
+                number, on the server where possible and on both sides of any
+                comparison (deduplicating only one side would fabricate a decline).
+                Published dates run back to 1950, but everything before 2004 is a
+                junk trickle, so queries are floored there. About 3.4% of rows carry
+                the no-location codes 77X/99X &mdash; they appear as &ldquo;Unmapped
+                beat,&rdquo; never silently dropped &mdash; and with null and malformed
+                beat values included, about 4.8% of rows join no beat at all.
+              </p>
+            </Finding>
+
+            <Finding title="Oakland 311 coordinates come from the odd fields">
+              <p>
+                The dataset&rsquo;s own address point is a constant junk location in
+                the ocean &mdash; real coordinates live in two state-plane fields
+                (srx/sry) that DataDiver converts and bounds-checks. The feed
+                publishes next-day, and &ldquo;open&rdquo; is a grammar of four
+                status words, not one &mdash; both are handled per Oakland&rsquo;s
+                vocabulary rather than San Francisco&rsquo;s.
+              </p>
+            </Finding>
+
+            <Finding title="Oakland parking citations run about eleven weeks behind">
+              <p>
+                The citations dataset is complete and fully geocoded &mdash; but its
+                newest record is typically ~11 weeks old, so recent windows are
+                honestly empty rather than quietly wrong; figures carry
+                &ldquo;through&rdquo; dates. Violation descriptions suffered a
+                10-character truncation era covering ~2M rows, so DataDiver groups
+                the clean violation codes and labels them itself. Beat identity
+                arrives as opaque region numbers &mdash; a committed 59-row
+                crosswalk translates them.
+              </p>
+            </Finding>
+
+            <Finding title="Oakland campaign-finance cycles tile the calendar">
+              <p>
+                Oakland fundraising starts the day after the previous election
+                &mdash; a January-1 cycle convention would silently clip real money
+                (tens of thousands of dollars in the April 2025 special alone). So
+                DataDiver&rsquo;s Oakland cycles tile: each begins where the last
+                ended. FPPC filings arrive in semiannual lumps, which means the
+                current half-year is structurally unfiled until its deadline passes
+                &mdash; totals are shown for concluded cycles, never implied current.
+                One schedule&rsquo;s date field differs from every sibling&rsquo;s,
+                and 1,553 expenditure rows ($3.39M) carry no date at all &mdash;
+                disclosed where they&rsquo;d matter.
               </p>
             </Finding>
 
             <div id="elections" className="scroll-mt-4">
               <Finding title="San Francisco doesn't publish election results as open data">
                 <p className="mb-3">
-                  Every other dataset on this page lives on DataSF, where anyone can re-query it.
+                  Every other dataset on this page lives on a municipal open-data portal, where anyone can re-query it.
                   Election results do not. The portal carries the precinct{' '}
                   <em>boundaries</em> but not a single vote total. The results exist only as
                   certified spreadsheets in the Department of Elections&rsquo; own archive — a
@@ -615,7 +701,7 @@ export default function About() {
             </p>
             <p className="text-[0.75rem] font-mono text-slate-500 dark:text-slate-400 pt-2">
               Development and Design by Assoc. Prof. Jesse Garnier, SF State Journalism ·
-              built with Claude · data from DataSF
+              built with Claude · data from DataSF &amp; Oakland Open Data
             </p>
           </Prose>
         </section>

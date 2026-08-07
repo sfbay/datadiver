@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildSearchIndex } from './useOmniSearch'
+import { buildSearchIndex, buildCityRows } from './useOmniSearch'
 import { DATASETS } from '@/api/datasets'
 import { sfCity } from '@/cities/sf'
 
@@ -67,12 +67,12 @@ describe('OmniSearch index (SF parity)', () => {
     expect(cats.lastIndexOf('place')).toBeLessThan(cats.indexOf('dataset'))
   })
 
-  it('oakland index: 4 LIVE view rows + 57 beat places (named · coded) + 7 live-claimed datasets', () => {
+  it('oakland index: 5 LIVE view rows + 57 beat places (named · coded) + 7 live-claimed datasets', () => {
     const oak = buildSearchIndex('oakland')
     const byCat = (c: string) => oak.filter((r) => r.category === c)
     // All four entries are live — each gets a view row.
     expect(byCat('view').map((r) => r.id)).toEqual([
-      'view-crime-incidents', 'view-311-cases', 'view-parking-citations', 'view-campaign-finance',
+      'view-home', 'view-crime-incidents', 'view-311-cases', 'view-parking-citations', 'view-campaign-finance',
     ])
     // 59 beats minus searchExcluded (LKM1, PDT2) = 57 place rows. Labels are
     // the composed editorial form; the sublabel keeps the literal word
@@ -91,7 +91,7 @@ describe('OmniSearch index (SF parity)', () => {
       'dataset-policeIncidents', 'dataset-cases311', 'dataset-parkingCitations',
       'dataset-fppcSchA', 'dataset-fppcSchE', 'dataset-fppc496', 'dataset-fppc497',
     ])
-    expect(oak).toHaveLength(68)
+    expect(oak).toHaveLength(69)
     for (const r of oak) expect(r.path.startsWith('/oakland'), r.id).toBe(true)
   })
 
@@ -128,5 +128,39 @@ describe('OmniSearch index (SF parity)', () => {
     it("'lake merritt' offers no place row (LKM1 is searchExcluded)", () => {
       expect(matches('lake merritt').filter((r) => r.category === 'place')).toHaveLength(0)
     })
+  })
+})
+
+describe('buildCityRows (⌘K city switching)', () => {
+  it('one row per OTHER city, same-view path when live there', () => {
+    expect(buildCityRows('sf', 'crime-incidents')).toEqual([
+      expect.objectContaining({
+        id: 'city-oakland',
+        category: 'city',
+        label: 'Switch to Oakland',
+        path: '/oakland/crime-incidents',
+      }),
+    ])
+  })
+  it('falls back to the target home when the view is not live there', () => {
+    expect(buildCityRows('sf', 'housing')[0].path).toBe('/oakland')
+    expect(buildCityRows('oakland', 'campaign-finance')[0]).toMatchObject({
+      id: 'city-sf',
+      label: 'Switch to San Francisco',
+      path: '/campaign-finance',
+    })
+  })
+  it("matches the filter on 'oakland' and on 'switch'", () => {
+    const rows = buildCityRows('sf', 'home')
+    const q1 = 'oakland', q2 = 'switch'
+    for (const q of [q1, q2]) {
+      expect(rows.some((r) => r.label.toLowerCase().includes(q) || r.sublabel.toLowerCase().includes(q))).toBe(true)
+    }
+    // From Oakland, typing 'sf' must also match the city-sf row — neither
+    // 'Switch to San Francisco' nor 'San Francisco civic data' alone
+    // contains 'sf'; the sublabel's trailing abbrev is what closes the gap.
+    const oakRows = buildCityRows('oakland', 'home')
+    const q3 = 'sf'
+    expect(oakRows.some((r) => r.id === 'city-sf' && (r.label.toLowerCase().includes(q3) || r.sublabel.toLowerCase().includes(q3)))).toBe(true)
   })
 })

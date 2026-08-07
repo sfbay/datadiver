@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { CITIES, getDatasetConfig } from './registry'
+import { CITIES, getDatasetConfig, crossCityPath, isViewLive } from './registry'
 import { liveManifest } from './manifest'
 import { DATASETS } from '@/api/datasets'
 
@@ -52,13 +52,31 @@ describe('city registry', () => {
 })
 
 describe('manifest liveness (stage 3)', () => {
-  it('oakland: all four manifest entries live (stage 3b flip — parking-citations + campaign-finance no longer dormant)', () => {
+  it('oakland: all five manifest entries live (stage 4b adds home — parking-citations + campaign-finance no longer dormant)', () => {
     const live = liveManifest(CITIES.oakland.manifest).map((e) => e.viewId)
-    expect(live).toEqual(['crime-incidents', '311-cases', 'parking-citations', 'campaign-finance'])
+    expect(live).toEqual(['home', 'crime-incidents', '311-cases', 'parking-citations', 'campaign-finance'])
     const dormant = CITIES.oakland.manifest.filter((e) => e.dormant).map((e) => e.viewId)
     expect(dormant).toEqual([])
   })
   it('sf: zero dormant entries — liveManifest is the identity', () => {
     expect(liveManifest(CITIES.sf.manifest)).toEqual([...CITIES.sf.manifest])
+  })
+})
+
+describe('crossCityPath (switch semantics)', () => {
+  it('same view when live in the target city', () => {
+    expect(crossCityPath('oakland', 'crime-incidents')).toBe('/oakland/crime-incidents')
+    expect(crossCityPath('sf', 'parking-citations')).toBe('/parking-citations')
+  })
+  it('falls back to the target home when the view is not live there', () => {
+    expect(crossCityPath('oakland', 'housing')).toBe('/oakland')
+    expect(crossCityPath('oakland', 'elections')).toBe('/oakland')
+    expect(crossCityPath('sf', 'home')).toBe('/')
+  })
+})
+
+describe('the /oakland/* catch-all target stays alive', () => {
+  it("isViewLive('oakland','home') — if home ever went dormant the App.tsx splat would self-target a blank", () => {
+    expect(isViewLive('oakland', 'home')).toBe(true)
   })
 })

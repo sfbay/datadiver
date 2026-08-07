@@ -203,7 +203,8 @@ overlay coverage is weak · **authored** = landmark-verified geographic fact.
   `areas` shape in `src/cities/types.ts` (verify finding: no such named type exists
   today), then add `displayName?: (id: string) => string`.
   Oakland: `(id) => OAKLAND_BEAT_NAMES[id] ?? 'Unmapped beat'` — the fallback fires
-  on REAL data (`77X` 34,898 rows / `99X` 8,311, ~3.9% of incidents, codes with no
+  on REAL data (`77X` 34,898 rows / `99X` 8,311, ~3.4% of rows — figure corrected
+  at 4b final review; ~4.8% join no beat at all incl. nulls — codes with no
   polygon) and must read as the administrative bucket it is, never as a place
   ("Beat 77X · 77X" was the rejected form). SF: absent — a neighborhood's name IS
   its id; no behavior change.

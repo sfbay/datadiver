@@ -33,7 +33,8 @@ function esc(v: string): string {
   return v.replace(/'/g, "''")
 }
 
-function dw(field: string, start: string, end: string): string {
+/** Inclusive date-window WHERE fragment: field >= 'sT00:00:00' AND field <= 'eT23:59:59'. */
+export function dw(field: string, start: string, end: string): string {
   return `${field} >= '${start}T00:00:00' AND ${field} <= '${end}T23:59:59'`
 }
 

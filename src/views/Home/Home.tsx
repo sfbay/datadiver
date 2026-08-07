@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { useActiveCity } from '@/cities/useActiveCity'
 import { viewPath } from '@/cities/routing'
+import { liveManifest } from '@/cities/manifest'
 import { useAppStore } from '@/stores/appStore'
 import CivicTicker, { useResponsiveTickerSize } from '@/components/ui/CivicTicker'
 import { useCivicIndicators } from '@/hooks/useCivicIndicators'
@@ -27,7 +28,7 @@ export default function Home() {
   // historical order (homeCard.order) — deliberately not nav order.
   const homeCards = useMemo(
     () =>
-      city.manifest
+      liveManifest(city.manifest)
         .filter((e) => e.homeCard)
         .sort((a, b) => a.homeCard!.order - b.homeCard!.order)
         .map((e) => ({
@@ -240,6 +241,17 @@ export default function Home() {
                     />
                   </div>
                 ))}
+              <div className="w-[13.4375rem] shrink-0 snap-start">
+                <VizCard
+                  title="Oakland"
+                  subtitle="Crime, 311, citations & campaign money on 59 named beats"
+                  badge="OAK"
+                  accentColor="#b85a33"
+                  onClick={() => navigate('/oakland')}
+                  delay={0}
+                  mounted={mounted}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -540,6 +552,15 @@ export default function Home() {
                 mounted={mounted}
               />
             ))}
+            <VizCard
+              title="Oakland"
+              subtitle="Crime, 311, citations & campaign money on 59 named beats"
+              badge="OAK"
+              accentColor="#b85a33"
+              onClick={() => navigate('/oakland')}
+              delay={600 + homeCards.length * 60}
+              mounted={mounted}
+            />
           </div>
         </section>
 

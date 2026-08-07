@@ -129,17 +129,22 @@ interface CivicTickerProps {
   /** When set, item clicks call this instead of navigating to source.view.
    *  Used by the Last 48 heartbeat for in-page selection. */
   onItemClick?: (item: TickerItem) => void
+  /** Hero-size header override. Default reproduces today's render exactly
+   *  ("Live Civic Data" + pinging dot) — SF byte-identical. A city whose
+   *  streams aren't live passes a static label and live: false. */
+  heroHeader?: { label: string; live?: boolean }
 }
 
 // ─── Hero Mode ──────────────────────────────────────────
 
-function HeroTicker({ items, lastUpdated, className = '' }: Omit<CivicTickerProps, 'size'>) {
+function HeroTicker({ items, lastUpdated, className = '', heroHeader }: Omit<CivicTickerProps, 'size'>) {
   const [hovered, setHovered] = useState(false)
   const reducedMotion = usePrefersReducedMotion()
   const trackRef = useTickerScroll(hovered, SCROLL_SPEED, reducedMotion)
 
   // Duplicate items for seamless loop
   const doubled = [...items, ...items]
+  const isLive = heroHeader?.live ?? true
 
   return (
     <div className={`relative ${className}`}>
@@ -147,11 +152,21 @@ function HeroTicker({ items, lastUpdated, className = '' }: Omit<CivicTickerProp
       <div className="flex items-center gap-3 mb-3 px-1">
         <div className="flex items-center gap-1.5">
           <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-moss-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-moss-500" />
+            {isLive && (
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-moss-400 opacity-75" />
+            )}
+            <span
+              className={`relative inline-flex rounded-full h-2 w-2 ${
+                isLive ? 'bg-moss-500' : 'bg-slate-400 dark:bg-slate-500'
+              }`}
+            />
           </span>
-          <span className="text-micro font-mono uppercase tracking-[0.25em] font-bold text-moss-500">
-            Live Civic Data
+          <span
+            className={`text-micro font-mono uppercase tracking-[0.25em] font-bold ${
+              isLive ? 'text-moss-500' : 'text-slate-500 dark:text-slate-400'
+            }`}
+          >
+            {heroHeader?.label ?? 'Live Civic Data'}
           </span>
         </div>
         {lastUpdated && (
@@ -362,14 +377,14 @@ function TickerSkeleton({ size }: { size: TickerSize }) {
 
 // ─── Main Export ─────────────────────────────────────────
 
-export default function CivicTicker({ items, size, isLoading, lastUpdated, className, onItemClick }: CivicTickerProps) {
+export default function CivicTicker({ items, size, isLoading, lastUpdated, className, onItemClick, heroHeader }: CivicTickerProps) {
   if (isLoading || items.length === 0) {
     return <TickerSkeleton size={size} />
   }
 
   switch (size) {
     case 'hero':
-      return <HeroTicker items={items} lastUpdated={lastUpdated} className={className} />
+      return <HeroTicker items={items} lastUpdated={lastUpdated} className={className} heroHeader={heroHeader} />
     case 'standard':
       return <StandardTicker items={items} className={className} onItemClick={onItemClick} />
     case 'compact':
