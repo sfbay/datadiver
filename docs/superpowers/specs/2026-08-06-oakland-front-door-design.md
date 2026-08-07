@@ -32,8 +32,9 @@ The beats elephant (AskUserQuestion round 2, after the 4-agent research pass):
    city's official neighborhoods layer generates proposals; the OPD dispatch-layer
    names cross-check; a committed, test-pinned editorial table is the shipped truth.
 6. **Format = name · code** — the human name leads, the beat code stays visible on
-   every surface ("Rockridge & Shafter · 12Y"; detail panels render the name as the
-   heading with "Police Beat 12Y" as the sub-line).
+   every surface ("Rockridge & Shafter · 12Y"; detail panels render the name on the
+   location line with "Police Beat 12Y" beneath it, carrying the disclosure
+   tooltip — as-built phrasing, plan-verify M3).
 7. **Packaging = names PR first** — 4a improves the already-live views immediately;
    4b presents named beats from day one.
 
@@ -53,7 +54,7 @@ lens):
 |---|---|---|
 | `sb4q-6bkc` "neighborhoods" (data.oaklandca.gov) | **Official city neighborhoods layer: 131 polygons / 129 names** (two names split across two polygons each — the generator merges shares by name), human-quality names in `neighbhd` (Rockridge, Temescal, Chinatown, Fruitvale Station, Adams Point, Montclair…). Actively maintained (rowsUpdatedAt 2024-07-26). | Official, current |
 | `b5ya-f7qx` "Neighborhoods" | Frozen 2021 copy — name sets AND multisets verified identical to `sb4q-6bkc`. It is the source of the citations dataset's `:@computed_region_b5ya_f7qx` (92.93% populated). Crime and 311 carry NO neighborhood computed region — only zips (311's zip region is 100% NULL, never backfilled). | Official, frozen |
-| `Police_Beats_NCPC` (Oakland ArcGIS, `services.arcgis.com/9tC74aDHuml0x5Yz/.../Police_Beats_NCPC/FeatureServer/0`) | The layer that feeds Oakland's 911 dispatch system: the SAME 59 beat codes with a `NEIGHBORHO` name field. ~43/59 carry real place names; ~16 are junk (tautologies "22X NC", street range "66-82", generic org names, blanks). lastEditDate 2023-09-26 (1,045 days) — tolerable for names. **Granularity caveat (verify finding): 11 of its names span 2–3 beats and 4 are blank, so for 23 of 59 beats this leg corroborates PLACE IDENTITY only, never a per-beat name** — those rows lean on overlay + reverse-share evidence. | Operational |
+| `Police_Beats_NCPC` (Oakland ArcGIS, `services.arcgis.com/9tC74aDHuml0x5Yz/.../Police_Beats_NCPC/FeatureServer/0`) | The layer that feeds Oakland's 911 dispatch system: the SAME 59 beat codes with a `NEIGHBORHO` name field. ~43/59 carry real place names; ~16 are junk (tautologies "22X NC", street range "66-82", generic org names, blanks). lastEditDate 2023-09-26 (1,045 days) — tolerable for names. **Granularity caveat (verify finding; count corrected at plan-verify): 10 of its names span 2–3 beats (22 beats) and 4 are blank, so for 26 of 59 beats this leg corroborates PLACE IDENTITY only, never a per-beat name** — those rows lean on overlay + reverse-share evidence. | Operational |
 | NCPC prior art (LocalWiki, NCPC sites) | Oakland's community convention: residents who engage with beats do it through Neighborhood Crime Prevention Councils that self-name exactly this way ("Greater Rockridge NCPC (12Y/13X)"). | Community |
 | `jjkx-wmbc` Planning Areas | 9 named regions with population — banked as a possible future regional tier, NOT used in v1. | Official (unused) |
 
@@ -219,8 +220,8 @@ overlay coverage is weak · **authored** = landmark-verified geographic fact.
   `src/cities/areaLabel.ts` (imports types only; node-unit-tested):
   `displayName ? \`${displayName(id)} · ${id}\` : id` → SF "Mission" stays
   "Mission"; Oakland renders "Rockridge & Shafter · 12Y"; unmapped codes render
-  "Unmapped beat · 77X". Detail panels use the parts directly: name as the
-  heading, "Police Beat 12Y" as the sub-line.
+  "Unmapped beat · 77X". Detail panels use the parts directly: the name on the
+  location line, "Police Beat 12Y" beneath it (with the disclosure tooltip).
 - **Truncation rule (verify finding — Large Type clips ~half the table):** in
   truncating containers (sidebar ranking rows at `min-w-0 flex-1 truncate`), the
   name and code render as SEPARATE spans — name truncates, the code span never
@@ -266,7 +267,7 @@ a window where synthesized names render with no disclosure anywhere.)
   `title` tooltip ("Beat names are DataDiver's synthesis of the City's official
   neighborhood boundaries and community policing names — see About");
   `docs/data-insights.md` → Oakland gains "How beats get their names" (sources
-  with ids + staleness, the reverse-share promotion rule, the 23-of-59
+  with ids + staleness, the reverse-share promotion rule, the 26-of-59
   granularity caveat, LKM1/PDT2 semantics).
 - **In 4b:** the full Oakland findings block (B5) absorbs and extends it.
 - The evidence JSON + generator script are committed (A2) — the audit trail.
