@@ -156,5 +156,11 @@ describe('buildCityRows (⌘K city switching)', () => {
     for (const q of [q1, q2]) {
       expect(rows.some((r) => r.label.toLowerCase().includes(q) || r.sublabel.toLowerCase().includes(q))).toBe(true)
     }
+    // From Oakland, typing 'sf' must also match the city-sf row — neither
+    // 'Switch to San Francisco' nor 'San Francisco civic data' alone
+    // contains 'sf'; the sublabel's trailing abbrev is what closes the gap.
+    const oakRows = buildCityRows('oakland', 'home')
+    const q3 = 'sf'
+    expect(oakRows.some((r) => r.id === 'city-sf' && (r.label.toLowerCase().includes(q3) || r.sublabel.toLowerCase().includes(q3)))).toBe(true)
   })
 })

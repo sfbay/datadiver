@@ -408,7 +408,7 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
   }, [wantOak, modernRes.data, histRes.data, wantModern, wantHist])
 
   /** Oakland: share of counted incidents whose beat is NULL or an
-   *  out-of-beat code with no polygon (77X, 99X alone are ~3.9%; adding
+   *  out-of-beat code with no polygon (77X, 99X alone are ~3.4%; adding
    *  NULLs and the malformed tail — unpadded ids, "UNKNOWN", city names,
    *  zip codes — brings the total to ~4.8%). These rows count in citywide
    *  totals but can't appear on the beat ranking or choropleth; the view

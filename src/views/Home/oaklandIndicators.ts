@@ -59,9 +59,7 @@ export function isStaleLocal(maxLocal: string, maxAgeDays: number, nowMs: number
 /** AP-style date; year appended only when it differs from nowYear.
  *  Month styling delegates to comparisonMode's apMonthDay — the repo's ONE
  *  AP-month authority (a second private table is the duplicated-allowlist
- *  class). Task step: export apMonthDay from src/utils/comparisonMode.ts
- *  (it is currently module-private; add `export` to the existing function,
- *  nothing else changes). */
+ *  class). */
 export function apDate(isoDate: string, nowYear: number): string {
   const y = Number(isoDate.slice(0, 4))
   const base = apMonthDay(isoDate.slice(0, 10))

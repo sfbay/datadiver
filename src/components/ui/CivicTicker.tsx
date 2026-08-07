@@ -155,9 +155,17 @@ function HeroTicker({ items, lastUpdated, className = '', heroHeader }: Omit<Civ
             {isLive && (
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-moss-400 opacity-75" />
             )}
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-moss-500" />
+            <span
+              className={`relative inline-flex rounded-full h-2 w-2 ${
+                isLive ? 'bg-moss-500' : 'bg-slate-400 dark:bg-slate-500'
+              }`}
+            />
           </span>
-          <span className="text-micro font-mono uppercase tracking-[0.25em] font-bold text-moss-500">
+          <span
+            className={`text-micro font-mono uppercase tracking-[0.25em] font-bold ${
+              isLive ? 'text-moss-500' : 'text-slate-500 dark:text-slate-400'
+            }`}
+          >
             {heroHeader?.label ?? 'Live Civic Data'}
           </span>
         </div>

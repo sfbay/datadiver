@@ -17,7 +17,7 @@ export const oaklandCity: CityConfig = {
     // is the separate searchExcluded field below.
     names: OAKLAND_BEATS, excluded: new Set(), count: 59,
     // Editorial labels (beatNames.ts). Unknown codes are the real
-    // no-polygon buckets 77X/99X (~3.9% of crime rows) — they must read as
+    // no-polygon buckets 77X/99X (~3.4% of crime rows) — they must read as
     // the administrative bucket they are, never as a place.
     displayName: (id) => OAKLAND_BEAT_NAMES[id] ?? 'Unmapped beat',
     // LKM1: 3 crime cases all-time (2005). PDT2: the Piedmont enclave —

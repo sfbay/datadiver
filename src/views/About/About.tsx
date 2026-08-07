@@ -124,7 +124,7 @@ const SF_SOURCES: SourceRow[] = [
 ]
 
 const OAKLAND_SOURCES: SourceRow[] = [
-  { name: 'Crime Reports (OPD)', id: 'ppgh-7dqv', dateField: 'datetime', note: 'Charge-level rows — every count dedupes by case number; ~3.9% carry no-location beat codes (77X/99X); clamped to 2004+ (earlier rows are a junk trickle)' },
+  { name: 'Crime Reports (OPD)', id: 'ppgh-7dqv', dateField: 'datetime', note: 'Charge-level rows — every count dedupes by case number; ~3.4% carry no-location beat codes (77X/99X); clamped to 2004+ (earlier rows are a junk trickle)' },
   { name: '311 Service Requests', id: 'quth-gb8e', dateField: 'datetimeinit', note: 'Coordinates from the srx/sry fields — the dataset’s own address point is junk; publishes next-day' },
   { name: 'Parking Citations', id: '58em-y96b', dateField: 'ticket_iss', note: 'Publishes ~11 weeks behind; violation descriptions carry a 10-character truncation era, so codes are grouped instead' },
   { name: 'Police Beats (boundaries)', id: '78s7-673i', note: 'Vendored as the 59-beat spine; the layer names only 2 of its 59 polygons' },
@@ -423,27 +423,29 @@ export default function About() {
               </p>
             </Finding>
 
-            <Finding title="Oakland police beats get their names from an overlay, not from OPD">
-              <p>
-                Oakland&rsquo;s crime, 311, and parking datasets locate events by police
-                beat &mdash; codes like 12Y &mdash; and the city names exactly two of
-                the 59 beat polygons. The neighborhood names DataDiver shows beside
-                each code (&ldquo;Rockridge &amp; Shafter &middot; 12Y&rdquo;) are our
-                synthesis: we overlay the city&rsquo;s official neighborhood boundary
-                layer on the beat polygons and measure how much of each beat every
-                named neighborhood covers, cross-check the result against the names
-                Oakland&rsquo;s 911 dispatch layer and Neighborhood Crime Prevention
-                Councils use, and edit for clarity. A few labels are geographic facts
-                rather than neighborhood names (Airport &amp; Coliseum Complex; Prescott
-                &amp; Port of Oakland; Outer Harbor &amp; Army Base; Lake Merritt; Piedmont &mdash; an enclave city
-                with its own police force, which is why its numbers sit near zero).
-                The beat code is always shown: it is the precise unit the data
-                actually uses, and the name is the human handle. Events whose records
-                carry the no-location codes 77X/99X appear as &ldquo;Unmapped
-                beat.&rdquo; The full method and per-beat evidence shares are
-                committed to the project repository.
-              </p>
-            </Finding>
+            <div id="oakland-beats" className="scroll-mt-4">
+              <Finding title="Oakland police beats get their names from an overlay, not from OPD">
+                <p>
+                  Oakland&rsquo;s crime, 311, and parking datasets locate events by police
+                  beat &mdash; codes like 12Y &mdash; and the city names exactly two of
+                  the 59 beat polygons. The neighborhood names DataDiver shows beside
+                  each code (&ldquo;Rockridge &amp; Shafter &middot; 12Y&rdquo;) are our
+                  synthesis: we overlay the city&rsquo;s official neighborhood boundary
+                  layer on the beat polygons and measure how much of each beat every
+                  named neighborhood covers, cross-check the result against the names
+                  Oakland&rsquo;s 911 dispatch layer and Neighborhood Crime Prevention
+                  Councils use, and edit for clarity. A few labels are geographic facts
+                  rather than neighborhood names (Airport &amp; Coliseum Complex; Prescott
+                  &amp; Port of Oakland; Outer Harbor &amp; Army Base; Lake Merritt; Piedmont &mdash; an enclave city
+                  with its own police force, which is why its numbers sit near zero).
+                  The beat code is always shown: it is the precise unit the data
+                  actually uses, and the name is the human handle. Events whose records
+                  carry the no-location codes 77X/99X appear as &ldquo;Unmapped
+                  beat.&rdquo; The full method and per-beat evidence shares are
+                  committed to the project repository.
+                </p>
+              </Finding>
+            </div>
 
             <Finding title="Oakland crime counts dedupe charge-level rows">
               <p>
@@ -455,7 +457,8 @@ export default function About() {
                 Published dates run back to 1950, but everything before 2004 is a
                 junk trickle, so queries are floored there. About 3.4% of rows carry
                 the no-location codes 77X/99X &mdash; they appear as &ldquo;Unmapped
-                beat,&rdquo; never silently dropped.
+                beat,&rdquo; never silently dropped &mdash; and with null and malformed
+                beat values included, about 4.8% of rows join no beat at all.
               </p>
             </Finding>
 

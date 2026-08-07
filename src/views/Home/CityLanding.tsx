@@ -10,11 +10,13 @@ import { formatApTime } from '@/utils/format'
 import VizCard from '@/components/ui/VizCard'
 
 /**
- * The non-SF city landing (spec §B1) — a lean mini-Home rendered entirely
- * from CityConfig + manifest. Deliberately absent: investigation cards,
- * PulseTeaser, Neighborhood Profiles, AlertsRibbon (SF-scoped backend),
- * the Dana comic row. The status chip never says "Live" and never
- * navigates — this city has no /live, and its freshest stream lags days.
+ * The non-SF city landing (spec §B1) — layout renders from CityConfig +
+ * manifest, but the ticker hook and deck copy are OAKLAND'S (gate or
+ * parameterize before a third city mounts this). Deliberately absent:
+ * investigation cards, PulseTeaser, Neighborhood Profiles, AlertsRibbon
+ * (SF-scoped backend), the Dana comic row. The status chip never says
+ * "Live" and never navigates — this city has no /live, and its freshest
+ * stream lags days.
  */
 export default function CityLanding() {
   const navigate = useNavigate()
@@ -108,9 +110,9 @@ export default function CityLanding() {
         <div className={`mb-14 transition-opacity duration-700 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
           {indicators.lastUpdated !== null && indicators.items.length === 0 ? (
             <p className="text-micro font-mono text-slate-500 dark:text-slate-400 py-4">
-              No stream is current enough to quote right now — every figure on
-              this page waits for its feed&rsquo;s completeness edge, and parking
-              citations alone run ~11 weeks behind. The four views below are live.
+              Nothing current enough to quote right now — ticker figures wait
+              for each feed&rsquo;s completeness edge (parking citations alone
+              run ~11 weeks behind). All four Oakland views below are open.
             </p>
           ) : (
             <CivicTicker
@@ -143,7 +145,7 @@ export default function CityLanding() {
             ))}
             <VizCard
               title="San Francisco"
-              subtitle="The full DataDiver — nine datasets, elections, housing & The Last 48"
+              subtitle="The full DataDiver — 23 datasets, elections, housing & The Last 48"
               badge="SF"
               accentColor="#b85a33"
               onClick={() => navigate('/')}
@@ -169,7 +171,7 @@ export default function CityLanding() {
             via the Socrata SODA API · beat names are DataDiver&rsquo;s synthesis of
             official City boundaries and community policing names —{' '}
             <Link
-              to="/about"
+              to="/about#oakland-beats"
               className="underline underline-offset-2 hover:text-slate-500 dark:hover:text-slate-400 transition-colors"
             >
               method in About

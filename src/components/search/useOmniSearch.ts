@@ -100,7 +100,7 @@ export function buildCityRows(currentCityId: CityId, currentViewId: string): Sea
       id: `city-${id}`,
       category: 'city' as const,
       label: `Switch to ${CITIES[id].name}`,
-      sublabel: `${CITIES[id].name} civic data`,
+      sublabel: `${CITIES[id].name} civic data · ${CITIES[id].abbrev}`,
       icon: '🌉',
       path: crossCityPath(id, currentViewId),
     }))

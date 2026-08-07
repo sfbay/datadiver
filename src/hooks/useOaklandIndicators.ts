@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { fetchDataset } from '@/api/client'
 import { viewPath } from '@/cities/routing'
 import { OAKLAND_CRIME_COUNT } from '@/views/CrimeIncidents/crimeDialect'
-import { fppcBuildersFor } from '@/views/CampaignFinance/fppcDialect'
+import { fppcBuildersFor, dw } from '@/views/CampaignFinance/fppcDialect'
 import { cityElections, getDefaultCycle } from '@/utils/electionCycles'
 import type { TickerItem } from '@/types/ticker'
 import {
@@ -36,18 +36,13 @@ async function probeMax(datasetKey: string, dateField: string): Promise<string |
   return rows[0]?.max_d ?? null
 }
 
-function dayWhere(field: string, start: string, end: string): string {
-  // end is inclusive date-only: use an exclusive < end+1 boundary via T-suffix
-  return `${field} >= '${start}T00:00:00' AND ${field} <= '${end}T23:59:59'`
-}
-
 async function fetchCrime(nowMs: number, nowYear: number): Promise<TickerItem | null> {
   const max = await probeMax('policeIncidents', 'datetime')
   if (!max || isStaleLocal(max, OAK_TICKER_EDGES.crimeSuppressMaxAgeDays, nowMs)) return null
   const w = completeWindow(max, OAK_TICKER_EDGES.crimeEdgeDays, 7)
   const rows = await fetchDataset<{ total: string }>('policeIncidents', {
     $select: `${OAKLAND_CRIME_COUNT} as total`,
-    $where: dayWhere('datetime', w.start, w.end),
+    $where: dw('datetime', w.start, w.end),
   }, OAK)
   const total = Number(rows[0]?.total ?? 0)
   if (!total) return null
@@ -75,7 +70,7 @@ async function fetch311(nowMs: number, nowYear: number): Promise<TickerItem | nu
   const w = completeWindow(max, OAK_TICKER_EDGES.threeOneOneEdgeDays, 7)
   const rows = await fetchDataset<{ total: string }>('cases311', {
     $select: 'count(*) as total',
-    $where: dayWhere('datetimeinit', w.start, w.end),
+    $where: dw('datetimeinit', w.start, w.end),
   }, OAK)
   const total = Number(rows[0]?.total ?? 0)
   if (!total) return null
@@ -105,7 +100,7 @@ async function fetchCitations(nowYear: number): Promise<TickerItem | null> {
   const w = completeWindow(max, OAK_TICKER_EDGES.citationsEdgeDays, 30)
   const rows = await fetchDataset<{ total: string }>('parkingCitations', {
     $select: 'count(*) as total',
-    $where: dayWhere('ticket_iss', w.start, w.end),
+    $where: dw('ticket_iss', w.start, w.end),
   }, OAK)
   const total = Number(rows[0]?.total ?? 0)
   if (!total) return null

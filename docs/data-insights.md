@@ -545,7 +545,7 @@ by `scripts/build-oakland-beat-names.py`):
 - **Traps for future work:** Fruitvale is beat 23X, not 20X (the dispatch
   name "Fruitvale Unity" spans 20X/23X/24X and cannot name a beat; Fruitvale
   BART and 100% of the Fruitvale Station polygon are in 23X). 77X/99X are
-  real no-polygon codes (~3.9% of crime rows) and render "Unmapped beat".
+  real no-polygon codes (~3.4% of crime rows) and render "Unmapped beat".
   Codes stay canonical in state/URL/queries — names are display-only via
   `areas.displayName` + `composeAreaLabel`.
 
