@@ -260,7 +260,7 @@ export default function About() {
             <p className="mb-5">
               Election results are the exception: the Department of Elections publishes none of
               its results to the open data portal, so those figures are read from the
-              Department's own certified reports. That source is listed below alongside the
+              Department&rsquo;s own certified reports. That source is listed below alongside the
               rest, and what it costs us is described in the findings.
             </p>
           </Prose>
