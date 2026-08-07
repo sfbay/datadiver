@@ -27,9 +27,12 @@ export default function CityLanding() {
   const indicators = useOaklandIndicators({ enabled: showTicker })
 
   useEffect(() => {
-    requestAnimationFrame(() => setMounted(true))
+    const raf = requestAnimationFrame(() => setMounted(true))
     const t = setTimeout(() => setShowTicker(true), 300)
-    return () => clearTimeout(t)
+    return () => {
+      cancelAnimationFrame(raf)
+      clearTimeout(t)
+    }
   }, [])
 
   const heroBg = isDarkMode ? '/dana-dark-hero-bg.png' : '/dana-light-hero-bg.png'
@@ -39,7 +42,7 @@ export default function CityLanding() {
     .sort((a, b) => a.homeCard!.order - b.homeCard!.order)
 
   return (
-    <div className="min-h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto">
       <div className="max-w-[1800px] mx-auto px-[clamp(16px,3vw,64px)] py-8">
         {/* Hero — same brand register as SF's, city-authored deck */}
         <header
@@ -103,7 +106,7 @@ export default function CityLanding() {
             isLoading false), so a fully-suppressed day gets the note, never a
             forever-skeleton (plan-verify C4). */}
         <div className={`mb-14 transition-opacity duration-700 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
-          {showTicker && !indicators.isLoading && indicators.items.length === 0 ? (
+          {indicators.lastUpdated !== null && indicators.items.length === 0 ? (
             <p className="text-micro font-mono text-slate-500 dark:text-slate-400 py-4">
               No stream is current enough to quote right now — every figure on
               this page waits for its feed&rsquo;s completeness edge, and parking

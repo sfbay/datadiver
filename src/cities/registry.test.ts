@@ -52,7 +52,7 @@ describe('city registry', () => {
 })
 
 describe('manifest liveness (stage 3)', () => {
-  it('oakland: all four manifest entries live (stage 3b flip — parking-citations + campaign-finance no longer dormant)', () => {
+  it('oakland: all five manifest entries live (stage 4b adds home — parking-citations + campaign-finance no longer dormant)', () => {
     const live = liveManifest(CITIES.oakland.manifest).map((e) => e.viewId)
     expect(live).toEqual(['home', 'crime-incidents', '311-cases', 'parking-citations', 'campaign-finance'])
     const dormant = CITIES.oakland.manifest.filter((e) => e.dormant).map((e) => e.viewId)

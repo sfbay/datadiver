@@ -67,7 +67,7 @@ describe('OmniSearch index (SF parity)', () => {
     expect(cats.lastIndexOf('place')).toBeLessThan(cats.indexOf('dataset'))
   })
 
-  it('oakland index: 4 LIVE view rows + 57 beat places (named · coded) + 7 live-claimed datasets', () => {
+  it('oakland index: 5 LIVE view rows + 57 beat places (named · coded) + 7 live-claimed datasets', () => {
     const oak = buildSearchIndex('oakland')
     const byCat = (c: string) => oak.filter((r) => r.category === c)
     // All four entries are live — each gets a view row.
