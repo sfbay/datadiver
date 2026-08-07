@@ -66,7 +66,7 @@ export function resolveComparisonRange(mode: ComparisonMode, range: DateRange): 
 // AP style: months of ≤5 letters spelled out, longer abbreviated with period.
 const AP_MONTHS = ['Jan.', 'Feb.', 'March', 'April', 'May', 'June', 'July', 'Aug.', 'Sept.', 'Oct.', 'Nov.', 'Dec.']
 
-function apMonthDay(dateStr: string): string {
+export function apMonthDay(dateStr: string): string {
   const [, m, d] = dateStr.split('-').map(Number)
   return `${AP_MONTHS[m - 1]} ${d}`
 }

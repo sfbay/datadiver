@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { CITIES, getDatasetConfig } from './registry'
+import { CITIES, getDatasetConfig, crossCityPath } from './registry'
 import { liveManifest } from './manifest'
 import { DATASETS } from '@/api/datasets'
 
@@ -60,5 +60,17 @@ describe('manifest liveness (stage 3)', () => {
   })
   it('sf: zero dormant entries — liveManifest is the identity', () => {
     expect(liveManifest(CITIES.sf.manifest)).toEqual([...CITIES.sf.manifest])
+  })
+})
+
+describe('crossCityPath (switch semantics)', () => {
+  it('same view when live in the target city', () => {
+    expect(crossCityPath('oakland', 'crime-incidents')).toBe('/oakland/crime-incidents')
+    expect(crossCityPath('sf', 'parking-citations')).toBe('/parking-citations')
+  })
+  it('falls back to the target home when the view is not live there', () => {
+    expect(crossCityPath('oakland', 'housing')).toBe('/oakland')
+    expect(crossCityPath('oakland', 'elections')).toBe('/oakland')
+    expect(crossCityPath('sf', 'home')).toBe('/')
   })
 })
