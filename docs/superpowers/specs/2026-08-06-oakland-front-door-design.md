@@ -411,7 +411,16 @@ rail): badge `OAK`, title "Oakland", subtitle on the 4-views/59-named-beats pitc
   `jkj3-8yq3` 496, `qact-u8hq` 497), and one roll-up row for the remaining
   registered-but-unread FPPC sets — noting `fppcSchB2` is published empty and the
   460 summary is deliberately never summed. Row-link fallback becomes per-section
-  host. Intro prose rewritten off the DataSF-only framing.
+  host. Intro prose rewritten off the DataSF-only framing — AND (4a final-review
+  carry) the elections-exception sentence ("Every other dataset on this page
+  lives on DataSF", About.tsx ~:421) and the page footer ("data from DataSF",
+  ~:618), which become false the moment Oakland rows land in the table.
+- **Disclosure reachability (4a final-review carry, load-bearing):** the
+  beat-naming disclosure ships in 4a as the About finding + a hover `title` —
+  sufficient ONLY while Oakland is URL-only. 4b must make it reachable without
+  hover from Oakland routes the day the front door ships (at minimum: the
+  landing footer links the About finding; the detail-panel sub-line's tooltip
+  stays as a bonus, never the primary path).
 - **Findings:** the Oakland block (~6 `<Finding>`s distilled from data-insights):
   the beat-naming method (extending 4a's finding); beat spine + the ~4.8% no-beat
   disclosure (77X/99X unmapped codes + what "Unmapped beat" means); charge-level
