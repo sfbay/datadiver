@@ -28,8 +28,10 @@ export const oaklandCity: CityConfig = {
     placeDestination: { viewId: 'crime-incidents', param: 'neighborhood' },
   },
   camera: {
-    // Provisional frame — visually tuned in stage 3 via ?debug=map.
-    defaultView: { center: { lat: 37.8004, lng: -122.2712 }, zoom: 11.6, pitch: 48, bearing: 0 },
+    // Whole-city frame hand-tuned by Jesse 2026-08-07 via ?debug=map
+    // (replaces the provisional stage-3 frame) — centers the full city
+    // landmass rather than downtown.
+    defaultView: { center: { lat: 37.7849, lng: -122.2133 }, zoom: 12.02, pitch: 48, bearing: 0 },
     slots: {},
     areaViews: OAKLAND_BEAT_VIEWS,
   },

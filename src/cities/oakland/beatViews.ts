@@ -28,6 +28,30 @@ import type { CameraView } from '@/utils/mapDefaults'
 
 export const OAKLAND_BEAT_VIEWS: Record<string, CameraView> = {
   // Tuned 2026-08-07 via the ?debug=map overlay (Jesse).
+  '03X': {
+    pitch: 49,
+    bearing: 0,
+    zoom: 15.25,
+    center: { lat: 37.7976, lng: -122.2669 },
+  },
+  '04X': {
+    pitch: 52,
+    bearing: -9.6,
+    zoom: 15.13,
+    center: { lat: 37.8049, lng: -122.2676 },
+  },
+  '08X': {
+    pitch: 56,
+    bearing: -18.4,
+    zoom: 15,
+    center: { lat: 37.8153, lng: -122.2610 },
+  },
+  '19X': {
+    pitch: 53,
+    bearing: 9.6,
+    zoom: 14.59,
+    center: { lat: 37.7857, lng: -122.2458 },
+  },
   '23X': {
     pitch: 49,
     bearing: 0,

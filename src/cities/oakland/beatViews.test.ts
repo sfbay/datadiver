@@ -29,7 +29,7 @@ describe('OAKLAND_BEAT_VIEWS', () => {
       expect(view.center.lat, `${code} lat`).toBeLessThan(37.9)
       expect(view.center.lng, `${code} lng`).toBeGreaterThan(-122.35)
       expect(view.center.lng, `${code} lng`).toBeLessThan(-122.09)
-      // Beat-scale framing: citywide is ~11.6, block-level ~17.
+      // Beat-scale framing: citywide is ~12, block-level ~17.
       expect(view.zoom, `${code} zoom`).toBeGreaterThanOrEqual(12)
       expect(view.zoom, `${code} zoom`).toBeLessThanOrEqual(18)
       expect(view.pitch, `${code} pitch`).toBeGreaterThanOrEqual(0)
