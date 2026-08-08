@@ -103,4 +103,20 @@ All data is fetched live from [data.sfgov.org](https://data.sfgov.org) via the S
 
 ## License
 
-MIT
+DataDiver uses a two-license split (the data-desk newsroom convention):
+
+- **Code** — everything in this repository's source — is **MIT** (see
+  [`LICENSE`](./LICENSE)).
+- **Editorial content and original derived datasets** — the `docs/`,
+  the About copy, the papers, and datasets the project produced by
+  transforming public sources (parsed election results, the Oakland
+  beat-name synthesis, generated boundary GeoJSON) — are **CC BY 4.0**
+  (see [`LICENSE-CONTENT.md`](./LICENSE-CONTENT.md)).
+
+Underlying public data belongs to its publishers (DataSF, Oakland Open
+Data, the SF Department of Elections, and the rest listed in the About
+page's Sources tables) under their own terms. A future layer derived from
+OpenStreetMap would additionally carry ODbL (share-alike).
+
+Cite it with the [`CITATION.cff`](./CITATION.cff) file — GitHub renders a
+"Cite this repository" button from it.
