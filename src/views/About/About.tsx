@@ -703,6 +703,10 @@ export default function About() {
               Development and Design by Assoc. Prof. Jesse Garnier, SF State Journalism ·
               built with Claude · data from DataSF &amp; Oakland Open Data
             </p>
+            <p className="text-[0.75rem] font-mono text-slate-500 dark:text-slate-400 pt-1">
+              Code licensed MIT · text &amp; original derived datasets CC BY 4.0 ·
+              underlying data belongs to its publishers
+            </p>
           </Prose>
         </section>
       </div>
