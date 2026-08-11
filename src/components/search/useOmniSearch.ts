@@ -3,9 +3,9 @@ import { getCity, CITIES, crossCityPath } from '@/cities/registry'
 import { viewPath, type CityId } from '@/cities/routing'
 import { useRouteView } from '@/cities/useActiveCity'
 import { liveManifest } from '@/cities/manifest'
-import { composeAreaLabel } from '@/cities/areaLabel'
+import { composeAreaLabel, censusUnitLabel } from '@/cities/areaLabel'
 
-export type SearchCategory = 'view' | 'place' | 'dataset' | 'vendor' | 'time' | 'city'
+export type SearchCategory = 'view' | 'place' | 'dataset' | 'vendor' | 'time' | 'city' | 'region'
 
 export interface SearchResult {
   id: string
@@ -15,6 +15,10 @@ export interface SearchResult {
   icon: string
   path: string
   params?: Record<string, string>
+  /** Canonical short id rendered as its OWN span beside the label, so a
+   *  truncating row can never clip it away (the beat/region idiom: the code
+   *  is the precise unit the data uses, the name is the human handle). */
+  code?: string
 }
 
 // Built once per city per session, on first use — the same cost profile as
@@ -84,6 +88,60 @@ export function buildSearchIndex(cityId: CityId): SearchResult[] {
       icon: '📊',
       path: viewPath(cityId, viewId),
     })
+  }
+
+  // Regions → region results. A TWO-GEOGRAPHY city (Oakland) paints its
+  // Demographics explorer on coarse planning regions, but no reader thinks in
+  // planning regions — they think 'Rockridge'. So every region gets a row AND
+  // every one of the city's official neighborhoods gets a row that lands on
+  // the region CONTAINING it: the familiar name stays findable without the
+  // index ever claiming the map draws that neighborhood. The `In <region>`
+  // sublabel runs the query the other way too — typing a region's name finds
+  // all of its members.
+  //
+  // LAST in the index, deliberately: the hook's filter has no scoring — array
+  // order IS the ranking — under a hard 8-row cap. Oakland's 141 rows placed
+  // ahead of the views would push every view and dataset off the list for a
+  // common substring like 'east'.
+  //
+  // Guarded on `census.regions`, which is exactly the two-geography claim: SF,
+  // whose 41 neighborhoods ARE its census spine, emits nothing here. (The
+  // destination's liveness is assumed rather than checked — a city registers
+  // regions to drive the Demographics view, and Oakland's entry is live.)
+  const regions = city.census?.regions
+  if (regions) {
+    const demographicsPath = viewPath(cityId, 'demographics')
+    for (const code of Object.keys(regions.names)) {
+      results.push({
+        id: `region-${code}`,
+        category: 'region',
+        label: censusUnitLabel(city, code),
+        code,
+        sublabel: `${city.name} demographic region`,
+        icon: '🗺️',
+        path: demographicsPath,
+        params: { nh: code },
+      })
+    }
+    for (const [code, names] of Object.entries(regions.members)) {
+      for (const name of names) {
+        results.push({
+          // Keyed on code AND name: two of Oakland's neighborhoods
+          // ('Coliseum Industrial Complex', 'East 14th Street Business')
+          // genuinely straddle CE and E, and each gets a row per region —
+          // picking one arbitrarily would be a quiet lie. OmniSearch uses
+          // `r.id` as the React list key, so the two rows must not collide.
+          id: `region-${code}-${name}`,
+          category: 'region',
+          label: name,
+          code,
+          sublabel: `In ${censusUnitLabel(city, code)}`,
+          icon: '📍',
+          path: demographicsPath,
+          params: { nh: code },
+        })
+      }
+    }
   }
 
   indexCache.set(cityId, results)

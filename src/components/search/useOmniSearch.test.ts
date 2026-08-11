@@ -67,7 +67,22 @@ describe('OmniSearch index (SF parity)', () => {
     expect(cats.lastIndexOf('place')).toBeLessThan(cats.indexOf('dataset'))
   })
 
-  it('oakland index: 6 LIVE view rows + 57 beat places (named · coded) + 7 live-claimed datasets', () => {
+  // Oakland adds a fourth section. There is no scoring in the hook's filter —
+  // array order IS the ranking under a hard 8-row cap — so 141 region rows
+  // ahead of the views would push every view and dataset off the list for a
+  // common substring like 'east'. They go LAST, and contiguously.
+  it('oakland section order is views → places → datasets → regions, region block contiguous', () => {
+    const cats = buildSearchIndex('oakland').map((r) => r.category)
+    expect(cats.lastIndexOf('view')).toBeLessThan(cats.indexOf('place'))
+    expect(cats.lastIndexOf('place')).toBeLessThan(cats.indexOf('dataset'))
+    expect(cats.lastIndexOf('dataset')).toBeLessThan(cats.indexOf('region'))
+    // Contiguous: the block runs unbroken from its first index to the end.
+    const first = cats.indexOf('region')
+    expect(cats.slice(first).every((c) => c === 'region')).toBe(true)
+    expect(cats.lastIndexOf('region')).toBe(cats.length - 1)
+  })
+
+  it('oakland index: 6 LIVE view rows + 57 beat places (named · coded) + 7 live-claimed datasets + 141 region rows', () => {
     const oak = buildSearchIndex('oakland')
     const byCat = (c: string) => oak.filter((r) => r.category === c)
     // All six entries are live — each gets a view row.
@@ -86,13 +101,32 @@ describe('OmniSearch index (SF parity)', () => {
       path: '/oakland/crime-incidents', params: { neighborhood: '01X' },
     })
     expect(places.some((p) => p.id === 'place-LKM1' || p.id === 'place-PDT2')).toBe(false)
+    // A beat row sets NO `code` — its label already carries the composed
+    // 'name · code' form, and a second code span would double it.
+    expect(places[0].code).toBeUndefined()
     // Dataset rows from every entry's omniDatasetKeys: crime 1 + 311 1 +
     // citations 1 + campaign-finance 4 (the read set) = 7.
     expect(byCat('dataset').map((r) => r.id)).toEqual([
       'dataset-policeIncidents', 'dataset-cases311', 'dataset-parkingCitations',
       'dataset-fppcSchA', 'dataset-fppcSchE', 'dataset-fppc496', 'dataset-fppc497',
     ])
-    expect(oak).toHaveLength(70)
+    // Region rows: 10 regions + 131 neighborhood MEMBERSHIPS (129 unique
+    // names; the two Coliseum-edge industrial areas each span CE and E, and
+    // each gets a row per region — see the spanning-names pin below).
+    const regions = byCat('region')
+    expect(regions).toHaveLength(141)
+    expect(regions.filter((r) => r.icon === '🗺️')).toHaveLength(10)
+    expect(regions.filter((r) => r.icon === '📍')).toHaveLength(131)
+    for (const r of regions) {
+      expect(r.path, r.id).toBe('/oakland/demographics')
+      expect(r.params?.nh, r.id).toBeTruthy()
+      expect(r.code, r.id).toBe(r.params!.nh)
+    }
+    expect(regions.find((r) => r.id === 'region-N')).toMatchObject({
+      label: 'North Oakland', code: 'N', sublabel: 'Oakland demographic region',
+    })
+    // 6 views + 57 places + 7 datasets + 141 regions = 211.
+    expect(oak).toHaveLength(211)
     for (const r of oak) expect(r.path.startsWith('/oakland'), r.id).toBe(true)
   })
 
@@ -128,6 +162,42 @@ describe('OmniSearch index (SF parity)', () => {
 
     it("'lake merritt' offers no place row (LKM1 is searchExcluded)", () => {
       expect(matches('lake merritt').filter((r) => r.category === 'place')).toHaveLength(0)
+    })
+
+    // Oakland's demographic paint is REGIONAL, but a reader thinks in
+    // neighborhoods. These pins are the promise that typing a familiar name
+    // lands on the region that actually contains it (spec §A4).
+    it('oakland: "rockridge" finds the neighborhood and lands on its region', () => {
+      const hits = matches('rockridge').filter((r) => r.category === 'region')
+      const rockridge = hits.find((r) => r.label === 'Rockridge')
+      expect(rockridge).toBeDefined()
+      expect(rockridge!.path).toBe('/oakland/demographics')
+      expect(rockridge!.params).toEqual({ nh: 'N' })
+      expect(rockridge!.code).toBe('N')
+    })
+
+    it('oakland: the two boundary-spanning names emit one row per region, not one arbitrary row', () => {
+      const spanning = buildSearchIndex('oakland').filter(
+        (r) => r.label === 'Coliseum Industrial Complex',
+      )
+      expect(spanning.map((r) => r.params!.nh).sort()).toEqual(['CE', 'E'])
+      expect(new Set(spanning.map((r) => r.id)).size).toBe(2) // ids must not collide
+    })
+
+    it('oakland: a region name finds its member neighborhoods', () => {
+      const hits = matches('deep east').filter((r) => r.category === 'region')
+      expect(hits.length).toBeGreaterThan(1)
+      expect(hits.every((r) => r.params!.nh === 'E')).toBe(true)
+    })
+
+    it('region rows never outrank views or datasets under the 8-row cap', () => {
+      // 'east' matches many region rows; the crime view row must still survive.
+      const cats = buildSearchIndex('oakland').map((r) => r.category)
+      expect(cats.lastIndexOf('dataset')).toBeLessThan(cats.indexOf('region'))
+    })
+
+    it('sf emits no region rows — its neighborhoods are already its census spine', () => {
+      expect(buildSearchIndex('sf').some((r) => r.category === 'region')).toBe(false)
     })
   })
 })

@@ -70,12 +70,28 @@ function ResultRow({
         {result.icon}
       </span>
       <span className="flex-1 min-w-0">
-        <span
-          className={`block text-ink dark:text-paper-100 truncate ${
-            grand ? 'text-lg desk:text-xl' : 'text-[13px]'
-          }`}
-        >
-          {result.label}
+        {/* Name and code are SEPARATE spans on one line — only the name
+            truncates, so a long region label can never clip away the code
+            that is the precise unit the data is keyed by (the beat/region
+            idiom from the ranking rows). Rows without a `code` render exactly
+            as before: a single truncating label filling the line. */}
+        <span className="flex items-baseline gap-2 min-w-0">
+          <span
+            className={`min-w-0 text-ink dark:text-paper-100 truncate ${
+              grand ? 'text-lg desk:text-xl' : 'text-[13px]'
+            }`}
+          >
+            {result.label}
+          </span>
+          {result.code && (
+            <span
+              className={`shrink-0 font-mono text-paper-600 dark:text-paper-400 ${
+                grand ? 'text-sm' : 'text-micro'
+              }`}
+            >
+              {result.code}
+            </span>
+          )}
         </span>
         <span
           className={`block font-mono text-paper-600 dark:text-paper-400 truncate ${
