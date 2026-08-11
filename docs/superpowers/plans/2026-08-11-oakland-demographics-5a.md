@@ -305,10 +305,10 @@ it('names + members are bijective on the 10 codes', () => {
   expect(Object.keys(OAKLAND_REGION_NAMES).sort()).toEqual([...CODES].sort())
   expect(Object.keys(OAKLAND_REGION_MEMBERS).sort()).toEqual([...CODES].sort())
 })
-it('members partition the 131 neighborhoods (each once)', () => {
+it('members cover the 131 source polygons (129 unique names; 2 span CE/E)', () => {
   const all = Object.values(OAKLAND_REGION_MEMBERS).flat()
-  expect(all).toHaveLength(131)
-  expect(new Set(all).size).toBe(131)
+  expect(all).toHaveLength(131)          // 131 sb4q-6bkc feature rows
+  expect(new Set(all).size).toBe(129)    // "Coliseum Industrial Complex" + "East 14th Street Business" each appear under CE AND E
 })
 ```
 
