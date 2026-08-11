@@ -474,7 +474,7 @@ export default function About() {
                 crimes, so they sit outside the violent-crime groups), and a few related
                 charges fall under Other. Even split, the Homicide figure is a floor,
                 not Oakland&rsquo;s official toll: many killings stay coded as death
-                investigations until the Coroner rules, so the number runs well below
+                investigations until the Coroner rules, so the number runs below
                 the official count, which OPD and the state report separately.
               </p>
             </Finding>

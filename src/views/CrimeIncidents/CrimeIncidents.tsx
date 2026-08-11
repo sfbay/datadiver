@@ -941,7 +941,7 @@ export default function CrimeIncidents() {
                       <span className="font-semibold text-ink/80 dark:text-paper-100/75">Homicide</span>{' '}
                       counts charged murder and manslaughter cases, not Oakland&rsquo;s official toll. Many
                       killings are coded as death investigations until the Coroner rules, so this figure runs
-                      well below the official count.{' '}
+                      below the official count.{' '}
                       <span className="font-semibold text-ink/80 dark:text-paper-100/75">Death Investigations</span>{' '}
                       are coroner probes of sudden or unexplained deaths, not crimes.
                     </p>
