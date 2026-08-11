@@ -37,7 +37,9 @@ export default function CityLanding() {
     }
   }, [])
 
-  const heroBg = isDarkMode ? '/dana-dark-hero-bg.png' : '/dana-light-hero-bg.png'
+  // Oakland-specific hero art (Dana diving the Estuary past the Port cranes) —
+  // distinct from SF's; generated to match the mirrored SF hero treatment.
+  const heroBg = isDarkMode ? '/dana-oakland-dark-hero-bg.webp' : '/dana-oakland-light-hero-bg.webp'
 
   const cards = liveManifest(city.manifest)
     .filter((e) => e.homeCard)
@@ -46,34 +48,75 @@ export default function CityLanding() {
   return (
     <div className="h-full overflow-y-auto">
       <div className="max-w-[1800px] mx-auto px-[clamp(16px,3vw,64px)] py-8">
-        {/* Hero — same brand register as SF's, city-authored deck */}
+        {/* Hero — mirrors SF's proportions and image treatment (Home.tsx):
+            a tall cinematic band with Dana on the right and text capped to
+            the left half, a directional gradient reveal, top-right terracotta
+            glow, rule-eyebrow, and staggered entrance. City-authored deck and
+            the non-navigating "Updated" chip (no "Live" — Oakland has no /live). */}
         <header
-          className="glow-host mb-14 relative z-10 overflow-hidden rounded-3xl flex flex-col justify-center"
-          style={{ '--glow': '#b85a33', minHeight: 'clamp(0px, 22vw, 440px)' } as CSSProperties}
+          className="glow-host mb-20 relative z-10 overflow-hidden rounded-3xl flex flex-col justify-center"
+          style={{ '--glow': '#b85a33', minHeight: 'clamp(0px, 30vw, 600px)' } as CSSProperties}
         >
-          <div className="glow-corner" />
+          {/* Large terracotta corner glow behind Dana — anchored top-right so
+              the disc bleeds in from off-canvas as warm light from above. */}
           <div
-            className="absolute inset-0 bg-cover bg-center opacity-30 dark:opacity-40"
-            style={{ backgroundImage: `url(${heroBg})` }}
+            className="glow-corner is-lg"
+            style={{ top: -80, left: 'auto', right: -60, opacity: 0.55 }}
           />
-          <div className="relative px-[clamp(20px,4vw,64px)] py-12">
-            <p className="text-label font-mono uppercase tracking-[0.25em] text-terracotta-500 mb-4">
-              {city.name} Open Data
-            </p>
+          {/* Background illustration — pushed hard right so Dana clears the text */}
+          <img
+            src={heroBg}
+            alt=""
+            aria-hidden="true"
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${mounted ? 'opacity-100' : 'opacity-0'}`}
+            style={{ objectPosition: '62% center' }}
+          />
+          {/* Gradient overlay — opaque on the left for text legibility, fades to
+              transparent on the right so the illustration reads. */}
+          <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/60 via-45% to-transparent dark:from-slate-950/95 dark:via-slate-950/60 dark:via-45% dark:to-transparent" />
+          {/* Extra flat overlay on narrow screens where text and Dana overlap */}
+          <div className="absolute inset-0 bg-white/50 dark:bg-slate-950/50 desk:hidden" />
+
+          {/* Text panel — capped to the left half on desktop so Dana shows on
+              the right (matches SF); full width under a wash on mobile. */}
+          <div className="relative py-6 px-8 desk:py-8 desk:px-14 desk:max-w-[min(50%,640px)]">
+            <div className={`transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+              <div className="flex items-center gap-2.5 mb-6">
+                <div className="h-[1px] w-8 bg-terracotta-500/60" />
+                <p className="text-label font-mono tracking-[0.25em] uppercase text-terracotta-500">
+                  {city.name} Open Data
+                </p>
+              </div>
+            </div>
+
             <h1
-              className="font-display italic text-ink dark:text-white leading-[0.95] tracking-tight mb-5"
-              style={{ fontSize: 'clamp(2.25rem, 4vw + 1rem, 5rem)' }}
+              className={`font-display text-ink dark:text-white leading-[0.9] mb-6 transition-all duration-1000 delay-150 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
+              style={{ fontSize: 'clamp(2.25rem, 4vw + 0.75rem, 5rem)' }}
             >
-              <em>Dive</em> beneath
+              <em
+                style={{
+                  textShadow:
+                    '0 0 18px rgba(184, 90, 51, 0.55), 0 0 42px rgba(184, 90, 51, 0.30), 0 0 96px rgba(184, 90, 51, 0.14)',
+                }}
+              >
+                Dive
+              </em>{' '}
+              toward
               <br />
-              the surface.
+              civic
+              <br />
+              accountability.
             </h1>
-            <p className="text-[1.0625rem] leading-relaxed text-slate-600 dark:text-slate-300 max-w-xl mb-6">
+
+            <p
+              className={`text-lg text-slate-500 dark:text-slate-400 max-w-md leading-relaxed transition-all duration-1000 delay-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+            >
               Crime, 311, parking and campaign money across {city.areas.count}{' '}
               {city.areas.nounPlural} — straight from {city.portal.name}, named
               the way Oaklanders know their neighborhoods.
             </p>
-            <div className="flex flex-wrap items-center gap-4">
+
+            <div className={`flex flex-col items-start gap-4 mt-6 desk:flex-row desk:items-center transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
               <a
                 href="mailto:jesse@jlabsf.org?subject=%5BDataDiver%5D%20Inquiry"
                 className="text-label font-mono text-slate-400/80 dark:text-slate-400/60 whitespace-nowrap text-left
