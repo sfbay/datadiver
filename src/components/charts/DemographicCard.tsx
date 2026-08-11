@@ -20,6 +20,11 @@ interface DemographicCardProps {
   /** Display label for a unit id, for a city whose census rows are keyed by a
    *  CODE (Oakland's regions). Omit and the id is the label (SF). */
   labelFor?: (id: string) => string
+  /** Whose citywide figure this is — `city.abbrev` ('SF', 'OAK'). Marks the
+   *  big number as the CITYWIDE aggregate, against the per-unit distribution
+   *  in the sparkbars below it. Omitted renders no city token at all: a caller
+   *  that forgets gets a missing claim, never someone else's. */
+  cityLabel?: string
 }
 
 // ---------------------------------------------------------------------------
@@ -118,6 +123,7 @@ export default function DemographicCard({
   onActivate,
   onToggleExpand,
   labelFor,
+  cityLabel,
 }: DemographicCardProps) {
   const config = getVariableConfig(variable)
   if (!config) return null
@@ -195,7 +201,9 @@ export default function DemographicCard({
         ) : (
           <span className="font-mono text-lg text-slate-500">—</span>
         )}
-        <span className="ml-2 text-micro text-slate-500 font-mono">SF · ACS 2019–2023</span>
+        <span className="ml-2 text-micro text-slate-500 font-mono">
+          {cityLabel ? `${cityLabel} · ACS 2019–2023` : 'ACS 2019–2023'}
+        </span>
       </div>
 
       {/* SparkBars — neighborhood distribution */}

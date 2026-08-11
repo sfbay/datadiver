@@ -15,6 +15,7 @@ import { useMapLayer } from '@/hooks/useMapLayer'
 import { useAppStore } from '@/stores/appStore'
 import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { useDemographicsData } from './useDemographicsData'
+import { SCATTER_CENSUS_OPTIONS, isPlottable } from './scatterOptions'
 import MapView from '@/components/maps/MapView'
 import CorrelationScatter from '@/components/charts/CorrelationScatter'
 import DorlingCartogram from '@/components/charts/DorlingCartogram'
@@ -52,11 +53,6 @@ const DEFAULT_EXPANDED: CensusVariable[] = [
   'povertyRate',
   'rentBurden',
 ]
-
-/** All Census variables usable as scatter Y-axis options */
-const SCATTER_CENSUS_OPTIONS = CENSUS_VARIABLES.filter(
-  v => v.format === 'percent' || v.format === 'currency' || v.key === 'totalPopulation' || v.key === 'populationDensity'
-)
 
 /** Civic metrics that can be fetched from Socrata (not client-side) */
 const SCATTER_CIVIC_OPTIONS = CIVIC_METRICS.filter(m => !m.isClientSide)
@@ -151,6 +147,22 @@ export default function Demographics() {
   // beats. Joining region-keyed rows onto beat polygons paints nothing.
   const { boundaries } = useCensusCoarseBoundaries()
 
+  // ?nh= is user-editable, so the id in it is UNTRUSTED: resolve it against the
+  // loaded rows and let a stale or malformed link be a silent no-op. Before the
+  // param existed this state was unreachable (selection could only come from a
+  // real row); the URL made it reachable, and an unresolvable id would
+  // otherwise render a card headed with the junk string over an empty value and
+  // hand the camera a selection matching no polygon. The rows are static JSON,
+  // so this is decided on the first render — no loading race.
+  const selectedUnit = useMemo(
+    () =>
+      selectedNeighborhood
+        ? neighborhoods.find(n => n.name === selectedNeighborhood) ?? null
+        : null,
+    [neighborhoods, selectedNeighborhood],
+  )
+  const selectedUnitId = selectedUnit?.name ?? null
+
   // Determine if scatter Y is a Census variable or civic metric
   const isCensusY = useMemo(() => {
     return scatterYMetric ? CENSUS_VARIABLES.some(v => v.key === scatterYMetric) : false
@@ -182,7 +194,6 @@ export default function Demographics() {
   } = useDemographicsData(
     neighborhoods,
     activeVariable,
-    selectedNeighborhood,
     scatterYData,
     boundaries,
     excluded,
@@ -200,6 +211,12 @@ export default function Demographics() {
     () => scatterData.map(d => ({ ...d, label: labelFor(d.name) })),
     [scatterData, labelFor],
   )
+
+  // A Census Y the city's ACS payload simply doesn't publish. Both cities have
+  // some (SF more than Oakland — the gap is a data-coverage fact, not a city
+  // one), and the generic empty frame reads as a bug. Named below instead.
+  const scatterYUnpublished =
+    isCensusY && scatterYMetric !== null && !isPlottable(neighborhoods, scatterYMetric)
 
   const activeConfig = useMemo(() => getVariableConfig(activeVariable), [activeVariable])
 
@@ -276,7 +293,11 @@ export default function Demographics() {
 
   // Camera presets — reactively glides to the matching neighborhood preset
   // (or fits the polygon when no preset). Cross-view consistent.
-  useMapCameraPresets(mapInstance, { selectedNeighborhood, neighborhoodBoundaries: boundaries })
+  // The RESOLVED id — an unresolvable ?nh= must not fly the camera anywhere.
+  useMapCameraPresets(mapInstance, {
+    selectedNeighborhood: selectedUnitId,
+    neighborhoodBoundaries: boundaries,
+  })
 
   // Choropleth tooltip
   useMapTooltip(mapInstance, 'demographics-choropleth-fill', (props) => {
@@ -476,19 +497,20 @@ export default function Demographics() {
                   </div>
                 )}
 
-                {/* Selected neighborhood info */}
-                {selectedNeighborhood && (
+                {/* Selected unit info \u2014 gated on the RESOLVED row, so a stale
+                    or malformed ?nh= renders nothing rather than a card headed
+                    with the junk id over a blank value. */}
+                {selectedUnit && (
                   <div className="absolute top-4 left-5 z-10 glass-card rounded-xl px-4 py-3 max-w-xs">
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <p className="text-[12px] font-medium text-ink dark:text-white">
-                          {censusUnitLabel(city, selectedNeighborhood)}
+                          {censusUnitLabel(city, selectedUnit.name)}
                         </p>
                         <p className="text-micro font-mono text-slate-400">
                           {(() => {
-                            const n = neighborhoods.find(n => n.name === selectedNeighborhood)
-                            if (!n || !activeConfig) return ''
-                            const val = n[activeVariable]
+                            if (!activeConfig) return ''
+                            const val = selectedUnit[activeVariable]
                             return val !== undefined ? formatValue(val as number, activeConfig.format) : '\u2014'
                           })()}
                         </p>
@@ -628,11 +650,13 @@ export default function Demographics() {
                   onSelect={handleScatterSelect}
                 />
               ) : (
-                <div className="flex items-center justify-center h-64">
-                  <p className="text-label text-slate-500">
-                    {scatterYData.size === 0
-                      ? 'Select a Y-axis metric to see correlations'
-                      : 'Not enough data points for scatter plot'}
+                <div className="flex items-center justify-center h-64 px-4">
+                  <p className="text-label text-slate-500 text-center">
+                    {scatterYUnpublished
+                      ? `No ${yLabel} figures are loaded for ${city.name}'s ${unitNoun.many} — pick another Y axis.`
+                      : scatterYMetric === null
+                        ? 'Select a Y-axis metric to see correlations'
+                        : 'Not enough data points for scatter plot'}
                   </p>
                 </div>
               )}
@@ -651,7 +675,7 @@ export default function Demographics() {
                       const value = n[activeVariable] as number
                       const maxVal = rankedNeighborhoods[0]?.[activeVariable] as number ?? 1
                       const barWidth = maxVal > 0 ? (value / maxVal) * 100 : 0
-                      const isSelected = selectedNeighborhood === n.name
+                      const isSelected = selectedUnitId === n.name
                       // Name truncates, the code NEVER clips (the beat idiom —
                       // see AreaRowLabel). Identical strings on SF, so no span.
                       const label = censusUnitLabel(city, n.name)
@@ -678,7 +702,7 @@ export default function Demographics() {
                                 {label}
                               </span>
                               {label !== n.name && (
-                                <span className="shrink-0 text-micro font-mono text-slate-400 dark:text-slate-500">
+                                <span className="shrink-0 text-micro font-mono text-slate-500">
                                   {n.name}
                                 </span>
                               )}
@@ -716,6 +740,7 @@ export default function Demographics() {
                       onActivate={handleActivateVariable}
                       onToggleExpand={handleToggleExpand}
                       labelFor={labelFor}
+                      cityLabel={city.abbrev}
                     />
                   ))}
                 </div>
@@ -734,6 +759,7 @@ export default function Demographics() {
                       onActivate={handleActivateVariable}
                       onToggleExpand={handleToggleExpand}
                       labelFor={labelFor}
+                      cityLabel={city.abbrev}
                     />
                   ))}
                 </div>
