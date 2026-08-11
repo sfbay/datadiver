@@ -9,6 +9,7 @@ import UnderlayPicker from '@/components/maps/UnderlayPicker'
 import UnderlayLegend from '@/components/maps/UnderlayLegend'
 import NeighborhoodCensusContext from '@/components/ui/NeighborhoodCensusContext'
 import { useViewEntry, useActiveCity } from '@/cities/useActiveCity'
+import { censusMatchesAreas } from '@/cities/registry'
 import { composeAreaLabel } from '@/cities/areaLabel'
 import { AreaRowLabel } from '@/components/ui/AreaLabel'
 import { useSearchParams } from 'react-router-dom'
@@ -300,7 +301,7 @@ export default function Cases311() {
   })
 
   const cityAvg = useMemo(() => {
-    if (city.census === null) return undefined
+    if (!censusMatchesAreas(city)) return undefined
     if (censusNeighborhoods.length === 0) return undefined
     const totalPop = censusNeighborhoods.reduce((s, n) => s + n.population, 0)
     if (totalPop === 0) return undefined
@@ -312,7 +313,7 @@ export default function Cases311() {
       }
     }
     return avg as any
-  }, [censusNeighborhoods, city.census])
+  }, [censusNeighborhoods, city])
 
   // --- Computed data ---
   const caseData = useMemo(() => {
@@ -963,7 +964,7 @@ export default function Cases311() {
 
                 {selectedNeighborhood && (
                   <>
-                    {city.census !== null && (
+                    {censusMatchesAreas(city) && (
                       <NeighborhoodCensusContext
                         neighborhood={selectedNeighborhood}
                         censusData={censusNeighborhoods.find(n => n.name === selectedNeighborhood)}

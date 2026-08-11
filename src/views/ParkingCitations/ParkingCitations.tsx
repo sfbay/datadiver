@@ -9,6 +9,7 @@ import UnderlayPicker from '@/components/maps/UnderlayPicker'
 import UnderlayLegend from '@/components/maps/UnderlayLegend'
 import NeighborhoodCensusContext from '@/components/ui/NeighborhoodCensusContext'
 import { useViewEntry, useRouteView, useActiveCity } from '@/cities/useActiveCity'
+import { censusMatchesAreas } from '@/cities/registry'
 import { composeAreaLabel } from '@/cities/areaLabel'
 import { AreaRowLabel } from '@/components/ui/AreaLabel'
 import { useSearchParams } from 'react-router-dom'
@@ -1039,7 +1040,7 @@ export default function ParkingCitations() {
                   </button>
                 )}
 
-                {selectedNeighborhood && isSF && (
+                {selectedNeighborhood && censusMatchesAreas(city) && (
                   <>
                     <NeighborhoodCensusContext
                       neighborhood={selectedNeighborhood}
