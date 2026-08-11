@@ -68,9 +68,17 @@ export interface CityConfig {
    *  (Oakland is a two-geography city: event data on beats, demographics on
    *  10 planning regions). Absent → the census tiers use `areas` (SF: the 41
    *  neighborhoods ARE both spines). Present → it drives the Demographics
-   *  coarse tier. NOTE: turning `census` non-null lights up UnderlayPicker on
-   *  every map view — only flip it on once the city's census JSON + region
-   *  underlay wiring exist, or the picker offers value-less layers. */
+   *  coarse tier.
+   *
+   *  NOTE for a new city: what lights up the area-keyed affordances (the
+   *  UnderlayPicker on every map view, its legend, the per-area census panel,
+   *  the citywide-average comparison) is NOT this field being non-null — it is
+   *  `censusMatchesAreas(city)` in cities/registry, which is true only when
+   *  `regions` is ABSENT, i.e. when the census spine IS the areas spine. So
+   *  registering a two-geography city's census here is safe: those surfaces
+   *  stay down until the city's map paints the same polygons its ACS rows are
+   *  keyed by. Omitting `regions` is the load-bearing claim — make it only
+   *  when the committed census JSON is keyed by `areas.names`. */
   census: {
     stateFips: string
     countyFips: string
