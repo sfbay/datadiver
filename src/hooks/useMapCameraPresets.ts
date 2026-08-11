@@ -3,8 +3,10 @@
  *
  *  Handles:
  *    1. Corridor selection — apply CORRIDOR_VIEWS preset, else fit-bounds
- *    2. Neighborhood selection — apply NEIGHBORHOOD_VIEWS preset, else
- *       centroid-flyTo at zoom 14
+ *    2. Neighborhood selection — apply the active city's
+ *       `camera.areaViews` preset (oakland: beat codes), else the global
+ *       NEIGHBORHOOD_VIEWS preset (SF names), else polygon-fitBounds /
+ *       centroid-flyTo
  *    3. Reset to the active city's default view when both selections clear
  *
  *  The lookup tables in `src/utils/mapDefaults.ts` are global, so a preset
@@ -59,7 +61,13 @@ export function useMapCameraPresets(
   options: UseMapCameraPresetsOptions,
 ) {
   const { selectedCorridor, selectedNeighborhood, fallbackPoints, neighborhoodBoundaries, viewportPadding } = options
-  const cityDefaultView = useActiveCity().camera.defaultView
+  const cityCamera = useActiveCity().camera
+  const cityDefaultView = cityCamera.defaultView
+  // Per-city area presets (oakland: OAKLAND_BEAT_VIEWS keyed by beat code).
+  // Checked before the global SF table — the vocabularies can't collide
+  // (beat codes vs. SF neighborhood names), but per-city is the spine's home
+  // for per-city facts. undefined for SF, whose presets predate the layer.
+  const cityAreaViews = cityCamera.areaViews
 
   // Full PaddingOptions (Mapbox wants all four sides) with a base breathing
   // margin for the fitBounds paths; undefined when the caller passes nothing
@@ -117,7 +125,8 @@ export function useMapCameraPresets(
   useEffect(() => {
     if (!map || !selectedNeighborhood) return
 
-    const preset = getNeighborhoodView(selectedNeighborhood)
+    const preset =
+      cityAreaViews?.[selectedNeighborhood] ?? getNeighborhoodView(selectedNeighborhood)
     if (preset) {
       applyCameraView(map, preset, { duration: 1000, padding: pad })
       return
@@ -161,7 +170,7 @@ export function useMapCameraPresets(
       map.flyTo({ center: [avgLng, avgLat], zoom: 14, duration: 1200, ...(pad ? { padding: pad } : {}) })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, selectedNeighborhood, fallbackPoints, neighborhoodBoundaries, viewportPadding])
+  }, [map, selectedNeighborhood, fallbackPoints, neighborhoodBoundaries, viewportPadding, cityAreaViews])
 
   // Reset to the active city's default view on falling-edge clear (set → null
   // transition for both selections). Tracked via ref so we don't fire on
