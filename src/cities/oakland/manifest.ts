@@ -90,8 +90,13 @@ export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
     // scatter can plot civic metrics (crime, 311, crashes) against ACS values,
     // and those queries read the global dateRange. Oakland withholds that axis
     // — its event data is grouped by police beat, a different geography from
-    // these regions — so nothing on the Oakland view consumes a date, and an
-    // inert picker would only dirty every shared link with ?start=&end=.
+    // these regions — so nothing on this view consumes a date.
+    // What the flag buys is the CLEAN URL: useUrlSync stops writing
+    // start/end/tod/compare here, so a shared link is just
+    // /oakland/demographics?nh=N instead of carrying date params no query
+    // reads. It does NOT hide the picker — AppShell renders <DateRangePicker>
+    // unconditionally, so the control stays visible and inert exactly as it
+    // already does on /live and /oakland.
     dateless: true,
   },
 ]

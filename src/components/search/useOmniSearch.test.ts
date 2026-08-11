@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildSearchIndex, buildCityRows } from './useOmniSearch'
+import { buildSearchIndex, buildCityRows, buildRegionRows, buildFullIndex } from './useOmniSearch'
 import { DATASETS } from '@/api/datasets'
 import { sfCity } from '@/cities/sf'
 
@@ -67,22 +67,24 @@ describe('OmniSearch index (SF parity)', () => {
     expect(cats.lastIndexOf('place')).toBeLessThan(cats.indexOf('dataset'))
   })
 
-  // Oakland adds a fourth section. There is no scoring in the hook's filter —
-  // array order IS the ranking under a hard 8-row cap — so 141 region rows
-  // ahead of the views would push every view and dataset off the list for a
-  // common substring like 'east'. They go LAST, and contiguously.
-  it('oakland section order is views → places → datasets → regions, region block contiguous', () => {
-    const cats = buildSearchIndex('oakland').map((r) => r.category)
+  // The composed order IS the ranking: the hook's filter has no scoring and a
+  // hard 8-row cap, so a section's position decides what a reader ever sees.
+  // Pinned against buildFullIndex — the function the hook actually calls — so
+  // a test rebuilding the concatenation itself can't keep passing while the
+  // real order drifts.
+  it('oakland full-index rank order is views → places → datasets → city → regions, region block contiguous', () => {
+    const cats = buildFullIndex('oakland', 'crime-incidents').map((r) => r.category)
     expect(cats.lastIndexOf('view')).toBeLessThan(cats.indexOf('place'))
     expect(cats.lastIndexOf('place')).toBeLessThan(cats.indexOf('dataset'))
-    expect(cats.lastIndexOf('dataset')).toBeLessThan(cats.indexOf('region'))
+    expect(cats.lastIndexOf('dataset')).toBeLessThan(cats.indexOf('city'))
+    expect(cats.lastIndexOf('city')).toBeLessThan(cats.indexOf('region'))
     // Contiguous: the block runs unbroken from its first index to the end.
     const first = cats.indexOf('region')
     expect(cats.slice(first).every((c) => c === 'region')).toBe(true)
     expect(cats.lastIndexOf('region')).toBe(cats.length - 1)
   })
 
-  it('oakland index: 6 LIVE view rows + 57 beat places (named · coded) + 7 live-claimed datasets + 141 region rows', () => {
+  it('oakland index: 6 LIVE view rows + 57 beat places (named · coded) + 7 live-claimed datasets', () => {
     const oak = buildSearchIndex('oakland')
     const byCat = (c: string) => oak.filter((r) => r.category === c)
     // All six entries are live — each gets a view row.
@@ -110,11 +112,21 @@ describe('OmniSearch index (SF parity)', () => {
       'dataset-policeIncidents', 'dataset-cases311', 'dataset-parkingCitations',
       'dataset-fppcSchA', 'dataset-fppcSchE', 'dataset-fppc496', 'dataset-fppc497',
     ])
-    // Region rows: 10 regions + 131 neighborhood MEMBERSHIPS (129 unique
-    // names; the two Coliseum-edge industrial areas each span CE and E, and
-    // each gets a row per region — see the spanning-names pin below).
-    const regions = byCat('region')
+    // Region rows are a SEPARATE builder — they rank below the city-switch
+    // rows, which are concatenated after this index (see buildFullIndex).
+    expect(byCat('region')).toHaveLength(0)
+    // 6 views + 57 places + 7 datasets = 70.
+    expect(oak).toHaveLength(70)
+    for (const r of oak) expect(r.path.startsWith('/oakland'), r.id).toBe(true)
+  })
+
+  it('buildRegionRows: 10 regions + 131 neighborhood memberships, all landing on the explorer', () => {
+    // 131 memberships over 129 unique names — the two Coliseum-edge
+    // industrial areas each span CE and E and get a row per region (see the
+    // spanning-names pin below).
+    const regions = buildRegionRows('oakland')
     expect(regions).toHaveLength(141)
+    expect(regions.every((r) => r.category === 'region')).toBe(true)
     expect(regions.filter((r) => r.icon === '🗺️')).toHaveLength(10)
     expect(regions.filter((r) => r.icon === '📍')).toHaveLength(131)
     for (const r of regions) {
@@ -125,21 +137,23 @@ describe('OmniSearch index (SF parity)', () => {
     expect(regions.find((r) => r.id === 'region-N')).toMatchObject({
       label: 'North Oakland', code: 'N', sublabel: 'Oakland demographic region',
     })
-    // 6 views + 57 places + 7 datasets + 141 regions = 211.
-    expect(oak).toHaveLength(211)
-    for (const r of oak) expect(r.path.startsWith('/oakland'), r.id).toBe(true)
+    // The 10 region rows lead, then the memberships.
+    expect(regions.slice(0, 10).every((r) => r.icon === '🗺️')).toBe(true)
   })
 
   // The hook's filter is `label.includes(q) || sublabel.includes(q)`
-  // (lowercased). These pins replicate that predicate against the index so
-  // the query behaviors the labels were DESIGNED for can't regress.
+  // (lowercased), then `.slice(0, 8)`. These pins replicate that predicate
+  // against the REAL composed index (buildFullIndex — what the hook calls) so
+  // the query behaviors the labels were DESIGNED for can't regress. `visible`
+  // adds the cap, which is where ranking becomes a reader-visible fact.
   describe('oakland query behavior (filter-predicate pins)', () => {
-    const oak = buildSearchIndex('oakland')
+    const oak = buildFullIndex('oakland', 'crime-incidents')
     const matches = (q: string) =>
       oak.filter(
         (r) =>
           r.label.toLowerCase().includes(q) || r.sublabel.toLowerCase().includes(q)
       )
+    const visible = (q: string) => matches(q).slice(0, 8)
 
     it("'beat 12y' still matches (via the sublabel)", () => {
       expect(matches('beat 12y').map((r) => r.id)).toContain('place-12Y')
@@ -177,7 +191,7 @@ describe('OmniSearch index (SF parity)', () => {
     })
 
     it('oakland: the two boundary-spanning names emit one row per region, not one arbitrary row', () => {
-      const spanning = buildSearchIndex('oakland').filter(
+      const spanning = buildRegionRows('oakland').filter(
         (r) => r.label === 'Coliseum Industrial Complex',
       )
       expect(spanning.map((r) => r.params!.nh).sort()).toEqual(['CE', 'E'])
@@ -190,14 +204,33 @@ describe('OmniSearch index (SF parity)', () => {
       expect(hits.every((r) => r.params!.nh === 'E')).toBe(true)
     })
 
-    it('region rows never outrank views or datasets under the 8-row cap', () => {
-      // 'east' matches many region rows; the crime view row must still survive.
-      const cats = buildSearchIndex('oakland').map((r) => r.category)
-      expect(cats.lastIndexOf('dataset')).toBeLessThan(cats.indexOf('region'))
+    // The two cap facts, on the two queries that actually demonstrate them.
+    // Both are measured, not hypothetical: rank the regions any higher and
+    // each of these regressions is what a reader gets.
+    it("'oak' keeps every view row visible — 74 region matches must not eat the cap", () => {
+      // 'oak' matches 4 views + 6 places + 5 datasets + 74 regions. Regions
+      // first would fill all 8 slots with regions and hide the views entirely.
+      const shown = visible('oak')
+      expect(shown).toHaveLength(8)
+      expect(shown.filter((r) => r.category === 'view').map((r) => r.id)).toEqual([
+        'view-home', 'view-311-cases', 'view-parking-citations', 'view-demographics',
+      ])
+      expect(matches('oak').filter((r) => r.category === 'region').length).toBeGreaterThan(70)
+    })
+
+    it("'san' still surfaces the city-switch row (17 region matches rank below it)", () => {
+      // Measured regression: with region rows inside buildSearchIndex, 'san'
+      // put city-sf at position 20 on an Oakland route — off the cap entirely.
+      const shown = visible('san')
+      const cityRow = shown.find((r) => r.category === 'city')
+      expect(cityRow?.id).toBe('city-sf')
+      expect(shown.indexOf(cityRow!)).toBeLessThan(8)
+      expect(matches('san').filter((r) => r.category === 'region').length).toBeGreaterThan(8)
     })
 
     it('sf emits no region rows — its neighborhoods are already its census spine', () => {
-      expect(buildSearchIndex('sf').some((r) => r.category === 'region')).toBe(false)
+      expect(buildRegionRows('sf')).toEqual([])
+      expect(buildFullIndex('sf', 'home').some((r) => r.category === 'region')).toBe(false)
     })
   })
 })
