@@ -8,6 +8,21 @@
 
 **Tech Stack:** React 18 + TS, Zustand, Mapbox GL v3, Vitest (node env), Python 3 + shapely (geometry scripts, run by hand — house convention), Census ACS 5-year API.
 
+## EXECUTION STATUS (Aug 11 2026)
+
+**Phase A + B keyless work DONE + pushed** on `feat/oakland-demographics` (783 tests green, tsc -b + vite build clean, no SF regression):
+- Task 1 (client FIPS param) ✅ `4878528` · Task 2 (aggregator crosswalk param) ✅ `43626c6`
+- Task 3 **type change only** ✅ `ebb556d` — the Oakland `census` FLIP is DEFERRED: turning it non-null renders `UnderlayPicker` (gate `!city.census`, `UnderlayPicker.tsx:53`) on Oakland crime/311/citations with value-less layers, and breaks `registry.test.ts:26` (`oakland.census toBeNull()`). Flip belongs in the post-key "light it up" unit alongside the census JSON + region-underlay wiring.
+- Task 4 (region dissolve geojson) ✅ `d8fc9d4` · Task 5 (names+members) ✅ `d8fc9d4` · Task 6 (tract→region crosswalk, 110 tracts) ✅ `9fc1c4d`
+
+**BLOCKED — Task 7 (Oakland ACS values JSON):** the Census API now **requires a key for every query** (keyless returns 302 → Missing Key, verified Aug 11 — even a single-tract call). Free/instant key: <https://api.census.gov/data/key_signup.html>. Unblock command (key in shell env ONLY, never `.env.local`/Vercel — the runtime ban stands):
+```
+VITE_CENSUS_API_KEY=<key> npx tsx scripts/generate-census-static.ts --city oakland
+```
+SF's committed JSONs are resonate-seeded sample data (not a live pull), so there is no keyless fallback for Oakland.
+
+**Remaining (post-key "light it up" unit — the subagent-driven Phase C):** Task 7 run (+ its `--city oakland` script branch) → flip Oakland `census` on + `registry.test.ts` re-pin → Task 8 (city-aware `useCensusData` + region tier) → Task 9 (de-SF Demographics + region underlay) → Task 10 (manifest) → Task 11 (names label+search) → Task 12 (disclosure). All need the census JSON present to build/verify, so they stay parked until the key lands.
+
 ## Global Constraints
 
 - **Spec:** `docs/superpowers/specs/2026-08-11-oakland-demographics-design.md` §A is the source of truth. §B (Neighborhood profile) is OUT of scope for this plan.
