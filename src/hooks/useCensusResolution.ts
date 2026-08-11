@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import type { Map as MapboxMap } from 'mapbox-gl'
 import type { CensusData } from '../types/census'
 import { useCensusData, loadBlockGroups } from './useCensusData'
+import { useRouteView } from '../cities/useActiveCity'
 
 type Resolution = 'neighborhood' | 'tract' | 'blockgroup'
 
@@ -32,6 +33,7 @@ export function useCensusResolution(
     return getResolutionForZoom(map.getZoom())
   })
 
+  const cityId = useRouteView().cityId
   const { neighborhoods, tracts, blockGroups } = useCensusData()
 
   // Listen to zoom events and update resolution
@@ -54,12 +56,12 @@ export function useCensusResolution(
   // Lazy-load block groups when resolution reaches blockgroup level
   useEffect(() => {
     if (resolution === 'blockgroup') {
-      // loadBlockGroups() is idempotent — module-level flag prevents re-importing
-      loadBlockGroups().catch((err) => {
+      // loadBlockGroups() is idempotent — a per-city flag prevents re-importing
+      loadBlockGroups(cityId).catch((err) => {
         console.warn('[useCensusResolution] Failed to load block groups:', err)
       })
     }
-  }, [resolution])
+  }, [resolution, cityId])
 
   // Return the data + boundaries + geoIdProperty appropriate for the current resolution
   switch (resolution) {
