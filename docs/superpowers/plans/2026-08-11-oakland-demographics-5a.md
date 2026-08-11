@@ -15,11 +15,9 @@
 - Task 3 **type change only** ✅ `ebb556d` — the Oakland `census` FLIP is DEFERRED: turning it non-null renders `UnderlayPicker` (gate `!city.census`, `UnderlayPicker.tsx:53`) on Oakland crime/311/citations with value-less layers, and breaks `registry.test.ts:26` (`oakland.census toBeNull()`). Flip belongs in the post-key "light it up" unit alongside the census JSON + region-underlay wiring.
 - Task 4 (region dissolve geojson) ✅ `d8fc9d4` · Task 5 (names+members) ✅ `d8fc9d4` · Task 6 (tract→region crosswalk, 110 tracts) ✅ `9fc1c4d`
 
-**BLOCKED — Task 7 (Oakland ACS values JSON):** the Census API now **requires a key for every query** (keyless returns 302 → Missing Key, verified Aug 11 — even a single-tract call). Free/instant key: <https://api.census.gov/data/key_signup.html>. Unblock command (key in shell env ONLY, never `.env.local`/Vercel — the runtime ban stands):
-```
-VITE_CENSUS_API_KEY=<key> npx tsx scripts/generate-census-static.ts --city oakland
-```
-SF's committed JSONs are resonate-seeded sample data (not a live pull), so there is no keyless fallback for Oakland.
+**Task 7 (Oakland ACS values JSON) ✅ DONE** `586f539` — Jesse supplied a Census key (the API now requires one for every query). `generate-census-static.ts` gained a `--city oakland` branch (`fetchCensusLive` FIPS-parameterized, SF default byte-identical; Alameda tracts → 10 regions via `OAKLAND_TRACT_REGIONS`, filtered Oakland-only: 110 tracts / 340 block groups). Committed `census-oakland-{neighborhoods,tracts,blockgroups}.json`; region pop reconciles to **423,336** (~96% of Oakland). Values sanity-check to Oakland's real income/education gradient (NW hills $233k/83% BA; Deep East 68k largest+lowest). SF census pristine. Re-run: `VITE_CENSUS_API_KEY=<key> npx tsx scripts/generate-census-static.ts --city oakland` (key in shell env ONLY — runtime ban stands).
+
+**⇒ Phase A + B COMPLETE. 787 tests green, tsc + build clean, no SF regression. The census JSON fixtures now exist, so Phase C is UNBLOCKED.**
 
 **Remaining (post-key "light it up" unit — the subagent-driven Phase C):** Task 7 run (+ its `--city oakland` script branch) → flip Oakland `census` on + `registry.test.ts` re-pin → Task 8 (city-aware `useCensusData` + region tier) → Task 9 (de-SF Demographics + region underlay) → Task 10 (manifest) → Task 11 (names label+search) → Task 12 (disclosure). All need the census JSON present to build/verify, so they stay parked until the key lands.
 
