@@ -3,7 +3,10 @@ import * as d3 from 'd3'
 import { useAppStore } from '@/stores/appStore'
 
 interface CorrelationScatterProps {
-  data: { name: string; x: number; y: number; population: number; color: string }[]
+  /** `name` is the CANONICAL id — what onHover/onSelect hand back and what the
+   *  rest of the app matches on. `label` is what a reader sees; omit it and the
+   *  id is the label (SF, where a neighborhood's name IS its key). */
+  data: { name: string; label?: string; x: number; y: number; population: number; color: string }[]
   xLabel: string
   yLabel: string
   width?: number
@@ -285,7 +288,7 @@ export default function CorrelationScatter({
             visible: true,
             x: svgOffsetX + px,
             y: svgOffsetY + py,
-            name: d.name,
+            name: d.label ?? d.name,
             xVal: d.x,
             yVal: d.y,
           })

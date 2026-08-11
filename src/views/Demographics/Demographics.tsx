@@ -1,12 +1,15 @@
 // src/views/Demographics/Demographics.tsx
 // Demographics Explorer — choropleth map + Dorling cartogram + correlation scatter + demographic cards.
 
-import { useState, useMemo, useCallback, useRef } from 'react'
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import { useCensusData } from '@/hooks/useCensusData'
-import { NON_RESIDENTIAL_NEIGHBORHOODS } from '@/utils/geo'
+import { useActiveCity } from '@/cities/useActiveCity'
+import { censusMatchesAreas } from '@/cities/registry'
+import { censusUnitLabel, censusUnitNoun } from '@/cities/areaLabel'
 import { useCivicMetric } from '@/hooks/useCivicMetrics'
-import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
+import { useCensusCoarseBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useMapLayer } from '@/hooks/useMapLayer'
 import { useAppStore } from '@/stores/appStore'
@@ -34,6 +37,14 @@ type MapMode = 'choropleth' | 'cartogram'
 
 const DEFAULT_ACTIVE_VARIABLE: CensusVariable = 'medianIncome'
 const DEFAULT_SCATTER_Y = 'crimeCount'
+
+/** Y-axis default where the civic metrics are withheld — a Census variable,
+ *  so the scatter still plots something real instead of an empty frame. */
+const DEFAULT_SCATTER_Y_NO_CIVIC: CensusVariable = 'rentBurden'
+
+/** URL param carrying the selected unit's CANONICAL id (SF: the neighborhood
+ *  name; Oakland: the region code). Same vocabulary as SF's ⌘K place rows. */
+const SELECTION_PARAM = 'nh'
 
 const DEFAULT_EXPANDED: CensusVariable[] = [
   'totalPopulation',
@@ -77,29 +88,75 @@ function formatValue(value: number | null | undefined, format: 'currency' | 'per
 // ---------------------------------------------------------------------------
 
 export default function Demographics() {
+  const city = useActiveCity()
+
+  // Can the civic-metric Y axis join to the units this view paints? True only
+  // where the census spine IS the areas spine — useCivicMetric reads SF's
+  // dataset registry and groups by SF-only neighborhood fields, so on a
+  // two-geography city it would throw on four of eight metrics and return
+  // unjoinable SF keys for the rest. The affordance is WITHHELD, and said.
+  const civicMetricsJoin = censusMatchesAreas(city)
+  const unitNoun = censusUnitNoun(city)
+
   // --- State ---
   const [activeVariable, setActiveVariable] = useState<CensusVariable>(DEFAULT_ACTIVE_VARIABLE)
-  const [scatterYMetric, setScatterYMetric] = useState<string | null>(DEFAULT_SCATTER_Y)
-  const [selectedNeighborhood, setSelectedNeighborhood] = useState<string | null>(null)
+  const [scatterYMetric, setScatterYMetric] = useState<string | null>(
+    civicMetricsJoin ? DEFAULT_SCATTER_Y : DEFAULT_SCATTER_Y_NO_CIVIC,
+  )
   const [mapMode, setMapMode] = useState<MapMode>('choropleth')
   const [expandedCards, setExpandedCards] = useState<Set<CensusVariable>>(new Set(DEFAULT_EXPANDED))
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
   const mapHandleRef = useRef(null)
 
-  // --- Data (filter out non-residential areas like parks) ---
-  const { neighborhoods: allNeighborhoods } = useCensusData()
-  const neighborhoods = useMemo(
-    () => allNeighborhoods.filter(n => !NON_RESIDENTIAL_NEIGHBORHOODS.has(n.name as any)),
-    [allNeighborhoods],
+  // --- Selection lives in the URL so a view can be shared / deep-linked ---
+  // Carries the CANONICAL id, never the display label. useUrlSync only ever
+  // writes the date params here and copies the rest forward, so ?nh= survives.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedNeighborhood = searchParams.get(SELECTION_PARAM) || null
+  // react-router rebuilds setSearchParams on EVERY location change, so a
+  // useCallback that closes over it churns identity — and the cartogram's d3
+  // effect lists onSelect in its deps, so that churn would clear the SVG and
+  // replay the entrance stagger on every click. The ref keeps the handler
+  // stable while still calling the current setter.
+  const setSearchParamsRef = useRef(setSearchParams)
+  useEffect(() => {
+    setSearchParamsRef.current = setSearchParams
+  }, [setSearchParams])
+
+  const setSelectedNeighborhood = useCallback(
+    (next: string | null | ((prev: string | null) => string | null)) => {
+      setSearchParamsRef.current(
+        prev => {
+          const params = new URLSearchParams(prev)
+          const current = params.get(SELECTION_PARAM) || null
+          const value = typeof next === 'function' ? next(current) : next
+          if (value) params.set(SELECTION_PARAM, value)
+          else params.delete(SELECTION_PARAM)
+          return params
+        },
+        { replace: true },
+      )
+    },
+    [],
   )
-  const { boundaries } = useNeighborhoodBoundaries()
+
+  // --- Data (filter out non-residential units like parks) ---
+  const { neighborhoods: allNeighborhoods } = useCensusData()
+  const excluded = city.areas.excluded
+  const neighborhoods = useMemo(
+    () => allNeighborhoods.filter(n => !excluded.has(n.name)),
+    [allNeighborhoods, excluded],
+  )
+  // The COARSE CENSUS tier's polygons — Oakland's 10 regions, not its 59
+  // beats. Joining region-keyed rows onto beat polygons paints nothing.
+  const { boundaries } = useCensusCoarseBoundaries()
 
   // Determine if scatter Y is a Census variable or civic metric
   const isCensusY = useMemo(() => {
     return scatterYMetric ? CENSUS_VARIABLES.some(v => v.key === scatterYMetric) : false
   }, [scatterYMetric])
 
-  const civicMetricKey = isCensusY ? null : scatterYMetric
+  const civicMetricKey = isCensusY || !civicMetricsJoin ? null : scatterYMetric
   const { data: civicYData, isLoading: civicLoading } = useCivicMetric(civicMetricKey)
 
   // When scatter Y is a Census variable, build the Map from neighborhoods directly
@@ -128,6 +185,20 @@ export default function Demographics() {
     selectedNeighborhood,
     scatterYData,
     boundaries,
+    excluded,
+  )
+
+  // Every reader-facing surface carries the authored label; `name` stays the
+  // canonical id that selection, the URL and the joins run on. Identical
+  // strings on SF, where a neighborhood's name IS its key.
+  const labelFor = useCallback((id: string) => censusUnitLabel(city, id), [city])
+  const cartogramLabelled = useMemo(
+    () => cartogramData.map(d => ({ ...d, label: labelFor(d.name) })),
+    [cartogramData, labelFor],
+  )
+  const scatterLabelled = useMemo(
+    () => scatterData.map(d => ({ ...d, label: labelFor(d.name) })),
+    [scatterData, labelFor],
   )
 
   const activeConfig = useMemo(() => getVariableConfig(activeVariable), [activeVariable])
@@ -209,7 +280,8 @@ export default function Demographics() {
 
   // Choropleth tooltip
   useMapTooltip(mapInstance, 'demographics-choropleth-fill', (props) => {
-    const nhood = props.nhood || 'Unknown'
+    // props.nhood is the canonical id; readers see the authored label.
+    const nhood = props.nhood ? censusUnitLabel(city, String(props.nhood)) : 'Unknown'
     const value = props[activeVariable]
     const config = activeConfig
     const formatted = config ? formatValue(Number(value), config.format) : String(value)
@@ -266,7 +338,7 @@ export default function Demographics() {
 
   const handleScatterSelect = useCallback((name: string) => {
     setSelectedNeighborhood(prev => (prev === name ? null : name))
-  }, [])
+  }, [setSelectedNeighborhood])
 
   // --- Determine which cards are expanded vs collapsed ---
   const allCardVariables: CensusVariable[] = useMemo(() => {
@@ -331,7 +403,7 @@ export default function Demographics() {
             </div>
             {!isEmpty && (
               <span className="inline-flex items-center gap-1.5 text-micro font-mono text-plum-500/80 bg-plum-500/10 px-2 py-1 rounded-full">
-                {neighborhoods.length} neighborhoods
+                {neighborhoods.length} {unitNoun.many}
               </span>
             )}
           </div>
@@ -409,7 +481,9 @@ export default function Demographics() {
                   <div className="absolute top-4 left-5 z-10 glass-card rounded-xl px-4 py-3 max-w-xs">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-[12px] font-medium text-ink dark:text-white">{selectedNeighborhood}</p>
+                        <p className="text-[12px] font-medium text-ink dark:text-white">
+                          {censusUnitLabel(city, selectedNeighborhood)}
+                        </p>
                         <p className="text-micro font-mono text-slate-400">
                           {(() => {
                             const n = neighborhoods.find(n => n.name === selectedNeighborhood)
@@ -451,9 +525,9 @@ export default function Demographics() {
                   </div>
                 </div>
 
-                {cartogramData.length > 0 ? (
+                {cartogramLabelled.length > 0 ? (
                   <DorlingCartogram
-                    data={cartogramData}
+                    data={cartogramLabelled}
                     colorScale={cartogramColorScale}
                     width={520}
                     height={400}
@@ -505,13 +579,15 @@ export default function Demographics() {
                   className="flex-1 text-label bg-slate-900 border border-white/[0.06] rounded-md px-2 py-1 text-slate-200 focus:outline-none focus:ring-1 focus:ring-plum-500/40"
                   style={{ colorScheme: 'dark' }}
                 >
-                  <optgroup label="Civic Metrics">
-                    {SCATTER_CIVIC_OPTIONS.map(m => (
-                      <option key={m.key} value={m.key}>
-                        {m.label}
-                      </option>
-                    ))}
-                  </optgroup>
+                  {civicMetricsJoin && (
+                    <optgroup label="Civic Metrics">
+                      {SCATTER_CIVIC_OPTIONS.map(m => (
+                        <option key={m.key} value={m.key}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                   <optgroup label="Census Variables">
                     {SCATTER_CENSUS_OPTIONS.map(v => (
                       <option key={v.key} value={v.key}>
@@ -521,6 +597,15 @@ export default function Demographics() {
                   </optgroup>
                 </select>
               </div>
+              {/* Withholding is only honest if it says WHY — an option list
+                  that quietly lost half its entries reads as a bug. */}
+              {!civicMetricsJoin && (
+                <p className="mt-1.5 text-micro font-mono text-slate-400/60 dark:text-slate-600 leading-snug">
+                  Civic correlations stay San Francisco-only for now: {city.name}&rsquo;s
+                  {' '}incident records are filed by {city.areas.nounPlural}, a different
+                  {' '}geography from the census {unitNoun.many} mapped here.
+                </p>
+              )}
             </div>
 
             {/* Scatter chart */}
@@ -535,7 +620,7 @@ export default function Demographics() {
                 </div>
               ) : scatterData.length >= 2 ? (
                 <CorrelationScatter
-                  data={scatterData}
+                  data={scatterLabelled}
                   xLabel={xLabel}
                   yLabel={yLabel}
                   width={385}
@@ -567,6 +652,9 @@ export default function Demographics() {
                       const maxVal = rankedNeighborhoods[0]?.[activeVariable] as number ?? 1
                       const barWidth = maxVal > 0 ? (value / maxVal) * 100 : 0
                       const isSelected = selectedNeighborhood === n.name
+                      // Name truncates, the code NEVER clips (the beat idiom —
+                      // see AreaRowLabel). Identical strings on SF, so no span.
+                      const label = censusUnitLabel(city, n.name)
                       return (
                         <div
                           key={n.name}
@@ -587,8 +675,13 @@ export default function Demographics() {
                                 {idx + 1}
                               </span>
                               <span className="text-[12px] font-medium text-slate-600 dark:text-slate-200 truncate">
-                                {n.name}
+                                {label}
                               </span>
+                              {label !== n.name && (
+                                <span className="shrink-0 text-micro font-mono text-slate-400 dark:text-slate-500">
+                                  {n.name}
+                                </span>
+                              )}
                             </div>
                             <span className="text-label font-mono text-slate-400 shrink-0 ml-2">
                               {formatValue(value, activeConfig.format)}
@@ -622,6 +715,7 @@ export default function Demographics() {
                       isExpanded={true}
                       onActivate={handleActivateVariable}
                       onToggleExpand={handleToggleExpand}
+                      labelFor={labelFor}
                     />
                   ))}
                 </div>
@@ -639,6 +733,7 @@ export default function Demographics() {
                       isExpanded={false}
                       onActivate={handleActivateVariable}
                       onToggleExpand={handleToggleExpand}
+                      labelFor={labelFor}
                     />
                   ))}
                 </div>

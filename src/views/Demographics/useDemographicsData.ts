@@ -5,13 +5,17 @@
 import { useMemo } from 'react'
 import type { CensusVariable, NeighborhoodCensusData } from '../../types/census'
 import { getVariableConfig, CENSUS_VARIABLES } from '../../utils/censusVariables'
-import { NON_RESIDENTIAL_NEIGHBORHOODS } from '../../utils/geo'
+import { featureCentroid } from '../../utils/geo'
 
 // ---------------------------------------------------------------------------
 // Approximate neighborhood centroids (lat, lng) for cartogram positioning
-// Derived from SF Analysis Neighborhoods GeoJSON polygon centroids.
+// Derived from SF Analysis Neighborhoods GeoJSON polygon centroids, then
+// hand-adjusted. It is SF's ONLY seed table and it WINS the lookup below —
+// the boundary-derived centroid is a fallback for cities that have none, so
+// SF's circle positions stay bit-identical. cartogramCenters.test.ts pins
+// that every SF census row still finds an entry here.
 // ---------------------------------------------------------------------------
-const NEIGHBORHOOD_CENTERS: Record<string, { lat: number; lng: number }> = {
+export const NEIGHBORHOOD_CENTERS: Record<string, { lat: number; lng: number }> = {
   'Bayview Hunters Point': { lat: 37.7286, lng: -122.3861 },
   'Bernal Heights': { lat: 37.7388, lng: -122.4155 },
   'Castro/Upper Market': { lat: 37.7609, lng: -122.4350 },
@@ -102,12 +106,19 @@ export interface DemographicsDataResult {
   choroplethGeoJSON: GeoJSON.FeatureCollection | null
 }
 
+/**
+ * @param excluded  Census units to drop as non-residential — SF's four park /
+ *   military polygons, empty for a city whose units are all residential. Passed
+ *   in (from `city.areas.excluded`) rather than imported, so this hook holds no
+ *   San Francisco constant.
+ */
 export function useDemographicsData(
   neighborhoods: NeighborhoodCensusData[],
   activeVariable: CensusVariable,
   selectedNeighborhood: string | null,
   scatterYData: Map<string, number>,
   boundaries: GeoJSON.FeatureCollection | null,
+  excluded: ReadonlySet<string>,
 ): DemographicsDataResult {
   // -- City averages (population-weighted for rates, sum for population) --
   const cityAverages = useMemo(() => {
@@ -186,11 +197,29 @@ export function useDemographicsData(
     return computePearsonR(scatterData.map(d => ({ x: d.x, y: d.y })))
   }, [scatterData])
 
+  // -- Boundary-derived centroids, one per unit --
+  // The fallback seed for any unit NEIGHBORHOOD_CENTERS doesn't name. Without
+  // it a city with no seed table (Oakland) drops every circle in the .filter
+  // below and the cartogram toggle renders 'No cartogram data' — a broken
+  // affordance, not an honest one.
+  const boundaryCenters = useMemo(() => {
+    const centers = new Map<string, { lat: number; lng: number }>()
+    if (!boundaries) return centers
+    for (const f of boundaries.features) {
+      const id = f.properties?.nhood as string | undefined
+      if (!id || centers.has(id)) continue
+      const c = featureCentroid(f)
+      if (c) centers.set(id, c)
+    }
+    return centers
+  }, [boundaries])
+
   // -- Cartogram data --
   const cartogramData = useMemo(() => {
     return rankedNeighborhoods
       .map(n => {
-        const center = NEIGHBORHOOD_CENTERS[n.name]
+        // The hand-tuned table WINS — SF's positions must not move.
+        const center = NEIGHBORHOOD_CENTERS[n.name] ?? boundaryCenters.get(n.name)
         if (!center) return null
         return {
           name: n.name,
@@ -201,7 +230,7 @@ export function useDemographicsData(
         }
       })
       .filter((d): d is NonNullable<typeof d> => d !== null)
-  }, [rankedNeighborhoods, activeVariable])
+  }, [rankedNeighborhoods, activeVariable, boundaryCenters])
 
   // -- Choropleth GeoJSON --
   const choroplethGeoJSON = useMemo((): GeoJSON.FeatureCollection | null => {
@@ -216,7 +245,7 @@ export function useDemographicsData(
     // Enrich each boundary feature with Census variable values (skip parks)
     const features = boundaries.features.filter(f => {
       const nhood = f.properties?.nhood as string | undefined
-      return !nhood || !NON_RESIDENTIAL_NEIGHBORHOODS.has(nhood)
+      return !nhood || !excluded.has(nhood)
     }).map(f => {
       const nhood = f.properties?.nhood as string | undefined
       const censusData = nhood ? lookup.get(nhood) : undefined
@@ -246,7 +275,7 @@ export function useDemographicsData(
       type: 'FeatureCollection',
       features,
     }
-  }, [boundaries, neighborhoods])
+  }, [boundaries, neighborhoods, excluded])
 
   return {
     cityAverages,

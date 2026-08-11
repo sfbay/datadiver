@@ -5,7 +5,12 @@ import { dorlingLabel } from './dorlingLabel'
 import { SCALE_FACTORS } from '@/stores/typeScale'
 
 interface DorlingCartogramDatum {
+  /** CANONICAL id — the selection value handed back to onSelect/onHover, and
+   *  the key the rest of the app matches on (Oakland: a region CODE). */
   name: string
+  /** What a reader sees, when the id is not itself readable. Omit and the id
+   *  is the label (SF, where the neighborhood name IS the key). */
+  label?: string
   value: number
   population: number
   lat: number
@@ -143,7 +148,8 @@ export default function DorlingCartogram({
       .text((d) => {
         // Truncate long names to fit — budget shrinks as the root scale grows
         const maxChars = dorlingLabel(d.r, labelFactor).nameMaxChars
-        return d.name.length > maxChars ? d.name.slice(0, maxChars - 1) + '…' : d.name
+        const text = d.label ?? d.name
+        return text.length > maxChars ? text.slice(0, maxChars - 1) + '…' : text
       })
 
     // Population sub-label (only when radius fits both labels at this scale)
@@ -181,7 +187,7 @@ export default function DorlingCartogram({
           setTooltip({
             x: event.clientX - svgRect.left,
             y: event.clientY - svgRect.top,
-            name: d.name,
+            name: d.label ?? d.name,
             value: d.value,
             population: d.population,
           })

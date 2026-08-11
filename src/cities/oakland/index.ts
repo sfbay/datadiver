@@ -15,10 +15,12 @@ export const oaklandCity: CityConfig = {
   areas: {
     noun: 'police beat', nounPlural: 'police beats',
     geojsonPath: '/data/geo/oakland-beats.geojson',
-    // excluded stays empty: the config field has census semantics, and the
-    // beats it would name are not the geography Oakland's census data lives on
-    // (censusMatchesAreas is false — see the census block below). ⌘K exclusion
-    // is the separate searchExcluded field below.
+    // excluded is the CENSUS exclusion set — the units the Demographics
+    // explorer drops as non-residential (SF's four park/military polygons).
+    // Empty here, and correct: all 10 planning regions Oakland's ACS data
+    // lives on are residential. It is NOT a beat list; the beats would be the
+    // wrong geography to name (censusMatchesAreas is false — see the census
+    // block below). ⌘K exclusion is the separate searchExcluded field below.
     names: OAKLAND_BEATS, excluded: new Set(), count: 59,
     // Editorial labels (beatNames.ts). Unknown codes are the real
     // no-polygon buckets 77X/99X (~3.4% of crime rows) — they must read as
