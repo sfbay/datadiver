@@ -63,8 +63,23 @@ export interface CityConfig {
      *  (NEIGHBORHOOD_VIEWS), reached by the hook's global fallback lookup. */
     areaViews?: Record<string, CameraView>
   }
-  /** null = city has no ACS pipeline; consumers HIDE census affordances. */
-  census: { stateFips: string; countyFips: string } | null
+  /** null = city has no ACS pipeline; consumers HIDE census affordances.
+   *  `regions` is the coarse ACS choropleth geography, SEPARATE from `areas`
+   *  (Oakland is a two-geography city: event data on beats, demographics on
+   *  10 planning regions). Absent → the census tiers use `areas` (SF: the 41
+   *  neighborhoods ARE both spines). Present → it drives the Demographics
+   *  coarse tier. NOTE: turning `census` non-null lights up UnderlayPicker on
+   *  every map view — only flip it on once the city's census JSON + region
+   *  underlay wiring exist, or the picker offers value-less layers. */
+  census: {
+    stateFips: string
+    countyFips: string
+    regions?: {
+      geojsonPath: string
+      names: Record<string, string>
+      members: Record<string, string[]>
+    }
+  } | null
   datasets: Record<string, DatasetConfig>  // endpoints derived by the registry
   /** Ordered view registration — array order IS nav order. Everything that
    *  used to be a per-view table (nav rows, Home cards, era sources, underlay
