@@ -37,6 +37,19 @@ export function censusMatchesAreas(city: CityConfig): boolean {
   return city.census !== null && city.census.regions === undefined
 }
 
+/** The boundary asset for a city's COARSE CENSUS tier: its region polygons
+ *  when it is a two-geography city, else its areas (SF's 41 Analysis
+ *  Neighborhoods ARE both spines, so the two resolve to the same file and
+ *  therefore the same cached FeatureCollection).
+ *
+ *  Lives here, beside censusMatchesAreas, rather than in useActiveCity:
+ *  it is a pure CityConfig → string read with no React in it, and pure
+ *  consumers (and the node-only test suite) must not have to pull
+ *  react-router in to ask a config question. */
+export function censusCoarseGeojsonPath(city: CityConfig): string {
+  return city.census?.regions?.geojsonPath ?? city.areas.geojsonPath
+}
+
 /** Where a city switch lands: the same view when the target city has it
  *  live, else the target's home. The program-spec switch semantics —
  *  consumed by the shell CitySwitcher and the ⌘K city rows. */

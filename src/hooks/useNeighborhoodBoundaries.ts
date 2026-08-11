@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useRouteView } from '@/cities/useActiveCity'
-import { getCity } from '@/cities/registry'
+import { getCity, censusCoarseGeojsonPath } from '@/cities/registry'
 import type { CityId } from '@/cities/routing'
 
 /**
@@ -17,19 +17,41 @@ import type { CityId } from '@/cities/routing'
 // after cross-city navigation.
 const cachedByUrl = new Map<string, GeoJSON.FeatureCollection>()
 
-/**
- * Analysis neighborhood boundary polygons for the active city — 41 features
- * for SF, one per neighborhood. Cached per asset URL, so each city's polygons
- * are fetched once per session. `feature.properties.nhood` matches
- * `analysis_neighborhood` in the 311 data.
- */
-export function useNeighborhoodBoundaries(cityId?: CityId): {
+export interface BoundariesResult {
   boundaries: GeoJSON.FeatureCollection | null
   isLoading: boolean
   error: string | null
-} {
+}
+
+/**
+ * Analysis neighborhood boundary polygons for the active city — 41 features
+ * for SF, one per neighborhood; Oakland's 59 police beats. Cached per asset
+ * URL, so each city's polygons are fetched once per session.
+ * `feature.properties.nhood` matches `analysis_neighborhood` in the 311 data.
+ */
+export function useNeighborhoodBoundaries(cityId?: CityId): BoundariesResult {
   const routeCity = useRouteView().cityId
-  const url = getCity(cityId ?? routeCity).areas.geojsonPath
+  return useBoundariesAsset(getCity(cityId ?? routeCity).areas.geojsonPath)
+}
+
+/**
+ * The COARSE CENSUS tier's polygons for a city — Oakland's 10 planning
+ * regions, SF's 41 neighborhoods. Shares the URL-keyed cache with
+ * useNeighborhoodBoundaries; on SF both hooks resolve the same asset and
+ * therefore hand back the same cached object.
+ *
+ * Demographics must use this, never the areas hook: Oakland's ACS rows are
+ * keyed by region code, and joining them onto the 59 beat polygons matches
+ * nothing — a flat ramp Mapbox refuses to paint, with no error anywhere.
+ */
+export function useCensusCoarseBoundaries(cityId?: CityId): BoundariesResult {
+  const routeCity = useRouteView().cityId
+  return useBoundariesAsset(censusCoarseGeojsonPath(getCity(cityId ?? routeCity)))
+}
+
+/** One asset, one cache entry. Both public hooks are thin URL resolvers over
+ *  this — keyed by URL rather than by city so the identity is the file. */
+function useBoundariesAsset(url: string): BoundariesResult {
   const [boundaries, setBoundaries] = useState<GeoJSON.FeatureCollection | null>(
     cachedByUrl.get(url) ?? null,
   )
