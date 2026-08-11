@@ -22,8 +22,11 @@ describe('city registry', () => {
   it('throws the same unknown-dataset message as the old client path', () => {
     expect(() => getDatasetConfig('sf', 'nope')).toThrow('Unknown dataset: nope')
   })
-  it('oakland registry: census null, 19 datasets, beat vocabulary', () => {
-    expect(CITIES.oakland.census).toBeNull()
+  it('oakland registry: Alameda census on 10 regions, 19 datasets, beat vocabulary', () => {
+    expect(CITIES.oakland.census).not.toBeNull()
+    expect(CITIES.oakland.census!.countyFips).toBe('001')
+    expect(Object.keys(CITIES.oakland.census!.regions!.names)).toHaveLength(10)
+    expect(CITIES.oakland.census!.regions!.geojsonPath).toBe('/data/geo/oakland-regions.geojson')
     expect(Object.keys(CITIES.oakland.datasets)).toHaveLength(19)
     expect(CITIES.oakland.areas.noun).toBe('police beat')
   })
@@ -48,6 +51,9 @@ describe('city registry', () => {
   })
   it('sf has a census pipeline', () => {
     expect(CITIES.sf.census).not.toBeNull()
+  })
+  it('sf census has no regions block — its neighborhoods are both spines', () => {
+    expect(CITIES.sf.census!.regions).toBeUndefined()
   })
 })
 

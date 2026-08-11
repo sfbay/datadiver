@@ -8,7 +8,11 @@ import type { ViewManifestEntry } from '../manifest'
  * /oakland/* slug renders a real view. navLabels/pigments mirror SF's
  * per-view values (same dataset family = same pigment in every city);
  * homeCard fields drive the /oakland landing grid (stage 4b);
- * underlayPreset stays absent (census: null hides every ACS affordance).
+ * underlayPreset stays absent because these views paint POLICE BEATS while
+ * Oakland's ACS data lives on 10 planning regions — censusMatchesAreas() is
+ * false for this city, so every area-keyed census affordance stands down. Not
+ * because census is null: it isn't (stage 5a turned it on for the
+ * region-based Demographics surface).
  */
 export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
   {
