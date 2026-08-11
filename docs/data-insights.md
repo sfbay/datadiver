@@ -569,13 +569,17 @@ fact is the code, the name is ours and is display-only.
 **Why not paint the 131 directly.** `sb4q-6bkc` publishes 131 polygons carrying
 129 distinct names ("Coliseum Industrial Complex" and "East 14th Street
 Business" each appear twice — the Coliseum industrial edge straddles the CE/E
-planning line). At ~3,400 residents apiece they are **finer than a census
-tract**, so ACS 5-year estimates at that size carry margins of error wide
-enough that a difference between two neighborhoods would mostly be sampling
-noise. The regions average ~42,000 residents, a scale tracts nest inside.
+planning line). At ~3,200 residents apiece (423,336 across 131 polygons) they
+are **finer than a census tract**, which costs twice. (1) ACS 5-year estimates
+at that size carry margins of error wide enough that a difference between two
+neighborhoods would mostly be sampling noise. (2) They do not NEST inside
+tracts, so painting them would require splitting each tract's population by
+area — the exact fractional-crosswalk failure mode that costs SF ~70% of its
+mass on count variables (next paragraph). The regions average ~42,000
+residents, a scale whole tracts fit inside.
 
 **The dissolve is the city's own filing scheme, read literally.** Every
-neighborhood polygon carries a `code` (`F-7`, `NW-2`); the letter prefix takes
+neighborhood polygon carries a `code` (e.g. `F-7`); the letter prefix takes
 exactly 10 values — `C CE E F L N NW S SE W` — and grouping on it partitions
 all 131 polygons with no leftovers. **The letters are a filing scheme, not
 compass directions** (`NW` holds Montclair, an *east* hill), so names cannot be
@@ -606,9 +610,13 @@ by `scripts/build-oakland-tract-regions.py`): each census tract is assigned
 whole to the single region its internal point falls in. A tract is never split,
 so no ACS mass can be silently lost — **structurally unlike SF's fractional
 `TRACT_MAPPINGS`**, which covers 161 of 244 tracts and drops ~70% of the mass
-for count variables (see Housing, above). Conservation check: 110 crosswalk
-rows, 110 tracts in the committed tracts JSON, Σ = 423,336 exactly on both
-sides, `unassigned` empty.
+for count variables (see Housing, above). Conservation check, as actually run:
+every one of the 110 crosswalk tracts is present in the committed tracts JSON,
+and both sides sum to 423,336 exactly. **There is no `unassigned` bucket** —
+the design spec proposed one and it was never built; the generator simply skips
+any tract whose centroid falls in no region, so the seven in-city tracts below
+are excluded by construction and disclosed here rather than counted anywhere.
+Anyone adding a coverage gate should know it does not exist yet.
 
 **Coverage, measured Aug 11 2026** (Census 2023 Gazetteer internal points ×
 TIGERweb Alameda tract polygons × TIGERweb place `0653000` × the committed
@@ -626,8 +634,8 @@ region layer does not cover:
 | `06001982000` | 21.2% | Inner harbor / Coast Guard Island (98xx special-use) |
 | `06001404200` | **52.7%** | **North-hills land tract — 2.73 km², 0% water** |
 
-Six of the seven are ≤21% covered: water, port, and regional parkland that
-Oakland's own neighborhood layer declines to name.
+Six of the seven are at most 21.2% covered: water, port, and regional parkland
+that Oakland's own neighborhood layer declines to name.
 
 **`06001404200` is the open question — under review, not settled.** It is the
 only one of the seven that is majority-inside the region layer with no water at

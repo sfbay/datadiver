@@ -462,8 +462,9 @@ export default function Demographics() {
               city today — a second one needs a per-city anchor, not a copy. */}
           {regionDissolve && (
             <p className="text-micro text-slate-500 dark:text-slate-500 mt-0.5">
-              These {regionDissolve.regions} regions are DataDiver&rsquo;s dissolve of{' '}
-              {city.name}&rsquo;s {regionDissolve.members} official neighborhoods &mdash;{' '}
+              These {regionDissolve.regions} regions are DataDiver&rsquo;s, not{' '}
+              {city.name}&rsquo;s &mdash; we merged the city&rsquo;s {regionDissolve.members}{' '}
+              official neighborhoods into them &mdash;{' '}
               <Link
                 to="/about#oakland-regions"
                 className="underline underline-offset-2 hover:text-ink dark:hover:text-slate-300 transition-colors"

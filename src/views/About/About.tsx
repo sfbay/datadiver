@@ -121,6 +121,12 @@ const SF_SOURCES: SourceRow[] = [
   },
   { name: 'Election Precincts — Current (2022)', id: 'd6x4-hefw', note: 'Precinct geometry, Nov 2022 onward' },
   { name: 'Election Precincts — Historical (2012)', id: 'bsfq-aeyw', note: 'Precinct geometry through Jun 2022 — precinct numbers are NOT comparable across the 2022 renumbering (see findings)' },
+  {
+    name: 'American Community Survey (2019–2023 5-year)',
+    id: 'census.gov',
+    url: 'https://www.census.gov/programs-surveys/acs/',
+    note: 'NOT on DataSF — U.S. Census Bureau estimates, published by block group and summed here to the 41 Analysis Neighborhoods',
+  },
 ]
 
 const OAKLAND_SOURCES: SourceRow[] = [
@@ -270,8 +276,9 @@ export default function About() {
               certified reports. And the demographic context behind every neighborhood
               profile — population, income, rent, education — is the U.S. Census Bureau&rsquo;s
               American Community Survey, which neither city republishes; DataDiver sums its
-              census-tract estimates up to the neighborhoods and regions each map is drawn
-              on. What each of those choices costs us is described in the findings.
+              small-area estimates — block groups in San Francisco, census tracts in Oakland —
+              up to the neighborhoods and regions each map is drawn on. What each of those
+              choices costs us is described in the findings.
             </p>
           </Prose>
           <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/80 dark:text-slate-600 mb-3 mt-2">
@@ -534,17 +541,21 @@ export default function About() {
                   Oakland publishes 131 official neighborhood polygons &mdash; 129
                   names, because &ldquo;Coliseum Industrial Complex&rdquo; and
                   &ldquo;East 14th Street Business&rdquo; each appear in two places.
-                  They are too small to carry census figures: at roughly 3,400
-                  residents apiece they are finer than a census tract, and the
+                  They are too small to carry census figures. At about 3,200
+                  residents apiece &mdash; 423,336 people across 131 polygons &mdash;
+                  they are finer than a census tract, which costs twice over: the
                   American Community Survey&rsquo;s margin of error at that size is
-                  wide enough that a gap between two neighborhoods would mostly be
-                  noise. Every polygon carries a filing code like F-7, and the
-                  letter in front of it sorts all 131 into exactly 10 planning
-                  regions. DataDiver dissolves the neighborhoods into those 10 and
-                  paints those instead. They average about 42,000 residents &mdash;
-                  from 17,276 in Skyline &amp; the Southeast Hills to 68,581 in Deep
-                  East Oakland &mdash; a size census tracts nest inside and the
-                  estimates hold at.
+                  wide enough that a difference between two neighborhoods would mostly
+                  be sampling noise, and because the polygons do not nest inside
+                  tracts, painting them would mean cutting each tract&rsquo;s
+                  population up by area and guessing where inside it people live.
+                  Every polygon carries a filing code like F-7, and the letter in
+                  front of it sorts all 131 into exactly 10 planning regions.
+                  DataDiver dissolves the neighborhoods into those 10 and paints
+                  those instead. They average about 42,000 residents &mdash; from
+                  17,276 in Skyline &amp; the Southeast Hills to 68,581 in Deep East
+                  Oakland &mdash; a size where whole census tracts fit inside a region
+                  and the estimates stay solid.
                 </p>
                 <p className="mb-3">
                   The region names are ours. The letters are a filing scheme, not
@@ -569,16 +580,21 @@ export default function About() {
                   one north-hills tract that is half inside the layer and still under
                   review here. Six of the seven are less than a quarter covered.
                 </p>
-                <p>
+                <p className="mb-3">
                   What that costs a reader: a tract straddling a region line has all of
                   its residents counted in the region holding its center, so blocks
                   along an edge can sit in the neighboring region&rsquo;s numbers. At
                   10-region scale that is a rounding effect rather than the blur the 131
                   would produce, but it is an approximation, and a boundary here should
-                  be read loosely. And Oakland&rsquo;s crime, 311 and parking data is located by
-                  police beat, a different geography that does not line up with these
-                  regions, which is why this view offers none of the
-                  demographics-against-civic-data comparisons San Francisco&rsquo;s does.
+                  be read loosely.
+                </p>
+                <p>
+                  One thing not to misread: these regions are not the geography
+                  Oakland&rsquo;s event data uses. Crime, 311, and parking citations are
+                  located by police beat &mdash; a different set of polygons that does
+                  not line up with these ten. That is why this view offers none of the
+                  demographics-against-civic-data comparisons San Francisco&rsquo;s does:
+                  there is nothing honest to join them on.
                 </p>
               </Finding>
             </div>
