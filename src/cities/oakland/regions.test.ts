@@ -7,6 +7,7 @@ import { readFileSync } from 'fs'
 import { describe, it, expect } from 'vitest'
 import { OAKLAND_REGION_NAMES, OAKLAND_REGION_CODES } from './regionNames'
 import { OAKLAND_REGION_MEMBERS } from './regionMembers'
+import { OAKLAND_TRACT_REGIONS } from './tractRegions'
 
 const CODES = ['C', 'CE', 'E', 'F', 'L', 'N', 'NW', 'S', 'SE', 'W']
 
@@ -54,5 +55,28 @@ describe('region names + members', () => {
     }
     const spanning = [...seen.entries()].filter(([, codes]) => codes.length > 1).map(([n]) => n).sort()
     expect(spanning).toEqual(['Coliseum Industrial Complex', 'East 14th Street Business'])
+  })
+})
+
+describe('tract→region crosswalk', () => {
+  it('every tract maps to exactly one region code, weight 1', () => {
+    const codes = new Set(CODES)
+    for (const m of OAKLAND_TRACT_REGIONS) {
+      expect(m.neighborhoods).toHaveLength(1)
+      expect(m.neighborhoods[0].weight).toBe(1)
+      expect(codes.has(m.neighborhoods[0].name)).toBe(true)
+    }
+  })
+
+  it('covers a plausible Oakland tract count spread across all 10 regions', () => {
+    expect(OAKLAND_TRACT_REGIONS.length).toBeGreaterThan(100)
+    const regionsHit = new Set(OAKLAND_TRACT_REGIONS.map((m) => m.neighborhoods[0].name))
+    expect(regionsHit.size).toBe(10)
+  })
+
+  it('tract ids are 6-digit codes (last 6 of the 11-digit GEOID)', () => {
+    for (const m of OAKLAND_TRACT_REGIONS) {
+      expect(m.tractId).toMatch(/^\d{6}$/)
+    }
   })
 })
