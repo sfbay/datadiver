@@ -18,7 +18,7 @@ import { useMapLayer } from '@/hooks/useMapLayer'
 import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { usePoliceHourlyPattern, useOaklandPoliceHourlyPattern } from '@/hooks/useHourlyPatternFactory'
 import { usePoliceComparisonData, useOaklandPoliceComparisonData, type OaklandCrimeComparisonRow } from '@/hooks/useComparisonDataFactory'
-import { CRIME_EYEBROWS, OAKLAND_CRIME_GROUPS, OAKLAND_CRIME_QUERY_FLOOR, titleCaseCrimetype } from './crimeDialect'
+import { CRIME_EYEBROWS, OAKLAND_CRIME_GROUPS, OAKLAND_CRIME_QUERY_FLOOR, titleCaseCrimetype, oaklandCategoryExpr, classifyOaklandCategory } from './crimeDialect'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useAppStore } from '@/stores/appStore'
@@ -129,7 +129,11 @@ export default function CrimeIncidents() {
   const categoryClause = useMemo(() => {
     if (selectedCategories.size === 0) return ''
     const escaped = Array.from(selectedCategories).map((c) => `'${c.replace(/'/g, "''")}'`)
-    return `${isSF ? 'incident_category' : 'crimetype'} IN (${escaped.join(',')})`
+    // Oakland's category is the DERIVED CASE expr (the HOMICIDE split), not raw
+    // crimetype — filtering on the same expr the count groups by keeps the
+    // sidebar row and its own filter in agreement. Plain crimetypes pass through.
+    const lhs = isSF ? 'incident_category' : `(${oaklandCategoryExpr()})`
+    return `${lhs} IN (${escaped.join(',')})`
   }, [selectedCategories, isSF])
 
   // SFPD publishes 2003–May 2018 and 2018–present as two differently-shaped
@@ -267,7 +271,14 @@ export default function CrimeIncidents() {
           cadNumber: record.cad_number || null,
           incidentAt: record.incident_datetime,
           reportAt: record.report_datetime || null,
-          category: record.incident_category || 'Unknown',
+          // Oakland: derive the display category per charge row (the HOMICIDE
+          // split), so a coroner probe dot never reads as "Homicide". SF keeps
+          // its published category. (A multi-charge case's headline can be
+          // ranked via classifyOaklandCase where the full charge list exists.)
+          category: (isSF
+            ? record.incident_category
+            : classifyOaklandCategory(record.incident_category || '', record.incident_description || '')
+          ) || 'Unknown',
           subcategory: record.incident_subcategory || '',
           description: record.incident_description || '',
           resolution: record.resolution || 'Unknown',
@@ -279,7 +290,7 @@ export default function CrimeIncidents() {
         }
       })
       .filter((r): r is NonNullable<typeof r> => r !== null)
-  }, [rawData])
+  }, [rawData, isSF])
 
   const stats = useMemo(() => {
     if (incidentData.length === 0) return { total: 0, topCategory: 'N/A', linkedPct: 0, peakHour: 0 }
@@ -589,14 +600,13 @@ export default function CrimeIncidents() {
       ? dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
       : null
     if (!isSF) {
+      // Hover is a PEEK — just enough to decide whether to click: when + what.
+      // The charge list, address, and beat are the click panel's job; showing
+      // them here made the tooltip a duplicate detail card (the panel owns them).
       return `
       ${dateStr ? `<div style="color:#e2e8f0">${dateStr} · ${timeStr}</div>` : ''}
       <div class="tooltip-label" style="margin-top:6px">Category</div>
       <div style="color:#e2e8f0">${titleCaseCrimetype(String(props.category ?? '')) || 'Unknown'}</div>
-      <div class="tooltip-label" style="margin-top:6px">Charge</div>
-      <div style="color:#94a3b8">${props.description || 'Unknown'}</div>
-      <div class="tooltip-label" style="margin-top:6px">Police beat</div>
-      <div style="color:#94a3b8">${props.neighborhood && props.neighborhood !== 'Unknown' ? areaLabel(String(props.neighborhood)) : 'Unknown'}</div>
     `
     }
     const linked = props.cadNumber ? '<span style="color:#8b6282;font-size:0.5625rem;margin-left:4px">911 LINKED</span>' : ''
@@ -921,6 +931,21 @@ export default function CrimeIncidents() {
                     groups={isSF ? undefined : OAKLAND_CRIME_GROUPS}
                     formatLabel={isSF ? undefined : titleCaseCrimetype}
                   />
+                )}
+                {/* Oakland only: OPD files coroner death probes under its
+                    homicide code (~92% of that bucket). We split it; this
+                    discloses what each half means and why Homicide is a floor. */}
+                {!isSF && (
+                  <div className="mt-4 pt-3 border-t border-slate-200/50 dark:border-white/[0.06]">
+                    <p className="text-micro text-ink/60 dark:text-paper-100/55 leading-relaxed">
+                      <span className="font-semibold text-ink/80 dark:text-paper-100/75">Homicide</span>{' '}
+                      counts charged murder and manslaughter cases, not Oakland&rsquo;s official toll. Many
+                      killings are coded as death investigations until the Coroner rules, so this figure runs
+                      well below the official count.{' '}
+                      <span className="font-semibold text-ink/80 dark:text-paper-100/75">Death Investigations</span>{' '}
+                      are coroner probes of sudden or unexplained deaths, not crimes.
+                    </p>
+                  </div>
                 )}
               </>
             )}

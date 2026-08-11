@@ -3,6 +3,8 @@ import {
   OAKLAND_CRIME_GROUPS, OAKLAND_CRIME_COUNT, OAKLAND_CRIME_QUERY_FLOOR,
   titleCaseCrimetype, adaptOaklandIncident,
   buildSfCrimeWhere, buildOaklandCrimeWhere,
+  classifyOaklandCategory, oaklandCategoryExpr,
+  OAK_CAT_HOMICIDE, OAK_CAT_DEATH_INVESTIGATIONS, OAK_CAT_OTHER,
 } from './crimeDialect'
 import { planCrimeEra } from './crimeEra'
 import { distinctCases } from '@/hooks/useComparisonDataFactory'
@@ -22,9 +24,13 @@ const PROBE_VOCAB = new Set([
 ])
 
 describe('OAKLAND_CRIME_GROUPS', () => {
-  it('every authored member exists in the probe vocabulary (no invented values)', () => {
+  it('every authored member is a probe crimetype or the derived Homicide category', () => {
+    // 'HOMICIDE' the raw code is split (see classifyOaklandCategory); its
+    // Violent slot is now the DERIVED 'Homicide' category, which is not a raw
+    // vocabulary value. Everything else must still be a real probe crimetype.
+    const allowed = new Set([...PROBE_VOCAB, OAK_CAT_HOMICIDE])
     for (const members of Object.values(OAKLAND_CRIME_GROUPS)) {
-      for (const m of members) expect(PROBE_VOCAB.has(m), m).toBe(true)
+      for (const m of members) expect(allowed.has(m), m).toBe(true)
     }
   })
   it('groups are disjoint and the admin tail is deliberately ungrouped', () => {
@@ -36,6 +42,71 @@ describe('OAKLAND_CRIME_GROUPS', () => {
     // The two judgment calls, made once in the spec: THREATS→Violent, VANDALISM→Property.
     expect(OAKLAND_CRIME_GROUPS.Violent).toContain('THREATS')
     expect(OAKLAND_CRIME_GROUPS.Property).toContain('VANDALISM')
+  })
+  it('the HOMICIDE code is split: derived Homicide is Violent; the raw code and the death/other buckets are ungrouped', () => {
+    const all = Object.values(OAKLAND_CRIME_GROUPS).flat()
+    expect(OAKLAND_CRIME_GROUPS.Violent).toContain(OAK_CAT_HOMICIDE)
+    expect(all).not.toContain('HOMICIDE')                    // raw code no longer a member
+    expect(all).not.toContain(OAK_CAT_DEATH_INVESTIGATIONS)  // coroner probes ungrouped — not crimes
+    expect(all).not.toContain(OAK_CAT_OTHER)
+  })
+})
+
+describe('classifyOaklandCategory (the HOMICIDE-code split)', () => {
+  // OPD files coroner death probes under crimetype='HOMICIDE' (~92% of the
+  // bucket). We split that ONE code by description into three honest display
+  // categories; every other crimetype passes through untouched.
+  it('routes charged murder / manslaughter to Homicide', () => {
+    expect(classifyOaklandCategory('HOMICIDE', 'MURDER')).toBe(OAK_CAT_HOMICIDE)
+    expect(classifyOaklandCategory('HOMICIDE', 'MURDER:FIRST DEGREE')).toBe(OAK_CAT_HOMICIDE)
+    expect(classifyOaklandCategory('HOMICIDE', 'VOLUNTARY MANSLAUGHTER')).toBe(OAK_CAT_HOMICIDE)
+    expect(classifyOaklandCategory('HOMICIDE', 'VEHICLE MANSLAUGHTER W/GROSS NEGLIGENCE')).toBe(OAK_CAT_HOMICIDE)
+  })
+  it('routes coroner death probes to Death Investigations', () => {
+    expect(classifyOaklandCategory('HOMICIDE', 'SC UNEXPLAINED DEATH')).toBe(OAK_CAT_DEATH_INVESTIGATIONS)
+    expect(classifyOaklandCategory('HOMICIDE', 'CONCL/ETC ACCIDENTL DEATH')).toBe(OAK_CAT_DEATH_INVESTIGATIONS)
+  })
+  it('routes the violent tail (attempts, assaults) to Other — never Homicide', () => {
+    // These are real violence, but the label says "murder and manslaughter";
+    // routing them to Homicide would overstate the floor. Other is the safe home.
+    expect(classifyOaklandCategory('HOMICIDE', 'ATTEMPTED MURDER-FIREARM')).toBe(OAK_CAT_OTHER)
+    expect(classifyOaklandCategory('HOMICIDE', 'ASSAULT WITH FIREARM ON PERSON')).toBe(OAK_CAT_OTHER)
+    expect(classifyOaklandCategory('HOMICIDE', 'SHOOT AT INHABITED DWELLING/VEHICLE/ETC')).toBe(OAK_CAT_OTHER)
+  })
+  it('an elder-abuse charge mentioning DEATH is NOT a coroner probe', () => {
+    // 'LIKELY GBI OR DEATH' contains DEATH but not UNEXPLAINED/ACCIDENTL DEATH,
+    // so the narrow coroner match must not swallow it.
+    expect(classifyOaklandCategory('HOMICIDE', 'CRUELTY TO ELDER/DEPENDENT ADULT WITH LIKELY GBI OR DEATH')).toBe(OAK_CAT_OTHER)
+  })
+  it('passes every non-HOMICIDE crimetype through untouched', () => {
+    expect(classifyOaklandCategory('STOLEN VEHICLE', 'VEHICLE THEFT - AUTO')).toBe('STOLEN VEHICLE')
+    expect(classifyOaklandCategory('ROBBERY', 'ROBBERY-FIREARM')).toBe('ROBBERY')
+  })
+  it('a HOMICIDE row with no description defaults to Other, never Homicide', () => {
+    expect(classifyOaklandCategory('HOMICIDE', '')).toBe(OAK_CAT_OTHER)
+  })
+})
+
+describe('oaklandCategoryExpr (SoQL mirror of the classifier)', () => {
+  // The SELECT/GROUP CASE string and the filter's IN() share this ONE
+  // expression, and it must carry the SAME description tokens the JS
+  // classifier keys on — drift here silently unlinks how we count from how
+  // we filter (the sidebar row and its own filter would disagree).
+  const expr = oaklandCategoryExpr()
+  it('emits the three derived category literals', () => {
+    expect(expr).toContain(`'${OAK_CAT_HOMICIDE}'`)
+    expect(expr).toContain(`'${OAK_CAT_DEATH_INVESTIGATIONS}'`)
+    expect(expr).toContain(`'${OAK_CAT_OTHER}'`)
+  })
+  it('keys on the same description tokens as the JS classifier', () => {
+    expect(expr).toContain('%MURDER%')
+    expect(expr).toContain('%MANSLAUGHTER%')
+    expect(expr).toContain('%ATTEMPTED%')
+    expect(expr).toContain('%UNEXPLAINED DEATH%')
+    expect(expr).toContain('%ACCIDENTL DEATH%')
+  })
+  it('passes non-HOMICIDE crimetypes through unchanged', () => {
+    expect(expr).toContain("crimetype != 'HOMICIDE', crimetype")
   })
 })
 

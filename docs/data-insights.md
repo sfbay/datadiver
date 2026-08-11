@@ -622,6 +622,36 @@ judgment calls made, made once, and pinned by test. Raw values ride WHERE
 clauses and `?categories=`; display surfaces title-case them
 (`titleCaseCrimetype`) except for acronyms like DUI.
 
+**The `HOMICIDE` code is a death-investigation family, not a murder count.**
+OPD files coroner death probes — sudden or unexplained deaths it must clear —
+under `crimetype = 'HOMICIDE'`, and they dominate the bucket: of 451 rows in
+2026 YTD, 400 are `SC UNEXPLAINED DEATH`, and the ratio holds every year
+(763/951 in 2023, 736/862 in 2024, 695/806 in 2025). Rendered raw, the sidebar
+read "Homicide 427" — which any reader takes as 427 murders, off by ~20×
+(Oakland's official toll runs ~50–120/yr). DataDiver splits the one code by
+charge description into three display categories via a derived SoQL `CASE`
+expression mirrored in JS (`oaklandCategoryExpr` / `classifyOaklandCategory`,
+pinned together by `crimeDialect.test`): **Homicide** = charged
+murder/manslaughter; **Death Investigations** = the coroner probes (ungrouped —
+not crimes); **Other** = the ~8/yr violent tail (attempted murder,
+assault-with-firearm) that would overstate the floor if folded into Homicide.
+The Homicide branch is *positive* (murder/manslaughter only), so a new coroner
+description can never silently inflate it — the safe default is `Other`. The
+same `CASE` expr drives the sidebar `GROUP BY` and the filter's `IN()`, so how
+we count and how we filter can't drift.
+
+**Even split, `Homicide` is a charge-based FLOOR, not the official toll.**
+Charged murder/manslaughter cases per year (2023→97, 2024→62, 2025→53) run
+~75% of Oakland's official homicide figures (~126, ~81, ~73): the Coroner's
+reclassification lags, and some killings sit under `SC UNEXPLAINED DEATH` until
+ruled. The number here is a lower bound; the authoritative count lives in OPD's
+official reporting / CA DOJ OpenJustice. The category sidebar discloses this in
+two sentences, and the honest framing is "at least N charged," never "N
+homicides." Category rows don't reconcile by summing (a fatal shooting charged
+`MURDER` + `ASSAULT WITH FIREARM` lands in both Homicide and Other) — totals
+reconcile through the top-line distinct-case count, as they already do across
+`crimetype` rows.
+
 ### 311 (`quth-gb8e`)
 
 **`srx`/`sry`, not `reqaddress`, are the real coordinates.** Despite names
