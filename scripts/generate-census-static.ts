@@ -27,6 +27,7 @@ import type { CensusData, NeighborhoodCensusData } from '../src/types/census'
 import { CENSUS_VARIABLES } from '../src/utils/censusVariables'
 import { TRACT_MAPPINGS, getAllMappedNeighborhoods } from '../src/utils/tractMapping'
 import { aggregateToNeighborhoods } from '../src/utils/censusAggregator'
+import { OAKLAND_TRACT_REGIONS } from '../src/cities/oakland/tractRegions'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -265,8 +266,12 @@ const SF_STATE = '06'
 const SF_COUNTY = '075'
 const MAX_VARS_PER_REQUEST = 48
 
-async function fetchCensusLive(apiKey: string): Promise<{ tracts: CensusData[]; blockGroups: CensusData[] }> {
-  console.log('Fetching live Census data with API key...')
+async function fetchCensusLive(
+  apiKey: string,
+  stateFips: string = SF_STATE,
+  countyFips: string = SF_COUNTY,
+): Promise<{ tracts: CensusData[]; blockGroups: CensusData[] }> {
+  console.log(`Fetching live Census data with API key (state ${stateFips}, county ${countyFips})...`)
 
   // Collect all ACS variable codes
   function collectVars(geoLevel: 'tract' | 'blockgroup'): string[] {
@@ -293,10 +298,10 @@ async function fetchCensusLive(apiKey: string): Promise<{ tracts: CensusData[]; 
       let inClause: string
       if (geoLevel === 'tract') {
         forClause = 'tract:*'
-        inClause = `state:${SF_STATE}+county:${SF_COUNTY}`
+        inClause = `state:${stateFips}+county:${countyFips}`
       } else {
         forClause = 'block group:*'
-        inClause = `state:${SF_STATE}+county:${SF_COUNTY}+tract:*`
+        inClause = `state:${stateFips}+county:${countyFips}+tract:*`
       }
 
       const params = new URLSearchParams({
@@ -667,11 +672,61 @@ function aggregateBlockGroupsToNeighborhoods(
 // Main
 // ---------------------------------------------------------------------------
 
+/**
+ * Oakland census generation — SEPARATE from the SF path (which aggregates
+ * neighborhoods from block groups via SF's boundary polygons). Oakland
+ * aggregates the 10 planning REGIONS from Alameda tracts via the committed
+ * OAKLAND_TRACT_REGIONS crosswalk (centroid, weight 1.0). Writes city-scoped
+ * files; never touches SF's census-*.json.
+ */
+async function generateOakland(apiKey: string) {
+  console.log('Generating Oakland census — 10 planning regions from Alameda (06/001) tracts')
+  const { tracts, blockGroups } = await fetchCensusLive(apiKey, '06', '001')
+  const regions = aggregateToNeighborhoods(tracts, OAKLAND_TRACT_REGIONS)
+  if (regions.length !== 10) {
+    throw new Error(`expected 10 Oakland regions, got ${regions.length} — crosswalk or tract fetch changed?`)
+  }
+  const totalPop = regions.reduce((s, r) => s + (r.population || 0), 0)
+  console.log(`Aggregated ${tracts.length} Alameda tracts → 10 Oakland regions (pop ${totalPop.toLocaleString()})`)
+  if (totalPop < 380_000 || totalPop > 470_000) {
+    throw new Error(`Oakland region population ${totalPop} outside plausible 380k–470k — coverage gap?`)
+  }
+
+  // Filter the Alameda fetch down to OAKLAND geographies (the fetch returns the
+  // whole county — Berkeley, Fremont, …). Oakland tracts = those in the region
+  // crosswalk; Oakland block groups = those whose parent tract is Oakland.
+  const oaklandTractIds = new Set(OAKLAND_TRACT_REGIONS.map((m) => m.tractId))
+  const oaklandTracts = tracts.filter((t) => oaklandTractIds.has(t.geoId.slice(-6)))
+  const oaklandBlockGroups = blockGroups.filter((bg) => oaklandTractIds.has(bg.geoId.slice(-7, -1)))
+  console.log(`  Oakland-only: ${oaklandTracts.length} tracts, ${oaklandBlockGroups.length} block groups`)
+
+  writeFileSync(resolve(DATA_DIR, 'census-oakland-neighborhoods.json'), JSON.stringify(regions, null, 2) + '\n')
+  writeFileSync(resolve(DATA_DIR, 'census-oakland-tracts.json'), JSON.stringify(oaklandTracts, null, 2) + '\n')
+  // Block-group tier boundaries aren't vendored for Oakland yet (Phase C), but
+  // the DATA is written so the finest tier is ready when they land.
+  writeFileSync(resolve(DATA_DIR, 'census-oakland-blockgroups.json'), JSON.stringify(oaklandBlockGroups, null, 2) + '\n')
+  console.log('  Wrote census-oakland-{neighborhoods,tracts,blockgroups}.json')
+}
+
 async function main() {
   const args = process.argv.slice(2)
+  const cityArg =
+    args.find((a) => a.startsWith('--city='))?.split('=')[1] ??
+    (args.includes('--city') ? args[args.indexOf('--city') + 1] : undefined)
+  const city = (cityArg ?? 'sf').toLowerCase()
   const sampleOnly = args.includes('--sample-only') || !process.env.VITE_CENSUS_API_KEY
 
   mkdirSync(DATA_DIR, { recursive: true })
+
+  if (city === 'oakland') {
+    if (!process.env.VITE_CENSUS_API_KEY) {
+      throw new Error('Oakland generation needs VITE_CENSUS_API_KEY in the shell env (no resonate sample exists for Oakland).')
+    }
+    await generateOakland(process.env.VITE_CENSUS_API_KEY)
+    console.log('')
+    console.log('Done!')
+    return
+  }
 
   if (sampleOnly) {
     console.log('Running in sample-only mode (no Census API key)')
