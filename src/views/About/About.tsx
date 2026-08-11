@@ -124,7 +124,7 @@ const SF_SOURCES: SourceRow[] = [
 ]
 
 const OAKLAND_SOURCES: SourceRow[] = [
-  { name: 'Crime Reports (OPD)', id: 'ppgh-7dqv', dateField: 'datetime', note: 'Charge-level rows — every count dedupes by case number; ~3.4% carry no-location beat codes (77X/99X); clamped to 2004+ (earlier rows are a junk trickle)' },
+  { name: 'Crime Reports (OPD)', id: 'ppgh-7dqv', dateField: 'datetime', note: 'Charge-level rows — every count dedupes by case number; the HOMICIDE code (mostly coroner death investigations) is split so it does not read as a murder count; ~3.4% carry no-location beat codes (77X/99X); clamped to 2004+ (earlier rows are a junk trickle)' },
   { name: '311 Service Requests', id: 'quth-gb8e', dateField: 'datetimeinit', note: 'Coordinates from the srx/sry fields — the dataset’s own address point is junk; publishes next-day' },
   { name: 'Parking Citations', id: '58em-y96b', dateField: 'ticket_iss', note: 'Publishes ~11 weeks behind; violation descriptions carry a 10-character truncation era, so codes are grouped instead' },
   { name: 'Police Beats (boundaries)', id: '78s7-673i', note: 'Vendored as the 59-beat spine; the layer names only 2 of its 59 polygons' },
@@ -459,6 +459,23 @@ export default function About() {
                 the no-location codes 77X/99X &mdash; they appear as &ldquo;Unmapped
                 beat,&rdquo; never silently dropped &mdash; and with null and malformed
                 beat values included, about 4.8% of rows join no beat at all.
+              </p>
+            </Finding>
+
+            <Finding title="&ldquo;Homicide&rdquo; in Oakland&rsquo;s data is not a murder count">
+              <p>
+                Oakland police file sudden and unexplained deaths &mdash; the kind a
+                coroner investigates &mdash; under the same code as murder, and those
+                death investigations are the large majority of it. Shown as published,
+                the code read &ldquo;Homicide 427&rdquo; for a year in which Oakland saw
+                a small fraction of that many killings. DataDiver splits it by charge:
+                <strong> Homicide</strong> counts charged murder and manslaughter cases,
+                <strong> Death Investigations</strong> holds the coroner probes (not
+                crimes, so they sit outside the violent-crime groups), and a few related
+                charges fall under Other. Even split, the Homicide figure is a floor,
+                not Oakland&rsquo;s official toll: many killings stay coded as death
+                investigations until the Coroner rules, so the number runs below
+                the official count, which OPD and the state report separately.
               </p>
             </Finding>
 

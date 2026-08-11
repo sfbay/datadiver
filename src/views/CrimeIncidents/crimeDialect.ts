@@ -23,14 +23,87 @@ export const CRIME_EYEBROWS = {
   oakland: 'OPD · Incident Reports',
 } as const
 
+// ─── The HOMICIDE-code split ────────────────────────────────────────────
+// OPD files coroner DEATH PROBES under crimetype='HOMICIDE' — ~92% of that
+// bucket is 'SC UNEXPLAINED DEATH', sudden/unexplained deaths OPD must clear,
+// NOT killings. Rendered raw, "Homicide 427" reads as 427 murders (off ~20×).
+// So we split the ONE code by description into three honest display
+// categories. Two invariants make it safe:
+//   1. The SoQL CASE string (oaklandCategoryExpr) and the JS mirror
+//      (classifyOaklandCategory) key on the SAME description tokens — the
+//      count and the filter can't disagree (pinned by crimeDialect.test).
+//   2. The Homicide branch is POSITIVE (murder/manslaughter only); anything
+//      unrecognized in the bucket falls to Other, so a new coroner code can
+//      never silently inflate the sensitive number.
+// Homicide here is a charge-based FLOOR — it undercounts Oakland's official
+// toll (Coroner reclassification lag). Disclosed in-view + About/data-insights.
+export const OAK_CAT_HOMICIDE = 'Homicide'
+export const OAK_CAT_DEATH_INVESTIGATIONS = 'Death Investigations'
+export const OAK_CAT_OTHER = 'Other'
+
+// Coroner-probe descriptions carry these substrings; completed homicides
+// carry MURDER (not ATTEMPTED) or MANSLAUGHTER. Authored ONCE so the SoQL
+// string and JS mirror stay in lockstep.
+const DEATH_PROBE_TOKENS = ['UNEXPLAINED DEATH', 'ACCIDENTL DEATH', 'ACCIDENTAL DEATH']
+
+function isMurderDesc(d: string): boolean {
+  return (d.includes('MURDER') && !d.includes('ATTEMPTED')) || d.includes('MANSLAUGHTER')
+}
+function isDeathProbeDesc(d: string): boolean {
+  return DEATH_PROBE_TOKENS.some((t) => d.includes(t))
+}
+
+/** JS mirror of oaklandCategoryExpr — classifies ONE charge row. Non-HOMICIDE
+ *  crimetypes pass through untouched; the HOMICIDE code splits by description.
+ *  For a multi-charge case deduped to one dot, apply severity precedence
+ *  (Homicide > Death Investigations > Other) across its charges at the call
+ *  site — a lone survivor row may under-rank; the panel's charge list is truth. */
+export function classifyOaklandCategory(crimetype: string, description: string): string {
+  if (crimetype !== 'HOMICIDE') return crimetype
+  const d = (description ?? '').toUpperCase()
+  if (isMurderDesc(d)) return OAK_CAT_HOMICIDE
+  if (isDeathProbeDesc(d)) return OAK_CAT_DEATH_INVESTIGATIONS
+  return OAK_CAT_OTHER
+}
+
+/** Rank a whole case (its charge descriptions) into ONE display category with
+ *  severity precedence, so a murder case that also carries an assault charge
+ *  headlines as Homicide, not Other. Mirrors classifyOaklandCategory's order. */
+export function classifyOaklandCase(descriptions: string[]): string {
+  const ds = descriptions.map((x) => (x ?? '').toUpperCase())
+  if (ds.some(isMurderDesc)) return OAK_CAT_HOMICIDE
+  if (ds.some(isDeathProbeDesc)) return OAK_CAT_DEATH_INVESTIGATIONS
+  return OAK_CAT_OTHER
+}
+
+/** The SoQL CASE expression that derives `category` server-side. Used BOTH in
+ *  the $select/$group of the category aggregation AND (wrapped in parens) as
+ *  the left side of the filter's IN() — one rule, so how we count and how we
+ *  filter can never drift. Verified live: groups + `(expr) IN (…)` both work. */
+export function oaklandCategoryExpr(): string {
+  const deathLike = DEATH_PROBE_TOKENS.map((t) => `description like '%${t}%'`).join(' or ')
+  const murderLike = `(description like '%MURDER%' and description not like '%ATTEMPTED%') or description like '%MANSLAUGHTER%'`
+  return (
+    `case(` +
+    `crimetype != 'HOMICIDE', crimetype, ` +
+    `${murderLike}, '${OAK_CAT_HOMICIDE}', ` +
+    `${deathLike}, '${OAK_CAT_DEATH_INVESTIGATIONS}', ` +
+    `true, '${OAK_CAT_OTHER}')`
+  )
+}
+
 /** Authored quick groups over the probe-pinned vocabulary (scope call 3:
  *  three groups; the administrative tail stays listed but ungrouped).
  *  THREATS→Violent and VANDALISM→Property are the two judgment calls,
  *  made once in the spec and pinned by test. */
 export const OAKLAND_CRIME_GROUPS: Record<string, string[]> = {
+  // NB: 'Homicide' here is the DERIVED display category (charged murder/
+  // manslaughter), not the raw 'HOMICIDE' code — the coroner death probes in
+  // that code are split out to 'Death Investigations', which stays ungrouped
+  // (not a crime). See classifyOaklandCategory / oaklandCategoryExpr.
   Violent: [
     'MISDEMEANOR ASSAULT', 'DOMESTIC VIOLENCE', 'ROBBERY', 'FELONY ASSAULT',
-    'HOMICIDE', 'FORCIBLE RAPE', 'KIDNAPPING', 'BRANDISHING', 'CHILD ABUSE', 'THREATS',
+    OAK_CAT_HOMICIDE, 'FORCIBLE RAPE', 'KIDNAPPING', 'BRANDISHING', 'CHILD ABUSE', 'THREATS',
   ],
   Property: [
     'STOLEN VEHICLE', 'BURG - AUTO', 'BURG - RESIDENTIAL', 'BURG - COMMERCIAL',

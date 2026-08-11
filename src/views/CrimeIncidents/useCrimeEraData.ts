@@ -40,7 +40,7 @@ import {
 import {
   adaptOaklandIncident, buildOaklandCrimeWhere, buildOaklandCrimeDateOnly,
   buildSfCrimeWhere, buildSfCrimeDateOnly,
-  OAKLAND_CRIME_COUNT, OAKLAND_CRIME_SELECT, type OaklandCrimeRow,
+  OAKLAND_CRIME_COUNT, OAKLAND_CRIME_SELECT, oaklandCategoryExpr, type OaklandCrimeRow,
 } from './crimeDialect'
 
 const MODERN_SELECT =
@@ -220,8 +220,11 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
   const oakCats = useDataset<IncidentCategoryAggRow>(
     'policeIncidents',
     {
-      $select: `crimetype as incident_category, ${OAKLAND_CRIME_COUNT} as incident_count`,
-      $group: 'crimetype',
+      // The derived CASE splits the HOMICIDE code (coroner probes vs charged
+      // homicides); every other crimetype passes through. Same expr drives the
+      // filter's IN() in CrimeIncidents, so count and filter can't drift.
+      $select: `${oaklandCategoryExpr()} as incident_category, ${OAKLAND_CRIME_COUNT} as incident_count`,
+      $group: oaklandCategoryExpr(),
       $where: oakDateOnly,
       $order: 'incident_count DESC',
       $limit: 60,

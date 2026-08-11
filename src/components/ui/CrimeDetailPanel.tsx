@@ -13,6 +13,7 @@ import {
 import {
   OAKLAND_CRIME_SELECT,
   titleCaseCrimetype,
+  classifyOaklandCase,
   type OaklandCrimeRow,
 } from '@/views/CrimeIncidents/crimeDialect'
 import { parseDateTime, formatDate, diffHours, formatResolution } from '@/utils/time'
@@ -39,7 +40,7 @@ interface CrimeDetail {
 
 interface OaklandCrimeDetail {
   casenumber: string
-  category: string          // raw crimetype; title-cased at render
+  category: string          // derived display category (HOMICIDE split); title-cased at render
   charges: string[]         // distinct description values, published order
   beat: string
   address: string
@@ -108,9 +109,15 @@ export default function CrimeDetailPanel() {
         .then((rows) => {
           if (cancelled || rows.length === 0) return
           const charges = [...new Set(rows.map((r) => r.description).filter(Boolean))] as string[]
+          // Headline the DERIVED category. For the HOMICIDE code, rank across
+          // ALL charges (Homicide > Death Investigations > Other) so a murder
+          // case that also carries an assault charge reads as Homicide, not the
+          // survivor row's Other. Other crimetypes headline as published.
+          const rawType = rows[0].crimetype ?? ''
+          const displayCategory = rawType === 'HOMICIDE' ? classifyOaklandCase(charges) : rawType
           setOakDetail({
             casenumber: rows[0].casenumber ?? selectedCrimeIncident,
-            category: rows[0].crimetype ?? '',
+            category: displayCategory,
             charges,
             beat: rows[0].policebeat ?? '',
             address: rows[0].address ?? '',
