@@ -58,9 +58,9 @@ describe('city registry', () => {
 })
 
 describe('manifest liveness (stage 3)', () => {
-  it('oakland: all five manifest entries live (stage 4b adds home — parking-citations + campaign-finance no longer dormant)', () => {
+  it('oakland: all six manifest entries live (stage 5a adds demographics — the region-based explorer)', () => {
     const live = liveManifest(CITIES.oakland.manifest).map((e) => e.viewId)
-    expect(live).toEqual(['home', 'crime-incidents', '311-cases', 'parking-citations', 'campaign-finance'])
+    expect(live).toEqual(['home', 'crime-incidents', '311-cases', 'parking-citations', 'campaign-finance', 'demographics'])
     const dormant = CITIES.oakland.manifest.filter((e) => e.dormant).map((e) => e.viewId)
     expect(dormant).toEqual([])
   })
@@ -78,6 +78,14 @@ describe('crossCityPath (switch semantics)', () => {
     expect(crossCityPath('oakland', 'housing')).toBe('/oakland')
     expect(crossCityPath('oakland', 'elections')).toBe('/oakland')
     expect(crossCityPath('sf', 'home')).toBe('/')
+  })
+  // Registering Oakland's demographics entry silently MOVES this destination:
+  // before stage 5a a reader on SF's /demographics who switched city landed on
+  // /oakland (the fallback). Pin the new truth in both directions so the switch
+  // can never quietly regress to the landing page.
+  it('demographics now switches view-to-view in BOTH directions (stage 5a)', () => {
+    expect(crossCityPath('oakland', 'demographics')).toBe('/oakland/demographics')
+    expect(crossCityPath('sf', 'demographics')).toBe('/demographics')
   })
 })
 

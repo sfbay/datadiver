@@ -55,6 +55,6 @@ export const oaklandCity: CityConfig = {
     },
   },
   datasets: buildDatasets('data.oaklandca.gov', OAKLAND_DATASETS_RAW),
-  manifest: OAKLAND_MANIFEST,  // stage 3b: all four entries live
+  manifest: OAKLAND_MANIFEST,  // stage 5a: all six entries live
   redirects: [],
 }

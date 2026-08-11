@@ -53,7 +53,7 @@ describe('eraSourceFor', () => {
     expect(eraSourceFor('oakland', 'crime-incidents')?.clamp).toEqual([2004, null])
     expect(eraSourceFor('oakland', '311-cases')?.datasetKey).toBe('cases311')
     expect(eraSourceFor('oakland', 'parking-citations')?.dateField).toBe('ticket_iss')
-    for (const view of ['campaign-finance', 'live', 'home', 'housing', 'elections']) {
+    for (const view of ['campaign-finance', 'demographics', 'live', 'home', 'housing', 'elections']) {
       expect(eraSourceFor('oakland', view), view).toBeUndefined()
     }
   })

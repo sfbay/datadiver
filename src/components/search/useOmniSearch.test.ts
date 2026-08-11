@@ -67,12 +67,13 @@ describe('OmniSearch index (SF parity)', () => {
     expect(cats.lastIndexOf('place')).toBeLessThan(cats.indexOf('dataset'))
   })
 
-  it('oakland index: 5 LIVE view rows + 57 beat places (named · coded) + 7 live-claimed datasets', () => {
+  it('oakland index: 6 LIVE view rows + 57 beat places (named · coded) + 7 live-claimed datasets', () => {
     const oak = buildSearchIndex('oakland')
     const byCat = (c: string) => oak.filter((r) => r.category === c)
-    // All four entries are live — each gets a view row.
+    // All six entries are live — each gets a view row.
     expect(byCat('view').map((r) => r.id)).toEqual([
       'view-home', 'view-crime-incidents', 'view-311-cases', 'view-parking-citations', 'view-campaign-finance',
+      'view-demographics',
     ])
     // 59 beats minus searchExcluded (LKM1, PDT2) = 57 place rows. Labels are
     // the composed editorial form; the sublabel keeps the literal word
@@ -91,7 +92,7 @@ describe('OmniSearch index (SF parity)', () => {
       'dataset-policeIncidents', 'dataset-cases311', 'dataset-parkingCitations',
       'dataset-fppcSchA', 'dataset-fppcSchE', 'dataset-fppc496', 'dataset-fppc497',
     ])
-    expect(oak).toHaveLength(69)
+    expect(oak).toHaveLength(70)
     for (const r of oak) expect(r.path.startsWith('/oakland'), r.id).toBe(true)
   })
 

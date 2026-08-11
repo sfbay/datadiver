@@ -2,17 +2,19 @@
 import type { ViewManifestEntry } from '../manifest'
 
 /**
- * Four entries carrying Oakland's per-dataset era facts and ⌘K claims.
- * All four are now LIVE — stage 3 brought crime-incidents and 311-cases up
- * first; stage 3b flips parking-citations and campaign-finance, so every
- * /oakland/* slug renders a real view. navLabels/pigments mirror SF's
+ * Six entries carrying Oakland's per-dataset era facts and ⌘K claims.
+ * All six are now LIVE — stage 3 brought crime-incidents and 311-cases up
+ * first; stage 3b flipped parking-citations and campaign-finance, so every
+ * /oakland/* slug renders a real view; stage 5a adds demographics, the one
+ * entry painting REGIONS rather than beats. navLabels/pigments mirror SF's
  * per-view values (same dataset family = same pigment in every city);
  * homeCard fields drive the /oakland landing grid (stage 4b);
- * underlayPreset stays absent because these views paint POLICE BEATS while
- * Oakland's ACS data lives on 10 planning regions — censusMatchesAreas() is
- * false for this city, so every area-keyed census affordance stands down. Not
- * because census is null: it isn't (stage 5a turned it on for the
- * region-based Demographics surface).
+ * underlayPreset stays absent because the five event views paint POLICE BEATS
+ * while Oakland's ACS data lives on 10 planning regions — censusMatchesAreas()
+ * is false for this city, so every area-keyed census affordance stands down.
+ * Not because census is null: it isn't (stage 5a turned it on for the
+ * region-based Demographics surface, which builds its own choropleth off
+ * census.regions and never mounts the UnderlayPicker).
  */
 export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
   {
@@ -76,5 +78,20 @@ export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
     // absent — its amount_a is cumulative-ish (10–20× transaction sums;
     // summing it fabricates money).
     omniDatasetKeys: ['fppcSchA', 'fppcSchE', 'fppc496', 'fppc497'],
+  },
+  {
+    viewId: 'demographics',
+    navLabel: 'Demographics',
+    navShortLabel: 'DM',
+    navDescription: 'Census demographics by Oakland region',
+    accentColor: '#8b6282', // plum-500 — same pigment as SF demographics
+    homeCard: { title: 'Demographics Explorer', subtitle: 'ACS estimates across 10 Oakland regions', order: 5 },
+    // DECLARED DELTA from SF's demographics entry, which is date-driven: SF's
+    // scatter can plot civic metrics (crime, 311, crashes) against ACS values,
+    // and those queries read the global dateRange. Oakland withholds that axis
+    // — its event data is grouped by police beat, a different geography from
+    // these regions — so nothing on the Oakland view consumes a date, and an
+    // inert picker would only dirty every shared link with ?start=&end=.
+    dateless: true,
   },
 ]
