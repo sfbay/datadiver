@@ -2,7 +2,7 @@
 // Demographics Explorer — choropleth map + Dorling cartogram + correlation scatter + demographic cards.
 
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
 import { useCensusData } from '@/hooks/useCensusData'
 import { useActiveCity } from '@/cities/useActiveCity'
@@ -93,6 +93,20 @@ export default function Demographics() {
   // unjoinable SF keys for the rest. The affordance is WITHHELD, and said.
   const civicMetricsJoin = censusMatchesAreas(city)
   const unitNoun = censusUnitNoun(city)
+
+  // Counts for the header's method line — derived, never typed twice: the
+  // region total and the neighborhood memberships it dissolves both come
+  // from the city's own census block, so a regeneration can't leave the
+  // disclosure claiming a number the data no longer has. Absent on
+  // one-geography cities (SF), where there is no dissolve to disclose.
+  const regionDissolve = useMemo(() => {
+    const regions = city.census?.regions
+    if (!regions) return null
+    return {
+      regions: Object.keys(regions.names).length,
+      members: Object.values(regions.members).reduce((n, list) => n + list.length, 0),
+    }
+  }, [city])
 
   // --- State ---
   const [activeVariable, setActiveVariable] = useState<CensusVariable>(DEFAULT_ACTIVE_VARIABLE)
@@ -441,6 +455,23 @@ export default function Demographics() {
             source="U.S. Census Bureau"
             vintage="2019-2023"
           />
+          {/* Two-geography cities only: the coarse census units are OURS, not
+              the city's — say so where the reader meets them, not only in
+              About. Mirrors CityLanding's beat-name disclosure line. Counts are
+              derived; the /about anchor is Oakland's, the only two-geography
+              city today — a second one needs a per-city anchor, not a copy. */}
+          {regionDissolve && (
+            <p className="text-micro text-slate-500 dark:text-slate-500 mt-0.5">
+              These {regionDissolve.regions} regions are DataDiver&rsquo;s dissolve of{' '}
+              {city.name}&rsquo;s {regionDissolve.members} official neighborhoods &mdash;{' '}
+              <Link
+                to="/about#oakland-regions"
+                className="underline underline-offset-2 hover:text-ink dark:hover:text-slate-300 transition-colors"
+              >
+                method in About
+              </Link>
+            </p>
+          )}
         </div>
       </header>
 
