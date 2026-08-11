@@ -640,17 +640,44 @@ description can never silently inflate it — the safe default is `Other`. The
 same `CASE` expr drives the sidebar `GROUP BY` and the filter's `IN()`, so how
 we count and how we filter can't drift.
 
-**Even split, `Homicide` is a charge-based FLOOR, not the official toll.**
-Charged murder/manslaughter cases per year (2023→97, 2024→62, 2025→53) run
-~75% of Oakland's official homicide figures (~126, ~81, ~73): the Coroner's
-reclassification lags, and some killings sit under `SC UNEXPLAINED DEATH` until
-ruled. The number here is a lower bound; the authoritative count lives in OPD's
-official reporting / CA DOJ OpenJustice. The category sidebar discloses this in
-two sentences, and the honest framing is "at least N charged," never "N
-homicides." Category rows don't reconcile by summing (a fatal shooting charged
-`MURDER` + `ASSAULT WITH FIREARM` lands in both Homicide and Other) — totals
-reconcile through the top-line distinct-case count, as they already do across
-`crimetype` rows.
+**Even split, `Homicide` is a charge-based FLOOR, not the official toll —
+validated at ~80–85% against CA DOJ.** Against Oakland PD's official UCR
+homicide count (CA DOJ *Crimes and Clearances with Arson*, 1985–2023;
+agency `Oakland`), DataDiver's charged murder/manslaughter cases run a
+consistent ~80–85%:
+
+| Year | Charged (DataDiver) | Official (CA DOJ) | Ratio |
+|---|---|---|---|
+| 2019 | 65 | 78 | 83% |
+| 2020 | 87 | 102 | 85% |
+| 2021 | 102 | 127 | 80% |
+| 2022 | 102 | 121 | 84% |
+| 2023 | 97 | 119 | 82% |
+
+The ~1-in-5 gap is two things at once: a **methodology difference** (UCR counts
+criminal homicide by a national standard from OPD's own submission; we count
+distinct cases in this incident extract that carry a murder/manslaughter charge)
+and **reclassification lag** (some killings sit under `SC UNEXPLAINED DEATH`
+until the Coroner rules). The gap widens for the freshest window — recent deaths
+pending reclassification aren't charged yet — so the current partial year
+undercounts by more than the settled ~82%, and 2024–25 (charged 62, 53) have no
+published official figure yet to check against. The number is a lower bound; the
+authoritative annual count lives in CA DOJ *Crimes and Clearances* (the source
+above) and OPD's own reporting. The category sidebar discloses this, and the
+honest framing is "at least N charged," never "N homicides."
+
+This validation is a **band, not a checksum** — the two series measure adjacent
+things and are pulled one time, by hand, from an annual dataset that lags
+~12–18 months (it cannot corroborate the current year, which is exactly the
+default view). Unlike the elections reconciliation, nothing in the app re-checks
+it. Source CSV:
+`https://data-openjustice.doj.ca.gov/sites/default/files/dataset/2024-07/Crimes_and_Clearances_with_Arson-1985-2023.csv`
+(portal: <https://openjustice.doj.ca.gov/exploration/crime-statistics/crimes-clearances>).
+
+Category rows don't reconcile by summing (a fatal shooting charged `MURDER` +
+`ASSAULT WITH FIREARM` lands in both Homicide and Other) — totals reconcile
+through the top-line distinct-case count, as they already do across `crimetype`
+rows.
 
 ### 311 (`quth-gb8e`)
 
