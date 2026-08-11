@@ -176,7 +176,13 @@ export function useDemographicUnderlay(options: UseDemographicUnderlayOptions): 
     }
 
     const config = getVariableConfig(variable)
-    if (!config) return
+    if (!config) {
+      // Same failure family as the degenerate-stops bail below: returning
+      // without cleanup would leave the PREVIOUS variable's choropleth painted
+      // under the new variable's legend — a wrong map that looks authoritative.
+      removeLayers(map, sourceId, fillLayerId, hatchLayerId, lineLayerId)
+      return
+    }
 
     const excludedSet = new Set<string>(excludedGeoIds)
 
