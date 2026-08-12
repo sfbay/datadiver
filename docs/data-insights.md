@@ -569,8 +569,8 @@ fact is the code, the name is ours and is display-only.
 **Why not paint the 131 directly.** `sb4q-6bkc` publishes 131 polygons carrying
 129 distinct names ("Coliseum Industrial Complex" and "East 14th Street
 Business" each appear twice — the Coliseum industrial edge straddles the CE/E
-planning line). At ~3,200 residents apiece (423,336 across 131 polygons) they
-are **finer than a census tract**, which costs twice. (1) ACS 5-year estimates
+planning line). At ~3,200 residents apiece — the region totals below, divided
+by 131 — they are **finer than a census tract**, which costs twice. (1) ACS 5-year estimates
 at that size carry margins of error wide enough that a difference between two
 neighborhoods would mostly be sampling noise. (2) They do not NEST inside
 tracts, so painting them would require splitting each tract's population by
@@ -612,7 +612,9 @@ so no ACS mass can be silently lost — **structurally unlike SF's fractional
 `TRACT_MAPPINGS`**, which covers 161 of 244 tracts and drops ~70% of the mass
 for count variables (see Housing, above). Conservation check, as actually run:
 every one of the 110 crosswalk tracts is present in the committed tracts JSON,
-and both sides sum to 423,336 exactly. **There is no `unassigned` bucket** —
+and both sides sum to 423,336 exactly. That 423,336 is **the 10 regions' total,
+not Oakland's** — it counts the 110 tracts the regions hold and nothing else
+(the seven in-city exclusions below are outside it). **There is no `unassigned` bucket** —
 the design spec proposed one and it was never built; the generator simply skips
 any tract whose centroid falls in no region, so the seven in-city tracts below
 are excluded by construction and disclosed here rather than counted anywhere.

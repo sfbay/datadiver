@@ -541,9 +541,10 @@ export default function About() {
                   Oakland publishes 131 official neighborhood polygons &mdash; 129
                   names, because &ldquo;Coliseum Industrial Complex&rdquo; and
                   &ldquo;East 14th Street Business&rdquo; each appear in two places.
-                  They are too small to carry census figures. At about 3,200
-                  residents apiece &mdash; 423,336 people across 131 polygons &mdash;
-                  they are finer than a census tract, which costs twice over: the
+                  They are too small to carry census figures. At roughly 3,200
+                  residents apiece &mdash; the region totals below, divided by
+                  131 &mdash; they are finer than a census tract, which costs
+                  twice over: the
                   American Community Survey&rsquo;s margin of error at that size is
                   wide enough that a difference between two neighborhoods would mostly
                   be sampling noise, and because the polygons do not nest inside
@@ -571,7 +572,8 @@ export default function About() {
                 <p className="mb-3">
                   Underneath, each census tract is assigned whole to the single region
                   its center falls in. A tract is never split, so no population can go
-                  missing on the way up. That covers 110 tracts and 423,336 residents
+                  missing on the way up. The 10 regions therefore count 423,336
+                  residents between them, across 110 whole tracts
                   (2019–2023 estimates) &mdash; 110 of the 117 tracts centered
                   inside Oakland&rsquo;s city limits. The other seven fall outside the
                   city&rsquo;s own neighborhood layer: the Bay water tract, which has

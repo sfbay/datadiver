@@ -16,6 +16,8 @@ import { useAppStore } from '@/stores/appStore'
 import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { useDemographicsData } from './useDemographicsData'
 import { SCATTER_CENSUS_OPTIONS, isPlottable } from './scatterOptions'
+import { buildRegionLabelFeatures, regionLabelLayers, REGION_LABEL_LAYER_ID } from './regionLabels'
+import { SCALE_FACTORS } from '@/stores/typeScale'
 import MapView from '@/components/maps/MapView'
 import CorrelationScatter from '@/components/charts/CorrelationScatter'
 import DorlingCartogram from '@/components/charts/DorlingCartogram'
@@ -94,20 +96,6 @@ export default function Demographics() {
   const civicMetricsJoin = censusMatchesAreas(city)
   const unitNoun = censusUnitNoun(city)
 
-  // Counts for the header's method line — derived, never typed twice: the
-  // region total and the neighborhood memberships it dissolves both come
-  // from the city's own census block, so a regeneration can't leave the
-  // disclosure claiming a number the data no longer has. Absent on
-  // one-geography cities (SF), where there is no dissolve to disclose.
-  const regionDissolve = useMemo(() => {
-    const regions = city.census?.regions
-    if (!regions) return null
-    return {
-      regions: Object.keys(regions.names).length,
-      members: Object.values(regions.members).reduce((n, list) => n + list.length, 0),
-    }
-  }, [city])
-
   // --- State ---
   const [activeVariable, setActiveVariable] = useState<CensusVariable>(DEFAULT_ACTIVE_VARIABLE)
   const [scatterYMetric, setScatterYMetric] = useState<string | null>(
@@ -160,6 +148,23 @@ export default function Demographics() {
   // The COARSE CENSUS tier's polygons — Oakland's 10 regions, not its 59
   // beats. Joining region-keyed rows onto beat polygons paints nothing.
   const { boundaries } = useCensusCoarseBoundaries()
+
+  // Counts for the method line — derived, never typed twice. The regions and
+  // the neighborhood memberships they dissolve come from the city's own census
+  // block; the tract count is summed from the loaded rows. So a regenerated
+  // crosswalk cannot leave this line claiming a number the data no longer has,
+  // and it is the coverage caveat for the totalPopulation card sitting a few
+  // hundred pixels below: that figure counts these tracts, not the whole city.
+  // Null on one-geography cities (SF), where there is no dissolve to disclose.
+  const regionDissolve = useMemo(() => {
+    const regions = city.census?.regions
+    if (!regions) return null
+    return {
+      regions: Object.keys(regions.names).length,
+      members: Object.values(regions.members).reduce((n, list) => n + list.length, 0),
+      tracts: neighborhoods.reduce((n, row) => n + (row.tractCount ?? 0), 0),
+    }
+  }, [city, neighborhoods])
 
   // ?nh= is user-editable, so the id in it is UNTRUSTED: resolve it against the
   // loaded rows and let a stale or malformed link be a silent no-op. Before the
@@ -247,6 +252,9 @@ export default function Demographics() {
   }, [scatterYMetric, isCensusY])
 
   const isDarkMode = useAppStore((s) => s.isDarkMode)
+  // Mapbox text-size is px-only — map labels are the one text surface the
+  // root-% rem mechanism can't reach, so Large Type is threaded as a factor.
+  const typeScale = useAppStore((s) => s.typeScale)
 
   // --- Choropleth map layers ---
   const choroplethLayers = useMemo((): mapboxgl.AnyLayer[] => {
@@ -304,6 +312,27 @@ export default function Demographics() {
   // labels render crisply on top of the full-coverage fill. Added on top (the
   // default), the 0.7-opacity fill muddies every label + halo into a hard border.
   useMapLayer(mapInstance, 'demographics-choropleth', choroplethGeo, choroplethLayers, { belowLabels: true })
+
+  // --- Region-name labels (two-geography cities only) --------------------
+  // The choropleth above goes BELOW the basemap's labels; this layer is added
+  // with no beforeId, so it appends last and sits above both the fill and the
+  // basemap text. On SF the feature list is empty by construction, and passing
+  // a NULL map keeps useMapLayer from adding even an empty source there — SF's
+  // map gains nothing at all, not just nothing visible.
+  const regionLabelGeo = useMemo(
+    () => buildRegionLabelFeatures(boundaries, city),
+    [boundaries, city],
+  )
+  const regionLabelConfigs = useMemo(
+    () => regionLabelLayers(SCALE_FACTORS[typeScale], isDarkMode),
+    [typeScale, isDarkMode],
+  )
+  useMapLayer(
+    regionLabelGeo.features.length > 0 ? mapInstance : null,
+    REGION_LABEL_LAYER_ID,
+    regionLabelGeo,
+    regionLabelConfigs,
+  )
 
   // Camera presets — reactively glides to the matching neighborhood preset
   // (or fits the polygon when no preset). Cross-view consistent.
@@ -455,16 +484,36 @@ export default function Demographics() {
             source="U.S. Census Bureau"
             vintage="2019-2023"
           />
-          {/* Two-geography cities only: the coarse census units are OURS, not
-              the city's — say so where the reader meets them, not only in
-              About. Mirrors CityLanding's beat-name disclosure line. Counts are
-              derived; the /about anchor is Oakland's, the only two-geography
-              city today — a second one needs a per-city anchor, not a copy. */}
-          {regionDissolve && (
-            <p className="text-micro text-slate-500 dark:text-slate-500 mt-0.5">
+        </div>
+      </header>
+
+      {/* ── Content ───────────────────────────────────────────────── */}
+      <div id="demographics-capture" className="flex-1 overflow-hidden flex flex-col">
+        {/* Two-geography cities only: the coarse census units are OURS, not the
+            city's — say so where the reader meets them, not only in About.
+            Mirrors CityLanding's beat-name disclosure line.
+
+            INSIDE the capture element on purpose. It used to sit in <header>,
+            which #demographics-capture does not contain, so an exported PNG
+            carried a ten-region choropleth labelled with names that exist in no
+            city document and no marking that either was ours — and an export is
+            the artifact most likely to be forwarded without its page. Same
+            ruling as the Elections WHAT-IF disclosure, which moved inside
+            #elections-capture for exactly this reason. If this element is ever
+            re-parented, it must stay inside the capture subtree.
+
+            Counts are derived from the city's own census block, so a
+            regeneration can't leave the disclosure claiming a number the data no
+            longer has. The /about anchor is Oakland's, the only two-geography
+            city today — a second one needs a per-city anchor, not a copy. */}
+        {regionDissolve && (
+          <div className="flex-shrink-0 px-6 py-1.5 border-b border-slate-200/50 dark:border-white/[0.04] bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl">
+            <p className="text-micro text-slate-500 dark:text-slate-500">
               These {regionDissolve.regions} regions are DataDiver&rsquo;s, not{' '}
               {city.name}&rsquo;s &mdash; we merged the city&rsquo;s {regionDissolve.members}{' '}
-              official neighborhoods into them &mdash;{' '}
+              official neighborhoods into them, and their totals cover{' '}
+              {regionDissolve.tracts} whole census tracts, a little short of the
+              whole city &mdash;{' '}
               <Link
                 to="/about#oakland-regions"
                 className="underline underline-offset-2 hover:text-ink dark:hover:text-slate-300 transition-colors"
@@ -472,12 +521,8 @@ export default function Demographics() {
                 method in About
               </Link>
             </p>
-          )}
-        </div>
-      </header>
-
-      {/* ── Content ───────────────────────────────────────────────── */}
-      <div id="demographics-capture" className="flex-1 overflow-hidden flex flex-col">
+          </div>
+        )}
         {/* Top row: Map/Cartogram + Scatter */}
         <div className="flex-1 flex overflow-hidden min-h-0">
           {/* Left panel: Map or Cartogram */}
