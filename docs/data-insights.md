@@ -432,6 +432,20 @@ reads on the same scale. Also: `scripts/generate-census-static.ts` run WITHOUT a
 silently falls back to sample mode and OVERWRITES the committed JSONs (41→37
 neighborhoods, tracts emptied) — check `git diff` after any run.
 
+**Six SF neighborhood variables come from tracts, not block groups.** `povertyRate`,
+`unemploymentRate`, `pctWFH`, `pctDriveAlone`, `pctTransit` and `pctBikeWalk` shipped
+empty on all 41 rows — the ACS does not tabulate those tables at BLOCK-GROUP scale,
+which is the geography SF's payload is built from, so Demographics opened with a `—`
+Poverty Rate card. They do exist per tract (240 of 244), so
+`scripts/patch-sf-neighborhood-rates.py` rolls them up through the same official
+`sevw-6tgi` assignment as a **population-weighted mean — rates, never sums** (the
+semantics of `aggregateToNeighborhoods`); it makes no ACS call and needs no key,
+because the tract values are already committed. Coverage is 40/41: Lincoln Park's only
+tract (980200) is one of the four the ACS publishes no rate for, and an invented value
+is worse than a gap. Citywide population-weighted poverty: **10.68%**. Pinned by
+`src/data/census-sf.test.ts`, which also tripwires `renterHouseholds` at 41/41 — the
+generator silently deletes that field, and nothing used to notice.
+
 **Era shape of the 29-year eviction series** (annual `file_date` counts, verified
 July 2026): 1998 all-time peak 2,917 (dot-com wave) → 2009 post-crash trough 1,174 →
 2016 Ellis-wave peak 2,134 → 2020 COVID floor 778 (lowest ever) → 2025 rebound 1,495

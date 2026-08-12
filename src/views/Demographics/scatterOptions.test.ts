@@ -4,7 +4,10 @@
 // Written to settle a review question — "is renterHouseholds an unexplained
 // empty option on Oakland?" — with evidence. It is not: `format: 'number'`
 // keeps it out of the option list entirely. And the coverage gaps that DO
-// exist are not Oakland-specific; Oakland's are a strict subset of SF's.
+// exist are not Oakland-specific: since the SF tract rollup (six rate
+// variables recovered from the tract file, `patch-sf-neighborhood-rates.py`),
+// the two cities' dead sets are IDENTICAL — the same eight variables. SF's set
+// was 14 before that fix; the six it lost are the six the rollup filled.
 
 import { describe, it, expect } from 'vitest'
 import {
@@ -77,10 +80,36 @@ describe('per-city coverage of the offered options', () => {
     expect(oaklandOnly).toEqual([])
   })
 
+  it('the two cities are now dead on exactly the same eight options', () => {
+    // Measured after the SF tract rollup. Pinned as membership, not a count, so
+    // a payload that fills one city's gap without the other's fails loudly
+    // instead of drifting. If a regenerated payload legitimately publishes one
+    // of these, RE-PIN the list — do not relax it back to a length check.
+    const DEAD_IN_BOTH = [
+      'lepRate',
+      'pctChinese',
+      'pctKorean',
+      'pctRussian',
+      'pctSpanish',
+      'pctTagalog',
+      'pctVietnamese',
+      'populationDensity',
+    ]
+    expect([...deadOn(SF)].sort()).toEqual(DEAD_IN_BOTH)
+    expect([...deadOn(OAK)].sort()).toEqual(DEAD_IN_BOTH)
+  })
+
+  it('the six rolled-up SF rates are alive — the Poverty Rate card is not a dash', () => {
+    // These were SF's extra six dead options before the tract rollup. Poverty
+    // Rate is one of the four cards Demographics opens expanded, so an empty
+    // povertyRate is the defect a reader meets first.
+    for (const key of ['povertyRate', 'unemploymentRate', 'pctWFH', 'pctDriveAlone', 'pctTransit', 'pctBikeWalk']) {
+      expect(isPlottable(SF, key), key).toBe(true)
+    }
+  })
+
   it('both cities carry unpublished options, so the view must explain the empty axis', () => {
-    // Not pinned to exact membership — a regenerated ACS payload may fill some
-    // in, and that should not fail the build. What must stay true is that the
-    // condition is REACHABLE, which is why the view names the reason.
+    // The condition stays REACHABLE, which is why the view names the reason.
     expect(deadOn(SF).length).toBeGreaterThan(0)
     expect(deadOn(OAK).length).toBeGreaterThan(0)
   })
