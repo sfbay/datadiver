@@ -541,7 +541,7 @@ export default function About() {
                   Oakland publishes 131 official neighborhood polygons &mdash; 129
                   names, because &ldquo;Coliseum Industrial Complex&rdquo; and
                   &ldquo;East 14th Street Business&rdquo; each appear in two places.
-                  They are too small to carry census figures. At roughly 3,200
+                  They are too small to carry census figures. At roughly 3,300
                   residents apiece &mdash; the region totals below, divided by
                   131 &mdash; they are finer than a census tract, which costs
                   twice over: the
@@ -553,7 +553,7 @@ export default function About() {
                   Every polygon carries a filing code like F-7, and the letter in
                   front of it sorts all 131 into exactly 10 planning regions.
                   DataDiver dissolves the neighborhoods into those 10 and paints
-                  those instead. They average about 42,000 residents &mdash; from
+                  those instead. They average about 42,700 residents &mdash; from
                   17,276 in Skyline &amp; the Southeast Hills to 68,581 in Deep East
                   Oakland &mdash; a size where whole census tracts fit inside a region
                   and the estimates stay solid.
@@ -572,15 +572,19 @@ export default function About() {
                 <p className="mb-3">
                   Underneath, each census tract is assigned whole to the single region
                   its center falls in. A tract is never split, so no population can go
-                  missing on the way up. The 10 regions therefore count 423,336
-                  residents between them, across 110 whole tracts
-                  (2019–2023 estimates) &mdash; 110 of the 117 tracts centered
-                  inside Oakland&rsquo;s city limits. The other seven fall outside the
-                  city&rsquo;s own neighborhood layer: the Bay water tract, which has
-                  no land at all; two Port of Oakland special-use tracts; the Army Base
-                  edge; the estuary shoreline; the Knowland–Chabot open space; and
-                  one north-hills tract that is half inside the layer and still under
-                  review here. Six of the seven are less than a quarter covered.
+                  missing on the way up. The 10 regions count 426,920
+                  residents between them, across 111 whole tracts
+                  (2019–2023 estimates). One of those 111 is there by hand: a
+                  north-hills tract whose center falls in a sliver the neighborhood
+                  layer doesn&rsquo;t cover, though most of its land does &mdash; we
+                  measured it (3,584 residents, a profile matching the hills around
+                  it) and assigned it to Montclair &amp; the North Hills explicitly
+                  rather than let a mapping quirk uncount its people. The six
+                  remaining in-city tracts stay outside the city&rsquo;s own
+                  neighborhood layer, each less than a quarter covered: the Bay water
+                  tract, which has no land at all; two Port of Oakland special-use
+                  tracts; the Army Base edge; the estuary shoreline; and the
+                  Knowland–Chabot open space.
                 </p>
                 <p className="mb-3">
                   What that costs a reader: a tract straddling a region line has all of

@@ -39,6 +39,23 @@ REGIONS = Path('public/data/geo/oakland-regions.geojson')
 OUT = Path('src/cities/oakland/tractRegions.ts')
 COUNTY_PREFIX = '06001'  # Alameda
 
+# Explicit assignments for tracts whose Gazetteer centroid falls in a GAP in
+# the neighborhood layer but which measurably belong to a region. This is a
+# judgment call recorded as data — each entry names its evidence. It is NOT a
+# method change: do not "generalize" it into a buffer/nearest-region rule.
+# The layer's largest hole is the City of Piedmont (5.57 km²), and any
+# proximity rule eventually files Piedmont's ~11k residents into whichever
+# region sorts first alphabetically. Measured and rejected Aug 2026; see
+# docs/data-insights.md → "How Oakland's demographic regions are drawn".
+MANUAL = {
+    # 2.73 km² of north-hills land, zero water; 52.7% of its area lies inside
+    # the region layer, best single region NW at 46.8% (its centroid lands in
+    # a sliver of unassigned hillside). ACS 2023: pop 3,584, median income
+    # $246,193, 84% owner-occupied — profile-matched to NW ($233K). Decided
+    # by Jesse Aug 11 2026 after measurement (probe figures in the docs above).
+    '06001404200': 'NW',
+}
+
 
 def load_regions():
     fc = json.loads(REGIONS.read_text())
@@ -62,6 +79,18 @@ def main():
             if poly.covers(pt):
                 assigned.append((geoid[-6:], code))
                 break
+        else:
+            if geoid in MANUAL:
+                assigned.append((geoid[-6:], MANUAL[geoid]))
+
+    # A MANUAL entry whose centroid DID land in a region means the layer (or
+    # the Gazetteer) changed underneath the override — refuse to double-assign.
+    ids = [t for t, _ in assigned]
+    for geoid, code in MANUAL.items():
+        if ids.count(geoid[-6:]) > 1:
+            raise SystemExit(f'MANUAL tract {geoid} was also assigned by geometry — remove the override')
+        if geoid[-6:] not in ids:
+            raise SystemExit(f'MANUAL tract {geoid} not found in the Gazetteer — source changed?')
 
     if len(assigned) < 90:
         raise SystemExit(f'only {len(assigned)} Oakland tracts assigned — expected >90; source or geometry changed?')
@@ -78,7 +107,9 @@ def main():
         "// Census tract (2023) -> Oakland planning region. Centroid-in-polygon,\n"
         "// weight 1.0, full coverage of the tracts listed (a tract is never split,\n"
         "// so no ACS mass is lost — structurally immune to SF's partial-crosswalk\n"
-        "// bug). Consumed by aggregateToNeighborhoods(tracts, OAKLAND_TRACT_REGIONS).\n"
+        "// bug), plus the explicit MANUAL overrides in the script (currently one:\n"
+        "// 404200 -> NW, a gap-centroid hill tract added by measurement Aug 2026).\n"
+        "// Consumed by aggregateToNeighborhoods(tracts, OAKLAND_TRACT_REGIONS).\n"
         "\n"
         "import type { TractMapping } from '../../types/census'\n"
         "\n"
