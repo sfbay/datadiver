@@ -125,7 +125,7 @@ const SF_SOURCES: SourceRow[] = [
     name: 'American Community Survey (2019–2023 5-year)',
     id: 'census.gov',
     url: 'https://www.census.gov/programs-surveys/acs/',
-    note: 'NOT on DataSF — U.S. Census Bureau estimates, published by block group and summed here to the 41 Analysis Neighborhoods; the six the survey does not publish that small (poverty, unemployment and the four commute shares) are averaged up from census tracts instead, using the city’s official tract-to-neighborhood assignment',
+    note: 'NOT on DataSF — U.S. Census Bureau estimates, published by block group and summed here to the 41 Analysis Neighborhoods. Six measures (poverty, unemployment and the four commute shares) are not published at block-group scale, so those are averaged up from census tracts instead, using the city’s official tract-to-neighborhood assignment',
   },
 ]
 
