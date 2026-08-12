@@ -5,8 +5,25 @@ import type { CensusData, CensusVariable } from '../types/census'
 import { CENSUS_VARIABLES } from '../utils/censusVariables'
 
 const API_BASE = 'https://api.census.gov/data'
-const SF_STATE = '06'
-const SF_COUNTY = '075'
+
+/** State + county FIPS for an ACS geo query. */
+export interface CensusFips {
+  stateFips: string
+  countyFips: string
+}
+
+/** SF's FIPS — the historical default; keeps fetchSFTracts callers unchanged. */
+export const SF_FIPS: CensusFips = { stateFips: '06', countyFips: '075' }
+
+/**
+ * Build the ACS `in=` geo clause for a geo level + county. A tract query scopes
+ * `in` to the county (the `tract:*` wildcard is the `for=` clause); a block-group
+ * query additionally wildcards `tract:*` inside the county. Exported for tests.
+ */
+export function buildGeoClause(geoLevel: 'tract' | 'blockgroup', fips: CensusFips): string {
+  const base = `state:${fips.stateFips}+county:${fips.countyFips}`
+  return geoLevel === 'tract' ? base : `${base}+tract:*`
+}
 const DEFAULT_YEAR = 2023 // latest ACS 5-year available as of early 2026
 const DEFAULT_DATASET = 'acs5'
 const MAX_VARS_PER_REQUEST = 48 // Census allows 50 max; leave room for NAME + geo fields
@@ -46,6 +63,7 @@ async function fetchBatched(
   geoLevel: 'tract' | 'blockgroup',
   year: number,
   dataset: string,
+  fips: CensusFips,
 ): Promise<{ headers: string[]; rows: Map<string, Record<string, string | null>> }> {
   const batches: string[][] = []
   for (let i = 0; i < variables.length; i += MAX_VARS_PER_REQUEST) {
@@ -62,15 +80,8 @@ async function fetchBatched(
     batches.map(async (batch) => {
       const getParam = ['NAME', ...batch].join(',')
 
-      let forClause: string
-      let inClause: string
-      if (geoLevel === 'tract') {
-        forClause = 'tract:*'
-        inClause = `state:${SF_STATE}+county:${SF_COUNTY}`
-      } else {
-        forClause = 'block group:*'
-        inClause = `state:${SF_STATE}+county:${SF_COUNTY}+tract:*`
-      }
+      const forClause = geoLevel === 'tract' ? 'tract:*' : 'block group:*'
+      const inClause = buildGeoClause(geoLevel, fips)
 
       const params = new URLSearchParams({
         get: getParam,
@@ -305,33 +316,38 @@ function computeVariables(
 // ---------------------------------------------------------------------------
 
 /**
- * Fetch all SF census tract data from the ACS 5-year dataset.
+ * Fetch all census tract data for a county from the ACS 5-year dataset.
  * Returns one CensusData object per tract with all computable variables.
  */
-export async function fetchSFTracts(config?: CensusApiConfig): Promise<CensusData[]> {
-  return fetchGeoLevel('tract', config)
+export async function fetchTracts(fips: CensusFips, config?: CensusApiConfig): Promise<CensusData[]> {
+  return fetchGeoLevel('tract', fips, config)
 }
 
 /**
- * Fetch all SF block group data from the ACS 5-year dataset.
+ * Fetch all block group data for a county from the ACS 5-year dataset.
  * Only includes variables whose CensusVariableConfig has 'blockgroup' in availableAt.
  */
-export async function fetchSFBlockGroups(config?: CensusApiConfig): Promise<CensusData[]> {
-  return fetchGeoLevel('blockgroup', config)
+export async function fetchBlockGroups(fips: CensusFips, config?: CensusApiConfig): Promise<CensusData[]> {
+  return fetchGeoLevel('blockgroup', fips, config)
 }
+
+/** SF-bound convenience wrappers — preserve the historical call sites. */
+export const fetchSFTracts = (config?: CensusApiConfig) => fetchTracts(SF_FIPS, config)
+export const fetchSFBlockGroups = (config?: CensusApiConfig) => fetchBlockGroups(SF_FIPS, config)
 
 /**
  * Shared implementation for both tract and block group fetches.
  */
 async function fetchGeoLevel(
   geoLevel: 'tract' | 'blockgroup',
+  fips: CensusFips,
   config?: CensusApiConfig,
 ): Promise<CensusData[]> {
   const year = config?.year ?? DEFAULT_YEAR
   const dataset = config?.dataset ?? DEFAULT_DATASET
 
   const variables = collectAllAcsVariables(geoLevel)
-  const { rows } = await fetchBatched(variables, geoLevel, year, dataset)
+  const { rows } = await fetchBatched(variables, geoLevel, year, dataset, fips)
 
   const results: CensusData[] = []
 

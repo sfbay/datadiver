@@ -5,6 +5,8 @@ import { OAKLAND_BEAT_NAMES } from './beatNames'
 import { OAKLAND_BEAT_VIEWS } from './beatViews'
 import { OAKLAND_DATASETS_RAW } from './datasets'
 import { OAKLAND_MANIFEST } from './manifest'
+import { OAKLAND_REGION_NAMES } from './regionNames'
+import { OAKLAND_REGION_MEMBERS } from './regionMembers'
 
 export const oaklandCity: CityConfig = {
   id: 'oakland',
@@ -13,9 +15,12 @@ export const oaklandCity: CityConfig = {
   areas: {
     noun: 'police beat', nounPlural: 'police beats',
     geojsonPath: '/data/geo/oakland-beats.geojson',
-    // excluded stays empty: the config field has census semantics and no
-    // Oakland consumer (census: null gates those surfaces off). ⌘K exclusion
-    // is the separate searchExcluded field below.
+    // excluded is the CENSUS exclusion set — the units the Demographics
+    // explorer drops as non-residential (SF's four park/military polygons).
+    // Empty here, and correct: all 10 planning regions Oakland's ACS data
+    // lives on are residential. It is NOT a beat list; the beats would be the
+    // wrong geography to name (censusMatchesAreas is false — see the census
+    // block below). ⌘K exclusion is the separate searchExcluded field below.
     names: OAKLAND_BEATS, excluded: new Set(), count: 59,
     // Editorial labels (beatNames.ts). Unknown codes are the real
     // no-polygon buckets 77X/99X (~3.4% of crime rows) — they must read as
@@ -35,8 +40,21 @@ export const oaklandCity: CityConfig = {
     slots: {},
     areaViews: OAKLAND_BEAT_VIEWS,
   },
-  census: null,      // beats have no tract crosswalk — ACS affordances hide
+  // Alameda County. `regions` marks Oakland a TWO-GEOGRAPHY city: events on
+  // the 59 beats above, ACS on 10 planning regions dissolved from the city's
+  // 131 official neighborhoods. Its presence is what makes
+  // censusMatchesAreas() false, standing every area-keyed census affordance
+  // down on the beat views — only region-based surfaces read this block.
+  census: {
+    stateFips: '06',
+    countyFips: '001',
+    regions: {
+      geojsonPath: '/data/geo/oakland-regions.geojson',
+      names: OAKLAND_REGION_NAMES,
+      members: OAKLAND_REGION_MEMBERS,
+    },
+  },
   datasets: buildDatasets('data.oaklandca.gov', OAKLAND_DATASETS_RAW),
-  manifest: OAKLAND_MANIFEST,  // stage 3b: all four entries live
+  manifest: OAKLAND_MANIFEST,  // stage 5a: all six entries live
   redirects: [],
 }

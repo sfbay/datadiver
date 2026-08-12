@@ -82,3 +82,77 @@ export const NON_RESIDENTIAL_NEIGHBORHOODS = new Set([
   'Lincoln Park',
   'Presidio',
 ])
+
+/**
+ * Signed-area (shoelace) centroid of a GeoJSON Polygon/MultiPolygon's LARGEST
+ * outer ring, in degrees. Deliberately planar — over a single city's span the
+ * projection error is far below the precision a Dorling circle needs, and the
+ * circle is force-relaxed away from this seed anyway.
+ *
+ * Only the OUTER ring is read (holes cannot move a positioning seed enough to
+ * matter), and for a MultiPolygon the largest part wins so an island never
+ * drags the marker off the mainland.
+ *
+ * Returns null for geometry it cannot read: a missing/non-polygonal geometry,
+ * a ring of fewer than three points, or a degenerate ring enclosing no area.
+ */
+export function featureCentroid(
+  feature: GeoJSON.Feature,
+): { lat: number; lng: number } | null {
+  const geom = feature?.geometry
+  if (!geom) return null
+
+  let rings: GeoJSON.Position[][]
+  if (geom.type === 'Polygon') {
+    rings = geom.coordinates.length > 0 ? [geom.coordinates[0]] : []
+  } else if (geom.type === 'MultiPolygon') {
+    rings = geom.coordinates.map((p) => p[0]).filter(Boolean)
+  } else {
+    return null
+  }
+
+  let best: { lat: number; lng: number } | null = null
+  let bestArea = 0
+  for (const ring of rings) {
+    const c = ringCentroid(ring)
+    if (c && c.area > bestArea) {
+      bestArea = c.area
+      best = { lat: c.lat, lng: c.lng }
+    }
+  }
+  return best
+}
+
+/** Shoelace centroid + absolute area of one ring. Tolerates an unclosed ring
+ *  (the closing edge is implied by wrapping the index). */
+function ringCentroid(
+  ring: GeoJSON.Position[] | undefined,
+): { lat: number; lng: number; area: number } | null {
+  if (!ring || ring.length < 3) return null
+
+  // Drop an explicit closing vertex — the wrap below supplies that edge.
+  const pts =
+    ring.length > 3 &&
+    ring[0][0] === ring[ring.length - 1][0] &&
+    ring[0][1] === ring[ring.length - 1][1]
+      ? ring.slice(0, -1)
+      : ring
+  if (pts.length < 3) return null
+
+  let twiceArea = 0
+  let cx = 0
+  let cy = 0
+  for (let i = 0; i < pts.length; i++) {
+    const [x0, y0] = pts[i]
+    const [x1, y1] = pts[(i + 1) % pts.length]
+    if (!isFinite(x0) || !isFinite(y0) || !isFinite(x1) || !isFinite(y1)) return null
+    const cross = x0 * y1 - x1 * y0
+    twiceArea += cross
+    cx += (x0 + x1) * cross
+    cy += (y0 + y1) * cross
+  }
+
+  if (twiceArea === 0) return null
+  const factor = 1 / (3 * twiceArea)
+  return { lng: cx * factor, lat: cy * factor, area: Math.abs(twiceArea) / 2 }
+}

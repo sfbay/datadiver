@@ -121,6 +121,12 @@ const SF_SOURCES: SourceRow[] = [
   },
   { name: 'Election Precincts — Current (2022)', id: 'd6x4-hefw', note: 'Precinct geometry, Nov 2022 onward' },
   { name: 'Election Precincts — Historical (2012)', id: 'bsfq-aeyw', note: 'Precinct geometry through Jun 2022 — precinct numbers are NOT comparable across the 2022 renumbering (see findings)' },
+  {
+    name: 'American Community Survey (2019–2023 5-year)',
+    id: 'census.gov',
+    url: 'https://www.census.gov/programs-surveys/acs/',
+    note: 'NOT on DataSF — U.S. Census Bureau estimates, published by block group and summed here to the 41 Analysis Neighborhoods',
+  },
 ]
 
 const OAKLAND_SOURCES: SourceRow[] = [
@@ -128,7 +134,13 @@ const OAKLAND_SOURCES: SourceRow[] = [
   { name: '311 Service Requests', id: 'quth-gb8e', dateField: 'datetimeinit', note: 'Coordinates from the srx/sry fields — the dataset’s own address point is junk; publishes next-day' },
   { name: 'Parking Citations', id: '58em-y96b', dateField: 'ticket_iss', note: 'Publishes ~11 weeks behind; violation descriptions carry a 10-character truncation era, so codes are grouped instead' },
   { name: 'Police Beats (boundaries)', id: '78s7-673i', note: 'Vendored as the 59-beat spine; the layer names only 2 of its 59 polygons' },
-  { name: 'Neighborhoods (boundaries)', id: 'sb4q-6bkc', note: 'The official 131-polygon layer behind DataDiver’s beat labels — see findings' },
+  { name: 'Neighborhoods (boundaries)', id: 'sb4q-6bkc', note: 'The official 131-polygon layer — it names DataDiver’s beat labels and, dissolved by its own code prefixes, defines the 10 demographic regions (see findings)' },
+  {
+    name: 'American Community Survey (2019–2023 5-year)',
+    id: 'census.gov',
+    url: 'https://www.census.gov/programs-surveys/acs/',
+    note: 'NOT on the city portal — U.S. Census Bureau estimates, published by census tract and summed here to the 10 demographic regions (see findings)',
+  },
   { name: 'Campaign Finance — Sch A contributions', id: '3xq4-ermg', dateField: 'tran_date', note: 'FPPC filings arrive in semiannual lumps — recent months are structurally incomplete until the next deadline' },
   { name: 'Campaign Finance — Sch E expenditures', id: 'bvfu-nq99', dateField: 'expn_date', note: '1,553 rows carry no date ($3.39M) — disclosed in the view' },
   { name: 'Campaign Finance — 496 late IEs', id: 'jkj3-8yq3', dateField: 'exp_date', note: 'Its date field differs from every sibling schedule (exp_date, not expn_date)' },
@@ -258,10 +270,15 @@ export default function About() {
               publishing agency; no dataset here is truly real-time.
             </p>
             <p className="mb-5">
-              Election results are the exception: the Department of Elections publishes none of
-              its results to the open data portal, so those figures are read from the
-              Department&rsquo;s own certified reports. That source is listed below alongside the
-              rest, and what it costs us is described in the findings.
+              Two things here come from somewhere else, and both are listed below alongside
+              the rest. San Francisco&rsquo;s Department of Elections publishes none of its
+              results as open data, so those figures are read from the Department&rsquo;s own
+              certified reports. And the demographic context behind every neighborhood
+              profile — population, income, rent, education — is the U.S. Census Bureau&rsquo;s
+              American Community Survey, which neither city republishes; DataDiver sums its
+              small-area estimates — block groups in San Francisco, census tracts in Oakland —
+              up to the neighborhoods and regions each map is drawn on. What each of those
+              choices costs us is described in the findings.
             </p>
           </Prose>
           <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/80 dark:text-slate-600 mb-3 mt-2">
@@ -518,6 +535,72 @@ export default function About() {
               </p>
             </Finding>
 
+            <div id="oakland-regions" className="scroll-mt-4">
+              <Finding title="Oakland&rsquo;s demographic map is drawn on 10 regions, not its 131 neighborhoods">
+                <p className="mb-3">
+                  Oakland publishes 131 official neighborhood polygons &mdash; 129
+                  names, because &ldquo;Coliseum Industrial Complex&rdquo; and
+                  &ldquo;East 14th Street Business&rdquo; each appear in two places.
+                  They are too small to carry census figures. At roughly 3,200
+                  residents apiece &mdash; the region totals below, divided by
+                  131 &mdash; they are finer than a census tract, which costs
+                  twice over: the
+                  American Community Survey&rsquo;s margin of error at that size is
+                  wide enough that a difference between two neighborhoods would mostly
+                  be sampling noise, and because the polygons do not nest inside
+                  tracts, painting them would mean cutting each tract&rsquo;s
+                  population up by area and guessing where inside it people live.
+                  Every polygon carries a filing code like F-7, and the letter in
+                  front of it sorts all 131 into exactly 10 planning regions.
+                  DataDiver dissolves the neighborhoods into those 10 and paints
+                  those instead. They average about 42,000 residents &mdash; from
+                  17,276 in Skyline &amp; the Southeast Hills to 68,581 in Deep East
+                  Oakland &mdash; a size where whole census tracts fit inside a region
+                  and the estimates stay solid.
+                </p>
+                <p className="mb-3">
+                  The region names are ours. The letters are a filing scheme, not
+                  compass directions &mdash; NW contains Montclair, which is an
+                  <em> east</em> hill &mdash; so nothing usable can be derived from
+                  them, and we wrote each name from the neighborhoods the region
+                  actually holds (&ldquo;Montclair &amp; the North Hills&rdquo;). The
+                  familiar names are still the way in: all 131 are searchable, and
+                  typing &ldquo;Rockridge&rdquo; opens North Oakland with that region
+                  selected. The two names that genuinely sit in two regions return a
+                  row for each &mdash; quietly picking one would misplace the place.
+                </p>
+                <p className="mb-3">
+                  Underneath, each census tract is assigned whole to the single region
+                  its center falls in. A tract is never split, so no population can go
+                  missing on the way up. The 10 regions therefore count 423,336
+                  residents between them, across 110 whole tracts
+                  (2019–2023 estimates) &mdash; 110 of the 117 tracts centered
+                  inside Oakland&rsquo;s city limits. The other seven fall outside the
+                  city&rsquo;s own neighborhood layer: the Bay water tract, which has
+                  no land at all; two Port of Oakland special-use tracts; the Army Base
+                  edge; the estuary shoreline; the Knowland–Chabot open space; and
+                  one north-hills tract that is half inside the layer and still under
+                  review here. Six of the seven are less than a quarter covered.
+                </p>
+                <p className="mb-3">
+                  What that costs a reader: a tract straddling a region line has all of
+                  its residents counted in the region holding its center, so blocks
+                  along an edge can sit in the neighboring region&rsquo;s numbers. At
+                  10-region scale that is a rounding effect rather than the blur the 131
+                  would produce, but it is an approximation, and a boundary here should
+                  be read loosely.
+                </p>
+                <p>
+                  One thing not to misread: these regions are not the geography
+                  Oakland&rsquo;s event data uses. Crime, 311, and parking citations are
+                  located by police beat &mdash; a different set of polygons that does
+                  not line up with these ten. That is why this view offers none of the
+                  demographics-against-civic-data comparisons San Francisco&rsquo;s does:
+                  there is nothing honest to join them on.
+                </p>
+              </Finding>
+            </div>
+
             <div id="elections" className="scroll-mt-4">
               <Finding title="San Francisco doesn't publish election results as open data">
                 <p className="mb-3">
@@ -718,7 +801,7 @@ export default function About() {
             </p>
             <p className="text-[0.75rem] font-mono text-slate-500 dark:text-slate-400 pt-2">
               Development and Design by Assoc. Prof. Jesse Garnier, SF State Journalism ·
-              built with Claude · data from DataSF &amp; Oakland Open Data
+              built with Claude · data from DataSF, Oakland Open Data &amp; the U.S. Census Bureau
             </p>
             <p className="text-[0.75rem] font-mono text-slate-500 dark:text-slate-400 pt-1">
               Code licensed MIT · text &amp; original derived datasets CC BY 4.0 ·

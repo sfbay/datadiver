@@ -6,6 +6,7 @@ import { useState, useRef, useEffect } from 'react'
 import type { CensusVariable, CensusCategory, CensusVariableConfig } from '../../types/census'
 import { CENSUS_VARIABLES, getVariablesByCategory, getSubPickerVariables } from '../../utils/censusVariables'
 import { useActiveCity } from '@/cities/useActiveCity'
+import { censusMatchesAreas } from '@/cities/registry'
 
 interface UnderlayPickerProps {
   presets: readonly CensusVariable[]
@@ -48,9 +49,12 @@ export default function UnderlayPicker({ presets, activeVariable, onSelect }: Un
     return () => document.removeEventListener('mousedown', handleOutsideClick)
   }, [open])
 
-  // A city without a census pipeline (beats have no tract crosswalk) hides the
-  // control entirely — an empty picker would read as broken, not absent.
-  if (!city.census) return null
+  // Hidden unless the city's census geography IS the geography this map paints.
+  // That covers both a city with no ACS pipeline at all and a two-geography city
+  // (Oakland: events on beats, census on planning regions) — an underlay painted
+  // on the wrong polygons is worse than an absent one, and an empty picker would
+  // read as broken rather than absent.
+  if (!censusMatchesAreas(city)) return null
 
   const presetConfigs = presets
     .map(key => CENSUS_VARIABLES.find(v => v.key === key))

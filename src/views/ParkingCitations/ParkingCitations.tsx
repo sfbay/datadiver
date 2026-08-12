@@ -9,6 +9,7 @@ import UnderlayPicker from '@/components/maps/UnderlayPicker'
 import UnderlayLegend from '@/components/maps/UnderlayLegend'
 import NeighborhoodCensusContext from '@/components/ui/NeighborhoodCensusContext'
 import { useViewEntry, useRouteView, useActiveCity } from '@/cities/useActiveCity'
+import { censusMatchesAreas } from '@/cities/registry'
 import { composeAreaLabel } from '@/cities/areaLabel'
 import { AreaRowLabel } from '@/components/ui/AreaLabel'
 import { useSearchParams } from 'react-router-dom'
@@ -312,6 +313,10 @@ export default function ParkingCitations() {
   })
 
   const cityAvg = useMemo(() => {
+    // Same gate as the CrimeIncidents/Cases311 copies of this memo: without it
+    // a two-geography city would average rows keyed by a geography this view
+    // never paints.
+    if (!censusMatchesAreas(city)) return undefined
     if (censusNeighborhoods.length === 0) return undefined
     const totalPop = censusNeighborhoods.reduce((s, n) => s + n.population, 0)
     if (totalPop === 0) return undefined
@@ -323,7 +328,7 @@ export default function ParkingCitations() {
       }
     }
     return avg as any
-  }, [censusNeighborhoods])
+  }, [censusNeighborhoods, city])
 
   // --- Computed data ---
   const citationData = useMemo(() => {
@@ -1039,15 +1044,21 @@ export default function ParkingCitations() {
                   </button>
                 )}
 
-                {selectedNeighborhood && isSF && (
+                {selectedNeighborhood && (
                   <>
-                    <NeighborhoodCensusContext
-                      neighborhood={selectedNeighborhood}
-                      censusData={censusNeighborhoods.find(n => n.name === selectedNeighborhood)}
-                      cityAverages={cityAvg}
-                      civicCount={neighborhoodEntries.find(n => n.neighborhood === selectedNeighborhood)?.citationCount}
-                      civicLabel="Citations"
-                    />
+                    {censusMatchesAreas(city) && (
+                      <NeighborhoodCensusContext
+                        neighborhood={selectedNeighborhood}
+                        censusData={censusNeighborhoods.find(n => n.name === selectedNeighborhood)}
+                        cityAverages={cityAvg}
+                        civicCount={neighborhoodEntries.find(n => n.neighborhood === selectedNeighborhood)?.citationCount}
+                        civicLabel="Citations"
+                      />
+                    )}
+                    {/* Not a census affordance — same shape as CrimeIncidents /
+                        Cases311. Self-neutralizing off-portal: the feed lookup is
+                        keyed by SF neighborhood NAME, so an Oakland beat code
+                        matches no district feed and the component renders null. */}
                     <ScannerFeedChips neighborhood={selectedNeighborhood} serviceFilter="police" />
                   </>
                 )}

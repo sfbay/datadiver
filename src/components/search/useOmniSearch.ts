@@ -1,11 +1,11 @@
 import { useState, useMemo } from 'react'
-import { getCity, CITIES, crossCityPath } from '@/cities/registry'
+import { getCity, CITIES, crossCityPath, isViewLive } from '@/cities/registry'
 import { viewPath, type CityId } from '@/cities/routing'
 import { useRouteView } from '@/cities/useActiveCity'
 import { liveManifest } from '@/cities/manifest'
-import { composeAreaLabel } from '@/cities/areaLabel'
+import { composeAreaLabel, censusUnitLabel } from '@/cities/areaLabel'
 
-export type SearchCategory = 'view' | 'place' | 'dataset' | 'vendor' | 'time' | 'city'
+export type SearchCategory = 'view' | 'place' | 'dataset' | 'vendor' | 'time' | 'city' | 'region'
 
 export interface SearchResult {
   id: string
@@ -15,11 +15,16 @@ export interface SearchResult {
   icon: string
   path: string
   params?: Record<string, string>
+  /** Canonical short id rendered as its OWN span beside the label, so a
+   *  truncating row can never clip it away (the beat/region idiom: the code
+   *  is the precise unit the data uses, the name is the human handle). */
+  code?: string
 }
 
 // Built once per city per session, on first use — the same cost profile as
 // the old module-eval SF index, but the index now follows the URL's city.
 const indexCache = new Map<CityId, SearchResult[]>()
+const regionCache = new Map<CityId, SearchResult[]>()
 
 export function buildSearchIndex(cityId: CityId): SearchResult[] {
   const cached = indexCache.get(cityId)
@@ -90,6 +95,76 @@ export function buildSearchIndex(cityId: CityId): SearchResult[] {
   return results
 }
 
+/**
+ * Region rows for a TWO-GEOGRAPHY city. Oakland paints its Demographics
+ * explorer on 10 coarse planning regions, but no reader thinks in planning
+ * regions — they think 'Rockridge'. So every region gets a row AND every one
+ * of the city's 131 official neighborhood memberships gets a row landing on
+ * the region CONTAINING it: the familiar name stays findable without the index
+ * ever claiming the map draws that neighborhood. The `In <region>` sublabel
+ * runs the query the other way too — a region's name finds all of its members.
+ *
+ * A SEPARATE builder, not a fourth section of buildSearchIndex, because these
+ * rows must rank below the city-switch rows too — and those are concatenated
+ * after the index (see buildFullIndex). Folding them in put `city-sf` at
+ * position 20 for the query 'san' on an Oakland route, i.e. off the 8-row cap.
+ *
+ * Two guards, and the city must pass BOTH:
+ *   - `census.regions` — the two-geography claim itself. SF, whose 41
+ *     neighborhoods ARE its census spine, emits nothing here.
+ *   - `isViewLive(cityId, 'demographics')` — the destination has to exist.
+ *     Unreachable today (Oakland's entry is live), but it makes this section
+ *     consistent with the other two, which both derive from liveManifest, and
+ *     it is the difference between 141 working rows and 141 dead ones for a
+ *     future city that registers regions before turning the view on.
+ *
+ * Cached per city like the main index: the hook re-filters on every keystroke,
+ * and rebuilding 141 rows per character is waste with no upside.
+ */
+export function buildRegionRows(cityId: CityId): SearchResult[] {
+  const cached = regionCache.get(cityId)
+  if (cached) return cached
+  const city = getCity(cityId)
+  const rows: SearchResult[] = []
+  const regions = city.census?.regions
+  if (regions && isViewLive(cityId, 'demographics')) {
+    const demographicsPath = viewPath(cityId, 'demographics')
+    for (const code of Object.keys(regions.names)) {
+      rows.push({
+        id: `region-${code}`,
+        category: 'region',
+        label: censusUnitLabel(city, code),
+        code,
+        sublabel: `${city.name} demographic region`,
+        icon: '🗺️',
+        path: demographicsPath,
+        params: { nh: code },
+      })
+    }
+    for (const [code, names] of Object.entries(regions.members)) {
+      for (const name of names) {
+        rows.push({
+          // Keyed on code AND name: two of Oakland's neighborhoods
+          // ('Coliseum Industrial Complex', 'East 14th Street Business')
+          // genuinely straddle CE and E, and each gets a row per region —
+          // picking one arbitrarily would be a quiet lie. OmniSearch uses
+          // `r.id` as the React list key, so the two rows must not collide.
+          id: `region-${code}-${name}`,
+          category: 'region',
+          label: name,
+          code,
+          sublabel: `In ${censusUnitLabel(city, code)}`,
+          icon: '📍',
+          path: demographicsPath,
+          params: { nh: code },
+        })
+      }
+    }
+  }
+  regionCache.set(cityId, rows)
+  return rows
+}
+
 /** One "Switch to {city}" row per OTHER city — same-view path when live
  *  there, else that city's home (crossCityPath). Built per-render, never
  *  cached: the target moves with the current view. */
@@ -106,6 +181,34 @@ export function buildCityRows(currentCityId: CityId, currentViewId: string): Sea
     }))
 }
 
+/**
+ * The full candidate list the hook filters, in RANK ORDER — this composition
+ * IS the ranking. The filter is a plain substring test with no scoring and a
+ * hard 8-row cap, so a section's position in this array decides what a reader
+ * ever sees.
+ *
+ * views → places → datasets → city switch → regions.
+ *
+ * Regions go last because they are the only unbounded section (Oakland: 141
+ * rows against 70 for everything else combined), and a broad substring hits a
+ * lot of them: 'oak' matches 74 region rows alongside 4 views, 6 places and 5
+ * datasets, so regions-first would spend the entire cap on regions and hide
+ * every view. City rows sit above them for the same reason — 'san' matches 17
+ * region rows on an Oakland route, which was enough to push `city-sf` to
+ * position 20 while it was ranked below them.
+ *
+ * Exported so the ordering can be pinned directly rather than re-derived in a
+ * test — a test that rebuilt this concatenation itself would keep passing if
+ * the hook's real order changed.
+ */
+export function buildFullIndex(cityId: CityId, currentViewId: string): SearchResult[] {
+  return [
+    ...buildSearchIndex(cityId),
+    ...buildCityRows(cityId, currentViewId),
+    ...buildRegionRows(cityId),
+  ]
+}
+
 export function useOmniSearch() {
   const { cityId, viewId } = useRouteView()
   const [query, setQuery] = useState('')
@@ -114,7 +217,7 @@ export function useOmniSearch() {
   const results = useMemo<SearchResult[]>(() => {
     const q = query.trim().toLowerCase()
     if (!q) return []
-    return [...buildSearchIndex(cityId), ...buildCityRows(cityId, viewId)]
+    return buildFullIndex(cityId, viewId)
       .filter(
         (r) =>
           r.label.toLowerCase().includes(q) ||

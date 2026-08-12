@@ -2,9 +2,9 @@
 // Population-weighted rollup functions that aggregate census-tract-level data
 // to neighborhood level using the tract-to-neighborhood crosswalk.
 
-import type { CensusData, CensusVariable, NeighborhoodCensusData } from '../types/census'
+import type { CensusData, CensusVariable, NeighborhoodCensusData, TractMapping } from '../types/census'
 import { CENSUS_VARIABLES } from './censusVariables'
-import { TRACT_MAPPINGS, getAllMappedNeighborhoods } from './tractMapping'
+import { TRACT_MAPPINGS } from './tractMapping'
 
 /** Variables that should be summed (not averaged) when aggregating to neighborhoods. */
 const COUNT_VARIABLES = new Set<CensusVariable>(['totalPopulation', 'renterHouseholds'])
@@ -70,18 +70,20 @@ function roundByFormat(value: number, variable: CensusVariable): number {
  * to avoid NaN contributions, but still contribute to weighted sums.
  */
 export function aggregateToNeighborhoods(
-  tracts: CensusData[]
+  tracts: CensusData[],
+  crosswalk: TractMapping[] = TRACT_MAPPINGS,
 ): NeighborhoodCensusData[] {
   // Build a map of 6-digit tractId → CensusData
-  // geoId format is '06075XXXXXX' — the last 6 digits are the tract code
+  // geoId format is '06075XXXXXX' (SF) / '06001XXXXXX' (Oakland) — the last 6
+  // digits are the tract code, consistent across counties.
   const tractMap = new Map<string, CensusData>()
   for (const tract of tracts) {
     const tractId = tract.geoId.slice(-6)
     tractMap.set(tractId, tract)
   }
 
-  // Get all unique neighborhoods from TRACT_MAPPINGS
-  const allNeighborhoods = getAllMappedNeighborhoods()
+  // Unique target areas from the crosswalk (SF neighborhoods / Oakland region codes)
+  const allNeighborhoods = [...new Set(crosswalk.flatMap((m) => m.neighborhoods.map((n) => n.name)))]
 
   // Collect all CensusVariable keys from the registry
   const allVariableKeys: CensusVariable[] = CENSUS_VARIABLES.map(v => v.key)
@@ -91,7 +93,7 @@ export function aggregateToNeighborhoods(
   for (const neighborhood of allNeighborhoods) {
     // Find all tracts that contribute to this neighborhood
     const contributingTracts: { tractId: string; weight: number; tract: CensusData }[] = []
-    for (const mapping of TRACT_MAPPINGS) {
+    for (const mapping of crosswalk) {
       const match = mapping.neighborhoods.find(n => n.name === neighborhood)
       if (!match) continue
       const tract = tractMap.get(mapping.tractId)

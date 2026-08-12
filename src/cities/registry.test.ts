@@ -22,8 +22,11 @@ describe('city registry', () => {
   it('throws the same unknown-dataset message as the old client path', () => {
     expect(() => getDatasetConfig('sf', 'nope')).toThrow('Unknown dataset: nope')
   })
-  it('oakland registry: census null, 19 datasets, beat vocabulary', () => {
-    expect(CITIES.oakland.census).toBeNull()
+  it('oakland registry: Alameda census on 10 regions, 19 datasets, beat vocabulary', () => {
+    expect(CITIES.oakland.census).not.toBeNull()
+    expect(CITIES.oakland.census!.countyFips).toBe('001')
+    expect(Object.keys(CITIES.oakland.census!.regions!.names)).toHaveLength(10)
+    expect(CITIES.oakland.census!.regions!.geojsonPath).toBe('/data/geo/oakland-regions.geojson')
     expect(Object.keys(CITIES.oakland.datasets)).toHaveLength(19)
     expect(CITIES.oakland.areas.noun).toBe('police beat')
   })
@@ -49,12 +52,15 @@ describe('city registry', () => {
   it('sf has a census pipeline', () => {
     expect(CITIES.sf.census).not.toBeNull()
   })
+  it('sf census has no regions block — its neighborhoods are both spines', () => {
+    expect(CITIES.sf.census!.regions).toBeUndefined()
+  })
 })
 
 describe('manifest liveness (stage 3)', () => {
-  it('oakland: all five manifest entries live (stage 4b adds home — parking-citations + campaign-finance no longer dormant)', () => {
+  it('oakland: all six manifest entries live (stage 5a adds demographics — the region-based explorer)', () => {
     const live = liveManifest(CITIES.oakland.manifest).map((e) => e.viewId)
-    expect(live).toEqual(['home', 'crime-incidents', '311-cases', 'parking-citations', 'campaign-finance'])
+    expect(live).toEqual(['home', 'crime-incidents', '311-cases', 'parking-citations', 'campaign-finance', 'demographics'])
     const dormant = CITIES.oakland.manifest.filter((e) => e.dormant).map((e) => e.viewId)
     expect(dormant).toEqual([])
   })
@@ -72,6 +78,14 @@ describe('crossCityPath (switch semantics)', () => {
     expect(crossCityPath('oakland', 'housing')).toBe('/oakland')
     expect(crossCityPath('oakland', 'elections')).toBe('/oakland')
     expect(crossCityPath('sf', 'home')).toBe('/')
+  })
+  // Registering Oakland's demographics entry silently MOVES this destination:
+  // before stage 5a a reader on SF's /demographics who switched city landed on
+  // /oakland (the fallback). Pin the new truth in both directions so the switch
+  // can never quietly regress to the landing page.
+  it('demographics now switches view-to-view in BOTH directions (stage 5a)', () => {
+    expect(crossCityPath('oakland', 'demographics')).toBe('/oakland/demographics')
+    expect(crossCityPath('sf', 'demographics')).toBe('/demographics')
   })
 })
 

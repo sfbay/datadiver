@@ -63,8 +63,31 @@ export interface CityConfig {
      *  (NEIGHBORHOOD_VIEWS), reached by the hook's global fallback lookup. */
     areaViews?: Record<string, CameraView>
   }
-  /** null = city has no ACS pipeline; consumers HIDE census affordances. */
-  census: { stateFips: string; countyFips: string } | null
+  /** null = city has no ACS pipeline; consumers HIDE census affordances.
+   *  `regions` is the coarse ACS choropleth geography, SEPARATE from `areas`
+   *  (Oakland is a two-geography city: event data on beats, demographics on
+   *  10 planning regions). Absent → the census tiers use `areas` (SF: the 41
+   *  neighborhoods ARE both spines). Present → it drives the Demographics
+   *  coarse tier.
+   *
+   *  NOTE for a new city: what lights up the area-keyed affordances (the
+   *  UnderlayPicker on every map view, its legend, the per-area census panel,
+   *  the citywide-average comparison) is NOT this field being non-null — it is
+   *  `censusMatchesAreas(city)` in cities/registry, which is true only when
+   *  `regions` is ABSENT, i.e. when the census spine IS the areas spine. So
+   *  registering a two-geography city's census here is safe: those surfaces
+   *  stay down until the city's map paints the same polygons its ACS rows are
+   *  keyed by. Omitting `regions` is the load-bearing claim — make it only
+   *  when the committed census JSON is keyed by `areas.names`. */
+  census: {
+    stateFips: string
+    countyFips: string
+    regions?: {
+      geojsonPath: string
+      names: Record<string, string>
+      members: Record<string, string[]>
+    }
+  } | null
   datasets: Record<string, DatasetConfig>  // endpoints derived by the registry
   /** Ordered view registration — array order IS nav order. Everything that
    *  used to be a per-view table (nav rows, Home cards, era sources, underlay

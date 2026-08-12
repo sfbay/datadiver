@@ -6,6 +6,7 @@ import mapboxgl, { type Map as MapboxMap } from 'mapbox-gl'
 import type { CensusVariable, CensusData } from '../../types/census'
 import { getVariableConfig } from '../../utils/censusVariables'
 import { useActiveCity } from '@/cities/useActiveCity'
+import { censusMatchesAreas } from '@/cities/registry'
 
 // ---------------------------------------------------------------------------
 // Curatorial exclusion list — neighborhoods that should NEVER count for
@@ -106,6 +107,33 @@ function percentile(values: number[], p: number): number {
   return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo)
 }
 
+/** The 0/33/66/100 percentile stops for the fill ramp — or `null` when these
+ *  values cannot make one.
+ *
+ *  Mapbox `interpolate` inputs must be STRICTLY ASCENDING. Two degenerate
+ *  inputs break that: an empty array (no boundary feature carries a value for
+ *  the chosen variable — three SF manifest presets name variables absent from
+ *  the committed JSON) and an all-identical array. Both used to collapse all
+ *  four stops onto one number, and the resulting layer spec is rejected by
+ *  Style.addLayer, which VALIDATES AND RETURNS — it fires an ErrorEvent rather
+ *  than throwing, so the hook's catch + retry never ran and the fill layer was
+ *  simply never added. Because addSource had already succeeded, every later
+ *  pass took the existing-source branch (whose paint update is guarded on
+ *  getLayer) and the underlay stayed dead for the life of that map instance,
+ *  even after the reader picked a variable that DOES have data.
+ *
+ *  Returning null lets the caller clean up and bail before addSource, keeping
+ *  the next variable's ramp reachable. */
+export function computeStops(values: number[]): [number, number, number, number] | null {
+  if (values.length === 0) return null
+  const p0 = percentile(values, 0)
+  const p33 = percentile(values, 33)
+  const p66 = percentile(values, 66)
+  const p100 = percentile(values, 100)
+  if (!(p0 < p33 && p33 < p66 && p66 < p100)) return null
+  return [p0, p33, p66, p100]
+}
+
 // ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
@@ -131,20 +159,30 @@ export function useDemographicUnderlay(options: UseDemographicUnderlayOptions): 
   const layerPrefixRef = useRef(layerPrefix)
   layerPrefixRef.current = layerPrefix
   const city = useActiveCity()
+  // ONE predicate (cities/registry) — true only when the city's census spine IS
+  // the geography these boundaries paint. False for a city with no ACS pipeline
+  // AND for a two-geography city (Oakland: beats vs planning regions), where the
+  // join would silently paint region values onto beat polygons.
+  const censusJoins = censusMatchesAreas(city)
 
   useEffect(() => {
     if (!map) return
 
-    // If no variable, no boundaries, or the active city has no census
-    // pipeline (beats have no tract crosswalk), remove any existing layers
-    // and bail
-    if (!city.census || !variable || !boundaries) {
+    // If no variable, no boundaries, or the active city's census data does not
+    // join to these polygons, remove any existing layers and bail
+    if (!censusJoins || !variable || !boundaries) {
       removeLayers(map, sourceId, fillLayerId, hatchLayerId, lineLayerId)
       return
     }
 
     const config = getVariableConfig(variable)
-    if (!config) return
+    if (!config) {
+      // Same failure family as the degenerate-stops bail below: returning
+      // without cleanup would leave the PREVIOUS variable's choropleth painted
+      // under the new variable's legend — a wrong map that looks authoritative.
+      removeLayers(map, sourceId, fillLayerId, hatchLayerId, lineLayerId)
+      return
+    }
 
     const excludedSet = new Set<string>(excludedGeoIds)
 
@@ -176,11 +214,17 @@ export function useDemographicUnderlay(options: UseDemographicUnderlayOptions): 
       }
     }
 
-    // Compute stop values at 0th, 33rd, 66th, and 100th percentiles
-    const p0  = percentile(allValues, 0)
-    const p33 = percentile(allValues, 33)
-    const p66 = percentile(allValues, 66)
-    const p100 = percentile(allValues, 100)
+    // Stop values at the 0th, 33rd, 66th, and 100th percentiles. Null means the
+    // values are degenerate (no feature carries one, or they're all identical),
+    // which cannot make a legal interpolate — tear down whatever we added for a
+    // previous variable and bail BEFORE addSource, or the source sticks around
+    // with no layer and the underlay never recovers.
+    const stops = computeStops(allValues)
+    if (!stops) {
+      removeLayers(map, sourceId, fillLayerId, hatchLayerId, lineLayerId)
+      return
+    }
+    const [p0, p33, p66, p100] = stops
 
     const ramp = config.colorRamp
     // Guard against ramps with fewer than 4 entries
@@ -324,7 +368,7 @@ export function useDemographicUnderlay(options: UseDemographicUnderlayOptions): 
       map.off('style.load', handleStyleData)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, city.census, variable, censusData, boundaries, geoIdProperty, opacity, beforeLayerId, layerPrefix, excludedGeoIds])
+  }, [map, censusJoins, variable, censusData, boundaries, geoIdProperty, opacity, beforeLayerId, layerPrefix, excludedGeoIds])
 
   // Cleanup on unmount
   useEffect(() => {

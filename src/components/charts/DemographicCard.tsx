@@ -17,6 +17,14 @@ interface DemographicCardProps {
   isExpanded: boolean
   onActivate: (variable: CensusVariable) => void
   onToggleExpand: (variable: CensusVariable) => void
+  /** Display label for a unit id, for a city whose census rows are keyed by a
+   *  CODE (Oakland's regions). Omit and the id is the label (SF). */
+  labelFor?: (id: string) => string
+  /** Whose citywide figure this is — `city.abbrev` ('SF', 'OAK'). Marks the
+   *  big number as the CITYWIDE aggregate, against the per-unit distribution
+   *  in the sparkbars below it. Omitted renders no city token at all: a caller
+   *  that forgets gets a missing claim, never someone else's. */
+  cityLabel?: string
 }
 
 // ---------------------------------------------------------------------------
@@ -88,6 +96,22 @@ function computeCitywideValue(
 }
 
 // ---------------------------------------------------------------------------
+// Unit naming — identity unless the caller supplies a label map
+// ---------------------------------------------------------------------------
+
+/** Reader-facing name for a unit id. */
+function unitLabel(id: string, labelFor?: (id: string) => string): string {
+  return labelFor ? labelFor(id) : id
+}
+
+/** Hover text: the label, plus the canonical code when the two differ, so the
+ *  id these bars are keyed by stays reachable from a truncated label. */
+function unitTitle(id: string, labelFor?: (id: string) => string): string {
+  const label = unitLabel(id, labelFor)
+  return label === id ? label : `${label} · ${id}`
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -98,6 +122,8 @@ export default function DemographicCard({
   isExpanded,
   onActivate,
   onToggleExpand,
+  labelFor,
+  cityLabel,
 }: DemographicCardProps) {
   const config = getVariableConfig(variable)
   if (!config) return null
@@ -175,7 +201,9 @@ export default function DemographicCard({
         ) : (
           <span className="font-mono text-lg text-slate-500">—</span>
         )}
-        <span className="ml-2 text-micro text-slate-500 font-mono">SF · ACS 2019–2023</span>
+        <span className="ml-2 text-micro text-slate-500 font-mono">
+          {cityLabel ? `${cityLabel} · ACS 2019–2023` : 'ACS 2019–2023'}
+        </span>
       </div>
 
       {/* SparkBars — neighborhood distribution */}
@@ -193,11 +221,11 @@ export default function DemographicCard({
           {/* High / low labels */}
           {highNeighborhood && lowNeighborhood && (
             <div className="flex justify-between mt-1">
-              <span className="text-nano text-slate-500 truncate max-w-[45%]" title={highNeighborhood.name}>
-                ▲ {highNeighborhood.name.replace(' ', '\u00A0')}
+              <span className="text-nano text-slate-500 truncate max-w-[45%]" title={unitTitle(highNeighborhood.name, labelFor)}>
+                ▲ {unitLabel(highNeighborhood.name, labelFor).replace(' ', '\u00A0')}
               </span>
-              <span className="text-nano text-slate-500 truncate max-w-[45%] text-right" title={lowNeighborhood.name}>
-                {lowNeighborhood.name.replace(' ', '\u00A0')} ▼
+              <span className="text-nano text-slate-500 truncate max-w-[45%] text-right" title={unitTitle(lowNeighborhood.name, labelFor)}>
+                {unitLabel(lowNeighborhood.name, labelFor).replace(' ', '\u00A0')} ▼
               </span>
             </div>
           )}
