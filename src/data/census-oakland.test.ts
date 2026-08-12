@@ -5,6 +5,7 @@ import { describe, it, expect } from 'vitest'
 import regions from './census-oakland-neighborhoods.json'
 import tracts from './census-oakland-tracts.json'
 import { OAKLAND_REGION_NAMES } from '../cities/oakland/regionNames'
+import { OAKLAND_TRACT_REGIONS } from '../cities/oakland/tractRegions'
 
 const CODES = ['C', 'CE', 'E', 'F', 'L', 'N', 'NW', 'S', 'SE', 'W']
 
@@ -16,16 +17,17 @@ const CODES = ['C', 'CE', 'E', 'F', 'L', 'N', 'NW', 'S', 'SE', 'W']
 //
 // REGENERATING THE CENSUS JSONs MEANS UPDATING ALL THREE IN THE SAME COMMIT.
 // The band check below is only a smoke test — 90,000 wide, so a crosswalk that
-// silently lost eight tracts (~30,000 people) would pass it while About went on
-// claiming "110 of the 117" and "423,336". These exact pins are what turn that
-// drift into a failing test. The known open item that would move them is tract
-// 06001404200, the half-inside north-hills tract written up as still under
-// review; taking it changes the total, the tract count, and NW's row.
+// silently lost eight tracts (~30,000 people) would pass it while About kept
+// publishing stale figures. These exact pins are what turn that drift into a
+// failing test. Current figures include tract 06001404200 (the gap-centroid
+// north-hills tract), added to NW by explicit MANUAL override Aug 11 2026
+// after measurement: pop 3,584, median income $246,193 — see
+// scripts/build-oakland-tract-regions.py and data-insights.
 // ---------------------------------------------------------------------------
-const PUBLISHED_TOTAL_POPULATION = 423_336
-const PUBLISHED_TRACT_COUNT = 110
+const PUBLISHED_TOTAL_POPULATION = 426_920
+const PUBLISHED_TRACT_COUNT = 111
 const PUBLISHED_REGION_TRACTS: Record<string, number> = {
-  C: 16, CE: 10, E: 16, F: 9, L: 10, N: 14, NW: 7, S: 14, SE: 4, W: 10,
+  C: 16, CE: 10, E: 16, F: 9, L: 10, N: 14, NW: 8, S: 14, SE: 4, W: 10,
 }
 
 describe('Oakland census region data', () => {
@@ -37,7 +39,18 @@ describe('Oakland census region data', () => {
     for (const r of regions as any[]) expect(OAKLAND_REGION_NAMES[r.name]).toBeTruthy()
   })
 
-  it('region populations reconcile to Oakland (~423k, band 380–470k)', () => {
+  it('the crosswalk and the committed tract file describe the SAME tract set', () => {
+    // The drift this catches: editing tractRegions.ts without regenerating the
+    // JSONs (or vice versa) passes every other test while code and payload
+    // disagree about which tracts exist.
+    expect(OAKLAND_TRACT_REGIONS).toHaveLength((tracts as any[]).length)
+    const inCrosswalk = new Set(OAKLAND_TRACT_REGIONS.map((m) => m.tractId))
+    for (const t of tracts as any[]) {
+      expect(inCrosswalk.has(t.geoId.slice(-6)), t.geoId).toBe(true)
+    }
+  })
+
+  it('region populations reconcile to Oakland (~427k, band 380–470k)', () => {
     const total = (regions as any[]).reduce((s, r) => s + (r.population || 0), 0)
     expect(total).toBeGreaterThan(380_000)
     expect(total).toBeLessThan(470_000)
@@ -68,7 +81,7 @@ describe('Oakland census region data', () => {
     }
   })
 
-  it('the tract file is Oakland-only (110 crosswalk tracts, 06001 geoids)', () => {
+  it('the tract file is Oakland-only (111 crosswalk tracts, 06001 geoids)', () => {
     expect(tracts).toHaveLength(PUBLISHED_TRACT_COUNT)
     for (const t of tracts as any[]) expect(t.geoId).toMatch(/^06001/)
   })

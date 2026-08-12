@@ -3,8 +3,9 @@
 // The 10 Oakland demographic REGIONS — authored display names, pinned 1:1 to
 // the region codes (regions.test.ts). Oakland's 131 official neighborhoods
 // (sb4q-6bkc) are tract-fine; they dissolve, by their `code` letter-prefix,
-// into these 10 coarse planning regions (~42k people each — 423,336 over 10,
-// measured, not the ~44k this docblock estimated pre-build) that census tracts
+// into these 10 coarse planning regions (~42.7k people each — 426,920 over 10
+// since the 404200 override; exact figure pinned in census-oakland.test.ts,
+// which is where to look before quoting it) that census tracts
 // nest into honestly. The letters are a FILING SCHEME, not compass directions
 // (`NW` holds Montclair, an east hill), so names are editorial synthesis from
 // the member neighborhoods — never auto-derive them. Approved by Jesse

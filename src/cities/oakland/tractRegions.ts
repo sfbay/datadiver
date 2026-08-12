@@ -4,7 +4,9 @@
 // Census tract (2023) -> Oakland planning region. Centroid-in-polygon,
 // weight 1.0, full coverage of the tracts listed (a tract is never split,
 // so no ACS mass is lost — structurally immune to SF's partial-crosswalk
-// bug). Consumed by aggregateToNeighborhoods(tracts, OAKLAND_TRACT_REGIONS).
+// bug), plus the explicit MANUAL overrides in the script (currently one:
+// 404200 -> NW, a gap-centroid hill tract added by measurement Aug 2026).
+// Consumed by aggregateToNeighborhoods(tracts, OAKLAND_TRACT_REGIONS).
 
 import type { TractMapping } from '../../types/census'
 
@@ -49,6 +51,7 @@ export const OAKLAND_TRACT_REGIONS: TractMapping[] = [
   { tractId: '404000', neighborhoods: [{ name: 'N', weight: 1 }] },
   { tractId: '404101', neighborhoods: [{ name: 'N', weight: 1 }] },
   { tractId: '404102', neighborhoods: [{ name: 'N', weight: 1 }] },
+  { tractId: '404200', neighborhoods: [{ name: 'NW', weight: 1 }] },
   { tractId: '404300', neighborhoods: [{ name: 'NW', weight: 1 }] },
   { tractId: '404400', neighborhoods: [{ name: 'NW', weight: 1 }] },
   { tractId: '404501', neighborhoods: [{ name: 'NW', weight: 1 }] },

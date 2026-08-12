@@ -583,13 +583,13 @@ fact is the code, the name is ours and is display-only.
 **Why not paint the 131 directly.** `sb4q-6bkc` publishes 131 polygons carrying
 129 distinct names ("Coliseum Industrial Complex" and "East 14th Street
 Business" each appear twice — the Coliseum industrial edge straddles the CE/E
-planning line). At ~3,200 residents apiece — the region totals below, divided
+planning line). At ~3,300 residents apiece — the region totals below, divided
 by 131 — they are **finer than a census tract**, which costs twice. (1) ACS 5-year estimates
 at that size carry margins of error wide enough that a difference between two
 neighborhoods would mostly be sampling noise. (2) They do not NEST inside
 tracts, so painting them would require splitting each tract's population by
 area — the exact fractional-crosswalk failure mode that costs SF ~70% of its
-mass on count variables (next paragraph). The regions average ~42,000
+mass on count variables (next paragraph). The regions average ~42,700
 residents, a scale whole tracts fit inside.
 
 **The dissolve is the city's own filing scheme, read literally.** Every
@@ -609,13 +609,13 @@ instead. Approved by Jesse Aug 11 2026.
 | `C` | Downtown & Lake Merritt | 16 | 44,688 | $91,552 |
 | `F` | Fruitvale & Dimond | 9 | 44,665 | $70,667 |
 | `L` | Grand Lake & Glenview | 10 | 40,660 | $145,757 |
-| `NW` | Montclair & the North Hills | 7 | 27,119 | $233,387 |
+| `NW` | Montclair & the North Hills | 8 | 30,703 | $234,882 |
 | `W` | West Oakland | 10 | 25,492 | $80,679 |
 | `SE` | Skyline & the Southeast Hills | 4 | 17,276 | $190,714 |
-| | **Total** | **110** | **423,336** | |
+| | **Total** | **111** | **426,920** | |
 
 (ACS 2019–2023 5-year, `src/data/census-oakland-neighborhoods.json`. The
-3.2x income spread between `NW` ($233,387) and `CE` ($71,816) is the story the
+3.3x income spread between `NW` ($234,882) and `CE` ($71,816) is the story the
 view exists to show; it is also why the coarse geography has to be honest about
 its edges.)
 
@@ -624,21 +624,26 @@ by `scripts/build-oakland-tract-regions.py`): each census tract is assigned
 whole to the single region its internal point falls in. A tract is never split,
 so no ACS mass can be silently lost — **structurally unlike SF's fractional
 `TRACT_MAPPINGS`**, which covers 161 of 244 tracts and drops ~70% of the mass
-for count variables (see Housing, above). Conservation check, as actually run:
-every one of the 110 crosswalk tracts is present in the committed tracts JSON,
-and both sides sum to 423,336 exactly. That 423,336 is **the 10 regions' total,
-not Oakland's** — it counts the 110 tracts the regions hold and nothing else
-(the seven in-city exclusions below are outside it). **There is no `unassigned` bucket** —
+for count variables (see Housing, above). One tract of the 111 arrives by an
+**explicit `MANUAL` override in the build script** rather than by geometry —
+see the `06001404200` entry below. Conservation check, as actually run
+(and now pinned by `census-oakland.test.ts`): every one of the 111 crosswalk
+tracts is present in the committed tracts JSON, and both sides sum to 426,920
+exactly. That 426,920 is **the 10 regions' total, not Oakland's** — it counts
+the 111 tracts the regions hold and nothing else (the six in-city exclusions
+below are outside it). **There is no `unassigned` bucket** —
 the design spec proposed one and it was never built; the generator simply skips
-any tract whose centroid falls in no region, so the seven in-city tracts below
+any tract whose centroid falls in no region, so the six in-city tracts below
 are excluded by construction and disclosed here rather than counted anywhere.
 Anyone adding a coverage gate should know it does not exist yet.
 
 **Coverage, measured Aug 11 2026** (Census 2023 Gazetteer internal points ×
 TIGERweb Alameda tract polygons × TIGERweb place `0653000` × the committed
 region GeoJSON): 379 Alameda tracts, **117 centered inside Oakland's city
-limits**, **110** centered inside a region polygon. The seven in-city tracts the
-region layer does not cover:
+limits**, 110 centered inside a region polygon, **111 assigned** (the
+110 plus one explicit override, next paragraph). The six in-city tracts the
+region layer does not cover, all at most 21.2% inside it — water, port, and
+regional parkland that Oakland's own neighborhood layer declines to name:
 
 | GEOID | Share inside the region layer | What it is |
 |---|---|---|
@@ -648,20 +653,22 @@ region layer does not cover:
 | `06001401700` | 12.7% | Army Base / outer-harbor edge (50.1% water) |
 | `06001403401` | 19.8% | Estuary / Lake Merritt water edge (52.3% water) |
 | `06001982000` | 21.2% | Inner harbor / Coast Guard Island (98xx special-use) |
-| `06001404200` | **52.7%** | **North-hills land tract — 2.73 km², 0% water** |
 
-Six of the seven are at most 21.2% covered: water, port, and regional parkland
-that Oakland's own neighborhood layer declines to name.
-
-**`06001404200` is the open question — under review, not settled.** It is the
-only one of the seven that is majority-inside the region layer with no water at
-all, so it plausibly carries hill residents nobody is counting; its best single
-region is `NW` at 46.8% area overlap, but its centroid lands in a gap between
-polygons, so the centroid rule skips it. Adding it means regenerating the
-committed ACS JSONs with a Census API key (anonymous requests now 302 to
-`missing_key.html`) and re-pinning them — the repo owner's call, deliberately
-not taken here. Until it is taken, the disclosure says 110 of 117 and names
-what the other seven are.
+**`06001404200` — the one that was arguable, resolved Aug 11 2026 by
+measurement.** A 2.73 km² north-hills land tract, zero water, **52.7%** inside
+the region layer with `NW` its best single region (46.8% area overlap) — but
+its centroid lands in a sliver of unassigned hillside, so the centroid rule
+skipped it and the first release shipped 110 tracts with this one disclosed as
+under review. A one-tract ACS probe settled it: **3,584 residents, 1,401
+households (84% owner-occupied), median household income $246,193** — higher
+than `NW`'s own $233,387, i.e. unmistakably the hills, and material at 13% of
+`NW`'s population. It is now assigned to `NW` by an explicit `MANUAL` entry in
+`scripts/build-oakland-tract-regions.py` — **a judgment recorded as data, not a
+method change**. The centroid rule is unchanged for the other 110, and the
+override refuses to run if the geometry ever starts assigning the tract on its
+own (double-assignment guard in the script). Leaving it out had understated the
+hills: `NW`'s median income rose from $233,387 to $234,882 when its people were
+counted.
 
 **Majority-area assignment was tested and rejected.** Across all 379 Alameda
 tracts the centroid rule and a max-area-overlap rule disagree on **2**
