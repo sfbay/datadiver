@@ -37,7 +37,13 @@
     "pctWorkingAge": 62.95,
     "pctBachelorsPlus": 26.25,
     "pctNoHighSchool": 24.16,
-    "renterHouseholds": 5899
+    "renterHouseholds": 5899,
+    "povertyRate": 15.97,
+    "unemploymentRate": 10.58,
+    "pctWFH": 12.34,
+    "pctDriveAlone": 48.47,
+    "pctTransit": 21.35,
+    "pctBikeWalk": 3.47
   },
   {
     "geoId": "neighborhood_bernal_heights",
@@ -72,7 +78,13 @@
     "pctWorkingAge": 67.53,
     "pctBachelorsPlus": 59.73,
     "pctNoHighSchool": 10.3,
-    "renterHouseholds": 3735
+    "renterHouseholds": 3735,
+    "povertyRate": 8.27,
+    "unemploymentRate": 4.51,
+    "pctWFH": 28.75,
+    "pctDriveAlone": 35.91,
+    "pctTransit": 13.92,
+    "pctBikeWalk": 10.85
   },
   {
     "geoId": "neighborhood_castro_upper_market",
@@ -108,7 +120,13 @@
     "pctWorkingAge": 77.1,
     "pctBachelorsPlus": 78.78,
     "pctNoHighSchool": 2.34,
-    "renterHouseholds": 6696
+    "renterHouseholds": 6696,
+    "povertyRate": 7.13,
+    "unemploymentRate": 4.52,
+    "pctWFH": 37.93,
+    "pctDriveAlone": 18.56,
+    "pctTransit": 25.47,
+    "pctBikeWalk": 9.74
   },
   {
     "geoId": "neighborhood_chinatown",
@@ -143,7 +161,13 @@
     "pctWorkingAge": 58.45,
     "pctBachelorsPlus": 24.75,
     "pctNoHighSchool": 43.91,
-    "renterHouseholds": 5867
+    "renterHouseholds": 5867,
+    "povertyRate": 28.84,
+    "unemploymentRate": 7.79,
+    "pctWFH": 19.13,
+    "pctDriveAlone": 7.98,
+    "pctTransit": 31.88,
+    "pctBikeWalk": 37.11
   },
   {
     "geoId": "neighborhood_excelsior",
@@ -180,7 +204,13 @@
     "pctWorkingAge": 64.46,
     "pctBachelorsPlus": 31.01,
     "pctNoHighSchool": 20.51,
-    "renterHouseholds": 3743
+    "renterHouseholds": 3743,
+    "povertyRate": 9.78,
+    "unemploymentRate": 7.51,
+    "pctWFH": 14.45,
+    "pctDriveAlone": 43.55,
+    "pctTransit": 25.29,
+    "pctBikeWalk": 2.62
   },
   {
     "geoId": "neighborhood_financial_district_south_beach",
@@ -219,7 +249,13 @@
     "pctWorkingAge": 80.72,
     "pctBachelorsPlus": 79.57,
     "pctNoHighSchool": 5.78,
-    "renterHouseholds": 9399
+    "renterHouseholds": 9399,
+    "povertyRate": 8.85,
+    "unemploymentRate": 6.17,
+    "pctWFH": 30.22,
+    "pctDriveAlone": 12.15,
+    "pctTransit": 17.01,
+    "pctBikeWalk": 35.15
   },
   {
     "geoId": "neighborhood_glen_park",
@@ -250,7 +286,13 @@
     "pctWorkingAge": 63.93,
     "pctBachelorsPlus": 77.6,
     "pctNoHighSchool": 4.08,
-    "renterHouseholds": 1217
+    "renterHouseholds": 1217,
+    "povertyRate": 4.7,
+    "unemploymentRate": 3.01,
+    "pctWFH": 40.36,
+    "pctDriveAlone": 27.57,
+    "pctTransit": 16.4,
+    "pctBikeWalk": 5.71
   },
   {
     "geoId": "neighborhood_golden_gate_park",
@@ -279,7 +321,13 @@
     "pctWorkingAge": 100,
     "pctBachelorsPlus": 81.63,
     "pctNoHighSchool": 0,
-    "renterHouseholds": 40
+    "renterHouseholds": 40,
+    "povertyRate": 0.0,
+    "unemploymentRate": 8.16,
+    "pctWFH": 30.0,
+    "pctDriveAlone": 26.67,
+    "pctTransit": 13.33,
+    "pctBikeWalk": 16.67
   },
   {
     "geoId": "neighborhood_haight_ashbury",
@@ -313,7 +361,13 @@
     "pctWorkingAge": 76.91,
     "pctBachelorsPlus": 81.57,
     "pctNoHighSchool": 2.49,
-    "renterHouseholds": 5789
+    "renterHouseholds": 5789,
+    "povertyRate": 6.51,
+    "unemploymentRate": 2.17,
+    "pctWFH": 34.94,
+    "pctDriveAlone": 21.68,
+    "pctTransit": 24.15,
+    "pctBikeWalk": 12.74
   },
   {
     "geoId": "neighborhood_hayes_valley",
@@ -347,7 +401,13 @@
     "pctWorkingAge": 83.05,
     "pctBachelorsPlus": 70.62,
     "pctNoHighSchool": 6.01,
-    "renterHouseholds": 7716
+    "renterHouseholds": 7716,
+    "povertyRate": 10.98,
+    "unemploymentRate": 4.23,
+    "pctWFH": 31.3,
+    "pctDriveAlone": 17.43,
+    "pctTransit": 28.84,
+    "pctBikeWalk": 16.38
   },
   {
     "geoId": "neighborhood_inner_richmond",
@@ -381,7 +441,13 @@
     "pctWorkingAge": 66.78,
     "pctBachelorsPlus": 69.2,
     "pctNoHighSchool": 7.08,
-    "renterHouseholds": 5574
+    "renterHouseholds": 5574,
+    "povertyRate": 5.34,
+    "unemploymentRate": 3.18,
+    "pctWFH": 30.66,
+    "pctDriveAlone": 29.5,
+    "pctTransit": 22.54,
+    "pctBikeWalk": 8.84
   },
   {
     "geoId": "neighborhood_inner_sunset",
@@ -416,7 +482,13 @@
     "pctWorkingAge": 69.61,
     "pctBachelorsPlus": 76.42,
     "pctNoHighSchool": 4.84,
-    "renterHouseholds": 7303
+    "renterHouseholds": 7303,
+    "povertyRate": 7.96,
+    "unemploymentRate": 4.0,
+    "pctWFH": 27.65,
+    "pctDriveAlone": 28.1,
+    "pctTransit": 19.97,
+    "pctBikeWalk": 15.32
   },
   {
     "geoId": "neighborhood_japantown",
@@ -446,7 +518,13 @@
     "pctWorkingAge": 55.95,
     "pctBachelorsPlus": 69.91,
     "pctNoHighSchool": 7.61,
-    "renterHouseholds": 2080
+    "renterHouseholds": 2080,
+    "povertyRate": 20.58,
+    "unemploymentRate": 6.35,
+    "pctWFH": 35.35,
+    "pctDriveAlone": 23.74,
+    "pctTransit": 27.03,
+    "pctBikeWalk": 11.1
   },
   {
     "geoId": "neighborhood_lakeshore",
@@ -479,7 +557,13 @@
     "pctWorkingAge": 75.57,
     "pctBachelorsPlus": 56.78,
     "pctNoHighSchool": 6.11,
-    "renterHouseholds": 4418
+    "renterHouseholds": 4418,
+    "povertyRate": 26.99,
+    "unemploymentRate": 13.49,
+    "pctWFH": 17.55,
+    "pctDriveAlone": 40.68,
+    "pctTransit": 20.93,
+    "pctBikeWalk": 12.57
   },
   {
     "geoId": "neighborhood_lincoln_park",
@@ -537,7 +621,13 @@
     "pctWorkingAge": 78.74,
     "pctBachelorsPlus": 73.85,
     "pctNoHighSchool": 6.32,
-    "renterHouseholds": 4130
+    "renterHouseholds": 4130,
+    "povertyRate": 13.26,
+    "unemploymentRate": 4.96,
+    "pctWFH": 29.23,
+    "pctDriveAlone": 21.49,
+    "pctTransit": 24.56,
+    "pctBikeWalk": 17.3
   },
   {
     "geoId": "neighborhood_marina",
@@ -575,7 +665,13 @@
     "pctWorkingAge": 75.82,
     "pctBachelorsPlus": 86.18,
     "pctNoHighSchool": 1.73,
-    "renterHouseholds": 8980
+    "renterHouseholds": 8980,
+    "povertyRate": 4.56,
+    "unemploymentRate": 2.8,
+    "pctWFH": 38.4,
+    "pctDriveAlone": 23.87,
+    "pctTransit": 20.14,
+    "pctBikeWalk": 8.7
   },
   {
     "geoId": "neighborhood_mclaren_park",
@@ -604,7 +700,13 @@
     "pctWorkingAge": 5.81,
     "pctBachelorsPlus": 0,
     "pctNoHighSchool": 80.79,
-    "renterHouseholds": 123
+    "renterHouseholds": 123,
+    "povertyRate": 76.77,
+    "unemploymentRate": 0.0,
+    "pctWFH": 0.0,
+    "pctDriveAlone": 55.56,
+    "pctTransit": 0.0,
+    "pctBikeWalk": 44.44
   },
   {
     "geoId": "neighborhood_mission",
@@ -650,7 +752,13 @@
     "pctWorkingAge": 74.95,
     "pctBachelorsPlus": 59.06,
     "pctNoHighSchool": 14.79,
-    "renterHouseholds": 16580
+    "renterHouseholds": 16580,
+    "povertyRate": 12.53,
+    "unemploymentRate": 6.69,
+    "pctWFH": 26.6,
+    "pctDriveAlone": 24.59,
+    "pctTransit": 26.64,
+    "pctBikeWalk": 15.38
   },
   {
     "geoId": "neighborhood_mission_bay",
@@ -682,7 +790,13 @@
     "pctWorkingAge": 76.05,
     "pctBachelorsPlus": 74.93,
     "pctNoHighSchool": 7.38,
-    "renterHouseholds": 4803
+    "renterHouseholds": 4803,
+    "povertyRate": 6.83,
+    "unemploymentRate": 3.42,
+    "pctWFH": 35.16,
+    "pctDriveAlone": 17.76,
+    "pctTransit": 20.06,
+    "pctBikeWalk": 22.41
   },
   {
     "geoId": "neighborhood_nob_hill",
@@ -720,7 +834,13 @@
     "pctWorkingAge": 77.32,
     "pctBachelorsPlus": 62.47,
     "pctNoHighSchool": 11.55,
-    "renterHouseholds": 12342
+    "renterHouseholds": 12342,
+    "povertyRate": 11.02,
+    "unemploymentRate": 5.97,
+    "pctWFH": 25.53,
+    "pctDriveAlone": 13.18,
+    "pctTransit": 20.38,
+    "pctBikeWalk": 34.93
   },
   {
     "geoId": "neighborhood_noe_valley",
@@ -755,7 +875,13 @@
     "pctWorkingAge": 70.64,
     "pctBachelorsPlus": 80.95,
     "pctNoHighSchool": 1.17,
-    "renterHouseholds": 5741
+    "renterHouseholds": 5741,
+    "povertyRate": 4.23,
+    "unemploymentRate": 2.64,
+    "pctWFH": 37.35,
+    "pctDriveAlone": 29.68,
+    "pctTransit": 20.36,
+    "pctBikeWalk": 7.08
   },
   {
     "geoId": "neighborhood_north_beach",
@@ -789,7 +915,13 @@
     "pctWorkingAge": 69.73,
     "pctBachelorsPlus": 64.92,
     "pctNoHighSchool": 10.76,
-    "renterHouseholds": 4809
+    "renterHouseholds": 4809,
+    "povertyRate": 9.98,
+    "unemploymentRate": 5.7,
+    "pctWFH": 32.19,
+    "pctDriveAlone": 22.17,
+    "pctTransit": 17.98,
+    "pctBikeWalk": 23.2
   },
   {
     "geoId": "neighborhood_oceanview_merced_ingleside",
@@ -824,7 +956,13 @@
     "pctWorkingAge": 64.76,
     "pctBachelorsPlus": 40.72,
     "pctNoHighSchool": 18.97,
-    "renterHouseholds": 2591
+    "renterHouseholds": 2591,
+    "povertyRate": 9.17,
+    "unemploymentRate": 4.88,
+    "pctWFH": 19.39,
+    "pctDriveAlone": 42.5,
+    "pctTransit": 20.71,
+    "pctBikeWalk": 2.38
   },
   {
     "geoId": "neighborhood_outer_mission",
@@ -858,7 +996,13 @@
     "pctWorkingAge": 63.34,
     "pctBachelorsPlus": 36.72,
     "pctNoHighSchool": 19.25,
-    "renterHouseholds": 1919
+    "renterHouseholds": 1919,
+    "povertyRate": 9.39,
+    "unemploymentRate": 6.82,
+    "pctWFH": 18.08,
+    "pctDriveAlone": 36.57,
+    "pctTransit": 29.96,
+    "pctBikeWalk": 2.2
   },
   {
     "geoId": "neighborhood_outer_richmond",
@@ -898,7 +1042,13 @@
     "pctWorkingAge": 63.93,
     "pctBachelorsPlus": 64.18,
     "pctNoHighSchool": 8.58,
-    "renterHouseholds": 11056
+    "renterHouseholds": 11056,
+    "povertyRate": 8.14,
+    "unemploymentRate": 4.8,
+    "pctWFH": 29.45,
+    "pctDriveAlone": 34.63,
+    "pctTransit": 19.12,
+    "pctBikeWalk": 6.17
   },
   {
     "geoId": "neighborhood_pacific_heights",
@@ -936,7 +1086,13 @@
     "pctWorkingAge": 72.28,
     "pctBachelorsPlus": 82.01,
     "pctNoHighSchool": 1.48,
-    "renterHouseholds": 8895
+    "renterHouseholds": 8895,
+    "povertyRate": 5.13,
+    "unemploymentRate": 3.75,
+    "pctWFH": 34.11,
+    "pctDriveAlone": 24.03,
+    "pctTransit": 16.18,
+    "pctBikeWalk": 12.13
   },
   {
     "geoId": "neighborhood_portola",
@@ -969,7 +1125,13 @@
     "pctWorkingAge": 63.32,
     "pctBachelorsPlus": 33.13,
     "pctNoHighSchool": 23.12,
-    "renterHouseholds": 1516
+    "renterHouseholds": 1516,
+    "povertyRate": 7.54,
+    "unemploymentRate": 6.16,
+    "pctWFH": 13.08,
+    "pctDriveAlone": 47.2,
+    "pctTransit": 19.53,
+    "pctBikeWalk": 2.62
   },
   {
     "geoId": "neighborhood_potrero_hill",
@@ -1003,7 +1165,13 @@
     "pctWorkingAge": 76.5,
     "pctBachelorsPlus": 82.56,
     "pctNoHighSchool": 3.81,
-    "renterHouseholds": 4561
+    "renterHouseholds": 4561,
+    "povertyRate": 6.0,
+    "unemploymentRate": 3.29,
+    "pctWFH": 35.24,
+    "pctDriveAlone": 23.69,
+    "pctTransit": 13.51,
+    "pctBikeWalk": 18.65
   },
   {
     "geoId": "neighborhood_presidio",
@@ -1032,7 +1200,13 @@
     "pctWorkingAge": 67.15,
     "pctBachelorsPlus": 85.05,
     "pctNoHighSchool": 1.58,
-    "renterHouseholds": 1338
+    "renterHouseholds": 1338,
+    "povertyRate": 0.74,
+    "unemploymentRate": 5.11,
+    "pctWFH": 27.18,
+    "pctDriveAlone": 41.62,
+    "pctTransit": 9.33,
+    "pctBikeWalk": 14.93
   },
   {
     "geoId": "neighborhood_presidio_heights",
@@ -1064,7 +1238,13 @@
     "pctWorkingAge": 67.27,
     "pctBachelorsPlus": 82.56,
     "pctNoHighSchool": 2.28,
-    "renterHouseholds": 3261
+    "renterHouseholds": 3261,
+    "povertyRate": 4.08,
+    "unemploymentRate": 4.19,
+    "pctWFH": 36.83,
+    "pctDriveAlone": 26.49,
+    "pctTransit": 20.25,
+    "pctBikeWalk": 7.63
   },
   {
     "geoId": "neighborhood_russian_hill",
@@ -1100,7 +1280,13 @@
     "pctWorkingAge": 74.79,
     "pctBachelorsPlus": 76.47,
     "pctNoHighSchool": 5.23,
-    "renterHouseholds": 7230
+    "renterHouseholds": 7230,
+    "povertyRate": 8.43,
+    "unemploymentRate": 3.54,
+    "pctWFH": 39.84,
+    "pctDriveAlone": 20.95,
+    "pctTransit": 15.54,
+    "pctBikeWalk": 18.42
   },
   {
     "geoId": "neighborhood_seacliff",
@@ -1130,7 +1316,13 @@
     "pctWorkingAge": 52.87,
     "pctBachelorsPlus": 82.7,
     "pctNoHighSchool": 3.17,
-    "renterHouseholds": 229
+    "renterHouseholds": 229,
+    "povertyRate": 3.56,
+    "unemploymentRate": 2.32,
+    "pctWFH": 43.44,
+    "pctDriveAlone": 39.06,
+    "pctTransit": 5.2,
+    "pctBikeWalk": 6.03
   },
   {
     "geoId": "neighborhood_south_of_market",
@@ -1166,7 +1358,13 @@
     "pctWorkingAge": 77.16,
     "pctBachelorsPlus": 55.99,
     "pctNoHighSchool": 10.83,
-    "renterHouseholds": 10537
+    "renterHouseholds": 10537,
+    "povertyRate": 20.31,
+    "unemploymentRate": 6.46,
+    "pctWFH": 30.03,
+    "pctDriveAlone": 11.95,
+    "pctTransit": 20.45,
+    "pctBikeWalk": 30.07
   },
   {
     "geoId": "neighborhood_sunset_parkside",
@@ -1211,7 +1409,13 @@
     "pctWorkingAge": 61.33,
     "pctBachelorsPlus": 56.43,
     "pctNoHighSchool": 10.75,
-    "renterHouseholds": 9122
+    "renterHouseholds": 9122,
+    "povertyRate": 7.79,
+    "unemploymentRate": 6.49,
+    "pctWFH": 21.24,
+    "pctDriveAlone": 41.42,
+    "pctTransit": 19.33,
+    "pctBikeWalk": 6.32
   },
   {
     "geoId": "neighborhood_tenderloin",
@@ -1252,7 +1456,13 @@
     "pctWorkingAge": 72.3,
     "pctBachelorsPlus": 32.57,
     "pctNoHighSchool": 23.8,
-    "renterHouseholds": 17572
+    "renterHouseholds": 17572,
+    "povertyRate": 26.67,
+    "unemploymentRate": 12.82,
+    "pctWFH": 14.55,
+    "pctDriveAlone": 12.16,
+    "pctTransit": 33.66,
+    "pctBikeWalk": 33.39
   },
   {
     "geoId": "neighborhood_treasure_island",
@@ -1281,7 +1491,13 @@
     "pctWorkingAge": 81.41,
     "pctBachelorsPlus": 36.05,
     "pctNoHighSchool": 10.33,
-    "renterHouseholds": 617
+    "renterHouseholds": 617,
+    "povertyRate": 38.69,
+    "unemploymentRate": 11.96,
+    "pctWFH": 12.81,
+    "pctDriveAlone": 30.21,
+    "pctTransit": 33.79,
+    "pctBikeWalk": 12.81
   },
   {
     "geoId": "neighborhood_twin_peaks",
@@ -1312,7 +1528,13 @@
     "pctWorkingAge": 66.72,
     "pctBachelorsPlus": 63.09,
     "pctNoHighSchool": 8.89,
-    "renterHouseholds": 1914
+    "renterHouseholds": 1914,
+    "povertyRate": 9.85,
+    "unemploymentRate": 2.61,
+    "pctWFH": 30.29,
+    "pctDriveAlone": 44.79,
+    "pctTransit": 13.73,
+    "pctBikeWalk": 2.04
   },
   {
     "geoId": "neighborhood_visitacion_valley",
@@ -1346,7 +1568,13 @@
     "pctWorkingAge": 63.57,
     "pctBachelorsPlus": 24.95,
     "pctNoHighSchool": 26.02,
-    "renterHouseholds": 1950
+    "renterHouseholds": 1950,
+    "povertyRate": 12.78,
+    "unemploymentRate": 6.99,
+    "pctWFH": 9.74,
+    "pctDriveAlone": 52.07,
+    "pctTransit": 21.38,
+    "pctBikeWalk": 1.48
   },
   {
     "geoId": "neighborhood_west_of_twin_peaks",
@@ -1382,7 +1610,13 @@
     "pctWorkingAge": 58.2,
     "pctBachelorsPlus": 69.14,
     "pctNoHighSchool": 5.6,
-    "renterHouseholds": 2772
+    "renterHouseholds": 2772,
+    "povertyRate": 4.74,
+    "unemploymentRate": 3.82,
+    "pctWFH": 31.48,
+    "pctDriveAlone": 37.32,
+    "pctTransit": 16.37,
+    "pctBikeWalk": 4.34
   },
   {
     "geoId": "neighborhood_western_addition",
@@ -1418,6 +1652,12 @@
     "pctWorkingAge": 65.59,
     "pctBachelorsPlus": 60.06,
     "pctNoHighSchool": 9.21,
-    "renterHouseholds": 8976
+    "renterHouseholds": 8976,
+    "povertyRate": 20.29,
+    "unemploymentRate": 7.11,
+    "pctWFH": 26.96,
+    "pctDriveAlone": 23.07,
+    "pctTransit": 29.48,
+    "pctBikeWalk": 13.41
   }
 ]
