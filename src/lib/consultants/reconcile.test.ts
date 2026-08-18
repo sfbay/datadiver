@@ -227,6 +227,56 @@ describe('reconcile', () => {
     expect(pair.exactMatch).toBe(false);
   });
 
+  it("reports committee-behind when the committee's newest Schedule E predates the period", () => {
+    // The two ledgers are on different clocks: the consultant side lands ~40s
+    // after signature, the committee side on the FPPC calendar. A committee that
+    // last filed a Schedule E years ago has not declined to report the payment —
+    // it has not filed yet. Publishing 0.00 here would invent an omission.
+    const [pair] = reconcile(
+      [receipt({ reported: 950, periodStart: '2026-03-01', periodEnd: '2026-05-31' })],
+      [],
+      { '1450577': '2021-02-01' },
+      { '1450577': true }
+    );
+
+    expect(pair.status).toBe('committee-behind');
+    expect(pair.ratio).toBeNull();
+    expect(pair.exactMatch).toBe(false);
+    // The measured sum is still published — only the COMPARISON is withheld.
+    expect(pair.schE).toBe(0);
+    expect(pair.committeeCompleteThrough).toBe('2021-02-01');
+  });
+
+  it('stays reconciled when the committee has filed through the end of the period', () => {
+    const [pair] = reconcile(
+      [receipt({ reported: 500, periodStart: '2024-09-01', periodEnd: '2024-11-30' })],
+      [expRow({ transaction_date: '2024-10-01', transaction_amount_1: '500' })],
+      { '1450577': '2025-01-31' },
+      { '1450577': true }
+    );
+
+    expect(pair.status).toBe('reconciled');
+    expect(pair.exactMatch).toBe(true);
+  });
+
+  it('ignores any pitq row that is not an expenditure, whatever its form_type', () => {
+    // `form_type` is reused across record types — 'E' appears on receipt rows
+    // too — so a query that ever widened past EXPN/DEBT would fold CONTRIBUTIONS
+    // into the "what the committee paid you" side and invert the finding.
+    const [pair] = reconcile(
+      [receipt({ reported: 500 })],
+      [
+        expRow({ record_type: 'RCPT', transaction_date: '2024-10-01', transaction_amount_1: '500' }),
+        expRow({ record_type: 'S497', form_type: 'G', transaction_date: '2024-10-01', transaction_amount_1: '900' }),
+      ],
+      {}
+    );
+
+    expect(pair.schE).toBe(0);
+    expect(pair.schG).toBe(0);
+    expect(pair.rowsE).toBe(0);
+  });
+
   it('skips receipts with a null filerNid', () => {
     const receipts = [receipt({ filerNid: null, reported: 500 })];
 

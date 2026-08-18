@@ -26,6 +26,18 @@ function periodsOverlap(aStart: string, aEnd: string, bStart: string, bEnd: stri
   return aStart <= bEnd && aEnd >= bStart;
 }
 
+/**
+ * Whether a pitq row is an EXPENDITURE at all. The generator's `$where` already
+ * restricts to `record_type in ('EXPN','DEBT')`, so this is belt-and-braces —
+ * but `form_type` is reused across record types ('E' appears on receipt rows
+ * too), so a caller that ever widens its query would silently add contributions
+ * INTO the "what the committee paid you" side. Cheap insurance against the one
+ * mistake that would invert the finding.
+ */
+function isExpenditureRow(row: PitqExpRow): boolean {
+  return row.record_type === 'EXPN' || row.record_type === 'DEBT';
+}
+
 /** Whole days of overlap between two inclusive `YYYY-MM-DD` ranges; 0 when they do not meet. */
 function overlapDays(aStart: string, aEnd: string, bStart: string, bEnd: string): number {
   if (!periodsOverlap(aStart, aEnd, bStart, bEnd)) return 0;
@@ -127,12 +139,16 @@ export function reconcile(
   }
 
   // ── Pass 1: assign every undated Schedule E row to exactly one group ────────
-  // Candidates are the groups sharing this row's consultant AND filer; the
-  // winner is the longest overlap with the filing's own window, ties to the
-  // earlier period so the choice is deterministic across runs.
+  // Candidates are every group sharing this row's FILER, across all consultants
+  // in `receipts` — not just the row's own consultant. One committee's payment
+  // can be caught by two consultants' payee patterns (the Stearns/Rough House
+  // and KMM/Kully Hall families are that shape), and counting it under both is
+  // the same dollar twice. The winner is the longest overlap with the filing's
+  // own window, ties to the earlier period so the choice is deterministic.
   const undatedByGroup = new Map<string, PitqExpRow[]>();
   const groupList = [...groups.entries()];
   for (const row of exp) {
+    if (!isExpenditureRow(row)) continue;
     if (row.form_type !== 'E') continue;
     if (datePrefix(row.transaction_date)) continue;
     const filingStart = datePrefix(row.start_date);
@@ -170,6 +186,7 @@ export function reconcile(
     let filerName: string | undefined;
 
     for (const row of exp) {
+      if (!isExpenditureRow(row)) continue;
       if (row.filer_nid !== filerNid) continue;
       if (row.form_type === 'E') {
         const txDate = datePrefix(row.transaction_date);
@@ -197,11 +214,24 @@ export function reconcile(
     }
 
     const ledger = hasScheduleE[filerNid];
+    const filedThrough = completeThrough[filerNid];
+    // The committee side moves on the FPPC calendar, the consultant side lands
+    // ~40s after signature. When a committee's newest Schedule E filing predates
+    // the quarter being reconciled, its silence is a filing that has not happened
+    // yet — not a payment that was never made. San Francisco Parent PAC last
+    // filed a Schedule E in Feb 2021; read as 'reconciled' it published Outset
+    // Strategies' $950 as a 100% unmatched claim. This also, deliberately, covers
+    // the ordinary case of a committee that simply has not filed the semiannual
+    // covering the newest quarter — the recon's "different clocks" finding, made
+    // structural instead of a caveat in prose.
+    const behind = filedThrough !== undefined && periodEnd !== '' && filedThrough < periodEnd;
     const status: ReconPair['status'] = group.periodImpossible
       ? 'period-impossible'
       : ledger === false
         ? 'no-payee-ledger'
-        : 'reconciled';
+        : behind
+          ? 'committee-behind'
+          : 'reconciled';
 
     results.push({
       consultantId,

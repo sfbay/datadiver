@@ -146,7 +146,11 @@ export function collapseRestatements(
       keptEnvelope: kept.envelope_id,
       droppedEnvelope: dropped.envelope_id,
       consultantKey: keyOf(kept),
-      periodStart: periodStartOf(kept),
+      // Date-only, so a restatement joins the receipts and pairs that carry the
+      // same period as 'YYYY-MM-DD'. The raw field is a floating SF-local
+      // timestamp; grouping above still uses it verbatim (every value is
+      // midnight, so the two forms partition identically).
+      periodStart: periodStartOf(kept).slice(0, 10),
       keptTotal,
       droppedTotal,
       keptChildSum: childSumByEnvelope.get(kept.envelope_id) ?? 0,

@@ -374,6 +374,34 @@ describe('reconciliation artifact — a number is withheld where it would be a c
     }
   })
 
+  it('never calls a pair reconciled when the committee has not filed through the period', () => {
+    // The two ledgers are on different clocks. A committee whose newest Schedule E
+    // predates the quarter has not declined to report the payment — it has not
+    // filed yet, and 'reconciled' with schE 0 would publish that as an omission.
+    for (const p of pairs) {
+      if (p.status !== 'reconciled') continue
+      if (p.committeeCompleteThrough === undefined) continue
+      expect(
+        p.committeeCompleteThrough >= p.periodEnd,
+        `${p.consultantId}/${p.filerNid} ${p.periodStart}: filed through ${p.committeeCompleteThrough}, period ends ${p.periodEnd}`
+      ).toBe(true)
+    }
+  })
+
+  it('flags San Francisco Parent PAC, which last filed a Schedule E in 2021', () => {
+    const pair = pairs.find(
+      (p) =>
+        p.consultantId === 'outset-strategies' &&
+        p.filerNid === '10944875' &&
+        p.periodStart === '2026-03-01'
+    )
+    expect(pair).toBeDefined()
+    expect(pair!.status).toBe('committee-behind')
+    expect(pair!.ratio).toBeNull()
+    expect(pair!.exactMatch).toBe(false)
+    expect(pair!.committeeCompleteThrough! < pair!.periodEnd).toBe(true)
+  })
+
   it("discloses the envelopes that declare client money and publish no client rows", () => {
     // SGR Consulting's Sep–Nov 2024 filing declares $403,889.62 with nothing in
     // m75g-xpci. It is a real gap in the city's data; hiding it would be the lie.
@@ -419,6 +447,14 @@ describe('reconciliation artifact — duplicate filings are detected, not just c
     expect(Array.isArray(artifact.gates.sameDayFilings)).toBe(true)
     for (const g of artifact.gates.sameDayFilings) {
       expect(g.envelopes.length).toBeGreaterThan(1)
+    }
+  })
+
+  it('restatements carry the same date-only period form as receipts and pairs', () => {
+    for (const c of artifact.consultants) {
+      for (const r of c.restatementsCollapsed) {
+        expect(r.periodStart, `${c.id} restatement period is not date-only`).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+      }
     }
   })
 

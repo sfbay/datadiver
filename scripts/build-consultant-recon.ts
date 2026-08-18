@@ -1909,12 +1909,31 @@ async function main(): Promise<void> {
     `  ${'TOP-10 TOTAL'.padEnd(30)}${money(topReported).padStart(16)}${money(topSchE).padStart(18)}${(topSchE / topReported).toFixed(3).padStart(8)}`
   )
 
+  const pairsAll = consultants.flatMap((c) => c.reconciliation)
   console.log('\nCOUNTS')
   console.log(`  consultants          ${consultants.length}`)
   console.log(`  latest filings       ${latestKept.length} (of ${parentAll.length} raw)`)
   console.log(`  receipts             ${artifact.totals.receipts}`)
-  console.log(`  reconciliation pairs ${artifact.totals.pairs}`)
-  const pairsAll = consultants.flatMap((c) => c.reconciliation)
+  console.log(
+    `  reconciliation pairs ${artifact.totals.pairs} (${pairsAll.filter((p) => p.status === 'reconciled').length} reconciled · ` +
+      `${pairsAll.filter((p) => p.status === 'committee-behind').length} committee-behind · ` +
+      `${pairsAll.filter((p) => p.status === 'no-payee-ledger').length} no-payee-ledger · ` +
+      `${pairsAll.filter((p) => p.status === 'period-impossible').length} period-impossible)`
+  )
+  const behind = pairsAll.filter((p) => p.status === 'committee-behind')
+  if (behind.length > 0) {
+    console.log(
+      `\nCOMMITTEE BEHIND — ${behind.length} pair(s) where the committee has not filed a Schedule E covering the period.` +
+        ' Absence here is absence of a FILING, not of a payment; ratio and exactMatch are withheld.'
+    )
+    for (const p of behind) {
+      const c = consultants.find((x) => x.id === p.consultantId)
+      console.log(
+        `  ${(c?.displayName ?? p.consultantId).slice(0, 30).padEnd(31)} ${(p.filerName ?? p.filerNid).slice(0, 42).padEnd(43)}` +
+          ` ${p.periodStart}→${p.periodEnd} reported ${money(p.reported).padStart(12)} · filed through ${p.committeeCompleteThrough}`
+      )
+    }
+  }
   console.log(
     `  exact-match pairs    ${artifact.totals.exactMatchPairs} of ${pairsAll.filter((p) => p.status === 'reconciled' && p.reported > 0).length} comparable` +
       ` (${pairsAll.filter((p) => p.status !== 'reconciled').length} not comparable, ${pairsAll.filter((p) => p.status === 'reconciled' && p.reported === 0).length} nothing reported)`

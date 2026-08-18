@@ -161,10 +161,14 @@ export interface ReconPair {
    *   reconciled        both sides are comparable
    *   no-payee-ledger   the committee files no Schedule E at all (F496-only
    *                     filers have no "who we paid" list to disagree with)
+   *   committee-behind  the committee HAS a payee ledger but has not filed one
+   *                     covering this period yet — its newest Schedule E filing
+   *                     predates `periodEnd`. Absence of a payment here is
+   *                     absence of a filing, not evidence of an omission
    *   period-impossible the consultant's own reporting window is self-
    *                     contradictory, so any in-window sum is arbitrary
    */
-  status: 'reconciled' | 'no-payee-ledger' | 'period-impossible';
+  status: 'reconciled' | 'no-payee-ledger' | 'committee-behind' | 'period-impossible';
   /** Whether the committee has ANY Schedule E filing. Undefined when not probed. */
   committeeHasScheduleE?: boolean;
   /**
