@@ -40,6 +40,52 @@ describe('reconcile', () => {
     expect(pair.rowsE).toBe(2);
   });
 
+  it('counts an E row whose transaction_date equals periodStart (inclusive lower bound)', () => {
+    const receipts = [receipt({ periodStart: '2024-09-01', periodEnd: '2024-11-30', reported: 100 })];
+    const exp = [expRow({ transaction_date: '2024-09-01', transaction_amount_1: '100' })];
+
+    const [pair] = reconcile(receipts, exp, {});
+
+    expect(pair.schE).toBe(100);
+    expect(pair.rowsE).toBe(1);
+  });
+
+  it('counts an E row whose transaction_date equals periodEnd (inclusive upper bound)', () => {
+    const receipts = [receipt({ periodStart: '2024-09-01', periodEnd: '2024-11-30', reported: 100 })];
+    const exp = [expRow({ transaction_date: '2024-11-30', transaction_amount_1: '100' })];
+
+    const [pair] = reconcile(receipts, exp, {});
+
+    expect(pair.schE).toBe(100);
+    expect(pair.rowsE).toBe(1);
+  });
+
+  it('excludes an E row whose transaction_date is one day past periodEnd', () => {
+    const receipts = [receipt({ periodStart: '2024-09-01', periodEnd: '2024-11-30', reported: 100 })];
+    const exp = [expRow({ transaction_date: '2024-12-01', transaction_amount_1: '100' })];
+
+    const [pair] = reconcile(receipts, exp, {});
+
+    expect(pair.schE).toBe(0);
+    expect(pair.rowsE).toBe(0);
+  });
+
+  it('assigns an undated E row whose filing end_date touches periodStart at exactly one endpoint', () => {
+    const receipts = [receipt({ periodStart: '2024-09-01', periodEnd: '2024-11-30', reported: 100 })];
+    const exp = [
+      expRow({
+        transaction_amount_1: '75',
+        start_date: '2024-06-01',
+        end_date: '2024-09-01', // touches periodStart exactly, no other overlap
+      }),
+    ];
+
+    const [pair] = reconcile(receipts, exp, {});
+
+    expect(pair.schE).toBe(75);
+    expect(pair.schEUndatedAssigned).toBe(75);
+  });
+
   it('assigns an undated E row by filing-period overlap and reports it separately', () => {
     const receipts = [receipt({ reported: 100 })];
     const exp = [
@@ -135,6 +181,17 @@ describe('reconcile', () => {
     expect(pair.exactMatch).toBe(false);
   });
 
+  it('flags exactMatch false when |schE - reported| === 1 exactly (rule is strictly < 1)', () => {
+    const receipts = [receipt({ reported: 101 })];
+    const exp = [expRow({ transaction_date: '2024-10-01', transaction_amount_1: '100' })];
+
+    const [pair] = reconcile(receipts, exp, {});
+
+    expect(pair.schE).toBe(100);
+    expect(Math.abs(pair.schE - pair.reported)).toBe(1);
+    expect(pair.exactMatch).toBe(false);
+  });
+
   it('skips receipts with a null filerNid', () => {
     const receipts = [receipt({ filerNid: null, reported: 500 })];
 
@@ -205,13 +262,13 @@ describe('matchContributions', () => {
     expect(result.pitqTransactionDate).toBe('2024-10-05');
   });
 
-  it('does not match exact when the date is more than 30 days apart', () => {
+  it('reports unmatched when the date is more than 30 days apart (known recipient, amount >= 100, no principal fallback)', () => {
     const rows = [contribRow({ contributionlist_dateofcontribution: '2024-08-01' })];
     const rcpt = [rcptRow({ transaction_date: '2024-10-05' })];
 
     const [result] = matchContributions(rows, recipientNidOf, rcpt, noPrincipals);
 
-    expect(result.matched).not.toBe('exact');
+    expect(result.matched).toBe('unmatched');
   });
 
   it('falls back to a principal-name match when the contributor name itself does not match', () => {
