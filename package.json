@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "build:elections": "tsx scripts/build-election-archive.ts",
+    "build:consultants": "tsx scripts/build-consultant-recon.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck:api": "tsc --noEmit -p api/tsconfig.json"
