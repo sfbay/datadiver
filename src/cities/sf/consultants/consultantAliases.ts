@@ -122,7 +122,7 @@ export const CONSULTANT_ALIASES: ConsultantAlias[] = [
     rawNames: ['Daniel Kazin'],
     kind: 'inferred-dba',
     payeePatterns: ['%KAZIN%', '%CANAL PARTNERS%'],
-    note: "INFERRED from dollar equality, not ownership records: pitq has ZERO payee rows containing 'KAZIN'. Mark Farrell for Mayor 2024 paid 'Canal Partners Media' $681,410 and Mayor Mark Farrell for Yes on Prop D paid it $330,174 — $1,011,584, exactly Kazin's reported client total.",
+    note: "INFERRED from dollar equality, not ownership records: pitq has ZERO payee rows containing 'KAZIN'. Mark Farrell for Mayor 2024 paid 'Canal Partners Media' $681,410 and Mayor Mark Farrell for Yes on Prop D paid it $330,174 — $1,011,584, exactly Kazin's reported client total. Over-match to check by eye: '%KAZIN%' also returns one unrelated 'Kazinski' EXPN row ($140, outside the 2024-09-01 window) and one 'Kazin' RCPT row ($100), neither of which the EXPN/DEBT + in-window filter admits.",
   },
   {
     id: 'kmm-strategies',
@@ -130,7 +130,7 @@ export const CONSULTANT_ALIASES: ConsultantAlias[] = [
     rawNames: ['KMM Strategies'],
     kind: 'inferred-dba',
     payeePatterns: ['%KMM%', '%KULLY HALL%'],
-    note: "Committees write the payee as 'KULLY HALL LLC DBA KMM STRATEGIES' on 311 of 359 rows (and 'KULLY HALL LLC' alone once), so a '%KMM%'-only query drops ~$2.48M of the relationship. The DBA is stated in the payee string itself.",
+    note: "Committees write the payee as 'KULLY HALL LLC DBA KMM STRATEGIES' on 311 of 359 rows (and 'KULLY HALL LLC' alone once), so a '%KMM%'-only query drops ~$2.48M of the relationship. The DBA is stated in the payee string itself. Over-match to check by eye: '%KULLY HALL%' also returns 16 'Kully Hall Struble' rows — a successor/variant firm name, not necessarily the same engagement.",
   },
   {
     id: 'bedford-grove',
@@ -277,8 +277,8 @@ export const CONSULTANT_ALIASES: ConsultantAlias[] = [
     displayName: 'Margaux Kelly',
     rawNames: ['Margaux Kelly'],
     kind: 'hand',
-    payeePatterns: ['KELLY'],
-    note: "CAUTION: an exact last-name match. 'Kelly' is a common surname and the payee column has no first-name filter in the pattern contract, so hits must be read by eye before publication.",
+    payeePatterns: ['%MARGAUX KELLY%', '%KELLY, MARGAUX%'],
+    note: "NO PATTERN CAN FIND HER — disclosed rather than papered over. Her real rows carry transaction_last_name 'Kelly' with the first name in transaction_first_name ('Margaux'), a column payeePatterns never sees: 80 in-window rows, $167,982.45, from Mark Farrell for Mayor 2024 ($154,538.58) and Mayor Mark Farrell for Yes on Prop D ($13,443.87). A bare 'KELLY' pattern returns 86 rows / $172,176.07 because it also drags in JOSH KELLY's six Yes-on-K rows, so it is deliberately NOT used. The two patterns here match the combined spellings if a committee ever writes one (neither matches anything today); until then this consultant needs a first-name-aware read the pattern contract does not provide.",
   },
   {
     id: 'proverb-strategy',
@@ -430,7 +430,7 @@ export const EXCLUDED_ENVELOPES: { envelope: string; reason: string }[] = [
   {
     envelope: '89f7b62b-be1f-4fc4-900a-22aba667b59c',
     reason:
-      "Junk filing — 'Law enforcement protection' Initial Registration (datesigned 2025-12-10): business address 'Kyle Of Lochalsh, Inverness, Shireness, Shetland, Virgin Islands 42800', a $600 'Watches' gift to 'Phillip Mccrown', and the code of conduct declined.",
+      "Junk filing — 'Law enforcement protection' Initial Registration (datesigned 2025-12-10): a fantasy business address (Inverness / Shetland / 'Virgin Islands 42800'), a $600 'Watches' gift to 'Phillip Mccrown', and the code of conduct declined. The address is described, not reproduced — the redaction rule holds even for a junk filer, and this is a Person-type filing.",
   },
   {
     envelope: 'c99a90cf-9699-4669-ae9e-4202212061b4',

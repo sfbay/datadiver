@@ -131,6 +131,26 @@ describe('CLIENT_CROSSWALK', () => {
     }
   });
 
+  it('sets a confidence on every entry', () => {
+    for (const entry of CLIENT_CROSSWALK) {
+      expect(['exact', 'inferred', 'uncertain'], entry.clientString).toContain(entry.confidence);
+    }
+  });
+
+  it("keeps confidence 'uncertain' and the word UNCERTAIN in evidence in lockstep", () => {
+    // Two ways to say the same thing must never disagree: the machine-readable flag is
+    // what a consumer filters on, the prose is what a human reads, and a row that says
+    // one and not the other silently publishes a guess as settled (or vice versa).
+    for (const entry of CLIENT_CROSSWALK) {
+      const saysUncertain = entry.evidence.includes('UNCERTAIN');
+      expect(
+        entry.confidence === 'uncertain',
+        `${entry.clientString}: confidence=${entry.confidence} but evidence ${saysUncertain ? 'DOES' : 'does NOT'} say UNCERTAIN`
+      ).toBe(saysUncertain);
+    }
+    expect(CLIENT_CROSSWALK.filter((c) => c.confidence === 'uncertain').length).toBeGreaterThan(0);
+  });
+
   it('gives every entry non-empty evidence and a review date', () => {
     for (const entry of CLIENT_CROSSWALK) {
       expect(entry.evidence.trim().length, entry.clientString).toBeGreaterThan(0);
