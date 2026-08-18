@@ -502,6 +502,134 @@ both extracts are read — 2018 is the all-time peak at 147,448 and 2025 the
 lowest full year at 95,549, a ~35% decline that sits entirely inside the modern
 dataset and is therefore not an artifact of the seam.
 
+## Campaign Consultants (SFEC e-filing family)
+
+**Source:** DataSF (Socrata), Ethics Commission e-filings — parent `iv34-5p9x` (Campaign Consultant Report, forms
+1/2/3/6) + 8 child tables joined on `envelope_id` + the stand-alone `acwz-2ua3` (Client Authorization & Termination).
+Cross-checked against the committee side of the ledger, `pitq-e56w` (SF Ethics campaign-finance filings — the same
+dataset CampaignFinance already reads). Recon memo: `docs/recon/2026-08-14-sfec-campaign-consultant-family.md` (on
+branch `docs/sfec-consultant-recon`). Generator: `scripts/build-consultant-recon.ts` (`pnpm build:consultants`),
+committed artifact `public/data/consultants/reconciliation.json`, tests in `src/lib/consultants/*.test.ts` +
+`src/cities/sf/consultants/crosswalks.test.ts`.
+
+### One "envelope" is one filing version, grouped into a "filingseries" — and the grouping key is filer-typed
+
+Every time a consultant signs a form through DocuSign it creates one **envelope** (one row in `iv34-5p9x`, keyed on
+`envelope_id`) — an amendment is a brand-new envelope, not an edit of the old one, and the parent table keeps both.
+Envelopes describing the same underlying report are grouped by **`filingseries`**, a string the filer's own software
+assembles from the consultant's typed name, the report type, and the reporting period's start date. The
+**latest-version rule** — keep the row with `MAX(datesigned)` per `filingseries` — is the correct way to collapse
+versions, and it is exact: surviving rows always equal the count of distinct series (241 of 260 raw rows after
+exclusion). **Its caveat is structural, not a bug to fix:** because `filingseries` embeds the filer's own name
+spelling and period-start typing, a filer who retypes either one lands the new envelope in a *different* series, and
+the old one survives beside it instead of being superseded. Amendment checkboxes can't be trusted either — several
+rows marked "Original" carry an `originalfilingdate`, and several marked "Amendment" don't move any figure. Detection
+has to be structural (grouping + dates), never the filer's own flag.
+
+### Same-report duplicates hide behind a name change or a mis-keyed year — four are authored corrections, not detected
+
+The dedupe rule above can't see a duplicate that changes BOTH the name spelling and the report type/period in one
+move, because that lands in a genuinely different `filingseries` key. Four such duplicates were found by hand and are
+corrected as authored, evidence-carrying rows in `src/cities/sf/consultants/overrides.ts` (`DUPLICATE_ENVELOPES`),
+never inferred by pattern:
+
+- **AGENCY** filed the identical $449,484.50 twice, 13m35s apart — once as a Quarterly Report for a period that
+  hadn't started yet, once as a Termination Report for the true period. Read naively, AGENCY (a real Des Moines media
+  firm, not junk) appears to have reported $898,969 against a committee-side total of $453,053.54 — a fabricated
+  0.50 ratio. Corrected, the two ledgers agree to **1.008**.
+- **Bedford Grove** filed the same Mar–May 2026 quarter twice, 39 hours apart, under its two registered spellings —
+  the later filing is a strict superset ($40,000 vs $30,000), and the earlier is dropped.
+- **Paul Kumar** and **Szabo and Associates** each filed the same $0 registration twice under name variants; both
+  resolve with no dollar impact.
+
+A generator-side scan (gate **G7**) groups filings on resolved identity + report type + period and **fails the
+build** if it finds an unexplained duplicate group — so the next filer who retypes their own name into a new series
+stops the pipeline instead of quietly inflating a total.
+
+### Twelve mis-keyed reporting periods were corrected; one cannot be — never bucket by period without checking `datesigned`
+
+Thirteen filings in the raw parent table (twelve after dedupe/duplicate removal) carry a reporting period that
+starts **after** the filer signed it — the year was typed one ahead (e.g., a quarter filed in March 2026 was keyed
+"2026-12-01→2027-02-28" instead of "2025-12-01→2026-02-28"). Twelve are corrected in `PERIOD_OVERRIDES`, each gated
+on two conditions holding at once: the one-year shift lands the period at or before the signature date, **and** it
+lands on the exact quarter the statutory deadline calendar (below) says that signature date belongs to. One —
+Joseph Sweiss's $6,000 filing — is left exactly as filed: the shift-back test and the deadline-calendar test disagree
+about which quarter it belongs to, and the shift-back answer would place it before the e-filing family even started
+collecting data. Rather than guess, the generator flags it `periodImpossible`: its `deadline`/`daysLate` publish as
+null (a real per-filing fact, not silently fabricated), while its dollar figure still counts. **The lesson
+generalizes:** any code that buckets these filings by reporting period, without first checking that `datesigned`
+postdates the period start, will silently misdate real money.
+
+### There are no ids anywhere in this family — every join is a hand-authored crosswalk with disclosed confidence
+
+`columns.json` for every table in the family carries no FPPC id, no committee id, nothing but `envelope_id`/`entry_id`
+and free text. Two committed crosswalks do the joining SFEC's own data can't: a **consultant-alias table** (90 raw
+name spellings → ~71 real consultants, including DBA bridges like Daniel Kazin ↔ payee "Canal Partners Media" and
+KMM Strategies ↔ payee "Kully Hall LLC") and a **client-string → `filer_nid`** map (118 distinct client strings
+resolved to SF Ethics committee ids). Each resolved row carries a `class` — `committee`/`state`/`resolved-by-money`
+(all three carry a `filerNid`) or `candidate-only`/`unresolved` (neither does, by rule, so an unmatched client is
+never silently treated as reconciled) — plus non-empty `evidence`. The Stearns Consulting ↔ "Rough House
+Productions" bridge is the sharpest trap: Rough House is a shared media-production vendor paid by many committees, so
+the bridge is scoped `payeeScope: 'own-clients'` — applied only to Stearns's own reported clients, never globally, or
+it would falsely flag other committees as under-reporting money that was never Stearns's.
+
+### The two-sided reconciliation — what a consultant reports vs. what its client committee's Schedule E says it paid
+
+The real value of this family is comparing it against `pitq-e56w`'s **Schedule E** (a committee's own itemized list
+of who it paid) for the same consultant, in the same reporting window. Of 160 total reconciliation pairs, 142 are
+comparable (a real reported figure, a real payee ledger to check against); of those, **50 agree to the dollar** —
+`exactMatch` is defined strictly (`status === 'reconciled' && reported > 0 && |schE − reported| < 1`) so a $0-vs-$0
+pair, which is two absences agreeing with nothing, never counts as a match. Six pairs are marked structurally
+uncertain rather than scored: five committees file no Schedule E at all (`status: 'no-payee-ledger'`, `ratio: null` —
+a 0.00 that would otherwise read as total omission), and Sweiss's impossible-period filing (above) keeps its dollar
+sum but drops its ratio.
+
+Where the two sides disagree, it is almost always **timing or accounting basis, not omission**: the consultant side
+publishes ~40 seconds after a DocuSign signature; the committee side lands on the FPPC filing calendar plus a
+nightly export, so the newest quarter on the consultant side can look like an omission simply because the committee
+hasn't filed yet. Six of 571 Schedule E rows carry no transaction date at all — assigned exclusively to the single
+reporting period with the largest date overlap (gate **G8**; no dollar is ever double-counted into two periods). The
+committee-completeness cutoff (`completeThrough`) is computed only over a committee's Schedule-E-bearing filings, not
+its whole filing history, so an F496-only filer with an empty payee ledger doesn't read as falsely "caught up." The
+`pitq` search window floors at six months before each consultant's own earliest reporting period (never earlier than
+2024-09-01) — a fixed global floor would have missed real payments to the one filer sitting right at that edge.
+
+### Three disclosure sections have never once been used
+
+City contracts, city appointments, and "employing local officeholders and city employees" — three of the form's
+disclosure sections — read **0 of 260** after 20 months of mandatory e-filing. The paper-era predecessor tables show
+the concept was live in the past (real appointments, real contract disclosures), so this isn't a section nobody
+understood; it's a section nobody has answered "yes" to since e-filing began. Render it as that sentence, never as an
+empty chart.
+
+### The statutory filing calendar — and why a late-filer scoreboard is withheld
+
+Quarterly reports are due **March 15 / June 15 / September 15 / December 15**, rolling to the next business day on a
+weekend or holiday, for periods Dec–Feb / Mar–May / Jun–Aug / Sep–Nov; registration renews by **January 1**. Against
+that calendar, on the corrected periods above, **41 of 153 quarterlies with a real deadline (27%) were filed late**,
+worst case 212 days (Rodney Leong). That per-filing fact is safe to publish. A per-consultant **leaderboard** of "who
+files late" is deliberately withheld: dates and periods are filer-entered, twelve of them were typed a year wrong
+before correction, and ranking consultants against self-reported dates would launder typos into reputational claims
+the data can't support.
+
+### Redaction is structural, not a filter bolted on at the end
+
+Every parent row carries a phone number (260 of 260); `acwz-2ua3` carries a client business phone on all 130 rows.
+For the 56 person-type (not entity) filers, the "business address" is frequently a home address. None of this
+crosses the wire: the parent `$select` projection omits every phone and address column, the employee table (75
+named private individuals) is never fetched at all, and a redaction test walks every string in the generated
+artifact, not just its keys. The one thing the artifact does surface is each filing's `docusignUrl`, a link to the
+signed PDF on SFEC's own storage — that document does carry contact details, but it's the city's own publication,
+linked exactly as SFEC already publishes it, not copied or redacted by us.
+
+### The Sep 2023–Aug 2024 hole
+
+Four consecutive quarters — Sep–Nov 2023 through Jun–Aug 2024 — have **no structured disclosure anywhere on
+DataSF**: the paper-era tables stopped in October 2023 and this e-filing family's first real quarter is Sep–Nov 2024.
+Only a PDF index (`an34-qeyq`, unstructured) covers that window. Any trend line spanning the two eras must render
+that stretch as **absent**, never as zero — a naive splice would read as a mid-2024 collapse in consultant activity
+that never happened.
+
 ## Oakland
 
 Oakland went live at stage 3 (Aug 2026) with two views on `data.oaklandca.gov` —
