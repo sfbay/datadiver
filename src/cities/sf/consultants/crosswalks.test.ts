@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { CONSULTANT_ALIASES, EXCLUDED_ENVELOPES } from './consultantAliases';
 import { CLIENT_CROSSWALK } from './clientCrosswalk';
+import { DUPLICATE_ENVELOPES, PERIOD_OVERRIDES } from './overrides';
 import { normalizeName } from '../../../lib/consultants/normalize';
 
 describe('CONSULTANT_ALIASES', () => {
@@ -189,6 +190,64 @@ describe('CLIENT_CROSSWALK', () => {
     const classes = new Set(CLIENT_CROSSWALK.map((c) => c.class));
     for (const k of ['committee', 'candidate-only', 'state', 'resolved-by-money', 'unresolved']) {
       expect(classes.has(k as never), `no entry of class ${k}`).toBe(true);
+    }
+  });
+});
+
+describe('DUPLICATE_ENVELOPES and PERIOD_OVERRIDES', () => {
+  /** Whole-day distance between two 'YYYY-MM-DD' strings, UTC parts only. */
+  const days = (from: string, to: string): number => {
+    const [ay, am, ad] = from.split('-').map(Number);
+    const [by, bm, bd] = to.split('-').map(Number);
+    return (Date.UTC(by, bm - 1, bd) - Date.UTC(ay, am - 1, ad)) / 86_400_000;
+  };
+  const excluded = new Set(EXCLUDED_ENVELOPES.map((e) => e.envelope));
+
+  it('keys every correction to a unique envelope, across both tables', () => {
+    const ids = [
+      ...DUPLICATE_ENVELOPES.map((d) => d.envelope),
+      ...PERIOD_OVERRIDES.map((o) => o.envelope),
+    ];
+    expect(new Set(ids).size, 'one envelope may carry at most one correction').toBe(ids.length);
+  });
+
+  it('never corrects an envelope that is already excluded', () => {
+    // An excluded envelope is removed from every figure; correcting one would be
+    // dead data at best and a contradiction about what the artifact publishes at worst.
+    for (const d of DUPLICATE_ENVELOPES) {
+      expect(excluded.has(d.envelope), `duplicate ${d.envelope} is also excluded`).toBe(false);
+      expect(excluded.has(d.duplicateOf), `survivor ${d.duplicateOf} is excluded`).toBe(false);
+    }
+    for (const o of PERIOD_OVERRIDES) {
+      expect(excluded.has(o.envelope), `period override ${o.envelope} is also excluded`).toBe(false);
+    }
+  });
+
+  it('states a reason on every correction', () => {
+    for (const d of DUPLICATE_ENVELOPES) {
+      expect(d.reason.trim().length, `duplicate ${d.envelope}`).toBeGreaterThan(40);
+      expect(d.envelope, `duplicate ${d.envelope} points at itself`).not.toBe(d.duplicateOf);
+    }
+    for (const o of PERIOD_OVERRIDES) {
+      expect(o.reason.trim().length, `period ${o.envelope}`).toBeGreaterThan(40);
+    }
+  });
+
+  it('only ever moves a period BACKWARD, and never changes its length', () => {
+    // The whole class is one filer slip — a year typed forward. A correction that
+    // lengthened, shortened, or advanced a reporting period would be a different
+    // claim entirely, and would silently move money between quarters.
+    for (const o of PERIOD_OVERRIDES) {
+      for (const d of [o.originalStart, o.originalEnd, o.correctedStart, o.correctedEnd]) {
+        expect(d, `${o.envelope} has a non-ISO date`).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      }
+      expect(o.correctedStart < o.originalStart, `${o.envelope} does not move backward`).toBe(true);
+      expect(o.correctedEnd < o.originalEnd, `${o.envelope} end does not move backward`).toBe(true);
+      expect(
+        days(o.correctedStart, o.correctedEnd),
+        `${o.envelope} changes the period's length`
+      ).toBe(days(o.originalStart, o.originalEnd));
+      expect(o.originalStart < o.originalEnd, `${o.envelope} original period is inverted`).toBe(true);
     }
   });
 });

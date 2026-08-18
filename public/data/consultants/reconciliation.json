@@ -1,6 +1,6 @@
 {
   "provenance": {
-    "generatedAt": "2026-08-18T20:11:57.608Z",
+    "generatedAt": "2026-08-18T20:22:23.081Z",
     "generator": "scripts/build-consultant-recon.ts",
     "sources": [
       {
@@ -68,7 +68,8 @@
       "schE": "pitq-e56w form_type 'E' rows for the client's filer_nid whose transaction_date falls inside the consultant's own reporting period. Schedule G is summed separately and NEVER folded into schE; Schedule F is ignored entirely.",
       "undated": "A Schedule E row with no transaction_date is assigned to a reporting period when the FILING's [start_date, end_date] overlaps it; the assigned amount is included in schE and also reported separately as schEUndatedAssigned.",
       "contributions": "Each priced 7gkm-68qf row is searched in the recipient's own pitq RCPT/S497 rows for the same amount to the cent within ±30 days, matching the contributor name, then the firm's principal. Where sourceofthecontribution is 'Campaign Consultant' the contributor is the registrant itself (the contributor column is null on those rows).",
-      "exclusion": "EXCLUDED_ENVELOPES are removed before any receipt, pair, or rollup is computed, so their dollars appear only under `excluded`."
+      "exclusion": "EXCLUDED_ENVELOPES are removed before any receipt, pair, or rollup is computed, so their dollars appear only under `excluded`.",
+      "overrides": "Authored, envelope-keyed, applied after latest-per-series and before the restatement collapse. DUPLICATE_ENVELOPES drops a second copy of one report that landed in a different filingseries; PERIOD_OVERRIDES corrects a Quarterly Report whose period begins after the filer signed it, but only where a one-year shift back is the determinate correction. Both original and corrected values are published under `overrides`, and every corrected quarterly carries periodCorrected + its original dates."
     },
     "committeeCompleteThrough": {
       "6685673": "2026-07-22",
@@ -148,7 +149,178 @@
     "supersededEnvelopes": 6,
     "restatementsCollapsed": 11,
     "blankClientRows": 1,
-    "excludedEnvelopes": 2
+    "excludedEnvelopes": 2,
+    "duplicateEnvelopes": 1,
+    "periodOverrides": 12,
+    "uncorrectablePeriods": 1
+  },
+  "overrides": {
+    "duplicates": [
+      {
+        "envelope": "59d2f802-601a-47bc-88e2-d629a125d7eb",
+        "duplicateOf": "bd2d3c05-88b2-4c60-aca0-42162096666d",
+        "reason": "AGENCY filed the same $449,484.50 twice on 2025-03-05, 13m35s apart: a Quarterly Report signed 16:46:25 for a period typed 2025-09-01 to 2025-11-30, and a Termination Report signed 17:00:00 for 2024-09-01 to 2024-11-05. The Quarterly is dropped and the Termination kept because the Termination's period is the true one — AGENCY's client is Safer San Francisco for Mark Farrell for Mayor 2024, whose 9 Schedule E payments to payee 'Agency' ($453,053.54) all fall in October 2024, and because the Quarterly's period had not yet begun on the day it was signed. The two land in different `filingseries` (the string embeds report type and period start), so latestPerSeries cannot see the pair, and their period starts differ, so collapseRestatements cannot either.",
+        "droppedTotal": 449484.5
+      }
+    ],
+    "periods": [
+      {
+        "envelope": "33d7f30c-e4db-4022-a58c-94e3b1ebd944",
+        "consultantId": "baughman-merrill",
+        "displayName": "The Baughman Company Inc DBA BaughmanMerrill",
+        "originalStart": "2025-12-01",
+        "originalEnd": "2026-02-28",
+        "correctedStart": "2024-12-01",
+        "correctedEnd": "2025-02-28",
+        "datesigned": "2025-03-04T11:16:47.000",
+        "reported": 0,
+        "reason": "The Baughman Company Inc DBA BaughmanMerrill signed 2025-03-04, eleven days before the 2025-03-17 deadline for the Dec 2024–Feb 2025 quarter; the period as typed begins nine months after the signature. One year back lands it exactly on that quarter."
+      },
+      {
+        "envelope": "f2bb9a64-2f55-41e5-99c3-9676406b55f4",
+        "consultantId": "bedford-grove",
+        "displayName": "Bedford Grove",
+        "originalStart": "2025-12-01",
+        "originalEnd": "2026-02-28",
+        "correctedStart": "2024-12-01",
+        "correctedEnd": "2025-02-28",
+        "datesigned": "2025-03-05T14:55:44.000",
+        "reported": 0,
+        "reason": "Bedford Grove signed 2025-03-05, twelve days before the 2025-03-17 deadline for the Dec 2024–Feb 2025 quarter; the period as typed begins nine months after the signature. One year back lands it exactly on that quarter."
+      },
+      {
+        "envelope": "75372fe8-0d89-4eba-bc53-7b29270ecd67",
+        "consultantId": "nathan-allbee",
+        "displayName": "Nathan Allbee",
+        "originalStart": "2025-12-01",
+        "originalEnd": "2026-02-28",
+        "correctedStart": "2024-12-01",
+        "correctedEnd": "2025-02-28",
+        "datesigned": "2025-03-20T17:21:42.000",
+        "reported": 0,
+        "reason": "Nathan Allbee signed 2025-03-20, three days after the 2025-03-17 deadline for the Dec 2024–Feb 2025 quarter; the period as typed begins nine months after the signature. One year back lands it exactly on that quarter."
+      },
+      {
+        "envelope": "fd4be27e-7ec3-41ff-97a1-5d52222b2934",
+        "consultantId": "storefront-political",
+        "displayName": "Storefront Political Media",
+        "originalStart": "2025-12-01",
+        "originalEnd": "2026-02-28",
+        "correctedStart": "2024-12-01",
+        "correctedEnd": "2025-02-28",
+        "datesigned": "2025-04-08T15:54:59.000",
+        "reported": 0,
+        "reason": "Storefront Political Media signed 2025-04-08, after the 2025-03-17 deadline for the Dec 2024–Feb 2025 quarter; the period as typed begins eight months after the signature. One year back lands it exactly on that quarter — and makes this filing 22 days late rather than 347 days early."
+      },
+      {
+        "envelope": "65efccfe-919a-4209-99f4-1350a81991da",
+        "consultantId": "jamie-hughes",
+        "displayName": "Jamie Hughes",
+        "originalStart": "2026-12-01",
+        "originalEnd": "2027-02-28",
+        "correctedStart": "2025-12-01",
+        "correctedEnd": "2026-02-28",
+        "datesigned": "2026-03-04T16:59:47.000",
+        "reported": 20000,
+        "reason": "Jamie Hughes signed 2026-03-04 ($20,000 of clients), twelve days before the 2026-03-16 deadline for the Dec 2025–Feb 2026 quarter; the period as typed begins nine months after the signature. One year back lands it exactly on that quarter."
+      },
+      {
+        "envelope": "013e5323-9441-4c78-8b0c-787abf094a1a",
+        "consultantId": "cleansweep-campaigns",
+        "displayName": "CleanSweep Campaigns",
+        "originalStart": "2026-12-01",
+        "originalEnd": "2027-02-28",
+        "correctedStart": "2025-12-01",
+        "correctedEnd": "2026-02-28",
+        "datesigned": "2026-03-09T12:04:07.000",
+        "reported": 0,
+        "reason": "CleanSweep Campaigns signed 2026-03-09, seven days before the 2026-03-16 deadline for the Dec 2025–Feb 2026 quarter; the period as typed begins nine months after the signature. One year back lands it exactly on that quarter."
+      },
+      {
+        "envelope": "14293994-9c87-46e0-9855-dc4c7e6b402a",
+        "consultantId": "media-company",
+        "displayName": "The Media Company LLC",
+        "originalStart": "2026-12-01",
+        "originalEnd": "2027-02-28",
+        "correctedStart": "2025-12-01",
+        "correctedEnd": "2026-02-28",
+        "datesigned": "2026-03-13T16:42:48.000",
+        "reported": 10000,
+        "reason": "The Media Company LLC signed 2026-03-13 ($10,000 of clients), three days before the 2026-03-16 deadline for the Dec 2025–Feb 2026 quarter; the period as typed begins nine months after the signature. One year back lands it exactly on that quarter. This is the surviving envelope of the filer's Original→Amendment pair on filingseries 'The Media Company LLC_Quarterly Report_12-1-2026' (the superseded 2026-03-09 copy carries the same typo and is dropped by latestPerSeries before overrides are applied)."
+      },
+      {
+        "envelope": "1138b89a-1235-48b3-a79f-0f496409039f",
+        "consultantId": "baughman-merrill",
+        "displayName": "The Baughman Company Inc DBA BaughmanMerrill",
+        "originalStart": "2026-12-01",
+        "originalEnd": "2027-02-28",
+        "correctedStart": "2025-12-01",
+        "correctedEnd": "2026-02-28",
+        "datesigned": "2026-03-11T12:03:22.000",
+        "reported": 0,
+        "reason": "The Baughman Company Inc DBA BaughmanMerrill signed 2026-03-11, five days before the 2026-03-16 deadline for the Dec 2025–Feb 2026 quarter; the period as typed begins nine months after the signature. Same slip as this filer made a year earlier. One year back lands it exactly on that quarter."
+      },
+      {
+        "envelope": "21dacb4a-92cd-489f-97d5-22f87de411e7",
+        "consultantId": "gallagher",
+        "displayName": "John Gallagher",
+        "originalStart": "2026-12-01",
+        "originalEnd": "2027-02-28",
+        "correctedStart": "2025-12-01",
+        "correctedEnd": "2026-02-28",
+        "datesigned": "2026-03-16T15:42:42.000",
+        "reported": 9846.15,
+        "reason": "John Gallagher signed 2026-03-16 ($9,846.15 of clients) — the deadline day itself for the Dec 2025–Feb 2026 quarter; the period as typed begins nine months after the signature. One year back lands it exactly on that quarter."
+      },
+      {
+        "envelope": "8ef6e2be-8c7b-40c2-bbf8-e866e99a2302",
+        "consultantId": "growth-political",
+        "displayName": "Growth Political Strategies LLC",
+        "originalStart": "2026-12-01",
+        "originalEnd": "2027-02-28",
+        "correctedStart": "2025-12-01",
+        "correctedEnd": "2026-02-28",
+        "datesigned": "2026-03-16T17:23:02.000",
+        "reported": 1500,
+        "reason": "Growth Political Strategies signed 2026-03-16 ($1,500 of clients) — the deadline day itself for the Dec 2025–Feb 2026 quarter; the period as typed begins nine months after the signature. One year back lands it exactly on that quarter."
+      },
+      {
+        "envelope": "675751b3-3e67-4e7c-af5d-a4ce22df3e8b",
+        "consultantId": "bedford-grove",
+        "displayName": "Bedford Grove",
+        "originalStart": "2026-12-01",
+        "originalEnd": "2027-02-28",
+        "correctedStart": "2025-12-01",
+        "correctedEnd": "2026-02-28",
+        "datesigned": "2026-03-18T15:56:23.000",
+        "reported": 25000,
+        "reason": "Bedford Grove signed 2026-03-18 ($25,000 of clients), two days after the 2026-03-16 deadline for the Dec 2025–Feb 2026 quarter; the period as typed begins nine months after the signature. Same slip as this filer made a year earlier. One year back lands it exactly on that quarter."
+      },
+      {
+        "envelope": "21f8c1b2-c67f-43c7-93ca-6147942be63a",
+        "consultantId": "nathan-allbee",
+        "displayName": "Nathan Allbee",
+        "originalStart": "2026-12-01",
+        "originalEnd": "2027-02-28",
+        "correctedStart": "2025-12-01",
+        "correctedEnd": "2026-02-28",
+        "datesigned": "2026-03-22T21:01:23.000",
+        "reported": 24000,
+        "reason": "Nathan Allbee signed 2026-03-22 ($24,000 of clients), six days after the 2026-03-16 deadline for the Dec 2025–Feb 2026 quarter; the period as typed begins nine months after the signature. Corroborated independently by the client crosswalk: the 'Strong Muni for All' row resolves by exact-dollar equality against Daniel Lurie Ballot Measure Committee payments of $12,000 on 2025-12-31 and $6,000 on 2026-02-17 — inside the corrected Dec 2025–Feb 2026 window, and nowhere near the period as typed."
+      }
+    ],
+    "uncorrectable": [
+      {
+        "envelope": "adcd3302-39f9-446b-a5e3-91bad19ec4bb",
+        "consultantId": "outset-strategies",
+        "displayName": "Outset Strategies (Joseph Sweiss)",
+        "periodStart": "2025-06-01",
+        "periodEnd": "2025-08-31",
+        "datesigned": "2025-03-27T16:51:13.000",
+        "reported": 6000,
+        "reason": "A quarter cannot be reported before it starts: the period as filed begins 66 days after the signature. Shifting it back one year lands 2024-06-01→2024-08-31, but the quarter that had already closed when this was signed is 2024-12-01→2025-02-28. The two disagree, so no correction is determinate and the dates are left exactly as filed — this filing reconciles against its window as typed."
+      }
+    ]
   },
   "consultants": [
     {
@@ -191,6 +363,18 @@
           "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_17_2024-12-12T21-46-38-086Z.pdf"
         },
         {
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "periodCorrected": true,
+          "originalPeriodStart": "2026-12-01",
+          "originalPeriodEnd": "2027-02-28",
+          "datesigned": "2026-03-13T16:42:48.000",
+          "deadline": "2026-03-16",
+          "daysLate": -3,
+          "envelope": "14293994-9c87-46e0-9855-dc4c7e6b402a",
+          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_214_2026-03-13T22-23-37-766Z.pdf"
+        },
+        {
           "periodStart": "2026-03-01",
           "periodEnd": "2026-05-31",
           "datesigned": "2026-06-01T14:09:39.000",
@@ -198,15 +382,6 @@
           "daysLate": -14,
           "envelope": "ce330cde-54ad-83b4-8147-da69d1937f1b",
           "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_243_2026-06-01T20-58-55-664Z.pdf"
-        },
-        {
-          "periodStart": "2026-12-01",
-          "periodEnd": "2027-02-28",
-          "datesigned": "2026-03-13T16:42:48.000",
-          "deadline": "2027-03-15",
-          "daysLate": -367,
-          "envelope": "14293994-9c87-46e0-9855-dc4c7e6b402a",
-          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_214_2026-03-13T22-23-37-766Z.pdf"
         }
       ],
       "receipts": [
@@ -221,6 +396,32 @@
           "reportType": "Quarterly Report",
           "envelope": "83a398f6-52d4-4274-a1b1-c72890dabb4c",
           "reported": 3394794.14
+        },
+        {
+          "clientString": "SF Believes",
+          "clientClass": "committee",
+          "clientConfidence": "exact",
+          "filerNid": "215606983",
+          "filerName": "SF Believes",
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "periodCorrected": true,
+          "reportType": "Quarterly Report",
+          "envelope": "14293994-9c87-46e0-9855-dc4c7e6b402a",
+          "reported": 10000
+        },
+        {
+          "clientString": "Team Manny, Manny Yekutiel for Supervisor 2026",
+          "clientClass": "committee",
+          "clientConfidence": "exact",
+          "filerNid": "217128861",
+          "filerName": "Team Manny, Manny Yekutiel for Supervisor 2026",
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "periodCorrected": true,
+          "reportType": "Quarterly Report",
+          "envelope": "14293994-9c87-46e0-9855-dc4c7e6b402a",
+          "reported": 0
         },
         {
           "clientString": "SF Believes",
@@ -245,30 +446,6 @@
           "reportType": "Quarterly Report",
           "envelope": "ce330cde-54ad-83b4-8147-da69d1937f1b",
           "reported": 0
-        },
-        {
-          "clientString": "SF Believes",
-          "clientClass": "committee",
-          "clientConfidence": "exact",
-          "filerNid": "215606983",
-          "filerName": "SF Believes",
-          "periodStart": "2026-12-01",
-          "periodEnd": "2027-02-28",
-          "reportType": "Quarterly Report",
-          "envelope": "14293994-9c87-46e0-9855-dc4c7e6b402a",
-          "reported": 10000
-        },
-        {
-          "clientString": "Team Manny, Manny Yekutiel for Supervisor 2026",
-          "clientClass": "committee",
-          "clientConfidence": "exact",
-          "filerNid": "217128861",
-          "filerName": "Team Manny, Manny Yekutiel for Supervisor 2026",
-          "periodStart": "2026-12-01",
-          "periodEnd": "2027-02-28",
-          "reportType": "Quarterly Report",
-          "envelope": "14293994-9c87-46e0-9855-dc4c7e6b402a",
-          "reported": 0
         }
       ],
       "reconciliation": [
@@ -288,6 +465,44 @@
           "committeeCompleteThrough": "2026-07-29",
           "clientStrings": [
             "Believe in SF, Lurie for Mayor 2024"
+          ],
+          "clientConfidence": "exact"
+        },
+        {
+          "consultantId": "media-company",
+          "filerNid": "215606983",
+          "filerName": "SF Believes",
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "reported": 10000,
+          "schE": 0,
+          "schEUndatedAssigned": 0,
+          "schG": 0,
+          "ratio": 0,
+          "exactMatch": false,
+          "rowsE": 0,
+          "committeeCompleteThrough": "2026-07-31",
+          "clientStrings": [
+            "SF Believes"
+          ],
+          "clientConfidence": "exact"
+        },
+        {
+          "consultantId": "media-company",
+          "filerNid": "217128861",
+          "filerName": "Team Manny, Manny Yekutiel for Supervisor 2026",
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "reported": 0,
+          "schE": 0,
+          "schEUndatedAssigned": 0,
+          "schG": 0,
+          "ratio": null,
+          "exactMatch": true,
+          "rowsE": 0,
+          "committeeCompleteThrough": "2026-07-31",
+          "clientStrings": [
+            "Team Manny, Manny Yekutiel for Supervisor 2026"
           ],
           "clientConfidence": "exact"
         },
@@ -316,44 +531,6 @@
           "filerName": "Team Manny, Manny Yekutiel for Supervisor 2026",
           "periodStart": "2026-03-01",
           "periodEnd": "2026-05-31",
-          "reported": 0,
-          "schE": 0,
-          "schEUndatedAssigned": 0,
-          "schG": 0,
-          "ratio": null,
-          "exactMatch": true,
-          "rowsE": 0,
-          "committeeCompleteThrough": "2026-07-31",
-          "clientStrings": [
-            "Team Manny, Manny Yekutiel for Supervisor 2026"
-          ],
-          "clientConfidence": "exact"
-        },
-        {
-          "consultantId": "media-company",
-          "filerNid": "215606983",
-          "filerName": "SF Believes",
-          "periodStart": "2026-12-01",
-          "periodEnd": "2027-02-28",
-          "reported": 10000,
-          "schE": 0,
-          "schEUndatedAssigned": 0,
-          "schG": 0,
-          "ratio": 0,
-          "exactMatch": false,
-          "rowsE": 0,
-          "committeeCompleteThrough": "2026-07-31",
-          "clientStrings": [
-            "SF Believes"
-          ],
-          "clientConfidence": "exact"
-        },
-        {
-          "consultantId": "media-company",
-          "filerNid": "217128861",
-          "filerName": "Team Manny, Manny Yekutiel for Supervisor 2026",
-          "periodStart": "2026-12-01",
-          "periodEnd": "2027-02-28",
           "reported": 0,
           "schE": 0,
           "schEUndatedAssigned": 0,
@@ -1190,114 +1367,6 @@
         "reported": 1011584,
         "reconciledReported": 1011584,
         "schE": 1011584,
-        "schG": 0
-      }
-    },
-    {
-      "id": "agency",
-      "displayName": "AGENCY",
-      "resolvedBy": "alias",
-      "rawNames": [
-        "AGENCY"
-      ],
-      "kind": "inferred-dba",
-      "payeePatterns": [
-        "AGENCY"
-      ],
-      "city": "Des Moines",
-      "state": "Iowa",
-      "registrations": [
-        {
-          "year": "2024",
-          "reportType": "Termination Report",
-          "datesigned": "2025-03-05T17:00:00.000",
-          "envelope": "bd2d3c05-88b2-4c60-aca0-42162096666d",
-          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_54_2025-03-06T00-58-38-769Z.pdf"
-        }
-      ],
-      "quarterlies": [
-        {
-          "periodStart": "2025-09-01",
-          "periodEnd": "2025-11-30",
-          "datesigned": "2025-03-05T16:46:25.000",
-          "deadline": "2025-12-15",
-          "daysLate": -285,
-          "envelope": "59d2f802-601a-47bc-88e2-d629a125d7eb",
-          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_53_2025-03-06T00-44-40-190Z.pdf"
-        }
-      ],
-      "receipts": [
-        {
-          "clientString": "Safer San Francisco for Mark Farrel 2024",
-          "clientClass": "committee",
-          "clientConfidence": "inferred",
-          "filerNid": "211765770",
-          "filerName": "Safer San Francisco",
-          "periodStart": "2024-09-01",
-          "periodEnd": "2024-11-05",
-          "reportType": "Termination Report",
-          "envelope": "bd2d3c05-88b2-4c60-aca0-42162096666d",
-          "reported": 449484.5
-        },
-        {
-          "clientString": "Safer San Francisco for Mark Farrel for Mayor 2024",
-          "clientClass": "committee",
-          "clientConfidence": "inferred",
-          "filerNid": "211765770",
-          "filerName": "Safer San Francisco",
-          "periodStart": "2025-09-01",
-          "periodEnd": "2025-11-30",
-          "reportType": "Quarterly Report",
-          "envelope": "59d2f802-601a-47bc-88e2-d629a125d7eb",
-          "reported": 449484.5
-        }
-      ],
-      "reconciliation": [
-        {
-          "consultantId": "agency",
-          "filerNid": "211765770",
-          "filerName": "Safer San Francisco for Mark Farrell for Mayor 2024",
-          "periodStart": "2024-09-01",
-          "periodEnd": "2024-11-05",
-          "reported": 449484.5,
-          "schE": 453053.54,
-          "schEUndatedAssigned": 0,
-          "schG": 0,
-          "ratio": 1.00794,
-          "exactMatch": false,
-          "rowsE": 9,
-          "committeeCompleteThrough": "2026-07-31",
-          "clientStrings": [
-            "Safer San Francisco for Mark Farrel 2024"
-          ],
-          "clientConfidence": "inferred"
-        },
-        {
-          "consultantId": "agency",
-          "filerNid": "211765770",
-          "filerName": "Safer San Francisco",
-          "periodStart": "2025-09-01",
-          "periodEnd": "2025-11-30",
-          "reported": 449484.5,
-          "schE": 0,
-          "schEUndatedAssigned": 0,
-          "schG": 0,
-          "ratio": 0,
-          "exactMatch": false,
-          "rowsE": 0,
-          "committeeCompleteThrough": "2026-07-31",
-          "clientStrings": [
-            "Safer San Francisco for Mark Farrel for Mayor 2024"
-          ],
-          "clientConfidence": "inferred"
-        }
-      ],
-      "contributions": [],
-      "restatementsCollapsed": [],
-      "totals": {
-        "reported": 898969,
-        "reconciledReported": 898969,
-        "schE": 453053.54,
         "schG": 0
       }
     },
@@ -2537,6 +2606,73 @@
       }
     },
     {
+      "id": "agency",
+      "displayName": "AGENCY",
+      "resolvedBy": "alias",
+      "rawNames": [
+        "AGENCY"
+      ],
+      "kind": "inferred-dba",
+      "payeePatterns": [
+        "AGENCY"
+      ],
+      "city": "Des Moines",
+      "state": "Iowa",
+      "registrations": [
+        {
+          "year": "2024",
+          "reportType": "Termination Report",
+          "datesigned": "2025-03-05T17:00:00.000",
+          "envelope": "bd2d3c05-88b2-4c60-aca0-42162096666d",
+          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_54_2025-03-06T00-58-38-769Z.pdf"
+        }
+      ],
+      "quarterlies": [],
+      "receipts": [
+        {
+          "clientString": "Safer San Francisco for Mark Farrel 2024",
+          "clientClass": "committee",
+          "clientConfidence": "inferred",
+          "filerNid": "211765770",
+          "filerName": "Safer San Francisco",
+          "periodStart": "2024-09-01",
+          "periodEnd": "2024-11-05",
+          "reportType": "Termination Report",
+          "envelope": "bd2d3c05-88b2-4c60-aca0-42162096666d",
+          "reported": 449484.5
+        }
+      ],
+      "reconciliation": [
+        {
+          "consultantId": "agency",
+          "filerNid": "211765770",
+          "filerName": "Safer San Francisco for Mark Farrell for Mayor 2024",
+          "periodStart": "2024-09-01",
+          "periodEnd": "2024-11-05",
+          "reported": 449484.5,
+          "schE": 453053.54,
+          "schEUndatedAssigned": 0,
+          "schG": 0,
+          "ratio": 1.00794,
+          "exactMatch": false,
+          "rowsE": 9,
+          "committeeCompleteThrough": "2026-07-31",
+          "clientStrings": [
+            "Safer San Francisco for Mark Farrel 2024"
+          ],
+          "clientConfidence": "inferred"
+        }
+      ],
+      "contributions": [],
+      "restatementsCollapsed": [],
+      "totals": {
+        "reported": 449484.5,
+        "reconciledReported": 449484.5,
+        "schE": 453053.54,
+        "schG": 0
+      }
+    },
+    {
       "id": "bedford-grove",
       "displayName": "Bedford Grove",
       "resolvedBy": "alias",
@@ -2571,6 +2707,18 @@
           "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_14_2024-12-12T17-50-56-370Z.pdf"
         },
         {
+          "periodStart": "2024-12-01",
+          "periodEnd": "2025-02-28",
+          "periodCorrected": true,
+          "originalPeriodStart": "2025-12-01",
+          "originalPeriodEnd": "2026-02-28",
+          "datesigned": "2025-03-05T14:55:44.000",
+          "deadline": "2025-03-17",
+          "daysLate": -12,
+          "envelope": "f2bb9a64-2f55-41e5-99c3-9676406b55f4",
+          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_51_2025-03-05T22-54-44-303Z.pdf"
+        },
+        {
           "periodStart": "2025-03-01",
           "periodEnd": "2025-05-31",
           "datesigned": "2025-06-13T21:01:19.000",
@@ -2600,11 +2748,14 @@
         {
           "periodStart": "2025-12-01",
           "periodEnd": "2026-02-28",
-          "datesigned": "2025-03-05T14:55:44.000",
+          "periodCorrected": true,
+          "originalPeriodStart": "2026-12-01",
+          "originalPeriodEnd": "2027-02-28",
+          "datesigned": "2026-03-18T15:56:23.000",
           "deadline": "2026-03-16",
-          "daysLate": -376,
-          "envelope": "f2bb9a64-2f55-41e5-99c3-9676406b55f4",
-          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_51_2025-03-05T22-54-44-303Z.pdf"
+          "daysLate": 2,
+          "envelope": "675751b3-3e67-4e7c-af5d-a4ce22df3e8b",
+          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_230_2026-03-18T22-55-18-646Z.pdf"
         },
         {
           "periodStart": "2026-03-01",
@@ -2623,15 +2774,6 @@
           "daysLate": 1,
           "envelope": "1593b3f6-bef1-847d-8075-d919308371b2",
           "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_271_2026-06-16T14-10-04-072Z.pdf"
-        },
-        {
-          "periodStart": "2026-12-01",
-          "periodEnd": "2027-02-28",
-          "datesigned": "2026-03-18T15:56:23.000",
-          "deadline": "2027-03-15",
-          "daysLate": -362,
-          "envelope": "675751b3-3e67-4e7c-af5d-a4ce22df3e8b",
-          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_230_2026-03-18T22-55-18-646Z.pdf"
         }
       ],
       "receipts": [
@@ -2731,6 +2873,32 @@
           "reported": 15000
         },
         {
+          "clientString": "Earthquake Safety and Emergency Response (ESER)",
+          "clientClass": "committee",
+          "clientConfidence": "exact",
+          "filerNid": "215726436",
+          "filerName": "Yes on A, San Franciscans for Fire, Earthquake, and Disaster Preparedness, sponsored by San Francisco Firefighters local 798",
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "periodCorrected": true,
+          "reportType": "Quarterly Report",
+          "envelope": "675751b3-3e67-4e7c-af5d-a4ce22df3e8b",
+          "reported": 20000
+        },
+        {
+          "clientString": "Stephen Sherrill for Supervisor",
+          "clientClass": "committee",
+          "clientConfidence": "inferred",
+          "filerNid": "213987622",
+          "filerName": "Stephen Sherrill for Supervisor 2026",
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "periodCorrected": true,
+          "reportType": "Quarterly Report",
+          "envelope": "675751b3-3e67-4e7c-af5d-a4ce22df3e8b",
+          "reported": 5000
+        },
+        {
           "clientString": "Matt Dorsey for DCCC",
           "clientClass": "committee",
           "clientConfidence": "inferred",
@@ -2777,30 +2945,6 @@
           "reportType": "Quarterly Report",
           "envelope": "bbf8ae37-d87a-8741-820b-d9afd0829e1d",
           "reported": 30000
-        },
-        {
-          "clientString": "Earthquake Safety and Emergency Response (ESER)",
-          "clientClass": "committee",
-          "clientConfidence": "exact",
-          "filerNid": "215726436",
-          "filerName": "Yes on A, San Franciscans for Fire, Earthquake, and Disaster Preparedness, sponsored by San Francisco Firefighters local 798",
-          "periodStart": "2026-12-01",
-          "periodEnd": "2027-02-28",
-          "reportType": "Quarterly Report",
-          "envelope": "675751b3-3e67-4e7c-af5d-a4ce22df3e8b",
-          "reported": 20000
-        },
-        {
-          "clientString": "Stephen Sherrill for Supervisor",
-          "clientClass": "committee",
-          "clientConfidence": "inferred",
-          "filerNid": "213987622",
-          "filerName": "Stephen Sherrill for Supervisor 2026",
-          "periodStart": "2026-12-01",
-          "periodEnd": "2027-02-28",
-          "reportType": "Quarterly Report",
-          "envelope": "675751b3-3e67-4e7c-af5d-a4ce22df3e8b",
-          "reported": 5000
         }
       ],
       "reconciliation": [
@@ -2939,6 +3083,44 @@
         },
         {
           "consultantId": "bedford-grove",
+          "filerNid": "213987622",
+          "filerName": "Stephen Sherrill for Supervisor 2026",
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "reported": 5000,
+          "schE": 10016.16,
+          "schEUndatedAssigned": 0,
+          "schG": 0,
+          "ratio": 2.003232,
+          "exactMatch": false,
+          "rowsE": 4,
+          "committeeCompleteThrough": "2026-08-17",
+          "clientStrings": [
+            "Stephen Sherrill for Supervisor"
+          ],
+          "clientConfidence": "inferred"
+        },
+        {
+          "consultantId": "bedford-grove",
+          "filerNid": "215726436",
+          "filerName": "Yes on A, San Franciscans for Fire, Earthquake, and Disaster Preparedness, sponsored by San Francisco Firefighters local 798",
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "reported": 20000,
+          "schE": 0,
+          "schEUndatedAssigned": 0,
+          "schG": 0,
+          "ratio": 0,
+          "exactMatch": false,
+          "rowsE": 0,
+          "committeeCompleteThrough": "2026-07-31",
+          "clientStrings": [
+            "Earthquake Safety and Emergency Response (ESER)"
+          ],
+          "clientConfidence": "exact"
+        },
+        {
+          "consultantId": "bedford-grove",
           "filerNid": "208697921",
           "filerName": "Matt Dorsey for DCCC Member 2024 Officeholder Committee",
           "periodStart": "2026-03-01",
@@ -2993,44 +3175,6 @@
             "San Franciscans for Fire, Earthquake and Disaster Preparedness"
           ],
           "clientConfidence": "inferred"
-        },
-        {
-          "consultantId": "bedford-grove",
-          "filerNid": "213987622",
-          "filerName": "Stephen Sherrill for Supervisor 2026",
-          "periodStart": "2026-12-01",
-          "periodEnd": "2027-02-28",
-          "reported": 5000,
-          "schE": 0,
-          "schEUndatedAssigned": 0,
-          "schG": 0,
-          "ratio": 0,
-          "exactMatch": false,
-          "rowsE": 0,
-          "committeeCompleteThrough": "2026-08-17",
-          "clientStrings": [
-            "Stephen Sherrill for Supervisor"
-          ],
-          "clientConfidence": "inferred"
-        },
-        {
-          "consultantId": "bedford-grove",
-          "filerNid": "215726436",
-          "filerName": "Yes on A, San Franciscans for Fire, Earthquake, and Disaster Preparedness, sponsored by San Francisco Firefighters local 798",
-          "periodStart": "2026-12-01",
-          "periodEnd": "2027-02-28",
-          "reported": 20000,
-          "schE": 0,
-          "schEUndatedAssigned": 0,
-          "schG": 0,
-          "ratio": 0,
-          "exactMatch": false,
-          "rowsE": 0,
-          "committeeCompleteThrough": "2026-07-31",
-          "clientStrings": [
-            "Earthquake Safety and Emergency Response (ESER)"
-          ],
-          "clientConfidence": "exact"
         }
       ],
       "contributions": [],
@@ -3038,7 +3182,7 @@
       "totals": {
         "reported": 276950,
         "reconciledReported": 269450,
-        "schE": 218593.25,
+        "schE": 228609.41,
         "schG": 0
       }
     },
@@ -5236,11 +5380,14 @@
           "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_183_2025-12-16T07-52-39-688Z.pdf"
         },
         {
-          "periodStart": "2026-12-01",
-          "periodEnd": "2027-02-28",
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "periodCorrected": true,
+          "originalPeriodStart": "2026-12-01",
+          "originalPeriodEnd": "2027-02-28",
           "datesigned": "2026-03-04T16:59:47.000",
-          "deadline": "2027-03-15",
-          "daysLate": -376,
+          "deadline": "2026-03-16",
+          "daysLate": -12,
           "envelope": "65efccfe-919a-4209-99f4-1350a81991da",
           "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_200_2026-03-05T00-58-52-773Z.pdf"
         }
@@ -5299,8 +5446,9 @@
           "clientClass": "candidate-only",
           "clientConfidence": "exact",
           "filerNid": null,
-          "periodStart": "2026-12-01",
-          "periodEnd": "2027-02-28",
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "periodCorrected": true,
           "reportType": "Quarterly Report",
           "envelope": "65efccfe-919a-4209-99f4-1350a81991da",
           "reported": 5000
@@ -5310,8 +5458,9 @@
           "clientClass": "candidate-only",
           "clientConfidence": "exact",
           "filerNid": null,
-          "periodStart": "2026-12-01",
-          "periodEnd": "2027-02-28",
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "periodCorrected": true,
           "reportType": "Quarterly Report",
           "envelope": "65efccfe-919a-4209-99f4-1350a81991da",
           "reported": 15000
@@ -5624,6 +5773,18 @@
       "registrations": [],
       "quarterlies": [
         {
+          "periodStart": "2024-12-01",
+          "periodEnd": "2025-02-28",
+          "periodCorrected": true,
+          "originalPeriodStart": "2025-12-01",
+          "originalPeriodEnd": "2026-02-28",
+          "datesigned": "2025-03-20T17:21:42.000",
+          "deadline": "2025-03-17",
+          "daysLate": 3,
+          "envelope": "75372fe8-0d89-4eba-bc53-7b29270ecd67",
+          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_78_2025-03-20T21-59-52-753Z.pdf"
+        },
+        {
           "periodStart": "2025-06-01",
           "periodEnd": "2025-08-31",
           "datesigned": "2025-09-16T14:12:37.000",
@@ -5644,11 +5805,14 @@
         {
           "periodStart": "2025-12-01",
           "periodEnd": "2026-02-28",
-          "datesigned": "2025-03-20T17:21:42.000",
+          "periodCorrected": true,
+          "originalPeriodStart": "2026-12-01",
+          "originalPeriodEnd": "2027-02-28",
+          "datesigned": "2026-03-22T21:01:23.000",
           "deadline": "2026-03-16",
-          "daysLate": -361,
-          "envelope": "75372fe8-0d89-4eba-bc53-7b29270ecd67",
-          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_78_2025-03-20T21-59-52-753Z.pdf"
+          "daysLate": 6,
+          "envelope": "21f8c1b2-c67f-43c7-93ca-6147942be63a",
+          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_233_2026-03-23T03-59-29-986Z.pdf"
         },
         {
           "periodStart": "2026-03-01",
@@ -5658,15 +5822,6 @@
           "daysLate": 51,
           "envelope": "49526614-96e4-8f02-83ea-0e006d1a43ee",
           "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_287_2026-07-13T00-26-44-329Z.pdf"
-        },
-        {
-          "periodStart": "2026-12-01",
-          "periodEnd": "2027-02-28",
-          "datesigned": "2026-03-22T21:01:23.000",
-          "deadline": "2027-03-15",
-          "daysLate": -358,
-          "envelope": "21f8c1b2-c67f-43c7-93ca-6147942be63a",
-          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_233_2026-03-23T03-59-29-986Z.pdf"
         }
       ],
       "receipts": [
@@ -5680,6 +5835,32 @@
           "reportType": "Quarterly Report",
           "envelope": "aeb4456e-db6d-489b-ba85-04c0910f2835",
           "reported": 4000
+        },
+        {
+          "clientString": "Phil Kim for School Board",
+          "clientClass": "committee",
+          "clientConfidence": "uncertain",
+          "filerNid": "214769736",
+          "filerName": "Kim for School Board June 2026",
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "periodCorrected": true,
+          "reportType": "Quarterly Report",
+          "envelope": "21f8c1b2-c67f-43c7-93ca-6147942be63a",
+          "reported": 6000
+        },
+        {
+          "clientString": "Strong Muni for All",
+          "clientClass": "resolved-by-money",
+          "clientConfidence": "inferred",
+          "filerNid": "214099226",
+          "filerName": "Daniel Lurie Ballot Measure Committee - Safe, Affordable MUNI for a Thriving San Francisco",
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "periodCorrected": true,
+          "reportType": "Quarterly Report",
+          "envelope": "21f8c1b2-c67f-43c7-93ca-6147942be63a",
+          "reported": 18000
         },
         {
           "clientString": "Clean Up City Hall",
@@ -5716,33 +5897,47 @@
           "reportType": "Quarterly Report",
           "envelope": "49526614-96e4-8f02-83ea-0e006d1a43ee",
           "reported": 18000
-        },
-        {
-          "clientString": "Phil Kim for School Board",
-          "clientClass": "committee",
-          "clientConfidence": "uncertain",
-          "filerNid": "214769736",
-          "filerName": "Kim for School Board June 2026",
-          "periodStart": "2026-12-01",
-          "periodEnd": "2027-02-28",
-          "reportType": "Quarterly Report",
-          "envelope": "21f8c1b2-c67f-43c7-93ca-6147942be63a",
-          "reported": 6000
-        },
-        {
-          "clientString": "Strong Muni for All",
-          "clientClass": "resolved-by-money",
-          "clientConfidence": "inferred",
-          "filerNid": "214099226",
-          "filerName": "Daniel Lurie Ballot Measure Committee - Safe, Affordable MUNI for a Thriving San Francisco",
-          "periodStart": "2026-12-01",
-          "periodEnd": "2027-02-28",
-          "reportType": "Quarterly Report",
-          "envelope": "21f8c1b2-c67f-43c7-93ca-6147942be63a",
-          "reported": 18000
         }
       ],
       "reconciliation": [
+        {
+          "consultantId": "nathan-allbee",
+          "filerNid": "214099226",
+          "filerName": "Daniel Lurie Ballot Measure Committee - Safe, Affordable MUNI for a Thriving San Francisco",
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "reported": 18000,
+          "schE": 18000,
+          "schEUndatedAssigned": 0,
+          "schG": 0,
+          "ratio": 1,
+          "exactMatch": true,
+          "rowsE": 2,
+          "committeeCompleteThrough": "2026-07-31",
+          "clientStrings": [
+            "Strong Muni for All"
+          ],
+          "clientConfidence": "inferred"
+        },
+        {
+          "consultantId": "nathan-allbee",
+          "filerNid": "214769736",
+          "filerName": "Kim for School Board June 2026",
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "reported": 6000,
+          "schE": 9799.16,
+          "schEUndatedAssigned": 0,
+          "schG": 0,
+          "ratio": 1.6331930000000001,
+          "exactMatch": false,
+          "rowsE": 5,
+          "committeeCompleteThrough": "2026-07-30",
+          "clientStrings": [
+            "Phil Kim for School Board"
+          ],
+          "clientConfidence": "uncertain"
+        },
         {
           "consultantId": "nathan-allbee",
           "filerNid": "214099226",
@@ -5799,44 +5994,6 @@
             "Clean Up City Hall"
           ],
           "clientConfidence": "inferred"
-        },
-        {
-          "consultantId": "nathan-allbee",
-          "filerNid": "214099226",
-          "filerName": "Daniel Lurie Ballot Measure Committee - Safe, Affordable MUNI for a Thriving San Francisco",
-          "periodStart": "2026-12-01",
-          "periodEnd": "2027-02-28",
-          "reported": 18000,
-          "schE": 0,
-          "schEUndatedAssigned": 0,
-          "schG": 0,
-          "ratio": 0,
-          "exactMatch": false,
-          "rowsE": 0,
-          "committeeCompleteThrough": "2026-07-31",
-          "clientStrings": [
-            "Strong Muni for All"
-          ],
-          "clientConfidence": "inferred"
-        },
-        {
-          "consultantId": "nathan-allbee",
-          "filerNid": "214769736",
-          "filerName": "Kim for School Board June 2026",
-          "periodStart": "2026-12-01",
-          "periodEnd": "2027-02-28",
-          "reported": 6000,
-          "schE": 0,
-          "schEUndatedAssigned": 0,
-          "schG": 0,
-          "ratio": 0,
-          "exactMatch": false,
-          "rowsE": 0,
-          "committeeCompleteThrough": "2026-07-30",
-          "clientStrings": [
-            "Phil Kim for School Board"
-          ],
-          "clientConfidence": "uncertain"
         }
       ],
       "contributions": [],
@@ -5844,7 +6001,7 @@
       "totals": {
         "reported": 71500,
         "reconciledReported": 67500,
-        "schE": 61500,
+        "schE": 89299.16,
         "schG": 0
       }
     },
@@ -6349,6 +6506,18 @@
       ],
       "quarterlies": [
         {
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "periodCorrected": true,
+          "originalPeriodStart": "2026-12-01",
+          "originalPeriodEnd": "2027-02-28",
+          "datesigned": "2026-03-16T15:42:42.000",
+          "deadline": "2026-03-16",
+          "daysLate": 0,
+          "envelope": "21dacb4a-92cd-489f-97d5-22f87de411e7",
+          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_219_2026-03-16T20-58-18-655Z.pdf"
+        },
+        {
           "periodStart": "2026-03-01",
           "periodEnd": "2026-05-31",
           "datesigned": "2026-06-11T16:03:02.000",
@@ -6356,18 +6525,22 @@
           "daysLate": -4,
           "envelope": "ff5bbab7-d8f6-8a44-83af-fedaf540db4f",
           "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_250_2026-06-10T22-25-30-456Z.pdf"
-        },
-        {
-          "periodStart": "2026-12-01",
-          "periodEnd": "2027-02-28",
-          "datesigned": "2026-03-16T15:42:42.000",
-          "deadline": "2027-03-15",
-          "daysLate": -364,
-          "envelope": "21dacb4a-92cd-489f-97d5-22f87de411e7",
-          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_219_2026-03-16T20-58-18-655Z.pdf"
         }
       ],
       "receipts": [
+        {
+          "clientString": "San Franciscans for Fire, Earthquake and Disaster Preparedness",
+          "clientClass": "committee",
+          "clientConfidence": "inferred",
+          "filerNid": "215726436",
+          "filerName": "Yes on A, San Franciscans for Fire, Earthquake, and Disaster Preparedness, sponsored by San Francisco Firefighters local 798",
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "periodCorrected": true,
+          "reportType": "Quarterly Report",
+          "envelope": "21dacb4a-92cd-489f-97d5-22f87de411e7",
+          "reported": 9846.15
+        },
         {
           "clientString": "Yes on A, San Franciscans for Fire, Earthquake and Disaster Preparedness",
           "clientClass": "committee",
@@ -6379,21 +6552,28 @@
           "reportType": "Quarterly Report",
           "envelope": "ff5bbab7-d8f6-8a44-83af-fedaf540db4f",
           "reported": 37126.91
-        },
-        {
-          "clientString": "San Franciscans for Fire, Earthquake and Disaster Preparedness",
-          "clientClass": "committee",
-          "clientConfidence": "inferred",
-          "filerNid": "215726436",
-          "filerName": "Yes on A, San Franciscans for Fire, Earthquake, and Disaster Preparedness, sponsored by San Francisco Firefighters local 798",
-          "periodStart": "2026-12-01",
-          "periodEnd": "2027-02-28",
-          "reportType": "Quarterly Report",
-          "envelope": "21dacb4a-92cd-489f-97d5-22f87de411e7",
-          "reported": 9846.15
         }
       ],
       "reconciliation": [
+        {
+          "consultantId": "gallagher",
+          "filerNid": "215726436",
+          "filerName": "Yes on A, San Franciscans for Fire, Earthquake, and Disaster Preparedness, sponsored by San Francisco Firefighters local 798",
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "reported": 9846.15,
+          "schE": 9846.15,
+          "schEUndatedAssigned": 0,
+          "schG": 0,
+          "ratio": 1,
+          "exactMatch": true,
+          "rowsE": 1,
+          "committeeCompleteThrough": "2026-07-31",
+          "clientStrings": [
+            "San Franciscans for Fire, Earthquake and Disaster Preparedness"
+          ],
+          "clientConfidence": "inferred"
+        },
         {
           "consultantId": "gallagher",
           "filerNid": "215726436",
@@ -6412,25 +6592,6 @@
             "Yes on A, San Franciscans for Fire, Earthquake and Disaster Preparedness"
           ],
           "clientConfidence": "inferred"
-        },
-        {
-          "consultantId": "gallagher",
-          "filerNid": "215726436",
-          "filerName": "Yes on A, San Franciscans for Fire, Earthquake, and Disaster Preparedness, sponsored by San Francisco Firefighters local 798",
-          "periodStart": "2026-12-01",
-          "periodEnd": "2027-02-28",
-          "reported": 9846.15,
-          "schE": 0,
-          "schEUndatedAssigned": 0,
-          "schG": 0,
-          "ratio": 0,
-          "exactMatch": false,
-          "rowsE": 0,
-          "committeeCompleteThrough": "2026-07-31",
-          "clientStrings": [
-            "San Franciscans for Fire, Earthquake and Disaster Preparedness"
-          ],
-          "clientConfidence": "inferred"
         }
       ],
       "contributions": [],
@@ -6438,7 +6599,7 @@
       "totals": {
         "reported": 46973.06,
         "reconciledReported": 46973.06,
-        "schE": 27280.76,
+        "schE": 37126.91,
         "schG": 0
       }
     },
@@ -7502,6 +7663,18 @@
           "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_175_2025-12-12T22-35-55-028Z.pdf"
         },
         {
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "periodCorrected": true,
+          "originalPeriodStart": "2026-12-01",
+          "originalPeriodEnd": "2027-02-28",
+          "datesigned": "2026-03-16T17:23:02.000",
+          "deadline": "2026-03-16",
+          "daysLate": 0,
+          "envelope": "8ef6e2be-8c7b-40c2-bbf8-e866e99a2302",
+          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_222_2026-03-17T00-22-19-395Z.pdf"
+        },
+        {
           "periodStart": "2026-03-01",
           "periodEnd": "2026-05-31",
           "datesigned": "2026-06-15T12:52:48.000",
@@ -7509,15 +7682,6 @@
           "daysLate": 0,
           "envelope": "4f6be9d2-6ba0-8efc-8113-64fbc5724a6c",
           "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_260_2026-06-15T17-40-21-874Z.pdf"
-        },
-        {
-          "periodStart": "2026-12-01",
-          "periodEnd": "2027-02-28",
-          "datesigned": "2026-03-16T17:23:02.000",
-          "deadline": "2027-03-15",
-          "daysLate": -364,
-          "envelope": "8ef6e2be-8c7b-40c2-bbf8-e866e99a2302",
-          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_222_2026-03-17T00-22-19-395Z.pdf"
         }
       ],
       "receipts": [
@@ -7563,10 +7727,11 @@
           "clientConfidence": "exact",
           "filerNid": "214577156",
           "filerName": "J.R. Eppler for Supervisor 2026",
-          "periodStart": "2026-03-01",
-          "periodEnd": "2026-05-31",
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "periodCorrected": true,
           "reportType": "Quarterly Report",
-          "envelope": "4f6be9d2-6ba0-8efc-8113-64fbc5724a6c",
+          "envelope": "8ef6e2be-8c7b-40c2-bbf8-e866e99a2302",
           "reported": 1500
         },
         {
@@ -7575,10 +7740,10 @@
           "clientConfidence": "exact",
           "filerNid": "214577156",
           "filerName": "J.R. Eppler for Supervisor 2026",
-          "periodStart": "2026-12-01",
-          "periodEnd": "2027-02-28",
+          "periodStart": "2026-03-01",
+          "periodEnd": "2026-05-31",
           "reportType": "Quarterly Report",
-          "envelope": "8ef6e2be-8c7b-40c2-bbf8-e866e99a2302",
+          "envelope": "4f6be9d2-6ba0-8efc-8113-64fbc5724a6c",
           "reported": 1500
         }
       ],
@@ -7644,15 +7809,15 @@
           "consultantId": "growth-political",
           "filerNid": "214577156",
           "filerName": "J.R. Eppler for Supervisor 2026",
-          "periodStart": "2026-03-01",
-          "periodEnd": "2026-05-31",
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
           "reported": 1500,
-          "schE": 0,
+          "schE": 1500,
           "schEUndatedAssigned": 0,
           "schG": 0,
-          "ratio": 0,
-          "exactMatch": false,
-          "rowsE": 0,
+          "ratio": 1,
+          "exactMatch": true,
+          "rowsE": 2,
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "J.R. Eppler for Supervisor 2026"
@@ -7663,8 +7828,8 @@
           "consultantId": "growth-political",
           "filerNid": "214577156",
           "filerName": "J.R. Eppler for Supervisor 2026",
-          "periodStart": "2026-12-01",
-          "periodEnd": "2027-02-28",
+          "periodStart": "2026-03-01",
+          "periodEnd": "2026-05-31",
           "reported": 1500,
           "schE": 0,
           "schEUndatedAssigned": 0,
@@ -7684,7 +7849,7 @@
       "totals": {
         "reported": 19500,
         "reconciledReported": 19500,
-        "schE": 19828.42,
+        "schE": 21328.42,
         "schG": 0
       }
     },
@@ -7869,6 +8034,18 @@
           "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_181_2025-12-15T20-03-54-058Z.pdf"
         },
         {
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "periodCorrected": true,
+          "originalPeriodStart": "2026-12-01",
+          "originalPeriodEnd": "2027-02-28",
+          "datesigned": "2026-03-09T12:04:07.000",
+          "deadline": "2026-03-16",
+          "daysLate": -7,
+          "envelope": "013e5323-9441-4c78-8b0c-787abf094a1a",
+          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_203_2026-03-09T17-59-00-292Z.pdf"
+        },
+        {
           "periodStart": "2026-03-01",
           "periodEnd": "2026-05-31",
           "datesigned": "2026-06-09T14:57:39.000",
@@ -7876,15 +8053,6 @@
           "daysLate": -6,
           "envelope": "54369c79-d77f-881a-836b-3f40f55782cd",
           "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_248_2026-06-09T21-30-59-656Z.pdf"
-        },
-        {
-          "periodStart": "2026-12-01",
-          "periodEnd": "2027-02-28",
-          "datesigned": "2026-03-09T12:04:07.000",
-          "deadline": "2027-03-15",
-          "daysLate": -371,
-          "envelope": "013e5323-9441-4c78-8b0c-787abf094a1a",
-          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_203_2026-03-09T17-59-00-292Z.pdf"
         }
       ],
       "receipts": [
@@ -8913,6 +9081,18 @@
           "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_8_2024-12-10T22-26-00-313Z.pdf"
         },
         {
+          "periodStart": "2024-12-01",
+          "periodEnd": "2025-02-28",
+          "periodCorrected": true,
+          "originalPeriodStart": "2025-12-01",
+          "originalPeriodEnd": "2026-02-28",
+          "datesigned": "2025-03-04T11:16:47.000",
+          "deadline": "2025-03-17",
+          "daysLate": -13,
+          "envelope": "33d7f30c-e4db-4022-a58c-94e3b1ebd944",
+          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_50_2025-03-04T19-12-48-705Z.pdf"
+        },
+        {
           "periodStart": "2025-03-01",
           "periodEnd": "2025-05-31",
           "datesigned": "2025-06-09T12:14:37.000",
@@ -8942,11 +9122,14 @@
         {
           "periodStart": "2025-12-01",
           "periodEnd": "2026-02-28",
-          "datesigned": "2025-03-04T11:16:47.000",
+          "periodCorrected": true,
+          "originalPeriodStart": "2026-12-01",
+          "originalPeriodEnd": "2027-02-28",
+          "datesigned": "2026-03-11T12:03:22.000",
           "deadline": "2026-03-16",
-          "daysLate": -377,
-          "envelope": "33d7f30c-e4db-4022-a58c-94e3b1ebd944",
-          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_50_2025-03-04T19-12-48-705Z.pdf"
+          "daysLate": -5,
+          "envelope": "1138b89a-1235-48b3-a79f-0f496409039f",
+          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_209_2026-03-11T19-01-12-514Z.pdf"
         },
         {
           "periodStart": "2026-03-01",
@@ -8956,15 +9139,6 @@
           "daysLate": -4,
           "envelope": "fc06ce09-9f00-8a33-80f4-ea02835e77ed",
           "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_253_2026-06-11T19-33-36-387Z.pdf"
-        },
-        {
-          "periodStart": "2026-12-01",
-          "periodEnd": "2027-02-28",
-          "datesigned": "2026-03-11T12:03:22.000",
-          "deadline": "2027-03-15",
-          "daysLate": -369,
-          "envelope": "1138b89a-1235-48b3-a79f-0f496409039f",
-          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_209_2026-03-11T19-01-12-514Z.pdf"
         }
       ],
       "receipts": [],
@@ -9591,6 +9765,18 @@
       "registrations": [],
       "quarterlies": [
         {
+          "periodStart": "2024-12-01",
+          "periodEnd": "2025-02-28",
+          "periodCorrected": true,
+          "originalPeriodStart": "2025-12-01",
+          "originalPeriodEnd": "2026-02-28",
+          "datesigned": "2025-04-08T15:54:59.000",
+          "deadline": "2025-03-17",
+          "daysLate": 22,
+          "envelope": "fd4be27e-7ec3-41ff-97a1-5d52222b2934",
+          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_88_2025-04-08T22-54-07-970Z.pdf"
+        },
+        {
           "periodStart": "2025-03-01",
           "periodEnd": "2025-05-31",
           "datesigned": "2025-06-23T14:16:45.000",
@@ -9598,15 +9784,6 @@
           "daysLate": 7,
           "envelope": "97ea51ea-b6d2-4c68-a3cb-f0f2ccbc1559",
           "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_115_2025-06-23T21-15-26-482Z.pdf"
-        },
-        {
-          "periodStart": "2025-12-01",
-          "periodEnd": "2026-02-28",
-          "datesigned": "2025-04-08T15:54:59.000",
-          "deadline": "2026-03-16",
-          "daysLate": -342,
-          "envelope": "fd4be27e-7ec3-41ff-97a1-5d52222b2934",
-          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_88_2025-04-08T22-54-07-970Z.pdf"
         }
       ],
       "receipts": [],
@@ -9709,25 +9886,6 @@
   ],
   "committees": [
     {
-      "filerNid": "211765770",
-      "filerName": "Safer San Francisco for Mark Farrell for Mayor 2024",
-      "completeThrough": "2026-07-31",
-      "consultants": [
-        {
-          "id": "al-media",
-          "reported": 2553984,
-          "schE": 2553984,
-          "schG": 0
-        },
-        {
-          "id": "agency",
-          "reported": 898969,
-          "schE": 453053.54,
-          "schG": 0
-        }
-      ]
-    },
-    {
       "filerNid": "208769508",
       "filerName": "Believe in SF, Lurie for Mayor 2024",
       "completeThrough": "2026-07-29",
@@ -9742,6 +9900,25 @@
           "id": "ravinett-strategies",
           "reported": 42000,
           "schE": 39000,
+          "schG": 0
+        }
+      ]
+    },
+    {
+      "filerNid": "211765770",
+      "filerName": "Safer San Francisco for Mark Farrell for Mayor 2024",
+      "completeThrough": "2026-07-31",
+      "consultants": [
+        {
+          "id": "al-media",
+          "reported": 2553984,
+          "schE": 2553984,
+          "schG": 0
+        },
+        {
+          "id": "agency",
+          "reported": 449484.5,
+          "schE": 453053.54,
           "schG": 0
         }
       ]
@@ -9785,7 +9962,7 @@
         {
           "id": "gallagher",
           "reported": 46973.06,
-          "schE": 27280.76,
+          "schE": 37126.91,
           "schG": 0
         },
         {
@@ -9991,7 +10168,7 @@
         {
           "id": "nathan-allbee",
           "reported": 36000,
-          "schE": 18000,
+          "schE": 36000,
           "schG": 0
         },
         {
@@ -10073,7 +10250,7 @@
         {
           "id": "bedford-grove",
           "reported": 35000,
-          "schE": 26643.25,
+          "schE": 36659.41,
           "schG": 0
         },
         {
@@ -10559,7 +10736,7 @@
         {
           "id": "growth-political",
           "reported": 4500,
-          "schE": 1000,
+          "schE": 2500,
           "schG": 0
         }
       ]
@@ -10611,7 +10788,7 @@
         {
           "id": "nathan-allbee",
           "reported": 13500,
-          "schE": 7500,
+          "schE": 17299.16,
           "schG": 0
         }
       ]
@@ -10880,12 +11057,12 @@
     }
   ],
   "totals": {
-    "reportedAll": 17819583.82,
-    "reportedReconcilable": 17369231.7,
-    "schE": 17440172.88,
+    "reportedAll": 17370099.32,
+    "reportedReconcilable": 16919747.2,
+    "schE": 17489334.35,
     "schG": 445870.9,
-    "receipts": 176,
-    "pairs": 161,
+    "receipts": 175,
+    "pairs": 160,
     "contributionsMatched": 19,
     "contributionsTotal": 29
   },

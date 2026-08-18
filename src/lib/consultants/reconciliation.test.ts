@@ -127,6 +127,59 @@ describe('reconciliation artifact — the two junk filings are excluded, not mer
   })
 })
 
+describe('reconciliation artifact — authored envelope-level corrections', () => {
+  it('drops the AGENCY double filing and keeps the Termination that carries the true period', () => {
+    const dup = artifact.overrides.duplicates.find(
+      (d) => d.envelope === '59d2f802-601a-47bc-88e2-d629a125d7eb'
+    )
+    expect(dup).toBeDefined()
+    expect(dup!.duplicateOf).toBe('bd2d3c05-88b2-4c60-aca0-42162096666d')
+    expect(dup!.droppedTotal).toBe(449484.5)
+    expect(dup!.reason).toMatch(/AGENCY/)
+  })
+
+  it('AGENCY reports 449,484.50 — not the 898,969 the two copies add up to', () => {
+    const agency = artifact.consultants.find((c) => c.id === 'agency')
+    expect(agency).toBeDefined()
+    const reported = agency!.receipts.reduce((s, r) => s + r.reported, 0)
+    expect(reported).toBe(449484.5)
+    expect(reported).not.toBe(898969)
+  })
+
+  it('no consultant reaches the top ten on a doubled figure', () => {
+    // The top ten is the table a reader sees first. AGENCY entered it at 898,969
+    // before the duplicate was authored, displacing SGR Consulting and Anderson
+    // Political — a ranking artifact of one filer submitting the same report twice.
+    const top10 = [...artifact.consultants]
+      .sort((a, b) => b.totals.reported - a.totals.reported)
+      .slice(0, 10)
+    expect(top10.map((c) => c.totals.reported)).not.toContain(898969)
+    expect(top10.map((c) => c.id)).toContain('sgr-consulting')
+  })
+
+  it('every corrected quarterly now begins on or before the day it was signed', () => {
+    const corrected = artifact.consultants.flatMap((c) =>
+      c.quarterlies.filter((q) => q.periodCorrected)
+    )
+    expect(corrected.length).toBeGreaterThanOrEqual(12)
+    for (const q of corrected) {
+      // The defect being corrected: a quarter cannot be reported before it starts.
+      expect(q.periodStart <= q.datesigned.slice(0, 10), `${q.envelope} still impossible`).toBe(true)
+      // Both figures stay published — the correction is disclosed, never silent.
+      expect(q.originalPeriodStart).toBeDefined()
+      expect(q.originalPeriodEnd).toBeDefined()
+      expect(q.periodStart < q.originalPeriodStart!).toBe(true)
+    }
+  })
+
+  it('leaves an indeterminate period exactly as filed, with its reason', () => {
+    for (const u of artifact.overrides.uncorrectable) {
+      expect(u.periodStart > u.datesigned.slice(0, 10)).toBe(true)
+      expect(u.reason).toMatch(/no correction is determinate/)
+    }
+  })
+})
+
 describe('reconciliation artifact — story pins from the recon memo §4', () => {
   const pairs = artifact.consultants.flatMap((c) => c.reconciliation)
 

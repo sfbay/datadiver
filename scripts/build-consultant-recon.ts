@@ -71,6 +71,10 @@ import {
   EXCLUDED_ENVELOPES,
 } from '../src/cities/sf/consultants/consultantAliases.js'
 import type { ConsultantAlias } from '../src/cities/sf/consultants/consultantAliases.js'
+import {
+  DUPLICATE_ENVELOPES,
+  PERIOD_OVERRIDES,
+} from '../src/cities/sf/consultants/overrides.js'
 import { CLIENT_CROSSWALK } from '../src/cities/sf/consultants/clientCrosswalk.js'
 import type { ClientConfidence, ClientEntry } from '../src/cities/sf/consultants/clientCrosswalk.js'
 
@@ -267,6 +271,7 @@ export interface ArtifactProvenance {
     undated: string
     contributions: string
     exclusion: string
+    overrides: string
   }
   /** filer_nid → MAX(filing_date) in pitq-e56w: how far the committee side is filed. */
   committeeCompleteThrough: Record<string, string>
@@ -283,6 +288,9 @@ export interface ArtifactGates {
   restatementsCollapsed: number
   blankClientRows: number
   excludedEnvelopes: number
+  duplicateEnvelopes: number
+  periodOverrides: number
+  uncorrectablePeriods: number
 }
 
 export interface ArtifactRegistration {
@@ -296,6 +304,10 @@ export interface ArtifactRegistration {
 export interface ArtifactQuarterly {
   periodStart: string
   periodEnd: string
+  /** Present when an authored PERIOD_OVERRIDE moved this filing's impossible period. */
+  periodCorrected?: true
+  originalPeriodStart?: string
+  originalPeriodEnd?: string
   datesigned: string
   /** Statutory due date (weekend roll-forward only), or null when the period is off-calendar. */
   deadline: string | null
@@ -313,6 +325,8 @@ export interface ArtifactReceipt {
   filerName?: string
   periodStart: string
   periodEnd: string
+  /** Present when this receipt's reporting window came from an authored PERIOD_OVERRIDE. */
+  periodCorrected?: true
   reportType: string
   envelope: string
   reported: number
@@ -342,9 +356,38 @@ export interface ArtifactConsultant {
   totals: { reported: number; reconciledReported: number; schE: number; schG: number }
 }
 
+/** Authored envelope-level corrections, published alongside the figures they change. */
+export interface ArtifactOverrides {
+  duplicates: { envelope: string; duplicateOf: string; reason: string; droppedTotal: number }[]
+  periods: {
+    envelope: string
+    consultantId: string
+    displayName: string
+    originalStart: string
+    originalEnd: string
+    correctedStart: string
+    correctedEnd: string
+    datesigned: string
+    reported: number
+    reason: string
+  }[]
+  /** Impossible periods left exactly as filed because no correction is determinate. */
+  uncorrectable: {
+    envelope: string
+    consultantId: string
+    displayName: string
+    periodStart: string
+    periodEnd: string
+    datesigned: string
+    reported: number
+    reason: string
+  }[]
+}
+
 export interface ReconciliationArtifact {
   provenance: ArtifactProvenance
   gates: ArtifactGates
+  overrides: ArtifactOverrides
   consultants: ArtifactConsultant[]
   committees: {
     filerNid: string
@@ -463,6 +506,33 @@ export function quarterlyDeadline(periodStart: string): string | null {
   const dow = new Date(Date.UTC(dy, dm - 1, 15)).getUTCDay()
   const day = dow === 6 ? 17 : dow === 0 ? 16 : 15
   return `${dy}-${pad2(dm)}-${pad2(day)}`
+}
+
+/** Same day and month, one year earlier ('YYYY-MM-DD'). Feb 29 falls back to Feb 28. */
+export function shiftYearBack(day: string): string {
+  const [y, m, d] = day.split('-').map(Number)
+  const target = new Date(Date.UTC(y - 1, m - 1, Math.min(d, m === 2 ? 28 : d)))
+  return `${target.getUTCFullYear()}-${pad2(target.getUTCMonth() + 1)}-${pad2(target.getUTCDate())}`
+}
+
+/**
+ * The consultant quarter that had already closed on `signed` — the period a filer
+ * signing that day is due to report. Quarters run Dec–Feb / Mar–May / Jun–Aug /
+ * Sep–Nov. Used only to judge whether a one-year shift is the DETERMINATE
+ * correction for an impossible period, never to rewrite dates on its own.
+ */
+export function lastClosedQuarter(signed: string): { start: string; end: string } | null {
+  const y = Number(signed.slice(0, 4))
+  const isLeap = (yy: number): boolean => (yy % 4 === 0 && yy % 100 !== 0) || yy % 400 === 0
+  const candidates: { start: string; end: string }[] = []
+  for (let yy = y - 2; yy <= y + 1; yy += 1) {
+    candidates.push({ start: `${yy - 1}-12-01`, end: `${yy}-02-${isLeap(yy) ? 29 : 28}` })
+    candidates.push({ start: `${yy}-03-01`, end: `${yy}-05-31` })
+    candidates.push({ start: `${yy}-06-01`, end: `${yy}-08-31` })
+    candidates.push({ start: `${yy}-09-01`, end: `${yy}-11-30` })
+  }
+  const closed = candidates.filter((c) => c.end < signed).sort((a, b) => a.end.localeCompare(b.end))
+  return closed.length > 0 ? closed[closed.length - 1] : null
 }
 
 /** Calendar days from `from` to `to` ('YYYY-MM-DD' parts, UTC arithmetic). Positive = later. */
@@ -658,9 +728,99 @@ async function main(): Promise<void> {
     .filter((r) => excludedIds.has(r.envelope_id))
     .reduce((s, r) => s + amt(r.clientlist_economicconsiderationreceived), 0)
 
-  const latest = split.latest.filter((r) => !excludedIds.has(r.envelope_id))
-  const clients = clientsAll.filter((r) => !excludedIds.has(r.envelope_id))
-  const contribs = contribsAll.filter((r) => !excludedIds.has(r.envelope_id))
+  // ---- 3b. authored overrides: duplicates first, then impossible periods ----
+  // Both classes exist because the mechanical rules are deliberately narrow:
+  // latestPerSeries dedupes only WITHIN a filingseries (which embeds the filer's
+  // own spelling of the period start), and collapseRestatements requires an
+  // identical period start. A filer typo defeats both. See overrides.ts.
+  const duplicateIds = new Set(DUPLICATE_ENVELOPES.map((d) => d.envelope))
+  gate(
+    DUPLICATE_ENVELOPES.every((d) => parentIds.has(d.envelope) && parentIds.has(d.duplicateOf)),
+    `G6a duplicate overrides — all ${DUPLICATE_ENVELOPES.length} envelope/duplicateOf pair(s) exist in the parent`
+  )
+  gate(
+    !DUPLICATE_ENVELOPES.some((d) => duplicateIds.has(d.duplicateOf) || excludedIds.has(d.duplicateOf)),
+    'G6b duplicate overrides — no chain: a survivor is never itself dropped'
+  )
+  const duplicatesApplied = DUPLICATE_ENVELOPES.map((d) => ({
+    ...d,
+    droppedTotal: round2(amt(parentById.get(d.envelope)?.clientinformation_total)),
+  }))
+
+  const survivedDuplicates = split.latest.filter(
+    (r) => !excludedIds.has(r.envelope_id) && !duplicateIds.has(r.envelope_id)
+  )
+  const clients = clientsAll.filter(
+    (r) => !excludedIds.has(r.envelope_id) && !duplicateIds.has(r.envelope_id)
+  )
+  const contribs = contribsAll.filter(
+    (r) => !excludedIds.has(r.envelope_id) && !duplicateIds.has(r.envelope_id)
+  )
+
+  // Detection pass: a Quarterly Report whose period BEGINS after the filer signed
+  // it is impossible — a quarter cannot be reported before it starts. Every hit is
+  // printed; each is then either corrected by an authored row or left as filed.
+  const impossiblePeriod = (r: ParentRow): boolean =>
+    r.filinginformation_reporttype === 'Quarterly Report' &&
+    dpx(r.filinginformation_reportingperiod_reportingperiodstartdate) > dpx(r.datesigned)
+  const detected = survivedDuplicates.filter(impossiblePeriod)
+  const periodById = new Map(PERIOD_OVERRIDES.map((o) => [o.envelope, o]))
+  console.log(
+    `\nIMPOSSIBLE REPORTING PERIODS (Quarterly Report signed before its period begins) — ${detected.length} detected`
+  )
+  for (const r of [...detected].sort((a, b) =>
+    (a.filinginformation_reportingperiod_reportingperiodstartdate ?? '').localeCompare(
+      b.filinginformation_reportingperiod_reportingperiodstartdate ?? ''
+    )
+  )) {
+    const o = periodById.get(r.envelope_id)
+    console.log(
+      `  ${o ? 'corrected  ' : 'UNCORRECTED'} ${r.envelope_id} ${r.campaignconsultantname.slice(0, 30).padEnd(31)}` +
+        `${dpx(r.filinginformation_reportingperiod_reportingperiodstartdate)}→${dpx(r.filinginformation_reportingperiod_reportingperiodenddate)}` +
+        ` signed ${dpx(r.datesigned)} ${money(amt(r.clientinformation_total)).padStart(14)}` +
+        (o ? `  ⇒ ${o.correctedStart}→${o.correctedEnd}` : '')
+    )
+  }
+
+  const staleOverrides = [
+    ...DUPLICATE_ENVELOPES.filter((d) => !parentIds.has(d.envelope)).map((d) => `duplicate ${d.envelope}`),
+    ...PERIOD_OVERRIDES.filter((o) => !parentIds.has(o.envelope)).map((o) => `period ${o.envelope}`),
+  ]
+  if (staleOverrides.length > 0) {
+    console.log(`  WARN  ${staleOverrides.length} override row(s) name an envelope absent from the parent:`)
+    for (const s of staleOverrides) console.log(`        ${s}`)
+  }
+
+  // An authored row must describe the filing it claims to correct, or it is
+  // silently rewriting the wrong dates.
+  const misdescribed = PERIOD_OVERRIDES.filter((o) => {
+    const row = parentById.get(o.envelope)
+    if (!row) return false
+    return (
+      dpx(row.filinginformation_reportingperiod_reportingperiodstartdate) !== o.originalStart ||
+      dpx(row.filinginformation_reportingperiod_reportingperiodenddate) !== o.originalEnd
+    )
+  })
+  gate(
+    misdescribed.length === 0,
+    `G6c period overrides — all ${PERIOD_OVERRIDES.length} row(s) match the filed dates they correct${misdescribed.length ? ` (mismatched: ${misdescribed.map((o) => o.envelope).join(', ')})` : ''}`
+  )
+
+  const correctedById = new Map<string, { originalStart: string; originalEnd: string }>()
+  const latest = survivedDuplicates.map((r) => {
+    const o = periodById.get(r.envelope_id)
+    if (!o) return r
+    correctedById.set(r.envelope_id, { originalStart: o.originalStart, originalEnd: o.originalEnd })
+    return {
+      ...r,
+      filinginformation_reportingperiod_reportingperiodstartdate: o.correctedStart,
+      filinginformation_reportingperiod_reportingperiodenddate: o.correctedEnd,
+    }
+  })
+  gate(
+    latest.filter(impossiblePeriod).length === detected.length - correctedById.size,
+    `G6d period overrides — ${correctedById.size} corrected, ${detected.length - correctedById.size} left as filed`
+  )
 
   // ---- 4. G4 identity -----------------------------------------------------
   const aliasByNormalized = buildAliasIndex()
@@ -779,6 +939,7 @@ async function main(): Promise<void> {
     clientClass: string
     clientConfidence: ClientConfidence
     filerName?: string
+    periodCorrected?: true
   })[] = []
   for (const row of clientRows) {
     const parent = latestById.get(row.envelope_id)
@@ -805,6 +966,7 @@ async function main(): Promise<void> {
       filerName: reconcilable ? entry.filerName : undefined,
       periodStart: dpx(parent.filinginformation_reportingperiod_reportingperiodstartdate),
       periodEnd: dpx(parent.filinginformation_reportingperiod_reportingperiodenddate),
+      periodCorrected: correctedById.has(parent.envelope_id) ? (true as const) : undefined,
       reportType: parent.filinginformation_reporttype,
       envelope: parent.envelope_id,
       reported,
@@ -817,6 +979,72 @@ async function main(): Promise<void> {
     `\nRECEIPTS\n  ${receipts.length} priced client row(s) across ${new Set(receipts.map((r) => r.consultantId)).size} consultant(s); ` +
       `${blankClientRows} blank-name row(s) skipped ($0)`
   )
+
+  // ---- 7b. the overrides block, now that consultant identity is resolved ----
+  const reportedByEnvelope = new Map<string, number>()
+  for (const r of receipts) {
+    reportedByEnvelope.set(r.envelope, (reportedByEnvelope.get(r.envelope) ?? 0) + r.reported)
+  }
+  const identify = (row: ParentRow): { consultantId: string; displayName: string } => {
+    const key = keyOfRaw(row.campaignconsultantname)
+    return { consultantId: key.id, displayName: key.alias?.displayName ?? row.campaignconsultantname }
+  }
+  const overrides: ArtifactOverrides = {
+    duplicates: duplicatesApplied,
+    periods: PERIOD_OVERRIDES.filter((o) => correctedById.has(o.envelope)).map((o) => {
+      const row = latestById.get(o.envelope)
+      return {
+        envelope: o.envelope,
+        ...identify(row as ParentRow),
+        originalStart: o.originalStart,
+        originalEnd: o.originalEnd,
+        correctedStart: o.correctedStart,
+        correctedEnd: o.correctedEnd,
+        datesigned: row?.datesigned ?? '',
+        reported: round2(reportedByEnvelope.get(o.envelope) ?? 0),
+        reason: o.reason,
+      }
+    }),
+    uncorrectable: detected
+      .filter((r) => !periodById.has(r.envelope_id))
+      .map((r) => {
+        const start = dpx(r.filinginformation_reportingperiod_reportingperiodstartdate)
+        const end = dpx(r.filinginformation_reportingperiod_reportingperiodenddate)
+        const signed = dpx(r.datesigned)
+        const shifted = { start: shiftYearBack(start), end: shiftYearBack(end) }
+        const closed = lastClosedQuarter(signed)
+        return {
+          envelope: r.envelope_id,
+          ...identify(r),
+          periodStart: start,
+          periodEnd: end,
+          datesigned: r.datesigned,
+          reported: round2(reportedByEnvelope.get(r.envelope_id) ?? 0),
+          reason:
+            `A quarter cannot be reported before it starts: the period as filed begins ${daysBetween(signed, start)} days after the signature. ` +
+            `Shifting it back one year lands ${shifted.start}\u2192${shifted.end}, but the quarter that had already closed when this was signed is ` +
+            `${closed ? `${closed.start}\u2192${closed.end}` : 'undetermined'}. The two disagree, so no correction is determinate and the dates are left exactly as filed \u2014 ` +
+            'this filing reconciles against its window as typed.',
+        }
+      }),
+  }
+  console.log(
+    `\nOVERRIDES\n  ${overrides.duplicates.length} duplicate envelope(s) dropped (${money(overrides.duplicates.reduce((s2, d) => s2 + d.droppedTotal, 0))}); ` +
+      `${overrides.periods.length} period(s) corrected; ${overrides.uncorrectable.length} left as filed`
+  )
+  for (const d of overrides.duplicates) {
+    console.log(`    duplicate    ${d.envelope} → kept ${d.duplicateOf} (${money(d.droppedTotal)})`)
+  }
+  for (const o of overrides.periods) {
+    console.log(
+      `    corrected    ${o.displayName.slice(0, 28).padEnd(29)} ${o.originalStart}→${o.originalEnd} ⇒ ${o.correctedStart}→${o.correctedEnd}  ${money(o.reported).padStart(12)}`
+    )
+  }
+  for (const u of overrides.uncorrectable) {
+    console.log(
+      `    UNCORRECTED  ${u.displayName.slice(0, 28).padEnd(29)} ${u.periodStart}→${u.periodEnd} signed ${dpx(u.datesigned)}  ${money(u.reported).padStart(12)}`
+    )
+  }
 
   // ---- 8. committeeCompleteThrough ---------------------------------------
   const clientNids = [...new Set(receipts.map((r) => r.filerNid).filter((n): n is string => !!n))]
@@ -1107,9 +1335,17 @@ async function main(): Promise<void> {
       .map((f) => {
         const periodStart = dpx(f.filinginformation_reportingperiod_reportingperiodstartdate)
         const deadline = quarterlyDeadline(periodStart)
+        const corrected = correctedById.get(f.envelope_id)
         return {
           periodStart,
           periodEnd: dpx(f.filinginformation_reportingperiod_reportingperiodenddate),
+          ...(corrected
+            ? {
+                periodCorrected: true as const,
+                originalPeriodStart: corrected.originalStart,
+                originalPeriodEnd: corrected.originalEnd,
+              }
+            : {}),
           datesigned: f.datesigned,
           deadline,
           daysLate: deadline ? daysBetween(deadline, dpx(f.datesigned)) : null,
@@ -1142,6 +1378,7 @@ async function main(): Promise<void> {
           filerName: r.filerName,
           periodStart: r.periodStart,
           periodEnd: r.periodEnd,
+          ...(r.periodCorrected ? { periodCorrected: true as const } : {}),
           reportType: r.reportType,
           envelope: r.envelope,
           reported: r.reported,
@@ -1276,6 +1513,8 @@ async function main(): Promise<void> {
           "Each priced 7gkm-68qf row is searched in the recipient's own pitq RCPT/S497 rows for the same amount to the cent within ±30 days, matching the contributor name, then the firm's principal. Where sourceofthecontribution is 'Campaign Consultant' the contributor is the registrant itself (the contributor column is null on those rows).",
         exclusion:
           'EXCLUDED_ENVELOPES are removed before any receipt, pair, or rollup is computed, so their dollars appear only under `excluded`.',
+        overrides:
+          'Authored, envelope-keyed, applied after latest-per-series and before the restatement collapse. DUPLICATE_ENVELOPES drops a second copy of one report that landed in a different filingseries; PERIOD_OVERRIDES corrects a Quarterly Report whose period begins after the filer signed it, but only where a one-year shift back is the determinate correction. Both original and corrected values are published under `overrides`, and every corrected quarterly carries periodCorrected + its original dates.',
       },
       committeeCompleteThrough: completeThrough,
     },
@@ -1290,7 +1529,11 @@ async function main(): Promise<void> {
       restatementsCollapsed: collapse.restatements.length,
       blankClientRows,
       excludedEnvelopes: EXCLUDED_ENVELOPES.length,
+      duplicateEnvelopes: overrides.duplicates.length,
+      periodOverrides: overrides.periods.length,
+      uncorrectablePeriods: overrides.uncorrectable.length,
     },
+    overrides,
     consultants,
     committees,
     unresolvedClients,
