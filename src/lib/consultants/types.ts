@@ -68,8 +68,18 @@ export interface Restatement {
   droppedEnvelope: string;
   consultantKey: string;
   periodStart: string;
+  /** Parent-DECLARED totals (`clientinformation_total`). */
   keptTotal: number;
   droppedTotal: number;
+  /**
+   * Money that actually moved between the two envelopes' CHILD rows. This is not
+   * the same as the declared totals: an envelope can declare a total and publish
+   * no client rows at all (SGR's $403,889.62 Sep–Nov 2024 filing does exactly
+   * that), so `droppedTotal` alone will claim a collapse removed money that was
+   * never in the child ledger to begin with.
+   */
+  keptChildSum: number;
+  droppedChildSum: number;
   delta: number;
   exact: boolean;
 }
@@ -92,6 +102,13 @@ export interface Receipt {
   reportType: string;
   envelope: string;
   reported: number;
+  /**
+   * The filing's reporting period is impossible as filed (it begins after the
+   * signature) and no correction was determinate, so the window this receipt
+   * reconciles against cannot be trusted. Propagates to the pair as
+   * `status: 'period-impossible'`.
+   */
+  periodImpossible?: boolean;
 }
 
 /** An expenditure row from FPPC/Ethics `pitq-e56w` (Schedule E/F/G transactions). */
@@ -125,9 +142,32 @@ export interface ReconPair {
   schE: number;
   schEUndatedAssigned: number;
   schG: number;
+  /**
+   * `schE / reported`, or null when the comparison would be meaningless: nothing
+   * reported, no payee ledger to compare against, or an untrustworthy window.
+   * A null ratio is the honest reading — a 0.00 would assert an omission.
+   */
   ratio: number | null;
   exactMatch: boolean;
   rowsE: number;
+  /**
+   * Why this pair reads the way it does.
+   *   reconciled        both sides are comparable
+   *   no-payee-ledger   the committee files no Schedule E at all (F496-only
+   *                     filers have no "who we paid" list to disagree with)
+   *   period-impossible the consultant's own reporting window is self-
+   *                     contradictory, so any in-window sum is arbitrary
+   */
+  status: 'reconciled' | 'no-payee-ledger' | 'period-impossible';
+  /** Whether the committee has ANY Schedule E filing. Undefined when not probed. */
+  committeeHasScheduleE?: boolean;
+  /**
+   * `transaction_id` of every UNDATED Schedule E row assigned to this pair by
+   * filing-period overlap. Published so the exclusivity of that assignment is
+   * checkable from the artifact alone — an undated row must land in exactly one
+   * period, never in every period its filing touches.
+   */
+  undatedTransactionIds: string[];
   committeeCompleteThrough?: string;
 }
 
@@ -151,6 +191,11 @@ export interface ContributionMatch {
   recipientNid: string | null;
   amount: number;
   date?: string;
-  matched: 'exact' | 'principal' | 'below-threshold' | 'recipient-not-in-pitq' | 'unmatched';
+  /**
+   * `blank` is a placeholder list row (no amount): the exporter writes a row for
+   * a section a filer touched but left empty. It is NOT `below-threshold`, which
+   * asserts a real contribution too small for the recipient to itemize.
+   */
+  matched: 'exact' | 'principal' | 'blank' | 'below-threshold' | 'recipient-not-in-pitq' | 'unmatched';
   pitqTransactionDate?: string;
 }

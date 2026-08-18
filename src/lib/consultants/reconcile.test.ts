@@ -314,3 +314,112 @@ describe('matchContributions', () => {
     expect(result.matched).toBe('unmatched');
   });
 });
+
+describe('reconcile — undated Schedule E rows are assigned to exactly one period', () => {
+  const receipts: Receipt[] = [
+    receipt({ periodStart: '2024-09-01', periodEnd: '2024-11-30', reported: 100, envelope: 'q1' }),
+    receipt({ periodStart: '2024-12-01', periodEnd: '2025-02-28', reported: 100, envelope: 'q2' }),
+  ];
+
+  it('counts the row once, in the period its filing overlaps most', () => {
+    // The filing window covers all of Sep–Nov and only nine days of Dec–Feb, so
+    // the money belongs to Sep–Nov. Counted in both, the same $500 would inflate
+    // the consultant's committee-side total by 100%.
+    const exp: PitqExpRow[] = [
+      expRow({
+        transaction_id: 'undated-1',
+        transaction_amount_1: '500',
+        start_date: '2024-09-01',
+        end_date: '2024-12-09',
+      }),
+    ];
+
+    const pairs = reconcile(receipts, exp, {});
+    const q1 = pairs.find((p) => p.periodStart === '2024-09-01');
+    const q2 = pairs.find((p) => p.periodStart === '2024-12-01');
+
+    expect(q1?.schE).toBe(500);
+    expect(q1?.schEUndatedAssigned).toBe(500);
+    expect(q1?.undatedTransactionIds).toEqual(['undated-1']);
+    expect(q2?.schE).toBe(0);
+    expect(q2?.undatedTransactionIds).toEqual([]);
+
+    const everywhere = pairs.flatMap((p) => p.undatedTransactionIds);
+    expect(new Set(everywhere).size).toBe(everywhere.length);
+  });
+
+  it('breaks an exact overlap tie toward the earlier period, deterministically', () => {
+    const exp: PitqExpRow[] = [
+      expRow({
+        transaction_id: 'undated-2',
+        transaction_amount_1: '900',
+        start_date: '2024-11-30',
+        end_date: '2024-12-01',
+      }),
+    ];
+
+    const pairs = reconcile(receipts, exp, {});
+
+    expect(pairs.find((p) => p.periodStart === '2024-09-01')?.schE).toBe(900);
+    expect(pairs.find((p) => p.periodStart === '2024-12-01')?.schE).toBe(0);
+  });
+
+  it('leaves an undated row unassigned when its filing window overlaps nothing', () => {
+    const exp: PitqExpRow[] = [
+      expRow({ transaction_id: 'undated-3', transaction_amount_1: '700', start_date: '2023-01-01', end_date: '2023-03-31' }),
+    ];
+
+    const pairs = reconcile(receipts, exp, {});
+
+    expect(pairs.every((p) => p.schE === 0)).toBe(true);
+    expect(pairs.flatMap((p) => p.undatedTransactionIds)).toEqual([]);
+  });
+});
+
+describe('reconcile — a pair says why it reads the way it does', () => {
+  it('reports no-payee-ledger and a NULL ratio when the committee files no Schedule E', () => {
+    // An F496-only filer has no "who we paid" list. A 0.00 ratio here would
+    // publish a total omission where the truth is that nothing was ever filed
+    // to disagree with.
+    const pairs = reconcile([receipt({ reported: 25000 })], [], {}, { '1450577': false });
+
+    expect(pairs[0].status).toBe('no-payee-ledger');
+    expect(pairs[0].ratio).toBeNull();
+    expect(pairs[0].committeeHasScheduleE).toBe(false);
+  });
+
+  it('reports period-impossible and a NULL ratio when the reporting window is self-contradictory', () => {
+    const pairs = reconcile(
+      [receipt({ reported: 6000, periodImpossible: true })],
+      [expRow({ transaction_date: '2024-10-01', transaction_amount_1: '6000' })],
+      {}
+    );
+
+    expect(pairs[0].status).toBe('period-impossible');
+    expect(pairs[0].ratio).toBeNull();
+    // The sum is still published — it is the RATIO that would be a claim.
+    expect(pairs[0].schE).toBe(6000);
+  });
+
+  it('reports reconciled with a real ratio in the ordinary case', () => {
+    const pairs = reconcile(
+      [receipt({ reported: 1000 })],
+      [expRow({ transaction_date: '2024-10-01', transaction_amount_1: '500' })],
+      {},
+      { '1450577': true }
+    );
+
+    expect(pairs[0].status).toBe('reconciled');
+    expect(pairs[0].ratio).toBe(0.5);
+  });
+});
+
+describe('matchContributions — placeholder rows', () => {
+  it("calls a zero-amount list row 'blank', never 'below-threshold'", () => {
+    const rows = [contribRow({ contributionlist_amountofcontribution: undefined })];
+
+    const [result] = matchContributions(rows, recipientNidOf, [], noPrincipals);
+
+    expect(result.matched).toBe('blank');
+  });
+});

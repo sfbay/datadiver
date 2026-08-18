@@ -92,7 +92,9 @@ export function latestPerSeries(rows: ParentRow[]): LatestSplit {
  * client rows are kept and the other's are dropped. Records `{ keptEnvelope,
  * droppedEnvelope, delta }` for every collapsed pair (exact and inexact alike).
  * `delta = keptTotal - droppedTotal` from `clientinformation_total`; `exact` when
- * `|delta| < 0.005`.
+ * `|delta| < 0.005`. `keptChildSum`/`droppedChildSum` report the CHILD-row money
+ * on each side, which is what the collapse actually adds and removes — an
+ * envelope can declare a parent total and publish no client rows at all.
  */
 export function collapseRestatements(
   latest: ParentRow[],
@@ -115,6 +117,17 @@ export function collapseRestatements(
   const droppedEnvelopeIds = new Set<string>();
   const restatements: Restatement[] = [];
 
+  // Child-row money per envelope, so a collapse can report what it actually
+  // removed rather than what the parent declared. The two differ whenever an
+  // envelope declares a total and publishes no client rows.
+  const childSumByEnvelope = new Map<string, number>();
+  for (const c of clients) {
+    childSumByEnvelope.set(
+      c.envelope_id,
+      (childSumByEnvelope.get(c.envelope_id) ?? 0) + amt(c.clientlist_economicconsiderationreceived)
+    );
+  }
+
   for (const group of groups.values()) {
     const quarterlies = group.filter((r) => r.filinginformation_reporttype === 'Quarterly Report');
     const terminations = group.filter((r) => r.filinginformation_reporttype === 'Termination Report');
@@ -136,6 +149,8 @@ export function collapseRestatements(
       periodStart: periodStartOf(kept),
       keptTotal,
       droppedTotal,
+      keptChildSum: childSumByEnvelope.get(kept.envelope_id) ?? 0,
+      droppedChildSum: childSumByEnvelope.get(dropped.envelope_id) ?? 0,
       delta,
       exact: Math.abs(delta) < 0.005,
     });

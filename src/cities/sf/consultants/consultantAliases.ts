@@ -430,11 +430,11 @@ export const EXCLUDED_ENVELOPES: { envelope: string; reason: string }[] = [
   {
     envelope: '89f7b62b-be1f-4fc4-900a-22aba667b59c',
     reason:
-      "Junk filing — 'Law enforcement protection' Initial Registration (datesigned 2025-12-10): a fantasy business address (Inverness / Shetland / 'Virgin Islands 42800'), a $600 'Watches' gift to 'Phillip Mccrown', and the code of conduct declined. The address is described, not reproduced — the redaction rule holds even for a junk filer, and this is a Person-type filing.",
+      "Junk filing — 'Law enforcement protection' Initial Registration (datesigned 2025-12-10): a fantasy business address (Inverness / Shetland / 'Virgin Islands 42800'), a $600 'Watches' gift to a named private individual, and the code of conduct declined. Neither the address nor the gift recipient's name is reproduced — the redaction rule holds even for a junk filer, and this is a Person-type filing naming a person who never consented to appear in a civic dataset.",
   },
   {
     envelope: 'c99a90cf-9699-4669-ae9e-4202212061b4',
     reason:
-      "Junk filing — 'Emelia Rosie Washington' Initial Registration (datesigned 2025-02-24): a $9,542 'Hotel bookings' gift to 'Emelia Rosie Washington Soviegn' (the filer) and a $152,000 client 'Caesar Kamila' that matches no filer, candidate, or measure in 4c8t-ngau or pitq-e56w.",
+      "Junk filing — 'Emelia Rosie Washington' Initial Registration (datesigned 2025-02-24): a $9,542 'Hotel bookings' gift whose named beneficiary is a variant of the filer's own name (not reproduced), and a $152,000 client 'Caesar Kamila' that matches no filer, candidate, or measure in 4c8t-ngau or pitq-e56w. The client string is kept because it is the money's only label and appears in the client crosswalk; the gift beneficiary is not, because it names a private individual.",
   },
 ];

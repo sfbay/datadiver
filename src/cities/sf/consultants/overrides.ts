@@ -58,6 +58,24 @@ export interface PeriodOverride {
  */
 export const DUPLICATE_ENVELOPES: DuplicateEnvelope[] = [
   {
+    envelope: '1593b3f6-bef1-847d-8075-d919308371b2',
+    duplicateOf: 'bbf8ae37-d87a-8741-820b-d9afd0829e1d',
+    reason:
+      "Bedford Grove filed its Mar-May 2026 quarterly twice under its two registered spellings, 39 hours apart: 'Celeste Wolter Sempere_Quarterly Report_3-1-2026' (1593b3f6, signed 2026-06-16 07:11:21, $30,000) and 'Bedford Grove_Quarterly Report_3-1-2026' (bbf8ae37, signed 2026-06-17 22:13:38, $40,000). The second is a SUPERSET, not a different report: it carries the identical 'San Franciscans for Fire, Earthquake and Disaster Preparedness' $30,000 line plus two Matt Dorsey lines of $5,000 each. The later, complete filing is kept. Because the two spellings sit in different filingseries, latestPerSeries cannot see the pair; the alias table already clusters the spellings, which is what makes the duplicate detectable at all.",
+  },
+  {
+    envelope: '2b8a3503-1c3b-48fa-b5e6-964686d02a3f',
+    duplicateOf: '9becb26f-b469-4e13-aaec-e80c6ff349e4',
+    reason:
+      "Paul Kumar filed a Mar-May 2025 quarterly twice under two spellings, three months apart, both reporting $0 clients: 'Paul R Kumar_Quarterly Report_3-1-2025' (9becb26f, signed 2025-06-17, one day after that quarter's 2025-06-16 deadline) and 'Paul Kumar_Quarterly Report_3-1-2025' (2b8a3503, signed 2025-09-16). The EARLIER filing is kept as the on-time one for the period both claim. Noted and not acted on: the September signature falls one day after the Jun-Aug 2025 deadline, so the later envelope may be a Jun-Aug quarterly with a mis-keyed period start rather than a re-file — but both report $0, so no figure in the artifact depends on which reading is right, and inventing a period correction on that inference would be a claim the data does not support.",
+  },
+  {
+    envelope: '862fbef4-ca1f-4c1c-b0e3-ac3cfa9f26e6',
+    duplicateOf: 'b75c7f9a-9d5b-4876-a965-c26c963fc231',
+    reason:
+      "Szabo and Associates filed an Initial Registration twice on 2026-04-22, 36m50s apart, both 'Original', both $0, differing only in the registration period typed: 862fbef4 at 22:24:08 (2025-11-17 to 2026-02-17) and b75c7f9a at 23:00:58 (2025-12-01 to 2026-03-01). The later is kept as the correction the filer sat down to make. NOTE: this pair escapes the generator's duplicate scan, which keys on (consultant, report type, period start) — the two period starts differ, which is the whole point of the re-submission. It is caught instead by the advisory same-day scan, which cannot be a gate because a consultant legitimately files two DIFFERENT quarters on one day (The Outreach Team did exactly that on 2025-06-02).",
+  },
+  {
     envelope: '59d2f802-601a-47bc-88e2-d629a125d7eb',
     duplicateOf: 'bd2d3c05-88b2-4c60-aca0-42162096666d',
     reason:
@@ -66,8 +84,10 @@ export const DUPLICATE_ENVELOPES: DuplicateEnvelope[] = [
 ]
 
 /**
- * Fifteen filings in this family carry a reporting period that had not started
- * when the filer signed. Every row below is the same mechanical slip — a year
+ * Thirteen filings in the working set (post-dedupe, post-duplicate) carry a
+ * reporting period that had not started when the filer signed — fifteen in the
+ * raw parent table, before latestPerSeries drops an amendment's superseded twin
+ * and DUPLICATE_ENVELOPES drops the AGENCY copy. Every row below is the same mechanical slip — a year
  * typed forward — and is corrected only where the one-year shift lands the whole
  * period at or before the signature AND matches the quarter the signature date
  * actually belongs to (quarterlies are due Mar 15 / Jun 15 / Sep 15 / Dec 15 for

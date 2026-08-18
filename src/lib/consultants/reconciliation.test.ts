@@ -16,6 +16,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { CONSULTANT_ALIASES } from '../../cities/sf/consultants/consultantAliases'
 import { ARTIFACT_PATH, PROJECTION } from '../../../scripts/build-consultant-recon'
 import type { ReconciliationArtifact } from '../../../scripts/build-consultant-recon'
 
@@ -37,6 +38,24 @@ function allKeys(value: unknown, out: string[] = []): string[] {
 }
 
 const PII_KEY = /phone|streetaddress|fulladdress|employertelephone|employees_name/i
+
+/** Every string VALUE anywhere in the parsed JSON. */
+function allStrings(value: unknown, out: string[] = []): string[] {
+  if (typeof value === 'string') out.push(value)
+  else if (Array.isArray(value)) for (const v of value) allStrings(v, out)
+  else if (value !== null && typeof value === 'object') {
+    for (const v of Object.values(value as Record<string, unknown>)) allStrings(v, out)
+  }
+  return out
+}
+
+const PII_VALUE: { name: string; re: RegExp }[] = [
+  { name: 'phone number', re: /\b\d{3}[-.\s]\d{3}[-.\s]\d{4}\b/ },
+  {
+    name: 'street address',
+    re: /\b\d+\s+\w+\s+(St|Street|Ave|Avenue|Blvd|Dr|Drive|Apt)\b/,
+  },
+]
 
 describe('reconciliation artifact — provenance', () => {
   it('carries a provenance header with at least five sources', () => {
@@ -89,6 +108,18 @@ describe('reconciliation artifact — redaction is structural', () => {
   it('the parent projection itself excludes every phone/address column', () => {
     expect(PROJECTION.length).toBeGreaterThan(10)
     expect(PROJECTION.filter((c) => PII_KEY.test(c))).toEqual([])
+  })
+
+  it('no string VALUE reads as a phone number or a street address either', () => {
+    // Keys alone are not enough: the authored `reason` and `evidence` prose is
+    // free text, and describing a junk filer's fantasy address is one careless
+    // sentence away from reproducing a real person's home address.
+    const strings = allStrings(artifact)
+    expect(strings.length).toBeGreaterThan(100)
+    for (const { name, re } of PII_VALUE) {
+      const offenders = strings.filter((v) => re.test(v))
+      expect(offenders, `${name} found in an artifact string`).toEqual([])
+    }
   })
 })
 
@@ -235,11 +266,163 @@ describe('reconciliation artifact — story pins from the recon memo §4', () =>
   })
 })
 
+describe('reconciliation artifact — the figures are self-consistent', () => {
+  const round2 = (n: number): number => Math.round(n * 100) / 100
+  const pairs = artifact.consultants.flatMap((c) => c.reconciliation)
+
+  it('the whole subtraction chain closes to the cent', () => {
+    // Everything published is the city's own child ledger minus three authored
+    // removals. If this does not close, one removal is double-counting or missing
+    // money and no headline built on `reportedAll` can be trusted.
+    const excluded = artifact.excluded.reduce((s, e) => s + e.reportedTotal, 0)
+    const duplicates = artifact.overrides.duplicates.reduce((s, d) => s + d.droppedChildSum, 0)
+    const restated = artifact.consultants
+      .flatMap((c) => c.restatementsCollapsed)
+      .reduce((s, r) => s + r.droppedChildSum, 0)
+    expect(
+      round2(artifact.totals.childReportedRaw - excluded - duplicates - restated)
+    ).toBe(artifact.totals.reportedAll)
+  })
+
+  it('every published total is the sum of its own parts', () => {
+    const receipts = artifact.consultants.flatMap((c) => c.receipts)
+    expect(round2(receipts.reduce((s, r) => s + r.reported, 0))).toBe(artifact.totals.reportedAll)
+    expect(round2(pairs.reduce((s, p) => s + p.reported, 0))).toBe(artifact.totals.reportedReconcilable)
+    expect(round2(artifact.consultants.reduce((s, c) => s + c.totals.schE, 0))).toBe(artifact.totals.schE)
+    expect(round2(artifact.consultants.reduce((s, c) => s + c.totals.schG, 0))).toBe(artifact.totals.schG)
+    expect(receipts.length).toBe(artifact.totals.receipts)
+    expect(pairs.length).toBe(artifact.totals.pairs)
+  })
+
+  it('a receipt group never draws from two envelopes for one committee and period', () => {
+    // Two envelopes reporting the same client for the same quarter is the
+    // duplicate-filing signature; if one ever survives the scan, this catches it
+    // downstream at the only place it changes a number.
+    for (const c of artifact.consultants) {
+      const byGroup = new Map<string, Set<string>>()
+      for (const r of c.receipts) {
+        if (!r.filerNid) continue
+        const k = `${r.filerNid}::${r.periodStart}`
+        const set = byGroup.get(k) ?? new Set<string>()
+        set.add(r.envelope)
+        byGroup.set(k, set)
+      }
+      for (const [k, envelopes] of byGroup) {
+        expect([...envelopes], `${c.id} ${k} draws from ${envelopes.size} envelopes`).toHaveLength(1)
+      }
+    }
+  })
+
+  it('an undated Schedule E row is counted in exactly one reporting period', () => {
+    const seen = new Map<string, string>()
+    for (const p of pairs) {
+      for (const tx of p.undatedTransactionIds) {
+        const k = `${p.consultantId}::${p.filerNid}::${tx}`
+        expect(seen.get(k), `${k} counted twice`).toBeUndefined()
+        seen.set(k, p.periodStart)
+      }
+    }
+    expect(seen.size).toBeGreaterThan(0)
+  })
+})
+
+describe('reconciliation artifact — a number is withheld where it would be a claim', () => {
+  const pairs = artifact.consultants.flatMap((c) => c.reconciliation)
+
+  it('a committee with no Schedule E gets a null ratio, never a 0.00 omission', () => {
+    const noLedger = pairs.filter((p) => p.committeeHasScheduleE === false)
+    expect(noLedger.length).toBeGreaterThan(0)
+    for (const p of noLedger) {
+      expect(p.ratio, `${p.consultantId}/${p.filerNid} publishes a ratio with no payee ledger`).toBeNull()
+      expect(p.status).toBe('no-payee-ledger')
+    }
+    // And the committee rollup says so too, so a consumer never has to infer it.
+    const flagged = artifact.committees.filter((c) => c.hasScheduleE === false)
+    expect(flagged.length).toBeGreaterThan(0)
+  })
+
+  it('an impossible reporting period gets a null ratio, no deadline, and no days-late', () => {
+    const impossible = pairs.filter((p) => p.status === 'period-impossible')
+    expect(impossible.length).toBe(artifact.overrides.uncorrectable.length)
+    for (const p of impossible) expect(p.ratio).toBeNull()
+
+    const quarterlies = artifact.consultants.flatMap((c) =>
+      c.quarterlies.filter((q) => q.periodImpossible)
+    )
+    expect(quarterlies.length).toBe(artifact.overrides.uncorrectable.length)
+    for (const q of quarterlies) {
+      // "172 days early" would be measuring the typo, not the filer.
+      expect(q.deadline).toBeNull()
+      expect(q.daysLate).toBeNull()
+    }
+  })
+
+  it("discloses the envelopes that declare client money and publish no client rows", () => {
+    // SGR Consulting's Sep–Nov 2024 filing declares $403,889.62 with nothing in
+    // m75g-xpci. It is a real gap in the city's data; hiding it would be the lie.
+    const sgr = artifact.gates.parentOnlyEnvelopes.find(
+      (e) => e.envelope === '9baff337-9bfb-4094-91d6-70331b42b9dc'
+    )
+    expect(sgr).toBeDefined()
+    expect(sgr!.declaredTotal).toBe(403889.62)
+  })
+
+  it('a placeholder contribution row is blank, not below-threshold', () => {
+    const blanks = artifact.consultants
+      .flatMap((c) => c.contributions)
+      .filter((m) => m.matched === 'blank')
+    expect(blanks.length).toBeGreaterThan(0)
+    for (const b of blanks) expect(b.amount).toBe(0)
+    const belowThreshold = artifact.consultants
+      .flatMap((c) => c.contributions)
+      .filter((m) => m.matched === 'below-threshold')
+    for (const b of belowThreshold) expect(b.amount).toBeGreaterThan(0)
+  })
+})
+
+describe('reconciliation artifact — duplicate filings are detected, not just corrected', () => {
+  it('leaves no same-consultant, same-report, same-period group unexplained', () => {
+    expect(artifact.gates.duplicateGroupsDetected).toBe(0)
+  })
+
+  it('drops the Bedford Grove Mar–May 2026 filing that its own superset repeats', () => {
+    const dup = artifact.overrides.duplicates.find(
+      (d) => d.envelope === '1593b3f6-bef1-847d-8075-d919308371b2'
+    )
+    expect(dup).toBeDefined()
+    expect(dup!.duplicateOf).toBe('bbf8ae37-d87a-8741-820b-d9afd0829e1d')
+    expect(dup!.droppedChildSum).toBe(30000)
+  })
+
+  it('publishes the advisory same-day scan without gating on it', () => {
+    // The Outreach Team signed two DIFFERENT quarters 30 seconds apart on
+    // 2025-06-02 — a catch-up filer, not a duplicate. Gating on same-day would
+    // break the build on a legitimate filing pattern, so it is published to be
+    // read rather than enforced.
+    expect(Array.isArray(artifact.gates.sameDayFilings)).toBe(true)
+    for (const g of artifact.gates.sameDayFilings) {
+      expect(g.envelopes.length).toBeGreaterThan(1)
+    }
+  })
+
+  it('reports any consultant id that was not in the previously committed artifact', () => {
+    expect(Array.isArray(artifact.gates.newConsultantIds)).toBe(true)
+  })
+})
+
 describe('reconciliation artifact — every consultant id is accounted for', () => {
   it('resolvedBy is always declared and rawNames never empty', () => {
     for (const c of artifact.consultants) {
       expect(['alias', 'mechanical']).toContain(c.resolvedBy)
       expect(c.rawNames.length).toBeGreaterThan(0)
+    }
+  })
+
+  it('every alias-resolved id really exists in the authored alias table', () => {
+    const aliasIds = new Set(CONSULTANT_ALIASES.map((a) => a.id))
+    for (const c of artifact.consultants) {
+      if (c.resolvedBy !== 'alias') continue
+      expect(aliasIds, `${c.id} claims an alias that is not authored`).toContain(c.id)
     }
   })
 

@@ -26,6 +26,15 @@ function periodsOverlap(aStart: string, aEnd: string, bStart: string, bEnd: stri
   return aStart <= bEnd && aEnd >= bStart;
 }
 
+/** Whole days of overlap between two inclusive `YYYY-MM-DD` ranges; 0 when they do not meet. */
+function overlapDays(aStart: string, aEnd: string, bStart: string, bEnd: string): number {
+  if (!periodsOverlap(aStart, aEnd, bStart, bEnd)) return 0;
+  const lo = aStart > bStart ? aStart : bStart;
+  const hi = aEnd < bEnd ? aEnd : bEnd;
+  const d = daysDiffUtc(lo, hi);
+  return d === null ? 0 : d + 1;
+}
+
 /**
  * Absolute day difference between two `YYYY-MM-DD`-prefixed strings, computed by parsing
  * each prefix's year/month/day as a UTC date. Safe here specifically because both sides
@@ -63,21 +72,42 @@ function isTokenSubset(sub: string[], full: string[]): boolean {
  * `pitq-e56w`, grouped by (`consultantId`, `filerNid`, `periodStart`).
  *
  * - Receipts with `filerNid === null` are skipped (nothing to reconcile against).
- * - Schedule E rows count toward `schE` when `form_type === 'E'`, the `filer_nid`
- *   matches, and either the dated `transaction_date` falls within
- *   `[periodStart, periodEnd]`, or (undated) the filing's own `[start_date, end_date]`
- *   overlaps the reporting period — the undated portion is ALSO reported separately
- *   as `schEUndatedAssigned` but is already included in `schE`.
- * - Schedule G rows (`form_type === 'G'`) in the same window are summed into `schG`
- *   only — never folded into `schE`. Schedule F rows are ignored entirely.
+ * - A DATED Schedule E row counts toward `schE` when `form_type === 'E'`, the
+ *   `filer_nid` matches, and `transaction_date` falls within `[periodStart,
+ *   periodEnd]`.
+ * - An UNDATED Schedule E row is assigned to EXACTLY ONE period — the one whose
+ *   overlap with the filing's own `[start_date, end_date]` is longest, ties going
+ *   to the earlier period. Assigning it to every period its filing touches would
+ *   count the same dollars two and three times over: Margaux Kelly's 49 undated
+ *   rows from Mark Farrell for Mayor 2024 ($48,600.16) span a filing window that
+ *   covers both her Sep–Nov 2024 and Dec 2024–Feb 2025 quarters, and were counted
+ *   in both before this rule. `undatedTransactionIds` publishes exactly which
+ *   rows landed where so the exclusivity is checkable from the artifact.
+ * - Schedule G rows (`form_type === 'G'`) in the same window are summed into
+ *   `schG` only — never folded into `schE`. Schedule F rows are ignored entirely.
+ *
+ * `hasScheduleE` maps `filer_nid` to whether that committee files ANY Schedule E.
+ * An explicit `false` means there is no payee ledger to disagree with (an
+ * F496-only filer), so the pair reports `status: 'no-payee-ledger'` and a null
+ * ratio rather than a 0.00 that would read as a total omission. A receipt marked
+ * `periodImpossible` likewise yields a null ratio and `status:
+ * 'period-impossible'` — an in-window sum over a self-contradictory window is
+ * arbitrary, not evidence.
  */
 export function reconcile(
   receipts: Receipt[],
   exp: PitqExpRow[],
-  completeThrough: Record<string, string>
+  completeThrough: Record<string, string>,
+  hasScheduleE: Record<string, boolean> = {}
 ): ReconPair[] {
   type GroupKey = { consultantId: string; filerNid: string; periodStart: string };
-  const groups = new Map<string, { key: GroupKey; periodEnd: string; reported: number }>();
+  interface Group {
+    key: GroupKey;
+    periodEnd: string;
+    reported: number;
+    periodImpossible: boolean;
+  }
+  const groups = new Map<string, Group>();
 
   for (const r of receipts) {
     if (r.filerNid === null) continue;
@@ -85,18 +115,52 @@ export function reconcile(
     const existing = groups.get(key);
     if (existing) {
       existing.reported += r.reported;
+      existing.periodImpossible = existing.periodImpossible || !!r.periodImpossible;
     } else {
       groups.set(key, {
         key: { consultantId: r.consultantId, filerNid: r.filerNid, periodStart: r.periodStart },
         periodEnd: r.periodEnd,
         reported: r.reported,
+        periodImpossible: !!r.periodImpossible,
       });
     }
   }
 
+  // ── Pass 1: assign every undated Schedule E row to exactly one group ────────
+  // Candidates are the groups sharing this row's consultant AND filer; the
+  // winner is the longest overlap with the filing's own window, ties to the
+  // earlier period so the choice is deterministic across runs.
+  const undatedByGroup = new Map<string, PitqExpRow[]>();
+  const groupList = [...groups.entries()];
+  for (const row of exp) {
+    if (row.form_type !== 'E') continue;
+    if (datePrefix(row.transaction_date)) continue;
+    const filingStart = datePrefix(row.start_date);
+    const filingEnd = datePrefix(row.end_date);
+    if (!filingStart || !filingEnd) continue;
+
+    let best: { id: string; days: number; periodStart: string } | null = null;
+    for (const [id, g] of groupList) {
+      if (g.key.filerNid !== row.filer_nid) continue;
+      const days = overlapDays(filingStart, filingEnd, g.key.periodStart, g.periodEnd);
+      if (days <= 0) continue;
+      const better =
+        best === null ||
+        days > best.days ||
+        (days === best.days && g.key.periodStart < best.periodStart);
+      if (better) best = { id, days, periodStart: g.key.periodStart };
+    }
+    if (!best) continue;
+    const arr = undatedByGroup.get(best.id);
+    if (arr) arr.push(row);
+    else undatedByGroup.set(best.id, [row]);
+  }
+
+  // ── Pass 2: dated E rows, Schedule G, and the assigned undated rows ────────
   const results: ReconPair[] = [];
 
-  for (const { key, periodEnd, reported } of groups.values()) {
+  for (const [id, group] of groupList) {
+    const { key, periodEnd, reported } = group;
     const { consultantId, filerNid, periodStart } = key;
 
     let schE = 0;
@@ -109,23 +173,10 @@ export function reconcile(
       if (row.filer_nid !== filerNid) continue;
       if (row.form_type === 'E') {
         const txDate = datePrefix(row.transaction_date);
-        if (txDate) {
-          if (withinWindow(txDate, periodStart, periodEnd)) {
-            const amount = amt(row.transaction_amount_1);
-            schE += amount;
-            rowsE += 1;
-            if (!filerName && row.filer_name) filerName = row.filer_name;
-          }
-        } else {
-          const filingStart = datePrefix(row.start_date);
-          const filingEnd = datePrefix(row.end_date);
-          if (periodsOverlap(filingStart, filingEnd, periodStart, periodEnd)) {
-            const amount = amt(row.transaction_amount_1);
-            schE += amount;
-            schEUndatedAssigned += amount;
-            rowsE += 1;
-            if (!filerName && row.filer_name) filerName = row.filer_name;
-          }
+        if (txDate && withinWindow(txDate, periodStart, periodEnd)) {
+          schE += amt(row.transaction_amount_1);
+          rowsE += 1;
+          if (!filerName && row.filer_name) filerName = row.filer_name;
         }
       } else if (row.form_type === 'G') {
         const txDate = datePrefix(row.transaction_date);
@@ -135,6 +186,22 @@ export function reconcile(
         }
       }
     }
+
+    const undated = undatedByGroup.get(id) ?? [];
+    for (const row of undated) {
+      const amount = amt(row.transaction_amount_1);
+      schE += amount;
+      schEUndatedAssigned += amount;
+      rowsE += 1;
+      if (!filerName && row.filer_name) filerName = row.filer_name;
+    }
+
+    const ledger = hasScheduleE[filerNid];
+    const status: ReconPair['status'] = group.periodImpossible
+      ? 'period-impossible'
+      : ledger === false
+        ? 'no-payee-ledger'
+        : 'reconciled';
 
     results.push({
       consultantId,
@@ -146,9 +213,14 @@ export function reconcile(
       schE,
       schEUndatedAssigned,
       schG,
-      ratio: reported > 0 ? schE / reported : null,
+      ratio: status === 'reconciled' && reported > 0 ? schE / reported : null,
       exactMatch: Math.abs(schE - reported) < 1,
       rowsE,
+      status,
+      committeeHasScheduleE: ledger,
+      undatedTransactionIds: undated
+        .map((r) => r.transaction_id)
+        .filter((t): t is string => typeof t === 'string' && t.length > 0),
       committeeCompleteThrough: completeThrough[filerNid],
     });
   }
@@ -174,6 +246,7 @@ function rcptRowName(row: PitqRcptRow): string {
  * contribution date, and the contributor's normalized name is a token subset of the
  * candidate row's assembled name. Failing that, the same test is retried against each
  * of `principalOf(contributor)`'s names for a 'principal' match. Absent any match,
+ * a row with no amount reports 'blank' (a placeholder list row, not a contribution),
  * contributions under $100 report 'below-threshold' (FPPC itemization floor), an
  * unresolved recipient reports 'recipient-not-in-pitq', and anything else 'unmatched'.
  */
@@ -227,7 +300,12 @@ export function matchContributions(
     }
 
     if (!matched) {
-      if (amount < 100) {
+      if (amount <= 0) {
+        // A placeholder list row: the DocuSign exporter writes a row for a section
+        // the filer touched but left empty. Calling it 'below-threshold' would
+        // assert a real contribution the recipient was not required to itemize.
+        matched = 'blank';
+      } else if (amount < 100) {
         matched = 'below-threshold';
       } else if (recipientNid === null) {
         matched = 'recipient-not-in-pitq';

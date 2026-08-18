@@ -1,6 +1,6 @@
 {
   "provenance": {
-    "generatedAt": "2026-08-18T20:22:23.081Z",
+    "generatedAt": "2026-08-18T20:54:33.599Z",
     "generator": "scripts/build-consultant-recon.ts",
     "sources": [
       {
@@ -65,24 +65,25 @@
     "recipes": {
       "latestRule": "MAX(datesigned) per filingseries (floating SF-local strings compared as text)",
       "restatement": "Same consultant identity + same reportingperiodstartdate with exactly one Quarterly and one Termination among the latest rows: keep the LATER-signed report's client rows, drop the other's (contributions too), record { keptEnvelope, droppedEnvelope, delta } for exact and inexact pairs alike",
+      "pitqFloor": "The pitq-e56w filing_date floor is per consultant: six months before that consultant's own earliest reporting period, never later than 2024-09-01. A single fixed floor hid a committee's Schedule E row filed before the era started and published the consultant as reporting money nobody paid.",
       "schE": "pitq-e56w form_type 'E' rows for the client's filer_nid whose transaction_date falls inside the consultant's own reporting period. Schedule G is summed separately and NEVER folded into schE; Schedule F is ignored entirely.",
-      "undated": "A Schedule E row with no transaction_date is assigned to a reporting period when the FILING's [start_date, end_date] overlaps it; the assigned amount is included in schE and also reported separately as schEUndatedAssigned.",
+      "undated": "A Schedule E row with no transaction_date is assigned to EXACTLY ONE reporting period — the one whose overlap with the FILING's own [start_date, end_date] is longest, ties to the earlier period. The amount is included in schE and reported separately as schEUndatedAssigned, and the row's transaction_id is published under the pair's undatedTransactionIds so the exclusivity is checkable.",
       "contributions": "Each priced 7gkm-68qf row is searched in the recipient's own pitq RCPT/S497 rows for the same amount to the cent within ±30 days, matching the contributor name, then the firm's principal. Where sourceofthecontribution is 'Campaign Consultant' the contributor is the registrant itself (the contributor column is null on those rows).",
       "exclusion": "EXCLUDED_ENVELOPES are removed before any receipt, pair, or rollup is computed, so their dollars appear only under `excluded`.",
       "overrides": "Authored, envelope-keyed, applied after latest-per-series and before the restatement collapse. DUPLICATE_ENVELOPES drops a second copy of one report that landed in a different filingseries; PERIOD_OVERRIDES corrects a Quarterly Report whose period begins after the filer signed it, but only where a one-year shift back is the determinate correction. Both original and corrected values are published under `overrides`, and every corrected quarterly carries periodCorrected + its original dates."
     },
     "committeeCompleteThrough": {
       "6685673": "2026-07-22",
-      "10944875": "2026-07-31",
+      "10944875": "2021-02-01",
       "201219888": "2025-08-01",
-      "206871404": "2025-08-01",
+      "206871404": "2025-07-31",
       "208059485": "2025-08-01",
       "208090470": "2026-07-31",
       "208395017": "2025-01-30",
       "208440318": "2026-07-31",
       "208504134": "2026-08-05",
       "208584481": "2025-04-30",
-      "208599394": "2026-08-07",
+      "208599394": "2026-07-31",
       "208688469": "2026-07-31",
       "208697921": "2026-07-31",
       "208734348": "2026-07-31",
@@ -90,7 +91,7 @@
       "208769508": "2026-07-29",
       "208835453": "2025-01-31",
       "208865143": "2026-07-14",
-      "209865652": "2026-07-31",
+      "209865652": "2026-02-02",
       "210489481": "2026-07-31",
       "210823617": "2026-06-24",
       "211027210": "2026-07-31",
@@ -98,7 +99,7 @@
       "211486142": "2025-03-13",
       "211703442": "2025-10-15",
       "211765770": "2026-07-31",
-      "211776936": "2026-08-11",
+      "211776936": "2026-02-02",
       "211810083": "2025-08-12",
       "211837252": "2026-07-31",
       "211940502": "2025-02-19",
@@ -106,9 +107,8 @@
       "211945518": "2025-04-30",
       "211945557": "2025-06-13",
       "212266099": "2025-02-10",
-      "212294989": "2025-01-21",
       "212327513": "2025-02-10",
-      "212570183": "2026-07-30",
+      "212570183": "2026-04-23",
       "212872841": "2026-07-31",
       "213987622": "2026-08-17",
       "214099226": "2026-07-31",
@@ -132,11 +132,9 @@
       "215606983": "2026-07-31",
       "215726436": "2026-07-31",
       "215852865": "2026-08-14",
-      "216006060": "2026-08-12",
+      "216006060": "2026-07-20",
       "216048526": "2026-07-31",
-      "216701453": "2026-06-01",
-      "216747316": "2026-08-14",
-      "217128861": "2026-07-31"
+      "216747316": "2026-07-07"
     }
   },
   "gates": {
@@ -146,21 +144,65 @@
     "conservationMismatches": 0,
     "unmappedConsultants": [],
     "unmappedClients": [],
+    "parentOnlyEnvelopes": [
+      {
+        "envelope": "9baff337-9bfb-4094-91d6-70331b42b9dc",
+        "consultant": "SGR Consulting, LLC",
+        "declaredTotal": 403889.62,
+        "reportType": "Quarterly Report",
+        "periodStart": "2024-09-01"
+      }
+    ],
+    "newConsultantIds": [],
     "supersededEnvelopes": 6,
     "restatementsCollapsed": 11,
     "blankClientRows": 1,
     "excludedEnvelopes": 2,
-    "duplicateEnvelopes": 1,
+    "duplicateEnvelopes": 4,
     "periodOverrides": 12,
-    "uncorrectablePeriods": 1
+    "uncorrectablePeriods": 1,
+    "duplicateGroupsDetected": 0,
+    "sameDayFilings": [
+      {
+        "consultantId": "outreach-team",
+        "reportType": "Quarterly Report",
+        "datesigned": "2025-06-02",
+        "envelopes": [
+          "15180c77-e699-425d-8a29-6224d659895e",
+          "4fc808a6-a13a-43c5-b3ae-6f302833b49a"
+        ]
+      }
+    ]
   },
   "overrides": {
     "duplicates": [
       {
+        "envelope": "1593b3f6-bef1-847d-8075-d919308371b2",
+        "duplicateOf": "bbf8ae37-d87a-8741-820b-d9afd0829e1d",
+        "reason": "Bedford Grove filed its Mar-May 2026 quarterly twice under its two registered spellings, 39 hours apart: 'Celeste Wolter Sempere_Quarterly Report_3-1-2026' (1593b3f6, signed 2026-06-16 07:11:21, $30,000) and 'Bedford Grove_Quarterly Report_3-1-2026' (bbf8ae37, signed 2026-06-17 22:13:38, $40,000). The second is a SUPERSET, not a different report: it carries the identical 'San Franciscans for Fire, Earthquake and Disaster Preparedness' $30,000 line plus two Matt Dorsey lines of $5,000 each. The later, complete filing is kept. Because the two spellings sit in different filingseries, latestPerSeries cannot see the pair; the alias table already clusters the spellings, which is what makes the duplicate detectable at all.",
+        "droppedTotal": 30000,
+        "droppedChildSum": 30000
+      },
+      {
+        "envelope": "2b8a3503-1c3b-48fa-b5e6-964686d02a3f",
+        "duplicateOf": "9becb26f-b469-4e13-aaec-e80c6ff349e4",
+        "reason": "Paul Kumar filed a Mar-May 2025 quarterly twice under two spellings, three months apart, both reporting $0 clients: 'Paul R Kumar_Quarterly Report_3-1-2025' (9becb26f, signed 2025-06-17, one day after that quarter's 2025-06-16 deadline) and 'Paul Kumar_Quarterly Report_3-1-2025' (2b8a3503, signed 2025-09-16). The EARLIER filing is kept as the on-time one for the period both claim. Noted and not acted on: the September signature falls one day after the Jun-Aug 2025 deadline, so the later envelope may be a Jun-Aug quarterly with a mis-keyed period start rather than a re-file — but both report $0, so no figure in the artifact depends on which reading is right, and inventing a period correction on that inference would be a claim the data does not support.",
+        "droppedTotal": 0,
+        "droppedChildSum": 0
+      },
+      {
+        "envelope": "862fbef4-ca1f-4c1c-b0e3-ac3cfa9f26e6",
+        "duplicateOf": "b75c7f9a-9d5b-4876-a965-c26c963fc231",
+        "reason": "Szabo and Associates filed an Initial Registration twice on 2026-04-22, 36m50s apart, both 'Original', both $0, differing only in the registration period typed: 862fbef4 at 22:24:08 (2025-11-17 to 2026-02-17) and b75c7f9a at 23:00:58 (2025-12-01 to 2026-03-01). The later is kept as the correction the filer sat down to make. NOTE: this pair escapes the generator's duplicate scan, which keys on (consultant, report type, period start) — the two period starts differ, which is the whole point of the re-submission. It is caught instead by the advisory same-day scan, which cannot be a gate because a consultant legitimately files two DIFFERENT quarters on one day (The Outreach Team did exactly that on 2025-06-02).",
+        "droppedTotal": 0,
+        "droppedChildSum": 0
+      },
+      {
         "envelope": "59d2f802-601a-47bc-88e2-d629a125d7eb",
         "duplicateOf": "bd2d3c05-88b2-4c60-aca0-42162096666d",
         "reason": "AGENCY filed the same $449,484.50 twice on 2025-03-05, 13m35s apart: a Quarterly Report signed 16:46:25 for a period typed 2025-09-01 to 2025-11-30, and a Termination Report signed 17:00:00 for 2024-09-01 to 2024-11-05. The Quarterly is dropped and the Termination kept because the Termination's period is the true one — AGENCY's client is Safer San Francisco for Mark Farrell for Mayor 2024, whose 9 Schedule E payments to payee 'Agency' ($453,053.54) all fall in October 2024, and because the Quarterly's period had not yet begun on the day it was signed. The two land in different `filingseries` (the string embeds report type and period start), so latestPerSeries cannot see the pair, and their period starts differ, so collapseRestatements cannot either.",
-        "droppedTotal": 449484.5
+        "droppedTotal": 449484.5,
+        "droppedChildSum": 449484.5
       }
     ],
     "periods": [
@@ -462,6 +504,9 @@
           "ratio": 1.031536,
           "exactMatch": false,
           "rowsE": 27,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-29",
           "clientStrings": [
             "Believe in SF, Lurie for Mayor 2024"
@@ -481,6 +526,9 @@
           "ratio": 0,
           "exactMatch": false,
           "rowsE": 0,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "SF Believes"
@@ -500,7 +548,9 @@
           "ratio": null,
           "exactMatch": true,
           "rowsE": 0,
-          "committeeCompleteThrough": "2026-07-31",
+          "status": "no-payee-ledger",
+          "committeeHasScheduleE": false,
+          "undatedTransactionIds": [],
           "clientStrings": [
             "Team Manny, Manny Yekutiel for Supervisor 2026"
           ],
@@ -519,6 +569,9 @@
           "ratio": 5.574198,
           "exactMatch": false,
           "rowsE": 44,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "SF Believes"
@@ -538,7 +591,9 @@
           "ratio": null,
           "exactMatch": true,
           "rowsE": 0,
-          "committeeCompleteThrough": "2026-07-31",
+          "status": "no-payee-ledger",
+          "committeeHasScheduleE": false,
+          "undatedTransactionIds": [],
           "clientStrings": [
             "Team Manny, Manny Yekutiel for Supervisor 2026"
           ],
@@ -633,6 +688,8 @@
           "periodStart": "2024-12-01T00:00:00.000",
           "keptTotal": 0,
           "droppedTotal": 0,
+          "keptChildSum": 0,
+          "droppedChildSum": 0,
           "delta": 0,
           "exact": true
         }
@@ -695,6 +752,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 17,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Safer San Francisco for Mark Farrell for Mayor 2024"
@@ -955,6 +1015,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 26,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2025-08-01",
           "clientStrings": [
             "Re-lect Mayor London Breed 2024"
@@ -974,6 +1037,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 10,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2025-10-15",
           "clientStrings": [
             "Mayor Breed's Committee for Reproductive Freedom, Yes on O"
@@ -993,7 +1059,10 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 6,
-          "committeeCompleteThrough": "2026-08-11",
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-02-02",
           "clientStrings": [
             "Yes on Prop K, Ocean Beach for All"
           ],
@@ -1012,6 +1081,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 23,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Healthy Vibrant SF, Yes on B"
@@ -1031,6 +1103,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 11,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2025-02-19",
           "clientStrings": [
             "Yes on F, San Franciscans for a Fully Staffed Police Department"
@@ -1050,6 +1125,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 2,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2025-08-01",
           "clientStrings": [
             "Re-elect Mayor London Breed 2024"
@@ -1069,6 +1147,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 1,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Yes on B, Healthy Vibrant SF Total"
@@ -1088,6 +1169,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 12,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Stop the Recall, Stand with Joel Engardio"
@@ -1107,6 +1191,9 @@
           "ratio": 1.017324,
           "exactMatch": false,
           "rowsE": 12,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Stop the Recall, Stand with Joel Engardio"
@@ -1126,6 +1213,9 @@
           "ratio": 6.136472,
           "exactMatch": false,
           "rowsE": 10,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Stop the Recall, Stand with Joel Engardio"
@@ -1217,6 +1307,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 6,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2025-01-31",
           "clientStrings": [
             "Committee to Fix San Francisco Government, A Coalition of San Francisco Civic Organizations Dedicated to Improving the City's Future"
@@ -1236,6 +1329,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 1,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2025-02-10",
           "clientStrings": [
             "San Franciscans Supporting Brooke Jenkins for District Attorney 2024"
@@ -1255,6 +1351,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 1,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2025-02-10",
           "clientStrings": [
             "San Franciscans Opposed to Aaron Peskin for Mayor 2024"
@@ -1335,6 +1434,16 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 6,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [
+            "500129023",
+            "500147938",
+            "500123239",
+            "500128778",
+            "500129022",
+            "500128777"
+          ],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Mark Farrell for Mayor 2024"
@@ -1354,6 +1463,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 4,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Mayor Mark Farrell for Yes on Prop D"
@@ -1533,6 +1645,9 @@
           "ratio": 1.029959,
           "exactMatch": false,
           "rowsE": 13,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2025-04-30",
           "clientStrings": [
             "Sharon Lai for Supervisor"
@@ -1552,6 +1667,9 @@
           "ratio": 0.95954,
           "exactMatch": false,
           "rowsE": 39,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2025-06-11",
           "clientStrings": [
             "Aaron Peskin for Mayor"
@@ -1571,6 +1689,9 @@
           "ratio": 0,
           "exactMatch": false,
           "rowsE": 0,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2025-08-12",
           "clientStrings": [
             "Real Reform Yes on C, No on D, Yes on E"
@@ -1590,6 +1711,9 @@
           "ratio": 1.000001,
           "exactMatch": true,
           "rowsE": 9,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Yes on B"
@@ -1609,6 +1733,9 @@
           "ratio": 0.8,
           "exactMatch": false,
           "rowsE": 4,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "San Franciscans for Fire, Earthquake and Disaster Preparedness"
@@ -1760,6 +1887,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 3,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "San Franciscans for Fire, Earthquake and Disaster Preparedness, sponsored by San Francisco Firefighters Local 798"
@@ -1779,6 +1909,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 22,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "San Franciscans for Fire, Earthquake and Disaster Preparedness, sponsored by San Francisco Firefighters Local 798"
@@ -1869,6 +2002,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 3,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Forward Action SF, Supporting Breed for Mayor 2024, Sponsored by Abundance Network"
@@ -1888,6 +2024,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 2,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Vote Marjan Philhour for Supervisor 2024"
@@ -1904,6 +2043,8 @@
           "periodStart": "2024-12-01T00:00:00.000",
           "keptTotal": 0,
           "droppedTotal": 0,
+          "keptChildSum": 0,
+          "droppedChildSum": 0,
           "delta": 0,
           "exact": true
         }
@@ -2007,6 +2148,9 @@
           "ratio": null,
           "exactMatch": true,
           "rowsE": 0,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-08-17",
           "clientStrings": [
             "Yes on C, No on D to Protect San Francisco’s Small Businesses and Economic Recovery, Sponsored by San Francisco Civic Organizations"
@@ -2026,6 +2170,9 @@
           "ratio": 0.24886999999999998,
           "exactMatch": false,
           "rowsE": 6,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-08-17",
           "clientStrings": [
             "Yes on C, No on D to Protect San Francisco’s Small Businesses and Economic Recovery, Sponsored by San Francisco Civic Organizations"
@@ -2045,6 +2192,9 @@
           "ratio": null,
           "exactMatch": false,
           "rowsE": 1,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-08-17",
           "clientStrings": [
             "Yes on C, No on D to Protect San Francisco Small Businesses and Economic Recovery, Sponsored by San Francisco Civic Organizations"
@@ -2153,6 +2303,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 3,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Brooke Jenkins for District Attorney 2024"
@@ -2172,6 +2325,9 @@
           "ratio": 0.5398970000000001,
           "exactMatch": false,
           "rowsE": 2,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2025-01-31",
           "clientStrings": [
             "Committee to Fix San Francisco Government"
@@ -2191,6 +2347,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 2,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-08-17",
           "clientStrings": [
             "Yes on C, No on D to Protect San Francisco's Small Business Recovery"
@@ -2207,6 +2366,8 @@
           "periodStart": "2024-09-01T00:00:00.000",
           "keptTotal": 403889.62,
           "droppedTotal": 403889.62,
+          "keptChildSum": 403889.62,
+          "droppedChildSum": 0,
           "delta": 0,
           "exact": true
         }
@@ -2425,6 +2586,9 @@
           "ratio": 0.9062049999999999,
           "exactMatch": false,
           "rowsE": 15,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2025-03-13",
           "clientStrings": [
             "Yes on L, Fund the Bus"
@@ -2444,6 +2608,9 @@
           "ratio": 0.44754700000000003,
           "exactMatch": false,
           "rowsE": 3,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2025-08-12",
           "clientStrings": [
             "Real Reform, Yes on C, No on D, Yes on E ,a coalition of small businesses, neighbors and Aaron Peskin"
@@ -2463,6 +2630,9 @@
           "ratio": 0.992289,
           "exactMatch": false,
           "rowsE": 19,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2025-04-30",
           "clientStrings": [
             "Yes on G, the Affordable Housing Opportunity Fund"
@@ -2482,6 +2652,9 @@
           "ratio": 0.966698,
           "exactMatch": false,
           "rowsE": 5,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Gary McCoy for Supervisor 2026"
@@ -2501,6 +2674,9 @@
           "ratio": 1.278373,
           "exactMatch": false,
           "rowsE": 5,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Gary McCoy for Supervisor 2026"
@@ -2520,6 +2696,9 @@
           "ratio": 1.010643,
           "exactMatch": false,
           "rowsE": 8,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Natalie Gee for Supervisor 2026"
@@ -2539,6 +2718,9 @@
           "ratio": 1.038846,
           "exactMatch": false,
           "rowsE": 5,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Gary McCoy for Supervisor 2026"
@@ -2558,6 +2740,9 @@
           "ratio": 1.1739709999999999,
           "exactMatch": false,
           "rowsE": 15,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Natalie Gee for Supervisor 2026"
@@ -2656,6 +2841,9 @@
           "ratio": 1.00794,
           "exactMatch": false,
           "rowsE": 9,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Safer San Francisco for Mark Farrel 2024"
@@ -2669,520 +2857,6 @@
         "reported": 449484.5,
         "reconciledReported": 449484.5,
         "schE": 453053.54,
-        "schG": 0
-      }
-    },
-    {
-      "id": "bedford-grove",
-      "displayName": "Bedford Grove",
-      "resolvedBy": "alias",
-      "rawNames": [
-        "Bedford Grove",
-        "Celeste Wolter Sempere"
-      ],
-      "kind": "inferred-dba",
-      "payeePatterns": [
-        "%BEDFORD GROVE%",
-        "%WOLTER SEMPERE%"
-      ],
-      "city": "San Francisco",
-      "state": "California",
-      "registrations": [
-        {
-          "year": "2025",
-          "reportType": "Reregistration",
-          "datesigned": "2024-12-12T10:15:04.000",
-          "envelope": "9be123ab-5cf1-4c2e-8a47-2705c56f62c4",
-          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_15_2024-12-12T18-01-39-457Z.pdf"
-        }
-      ],
-      "quarterlies": [
-        {
-          "periodStart": "2024-09-01",
-          "periodEnd": "2024-11-30",
-          "datesigned": "2024-12-12T09:53:31.000",
-          "deadline": "2024-12-16",
-          "daysLate": -4,
-          "envelope": "5fecebdb-65ee-483f-8331-5f2ba190ef46",
-          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_14_2024-12-12T17-50-56-370Z.pdf"
-        },
-        {
-          "periodStart": "2024-12-01",
-          "periodEnd": "2025-02-28",
-          "periodCorrected": true,
-          "originalPeriodStart": "2025-12-01",
-          "originalPeriodEnd": "2026-02-28",
-          "datesigned": "2025-03-05T14:55:44.000",
-          "deadline": "2025-03-17",
-          "daysLate": -12,
-          "envelope": "f2bb9a64-2f55-41e5-99c3-9676406b55f4",
-          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_51_2025-03-05T22-54-44-303Z.pdf"
-        },
-        {
-          "periodStart": "2025-03-01",
-          "periodEnd": "2025-05-31",
-          "datesigned": "2025-06-13T21:01:19.000",
-          "deadline": "2025-06-16",
-          "daysLate": -3,
-          "envelope": "65f5d477-f7e9-4ed5-80f1-a485c6b0ae5e",
-          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_107_2025-06-14T03-59-32-446Z.pdf"
-        },
-        {
-          "periodStart": "2025-06-01",
-          "periodEnd": "2025-08-31",
-          "datesigned": "2025-09-11T15:31:50.000",
-          "deadline": "2025-09-15",
-          "daysLate": -4,
-          "envelope": "149d9226-b156-4ab7-bec6-e78c0d045318",
-          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_136_2025-09-11T22-29-28-660Z.pdf"
-        },
-        {
-          "periodStart": "2025-09-01",
-          "periodEnd": "2025-11-30",
-          "datesigned": "2025-12-14T22:45:23.000",
-          "deadline": "2025-12-15",
-          "daysLate": -1,
-          "envelope": "379c734c-fd67-4033-8bbc-0ce46267772f",
-          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_178_2025-12-15T06-44-21-834Z.pdf"
-        },
-        {
-          "periodStart": "2025-12-01",
-          "periodEnd": "2026-02-28",
-          "periodCorrected": true,
-          "originalPeriodStart": "2026-12-01",
-          "originalPeriodEnd": "2027-02-28",
-          "datesigned": "2026-03-18T15:56:23.000",
-          "deadline": "2026-03-16",
-          "daysLate": 2,
-          "envelope": "675751b3-3e67-4e7c-af5d-a4ce22df3e8b",
-          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_230_2026-03-18T22-55-18-646Z.pdf"
-        },
-        {
-          "periodStart": "2026-03-01",
-          "periodEnd": "2026-05-31",
-          "datesigned": "2026-06-17T22:13:38.000",
-          "deadline": "2026-06-15",
-          "daysLate": 2,
-          "envelope": "bbf8ae37-d87a-8741-820b-d9afd0829e1d",
-          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_276_2026-06-18T05-10-18-806Z.pdf"
-        },
-        {
-          "periodStart": "2026-03-01",
-          "periodEnd": "2026-05-31",
-          "datesigned": "2026-06-16T07:11:21.000",
-          "deadline": "2026-06-15",
-          "daysLate": 1,
-          "envelope": "1593b3f6-bef1-847d-8075-d919308371b2",
-          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_271_2026-06-16T14-10-04-072Z.pdf"
-        }
-      ],
-      "receipts": [
-        {
-          "clientString": "Forward Action SF",
-          "clientClass": "committee",
-          "clientConfidence": "inferred",
-          "filerNid": "208688469",
-          "filerName": "Forward Action SF, Supporting London Breed for Mayor 2024, Sponsored by Abundance Network",
-          "periodStart": "2024-09-01",
-          "periodEnd": "2024-11-30",
-          "reportType": "Quarterly Report",
-          "envelope": "5fecebdb-65ee-483f-8331-5f2ba190ef46",
-          "reported": 90450
-        },
-        {
-          "clientString": "Healthy and Vibrant SF - Yes on B",
-          "clientClass": "committee",
-          "clientConfidence": "inferred",
-          "filerNid": "211837252",
-          "filerName": "Healthy, Vibrant SF, Yes on B",
-          "periodStart": "2024-09-01",
-          "periodEnd": "2024-11-30",
-          "reportType": "Quarterly Report",
-          "envelope": "5fecebdb-65ee-483f-8331-5f2ba190ef46",
-          "reported": 40000
-        },
-        {
-          "clientString": "Yes on F - Fully Staffed Police Dept.",
-          "clientClass": "committee",
-          "clientConfidence": "inferred",
-          "filerNid": "211940502",
-          "filerName": "Yes on F, San Franciscans for a Full Police Staffing",
-          "periodStart": "2024-09-01",
-          "periodEnd": "2024-11-30",
-          "reportType": "Quarterly Report",
-          "envelope": "5fecebdb-65ee-483f-8331-5f2ba190ef46",
-          "reported": 10000
-        },
-        {
-          "clientString": "Rafael Mandelman for Senate 2028",
-          "clientClass": "state",
-          "clientConfidence": "exact",
-          "filerNid": null,
-          "periodStart": "2025-03-01",
-          "periodEnd": "2025-05-31",
-          "reportType": "Quarterly Report",
-          "envelope": "65f5d477-f7e9-4ed5-80f1-a485c6b0ae5e",
-          "reported": 7500
-        },
-        {
-          "clientString": "Stephen Sherrill for Supervisor 2026",
-          "clientClass": "committee",
-          "clientConfidence": "exact",
-          "filerNid": "213987622",
-          "filerName": "Stephen Sherrill for Supervisor 2026",
-          "periodStart": "2025-03-01",
-          "periodEnd": "2025-05-31",
-          "reportType": "Quarterly Report",
-          "envelope": "65f5d477-f7e9-4ed5-80f1-a485c6b0ae5e",
-          "reported": 5000
-        },
-        {
-          "clientString": "Matt Dorsey for DCCC",
-          "clientClass": "committee",
-          "clientConfidence": "inferred",
-          "filerNid": "208697921",
-          "filerName": "Matt Dorsey for DCCC Member 2024 Officeholder Committee",
-          "periodStart": "2025-06-01",
-          "periodEnd": "2025-08-31",
-          "reportType": "Quarterly Report",
-          "envelope": "149d9226-b156-4ab7-bec6-e78c0d045318",
-          "reported": 4000
-        },
-        {
-          "clientString": "Stephen Sherrill for Supervisor 2026",
-          "clientClass": "committee",
-          "clientConfidence": "exact",
-          "filerNid": "213987622",
-          "filerName": "Stephen Sherrill for Supervisor 2026",
-          "periodStart": "2025-06-01",
-          "periodEnd": "2025-08-31",
-          "reportType": "Quarterly Report",
-          "envelope": "149d9226-b156-4ab7-bec6-e78c0d045318",
-          "reported": 10000
-        },
-        {
-          "clientString": "Stephen Sherrill For Supervisor",
-          "clientClass": "committee",
-          "clientConfidence": "inferred",
-          "filerNid": "213987622",
-          "filerName": "Stephen Sherrill for Supervisor 2026",
-          "periodStart": "2025-09-01",
-          "periodEnd": "2025-11-30",
-          "reportType": "Quarterly Report",
-          "envelope": "379c734c-fd67-4033-8bbc-0ce46267772f",
-          "reported": 15000
-        },
-        {
-          "clientString": "Earthquake Safety and Emergency Response (ESER)",
-          "clientClass": "committee",
-          "clientConfidence": "exact",
-          "filerNid": "215726436",
-          "filerName": "Yes on A, San Franciscans for Fire, Earthquake, and Disaster Preparedness, sponsored by San Francisco Firefighters local 798",
-          "periodStart": "2025-12-01",
-          "periodEnd": "2026-02-28",
-          "periodCorrected": true,
-          "reportType": "Quarterly Report",
-          "envelope": "675751b3-3e67-4e7c-af5d-a4ce22df3e8b",
-          "reported": 20000
-        },
-        {
-          "clientString": "Stephen Sherrill for Supervisor",
-          "clientClass": "committee",
-          "clientConfidence": "inferred",
-          "filerNid": "213987622",
-          "filerName": "Stephen Sherrill for Supervisor 2026",
-          "periodStart": "2025-12-01",
-          "periodEnd": "2026-02-28",
-          "periodCorrected": true,
-          "reportType": "Quarterly Report",
-          "envelope": "675751b3-3e67-4e7c-af5d-a4ce22df3e8b",
-          "reported": 5000
-        },
-        {
-          "clientString": "Matt Dorsey for DCCC",
-          "clientClass": "committee",
-          "clientConfidence": "inferred",
-          "filerNid": "208697921",
-          "filerName": "Matt Dorsey for DCCC Member 2024 Officeholder Committee",
-          "periodStart": "2026-03-01",
-          "periodEnd": "2026-05-31",
-          "reportType": "Quarterly Report",
-          "envelope": "bbf8ae37-d87a-8741-820b-d9afd0829e1d",
-          "reported": 5000
-        },
-        {
-          "clientString": "Matt Dorsey for Supervisor 2026",
-          "clientClass": "committee",
-          "clientConfidence": "exact",
-          "filerNid": "215579031",
-          "filerName": "Matt Dorsey for Supervisor 2026",
-          "periodStart": "2026-03-01",
-          "periodEnd": "2026-05-31",
-          "reportType": "Quarterly Report",
-          "envelope": "bbf8ae37-d87a-8741-820b-d9afd0829e1d",
-          "reported": 5000
-        },
-        {
-          "clientString": "San Franciscans for Fire, Earthquake and Disaster Preparedness",
-          "clientClass": "committee",
-          "clientConfidence": "inferred",
-          "filerNid": "215726436",
-          "filerName": "Yes on A, San Franciscans for Fire, Earthquake, and Disaster Preparedness, sponsored by San Francisco Firefighters local 798",
-          "periodStart": "2026-03-01",
-          "periodEnd": "2026-05-31",
-          "reportType": "Quarterly Report",
-          "envelope": "1593b3f6-bef1-847d-8075-d919308371b2",
-          "reported": 30000
-        },
-        {
-          "clientString": "San Franciscans for Fire, Earthquake and Disaster Preparedness",
-          "clientClass": "committee",
-          "clientConfidence": "inferred",
-          "filerNid": "215726436",
-          "filerName": "Yes on A, San Franciscans for Fire, Earthquake, and Disaster Preparedness, sponsored by San Francisco Firefighters local 798",
-          "periodStart": "2026-03-01",
-          "periodEnd": "2026-05-31",
-          "reportType": "Quarterly Report",
-          "envelope": "bbf8ae37-d87a-8741-820b-d9afd0829e1d",
-          "reported": 30000
-        }
-      ],
-      "reconciliation": [
-        {
-          "consultantId": "bedford-grove",
-          "filerNid": "208688469",
-          "filerName": "Forward Action SF, Supporting London Breed for Mayor 2024, Sponsored by Abundance Network",
-          "periodStart": "2024-09-01",
-          "periodEnd": "2024-11-30",
-          "reported": 90450,
-          "schE": 90450,
-          "schEUndatedAssigned": 0,
-          "schG": 0,
-          "ratio": 1,
-          "exactMatch": true,
-          "rowsE": 3,
-          "committeeCompleteThrough": "2026-07-31",
-          "clientStrings": [
-            "Forward Action SF"
-          ],
-          "clientConfidence": "inferred"
-        },
-        {
-          "consultantId": "bedford-grove",
-          "filerNid": "211837252",
-          "filerName": "Healthy, Vibrant SF, Yes on B",
-          "periodStart": "2024-09-01",
-          "periodEnd": "2024-11-30",
-          "reported": 40000,
-          "schE": 40000,
-          "schEUndatedAssigned": 0,
-          "schG": 0,
-          "ratio": 1,
-          "exactMatch": true,
-          "rowsE": 3,
-          "committeeCompleteThrough": "2026-07-31",
-          "clientStrings": [
-            "Healthy and Vibrant SF - Yes on B"
-          ],
-          "clientConfidence": "inferred"
-        },
-        {
-          "consultantId": "bedford-grove",
-          "filerNid": "211940502",
-          "filerName": "Yes on F, San Franciscans for a Full Police Staffing",
-          "periodStart": "2024-09-01",
-          "periodEnd": "2024-11-30",
-          "reported": 10000,
-          "schE": 10000,
-          "schEUndatedAssigned": 0,
-          "schG": 0,
-          "ratio": 1,
-          "exactMatch": true,
-          "rowsE": 2,
-          "committeeCompleteThrough": "2025-02-19",
-          "clientStrings": [
-            "Yes on F - Fully Staffed Police Dept."
-          ],
-          "clientConfidence": "inferred"
-        },
-        {
-          "consultantId": "bedford-grove",
-          "filerNid": "213987622",
-          "filerName": "Stephen Sherrill for Supervisor 2026 General",
-          "periodStart": "2025-03-01",
-          "periodEnd": "2025-05-31",
-          "reported": 5000,
-          "schE": 6441.79,
-          "schEUndatedAssigned": 0,
-          "schG": 0,
-          "ratio": 1.288358,
-          "exactMatch": false,
-          "rowsE": 3,
-          "committeeCompleteThrough": "2026-08-17",
-          "clientStrings": [
-            "Stephen Sherrill for Supervisor 2026"
-          ],
-          "clientConfidence": "exact"
-        },
-        {
-          "consultantId": "bedford-grove",
-          "filerNid": "208697921",
-          "filerName": "Matt Dorsey for DCCC Member 2024 Officeholder Committee",
-          "periodStart": "2025-06-01",
-          "periodEnd": "2025-08-31",
-          "reported": 4000,
-          "schE": 4000,
-          "schEUndatedAssigned": 0,
-          "schG": 0,
-          "ratio": 1,
-          "exactMatch": true,
-          "rowsE": 1,
-          "committeeCompleteThrough": "2026-07-31",
-          "clientStrings": [
-            "Matt Dorsey for DCCC"
-          ],
-          "clientConfidence": "inferred"
-        },
-        {
-          "consultantId": "bedford-grove",
-          "filerNid": "213987622",
-          "filerName": "Stephen Sherrill for Supervisor 2026 General",
-          "periodStart": "2025-06-01",
-          "periodEnd": "2025-08-31",
-          "reported": 10000,
-          "schE": 5058.07,
-          "schEUndatedAssigned": 0,
-          "schG": 0,
-          "ratio": 0.505807,
-          "exactMatch": false,
-          "rowsE": 3,
-          "committeeCompleteThrough": "2026-08-17",
-          "clientStrings": [
-            "Stephen Sherrill for Supervisor 2026"
-          ],
-          "clientConfidence": "exact"
-        },
-        {
-          "consultantId": "bedford-grove",
-          "filerNid": "213987622",
-          "filerName": "Stephen Sherrill for Supervisor 2026",
-          "periodStart": "2025-09-01",
-          "periodEnd": "2025-11-30",
-          "reported": 15000,
-          "schE": 15143.39,
-          "schEUndatedAssigned": 0,
-          "schG": 0,
-          "ratio": 1.009559,
-          "exactMatch": false,
-          "rowsE": 6,
-          "committeeCompleteThrough": "2026-08-17",
-          "clientStrings": [
-            "Stephen Sherrill For Supervisor"
-          ],
-          "clientConfidence": "inferred"
-        },
-        {
-          "consultantId": "bedford-grove",
-          "filerNid": "213987622",
-          "filerName": "Stephen Sherrill for Supervisor 2026",
-          "periodStart": "2025-12-01",
-          "periodEnd": "2026-02-28",
-          "reported": 5000,
-          "schE": 10016.16,
-          "schEUndatedAssigned": 0,
-          "schG": 0,
-          "ratio": 2.003232,
-          "exactMatch": false,
-          "rowsE": 4,
-          "committeeCompleteThrough": "2026-08-17",
-          "clientStrings": [
-            "Stephen Sherrill for Supervisor"
-          ],
-          "clientConfidence": "inferred"
-        },
-        {
-          "consultantId": "bedford-grove",
-          "filerNid": "215726436",
-          "filerName": "Yes on A, San Franciscans for Fire, Earthquake, and Disaster Preparedness, sponsored by San Francisco Firefighters local 798",
-          "periodStart": "2025-12-01",
-          "periodEnd": "2026-02-28",
-          "reported": 20000,
-          "schE": 0,
-          "schEUndatedAssigned": 0,
-          "schG": 0,
-          "ratio": 0,
-          "exactMatch": false,
-          "rowsE": 0,
-          "committeeCompleteThrough": "2026-07-31",
-          "clientStrings": [
-            "Earthquake Safety and Emergency Response (ESER)"
-          ],
-          "clientConfidence": "exact"
-        },
-        {
-          "consultantId": "bedford-grove",
-          "filerNid": "208697921",
-          "filerName": "Matt Dorsey for DCCC Member 2024 Officeholder Committee",
-          "periodStart": "2026-03-01",
-          "periodEnd": "2026-05-31",
-          "reported": 5000,
-          "schE": 2500,
-          "schEUndatedAssigned": 0,
-          "schG": 0,
-          "ratio": 0.5,
-          "exactMatch": false,
-          "rowsE": 1,
-          "committeeCompleteThrough": "2026-07-31",
-          "clientStrings": [
-            "Matt Dorsey for DCCC"
-          ],
-          "clientConfidence": "inferred"
-        },
-        {
-          "consultantId": "bedford-grove",
-          "filerNid": "215579031",
-          "filerName": "Matt Dorsey for Supervisor 2026",
-          "periodStart": "2026-03-01",
-          "periodEnd": "2026-05-31",
-          "reported": 5000,
-          "schE": 0,
-          "schEUndatedAssigned": 0,
-          "schG": 0,
-          "ratio": 0,
-          "exactMatch": false,
-          "rowsE": 0,
-          "committeeCompleteThrough": "2026-07-31",
-          "clientStrings": [
-            "Matt Dorsey for Supervisor 2026"
-          ],
-          "clientConfidence": "exact"
-        },
-        {
-          "consultantId": "bedford-grove",
-          "filerNid": "215726436",
-          "filerName": "Yes on A, San Franciscans for Fire, Earthquake, and Disaster Preparedness, sponsored by San Francisco Firefighters local 798",
-          "periodStart": "2026-03-01",
-          "periodEnd": "2026-05-31",
-          "reported": 60000,
-          "schE": 45000,
-          "schEUndatedAssigned": 0,
-          "schG": 0,
-          "ratio": 0.75,
-          "exactMatch": false,
-          "rowsE": 3,
-          "committeeCompleteThrough": "2026-07-31",
-          "clientStrings": [
-            "San Franciscans for Fire, Earthquake and Disaster Preparedness"
-          ],
-          "clientConfidence": "inferred"
-        }
-      ],
-      "contributions": [],
-      "restatementsCollapsed": [],
-      "totals": {
-        "reported": 276950,
-        "reconciledReported": 269450,
-        "schE": 228609.41,
         "schG": 0
       }
     },
@@ -3373,7 +3047,10 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 18,
-          "committeeCompleteThrough": "2025-08-01",
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2025-07-31",
           "clientStrings": [
             "Connie Chan for Supervisor 2024"
           ],
@@ -3392,6 +3069,9 @@
           "ratio": 1.02662,
           "exactMatch": false,
           "rowsE": 14,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2025-01-28",
           "clientStrings": [
             "Stephen Torres for Supervisor 2024"
@@ -3411,6 +3091,9 @@
           "ratio": 0.999755,
           "exactMatch": false,
           "rowsE": 10,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-06-24",
           "clientStrings": [
             "Chyanne Chen for Supervisor 2024"
@@ -3430,6 +3113,9 @@
           "ratio": 0,
           "exactMatch": false,
           "rowsE": 0,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "J.R. Eppler for Supervisor 2026"
@@ -3449,6 +3135,9 @@
           "ratio": 1.096565,
           "exactMatch": false,
           "rowsE": 9,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "J.R. Eppler for District 10 Supervisor 2026"
@@ -3468,6 +3157,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 6,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "JR Eppler for Supervisor 2026"
@@ -3487,6 +3179,9 @@
           "ratio": 0.522258,
           "exactMatch": false,
           "rowsE": 4,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "JR Eppler for Supervisor 2026"
@@ -3674,6 +3369,9 @@
           "ratio": 1.078176,
           "exactMatch": false,
           "rowsE": 4,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2025-08-01",
           "clientStrings": [
             "Ernest Jones for Supervisor 2024"
@@ -3693,6 +3391,9 @@
           "ratio": 1.184499,
           "exactMatch": false,
           "rowsE": 5,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2025-06-13",
           "clientStrings": [
             "Support Our First Responders Now! Yes on N"
@@ -3712,6 +3413,9 @@
           "ratio": 1.027177,
           "exactMatch": false,
           "rowsE": 4,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2025-06-13",
           "clientStrings": [
             "Improve Emergency Response Times - Yes on I"
@@ -3731,6 +3435,9 @@
           "ratio": null,
           "exactMatch": true,
           "rowsE": 0,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Stand Up for SF sponsored by labor organizations"
@@ -3750,6 +3457,9 @@
           "ratio": 3.9405370000000004,
           "exactMatch": false,
           "rowsE": 15,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Stand Up For SF"
@@ -3769,6 +3479,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 2,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Affordable SF Now, supporting Natalie Gee for Supervisor 2026"
@@ -3782,6 +3495,534 @@
         "reported": 270000,
         "reconciledReported": 270000,
         "schE": 650734.5,
+        "schG": 0
+      }
+    },
+    {
+      "id": "bedford-grove",
+      "displayName": "Bedford Grove",
+      "resolvedBy": "alias",
+      "rawNames": [
+        "Bedford Grove"
+      ],
+      "kind": "inferred-dba",
+      "payeePatterns": [
+        "%BEDFORD GROVE%",
+        "%WOLTER SEMPERE%"
+      ],
+      "city": "San Francisco",
+      "state": "California",
+      "registrations": [
+        {
+          "year": "2025",
+          "reportType": "Reregistration",
+          "datesigned": "2024-12-12T10:15:04.000",
+          "envelope": "9be123ab-5cf1-4c2e-8a47-2705c56f62c4",
+          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_15_2024-12-12T18-01-39-457Z.pdf"
+        }
+      ],
+      "quarterlies": [
+        {
+          "periodStart": "2024-09-01",
+          "periodEnd": "2024-11-30",
+          "datesigned": "2024-12-12T09:53:31.000",
+          "deadline": "2024-12-16",
+          "daysLate": -4,
+          "envelope": "5fecebdb-65ee-483f-8331-5f2ba190ef46",
+          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_14_2024-12-12T17-50-56-370Z.pdf"
+        },
+        {
+          "periodStart": "2024-12-01",
+          "periodEnd": "2025-02-28",
+          "periodCorrected": true,
+          "originalPeriodStart": "2025-12-01",
+          "originalPeriodEnd": "2026-02-28",
+          "datesigned": "2025-03-05T14:55:44.000",
+          "deadline": "2025-03-17",
+          "daysLate": -12,
+          "envelope": "f2bb9a64-2f55-41e5-99c3-9676406b55f4",
+          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_51_2025-03-05T22-54-44-303Z.pdf"
+        },
+        {
+          "periodStart": "2025-03-01",
+          "periodEnd": "2025-05-31",
+          "datesigned": "2025-06-13T21:01:19.000",
+          "deadline": "2025-06-16",
+          "daysLate": -3,
+          "envelope": "65f5d477-f7e9-4ed5-80f1-a485c6b0ae5e",
+          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_107_2025-06-14T03-59-32-446Z.pdf"
+        },
+        {
+          "periodStart": "2025-06-01",
+          "periodEnd": "2025-08-31",
+          "datesigned": "2025-09-11T15:31:50.000",
+          "deadline": "2025-09-15",
+          "daysLate": -4,
+          "envelope": "149d9226-b156-4ab7-bec6-e78c0d045318",
+          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_136_2025-09-11T22-29-28-660Z.pdf"
+        },
+        {
+          "periodStart": "2025-09-01",
+          "periodEnd": "2025-11-30",
+          "datesigned": "2025-12-14T22:45:23.000",
+          "deadline": "2025-12-15",
+          "daysLate": -1,
+          "envelope": "379c734c-fd67-4033-8bbc-0ce46267772f",
+          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_178_2025-12-15T06-44-21-834Z.pdf"
+        },
+        {
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "periodCorrected": true,
+          "originalPeriodStart": "2026-12-01",
+          "originalPeriodEnd": "2027-02-28",
+          "datesigned": "2026-03-18T15:56:23.000",
+          "deadline": "2026-03-16",
+          "daysLate": 2,
+          "envelope": "675751b3-3e67-4e7c-af5d-a4ce22df3e8b",
+          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_230_2026-03-18T22-55-18-646Z.pdf"
+        },
+        {
+          "periodStart": "2026-03-01",
+          "periodEnd": "2026-05-31",
+          "datesigned": "2026-06-17T22:13:38.000",
+          "deadline": "2026-06-15",
+          "daysLate": 2,
+          "envelope": "bbf8ae37-d87a-8741-820b-d9afd0829e1d",
+          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_276_2026-06-18T05-10-18-806Z.pdf"
+        }
+      ],
+      "receipts": [
+        {
+          "clientString": "Forward Action SF",
+          "clientClass": "committee",
+          "clientConfidence": "inferred",
+          "filerNid": "208688469",
+          "filerName": "Forward Action SF, Supporting London Breed for Mayor 2024, Sponsored by Abundance Network",
+          "periodStart": "2024-09-01",
+          "periodEnd": "2024-11-30",
+          "reportType": "Quarterly Report",
+          "envelope": "5fecebdb-65ee-483f-8331-5f2ba190ef46",
+          "reported": 90450
+        },
+        {
+          "clientString": "Healthy and Vibrant SF - Yes on B",
+          "clientClass": "committee",
+          "clientConfidence": "inferred",
+          "filerNid": "211837252",
+          "filerName": "Healthy, Vibrant SF, Yes on B",
+          "periodStart": "2024-09-01",
+          "periodEnd": "2024-11-30",
+          "reportType": "Quarterly Report",
+          "envelope": "5fecebdb-65ee-483f-8331-5f2ba190ef46",
+          "reported": 40000
+        },
+        {
+          "clientString": "Yes on F - Fully Staffed Police Dept.",
+          "clientClass": "committee",
+          "clientConfidence": "inferred",
+          "filerNid": "211940502",
+          "filerName": "Yes on F, San Franciscans for a Full Police Staffing",
+          "periodStart": "2024-09-01",
+          "periodEnd": "2024-11-30",
+          "reportType": "Quarterly Report",
+          "envelope": "5fecebdb-65ee-483f-8331-5f2ba190ef46",
+          "reported": 10000
+        },
+        {
+          "clientString": "Rafael Mandelman for Senate 2028",
+          "clientClass": "state",
+          "clientConfidence": "exact",
+          "filerNid": null,
+          "periodStart": "2025-03-01",
+          "periodEnd": "2025-05-31",
+          "reportType": "Quarterly Report",
+          "envelope": "65f5d477-f7e9-4ed5-80f1-a485c6b0ae5e",
+          "reported": 7500
+        },
+        {
+          "clientString": "Stephen Sherrill for Supervisor 2026",
+          "clientClass": "committee",
+          "clientConfidence": "exact",
+          "filerNid": "213987622",
+          "filerName": "Stephen Sherrill for Supervisor 2026",
+          "periodStart": "2025-03-01",
+          "periodEnd": "2025-05-31",
+          "reportType": "Quarterly Report",
+          "envelope": "65f5d477-f7e9-4ed5-80f1-a485c6b0ae5e",
+          "reported": 5000
+        },
+        {
+          "clientString": "Matt Dorsey for DCCC",
+          "clientClass": "committee",
+          "clientConfidence": "inferred",
+          "filerNid": "208697921",
+          "filerName": "Matt Dorsey for DCCC Member 2024 Officeholder Committee",
+          "periodStart": "2025-06-01",
+          "periodEnd": "2025-08-31",
+          "reportType": "Quarterly Report",
+          "envelope": "149d9226-b156-4ab7-bec6-e78c0d045318",
+          "reported": 4000
+        },
+        {
+          "clientString": "Stephen Sherrill for Supervisor 2026",
+          "clientClass": "committee",
+          "clientConfidence": "exact",
+          "filerNid": "213987622",
+          "filerName": "Stephen Sherrill for Supervisor 2026",
+          "periodStart": "2025-06-01",
+          "periodEnd": "2025-08-31",
+          "reportType": "Quarterly Report",
+          "envelope": "149d9226-b156-4ab7-bec6-e78c0d045318",
+          "reported": 10000
+        },
+        {
+          "clientString": "Stephen Sherrill For Supervisor",
+          "clientClass": "committee",
+          "clientConfidence": "inferred",
+          "filerNid": "213987622",
+          "filerName": "Stephen Sherrill for Supervisor 2026",
+          "periodStart": "2025-09-01",
+          "periodEnd": "2025-11-30",
+          "reportType": "Quarterly Report",
+          "envelope": "379c734c-fd67-4033-8bbc-0ce46267772f",
+          "reported": 15000
+        },
+        {
+          "clientString": "Earthquake Safety and Emergency Response (ESER)",
+          "clientClass": "committee",
+          "clientConfidence": "exact",
+          "filerNid": "215726436",
+          "filerName": "Yes on A, San Franciscans for Fire, Earthquake, and Disaster Preparedness, sponsored by San Francisco Firefighters local 798",
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "periodCorrected": true,
+          "reportType": "Quarterly Report",
+          "envelope": "675751b3-3e67-4e7c-af5d-a4ce22df3e8b",
+          "reported": 20000
+        },
+        {
+          "clientString": "Stephen Sherrill for Supervisor",
+          "clientClass": "committee",
+          "clientConfidence": "inferred",
+          "filerNid": "213987622",
+          "filerName": "Stephen Sherrill for Supervisor 2026",
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "periodCorrected": true,
+          "reportType": "Quarterly Report",
+          "envelope": "675751b3-3e67-4e7c-af5d-a4ce22df3e8b",
+          "reported": 5000
+        },
+        {
+          "clientString": "Matt Dorsey for DCCC",
+          "clientClass": "committee",
+          "clientConfidence": "inferred",
+          "filerNid": "208697921",
+          "filerName": "Matt Dorsey for DCCC Member 2024 Officeholder Committee",
+          "periodStart": "2026-03-01",
+          "periodEnd": "2026-05-31",
+          "reportType": "Quarterly Report",
+          "envelope": "bbf8ae37-d87a-8741-820b-d9afd0829e1d",
+          "reported": 5000
+        },
+        {
+          "clientString": "Matt Dorsey for Supervisor 2026",
+          "clientClass": "committee",
+          "clientConfidence": "exact",
+          "filerNid": "215579031",
+          "filerName": "Matt Dorsey for Supervisor 2026",
+          "periodStart": "2026-03-01",
+          "periodEnd": "2026-05-31",
+          "reportType": "Quarterly Report",
+          "envelope": "bbf8ae37-d87a-8741-820b-d9afd0829e1d",
+          "reported": 5000
+        },
+        {
+          "clientString": "San Franciscans for Fire, Earthquake and Disaster Preparedness",
+          "clientClass": "committee",
+          "clientConfidence": "inferred",
+          "filerNid": "215726436",
+          "filerName": "Yes on A, San Franciscans for Fire, Earthquake, and Disaster Preparedness, sponsored by San Francisco Firefighters local 798",
+          "periodStart": "2026-03-01",
+          "periodEnd": "2026-05-31",
+          "reportType": "Quarterly Report",
+          "envelope": "bbf8ae37-d87a-8741-820b-d9afd0829e1d",
+          "reported": 30000
+        }
+      ],
+      "reconciliation": [
+        {
+          "consultantId": "bedford-grove",
+          "filerNid": "208688469",
+          "filerName": "Forward Action SF, Supporting London Breed for Mayor 2024, Sponsored by Abundance Network",
+          "periodStart": "2024-09-01",
+          "periodEnd": "2024-11-30",
+          "reported": 90450,
+          "schE": 90450,
+          "schEUndatedAssigned": 0,
+          "schG": 0,
+          "ratio": 1,
+          "exactMatch": true,
+          "rowsE": 3,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-07-31",
+          "clientStrings": [
+            "Forward Action SF"
+          ],
+          "clientConfidence": "inferred"
+        },
+        {
+          "consultantId": "bedford-grove",
+          "filerNid": "211837252",
+          "filerName": "Healthy, Vibrant SF, Yes on B",
+          "periodStart": "2024-09-01",
+          "periodEnd": "2024-11-30",
+          "reported": 40000,
+          "schE": 40000,
+          "schEUndatedAssigned": 0,
+          "schG": 0,
+          "ratio": 1,
+          "exactMatch": true,
+          "rowsE": 3,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-07-31",
+          "clientStrings": [
+            "Healthy and Vibrant SF - Yes on B"
+          ],
+          "clientConfidence": "inferred"
+        },
+        {
+          "consultantId": "bedford-grove",
+          "filerNid": "211940502",
+          "filerName": "Yes on F, San Franciscans for a Full Police Staffing",
+          "periodStart": "2024-09-01",
+          "periodEnd": "2024-11-30",
+          "reported": 10000,
+          "schE": 10000,
+          "schEUndatedAssigned": 0,
+          "schG": 0,
+          "ratio": 1,
+          "exactMatch": true,
+          "rowsE": 2,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2025-02-19",
+          "clientStrings": [
+            "Yes on F - Fully Staffed Police Dept."
+          ],
+          "clientConfidence": "inferred"
+        },
+        {
+          "consultantId": "bedford-grove",
+          "filerNid": "213987622",
+          "filerName": "Stephen Sherrill for Supervisor 2026 General",
+          "periodStart": "2025-03-01",
+          "periodEnd": "2025-05-31",
+          "reported": 5000,
+          "schE": 6441.79,
+          "schEUndatedAssigned": 0,
+          "schG": 0,
+          "ratio": 1.288358,
+          "exactMatch": false,
+          "rowsE": 3,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-08-17",
+          "clientStrings": [
+            "Stephen Sherrill for Supervisor 2026"
+          ],
+          "clientConfidence": "exact"
+        },
+        {
+          "consultantId": "bedford-grove",
+          "filerNid": "208697921",
+          "filerName": "Matt Dorsey for DCCC Member 2024 Officeholder Committee",
+          "periodStart": "2025-06-01",
+          "periodEnd": "2025-08-31",
+          "reported": 4000,
+          "schE": 4000,
+          "schEUndatedAssigned": 0,
+          "schG": 0,
+          "ratio": 1,
+          "exactMatch": true,
+          "rowsE": 1,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-07-31",
+          "clientStrings": [
+            "Matt Dorsey for DCCC"
+          ],
+          "clientConfidence": "inferred"
+        },
+        {
+          "consultantId": "bedford-grove",
+          "filerNid": "213987622",
+          "filerName": "Stephen Sherrill for Supervisor 2026 General",
+          "periodStart": "2025-06-01",
+          "periodEnd": "2025-08-31",
+          "reported": 10000,
+          "schE": 5058.07,
+          "schEUndatedAssigned": 0,
+          "schG": 0,
+          "ratio": 0.505807,
+          "exactMatch": false,
+          "rowsE": 3,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-08-17",
+          "clientStrings": [
+            "Stephen Sherrill for Supervisor 2026"
+          ],
+          "clientConfidence": "exact"
+        },
+        {
+          "consultantId": "bedford-grove",
+          "filerNid": "213987622",
+          "filerName": "Stephen Sherrill for Supervisor 2026",
+          "periodStart": "2025-09-01",
+          "periodEnd": "2025-11-30",
+          "reported": 15000,
+          "schE": 15143.39,
+          "schEUndatedAssigned": 0,
+          "schG": 0,
+          "ratio": 1.009559,
+          "exactMatch": false,
+          "rowsE": 6,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-08-17",
+          "clientStrings": [
+            "Stephen Sherrill For Supervisor"
+          ],
+          "clientConfidence": "inferred"
+        },
+        {
+          "consultantId": "bedford-grove",
+          "filerNid": "213987622",
+          "filerName": "Stephen Sherrill for Supervisor 2026",
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "reported": 5000,
+          "schE": 10016.16,
+          "schEUndatedAssigned": 0,
+          "schG": 0,
+          "ratio": 2.003232,
+          "exactMatch": false,
+          "rowsE": 4,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-08-17",
+          "clientStrings": [
+            "Stephen Sherrill for Supervisor"
+          ],
+          "clientConfidence": "inferred"
+        },
+        {
+          "consultantId": "bedford-grove",
+          "filerNid": "215726436",
+          "filerName": "Yes on A, San Franciscans for Fire, Earthquake, and Disaster Preparedness, sponsored by San Francisco Firefighters local 798",
+          "periodStart": "2025-12-01",
+          "periodEnd": "2026-02-28",
+          "reported": 20000,
+          "schE": 0,
+          "schEUndatedAssigned": 0,
+          "schG": 0,
+          "ratio": 0,
+          "exactMatch": false,
+          "rowsE": 0,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-07-31",
+          "clientStrings": [
+            "Earthquake Safety and Emergency Response (ESER)"
+          ],
+          "clientConfidence": "exact"
+        },
+        {
+          "consultantId": "bedford-grove",
+          "filerNid": "208697921",
+          "filerName": "Matt Dorsey for DCCC Member 2024 Officeholder Committee",
+          "periodStart": "2026-03-01",
+          "periodEnd": "2026-05-31",
+          "reported": 5000,
+          "schE": 2500,
+          "schEUndatedAssigned": 0,
+          "schG": 0,
+          "ratio": 0.5,
+          "exactMatch": false,
+          "rowsE": 1,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-07-31",
+          "clientStrings": [
+            "Matt Dorsey for DCCC"
+          ],
+          "clientConfidence": "inferred"
+        },
+        {
+          "consultantId": "bedford-grove",
+          "filerNid": "215579031",
+          "filerName": "Matt Dorsey for Supervisor 2026",
+          "periodStart": "2026-03-01",
+          "periodEnd": "2026-05-31",
+          "reported": 5000,
+          "schE": 0,
+          "schEUndatedAssigned": 0,
+          "schG": 0,
+          "ratio": 0,
+          "exactMatch": false,
+          "rowsE": 0,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-07-31",
+          "clientStrings": [
+            "Matt Dorsey for Supervisor 2026"
+          ],
+          "clientConfidence": "exact"
+        },
+        {
+          "consultantId": "bedford-grove",
+          "filerNid": "215726436",
+          "filerName": "Yes on A, San Franciscans for Fire, Earthquake, and Disaster Preparedness, sponsored by San Francisco Firefighters local 798",
+          "periodStart": "2026-03-01",
+          "periodEnd": "2026-05-31",
+          "reported": 30000,
+          "schE": 45000,
+          "schEUndatedAssigned": 0,
+          "schG": 0,
+          "ratio": 1.5,
+          "exactMatch": false,
+          "rowsE": 3,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-07-31",
+          "clientStrings": [
+            "San Franciscans for Fire, Earthquake and Disaster Preparedness"
+          ],
+          "clientConfidence": "inferred"
+        }
+      ],
+      "contributions": [],
+      "restatementsCollapsed": [],
+      "totals": {
+        "reported": 246950,
+        "reconciledReported": 239450,
+        "schE": 228609.41,
         "schG": 0
       }
     },
@@ -3949,7 +4190,10 @@
           "ratio": 1.267188,
           "exactMatch": false,
           "rowsE": 2,
-          "committeeCompleteThrough": "2026-08-07",
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Daniel Lurie for Mayor 2024"
           ],
@@ -3968,7 +4212,10 @@
           "ratio": null,
           "exactMatch": true,
           "rowsE": 0,
-          "committeeCompleteThrough": "2026-07-31",
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-02-02",
           "clientStrings": [
             "Bilal Mahmood for Supervisor 2024"
           ],
@@ -3987,6 +4234,9 @@
           "ratio": 0,
           "exactMatch": false,
           "rowsE": 0,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Daniel Lurie Ballot Measure Committee Safe, Affordable MUNI for a Thriving San Francisco"
@@ -4006,6 +4256,9 @@
           "ratio": 1.25,
           "exactMatch": false,
           "rowsE": 4,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Daniel Lurie Ballot Measure Committee Safe, Affordable MUNI for a Thriving San Francisco"
@@ -4025,6 +4278,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 3,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Daniel Lurie Ballot Measure Committee Safe, Affordable MUNI for a Thriving San Francisco"
@@ -4044,7 +4300,10 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 3,
-          "committeeCompleteThrough": "2026-08-12",
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-07-20",
           "clientStrings": [
             "Clean Up City Hall, Mayor Lurie's Ballot Measure Committee"
           ],
@@ -4081,13 +4340,6 @@
           "datesigned": "2026-04-22T23:00:58.000",
           "envelope": "b75c7f9a-9d5b-4876-a965-c26c963fc231",
           "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_238_2026-04-22T05-19-56-507Z.pdf"
-        },
-        {
-          "year": "2025",
-          "reportType": "Initial Registration",
-          "datesigned": "2026-04-22T22:24:08.000",
-          "envelope": "862fbef4-ca1f-4c1c-b0e3-ac3cfa9f26e6",
-          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_238_2026-04-22T16-42-40-771Z.pdf"
         },
         {
           "year": "2024",
@@ -4184,7 +4436,10 @@
           "ratio": 1.083333,
           "exactMatch": false,
           "rowsE": 2,
-          "committeeCompleteThrough": "2026-08-07",
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Daniel Lurie for Mayor 2024"
           ],
@@ -4203,6 +4458,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 3,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Daniel Lurie Ballot Measure Committee Safe, Affordable MUNI for a Thriving San Francisco"
@@ -4222,6 +4480,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 2,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-08-14",
           "clientStrings": [
             "GrowSF Supporting Stephen Sherrill for Supervisor 2026"
@@ -4241,6 +4502,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 2,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-08-14",
           "clientStrings": [
             "GrowSF Supporting Alan Wong for Supervisor 2026"
@@ -4260,7 +4524,10 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 3,
-          "committeeCompleteThrough": "2026-08-12",
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-07-20",
           "clientStrings": [
             "Clean Up City Hall, Mayor Lurie's Ballot Measure Committee"
           ],
@@ -4399,6 +4666,9 @@
           "ratio": 0,
           "exactMatch": false,
           "rowsE": 0,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Michael Nguyen for Supervisor 2026"
@@ -4418,6 +4688,9 @@
           "ratio": 0,
           "exactMatch": false,
           "rowsE": 0,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-30",
           "clientStrings": [
             "Brandee Marckmann for Board of Education 2026"
@@ -4589,6 +4862,9 @@
           "ratio": null,
           "exactMatch": true,
           "rowsE": 0,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-08-17",
           "clientStrings": [
             "Stephen Sherrill for Supervisor 2026"
@@ -4608,6 +4884,9 @@
           "ratio": 0.9900459999999999,
           "exactMatch": false,
           "rowsE": 14,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-08-17",
           "clientStrings": [
             "Stephen Sherrill for Supervisor 2026"
@@ -4627,6 +4906,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 2,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Stronger Muni For All, Mayor Lurie's Ballot Measure Committee"
@@ -4646,7 +4928,10 @@
           "ratio": 1.14414,
           "exactMatch": false,
           "rowsE": 3,
-          "committeeCompleteThrough": "2026-08-12",
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-07-20",
           "clientStrings": [
             "Clean Up City Hall, Mayor Lurie's Ballot Measure Committee"
           ],
@@ -4720,10 +5005,12 @@
           "schE": 0,
           "schEUndatedAssigned": 0,
           "schG": 0,
-          "ratio": 0,
+          "ratio": null,
           "exactMatch": false,
           "rowsE": 0,
-          "committeeCompleteThrough": "2026-06-01",
+          "status": "no-payee-ledger",
+          "committeeHasScheduleE": false,
+          "undatedTransactionIds": [],
           "clientStrings": [
             "California Alliance of Family Owned Businesses PAC"
           ],
@@ -4798,10 +5085,12 @@
           "schE": 0,
           "schEUndatedAssigned": 0,
           "schG": 0,
-          "ratio": 0,
+          "ratio": null,
           "exactMatch": false,
           "rowsE": 0,
-          "committeeCompleteThrough": "2026-06-01",
+          "status": "no-payee-ledger",
+          "committeeHasScheduleE": false,
+          "undatedTransactionIds": [],
           "clientStrings": [
             "California Alliance of Family Owned Businesses"
           ],
@@ -4979,6 +5268,9 @@
           "ratio": 2.829811,
           "exactMatch": false,
           "rowsE": 11,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Manny Yekutiel for Supervisor 2026"
@@ -4998,6 +5290,9 @@
           "ratio": 1.870614,
           "exactMatch": false,
           "rowsE": 4,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Manny Yekutiel for Supervisor 2026"
@@ -5017,6 +5312,9 @@
           "ratio": 1.5,
           "exactMatch": false,
           "rowsE": 3,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-08-17",
           "clientStrings": [
             "San Franciscans for Term Limit Reform"
@@ -5036,6 +5334,9 @@
           "ratio": 1.8365740000000002,
           "exactMatch": false,
           "rowsE": 4,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Manny Yekutiel for Supervisor 2026"
@@ -5055,6 +5356,9 @@
           "ratio": 4.177611,
           "exactMatch": false,
           "rowsE": 20,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-08-17",
           "clientStrings": [
             "San Franciscans for Term Limit Reform"
@@ -5217,6 +5521,9 @@
           "ratio": 0,
           "exactMatch": false,
           "rowsE": 0,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "DJ Brookter for Supervisor 2026"
@@ -5236,6 +5543,9 @@
           "ratio": 2.168044,
           "exactMatch": false,
           "rowsE": 7,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "DJ Brookter for Supervisor 2026"
@@ -5255,6 +5565,9 @@
           "ratio": 1.9708029999999999,
           "exactMatch": false,
           "rowsE": 4,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "DJ Brookter For Supervisor 2026"
@@ -5274,6 +5587,9 @@
           "ratio": 1.256137,
           "exactMatch": false,
           "rowsE": 4,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "DJ Brookter For Supervisor 2026"
@@ -5293,6 +5609,9 @@
           "ratio": 2.673635,
           "exactMatch": false,
           "rowsE": 7,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Yes on D Stand Up For SF Sponsored By Labor Organizations"
@@ -5480,7 +5799,10 @@
           "ratio": 0.409568,
           "exactMatch": false,
           "rowsE": 11,
-          "committeeCompleteThrough": "2026-07-30",
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-04-23",
           "clientStrings": [
             "Our Neighborhood, Our Future"
           ],
@@ -5499,7 +5821,10 @@
           "ratio": 1.167869,
           "exactMatch": false,
           "rowsE": 18,
-          "committeeCompleteThrough": "2026-07-30",
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-04-23",
           "clientStrings": [
             "Our Neighborhood, Our Future Supporting the Recall of Supervisor Engardio"
           ],
@@ -5518,7 +5843,10 @@
           "ratio": 0.575619,
           "exactMatch": false,
           "rowsE": 19,
-          "committeeCompleteThrough": "2026-07-30",
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-04-23",
           "clientStrings": [
             "Our Neighborhood, Our Future Supporting the Recall of Supervisor Engardio"
           ],
@@ -5537,6 +5865,9 @@
           "ratio": 0,
           "exactMatch": false,
           "rowsE": 0,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-08-06",
           "clientStrings": [
             "Lori Brooke for Supervisor 2026"
@@ -5684,6 +6015,9 @@
           "ratio": null,
           "exactMatch": true,
           "rowsE": 0,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Daniel Lurie Ballot Measure Committee Safe, Affordable MUNI for a Thriving San Francisco"
@@ -5703,6 +6037,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 1,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Daniel Lurie Ballot Measure Committee Safe, Affordable MUNI for a Thriving San Francisco"
@@ -5722,6 +6059,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 5,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Daniel Lurie Ballot Measure Committee Safe, Affordable MUNI for a Thriving San Francisco"
@@ -5741,6 +6081,9 @@
           "ratio": 3,
           "exactMatch": false,
           "rowsE": 2,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Daniel Lurie Ballot Measure Committee Safe, Affordable MUNI for a Thriving San Francisco"
@@ -5913,6 +6256,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 2,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Strong Muni for All"
@@ -5932,6 +6278,9 @@
           "ratio": 1.6331930000000001,
           "exactMatch": false,
           "rowsE": 5,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-30",
           "clientStrings": [
             "Phil Kim for School Board"
@@ -5951,6 +6300,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 3,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Stronger Muni for All"
@@ -5970,6 +6322,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 3,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-30",
           "clientStrings": [
             "Phil Kim for Schoolboard 2026 July"
@@ -5989,7 +6344,10 @@
           "ratio": 2,
           "exactMatch": false,
           "rowsE": 2,
-          "committeeCompleteThrough": "2026-08-12",
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-07-20",
           "clientStrings": [
             "Clean Up City Hall"
           ],
@@ -6040,9 +6398,10 @@
         {
           "periodStart": "2025-06-01",
           "periodEnd": "2025-08-31",
+          "periodImpossible": true,
           "datesigned": "2025-03-27T16:51:13.000",
-          "deadline": "2025-09-15",
-          "daysLate": -172,
+          "deadline": null,
+          "daysLate": null,
           "envelope": "adcd3302-39f9-446b-a5e3-91bad19ec4bb",
           "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_85_2025-03-27T23-38-28-249Z.pdf"
         },
@@ -6086,6 +6445,7 @@
           "filerName": "Healthy, Vibrant SF, Yes on B",
           "periodStart": "2025-06-01",
           "periodEnd": "2025-08-31",
+          "periodImpossible": true,
           "reportType": "Quarterly Report",
           "envelope": "adcd3302-39f9-446b-a5e3-91bad19ec4bb",
           "reported": 6000
@@ -6141,6 +6501,9 @@
           "ratio": 1.504494,
           "exactMatch": false,
           "rowsE": 7,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Healthy Vibrant SF YES on B"
@@ -6157,9 +6520,12 @@
           "schE": 0,
           "schEUndatedAssigned": 0,
           "schG": 0,
-          "ratio": 0,
+          "ratio": null,
           "exactMatch": false,
           "rowsE": 0,
+          "status": "period-impossible",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Healthy Vibrant SF"
@@ -6179,6 +6545,9 @@
           "ratio": 1.038511,
           "exactMatch": false,
           "rowsE": 5,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-08-17",
           "clientStrings": [
             "Stephen Sherrill for Supervisor"
@@ -6198,7 +6567,10 @@
           "ratio": 0,
           "exactMatch": false,
           "rowsE": 0,
-          "committeeCompleteThrough": "2026-07-31",
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2021-02-01",
           "clientStrings": [
             "San Francisco Parent PAC"
           ],
@@ -6217,6 +6589,9 @@
           "ratio": 1.030103,
           "exactMatch": false,
           "rowsE": 4,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-08-17",
           "clientStrings": [
             "Stephen Sherrill for Supervisor 2026"
@@ -6331,6 +6706,73 @@
           "ratio": 4.7430129999999995,
           "exactMatch": false,
           "rowsE": 63,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [
+            "500147959",
+            "500147989",
+            "500147990",
+            "500147991",
+            "500147992",
+            "500147993",
+            "500147994",
+            "500147995",
+            "500147996",
+            "500147997",
+            "500147998",
+            "500147999",
+            "500148000",
+            "500148001",
+            "500148002",
+            "500148003",
+            "500148004",
+            "500148005",
+            "500148006",
+            "500148007",
+            "500148014",
+            "500147913",
+            "500147917",
+            "500147918",
+            "500147919",
+            "500147920",
+            "500147921",
+            "500147903",
+            "500147902",
+            "500129036",
+            "500147958",
+            "500147977",
+            "500148008",
+            "500148009",
+            "500148010",
+            "500148011",
+            "500148012",
+            "500148013",
+            "500147978",
+            "500147979",
+            "500147980",
+            "500147981",
+            "500147982",
+            "500147983",
+            "500147984",
+            "500147985",
+            "500147986",
+            "500147987",
+            "500147988",
+            "500099501",
+            "500088023",
+            "500099312",
+            "500099313",
+            "500099314",
+            "500099315",
+            "500124543",
+            "500124544",
+            "500124545",
+            "500110563",
+            "500116966",
+            "500088022",
+            "500123163",
+            "500110562"
+          ],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Mark Farrell for Mayor 2024"
@@ -6350,6 +6792,9 @@
           "ratio": 1.1534739999999999,
           "exactMatch": false,
           "rowsE": 6,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Mayor Mark Farrell for Yes on Prop D"
@@ -6363,12 +6808,15 @@
           "periodStart": "2024-12-01",
           "periodEnd": "2025-01-31",
           "reported": 15000,
-          "schE": 55686.08,
-          "schEUndatedAssigned": 48600.16,
+          "schE": 7085.92,
+          "schEUndatedAssigned": 0,
           "schG": 0,
-          "ratio": 3.7124050000000004,
+          "ratio": 0.472395,
           "exactMatch": false,
-          "rowsE": 51,
+          "rowsE": 2,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Mark Farrell for Mayor 2024"
@@ -6388,6 +6836,9 @@
           "ratio": 0,
           "exactMatch": false,
           "rowsE": 0,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Mayor Mark Farrell for Yes on Prop D"
@@ -6400,7 +6851,7 @@
       "totals": {
         "reported": 61147.5,
         "reconciledReported": 61147.5,
-        "schE": 161582.61,
+        "schE": 112982.45,
         "schG": 0
       }
     },
@@ -6465,6 +6916,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 1,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-22",
           "clientStrings": [
             "United Educators of San Francisco Candidate PAC"
@@ -6568,6 +7022,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 1,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "San Franciscans for Fire, Earthquake and Disaster Preparedness"
@@ -6587,6 +7044,9 @@
           "ratio": 0.734797,
           "exactMatch": false,
           "rowsE": 12,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Yes on A, San Franciscans for Fire, Earthquake and Disaster Preparedness"
@@ -6677,6 +7137,9 @@
           "ratio": 0.8888889999999999,
           "exactMatch": false,
           "rowsE": 2,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-29",
           "clientStrings": [
             "Believe in SF, Lurie for Mayor 2024"
@@ -6696,6 +7159,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 1,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-29",
           "clientStrings": [
             "Believe in SF, Lurie for Mayor 2024"
@@ -6710,7 +7176,7 @@
           "recipient": "",
           "recipientNid": null,
           "amount": 0,
-          "matched": "below-threshold"
+          "matched": "blank"
         }
       ],
       "restatementsCollapsed": [],
@@ -6828,6 +7294,9 @@
           "ratio": 1.026036,
           "exactMatch": false,
           "rowsE": 6,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Stop the Recall, Stand with Joel Engardio"
@@ -6847,6 +7316,9 @@
           "ratio": 1.00491,
           "exactMatch": false,
           "rowsE": 7,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Stop the Recall, Stand with Joel Engardio"
@@ -6866,6 +7338,9 @@
           "ratio": null,
           "exactMatch": true,
           "rowsE": 0,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Stop the Recall, Stand with Joel Engardio"
@@ -7033,6 +7508,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 4,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Theo Ellington for Supervisor 2026"
@@ -7052,6 +7530,9 @@
           "ratio": 1.018857,
           "exactMatch": false,
           "rowsE": 4,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Theo Ellington for Supervisor 2026"
@@ -7071,6 +7552,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 3,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Theo Ellington for Supervisor 2026"
@@ -7180,6 +7664,9 @@
           "ratio": 1.035583,
           "exactMatch": false,
           "rowsE": 6,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Alan Wong for Supervisor 2026"
@@ -7199,6 +7686,9 @@
           "ratio": 1.013073,
           "exactMatch": false,
           "rowsE": 7,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Alan Wong for Supervisor 2026"
@@ -7277,6 +7767,9 @@
           "ratio": 1.003526,
           "exactMatch": false,
           "rowsE": 6,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2025-08-01",
           "clientStrings": [
             "Committee to Re-Elect Mayor London Breed"
@@ -7293,6 +7786,8 @@
           "periodStart": "2024-09-01T00:00:00.000",
           "keptTotal": 31267.53,
           "droppedTotal": 30000,
+          "keptChildSum": 31267.53,
+          "droppedChildSum": 30000,
           "delta": 1267.5299999999988,
           "exact": false
         }
@@ -7355,6 +7850,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 5,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2025-04-30",
           "clientStrings": [
             "Yes on G, the Affordable Housing Opportunity Fund"
@@ -7382,6 +7880,8 @@
           "periodStart": "2024-09-01T00:00:00.000",
           "keptTotal": 30500,
           "droppedTotal": 30500,
+          "keptChildSum": 30500,
+          "droppedChildSum": 30500,
           "delta": 0,
           "exact": true
         }
@@ -7500,6 +8000,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 3,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2025-08-01",
           "clientStrings": [
             "Re-Elect Mayor London Breed 2024"
@@ -7577,6 +8080,9 @@
           "ratio": 0,
           "exactMatch": false,
           "rowsE": 0,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-08-17",
           "clientStrings": [
             "Yes on C, No on D to Protect San Francisco Small Businesses and Economic Recovery, Sponsored by San Francisco Civic Organizations"
@@ -7761,7 +8267,10 @@
           "ratio": 1.269321,
           "exactMatch": false,
           "rowsE": 6,
-          "committeeCompleteThrough": "2025-08-01",
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2025-07-31",
           "clientStrings": [
             "Connie Chan for Supervisor 2024"
           ],
@@ -7780,6 +8289,9 @@
           "ratio": 1.222344,
           "exactMatch": false,
           "rowsE": 3,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-06-24",
           "clientStrings": [
             "Chyanne Chen for Supervisor 2024"
@@ -7799,6 +8311,9 @@
           "ratio": 0.666667,
           "exactMatch": false,
           "rowsE": 2,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "JR Eppler for Supervisor 2026"
@@ -7818,6 +8333,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 2,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "J.R. Eppler for Supervisor 2026"
@@ -7837,6 +8355,9 @@
           "ratio": 0,
           "exactMatch": false,
           "rowsE": 0,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "J.R. Eppler for Supervisor 2026"
@@ -7933,7 +8454,10 @@
           "ratio": 0.25,
           "exactMatch": false,
           "rowsE": 1,
-          "committeeCompleteThrough": "2026-07-30",
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-04-23",
           "clientStrings": [
             "Our Neighborhood, Our Future, Supporting the Recall of Supervisor Engardio"
           ],
@@ -7948,7 +8472,7 @@
           "recipientNid": "208504134",
           "amount": 0,
           "date": "2024-10-22T00:00:00.000",
-          "matched": "below-threshold"
+          "matched": "blank"
         },
         {
           "envelope": "8483ec9f-a55c-4c8f-8d61-a19587af79b0",
@@ -8107,7 +8631,10 @@
           "ratio": null,
           "exactMatch": true,
           "rowsE": 0,
-          "committeeCompleteThrough": "2026-07-30",
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-04-23",
           "clientStrings": [
             "Our Neighborhood, Our Future, the Campaign to Recall Joel Engardio"
           ],
@@ -8126,7 +8653,10 @@
           "ratio": null,
           "exactMatch": true,
           "rowsE": 0,
-          "committeeCompleteThrough": "2026-07-30",
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-04-23",
           "clientStrings": [
             "Our Neighborhood, Our Future, the Campaign to Recall Joel Engardio"
           ],
@@ -8145,6 +8675,9 @@
           "ratio": 1,
           "exactMatch": true,
           "rowsE": 3,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Albert Chow for Supervisor 2026"
@@ -8225,6 +8758,9 @@
           "ratio": 0,
           "exactMatch": false,
           "rowsE": 0,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-08-05",
           "clientStrings": [
             "Dean Preston for Supervisor 2024"
@@ -8244,6 +8780,9 @@
           "ratio": 0,
           "exactMatch": false,
           "rowsE": 0,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2025-08-12",
           "clientStrings": [
             "Paid for by Real Reform, Yes on C, No on D, Yes on E, a coalition of small businesses, neighbors and Aaron Peskin"
@@ -8363,10 +8902,12 @@
           "schE": 0,
           "schEUndatedAssigned": 0,
           "schG": 0,
-          "ratio": 0,
+          "ratio": null,
           "exactMatch": false,
           "rowsE": 0,
-          "committeeCompleteThrough": "2025-01-21",
+          "status": "no-payee-ledger",
+          "committeeHasScheduleE": false,
+          "undatedTransactionIds": [],
           "clientStrings": [
             "California Federation of Teachers"
           ],
@@ -8462,7 +9003,10 @@
           "ratio": null,
           "exactMatch": true,
           "rowsE": 0,
-          "committeeCompleteThrough": "2026-08-14",
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-07-07",
           "clientStrings": [
             "Fair Housing"
           ],
@@ -8481,7 +9025,10 @@
           "ratio": 0,
           "exactMatch": false,
           "rowsE": 0,
-          "committeeCompleteThrough": "2026-08-14",
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
+          "committeeCompleteThrough": "2026-07-07",
           "clientStrings": [
             "Fair Housing"
           ],
@@ -8588,6 +9135,9 @@
           "ratio": 0.5,
           "exactMatch": false,
           "rowsE": 1,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2025-01-30",
           "clientStrings": [
             "Stephen Martin Pinto for Supervisor"
@@ -8604,6 +9154,8 @@
           "periodStart": "2024-09-01T00:00:00.000",
           "keptTotal": 10000,
           "droppedTotal": 5000,
+          "keptChildSum": 10000,
+          "droppedChildSum": 5000,
           "delta": 5000,
           "exact": false
         }
@@ -8679,6 +9231,15 @@
           "ratio": 2,
           "exactMatch": false,
           "rowsE": 5,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [
+            "500147940",
+            "500098724",
+            "500098723",
+            "500098725",
+            "500128756"
+          ],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Mark Farrell for Mayor"
@@ -8698,6 +9259,9 @@
           "ratio": 0,
           "exactMatch": false,
           "rowsE": 0,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Mark Farrell for Proposition D"
@@ -8714,6 +9278,8 @@
           "periodStart": "2024-09-01T00:00:00.000",
           "keptTotal": 9000,
           "droppedTotal": 9000,
+          "keptChildSum": 9000,
+          "droppedChildSum": 9000,
           "delta": 0,
           "exact": true
         }
@@ -8775,6 +9341,9 @@
           "ratio": 0,
           "exactMatch": false,
           "rowsE": 0,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Forward Action SF"
@@ -8791,6 +9360,8 @@
           "periodStart": "2024-09-01T00:00:00.000",
           "keptTotal": 7425,
           "droppedTotal": 7425,
+          "keptChildSum": 7425,
+          "droppedChildSum": 7425,
           "delta": 0,
           "exact": true
         }
@@ -8846,12 +9417,15 @@
           "periodStart": "2024-03-01",
           "periodEnd": "2024-04-30",
           "reported": 6000,
-          "schE": 0,
+          "schE": 6000,
           "schEUndatedAssigned": 0,
           "schG": 0,
-          "ratio": 0,
-          "exactMatch": false,
-          "rowsE": 0,
+          "ratio": 1,
+          "exactMatch": true,
+          "rowsE": 1,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-14",
           "clientStrings": [
             "Michael Alioto-Pier for DCCC"
@@ -8864,7 +9438,7 @@
       "totals": {
         "reported": 6000,
         "reconciledReported": 6000,
-        "schE": 0,
+        "schE": 6000,
         "schG": 0
       }
     },
@@ -8939,6 +9513,9 @@
           "ratio": 1.208496,
           "exactMatch": false,
           "rowsE": 8,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Miyamoto for Sheriff 2024"
@@ -8955,6 +9532,8 @@
           "periodStart": "2024-12-01T00:00:00.000",
           "keptTotal": 738.8,
           "droppedTotal": 738.8,
+          "keptChildSum": 738.8,
+          "droppedChildSum": 738.8,
           "delta": 0,
           "exact": true
         }
@@ -9214,6 +9793,9 @@
           "ratio": null,
           "exactMatch": true,
           "rowsE": 0,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2026-07-31",
           "clientStrings": [
             "Gary McCoy for Supervisor"
@@ -9290,6 +9872,9 @@
           "ratio": null,
           "exactMatch": false,
           "rowsE": 5,
+          "status": "reconciled",
+          "committeeHasScheduleE": true,
+          "undatedTransactionIds": [],
           "committeeCompleteThrough": "2025-08-01",
           "clientStrings": [
             "Re-Elect Mayor London Breed 2024"
@@ -9306,6 +9891,8 @@
           "periodStart": "2024-12-01T00:00:00.000",
           "keptTotal": 0,
           "droppedTotal": 0,
+          "keptChildSum": 0,
+          "droppedChildSum": 0,
           "delta": 0,
           "exact": true
         }
@@ -9635,15 +10222,6 @@
         {
           "periodStart": "2025-03-01",
           "periodEnd": "2025-05-31",
-          "datesigned": "2025-09-16T13:05:45.000",
-          "deadline": "2025-06-16",
-          "daysLate": 92,
-          "envelope": "2b8a3503-1c3b-48fa-b5e6-964686d02a3f",
-          "docusignUrl": "https://sfethicsstorage.blob.core.usgovcloudapi.net/prod-sfec1515abeg-pdf-signed/SFEC1515abeg_v2024-06-03_147_2025-09-16T20-03-33-484Z.pdf"
-        },
-        {
-          "periodStart": "2025-03-01",
-          "periodEnd": "2025-05-31",
           "datesigned": "2025-06-17T22:05:32.000",
           "deadline": "2025-06-16",
           "daysLate": 1,
@@ -9662,6 +10240,8 @@
           "periodStart": "2025-09-01T00:00:00.000",
           "keptTotal": 0,
           "droppedTotal": 0,
+          "keptChildSum": 0,
+          "droppedChildSum": 0,
           "delta": 0,
           "exact": true
         }
@@ -9795,7 +10375,7 @@
           "recipient": "",
           "recipientNid": null,
           "amount": 0,
-          "matched": "below-threshold"
+          "matched": "blank"
         }
       ],
       "restatementsCollapsed": [],
@@ -9889,6 +10469,7 @@
       "filerNid": "208769508",
       "filerName": "Believe in SF, Lurie for Mayor 2024",
       "completeThrough": "2026-07-29",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "media-company",
@@ -9908,6 +10489,7 @@
       "filerNid": "211765770",
       "filerName": "Safer San Francisco for Mark Farrell for Mayor 2024",
       "completeThrough": "2026-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "al-media",
@@ -9927,6 +10509,7 @@
       "filerNid": "208835453",
       "filerName": "Committee to Fix San Francisco Government, Yes on D, No on E, A Coalition of San Francisco Civic Organizations Dedicated to Improving the City's Future",
       "completeThrough": "2025-01-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "strother-nuckels",
@@ -9946,6 +10529,7 @@
       "filerNid": "215726436",
       "filerName": "Yes on A, San Franciscans for Fire, Earthquake, and Disaster Preparedness, sponsored by San Francisco Firefighters local 798",
       "completeThrough": "2026-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "merrill-strategy-group",
@@ -9955,7 +10539,7 @@
         },
         {
           "id": "bedford-grove",
-          "reported": 80000,
+          "reported": 50000,
           "schE": 45000,
           "schG": 0
         },
@@ -9977,6 +10561,7 @@
       "filerNid": "211837252",
       "filerName": "Healthy, Vibrant SF, Yes on B",
       "completeThrough": "2026-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "kmm-strategies",
@@ -10008,6 +10593,7 @@
       "filerNid": "210489481",
       "filerName": "Mark Farrell for Mayor 2024",
       "completeThrough": "2026-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "kazin",
@@ -10018,7 +10604,7 @@
         {
           "id": "margaux-kelly",
           "reported": 34492.39,
-          "schE": 148138.74,
+          "schE": 99538.58,
           "schG": 0
         },
         {
@@ -10033,6 +10619,7 @@
       "filerNid": "201219888",
       "filerName": "Re-Elect Mayor London Breed 2024",
       "completeThrough": "2025-08-01",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "kmm-strategies",
@@ -10064,6 +10651,7 @@
       "filerNid": "215118470",
       "filerName": "YES ON C, NO ON D TO PROTECT SAN FRANCISCO'S SMALL BUSINESSES AND ECONOMIC RECOVERY, SPONSORED BY SAN FRANCISCO CIVIC ORGANIZATIONS",
       "completeThrough": "2026-08-17",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "bearstar-strategies",
@@ -10089,6 +10677,7 @@
       "filerNid": "208688469",
       "filerName": "Forward Action SF, Supporting London Breed for Mayor 2024, Sponsored by Abundance Network",
       "completeThrough": "2026-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "outreach-team",
@@ -10114,6 +10703,7 @@
       "filerNid": "211430184",
       "filerName": "Aaron Peskin for Mayor 2024",
       "completeThrough": "2025-06-11",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "stearns-consulting",
@@ -10127,6 +10717,7 @@
       "filerNid": "211027210",
       "filerName": "Mayor Mark Farrell for Yes on Prop D",
       "completeThrough": "2026-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "kazin",
@@ -10152,6 +10743,7 @@
       "filerNid": "214099226",
       "filerName": "Daniel Lurie Ballot Measure Committee - Safe, Affordable MUNI for a Thriving San Francisco",
       "completeThrough": "2026-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "thematic-strategies",
@@ -10188,7 +10780,7 @@
     {
       "filerNid": "216701453",
       "filerName": "California Alliance of Family Owned Businesses PAC",
-      "completeThrough": "2026-06-01",
+      "hasScheduleE": false,
       "consultants": [
         {
           "id": "swing-strategies",
@@ -10208,6 +10800,7 @@
       "filerNid": "214966146",
       "filerName": "Yes on D - Stand Up for SF sponsored by labor organizations",
       "completeThrough": "2026-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "cliffordmoss",
@@ -10226,7 +10819,8 @@
     {
       "filerNid": "211776936",
       "filerName": "Yes on K, Ocean Beach Park for All Sponsored By Community Nonprofits",
-      "completeThrough": "2026-08-11",
+      "completeThrough": "2026-02-02",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "kmm-strategies",
@@ -10240,6 +10834,7 @@
       "filerNid": "213987622",
       "filerName": "Stephen Sherrill for Supervisor 2026 General",
       "completeThrough": "2026-08-17",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "amplify-campaigns",
@@ -10265,6 +10860,7 @@
       "filerNid": "211486142",
       "filerName": "Yes on L, Fund the Bus",
       "completeThrough": "2025-03-13",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "anderson-political",
@@ -10278,6 +10874,7 @@
       "filerNid": "212872841",
       "filerName": "Stop the Recall, Stand with Joel Engardio",
       "completeThrough": "2026-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "kmm-strategies",
@@ -10296,7 +10893,8 @@
     {
       "filerNid": "216006060",
       "filerName": "Clean Up City Hall, Mayor Lurie's Ballot Measure Committee",
-      "completeThrough": "2026-08-12",
+      "completeThrough": "2026-07-20",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "thematic-strategies",
@@ -10328,6 +10926,7 @@
       "filerNid": "215606983",
       "filerName": "SF Believes",
       "completeThrough": "2026-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "media-company",
@@ -10341,6 +10940,7 @@
       "filerNid": "211703442",
       "filerName": "Mayor Breed's Committee for Reproductive Freedom, Yes on O",
       "completeThrough": "2025-10-15",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "kmm-strategies",
@@ -10353,7 +10953,8 @@
     {
       "filerNid": "206871404",
       "filerName": "Connie Chan for Supervisor 2024",
-      "completeThrough": "2025-08-01",
+      "completeThrough": "2025-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "mje-strategies",
@@ -10372,7 +10973,8 @@
     {
       "filerNid": "208599394",
       "filerName": "Daniel Lurie for Mayor 2024",
-      "completeThrough": "2026-08-07",
+      "completeThrough": "2026-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "szabo-associates",
@@ -10392,6 +10994,7 @@
       "filerNid": "211945518",
       "filerName": "Yes on G, the Affordable Housing Opportunity Fund",
       "completeThrough": "2025-04-30",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "anderson-political",
@@ -10411,6 +11014,7 @@
       "filerNid": "214896050",
       "filerName": "Natalie Gee for Supervisor 2026",
       "completeThrough": "2026-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "anderson-political",
@@ -10424,6 +11028,7 @@
       "filerNid": "211940502",
       "filerName": "Yes on F, San Franciscans for a Full Police Staffing",
       "completeThrough": "2025-02-19",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "kmm-strategies",
@@ -10443,6 +11048,7 @@
       "filerNid": "210823617",
       "filerName": "Chyanne Chen for Supervisor 2024",
       "completeThrough": "2026-06-24",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "mje-strategies",
@@ -10462,6 +11068,7 @@
       "filerNid": "208584481",
       "filerName": "Sharon Lai for Supervisor 2024",
       "completeThrough": "2025-04-30",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "stearns-consulting",
@@ -10475,6 +11082,7 @@
       "filerNid": "212327513",
       "filerName": "Residents Opposing Aaron Peskin for Mayor 2024",
       "completeThrough": "2025-02-10",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "strother-nuckels",
@@ -10488,6 +11096,7 @@
       "filerNid": "208734348",
       "filerName": "Vote Marjan Philhour for Supervisor 2024",
       "completeThrough": "2026-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "outreach-team",
@@ -10501,6 +11110,7 @@
       "filerNid": "215271192",
       "filerName": "Term Limits Now - Yes on B!",
       "completeThrough": "2026-08-17",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "bmwl",
@@ -10513,7 +11123,8 @@
     {
       "filerNid": "212570183",
       "filerName": "Our Neighborhood, Our Future Supporting the Recall of Supervisor Engardio",
-      "completeThrough": "2026-07-30",
+      "completeThrough": "2026-04-23",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "jamie-hughes",
@@ -10539,6 +11150,7 @@
       "filerNid": "211810083",
       "filerName": "Real Reform, Yes on C, No on D, Yes on E, A Coalition of Small Businesses, Neighbors and Aaron Peskin",
       "completeThrough": "2025-08-12",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "anderson-political",
@@ -10564,6 +11176,7 @@
       "filerNid": "212266099",
       "filerName": "San Franciscans in Support of Brooke Jenkins for District Attorney 2024",
       "completeThrough": "2025-02-10",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "strother-nuckels",
@@ -10577,6 +11190,7 @@
       "filerNid": "211945441",
       "filerName": "Support our First Responders Now! Yes on N",
       "completeThrough": "2025-06-13",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "cliffordmoss",
@@ -10590,6 +11204,7 @@
       "filerNid": "6685673",
       "filerName": "United Educators of San Francisco Candidate PAC",
       "completeThrough": "2026-07-22",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "yosemite-consulting",
@@ -10603,6 +11218,7 @@
       "filerNid": "208059485",
       "filerName": "Ernest 'EJ' Jones for Supervisor 2024",
       "completeThrough": "2025-08-01",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "cliffordmoss",
@@ -10616,6 +11232,7 @@
       "filerNid": "208763299",
       "filerName": "Stephen Torres for Supervisor 2024",
       "completeThrough": "2025-01-28",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "mje-strategies",
@@ -10629,6 +11246,7 @@
       "filerNid": "214808596",
       "filerName": "Theo Ellington for Supervisor 2026",
       "completeThrough": "2026-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "message-department",
@@ -10642,6 +11260,7 @@
       "filerNid": "215112140",
       "filerName": "Alan Wong for Supervisor 2026",
       "completeThrough": "2026-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "christian-kropff",
@@ -10655,6 +11274,7 @@
       "filerNid": "215120587",
       "filerName": "Brandee Marckmann for Board of Education 2026",
       "completeThrough": "2026-07-30",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "democratic-direct",
@@ -10668,6 +11288,7 @@
       "filerNid": "211945557",
       "filerName": "Improve Emergency Responses Times - Yes on I",
       "completeThrough": "2025-06-13",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "cliffordmoss",
@@ -10681,6 +11302,7 @@
       "filerNid": "214772801",
       "filerName": "Manny Yekutiel for Supervisor 2026",
       "completeThrough": "2026-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "bmwl",
@@ -10694,6 +11316,7 @@
       "filerNid": "216048526",
       "filerName": "Affordable SF Now supporting Natalie Gee for Supervisor 2026, Sponsored by Labor Organizations",
       "completeThrough": "2026-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "cliffordmoss",
@@ -10707,6 +11330,7 @@
       "filerNid": "214783692",
       "filerName": "Gary Mc Coy for Supervisor 2026",
       "completeThrough": "2026-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "anderson-political",
@@ -10726,6 +11350,7 @@
       "filerNid": "214577156",
       "filerName": "J.R. Eppler for Supervisor 2026",
       "completeThrough": "2026-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "mje-strategies",
@@ -10745,6 +11370,7 @@
       "filerNid": "215019694",
       "filerName": "Albert Chow for Supervisor 2026",
       "completeThrough": "2026-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "cleansweep-campaigns",
@@ -10758,6 +11384,7 @@
       "filerNid": "214443884",
       "filerName": "DJ Brookter for Supervisor 2026",
       "completeThrough": "2026-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "proverb-strategy",
@@ -10771,6 +11398,7 @@
       "filerNid": "208090470",
       "filerName": "Brooke Jenkins for District Attorney 2024",
       "completeThrough": "2026-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "sgr-consulting",
@@ -10784,6 +11412,7 @@
       "filerNid": "214769736",
       "filerName": "Kim for School Board June 2026",
       "completeThrough": "2026-07-30",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "nathan-allbee",
@@ -10796,7 +11425,7 @@
     {
       "filerNid": "212294989",
       "filerName": "California Federation of Teachers COPE",
-      "completeThrough": "2025-01-21",
+      "hasScheduleE": false,
       "consultants": [
         {
           "id": "campaign-workshop",
@@ -10809,7 +11438,8 @@
     {
       "filerNid": "216747316",
       "filerName": "Fair Housing",
-      "completeThrough": "2026-08-14",
+      "completeThrough": "2026-07-07",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "RISHAV ROUT",
@@ -10823,6 +11453,7 @@
       "filerNid": "214918275",
       "filerName": "GrowSF Supporting Stephen Sherrill for Supervisor 2026",
       "completeThrough": "2026-08-14",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "szabo-associates",
@@ -10836,6 +11467,7 @@
       "filerNid": "215852865",
       "filerName": "GrowSF Supporting Alan Wong for Supervisor 2026",
       "completeThrough": "2026-08-14",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "szabo-associates",
@@ -10849,6 +11481,7 @@
       "filerNid": "208395017",
       "filerName": "Stephen Martin-Pinto for Supervisor 2024",
       "completeThrough": "2025-01-30",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "JOHN DENNIS",
@@ -10862,6 +11495,7 @@
       "filerNid": "208697921",
       "filerName": "Matt Dorsey for DCCC Member 2024 Officeholder Committee",
       "completeThrough": "2026-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "bedford-grove",
@@ -10875,6 +11509,7 @@
       "filerNid": "214820258",
       "filerName": "Lori Brooke for Supervisor 2026",
       "completeThrough": "2026-08-06",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "jamie-hughes",
@@ -10888,6 +11523,7 @@
       "filerNid": "208504134",
       "filerName": "Dean Preston for Supervisor 2024",
       "completeThrough": "2026-08-05",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "AVERY YU",
@@ -10901,11 +11537,12 @@
       "filerNid": "208865143",
       "filerName": "MICHELA ALIOTO-PIER FOR DEMOCRATIC COUNTY CENTRAL COMMITTEE 2024",
       "completeThrough": "2026-07-14",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "AST CONSULTING",
           "reported": 6000,
-          "schE": 0,
+          "schE": 6000,
           "schG": 0
         }
       ]
@@ -10914,6 +11551,7 @@
       "filerNid": "208440318",
       "filerName": "Miyamoto for Sheriff 2024",
       "completeThrough": "2026-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "RODNEY LEONG",
@@ -10927,6 +11565,7 @@
       "filerNid": "215579031",
       "filerName": "Matt Dorsey for Supervisor 2026",
       "completeThrough": "2026-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "bedford-grove",
@@ -10940,6 +11579,7 @@
       "filerNid": "214884831",
       "filerName": "Michael Nguyen for Supervisor 2026",
       "completeThrough": "2026-07-31",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "democratic-direct",
@@ -10952,7 +11592,8 @@
     {
       "filerNid": "10944875",
       "filerName": "San Francisco Parent PAC",
-      "completeThrough": "2026-07-31",
+      "completeThrough": "2021-02-01",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "outset-strategies",
@@ -10965,7 +11606,7 @@
     {
       "filerNid": "217128861",
       "filerName": "Team Manny, Manny Yekutiel for Supervisor 2026",
-      "completeThrough": "2026-07-31",
+      "hasScheduleE": false,
       "consultants": [
         {
           "id": "media-company",
@@ -10978,7 +11619,8 @@
     {
       "filerNid": "209865652",
       "filerName": "Bilal Mahmood for Supervisor 2024",
-      "completeThrough": "2026-07-31",
+      "completeThrough": "2026-02-02",
+      "hasScheduleE": true,
       "consultants": [
         {
           "id": "thematic-strategies",
@@ -11049,19 +11691,22 @@
   "excluded": [
     {
       "envelope": "89f7b62b-be1f-4fc4-900a-22aba667b59c",
-      "reason": "Junk filing — 'Law enforcement protection' Initial Registration (datesigned 2025-12-10): a fantasy business address (Inverness / Shetland / 'Virgin Islands 42800'), a $600 'Watches' gift to 'Phillip Mccrown', and the code of conduct declined. The address is described, not reproduced — the redaction rule holds even for a junk filer, and this is a Person-type filing."
+      "reason": "Junk filing — 'Law enforcement protection' Initial Registration (datesigned 2025-12-10): a fantasy business address (Inverness / Shetland / 'Virgin Islands 42800'), a $600 'Watches' gift to a named private individual, and the code of conduct declined. Neither the address nor the gift recipient's name is reproduced — the redaction rule holds even for a junk filer, and this is a Person-type filing naming a person who never consented to appear in a civic dataset.",
+      "reportedTotal": 0
     },
     {
       "envelope": "c99a90cf-9699-4669-ae9e-4202212061b4",
-      "reason": "Junk filing — 'Emelia Rosie Washington' Initial Registration (datesigned 2025-02-24): a $9,542 'Hotel bookings' gift to 'Emelia Rosie Washington Soviegn' (the filer) and a $152,000 client 'Caesar Kamila' that matches no filer, candidate, or measure in 4c8t-ngau or pitq-e56w."
+      "reason": "Junk filing — 'Emelia Rosie Washington' Initial Registration (datesigned 2025-02-24): a $9,542 'Hotel bookings' gift whose named beneficiary is a variant of the filer's own name (not reproduced), and a $152,000 client 'Caesar Kamila' that matches no filer, candidate, or measure in 4c8t-ngau or pitq-e56w. The client string is kept because it is the money's only label and appears in the client crosswalk; the gift beneficiary is not, because it names a private individual.",
+      "reportedTotal": 152000
     }
   ],
   "totals": {
-    "reportedAll": 17370099.32,
-    "reportedReconcilable": 16919747.2,
-    "schE": 17489334.35,
+    "childReportedRaw": 18054247.62,
+    "reportedAll": 17340099.32,
+    "reportedReconcilable": 16889747.2,
+    "schE": 17446734.19,
     "schG": 445870.9,
-    "receipts": 175,
+    "receipts": 174,
     "pairs": 160,
     "contributionsMatched": 19,
     "contributionsTotal": 29

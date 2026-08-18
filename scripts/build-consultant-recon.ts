@@ -27,10 +27,17 @@
  * REDACTION IS STRUCTURAL, not a filter applied at the end: `PROJECTION` (the
  * parent `$select`) omits every phone, street-address and full-address column,
  * the contributions projection omits the contributor address block, and the
- * employees table `gjyg-9whd` is never fetched at all — so no private
- * individual's name or address ever crosses the wire. Consultant location is
- * kept at city + state only. `src/lib/consultants/reconciliation.test.ts` pins
- * this by walking every key in the emitted JSON.
+ * employees table `gjyg-9whd` — 75 named private individuals — is never fetched
+ * at all. Consultant location is kept at city + state only, and authored
+ * `reason`/`evidence` strings describe a junk filer's address rather than
+ * reproducing it. `src/lib/consultants/reconciliation.test.ts` pins this by
+ * walking every key AND every string value in the emitted JSON.
+ *
+ * The claim is about what THIS artifact carries, and stops there. Each filing's
+ * `docusignUrl` points at the signed PDF on SFEC's own storage, which does
+ * contain the filer's contact details — that document is the city's publication,
+ * linked here exactly as SFEC publishes it, not redacted by us and not copied
+ * into the artifact.
  *
  * DATE HANDLING. DataSF datetimes are floating SF-local strings with no offset.
  * Every comparison and every deadline in this file is done on the 'YYYY-MM-DD'
@@ -45,7 +52,7 @@
  *       VITE_SOCRATA_APP_TOKEN is read from the environment if present.
  */
 
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import {
@@ -269,6 +276,7 @@ export interface ArtifactProvenance {
     restatement: string
     schE: string
     undated: string
+    pitqFloor: string
     contributions: string
     exclusion: string
     overrides: string
@@ -284,6 +292,20 @@ export interface ArtifactGates {
   conservationMismatches: number
   unmappedConsultants: string[]
   unmappedClients: string[]
+  /**
+   * Envelopes that DECLARE client money on the parent and publish zero child
+   * rows. Disclosed, never a failure — SGR's $403,889.62 Sep–Nov 2024 filing is
+   * a real published gap in SFEC's own data, and hiding it would be the lie.
+   */
+  parentOnlyEnvelopes: {
+    envelope: string
+    consultant: string
+    declaredTotal: number
+    reportType: string
+    periodStart: string
+  }[]
+  /** Consultant ids absent from the previously committed artifact — new filers, or a crosswalk drift. */
+  newConsultantIds: string[]
   supersededEnvelopes: number
   restatementsCollapsed: number
   blankClientRows: number
@@ -291,6 +313,10 @@ export interface ArtifactGates {
   duplicateEnvelopes: number
   periodOverrides: number
   uncorrectablePeriods: number
+  /** Same consultant, report type and period filed under >1 envelope; each must be authored. */
+  duplicateGroupsDetected: number
+  /** Advisory only: same consultant + report type signed the same day. Legitimate for catch-up filers. */
+  sameDayFilings: { consultantId: string; reportType: string; datesigned: string; envelopes: string[] }[]
 }
 
 export interface ArtifactRegistration {
@@ -308,6 +334,8 @@ export interface ArtifactQuarterly {
   periodCorrected?: true
   originalPeriodStart?: string
   originalPeriodEnd?: string
+  /** Present when the period is impossible as filed and NO correction was determinate. */
+  periodImpossible?: true
   datesigned: string
   /** Statutory due date (weekend roll-forward only), or null when the period is off-calendar. */
   deadline: string | null
@@ -327,6 +355,8 @@ export interface ArtifactReceipt {
   periodEnd: string
   /** Present when this receipt's reporting window came from an authored PERIOD_OVERRIDE. */
   periodCorrected?: true
+  /** Present when the window is impossible as filed and no correction was determinate. */
+  periodImpossible?: true
   reportType: string
   envelope: string
   reported: number
@@ -358,7 +388,15 @@ export interface ArtifactConsultant {
 
 /** Authored envelope-level corrections, published alongside the figures they change. */
 export interface ArtifactOverrides {
-  duplicates: { envelope: string; duplicateOf: string; reason: string; droppedTotal: number }[]
+  duplicates: {
+    envelope: string
+    duplicateOf: string
+    reason: string
+    /** Parent-declared total on the dropped envelope. */
+    droppedTotal: number
+    /** Child-row money actually removed — the figure the subtraction chain uses. */
+    droppedChildSum: number
+  }[]
   periods: {
     envelope: string
     consultantId: string
@@ -392,13 +430,27 @@ export interface ReconciliationArtifact {
   committees: {
     filerNid: string
     filerName?: string
+    /** MAX(filing_date) over this committee's Schedule E filings only. */
     completeThrough?: string
+    /** False when the committee files no Schedule E at all — there is no payee ledger to compare. */
+    hasScheduleE: boolean
     consultants: { id: string; reported: number; schE: number; schG: number }[]
   }[]
   /** Client strings that carry money but resolve to no SF Ethics filer_nid. */
   unresolvedClients: { clientString: string; class: string; reported: number }[]
-  excluded: { envelope: string; reason: string }[]
+  excluded: { envelope: string; reason: string; reportedTotal: number }[]
   totals: {
+    /**
+     * Sum of EVERY child client row as published, before any exclusion, duplicate
+     * drop or restatement collapse. Publishing it makes the whole subtraction
+     * chain checkable from the artifact alone:
+     *   childReportedRaw
+     *     − Σ excluded[].reportedTotal
+     *     − Σ overrides.duplicates[].droppedChildSum
+     *     − Σ consultants[].restatementsCollapsed[].droppedChildSum
+     *   === reportedAll
+     */
+    childReportedRaw: number
     reportedAll: number
     reportedReconcilable: number
     schE: number
@@ -484,10 +536,15 @@ function payeeWhereClause(patterns: string[]): string {
  * Statutory quarterly deadline for a reporting period start, with weekend
  * roll-forward only (SF holidays are a later refinement, disclosed in the
  * artifact's `calendar.rollForward`). Periods start Dec 1 / Mar 1 / Jun 1 /
- * Sep 1 and are due Mar 15 / Jun 15 / Sep 15 / Dec 15 respectively. Returns
- * null for an off-calendar period start — 9 rows in this family carry a
- * mis-keyed 2026-12-01 period, and a fabricated deadline for one of those
- * would read as a filer being 300 days early.
+ * Sep 1 and are due Mar 15 / Jun 15 / Sep 15 / Dec 15 respectively; returns null
+ * for any other period start.
+ *
+ * It does NOT — and must not — judge whether the period is plausible. A period
+ * mis-keyed a year forward is still a valid Dec 1 start and gets a real (future)
+ * deadline here. That whole class belongs to the PERIOD_OVERRIDES pass, which
+ * either corrects the dates before this function ever sees them or marks the
+ * filing `periodImpossible`, in which case the caller suppresses the deadline
+ * entirely rather than publishing "362 days early".
  */
 export function quarterlyDeadline(periodStart: string): string | null {
   const p = dpx(periodStart)
@@ -567,7 +624,18 @@ async function soda<T>(dataset: string, params: Record<string, string>, label: s
     await sleep(150)
     requestCount += 1
     const res = await fetch(url, { headers })
-    if (res.ok) return (await res.json()) as T[]
+    if (res.ok) {
+      const rows = (await res.json()) as T[]
+      // A silently truncated page is the worst failure mode here: every total
+      // downstream would be quietly low and every gate would still pass.
+      const limit = params.$limit ? Number(params.$limit) : null
+      if (limit !== null && rows.length >= limit) {
+        throw new Error(
+          `SODA ${dataset} [${label}] returned ${rows.length} rows at $limit=${limit} — the page is truncated; raise the limit or paginate`
+        )
+      }
+      return rows
+    }
     const retryable = res.status === 429 || res.status >= 500
     const body = await res.text().catch(() => '')
     if (!retryable || attempt === 1) {
@@ -715,6 +783,23 @@ async function main(): Promise<void> {
   )
   for (const d of conservationDetail) console.log(`        ${d}`)
 
+  // G3 only walks envelopes that HAVE child rows, so it is blind in one direction:
+  // an envelope that declares money on the parent and publishes no client rows at
+  // all reconciles vacuously. That is a real published gap, not a generator bug —
+  // SGR Consulting's Sep–Nov 2024 filing declares $403,889.62 with nothing in
+  // m75g-xpci — so it is DISCLOSED rather than failed.
+  const parentOnlyEnvelopes = parentAll
+    .filter((r) => !clientSums.has(r.envelope_id))
+    .filter((r) => amt(r.clientinformation_total) > 0 || r.clientinformation_hasclients === true)
+    .map((r) => ({
+      envelope: r.envelope_id,
+      consultant: r.campaignconsultantname,
+      declaredTotal: round2(amt(r.clientinformation_total)),
+      reportType: r.filinginformation_reporttype,
+      periodStart: dpx(r.filinginformation_reportingperiod_reportingperiodstartdate),
+    }))
+    .sort((a, b) => b.declaredTotal - a.declaredTotal)
+
   // ---- 3. G5a exclusion (BEFORE any receipt or rollup) --------------------
   const excludedIds = new Set(EXCLUDED_ENVELOPES.map((e) => e.envelope))
   const missingExcluded = EXCLUDED_ENVELOPES.filter((e) => !parentIds.has(e.envelope)).map(
@@ -727,6 +812,14 @@ async function main(): Promise<void> {
   const excludedClientDollars = clientsAll
     .filter((r) => excludedIds.has(r.envelope_id))
     .reduce((s, r) => s + amt(r.clientlist_economicconsiderationreceived), 0)
+
+  const aliasByNormalized = buildAliasIndex()
+  const keyOfRaw = (raw: string): ConsultantKey => {
+    const normalized = normalizeName(raw ?? '')
+    const alias = aliasByNormalized.get(normalized)
+    if (alias) return { id: alias.id, resolvedBy: 'alias', alias }
+    return { id: normalized, resolvedBy: 'mechanical' }
+  }
 
   // ---- 3b. authored overrides: duplicates first, then impossible periods ----
   // Both classes exist because the mechanical rules are deliberately narrow:
@@ -742,9 +835,17 @@ async function main(): Promise<void> {
     !DUPLICATE_ENVELOPES.some((d) => duplicateIds.has(d.duplicateOf) || excludedIds.has(d.duplicateOf)),
     'G6b duplicate overrides — no chain: a survivor is never itself dropped'
   )
+  const childSumByEnvelope = new Map<string, number>()
+  for (const c of clientsAll) {
+    childSumByEnvelope.set(
+      c.envelope_id,
+      (childSumByEnvelope.get(c.envelope_id) ?? 0) + amt(c.clientlist_economicconsiderationreceived)
+    )
+  }
   const duplicatesApplied = DUPLICATE_ENVELOPES.map((d) => ({
     ...d,
     droppedTotal: round2(amt(parentById.get(d.envelope)?.clientinformation_total)),
+    droppedChildSum: round2(childSumByEnvelope.get(d.envelope) ?? 0),
   }))
 
   const survivedDuplicates = split.latest.filter(
@@ -822,14 +923,84 @@ async function main(): Promise<void> {
     `G6d period overrides — ${correctedById.size} corrected, ${detected.length - correctedById.size} left as filed`
   )
 
-  // ---- 4. G4 identity -----------------------------------------------------
-  const aliasByNormalized = buildAliasIndex()
-  const keyOfRaw = (raw: string): ConsultantKey => {
-    const normalized = normalizeName(raw ?? '')
-    const alias = aliasByNormalized.get(normalized)
-    if (alias) return { id: alias.id, resolvedBy: 'alias', alias }
-    return { id: normalized, resolvedBy: 'mechanical' }
+  // I6: filings whose window stayed impossible. Everything downstream that would
+  // otherwise publish a number ABOUT that window — a ratio, a days-late figure —
+  // is suppressed rather than computed, because the window itself is not a fact.
+  const impossibleIds = new Set(latest.filter(impossiblePeriod).map((r) => r.envelope_id))
+
+  // Narrow the parent-only disclosure to filings that actually reach the figures:
+  // a superseded, excluded or duplicate envelope is not a published gap.
+  const liveEnvelopes = new Set(latest.map((r) => r.envelope_id))
+  const parentOnlyLive = parentOnlyEnvelopes.filter((e) => liveEnvelopes.has(e.envelope))
+  console.log(
+    `\nPARENT-ONLY ENVELOPES — ${parentOnlyLive.length} live filing(s) declare clients and publish zero child rows` +
+      ` (${parentOnlyEnvelopes.length} before dropping superseded/duplicate copies). Disclosed, not a failure:`
+  )
+  for (const e of parentOnlyLive) {
+    console.log(
+      `  ${e.envelope} ${e.consultant.slice(0, 28).padEnd(29)} ${money(e.declaredTotal).padStart(14)} ${e.reportType} ${e.periodStart}`
+    )
   }
+
+  // ---- 3c. C1 duplicate scan: one report filed twice under two spellings ----
+  // latestPerSeries only dedupes WITHIN a filingseries, and that string embeds the
+  // consultant's own spelling of its own name. A filer who retypes the name files
+  // the same report into a NEW series, and the money doubles with nothing to catch
+  // it. Grouping on the RESOLVED consultant identity is what makes the pair visible
+  // — this is the alias table's second job, after payee patterns.
+  const dupScan = new Map<string, ParentRow[]>()
+  for (const r of latest) {
+    const k = `${keyOfRaw(r.campaignconsultantname).id}::${r.filinginformation_reporttype}::${dpx(r.filinginformation_reportingperiod_reportingperiodstartdate)}`
+    const arr = dupScan.get(k)
+    if (arr) arr.push(r)
+    else dupScan.set(k, [r])
+  }
+  const dupGroups = [...dupScan.entries()].filter(([, arr]) => arr.length > 1)
+  console.log(
+    `\nDUPLICATE SCAN (same consultant + report type + period, more than one envelope) — ${dupGroups.length} group(s)`
+  )
+  for (const [k, arr] of dupGroups.sort((a, b) => a[0].localeCompare(b[0]))) {
+    console.log(`  ${k}`)
+    for (const r of [...arr].sort((a, b) => a.datesigned.localeCompare(b.datesigned))) {
+      console.log(
+        `      ${r.envelope_id} | ${r.filingseries} | signed ${r.datesigned}` +
+          ` | parent ${money(amt(r.clientinformation_total))} | child ${money(childSumByEnvelope.get(r.envelope_id) ?? 0)}`
+      )
+    }
+  }
+  gate(
+    dupGroups.length === 0,
+    `G7 duplicate scan — every same-report group is explained by an authored DUPLICATE_ENVELOPES row` +
+      (dupGroups.length ? ` (unexplained: ${dupGroups.map(([k]) => k).join(' · ')})` : '')
+  )
+
+  // Advisory, deliberately NOT a gate: one consultant signing two filings of the
+  // same report type on one day is often a catch-up filer clearing two different
+  // quarters (The Outreach Team did exactly that on 2025-06-02, 30 seconds apart).
+  // It is also how the Szabo re-submission hides — same day, two period starts —
+  // so the class is printed and published, and judged by a human.
+  const sameDayScan = new Map<string, ParentRow[]>()
+  for (const r of latest) {
+    const k = `${keyOfRaw(r.campaignconsultantname).id}::${r.filinginformation_reporttype}::${dpx(r.datesigned)}`
+    const arr = sameDayScan.get(k)
+    if (arr) arr.push(r)
+    else sameDayScan.set(k, [r])
+  }
+  const sameDayFilings = [...sameDayScan.entries()]
+    .filter(([, arr]) => arr.length > 1)
+    .map(([k, arr]) => {
+      const [consultantId, reportType, datesigned] = k.split('::')
+      return { consultantId, reportType, datesigned, envelopes: arr.map((r) => r.envelope_id).sort() }
+    })
+    .sort((a, b) => a.consultantId.localeCompare(b.consultantId))
+  if (sameDayFilings.length > 0) {
+    console.log(`  ADVISORY  ${sameDayFilings.length} same-day, same-report-type group(s) — read by eye, not gated:`)
+    for (const g of sameDayFilings) {
+      console.log(`        ${g.consultantId} ${g.reportType} ${g.datesigned}: ${g.envelopes.join(', ')}`)
+    }
+  }
+
+  // ---- 4. G4 identity -----------------------------------------------------
   const unmappedConsultants = [
     ...new Set(
       parentAll
@@ -967,6 +1138,7 @@ async function main(): Promise<void> {
       periodStart: dpx(parent.filinginformation_reportingperiod_reportingperiodstartdate),
       periodEnd: dpx(parent.filinginformation_reportingperiod_reportingperiodenddate),
       periodCorrected: correctedById.has(parent.envelope_id) ? (true as const) : undefined,
+      periodImpossible: impossibleIds.has(parent.envelope_id) ? (true as const) : undefined,
       reportType: parent.filinginformation_reporttype,
       envelope: parent.envelope_id,
       reported,
@@ -1048,18 +1220,33 @@ async function main(): Promise<void> {
 
   // ---- 8. committeeCompleteThrough ---------------------------------------
   const clientNids = [...new Set(receipts.map((r) => r.filerNid).filter((n): n is string => !!n))]
-  const completeRows = await soda<{ filer_nid: string; m: string }>(
+  // Scoped to Schedule E deliberately. Over ALL record types this reads "current"
+  // for a committee that has never filed a Form 460 at all — California Alliance
+  // of Family Owned Businesses PAC (216701453) files only F496 late-independent-
+  // expenditure reports, so its 2026 filing_date made an empty payee ledger look
+  // up to date, and the pair read as a 100% omission instead of "no ledger exists".
+  const completeRows = await soda<{ filer_nid: string; m: string; n: string }>(
     DS.pitq,
     {
-      $select: 'filer_nid,max(filing_date) as m',
-      $where: `filer_nid in (${clientNids.map(sqlQuote).join(',')})`,
+      $select: 'filer_nid,max(filing_date) as m,count(*) as n',
+      $where: `filer_nid in (${clientNids.map(sqlQuote).join(',')}) AND record_type = 'EXPN' AND form_type = 'E'`,
       $group: 'filer_nid',
       $limit: '5000',
     },
     'committeeCompleteThrough'
   )
   const completeThrough: Record<string, string> = {}
-  for (const r of completeRows) completeThrough[r.filer_nid] = dpx(r.m)
+  const hasScheduleE: Record<string, boolean> = {}
+  for (const nid of clientNids) hasScheduleE[nid] = false
+  for (const r of completeRows) {
+    completeThrough[r.filer_nid] = dpx(r.m)
+    hasScheduleE[r.filer_nid] = Number(r.n) > 0
+  }
+  const noLedger = clientNids.filter((n) => !hasScheduleE[n])
+  console.log(
+    `  ${clientNids.length - noLedger.length} of ${clientNids.length} client committees file a Schedule E; ` +
+      `${noLedger.length} have no payee ledger at all${noLedger.length ? ` (${noLedger.join(', ')})` : ''}`
+  )
 
   // ---- 9. per-consultant pitq expenditures -------------------------------
   console.log(`\nPITQ EXPENDITURES (record_type in ('EXPN','DEBT') AND filing_date >= '${ERA_START}')`)
@@ -1074,11 +1261,21 @@ async function main(): Promise<void> {
   const patternReport: { consultant: string; pattern: string; rows: number; dollars: number }[] = []
   const scopeDrops: { consultant: string; rows: number; dollars: number }[] = []
 
+  const floorByConsultant: Record<string, string> = {}
   for (const [consultantId, rows] of [...receiptsByConsultant].sort((a, b) => a[0].localeCompare(b[0]))) {
     const group = groups.get(consultantId)
     if (!group) continue
     const patterns = group.key.alias?.payeePatterns ?? [`%${consultantId}%`]
-    const where = `record_type in ('EXPN','DEBT') AND filing_date >= '${ERA_START}' AND ${payeeWhereClause(patterns)}`
+    // A single fixed floor fabricates omissions on the family's pre-era edge. AST
+    // Consulting's only filing is a Termination for Mar–Apr 2024; its client's
+    // Schedule E row for that work was FILED on 2024-07-29, before the 2024-09-01
+    // floor, so the consultant read as reporting $6,000 nobody paid. The floor is
+    // therefore per consultant: six months before its own earliest reporting
+    // period, never later than the era start.
+    const earliest = rows.map((r) => r.periodStart).filter(Boolean).sort()[0]
+    const floor = earliest ? minDate(shiftMonthsBack(earliest, 6), ERA_START) : ERA_START
+    floorByConsultant[consultantId] = floor
+    const where = `record_type in ('EXPN','DEBT') AND filing_date >= '${floor}' AND ${payeeWhereClause(patterns)}`
     const exp = await soda<PitqExpRow>(
       DS.pitq,
       { $select: PITQ_EXP_PROJECTION.join(','), $where: where, $limit: '50000' },
@@ -1121,7 +1318,7 @@ async function main(): Promise<void> {
   const CONF_RANK: Record<ClientConfidence, number> = { uncertain: 0, inferred: 1, exact: 2 }
   for (const [consultantId, rows] of receiptsByConsultant) {
     const exp = expByConsultant.get(consultantId) ?? []
-    const pairs = reconcile(rows, exp, completeThrough)
+    const pairs = reconcile(rows, exp, completeThrough, hasScheduleE)
     const enriched: ArtifactPair[] = pairs.map((p) => {
       const contributing = rows.filter(
         (r) => r.filerNid === p.filerNid && r.periodStart === p.periodStart
@@ -1147,6 +1344,28 @@ async function main(): Promise<void> {
     )
     pairsByConsultant.set(consultantId, enriched)
   }
+
+  // I1 gate: an undated Schedule E row must land in exactly ONE reporting period.
+  // Before the exclusive assignment rule, Margaux Kelly's 49 undated rows from
+  // Mark Farrell for Mayor 2024 ($48,600.16) were counted in BOTH her Sep–Nov 2024
+  // and Dec 2024–Feb 2025 quarters, because the filing window overlapped both.
+  const seenTx = new Map<string, string>()
+  const doubleCounted: string[] = []
+  for (const [consultantId, pairs] of pairsByConsultant) {
+    for (const p of pairs) {
+      for (const tx of p.undatedTransactionIds) {
+        const k = `${consultantId}::${p.filerNid}::${tx}`
+        const prior = seenTx.get(k)
+        if (prior) doubleCounted.push(`${k} in ${prior} and ${p.periodStart}`)
+        else seenTx.set(k, p.periodStart)
+      }
+    }
+  }
+  gate(
+    doubleCounted.length === 0,
+    `G8 undated exclusivity — ${seenTx.size} undated Schedule E row(s) assigned, each to exactly one period` +
+      (doubleCounted.length ? ` (double-counted: ${doubleCounted.slice(0, 5).join(' · ')})` : '')
+  )
 
   // ---- 11. contributions --------------------------------------------------
   console.log('\nCONTRIBUTIONS')
@@ -1336,6 +1555,7 @@ async function main(): Promise<void> {
         const periodStart = dpx(f.filinginformation_reportingperiod_reportingperiodstartdate)
         const deadline = quarterlyDeadline(periodStart)
         const corrected = correctedById.get(f.envelope_id)
+        const impossible = impossibleIds.has(f.envelope_id)
         return {
           periodStart,
           periodEnd: dpx(f.filinginformation_reportingperiod_reportingperiodenddate),
@@ -1346,9 +1566,13 @@ async function main(): Promise<void> {
                 originalPeriodEnd: corrected.originalEnd,
               }
             : {}),
+          ...(impossible ? { periodImpossible: true as const } : {}),
           datesigned: f.datesigned,
-          deadline,
-          daysLate: deadline ? daysBetween(deadline, dpx(f.datesigned)) : null,
+          // An impossible window yields no deadline and no days-late: the statutory
+          // due date is derived FROM the period, so "172 days early" would be
+          // measuring the typo, not the filer.
+          deadline: impossible ? null : deadline,
+          daysLate: impossible || !deadline ? null : daysBetween(deadline, dpx(f.datesigned)),
           envelope: f.envelope_id,
           docusignUrl: docusignUrl(f.docusign_filing),
         }
@@ -1379,6 +1603,7 @@ async function main(): Promise<void> {
           periodStart: r.periodStart,
           periodEnd: r.periodEnd,
           ...(r.periodCorrected ? { periodCorrected: true as const } : {}),
+          ...(r.periodImpossible ? { periodImpossible: true as const } : {}),
           reportType: r.reportType,
           envelope: r.envelope,
           reported: r.reported,
@@ -1398,6 +1623,41 @@ async function main(): Promise<void> {
     })
   }
   consultants.sort((a, b) => b.totals.reported - a.totals.reported || a.id.localeCompare(b.id))
+
+  // ---- 12b. I7: identity drift the mechanical gate cannot see ---------------
+  // G4a can only catch a name that resolves to NOTHING, which never happens —
+  // normalizeName always returns something. A misspelling that resolves to a NEW
+  // identity is the real failure mode, and it is invisible unless you compare
+  // against what was published last time. "Last time" here is the artifact
+  // currently ON DISK, read before this run overwrites it — so the comparison is
+  // meaningful exactly once per checkout of a given artifact, which is the moment
+  // a human is about to review the diff. A second run in a row reports nothing new.
+  let newConsultantIds: string[] = []
+  try {
+    const priorRaw = readFileSync(join(process.cwd(), ARTIFACT_PATH), 'utf8')
+    const prior = JSON.parse(priorRaw) as { consultants?: { id: string }[] }
+    const priorIds = new Set((prior.consultants ?? []).map((c) => c.id))
+    newConsultantIds = consultants.map((c) => c.id).filter((id) => !priorIds.has(id)).sort()
+    console.log(
+      `\nIDENTITY DRIFT (vs the artifact currently on disk)\n  ${newConsultantIds.length} consultant id(s) not in it` +
+        (newConsultantIds.length ? ':' : ' — the roster is unchanged')
+    )
+    for (const id of newConsultantIds) {
+      const c = consultants.find((x) => x.id === id)
+      console.log(
+        `    NEW  ${id}  (${c?.resolvedBy}, ${money(c?.totals.reported ?? 0)})  spellings: ${c?.rawNames.join(' | ')}`
+      )
+    }
+    console.log('    Read each one: a genuinely new registrant is expected; a near-miss of an existing id is a crosswalk gap.')
+  } catch {
+    console.log('\nIDENTITY DRIFT\n  no previously committed artifact to compare against (first run)')
+  }
+  const aliasIds = new Set(CONSULTANT_ALIASES.map((a) => a.id))
+  const orphanAliasIds = consultants.filter((c) => c.resolvedBy === 'alias' && !aliasIds.has(c.id)).map((c) => c.id)
+  gate(
+    orphanAliasIds.length === 0,
+    `G4c alias identity — every alias-resolved consultant id exists in CONSULTANT_ALIASES${orphanAliasIds.length ? ` (orphans: ${orphanAliasIds.join(', ')})` : ''}`
+  )
 
   // ---- 13. rollups --------------------------------------------------------
   const committeeMap = new Map<
@@ -1424,6 +1684,7 @@ async function main(): Promise<void> {
       filerNid: e.filerNid,
       filerName: e.filerName,
       completeThrough: completeThrough[e.filerNid],
+      hasScheduleE: hasScheduleE[e.filerNid] ?? false,
       consultants: [...e.consultants]
         .map(([id, v]) => ({ id, reported: round2(v.reported), schE: round2(v.schE), schG: round2(v.schG) }))
         .sort((a, b) => b.reported - a.reported),
@@ -1449,6 +1710,39 @@ async function main(): Promise<void> {
   const unresolvedClients = [...unresolvedMap.values()]
     .map((u) => ({ ...u, reported: round2(u.reported) }))
     .sort((a, b) => b.reported - a.reported)
+
+  // ---- 13b. I5: the subtraction chain closes, or nothing is written --------
+  // Every figure the artifact publishes is the published child ledger minus three
+  // authored removals. If that arithmetic does not close to the cent, one of the
+  // removals is double-counting or missing money, and no headline built on
+  // `reportedAll` can be trusted.
+  const childReportedRaw = round2(
+    clientsAll.reduce((sum, c) => sum + amt(c.clientlist_economicconsiderationreceived), 0)
+  )
+  const excludedWithTotals = EXCLUDED_ENVELOPES.map((e) => ({
+    envelope: e.envelope,
+    reason: e.reason,
+    reportedTotal: round2(childSumByEnvelope.get(e.envelope) ?? 0),
+  }))
+  const excludedSum = round2(excludedWithTotals.reduce((t, e) => t + e.reportedTotal, 0))
+  const duplicateChildSum = round2(duplicatesApplied.reduce((t, d) => t + d.droppedChildSum, 0))
+  const restatementChildSum = round2(
+    collapse.restatements.reduce((t, r) => t + r.droppedChildSum, 0)
+  )
+  const reportedAll = round2(consultants.reduce((t, c) => t + c.totals.reported, 0))
+  const chainResidual = round2(
+    childReportedRaw - excludedSum - duplicateChildSum - restatementChildSum - reportedAll
+  )
+  console.log('\nSUBTRACTION CHAIN')
+  console.log(`  child rows as published      ${money(childReportedRaw).padStart(16)}`)
+  console.log(`  − excluded junk filings      ${money(excludedSum).padStart(16)}`)
+  console.log(`  − duplicate envelopes        ${money(duplicateChildSum).padStart(16)}`)
+  console.log(`  − restatements collapsed     ${money(restatementChildSum).padStart(16)}`)
+  console.log(`  = reported (all)             ${money(reportedAll).padStart(16)}`)
+  gate(
+    Math.abs(chainResidual) < 0.005,
+    `G9 subtraction chain — closes to the cent (residual ${money(chainResidual)})`
+  )
 
   // ---- 14. G5b — the exclusion actually held ------------------------------
   console.log('\nG5 SUB-CHECKS')
@@ -1505,10 +1799,12 @@ async function main(): Promise<void> {
         latestRule: 'MAX(datesigned) per filingseries (floating SF-local strings compared as text)',
         restatement:
           'Same consultant identity + same reportingperiodstartdate with exactly one Quarterly and one Termination among the latest rows: keep the LATER-signed report\'s client rows, drop the other\'s (contributions too), record { keptEnvelope, droppedEnvelope, delta } for exact and inexact pairs alike',
+        pitqFloor:
+          "The pitq-e56w filing_date floor is per consultant: six months before that consultant's own earliest reporting period, never later than 2024-09-01. A single fixed floor hid a committee's Schedule E row filed before the era started and published the consultant as reporting money nobody paid.",
         schE:
           "pitq-e56w form_type 'E' rows for the client's filer_nid whose transaction_date falls inside the consultant's own reporting period. Schedule G is summed separately and NEVER folded into schE; Schedule F is ignored entirely.",
         undated:
-          "A Schedule E row with no transaction_date is assigned to a reporting period when the FILING's [start_date, end_date] overlaps it; the assigned amount is included in schE and also reported separately as schEUndatedAssigned.",
+          "A Schedule E row with no transaction_date is assigned to EXACTLY ONE reporting period — the one whose overlap with the FILING's own [start_date, end_date] is longest, ties to the earlier period. The amount is included in schE and reported separately as schEUndatedAssigned, and the row's transaction_id is published under the pair's undatedTransactionIds so the exclusivity is checkable.",
         contributions:
           "Each priced 7gkm-68qf row is searched in the recipient's own pitq RCPT/S497 rows for the same amount to the cent within ±30 days, matching the contributor name, then the firm's principal. Where sourceofthecontribution is 'Campaign Consultant' the contributor is the registrant itself (the contributor column is null on those rows).",
         exclusion:
@@ -1525,6 +1821,8 @@ async function main(): Promise<void> {
       conservationMismatches,
       unmappedConsultants,
       unmappedClients,
+      parentOnlyEnvelopes: parentOnlyLive,
+      newConsultantIds,
       supersededEnvelopes: split.superseded.length,
       restatementsCollapsed: collapse.restatements.length,
       blankClientRows,
@@ -1532,14 +1830,17 @@ async function main(): Promise<void> {
       duplicateEnvelopes: overrides.duplicates.length,
       periodOverrides: overrides.periods.length,
       uncorrectablePeriods: overrides.uncorrectable.length,
+      duplicateGroupsDetected: dupGroups.length,
+      sameDayFilings,
     },
     overrides,
     consultants,
     committees,
     unresolvedClients,
-    excluded: EXCLUDED_ENVELOPES.map((e) => ({ envelope: e.envelope, reason: e.reason })),
+    excluded: excludedWithTotals,
     totals: {
-      reportedAll: round2(consultants.reduce((s, c) => s + c.totals.reported, 0)),
+      childReportedRaw,
+      reportedAll,
       reportedReconcilable: round2(consultants.reduce((s, c) => s + c.totals.reconciledReported, 0)),
       schE: round2(consultants.reduce((s, c) => s + c.totals.schE, 0)),
       schG: round2(consultants.reduce((s, c) => s + c.totals.schG, 0)),
@@ -1613,6 +1914,20 @@ async function main(): Promise<void> {
   mkdirSync(dirname(out), { recursive: true })
   writeFileSync(out, `${JSON.stringify(artifact, null, 2)}\n`)
   console.log(`\nwrote ${ARTIFACT_PATH} in ${((Date.now() - startedAt) / 1000).toFixed(1)}s`)
+}
+
+/** Shift a 'YYYY-MM-DD' string back by whole months using UTC arithmetic (day clamped). */
+function shiftMonthsBack(day: string, months: number): string {
+  const [y, m, d] = day.split('-').map(Number)
+  const t = new Date(Date.UTC(y, m - 1 - months, 1))
+  const lastDay = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + 1, 0)).getUTCDate()
+  t.setUTCDate(Math.min(d, lastDay))
+  return `${t.getUTCFullYear()}-${pad2(t.getUTCMonth() + 1)}-${pad2(t.getUTCDate())}`
+}
+
+/** The earlier of two 'YYYY-MM-DD' strings. */
+function minDate(a: string, b: string): string {
+  return a < b ? a : b
 }
 
 /** Shift a 'YYYY-MM-DD' string by whole days using UTC arithmetic. */
