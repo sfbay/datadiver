@@ -313,16 +313,33 @@ describe('reconciliation artifact — the figures are self-consistent', () => {
     }
   })
 
-  it('an undated Schedule E row is counted in exactly one reporting period', () => {
+  it('an undated Schedule E row is counted once across the WHOLE artifact', () => {
+    // Keyed on (filerNid, transaction_id) with no consultant in the key: one
+    // committee's payment can be caught by two consultants' payee patterns, and
+    // counting it under both is the same dollar twice.
     const seen = new Map<string, string>()
     for (const p of pairs) {
       for (const tx of p.undatedTransactionIds) {
-        const k = `${p.consultantId}::${p.filerNid}::${tx}`
+        const k = `${p.filerNid}::${tx}`
         expect(seen.get(k), `${k} counted twice`).toBeUndefined()
-        seen.set(k, p.periodStart)
+        seen.set(k, `${p.consultantId}/${p.periodStart}`)
       }
     }
     expect(seen.size).toBeGreaterThan(0)
+  })
+
+  it('an exact match is never published on a comparison that is not sound', () => {
+    // Before this rule two pairs published `ratio: null, status:
+    // 'no-payee-ledger'` AND `exactMatch: true` in the same object, and the
+    // headline count included pairs where reported === schE === 0.
+    for (const p of pairs) {
+      if (!p.exactMatch) continue
+      expect(p.status, `${p.consultantId}/${p.filerNid} matches on an unsound comparison`).toBe('reconciled')
+      expect(p.reported, `${p.consultantId}/${p.filerNid} matches on $0`).toBeGreaterThan(0)
+      expect(p.ratio).not.toBeNull()
+    }
+    expect(pairs.filter((p) => p.exactMatch).length).toBe(artifact.totals.exactMatchPairs)
+    expect(artifact.totals.exactMatchPairs).toBeGreaterThan(0)
   })
 })
 

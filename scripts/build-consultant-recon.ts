@@ -281,7 +281,14 @@ export interface ArtifactProvenance {
     exclusion: string
     overrides: string
   }
-  /** filer_nid → MAX(filing_date) in pitq-e56w: how far the committee side is filed. */
+  /**
+   * filer_nid → MAX(filing_date) over that committee's SCHEDULE-E-BEARING filings
+   * only (`record_type='EXPN' AND form_type='E'`): how far its payee ledger is
+   * filed. Over all record types this reads "current" for a committee that has
+   * never filed a Form 460 at all — an F496-only filer whose empty payee ledger
+   * would then look up to date. A committee absent from this map files no
+   * Schedule E; `committees[].hasScheduleE` says so explicitly.
+   */
   committeeCompleteThrough: Record<string, string>
 }
 
@@ -457,6 +464,8 @@ export interface ReconciliationArtifact {
     schG: number
     receipts: number
     pairs: number
+    /** Pairs where both ledgers agree to within a dollar — sound comparisons with money on both sides only. */
+    exactMatchPairs: number
     contributionsMatched: number
     contributionsTotal: number
   }
@@ -1349,21 +1358,26 @@ async function main(): Promise<void> {
   // Before the exclusive assignment rule, Margaux Kelly's 49 undated rows from
   // Mark Farrell for Mayor 2024 ($48,600.16) were counted in BOTH her Sep–Nov 2024
   // and Dec 2024–Feb 2025 quarters, because the filing window overlapped both.
+  // Keyed on (filerNid, transaction_id) ACROSS consultants, not per consultant:
+  // one committee's payment can be caught by two consultants' payee patterns —
+  // the Stearns/Rough House and KMM/Kully Hall families are exactly the shape
+  // that would collide — and counting it under both is the same dollar twice.
+  // Zero shared rows today; the gate exists so the first one stops the build.
   const seenTx = new Map<string, string>()
   const doubleCounted: string[] = []
   for (const [consultantId, pairs] of pairsByConsultant) {
     for (const p of pairs) {
       for (const tx of p.undatedTransactionIds) {
-        const k = `${consultantId}::${p.filerNid}::${tx}`
+        const k = `${p.filerNid}::${tx}`
         const prior = seenTx.get(k)
-        if (prior) doubleCounted.push(`${k} in ${prior} and ${p.periodStart}`)
-        else seenTx.set(k, p.periodStart)
+        if (prior) doubleCounted.push(`${k} in ${prior} and ${consultantId}/${p.periodStart}`)
+        else seenTx.set(k, `${consultantId}/${p.periodStart}`)
       }
     }
   }
   gate(
     doubleCounted.length === 0,
-    `G8 undated exclusivity — ${seenTx.size} undated Schedule E row(s) assigned, each to exactly one period` +
+    `G8 undated exclusivity — ${seenTx.size} undated Schedule E row(s) assigned, each to exactly one consultant-period` +
       (doubleCounted.length ? ` (double-counted: ${doubleCounted.slice(0, 5).join(' · ')})` : '')
   )
 
@@ -1846,6 +1860,7 @@ async function main(): Promise<void> {
       schG: round2(consultants.reduce((s, c) => s + c.totals.schG, 0)),
       receipts: receipts.length,
       pairs: consultants.reduce((s, c) => s + c.reconciliation.length, 0),
+      exactMatchPairs: consultants.flatMap((c) => c.reconciliation).filter((p) => p.exactMatch).length,
       contributionsMatched: matchedCount,
       contributionsTotal: allMatches.length,
     },
@@ -1899,7 +1914,11 @@ async function main(): Promise<void> {
   console.log(`  latest filings       ${latestKept.length} (of ${parentAll.length} raw)`)
   console.log(`  receipts             ${artifact.totals.receipts}`)
   console.log(`  reconciliation pairs ${artifact.totals.pairs}`)
-  console.log(`  exact-match pairs    ${consultants.flatMap((c) => c.reconciliation).filter((p) => p.exactMatch).length}`)
+  const pairsAll = consultants.flatMap((c) => c.reconciliation)
+  console.log(
+    `  exact-match pairs    ${artifact.totals.exactMatchPairs} of ${pairsAll.filter((p) => p.status === 'reconciled' && p.reported > 0).length} comparable` +
+      ` (${pairsAll.filter((p) => p.status !== 'reconciled').length} not comparable, ${pairsAll.filter((p) => p.status === 'reconciled' && p.reported === 0).length} nothing reported)`
+  )
   console.log(`  committees           ${committees.length}`)
   console.log(`  unresolved clients   ${unresolvedClients.length} (${money(unresolvedClients.reduce((s, u) => s + u.reported, 0))})`)
   console.log(`  reported (all)       ${money(artifact.totals.reportedAll)}`)

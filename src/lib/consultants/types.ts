@@ -148,6 +148,12 @@ export interface ReconPair {
    * A null ratio is the honest reading — a 0.00 would assert an omission.
    */
   ratio: number | null;
+  /**
+   * Both ledgers agree to within a dollar. True ONLY when the comparison is
+   * sound and there is money on the consultant's side — a `no-payee-ledger` or
+   * `period-impossible` pair can never be an exact match, and $0 against $0 is
+   * two absences, not an agreement.
+   */
   exactMatch: boolean;
   rowsE: number;
   /**

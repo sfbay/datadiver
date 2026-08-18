@@ -214,7 +214,11 @@ export function reconcile(
       schEUndatedAssigned,
       schG,
       ratio: status === 'reconciled' && reported > 0 ? schE / reported : null,
-      exactMatch: Math.abs(schE - reported) < 1,
+      // An exact match is a CLAIM that two independently filed ledgers agree, so
+      // it is withheld wherever the comparison itself is not sound: a null-ratio
+      // pair (no payee ledger, impossible window) must never also publish
+      // exactMatch true, and 0 === 0 is the absence of both sides, not agreement.
+      exactMatch: status === 'reconciled' && reported > 0 && Math.abs(schE - reported) < 1,
       rowsE,
       status,
       committeeHasScheduleE: ledger,

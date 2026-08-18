@@ -192,6 +192,41 @@ describe('reconcile', () => {
     expect(pair.exactMatch).toBe(false);
   });
 
+  it('flags exactMatch false for $0 against $0 — two absences are not an agreement', () => {
+    // A consultant reporting nothing, matched against a committee that paid
+    // nothing in that window, satisfies |schE - reported| < 1 arithmetically.
+    // Publishing it as an exact match would inflate the headline "N pairs agree
+    // to the dollar" with pairs where neither side has anything to agree about.
+    const [pair] = reconcile([receipt({ reported: 0 })], [], {});
+
+    expect(pair.reported).toBe(0);
+    expect(pair.schE).toBe(0);
+    expect(pair.exactMatch).toBe(false);
+    expect(pair.ratio).toBeNull();
+  });
+
+  it('flags exactMatch false when there is no payee ledger, even at $0 vs $0', () => {
+    // Otherwise the same pair publishes `ratio: null, status: 'no-payee-ledger'`
+    // AND `exactMatch: true` — a contradiction in one object.
+    const [pair] = reconcile([receipt({ reported: 0 })], [], {}, { '1450577': false });
+
+    expect(pair.status).toBe('no-payee-ledger');
+    expect(pair.ratio).toBeNull();
+    expect(pair.exactMatch).toBe(false);
+  });
+
+  it('flags exactMatch false on an impossible reporting window even when the sums agree', () => {
+    const [pair] = reconcile(
+      [receipt({ reported: 500, periodImpossible: true })],
+      [expRow({ transaction_date: '2024-10-01', transaction_amount_1: '500' })],
+      {}
+    );
+
+    expect(pair.status).toBe('period-impossible');
+    expect(pair.schE).toBe(500);
+    expect(pair.exactMatch).toBe(false);
+  });
+
   it('skips receipts with a null filerNid', () => {
     const receipts = [receipt({ filerNid: null, reported: 500 })];
 
