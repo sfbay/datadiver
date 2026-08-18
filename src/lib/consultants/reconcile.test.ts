@@ -1,0 +1,259 @@
+import { describe, it, expect } from 'vitest';
+import { reconcile, matchContributions } from './reconcile';
+import type { Receipt, PitqExpRow, ContributionRow, PitqRcptRow } from './types';
+
+function receipt(overrides: Partial<Receipt>): Receipt {
+  return {
+    consultantId: 'kazin',
+    clientString: 'Safer SF for Farrell',
+    filerNid: '1450577',
+    periodStart: '2024-09-01',
+    periodEnd: '2024-11-30',
+    reportType: 'Quarterly Report',
+    envelope: 'env-default',
+    reported: 100,
+    ...overrides,
+  };
+}
+
+function expRow(overrides: Partial<PitqExpRow>): PitqExpRow {
+  return {
+    filer_nid: '1450577',
+    form_type: 'E',
+    record_type: 'EXPN',
+    ...overrides,
+  };
+}
+
+describe('reconcile', () => {
+  it('sums only Schedule E rows whose transaction_date falls within the window', () => {
+    const receipts = [receipt({ reported: 300 })];
+    const exp = [
+      expRow({ transaction_date: '2024-09-15', transaction_amount_1: '100' }),
+      expRow({ transaction_date: '2024-11-01', transaction_amount_1: '200' }),
+      expRow({ transaction_date: '2024-12-15', transaction_amount_1: '9999' }), // outside window
+    ];
+
+    const [pair] = reconcile(receipts, exp, {});
+
+    expect(pair.schE).toBe(300);
+    expect(pair.rowsE).toBe(2);
+  });
+
+  it('assigns an undated E row by filing-period overlap and reports it separately', () => {
+    const receipts = [receipt({ reported: 100 })];
+    const exp = [
+      expRow({
+        transaction_amount_1: '75',
+        start_date: '2024-10-01',
+        end_date: '2024-12-31',
+        // no transaction_date
+      }),
+    ];
+
+    const [pair] = reconcile(receipts, exp, {});
+
+    expect(pair.schE).toBe(75);
+    expect(pair.schEUndatedAssigned).toBe(75);
+    expect(pair.rowsE).toBe(1);
+  });
+
+  it('does not assign an undated E row whose filing period does not overlap', () => {
+    const receipts = [receipt({ reported: 100 })];
+    const exp = [
+      expRow({
+        transaction_amount_1: '75',
+        start_date: '2025-01-01',
+        end_date: '2025-03-31',
+      }),
+    ];
+
+    const [pair] = reconcile(receipts, exp, {});
+
+    expect(pair.schE).toBe(0);
+    expect(pair.schEUndatedAssigned).toBe(0);
+  });
+
+  it('keeps Schedule G rows out of schE, summed only into schG', () => {
+    const receipts = [receipt({ reported: 100 })];
+    const exp = [
+      expRow({ form_type: 'G', transaction_date: '2024-10-01', transaction_amount_1: '50' }),
+    ];
+
+    const [pair] = reconcile(receipts, exp, {});
+
+    expect(pair.schG).toBe(50);
+    expect(pair.schE).toBe(0);
+  });
+
+  it('ignores Schedule F rows entirely', () => {
+    const receipts = [receipt({ reported: 100 })];
+    const exp = [
+      expRow({ form_type: 'F', transaction_date: '2024-10-01', transaction_amount_1: '50' }),
+    ];
+
+    const [pair] = reconcile(receipts, exp, {});
+
+    expect(pair.schE).toBe(0);
+    expect(pair.schG).toBe(0);
+  });
+
+  it('reports ratio null when reported is 0', () => {
+    const receipts = [receipt({ reported: 0 })];
+    const exp = [expRow({ transaction_date: '2024-10-01', transaction_amount_1: '50' })];
+
+    const [pair] = reconcile(receipts, exp, {});
+
+    expect(pair.reported).toBe(0);
+    expect(pair.ratio).toBeNull();
+  });
+
+  it('computes ratio when reported is positive', () => {
+    const receipts = [receipt({ reported: 200 })];
+    const exp = [expRow({ transaction_date: '2024-10-01', transaction_amount_1: '100' })];
+
+    const [pair] = reconcile(receipts, exp, {});
+
+    expect(pair.ratio).toBe(0.5);
+  });
+
+  it('flags exactMatch true when |schE - reported| < 1', () => {
+    const receipts = [receipt({ reported: 100.4 })];
+    const exp = [expRow({ transaction_date: '2024-10-01', transaction_amount_1: '100' })];
+
+    const [pair] = reconcile(receipts, exp, {});
+
+    expect(pair.exactMatch).toBe(true);
+  });
+
+  it('flags exactMatch false when |schE - reported| >= 1', () => {
+    const receipts = [receipt({ reported: 105 })];
+    const exp = [expRow({ transaction_date: '2024-10-01', transaction_amount_1: '100' })];
+
+    const [pair] = reconcile(receipts, exp, {});
+
+    expect(pair.exactMatch).toBe(false);
+  });
+
+  it('skips receipts with a null filerNid', () => {
+    const receipts = [receipt({ filerNid: null, reported: 500 })];
+
+    const pairs = reconcile(receipts, [], {});
+
+    expect(pairs).toHaveLength(0);
+  });
+
+  it('sums reported across multiple receipts in the same (consultant, filer, periodStart) group', () => {
+    const receipts = [
+      receipt({ clientString: 'Client A', reported: 100, envelope: 'env-a' }),
+      receipt({ clientString: 'Client B', reported: 150, envelope: 'env-b' }),
+    ];
+
+    const pairs = reconcile(receipts, [], {});
+
+    expect(pairs).toHaveLength(1);
+    expect(pairs[0].reported).toBe(250);
+  });
+
+  it('carries committeeCompleteThrough from the lookup table by filerNid', () => {
+    const receipts = [receipt({ filerNid: '1450577' })];
+
+    const [pair] = reconcile(receipts, [], { '1450577': '2025-01-15' });
+
+    expect(pair.committeeCompleteThrough).toBe('2025-01-15');
+  });
+});
+
+function contribRow(overrides: Partial<ContributionRow>): ContributionRow {
+  return {
+    envelope_id: 'env-default',
+    entry_id: 'entry-1',
+    filingseries: 'series-default',
+    contributionlist_contrecipientname: 'Safer SF for Farrell',
+    contributionlist_nameofcontributororclient: 'Jane Smith',
+    contributionlist_amountofcontribution: '500',
+    contributionlist_dateofcontribution: '2024-10-01',
+    ...overrides,
+  };
+}
+
+function rcptRow(overrides: Partial<PitqRcptRow>): PitqRcptRow {
+  return {
+    filer_nid: 'nid-farrell',
+    record_type: 'RCPT',
+    form_type: 'RCPT',
+    transaction_first_name: 'Jane',
+    transaction_last_name: 'Smith',
+    transaction_amount_1: '500',
+    transaction_date: '2024-10-05',
+    ...overrides,
+  };
+}
+
+const recipientNidOf = (name: string) => (name === 'Safer SF for Farrell' ? 'nid-farrell' : null);
+const noPrincipals = () => [] as string[];
+
+describe('matchContributions', () => {
+  it('matches exact: same recipient nid, equal amount, date within 30 d, contributor name subset of payee name', () => {
+    const rows = [contribRow({})];
+    const rcpt = [rcptRow({})];
+
+    const [result] = matchContributions(rows, recipientNidOf, rcpt, noPrincipals);
+
+    expect(result.matched).toBe('exact');
+    expect(result.recipientNid).toBe('nid-farrell');
+    expect(result.pitqTransactionDate).toBe('2024-10-05');
+  });
+
+  it('does not match exact when the date is more than 30 days apart', () => {
+    const rows = [contribRow({ contributionlist_dateofcontribution: '2024-08-01' })];
+    const rcpt = [rcptRow({ transaction_date: '2024-10-05' })];
+
+    const [result] = matchContributions(rows, recipientNidOf, rcpt, noPrincipals);
+
+    expect(result.matched).not.toBe('exact');
+  });
+
+  it('falls back to a principal-name match when the contributor name itself does not match', () => {
+    const rows = [contribRow({ contributionlist_nameofcontributororclient: 'Acme PAC' })];
+    const rcpt = [rcptRow({ transaction_first_name: 'Jane', transaction_last_name: 'Smith' })];
+    const principalOf = (contributor: string) =>
+      contributor === 'Acme PAC' ? ['Jane Smith'] : [];
+
+    const [result] = matchContributions(rows, recipientNidOf, rcpt, principalOf);
+
+    expect(result.matched).toBe('principal');
+  });
+
+  it('reports below-threshold for contributions under $100', () => {
+    const rows = [
+      contribRow({
+        contributionlist_amountofcontribution: '40',
+        contributionlist_nameofcontributororclient: 'Nobody Matching',
+      }),
+    ];
+    const rcpt = [rcptRow({ transaction_amount_1: '999', transaction_first_name: 'Other', transaction_last_name: 'Person' })];
+
+    const [result] = matchContributions(rows, recipientNidOf, rcpt, noPrincipals);
+
+    expect(result.matched).toBe('below-threshold');
+  });
+
+  it('reports recipient-not-in-pitq when the recipient cannot be resolved to a filer nid', () => {
+    const rows = [contribRow({ contributionlist_contrecipientname: 'Unknown Committee' })];
+
+    const [result] = matchContributions(rows, recipientNidOf, [], noPrincipals);
+
+    expect(result.matched).toBe('recipient-not-in-pitq');
+    expect(result.recipientNid).toBeNull();
+  });
+
+  it('reports unmatched when the recipient resolves but no candidate row lines up', () => {
+    const rows = [contribRow({ contributionlist_amountofcontribution: '500' })];
+    const rcpt = [rcptRow({ transaction_amount_1: '12345' })];
+
+    const [result] = matchContributions(rows, recipientNidOf, rcpt, noPrincipals);
+
+    expect(result.matched).toBe('unmatched');
+  });
+});
