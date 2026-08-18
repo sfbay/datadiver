@@ -507,8 +507,7 @@ dataset and is therefore not an artifact of the seam.
 **Source:** DataSF (Socrata), Ethics Commission e-filings — parent `iv34-5p9x` (Campaign Consultant Report, forms
 1/2/3/6) + 8 child tables joined on `envelope_id` + the stand-alone `acwz-2ua3` (Client Authorization & Termination).
 Cross-checked against the committee side of the ledger, `pitq-e56w` (SF Ethics campaign-finance filings — the same
-dataset CampaignFinance already reads). Recon memo: `docs/recon/2026-08-14-sfec-campaign-consultant-family.md` (on
-branch `docs/sfec-consultant-recon`). Generator: `scripts/build-consultant-recon.ts` (`pnpm build:consultants`),
+dataset CampaignFinance already reads). Recon memo: `docs/recon/2026-08-14-sfec-campaign-consultant-family.md`. Generator: `scripts/build-consultant-recon.ts` (`pnpm build:consultants`),
 committed artifact `public/data/consultants/reconciliation.json`, tests in `src/lib/consultants/*.test.ts` +
 `src/cities/sf/consultants/crosswalks.test.ts`.
 
@@ -519,11 +518,11 @@ Every time a consultant signs a form through DocuSign it creates one **envelope*
 Envelopes describing the same underlying report are grouped by **`filingseries`**, a string the filer's own software
 assembles from the consultant's typed name, the report type, and the reporting period's start date. The
 **latest-version rule** — keep the row with `MAX(datesigned)` per `filingseries` — is the correct way to collapse
-versions, and it is exact: surviving rows always equal the count of distinct series (241 of 260 raw rows after
-exclusion). **Its caveat is structural, not a bug to fix:** because `filingseries` embeds the filer's own name
+versions, and it is exact: surviving rows always equal the count of distinct series (254 of 260 raw rows — six
+superseded envelopes). **Its caveat is structural, not a bug to fix:** because `filingseries` embeds the filer's own name
 spelling and period-start typing, a filer who retypes either one lands the new envelope in a *different* series, and
-the old one survives beside it instead of being superseded. Amendment checkboxes can't be trusted either — several
-rows marked "Original" carry an `originalfilingdate`, and several marked "Amendment" don't move any figure. Detection
+the old one survives beside it instead of being superseded. Amendment checkboxes can't be trusted either — four
+rows marked "Original" carry an `originalfilingdate`, and one marked "Amendment" changes no figure. Detection
 has to be structural (grouping + dates), never the filer's own flag.
 
 ### Same-report duplicates hide behind a name change or a mis-keyed year — four are authored corrections, not detected
@@ -580,14 +579,14 @@ of who it paid) for the same consultant, in the same reporting window. Of 160 to
 comparable (a real reported figure, a real payee ledger to check against); of those, **50 agree to the dollar** —
 `exactMatch` is defined strictly (`status === 'reconciled' && reported > 0 && |schE − reported| < 1`) so a $0-vs-$0
 pair, which is two absences agreeing with nothing, never counts as a match. Six pairs are marked structurally
-uncertain rather than scored: five committees file no Schedule E at all (`status: 'no-payee-ledger'`, `ratio: null` —
-a 0.00 that would otherwise read as total omission), and Sweiss's impossible-period filing (above) keeps its dollar
+uncertain rather than scored: three committees (five pairs) file no Schedule E at all (`status: 'no-payee-ledger'`,
+`ratio: null` — a 0.00 that would otherwise read as total omission), and Sweiss's impossible-period filing (above) keeps its dollar
 sum but drops its ratio.
 
 Where the two sides disagree, it is almost always **timing or accounting basis, not omission**: the consultant side
 publishes ~40 seconds after a DocuSign signature; the committee side lands on the FPPC filing calendar plus a
 nightly export, so the newest quarter on the consultant side can look like an omission simply because the committee
-hasn't filed yet. Six of 571 Schedule E rows carry no transaction date at all — assigned exclusively to the single
+hasn't filed yet. Seventy-four Schedule E rows in the artifact carry no transaction date at all — each assigned exclusively to the single
 reporting period with the largest date overlap (gate **G8**; no dollar is ever double-counted into two periods). The
 committee-completeness cutoff (`completeThrough`) is computed only over a committee's Schedule-E-bearing filings, not
 its whole filing history, so an F496-only filer with an empty payee ledger doesn't read as falsely "caught up." The
