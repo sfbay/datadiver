@@ -562,8 +562,8 @@ postdates the period start, will silently misdate real money.
 ### There are no ids anywhere in this family — every join is a hand-authored crosswalk with disclosed confidence
 
 `columns.json` for every table in the family carries no FPPC id, no committee id, nothing but `envelope_id`/`entry_id`
-and free text. Two committed crosswalks do the joining SFEC's own data can't: a **consultant-alias table** (90 raw
-name spellings → ~71 real consultants, including DBA bridges like Daniel Kazin ↔ payee "Canal Partners Media" and
+and free text. Two committed crosswalks do the joining SFEC's own data can't: a **consultant-alias table** (87 raw
+name spellings in the deduped working set → 68 consultants — 45 alias-resolved, 23 mechanical; including DBA bridges like Daniel Kazin ↔ payee "Canal Partners Media" and
 KMM Strategies ↔ payee "Kully Hall LLC") and a **client-string → `filer_nid`** map (118 distinct client strings
 resolved to SF Ethics committee ids). Each resolved row carries a `class` — `committee`/`state`/`resolved-by-money`
 (all three carry a `filerNid`) or `candidate-only`/`unresolved` (neither does, by rule, so an unmatched client is
@@ -586,7 +586,13 @@ sum but drops its ratio.
 Where the two sides disagree, it is almost always **timing or accounting basis, not omission**: the consultant side
 publishes ~40 seconds after a DocuSign signature; the committee side lands on the FPPC filing calendar plus a
 nightly export, so the newest quarter on the consultant side can look like an omission simply because the committee
-hasn't filed yet. Seventy-four Schedule E rows in the artifact carry no transaction date at all — each assigned exclusively to the single
+hasn't filed yet. Two more mechanisms produce a `schE: 0` pair that is NOT an omission, and a lens must say so before
+it renders a zero: **the matching payment is dated just past the window edge** (Democratic Direct's Dec 2025–Feb 2026
+receipt of $30,678.91 appears in the committee's ledger to the cent — dated 2026-03-05, one week outside the
+consultant's stated period; Thematic, Ground Floor and Stearns show the same shape), and **payroll or sub-vendor
+routing** that makes an individual consultant structurally invisible on Schedule E (Dean Preston's committee pays
+staff through Gusto, a payroll processor, so 'Avery Yu' can never appear as a payee there). Sampling the 19
+`ratio: 0` pairs found these two shapes, not committee silence, in every case checked. Seventy-four Schedule E rows in the artifact carry no transaction date at all — each assigned exclusively to the single
 reporting period with the largest date overlap (gate **G8**; no dollar is ever double-counted into two periods). The
 committee-completeness cutoff (`completeThrough`) is computed only over a committee's Schedule-E-bearing filings, not
 its whole filing history, so an F496-only filer with an empty payee ledger doesn't read as falsely "caught up." The

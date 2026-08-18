@@ -430,7 +430,7 @@ export const EXCLUDED_ENVELOPES: { envelope: string; reason: string }[] = [
   {
     envelope: '89f7b62b-be1f-4fc4-900a-22aba667b59c',
     reason:
-      "Junk filing — 'Law enforcement protection' Initial Registration (datesigned 2025-12-10): a fantasy business address (Inverness / Shetland / 'Virgin Islands 42800'), a $600 'Watches' gift to a named private individual, and the code of conduct declined. Neither the address nor the gift recipient's name is reproduced — the redaction rule holds even for a junk filer, and this is a Person-type filing naming a person who never consented to appear in a civic dataset.",
+      "Junk filing — 'Law enforcement protection' Initial Registration (datesigned 2025-12-10): a plainly fictional business address (a Scottish-islands / 'Virgin Islands' mash-up), a $600 'Watches' gift to a named private individual, and the code of conduct declined. The address is described rather than quoted and the gift recipient's name is not reproduced — the redaction rule holds even for a junk filer, and this is a Person-type filing naming a person who never consented to appear in a civic dataset.",
   },
   {
     envelope: 'c99a90cf-9699-4669-ae9e-4202212061b4',
