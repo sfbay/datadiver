@@ -19,6 +19,16 @@
 
 **⇒ Phase A + B COMPLETE. 787 tests green, tsc + build clean, no SF regression. The census JSON fixtures now exist, so Phase C is UNBLOCKED.**
 
+**⇒ PLAN COMPLETE — MERGED Aug 11 2026.** Phase C ran as 4 SDD units (C1 gate+flip · C2 view ·
+C3 manifest+⌘K · C4 disclosure), each with independent review + fix round, plus a final
+whole-branch review (4 cross-cutting fixes) and a browser pass. Merged as PR #156 (squash
+`5e79b43`); follow-ups #157 (SF six-rate rollup) + #158 (tract-404200 override) merged same day.
+Final: 93 test files / 865 tests. As-built deltas from this plan: Task 8's `useCensusResolution`
+work DROPPED (dead code, zero importers); Task 3's flip shipped behind the new
+`censusMatchesAreas` predicate (5 gate sites unified); tract count ended 111 (not 110) after the
+measured 404200 override; coverage figures superseded the "~96%" estimate (110→111 of 117
+in-city tracts, named exclusions). Ledger: `.superpowers/sdd/2026-08-11-oakland-demographics-5a/`.
+
 **Remaining (post-key "light it up" unit — the subagent-driven Phase C):** Task 7 run (+ its `--city oakland` script branch) → flip Oakland `census` on + `registry.test.ts` re-pin → Task 8 (city-aware `useCensusData` + region tier) → Task 9 (de-SF Demographics + region underlay) → Task 10 (manifest) → Task 11 (names label+search) → Task 12 (disclosure). All need the census JSON present to build/verify, so they stay parked until the key lands.
 
 ## Global Constraints
