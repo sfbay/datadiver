@@ -8,6 +8,8 @@ export interface ElectionCycle {
 }
 
 export const SF_ELECTIONS: ElectionCycle[] = [
+  // Nov cycles run from Jan 1 of the election year (house convention — overlaps the June window on purpose, as Nov 2024 / Mar 2024 do).
+  { label: 'Nov 2026',  date: '2026-11-03', start: '2026-01-01', end: '2026-11-03' },
   { label: 'June 2026', date: '2026-06-02', start: '2025-07-01', end: '2026-06-02' },
   { label: 'Nov 2024',  date: '2024-11-05', start: '2024-01-01', end: '2024-11-05' },
   { label: 'Mar 2024',  date: '2024-03-05', start: '2023-07-01', end: '2024-03-05' },

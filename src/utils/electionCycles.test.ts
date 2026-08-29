@@ -35,6 +35,13 @@ describe('OAKLAND_ELECTIONS', () => {
     expect(cityElections('sf')).toBe(SF_ELECTIONS)
     expect(cityElections('oakland')).toBe(OAKLAND_ELECTIONS)
   })
+  it('SF table is newest-first and Nov 2026 → prior Nov 2024', () => {
+    expect(SF_ELECTIONS[0].label).toBe('Nov 2026')
+    for (let i = 0; i < SF_ELECTIONS.length - 1; i++) {
+      expect(SF_ELECTIONS[i].date > SF_ELECTIONS[i + 1].date, SF_ELECTIONS[i].label).toBe(true)
+    }
+    expect(findPriorCycle(SF_ELECTIONS[0])?.label).toBe('Nov 2024')
+  })
   it('SF defaults untouched: no-arg calls still read SF_ELECTIONS', () => {
     expect(getDefaultCycle().label).toBe(getDefaultCycle(SF_ELECTIONS).label)
     const nov24sf = SF_ELECTIONS.find((c) => c.label === 'Nov 2024')!
