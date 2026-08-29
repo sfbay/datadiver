@@ -42,6 +42,17 @@ describe('OAKLAND_ELECTIONS', () => {
     }
     expect(findPriorCycle(SF_ELECTIONS[0])?.label).toBe('Nov 2024')
   })
+  it('SF Nov cycles tile after a same-year spring election; Nov 2019 (no spring) keeps Jan 1', () => {
+    for (const c of SF_ELECTIONS) {
+      if (!c.label.startsWith('Nov')) continue
+      const year = c.date.slice(0, 4)
+      const spring = SF_ELECTIONS.find((s) => !s.label.startsWith('Nov') && s.date.startsWith(year))
+      if (!spring) { expect(c.start, c.label).toBe(`${year}-01-01`); continue }
+      const dayAfter = new Date(spring.date + 'T12:00:00Z')
+      dayAfter.setUTCDate(dayAfter.getUTCDate() + 1)
+      expect(c.start, c.label).toBe(dayAfter.toISOString().slice(0, 10))
+    }
+  })
   it('SF defaults untouched: no-arg calls still read SF_ELECTIONS', () => {
     expect(getDefaultCycle().label).toBe(getDefaultCycle(SF_ELECTIONS).label)
     const nov24sf = SF_ELECTIONS.find((c) => c.label === 'Nov 2024')!
