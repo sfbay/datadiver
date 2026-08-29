@@ -29,6 +29,8 @@ export interface FppcQueryBuilders {
   nullDateDisclosure(): FppcQuerySpec | null
 }
 
+const SF_DONOR_GROUP = 'transaction_first_name, transaction_last_name, transaction_city, transaction_state, transaction_zip, entity_code'
+
 function esc(v: string): string {
   return v.replace(/'/g, "''")
 }
@@ -78,10 +80,12 @@ const SF_BUILDERS: FppcQueryBuilders = {
     $select: 'entity_code, SUM(calculated_amount) as total, COUNT(*) as cnt',
     $where: `form_type='A' AND ${SF_BUILDERS.filerWhere(nid)} AND ${dw('calculated_date', s, e)}`,
     $group: 'entity_code' } }),
+  // Grouped on the whole identity. Grouping on last name alone merged every
+  // "Chan" (and every "Jones") into one bar — a wrong ranking, not a thin one.
   topDonors: (nid, s, e) => ({ datasetKey: CF, params: {
-    $select: 'transaction_last_name, SUM(calculated_amount) as total',
+    $select: `${SF_DONOR_GROUP}, MAX(transaction_employer) as employer, MAX(transaction_occupation) as occupation, COUNT(*) as gifts, MIN(calculated_date) as first_date, MAX(calculated_date) as last_date, SUM(calculated_amount) as total`,
     $where: `form_type='A' AND ${SF_BUILDERS.filerWhere(nid)} AND ${dw('calculated_date', s, e)}`,
-    $group: 'transaction_last_name', $order: 'total DESC', $limit: 10 } }),
+    $group: SF_DONOR_GROUP, $order: 'total DESC', $limit: 10 } }),
   entityTimeline: (nid, s, e) => ({ datasetKey: CF, params: {
     $select: 'date_trunc_ym(calculated_date) as period, SUM(calculated_amount) as total',
     $where: `form_type='A' AND ${SF_BUILDERS.filerWhere(nid)} AND ${dw('calculated_date', s, e)}`,
@@ -145,9 +149,9 @@ const OAK_BUILDERS: FppcQueryBuilders = {
     $select: 'entity_cd as entity_code, SUM(tran_amt1) as total, COUNT(*) as cnt',
     $where: `${OAK_BUILDERS.filerWhere(id)} AND ${dw('tran_date', s, e)}`, $group: 'entity_code' } }),
   topDonors: (id, s, e) => ({ datasetKey: 'fppcSchA', params: {
-    $select: 'tran_naml as transaction_last_name, SUM(tran_amt1) as total',
+    $select: 'tran_namf as transaction_first_name, tran_naml as transaction_last_name, tran_city as transaction_city, tran_state as transaction_state, tran_zip4 as transaction_zip, entity_cd as entity_code, MAX(tran_emp) as employer, MAX(tran_occ) as occupation, COUNT(*) as gifts, MIN(tran_date) as first_date, MAX(tran_date) as last_date, SUM(tran_amt1) as total',
     $where: `${OAK_BUILDERS.filerWhere(id)} AND ${dw('tran_date', s, e)}`,
-    $group: 'transaction_last_name', $order: 'total DESC', $limit: 10 } }),
+    $group: 'tran_namf, tran_naml, tran_city, tran_state, tran_zip4, entity_cd', $order: 'total DESC', $limit: 10 } }),
   entityTimeline: (id, s, e) => ({ datasetKey: 'fppcSchA', params: {
     $select: 'date_trunc_ym(tran_date) as period, SUM(tran_amt1) as total',
     $where: `${OAK_BUILDERS.filerWhere(id)} AND ${dw('tran_date', s, e)}`,
