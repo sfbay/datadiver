@@ -16,6 +16,7 @@ import TopRecipientsChart, { type RecipientDatum, formatCurrency } from '@/compo
 import ContributionTimeline from '@/components/charts/ContributionTimeline'
 import FundingSourcesChart, { buildSourceData } from '@/components/charts/FundingSourcesChart'
 import ForAgainstSplit from '@/components/charts/ForAgainstSplit'
+import FunderList, { funderFromDonorRow } from '@/components/charts/FunderList'
 import type { CampaignFilerAggRow } from '@/types/datasets'
 
 export default function CampaignFinance() {
@@ -293,18 +294,8 @@ export default function CampaignFinance() {
                         />
                       ) : (
                         detail.topDonors.length > 0 && (
-                          <div className="glass-card rounded-xl p-4">
-                            <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 mb-2">
-                              Top Donors
-                            </p>
-                            <div className="space-y-1">
-                              {detail.topDonors.map((d, i) => (
-                                <div key={i} className="flex justify-between text-micro">
-                                  <span className="text-slate-600 dark:text-slate-300 truncate max-w-[70%]">{d.transaction_last_name}</span>
-                                  <span className="font-mono text-slate-400">{formatCurrency(parseFloat(d.total) || 0)}</span>
-                                </div>
-                              ))}
-                            </div>
+                          <div className="glass-card rounded-xl p-4 [&>div>div:first-child]:mt-0">
+                            <FunderList label="Top Donors" funders={detail.topDonors.map(funderFromDonorRow)} color="#8b6282" />
                           </div>
                         )
                       )}

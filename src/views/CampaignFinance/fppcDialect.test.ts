@@ -47,9 +47,11 @@ describe('SF builders — byte-pins against the pre-dialect hook literals', () =
     expect(b.sourceBreakdown("O'Brien", S, E)).toEqual({ datasetKey: 'campaignFinance', params: {
       $select: 'entity_code, SUM(calculated_amount) as total, COUNT(*) as cnt',
       $where: `form_type='A' AND ${FW} AND ${DW}`, $group: 'entity_code' } })
+    // Full-identity grouping (name + city + ZIP + entity) — last-name-only merged distinct people.
+    const G = 'transaction_first_name, transaction_last_name, transaction_city, transaction_state, transaction_zip, entity_code'
     expect(b.topDonors("O'Brien", S, E)).toEqual({ datasetKey: 'campaignFinance', params: {
-      $select: 'transaction_last_name, SUM(calculated_amount) as total',
-      $where: `form_type='A' AND ${FW} AND ${DW}`, $group: 'transaction_last_name',
+      $select: `${G}, MAX(transaction_employer) as employer, MAX(transaction_occupation) as occupation, COUNT(*) as gifts, MIN(calculated_date) as first_date, MAX(calculated_date) as last_date, SUM(calculated_amount) as total`,
+      $where: `form_type='A' AND ${FW} AND ${DW}`, $group: G,
       $order: 'total DESC', $limit: 10 } })
     expect(b.entityTimeline("O'Brien", S, E)).toEqual({ datasetKey: 'campaignFinance', params: {
       $select: 'date_trunc_ym(calculated_date) as period, SUM(calculated_amount) as total',
@@ -105,6 +107,12 @@ describe('Oakland builders', () => {
       $select: 'expn_code as transaction_code, SUM(amount) as total',
       $where: "filer_id='123' AND expn_date >= '2024-01-01T00:00:00' AND expn_date <= '2024-11-05T23:59:59'",
       $group: 'transaction_code', $order: 'total DESC', $limit: 50 } })
+    const td = b.topDonors('123', S, E)
+    expect(td.datasetKey).toBe('fppcSchA')
+    expect(td.params.$group).toBe('tran_namf, tran_naml, tran_city, tran_state, tran_zip4, entity_cd')
+    expect(td.params.$select).toContain('tran_namf as transaction_first_name')
+    expect(td.params.$select).toContain('MAX(tran_emp) as employer')
+    expect(td.params.$where).toBe(`filer_id='123' AND ${ODW}`)
     expect(b.ieQueries('x', S, E)).toBeNull()
     expect(b.ballotNumberLookup('123', S, E)).toBeNull()
     expect(b.entityDonorGeo('123', S, E)).toBeNull()

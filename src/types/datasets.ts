@@ -586,8 +586,21 @@ export interface CampaignTimelineRow {
   total: string
 }
 
+/** One funder of a committee — grouped on the full identity (name + city + ZIP +
+ *  entity type), never last name alone (which merged every "Chan" into one bar). */
 export interface CampaignDonorRow {
+  transaction_first_name?: string
   transaction_last_name: string
+  transaction_city?: string
+  transaction_state?: string
+  transaction_zip?: string
+  /** IND person · COM committee · OTH business/other · PTY party · SCC small-contributor committee */
+  entity_code?: string
+  employer?: string
+  occupation?: string
+  gifts?: string
+  first_date?: string
+  last_date?: string
   total: string
 }
 
