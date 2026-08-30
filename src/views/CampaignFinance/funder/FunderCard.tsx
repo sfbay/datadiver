@@ -10,6 +10,7 @@ import { displayName } from '@/lib/funders/funderKey'
 import type { FunderBuilders } from '../fppcDialect'
 import FunderMasthead from './FunderMasthead'
 import FunderTiles from './FunderTiles'
+import YearStrip from './YearStrip'
 
 export default function FunderCard({ keyParam, fzip, builders, onClose, onSetZip }: {
   keyParam: string
@@ -19,8 +20,8 @@ export default function FunderCard({ keyParam, fzip, builders, onClose, onSetZip
   onSetZip: (zip: string | null) => void
 }) {
   const { profile, failed, isLoading, retry } = useFunderProfile(keyParam, fzip, builders)
-  // Owned here for Task 6's YearStrip (click-to-filter); unused until then —
-  // referenced via data-year below so the value isn't dead in the meantime.
+  // Owned here (not in YearStrip) so Task 7's Recipients/GiftList sections
+  // can narrow to the same selection.
   const [year, setYear] = useState<number | null>(null)
 
   // profile.gifts is entirely byYear-derived — a failed byYear also reads
@@ -82,7 +83,21 @@ export default function FunderCard({ keyParam, fzip, builders, onClose, onSetZip
 
         {profile && <FunderTiles profile={profile} failed={failed} retry={retry} />}
 
-        {/* Task 6: YearStrip */}
+        {profile && !isEmpty && !failed.includes('byYear') && (
+          <>
+            <YearStrip years={profile.byYear} selected={year} onSelect={setYear} />
+            {year !== null && (
+              <button
+                type="button"
+                onClick={() => setYear(null)}
+                className="mt-1 text-nano font-mono uppercase tracking-widest text-slate-400 hover:text-plum-500 dark:hover:text-plum-400 transition-colors"
+              >
+                all years ×
+              </button>
+            )}
+          </>
+        )}
+
         {/* Task 7: Recipients · FiledAs · GiftList · Footer */}
       </div>
     </DetailPanelShell>
