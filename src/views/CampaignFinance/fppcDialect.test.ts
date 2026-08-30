@@ -78,12 +78,75 @@ describe('SF builders — byte-pins against the pre-dialect hook literals', () =
   })
 })
 
+describe('SF funder builders — byte-pins (spec §3)', () => {
+  const b = fppcBuildersFor('sf')
+  const A = "record_type = 'RCPT' AND form_type IN ('A','C')"
+  const NOTICE = "record_type IN ('S497','RCPT') AND form_type IN ('F497P1','F496P3')"
+  const N_PERSON = "upper(transaction_first_name) = 'MICHAEL' AND upper(transaction_last_name) = 'MORITZ'"
+  const N_ORG = "transaction_first_name IS NULL AND upper(transaction_last_name) = 'NEIGHBORS FOR A BETTER SAN FRANCISCO'"
+  const VARIANTS_GROUP = 'transaction_first_name, transaction_last_name, transaction_city, transaction_state, transaction_zip, transaction_employer, transaction_occupation, entity_code'
+
+  it('funder is present on SF builders', () => {
+    expect(b.funder).not.toBeNull()
+  })
+
+  it('variants — person form', () => {
+    expect(b.funder!.variants('MICHAEL', 'MORITZ')).toEqual({ datasetKey: 'campaignFinance', params: {
+      $select: `${VARIANTS_GROUP}, COUNT(*) as gifts, SUM(calculated_amount) as total`,
+      $where: `${A} AND ${N_PERSON}`,
+      $group: VARIANTS_GROUP, $limit: 200 } })
+  })
+
+  it('variants — org form (first === "" → IS NULL)', () => {
+    expect(b.funder!.variants('', 'NEIGHBORS FOR A BETTER SAN FRANCISCO')).toEqual({ datasetKey: 'campaignFinance', params: {
+      $select: `${VARIANTS_GROUP}, COUNT(*) as gifts, SUM(calculated_amount) as total`,
+      $where: `${A} AND ${N_ORG}`,
+      $group: VARIANTS_GROUP, $limit: 200 } })
+  })
+
+  it('byYear', () => {
+    expect(b.funder!.byYear('MICHAEL', 'MORITZ')).toEqual({ datasetKey: 'campaignFinance', params: {
+      $select: 'date_extract_y(calculated_date) as y, form_type, COUNT(*) as gifts, SUM(calculated_amount) as total',
+      $where: `${A} AND ${N_PERSON}`,
+      $group: 'y, form_type' } })
+  })
+
+  it('recipients', () => {
+    expect(b.funder!.recipients('MICHAEL', 'MORITZ')).toEqual({ datasetKey: 'campaignFinance', params: {
+      $select: 'filer_nid, filer_name, filer_type, COUNT(*) as gifts, SUM(calculated_amount) as total, MIN(calculated_date) as first_date, MAX(calculated_date) as last_date',
+      $where: `${A} AND ${N_PERSON}`,
+      $group: 'filer_nid, filer_name, filer_type', $order: 'total DESC', $limit: 500 } })
+  })
+
+  it('gifts — with fzip narrowing (LIKE appended)', () => {
+    expect(b.funder!.gifts('MICHAEL', 'MORITZ', '94103')).toEqual({ datasetKey: 'campaignFinance', params: {
+      $select: 'transaction_id, calculated_date, calculated_amount, form_type, filer_nid, filer_name, filer_type, transaction_zip, transaction_employer',
+      $where: `${A} AND ${N_PERSON} AND transaction_zip LIKE '94103%'`,
+      $order: 'calculated_date DESC', $limit: 5000 } })
+  })
+
+  it('notices', () => {
+    expect(b.funder!.notices('MICHAEL', 'MORITZ')).toEqual({ datasetKey: 'campaignFinance', params: {
+      $select: 'transaction_id, calculated_date, calculated_amount, form_type, filer_nid, filer_name, filer_type, transaction_zip, transaction_employer, record_type',
+      $where: `${NOTICE} AND ${N_PERSON}`,
+      $limit: 2000 } })
+  })
+
+  it('typeahead — folds + escapes q', () => {
+    expect(b.funder!.typeahead("o'br")).toEqual({ datasetKey: 'campaignFinance', params: {
+      $select: 'transaction_first_name, transaction_last_name, entity_code, MAX(transaction_city) as city, COUNT(*) as gifts, SUM(calculated_amount) as total',
+      $where: `${A} AND (upper(transaction_last_name) LIKE 'O''BR%' OR upper(transaction_first_name || ' ' || transaction_last_name) LIKE 'O''BR%')`,
+      $group: 'transaction_first_name, transaction_last_name, entity_code', $order: 'total DESC', $limit: 8 } })
+  })
+})
+
 describe('Oakland builders', () => {
   const b = fppcBuildersFor('oakland')
   const ODW = "tran_date >= '2024-01-01T00:00:00' AND tran_date <= '2024-11-05T23:59:59'"
   it('scope, freshness, and registry-real dataset keys', () => {
     expect(b.lateIEScope).toBe('view')
     expect(b.freshness).toEqual({ datasetKey: 'fppcSchA', dateField: 'tran_date' })
+    expect(b.funder).toBeNull()
     const keys = [
       b.totals(S, E), b.topRecipients(S, E), b.spendingCategories('X', S, E),
       b.lateIEByTarget(S, E)!, b.lateContribsSummary(S, E)!, b.nullDateDisclosure()!,
