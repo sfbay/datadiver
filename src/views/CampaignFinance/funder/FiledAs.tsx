@@ -3,6 +3,7 @@
 // when the common-name guard trips (§2), every filed variant still lists here
 // — the guard only adds the masthead warning + ZIP narrowing chips, it never
 // hides a row in this table. Sorted by dollars, muted register throughout.
+import { useState } from 'react'
 import { toSentenceCase } from '@/utils/format'
 import { formatCurrency } from '@/components/charts/TopRecipientsChart'
 import type { FunderVariant } from '@/lib/funders/types'
@@ -18,8 +19,15 @@ function jobLine(v: FunderVariant): string | null {
 }
 
 export default function FiledAs({ variants }: { variants: FunderVariant[] }) {
+  const [showAll, setShowAll] = useState(false)
   if (variants.length === 0) return null
-  const rows = [...variants].sort((a, b) => b.total - a.total)
+  const sorted = [...variants].sort((a, b) => b.total - a.total)
+  // Top rows by dollars stay visible; the long tail (Dolby files under ~20
+  // occupation/ZIP combinations) folds behind a turn-down. Never paged away —
+  // the guard and the count read the full set.
+  const FOLD = 5
+  const folded = !showAll && sorted.length > FOLD
+  const rows = folded ? sorted.slice(0, FOLD) : sorted
 
   return (
     <div className="mt-4">
@@ -62,6 +70,12 @@ export default function FiledAs({ variants }: { variants: FunderVariant[] }) {
           </tbody>
         </table>
       </div>
+      {sorted.length > FOLD && (
+        <button type="button" onClick={() => setShowAll((v) => !v)}
+          className="mt-1 text-nano font-mono uppercase tracking-widest text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+          {showAll ? 'show fewer ▴' : `+${sorted.length - FOLD} more filings ▾`}
+        </button>
+      )}
     </div>
   )
 }

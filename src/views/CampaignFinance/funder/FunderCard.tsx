@@ -228,7 +228,7 @@ export default function FunderCard({ keyParam, fzip, builders, onClose, onSetZip
               <RetryLine label="Recipients" section="recipients" failed={failed} retrying={retrying} retry={retry} mt="mt-3" />
             ) : (
               <>
-                <FunderList label="Recipients" color="#8b6282" funders={recipientFunders} />
+                <FunderList label="Recipients" color="#8b6282" funders={recipientFunders} collapseAfter={8} />
                 {year !== null && yearFilterUnavailable && (
                   <p className="text-nano font-mono text-slate-400 dark:text-slate-500 mt-1">
                     year filter unavailable — gift list {profile.capped ? 'capped' : 'did not load'}

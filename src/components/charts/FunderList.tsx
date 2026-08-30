@@ -81,13 +81,17 @@ function MiniBar({ value, max, color }: { value: number; max: number; color: str
   )
 }
 
-export default function FunderList({ label, funders, max, color, emptyText, onOpenFunder }: {
+export default function FunderList({ label, funders, max, color, emptyText, onOpenFunder, collapseAfter }: {
   label: string
   funders: Funder[]
   /** Bar scale; defaults to the largest amount in this list. */
   max?: number
   color: string
   emptyText?: string
+  /** Show only the first N rows (they arrive sorted by dollars) behind a
+   *  "show all" turn-down — a scannable card for donors with dozens of
+   *  recipients. Every row stays reachable; nothing is paged away. */
+  collapseAfter?: number
   /** Opens the funder card for a clicked row (spec §4 "Entry points"). Only
    *  rows carrying a `funderKey` (real donor rows, not IE-only rows) render
    *  their name as a button — SF only; Oakland callers omit this prop. */
@@ -97,6 +101,9 @@ export default function FunderList({ label, funders, max, color, emptyText, onOp
   const expandable = funders.filter((f) => f.detail)
   const allOpen = expandable.length > 0 && expandable.every((f) => open.has(f.key))
   const scale = max ?? Math.max(1, ...funders.map((f) => f.amount))
+  const [showAll, setShowAll] = useState(false)
+  const collapsed = collapseAfter !== undefined && !showAll && funders.length > collapseAfter
+  const visible = collapsed ? funders.slice(0, collapseAfter) : funders
 
   const toggle = (key: string) =>
     setOpen((prev) => { const n = new Set(prev); if (n.has(key)) n.delete(key); else n.add(key); return n })
@@ -113,7 +120,7 @@ export default function FunderList({ label, funders, max, color, emptyText, onOp
         )}
       </div>
       <div className="space-y-1.5">
-        {funders.map((f) => {
+        {visible.map((f) => {
           const isOpen = open.has(f.key)
           return (
             <div key={f.key}>
@@ -151,6 +158,12 @@ export default function FunderList({ label, funders, max, color, emptyText, onOp
             </div>
           )
         })}
+        {collapseAfter !== undefined && funders.length > collapseAfter && (
+          <button type="button" onClick={() => setShowAll((v) => !v)}
+            className="mt-1 text-nano font-mono uppercase tracking-widest text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+            {showAll ? `show fewer ▴` : `show all ${funders.length} ▾`}
+          </button>
+        )}
         {funders.length === 0 && emptyText && (
           <p className="text-micro text-slate-400 dark:text-slate-500 italic">{emptyText}</p>
         )}
