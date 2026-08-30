@@ -141,6 +141,71 @@ function giftId(g: GiftRow): string {
   return g.transaction_id ?? `${g.calculated_date}|${g.calculated_amount}|${g.filer_nid}`
 }
 
+interface MergedRecipientRow {
+  filerNid: string
+  filerName: string
+  filerType?: string
+  gifts: number
+  total: number
+  firstDate?: string
+  lastDate?: string
+}
+
+/** The `recipients` builder groups server-side on `filer_nid, filer_name,
+ *  filer_type` — but a filer_nid is one committee, and a committee can file
+ *  under several `filer_name`s over its life (real case: filer_nid
+ *  211776936 carries six names across 2024–2026). Merge those rows into one
+ *  per filer_nid BEFORE building `FunderRecipient[]`, so `FunderList` never
+ *  gets two rows sharing a React `key` and the year-filtered path (which
+ *  aggregates giftList into a `Map<filerNid>`) reports the same recipient
+ *  count as the all-years path. The displayed name/type is whichever row
+ *  carries the most dollars (ties broken by the later `last_date` — the
+ *  more RECENT of two equally-funded names is the more current one). */
+function mergeRecipientRows(rows: RecipientRow[]): MergedRecipientRow[] {
+  const groups = new Map<string, RecipientRow[]>()
+  for (const r of rows) {
+    const group = groups.get(r.filer_nid)
+    if (group) group.push(r)
+    else groups.set(r.filer_nid, [r])
+  }
+
+  const merged: MergedRecipientRow[] = []
+  for (const [filerNid, group] of groups) {
+    let gifts = 0
+    let total = 0
+    let firstDate: string | undefined
+    let lastDate: string | undefined
+    let best: RecipientRow | undefined
+    let bestTotal = -Infinity
+    for (const r of group) {
+      gifts += Number(r.gifts) || 0
+      total += parseFloat(r.total) || 0
+      if (r.first_date && (!firstDate || r.first_date < firstDate)) firstDate = r.first_date
+      if (r.last_date && (!lastDate || r.last_date > lastDate)) lastDate = r.last_date
+
+      const rTotal = parseFloat(r.total) || 0
+      const better =
+        !best ||
+        rTotal > bestTotal ||
+        (rTotal === bestTotal && (r.last_date ?? '') > (best.last_date ?? ''))
+      if (better) {
+        best = r
+        bestTotal = rTotal
+      }
+    }
+    merged.push({
+      filerNid,
+      filerName: best!.filer_name,
+      filerType: best!.filer_type,
+      gifts,
+      total,
+      firstDate,
+      lastDate,
+    })
+  }
+  return merged
+}
+
 export function buildFunderProfile(input: {
   key: string
   variants: VariantRow[] | null
@@ -170,9 +235,13 @@ export function buildFunderProfile(input: {
   const topEmployers = computeTopEmployers(variants)
 
   // --- Recipients → stance lookup ------------------------------------------
+  // Merge same-nid rows FIRST (see mergeRecipientRows) — the stance lookup
+  // feeds the byYear type-stack join below, which is keyed by filer_nid and
+  // must agree with the merged recipient list's stance, not a raw row's.
   const recipientRows = input.recipients ?? []
+  const mergedRecipients = mergeRecipientRows(recipientRows)
   const stanceByFiler = new Map<string, ReturnType<typeof parseStance>>()
-  for (const r of recipientRows) stanceByFiler.set(r.filer_nid, parseStance(r.filer_name, r.filer_type))
+  for (const r of mergedRecipients) stanceByFiler.set(r.filerNid, parseStance(r.filerName, r.filerType))
 
   // --- Notices → pending -----------------------------------------------
   const giftRows = input.gifts // GiftRow[] | null — keep the null distinct from []
@@ -185,16 +254,16 @@ export function buildFunderProfile(input: {
   const pendingTotal = pendingNotices.reduce((sum, n) => sum + (parseFloat(n.calculated_amount) || 0), 0)
 
   // --- Recipients → FunderRecipient[] -------------------------------------
-  const recipients: FunderRecipient[] = recipientRows
+  const recipients: FunderRecipient[] = mergedRecipients
     .map((r) => ({
-      filerNid: r.filer_nid,
-      filerName: r.filer_name,
-      stance: parseStance(r.filer_name, r.filer_type),
-      gifts: Number(r.gifts) || 0,
-      total: parseFloat(r.total) || 0,
-      firstDate: r.first_date,
-      lastDate: r.last_date,
-      pending: pendingByFiler.get(r.filer_nid) ?? 0,
+      filerNid: r.filerNid,
+      filerName: r.filerName,
+      stance: parseStance(r.filerName, r.filerType),
+      gifts: r.gifts,
+      total: r.total,
+      firstDate: r.firstDate,
+      lastDate: r.lastDate,
+      pending: pendingByFiler.get(r.filerNid) ?? 0,
     }))
     .sort((a, b) => b.total - a.total)
 

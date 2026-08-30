@@ -264,6 +264,44 @@ describe('buildFunderProfile — Moritz-shaped fixture', () => {
   })
 })
 
+describe('recipient renamed-committee merge (review fix)', () => {
+  // The `recipients` builder groups server-side on filer_nid + filer_name +
+  // filer_type — a committee that renames mid-life (real case: filer_nid
+  // 211776936 carries six names across 2024–2026) comes back as several
+  // RecipientRows for ONE committee. buildFunderProfile must merge them by
+  // filer_nid before FunderList ever sees a `key` collision.
+  it('merges same-filer_nid rows into one FunderRecipient: summed gifts/total, min/max dates, higher-dollar name', () => {
+    const recipients: RecipientRow[] = [
+      { filer_nid: 'REC1', filer_name: 'Old Committee Name', filer_type: 'General Purpose', gifts: '2', total: '10000', first_date: '2024-01-01', last_date: '2024-06-01' },
+      { filer_nid: 'REC1', filer_name: 'New Committee Name', filer_type: 'General Purpose', gifts: '3', total: '25000', first_date: '2025-01-01', last_date: '2026-01-01' },
+      { filer_nid: 'REC2', filer_name: 'Other PAC', filer_type: 'General Purpose', gifts: '1', total: '5000', first_date: '2024-05-01', last_date: '2024-05-01' },
+    ]
+    const profile = buildFunderProfile({ key: '|TEST', variants: [], byYear: [], recipients, gifts: [], notices: [], currentYear: 2026 })
+
+    expect(profile.recipients).toHaveLength(2)
+    const rec1 = profile.recipients.find((r) => r.filerNid === 'REC1')
+    expect(rec1).toMatchObject({
+      filerName: 'New Committee Name', // higher-dollar row wins the display name
+      gifts: 5, // 2 + 3
+      total: 35000, // 10000 + 25000
+      firstDate: '2024-01-01', // min
+      lastDate: '2026-01-01', // max
+    })
+  })
+
+  it('recipients.length equals distinct filer_nids, not raw RecipientRow count', () => {
+    const recipients: RecipientRow[] = [
+      { filer_nid: 'REC1', filer_name: 'A', filer_type: 'General Purpose', gifts: '1', total: '1000' },
+      { filer_nid: 'REC1', filer_name: 'B', filer_type: 'General Purpose', gifts: '1', total: '2000' },
+      { filer_nid: 'REC1', filer_name: 'C', filer_type: 'General Purpose', gifts: '1', total: '3000' },
+      { filer_nid: 'REC2', filer_name: 'D', filer_type: 'General Purpose', gifts: '1', total: '1000' },
+    ]
+    const profile = buildFunderProfile({ key: '|TEST2', variants: [], byYear: [], recipients, gifts: [], notices: [], currentYear: 2026 })
+    expect(profile.recipients).toHaveLength(2)
+    expect(new Set(profile.recipients.map((r) => r.filerNid)).size).toBe(profile.recipients.length)
+  })
+})
+
 describe('FunderRecipient.pending', () => {
   it('sums unmatched-notice dollars for that recipient (distinct from the top-level pending total)', () => {
     const gifts: GiftRow[] = [
