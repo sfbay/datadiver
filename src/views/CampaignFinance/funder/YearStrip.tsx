@@ -147,7 +147,7 @@ export default function YearStrip({ years, selected, onSelect }: {
               <rect x={barX} y={barTop} width={bw} height={barH} fill={MEASURE} opacity={0.9} />
             )}
             {y.partial && total > 0 && (
-              <rect x={barX} y={barTop} width={bw} height={barH} fill={`url(#${patternId})`} opacity={0.35} />
+              <rect x={barX} y={barTop} width={bw} height={barH} fill={`url(#${patternId})`} />
             )}
             {isSelected && (
               <rect
