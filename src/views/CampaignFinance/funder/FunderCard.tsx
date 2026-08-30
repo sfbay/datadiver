@@ -23,7 +23,11 @@ export default function FunderCard({ keyParam, fzip, builders, onClose, onSetZip
   // referenced via data-year below so the value isn't dead in the meantime.
   const [year, setYear] = useState<number | null>(null)
 
-  const isEmpty = !!profile && !isLoading && profile.gifts === 0
+  // profile.gifts is entirely byYear-derived — a failed byYear also reads
+  // gifts === 0, which is an ARTIFACT of the failure, not a fact. The empty
+  // line must never render off a section that didn't load; the byYear-retry
+  // line below takes its place instead.
+  const isEmpty = !!profile && !isLoading && !failed.includes('byYear') && profile.gifts === 0
 
   return (
     <DetailPanelShell
@@ -57,13 +61,26 @@ export default function FunderCard({ keyParam, fzip, builders, onClose, onSetZip
           </p>
         )}
 
+        {failed.includes('byYear') && (
+          <p className="text-micro font-mono text-slate-400 dark:text-slate-500 mt-1">
+            Totals did not load —{' '}
+            <button
+              type="button"
+              onClick={() => retry('byYear')}
+              className="underline decoration-dotted underline-offset-2 hover:text-plum-500 dark:hover:text-plum-400 transition-colors"
+            >
+              retry
+            </button>
+          </p>
+        )}
+
         {isEmpty && (
           <p className="text-micro font-serif italic text-slate-500 dark:text-slate-400 mt-3">
             No itemized gifts found under this name — {displayName(profile!.key)}
           </p>
         )}
 
-        {profile && <FunderTiles profile={profile} failed={failed} />}
+        {profile && <FunderTiles profile={profile} failed={failed} retry={retry} />}
 
         {/* Task 6: YearStrip */}
         {/* Task 7: Recipients · FiledAs · GiftList · Footer */}

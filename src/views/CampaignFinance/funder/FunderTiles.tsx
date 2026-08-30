@@ -15,29 +15,46 @@ function plural(n: number, word: string): string {
   return `${n} ${word}${n === 1 ? '' : 's'}`
 }
 
-export default function FunderTiles({ profile, failed }: { profile: FunderProfile; failed: string[] }) {
+export default function FunderTiles({ profile, failed, retry }: {
+  profile: FunderProfile
+  failed: string[]
+  /** Per-section retry — only 'notices' is wired here (the BY NOTICE tile's
+   *  own failure affordance); byYear/variants retries live on FunderCard. */
+  retry?: (section: 'notices') => void
+}) {
+  const byYearFailed = failed.includes('byYear')
+  const recipientsFailed = failed.includes('recipients')
+  const giftsFailed = failed.includes('gifts')
+  const noticesFailed = failed.includes('notices')
+
   const hasGifts = profile.gifts > 0
-  const showNotice = profile.pending.count > 0
-  if (!hasGifts && !showNotice) return null
+  // A failed notices fetch is indistinguishable from zero pending inside
+  // `buildFunderProfile` (both collapse to pending.count === 0) — surface it
+  // here instead of letting the tile silently vanish.
+  const showNotice = profile.pending.count > 0 || noticesFailed
+  // Only collapse to "no tiles" when byYear actually LOADED and confirmed
+  // zero gifts — a failed byYear also reads profile.gifts === 0, but that's
+  // an artifact of the failure, not a fact, so it must not suppress the
+  // other tiles (which show their own "—" below).
+  if (!byYearFailed && !hasGifts && !showNotice) return null
 
   const noticeTile = showNotice ? (
     <StatCard
       label="By Notice"
-      value={`+${formatCurrency(profile.pending.total)}`}
+      value={noticesFailed ? '—' : `+${formatCurrency(profile.pending.total)}`}
       color={PLUM}
-      subtitle="not yet on a statement"
+      subtitle={noticesFailed ? 'notices did not load — retry' : 'not yet on a statement'}
+      subtitleAction={noticesFailed && retry ? () => retry('notices') : undefined}
     />
   ) : null
 
-  // Zero itemized gifts but a pending notice exists — only the notice tile
-  // earned its place (the card's empty-state line, rendered by FunderCard,
-  // carries the rest of the message).
-  if (!hasGifts) {
+  // Zero itemized gifts (byYear loaded and confirmed it) but a pending
+  // notice exists — only the notice tile earned its place (the card's
+  // empty-state line, rendered by FunderCard, carries the rest of the
+  // message).
+  if (!byYearFailed && !hasGifts) {
     return <div className="grid grid-cols-2 gap-2 mt-3">{noticeTile}</div>
   }
-
-  const byYearFailed = failed.includes('byYear')
-  const recipientsFailed = failed.includes('recipients')
 
   const totalSub = byYearFailed
     ? undefined
@@ -47,7 +64,9 @@ export default function FunderTiles({ profile, failed }: { profile: FunderProfil
 
   const medianSub = profile.median != null
     ? `median ${formatCurrency(profile.median)}`
-    : 'median n/a (list capped)'
+    : giftsFailed
+      ? 'median n/a (gifts did not load)'
+      : 'median n/a (list capped)'
 
   const spanValue = byYearFailed || profile.firstYear == null
     ? '—'
