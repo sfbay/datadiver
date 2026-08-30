@@ -235,7 +235,7 @@ export function buildFullIndex(cityId: CityId, currentViewId: string): SearchRes
  * first/last/entity so real duplicates shouldn't occur, but two rows
  * sharing an `id` would collide as React list keys in OmniSearch.
  */
-function buildFunderRows(rows: {
+export function buildFunderRows(rows: {
   transaction_first_name?: string
   transaction_last_name: string
   entity_code?: string
@@ -265,17 +265,30 @@ function buildFunderRows(rows: {
   return out
 }
 
-export function useOmniSearch() {
+export interface UseOmniSearchOptions {
+  /** Overrides the hook's internal `isOpen` as the "is the palette actually
+   *  showing" signal fed to the funder typeahead. Needed because the MODAL
+   *  surface (OmniSearch.tsx `mode="modal"`) tracks its own open/close state
+   *  in AppShell and passes it down as a PROP — it never calls this hook's
+   *  own `open`/`close`/`toggle`, so the internal `isOpen` here stays
+   *  permanently false for that surface and the typeahead would never fire.
+   *  Defaults to the internal `isOpen` so every other caller (the ribbon
+   *  surface, which DOES drive open/close through this hook) is unaffected. */
+  active?: boolean
+}
+
+export function useOmniSearch(options?: UseOmniSearchOptions) {
   const { cityId, viewId } = useRouteView()
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
+  const active = options?.active ?? isOpen
 
   // Called UNCONDITIONALLY (hooks-order rule) — Oakland (and any future
   // non-SF city) passes `null` builders, which the hook reads as "no
   // funder dialect available" and never fetches.
   const { rows: funderTypeaheadRows } = useFunderTypeahead(
     query,
-    isOpen,
+    active,
     cityId === 'sf' ? fppcBuildersFor('sf').funder : null
   )
 

@@ -181,7 +181,12 @@ function SearchBar({ query, setQuery, inputRef, cyclePlaceholder = false, size =
 }
 
 export default function OmniSearch({ mode, isOpen, onClose }: OmniSearchProps) {
-  const { query, setQuery, results } = useOmniSearch()
+  // Pass the REAL palette-open signal through: for the modal surface,
+  // `isOpen` is a prop owned by AppShell (the ⌘K listener), not this hook's
+  // own internal state — the hook never learns the palette opened unless
+  // told. For the ribbon surface `isOpen` is undefined, so `active` falls
+  // back to the hook's own internal `isOpen` (see UseOmniSearchOptions).
+  const { query, setQuery, results } = useOmniSearch({ active: isOpen })
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement | null>(null)
 
