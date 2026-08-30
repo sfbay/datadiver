@@ -5,6 +5,14 @@
 // arrives after the key/zip has since moved on (the same pattern as
 // useCampaignDetail's abortRef). Per-section retry re-fires one builder
 // without touching the other four's already-loaded data.
+//
+// retry() keeps the section in `failed` (and exposes it in `retrying`) until
+// the re-fetch actually settles. `profile` is a build over `sections`, and
+// clearing a slot to null OR clearing `failed` optimistically before the new
+// data lands both make the stale (already-failed → zeroed) build render as if
+// it had loaded — the empty-list/zero-total cards for that section reappear
+// for the ~15s the retry is in flight. `retrying` lets the card word the
+// failure line as "retrying…" and disable its own retry button instead.
 import { useEffect, useRef, useState } from 'react'
 import { fetchDataset } from '@/api/client'
 import { parseFunderParam } from '@/lib/funders/funderKey'
@@ -20,7 +28,7 @@ export interface FunderSections {
   notices: GiftRow[] | null
 }
 
-type SectionKey = keyof FunderSections
+export type SectionKey = keyof FunderSections
 
 const EMPTY_SECTIONS: FunderSections = {
   variants: null,
@@ -55,12 +63,16 @@ export function useFunderProfile(
   profile: FunderProfile | null
   sections: FunderSections
   failed: SectionKey[]
+  /** Sections currently re-fetching via retry() — still present in `failed`
+   *  (I1: a section only leaves `failed` once its re-fetch actually settles). */
+  retrying: SectionKey[]
   isLoading: boolean
   retry: (section: SectionKey) => void
 } {
   const [profile, setProfile] = useState<FunderProfile | null>(null)
   const [sections, setSections] = useState<FunderSections>(EMPTY_SECTIONS)
   const [failed, setFailed] = useState<SectionKey[]>([])
+  const [retrying, setRetrying] = useState<SectionKey[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const generationRef = useRef(0)
   // Mirrors `sections` synchronously so retry() can read the latest merged
@@ -81,6 +93,7 @@ export function useFunderProfile(
       setProfile(null)
       setSections(EMPTY_SECTIONS)
       setFailed([])
+      setRetrying([])
       setIsLoading(false)
       return
     }
@@ -89,33 +102,34 @@ export function useFunderProfile(
     setProfile(null)
     setSections(EMPTY_SECTIONS)
     setFailed([])
+    setRetrying([])
     setIsLoading(true)
 
     const { first, last } = parsed
     const fz = fzip ?? undefined
 
-    const variantsSpec = builders.variants(first, last, fz)
-    const byYearSpec = builders.byYear(first, last, fz)
-    const recipientsSpec = builders.recipients(first, last, fz)
-    const giftsSpec = builders.gifts(first, last, fz)
-    const noticesSpec = builders.notices(first, last, fz)
+    // One tuple per section — [key, in-flight fetch] — instead of five
+    // separately-named spec variables lined up against a parallel
+    // Promise.allSettled array; the two lists can't drift out of order
+    // because there's only ever one list.
+    const fetches = SECTION_ORDER.map((section) => {
+      const spec = builders[section](first, last, fz)
+      return [
+        section,
+        fetchDataset<VariantRow | YearRow | RecipientRow | GiftRow>(spec.datasetKey, spec.params, PROFILE_FETCH_OPTS),
+      ] as const
+    })
 
-    Promise.allSettled([
-      fetchDataset<VariantRow>(variantsSpec.datasetKey, variantsSpec.params, PROFILE_FETCH_OPTS),
-      fetchDataset<YearRow>(byYearSpec.datasetKey, byYearSpec.params, PROFILE_FETCH_OPTS),
-      fetchDataset<RecipientRow>(recipientsSpec.datasetKey, recipientsSpec.params, PROFILE_FETCH_OPTS),
-      fetchDataset<GiftRow>(giftsSpec.datasetKey, giftsSpec.params, PROFILE_FETCH_OPTS),
-      fetchDataset<GiftRow>(noticesSpec.datasetKey, noticesSpec.params, PROFILE_FETCH_OPTS),
-    ]).then((results) => {
+    Promise.allSettled(fetches.map(([, p]) => p)).then((results) => {
       if (generation !== generationRef.current) return
 
       const nextSections: FunderSections = { ...EMPTY_SECTIONS }
       const nextFailed: SectionKey[] = []
       results.forEach((result, i) => {
-        const section = SECTION_ORDER[i]
+        const [section] = fetches[i]!
         if (result.status === 'fulfilled') {
           // Each result array's element type lines up with its section — same
-          // fixed order as the Promise.allSettled call above.
+          // fixed order as the `fetches` tuple list above.
           ;(nextSections as Record<SectionKey, unknown>)[section] = result.value
         } else {
           nextFailed.push(section)
@@ -136,15 +150,11 @@ export function useFunderProfile(
     const { first, last } = parsed
     const fz = fzip ?? undefined
 
-    // Same cast-to-indexable pattern as the forEach above: `section` is a
-    // union of literal keys, so a plain computed-property write isn't
-    // something TS can verify per-key — the cast is the documented escape
-    // hatch, safe here because every field shares the `X[] | null` shape.
-    const cleared: FunderSections = { ...sectionsRef.current }
-    ;(cleared as Record<SectionKey, unknown>)[section] = null
-    sectionsRef.current = cleared
-    setSections(cleared)
-    setFailed((prev) => prev.filter((s) => s !== section))
+    // `section` stays in `failed` for the whole retry — only `retrying` gains
+    // it here. Clearing `failed` (or the section's data) optimistically was
+    // the bug (I1): the card would read "loaded" off a profile still built
+    // from the pre-retry (failed → zeroed) sections until the fetch settled.
+    setRetrying((prev) => (prev.includes(section) ? prev : [...prev, section]))
 
     const spec = builders[section](first, last, fz)
     fetchDataset<VariantRow | YearRow | RecipientRow | GiftRow>(spec.datasetKey, spec.params, PROFILE_FETCH_OPTS)
@@ -154,13 +164,16 @@ export function useFunderProfile(
         ;(next as Record<SectionKey, unknown>)[section] = rows
         sectionsRef.current = next
         setSections(next)
+        setFailed((prev) => prev.filter((s) => s !== section))
+        setRetrying((prev) => prev.filter((s) => s !== section))
         setProfile(rebuild(parsed.key, next))
       })
       .catch(() => {
         if (generation !== generationRef.current) return
-        setFailed((prev) => (prev.includes(section) ? prev : [...prev, section]))
+        setRetrying((prev) => prev.filter((s) => s !== section))
+        // section was never removed from `failed` — nothing to re-add.
       })
   }
 
-  return { profile, sections, failed, isLoading, retry }
+  return { profile, sections, failed, retrying, isLoading, retry }
 }

@@ -52,11 +52,20 @@ function yearFromDate(s: string | undefined): number | null {
  *  Matched notices are the same gift reported early and are dropped; only
  *  the unmatched ones are returned as `pending`. */
 export function matchNotices(gifts: GiftRow[], notices: GiftRow[]): { pending: GiftRow[] } {
+  // Index gifts by filer_nid first — a notice can only ever match a gift to the SAME
+  // recipient, so this turns an O(gifts × notices) scan into O(gifts + notices).
+  const giftsByFiler = new Map<string, GiftRow[]>()
+  for (const gift of gifts) {
+    const list = giftsByFiler.get(gift.filer_nid)
+    if (list) list.push(gift)
+    else giftsByFiler.set(gift.filer_nid, [gift])
+  }
+
   const pending: GiftRow[] = []
   for (const notice of notices) {
     const noticeAmount = parseFloat(notice.calculated_amount)
-    const matched = gifts.some((gift) => {
-      if (gift.filer_nid !== notice.filer_nid) return false
+    const candidates = giftsByFiler.get(notice.filer_nid) ?? []
+    const matched = candidates.some((gift) => {
       const giftAmount = parseFloat(gift.calculated_amount)
       if (Math.abs(giftAmount - noticeAmount) >= 0.005) return false
       const diff = daysDiffUtc(gift.calculated_date, notice.calculated_date)
@@ -79,8 +88,13 @@ export function commonNameGuard(variants: FunderVariant[]): FunderProfile['guard
         .filter((z) => /^\d{5}$/.test(z))
     )
   )
+  // Distinct (folded city, 5-digit ZIP) pairs — the masthead's "appears at {n}
+  // addresses" count. `variants.length` overstates this: the group is on eight
+  // columns including employer/occupation, so the SAME address repeats across
+  // several variant rows whenever a donor reports a different employer over time.
+  const addresses = new Set(variants.map((v) => `${fold(v.city)}|${(v.zip ?? '').slice(0, 5)}`)).size
   const tripped = cities.length > 1 && zips.length > 3
-  return { tripped, cities, zips }
+  return { tripped, cities, zips, addresses }
 }
 
 function isPerson(v: FunderVariant): boolean {
@@ -246,7 +260,12 @@ export function buildFunderProfile(input: {
   // --- Notices → pending -----------------------------------------------
   const giftRows = input.gifts // GiftRow[] | null — keep the null distinct from []
   const noticeRows = input.notices ?? []
-  const { pending: pendingNotices } = matchNotices(giftRows ?? [], noticeRows)
+  // A failed `gifts` fetch (giftRows === null) has NO gift rows to match a notice against —
+  // matchNotices(gifts ?? [], notices) would then read every notice as unmatched and inflate
+  // BY NOTICE with amounts that may well already be on a statement. Pending is genuinely
+  // UNKNOWN in that case, not zero and not "every notice" — never fabricate either.
+  const pendingKnown = giftRows !== null
+  const pendingNotices = pendingKnown ? matchNotices(giftRows, noticeRows).pending : []
   const pendingByFiler = new Map<string, number>()
   for (const n of pendingNotices) {
     pendingByFiler.set(n.filer_nid, (pendingByFiler.get(n.filer_nid) ?? 0) + (parseFloat(n.calculated_amount) || 0))
@@ -383,7 +402,9 @@ export function buildFunderProfile(input: {
     byYear,
     variants,
     giftList,
-    pending: { count: pendingNotices.length, total: pendingTotal },
+    pending: pendingKnown
+      ? { count: pendingNotices.length, total: pendingTotal }
+      : { count: 0, total: 0, unknown: true },
     guard,
     primaryCity,
     topEmployers,

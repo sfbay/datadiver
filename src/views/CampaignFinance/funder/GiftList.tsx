@@ -23,7 +23,15 @@ export default function GiftList({ gifts, capped, year }: {
 }) {
   const rows = year === null ? gifts : gifts.filter((g) => g.year === year)
   const yearSuffix = year !== null ? ` in ${year}` : ''
-  const summary = capped ? `newest 5,000 gifts${yearSuffix}` : `all ${rows.length} gifts${yearSuffix}`
+  // M2: under `capped` + a year filter, `rows` holds only the (fewer) gifts from that year
+  // that happened to survive the 5,000-row cap — "newest 5,000 gifts in 2024" overstated it
+  // when far fewer than 5,000 rows are actually in that year. Say how many of the 5,000 rows
+  // fell in the selected year instead. With no year selected, `rows.length` IS (up to) the cap.
+  const summary = capped
+    ? year !== null
+      ? `${rows.length} of the newest 5,000 gifts${yearSuffix}`
+      : `newest 5,000 gifts${yearSuffix}`
+    : `all ${rows.length} gifts${yearSuffix}`
 
   return (
     <details className="mt-4 group">

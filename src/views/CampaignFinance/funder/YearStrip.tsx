@@ -47,10 +47,17 @@ function LegendSwatch({ color, label }: { color: string; label: string }) {
   )
 }
 
-export default function YearStrip({ years, selected, onSelect }: {
+export default function YearStrip({ years, selected, onSelect, splitUnavailableReason }: {
   years: FunderYear[]
   selected: number | null
   onSelect: (y: number | null) => void
+  /** M1: `byType === null` for every year happens for TWO different reasons —
+   *  the gift list hit the 5,000-row cap, or a fetch (gifts/recipients) simply
+   *  didn't load. The legend note used to say "gift list capped" unconditionally;
+   *  the caller (FunderCard) now tells us which one actually happened. Undefined
+   *  reads the same as 'capped' (the pre-existing wording) for a caller that
+   *  hasn't been updated to pass it. */
+  splitUnavailableReason?: 'capped' | 'did-not-load'
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -85,7 +92,7 @@ export default function YearStrip({ years, selected, onSelect }: {
   const maxTotal = useMemo(() => Math.max(1, d3.max(years, (y) => y.cash + y.inKind) ?? 1), [years])
   const yScale = useMemo(() => d3.scaleLinear().domain([0, maxTotal]).range([0, PLOT_H]), [maxTotal])
 
-  const capped = years.some((y) => y.byType === null)
+  const typeSplitUnavailable = years.some((y) => y.byType === null)
 
   if (years.length === 0) return null
 
@@ -218,9 +225,11 @@ export default function YearStrip({ years, selected, onSelect }: {
           </svg>
           partial
         </span>
-        {capped && (
+        {typeSplitUnavailable && (
           <span className="text-nano font-mono text-slate-400 dark:text-slate-500 italic">
-            type split unavailable — gift list capped
+            {splitUnavailableReason === 'did-not-load'
+              ? 'type split unavailable — gift list did not load'
+              : 'type split unavailable — gift list capped'}
           </span>
         )}
       </div>

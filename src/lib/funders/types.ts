@@ -106,8 +106,11 @@ export interface FunderProfile {
   byYear: FunderYear[]
   variants: FunderVariant[]
   giftList: FunderGift[]
-  pending: { count: number; total: number }
-  guard: { tripped: boolean; cities: string[]; zips: string[] }
+  /** `unknown: true` when the `gifts` fetch failed — with no gift rows to match against, every
+   *  notice would spuriously read as pending. count/total both read 0 in that case, never a
+   *  fabricated (inflated) pending figure off the raw notice rows. */
+  pending: { count: number; total: number; unknown?: true }
+  guard: { tripped: boolean; cities: string[]; zips: string[]; addresses: number }
   primaryCity?: string
   topEmployers: string[]
   capped: boolean

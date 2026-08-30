@@ -62,13 +62,27 @@ const FUNDER_NOTICE = "record_type IN ('S497','RCPT') AND form_type IN ('F497P1'
 const FUNDER_VARIANTS_GROUP = 'transaction_first_name, transaction_last_name, transaction_city, transaction_state, transaction_zip, transaction_employer, transaction_occupation, entity_code'
 
 /** Name predicate `N` (+ optional ZIP narrowing). `first === ''` → org (IS NULL form). Values arrive
- *  already upper-cased by the caller; only escaping happens here. */
+ *  already fold()-ed by the caller (funderKey.ts: trim → upper → collapse whitespace → strip
+ *  trailing periods) — only escaping happens here.
+ *
+ *  `fold` STRIPS a trailing period ("MICHAEL R." → "MICHAEL R") but the stored column does not,
+ *  so an equality against the folded value alone missed every row on record with the period kept
+ *  (Michael R. Bloomberg: 30 rows, $9.4M — a real "No itemized gifts found" false negative). The
+ *  fix is an IN-list that's fold-equivalent for the ONE normalization `fold` performs that the
+ *  column doesn't undo: `IN ('<X>','<X>.')`. `trim()` in the SQL guards stray column-side
+ *  whitespace the same way `fold`'s own trim does.
+ *
+ *  NOT fixed by this predicate, by design: ~1,664 itemized rows whose stored name carries an
+ *  INTERNAL double space (`fold` collapses whitespace runs to one; the column doesn't). Those
+ *  rows stay unmatched under the collapsed-whitespace key and surface to a reader as a *separate*
+ *  identity/card rather than being silently merged or (worse) silently dropped — an unmerged
+ *  variant is a disclosed gap, not a fabricated zero. */
 function funderName(first: string, last: string, fzip?: string): string {
   const F = esc(first)
   const L = esc(last)
   const n = first === ''
-    ? `transaction_first_name IS NULL AND upper(transaction_last_name) = '${L}'`
-    : `upper(transaction_first_name) = '${F}' AND upper(transaction_last_name) = '${L}'`
+    ? `transaction_first_name IS NULL AND upper(trim(transaction_last_name)) IN ('${L}','${L}.')`
+    : `upper(trim(transaction_first_name)) IN ('${F}','${F}.') AND upper(trim(transaction_last_name)) IN ('${L}','${L}.')`
   const zip = fzip ? ` AND transaction_zip LIKE '${esc(fzip)}%'` : ''
   return `${n}${zip}`
 }

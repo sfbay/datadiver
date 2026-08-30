@@ -92,6 +92,14 @@ describe('matchNotices', () => {
     const notices: GiftRow[] = [{ calculated_date: '2026-01-10', calculated_amount: '1000.01', form_type: 'S497', filer_nid: 'R', filer_name: 'R' }]
     expect(matchNotices(gifts, notices).pending).toHaveLength(1)
   })
+
+  it('exact 30-day boundary: day 30 matches (dropped), day 31 does not (stays pending)', () => {
+    const gifts: GiftRow[] = [{ calculated_date: '2026-01-01', calculated_amount: '1000', form_type: 'A', filer_nid: 'R', filer_name: 'R' }]
+    const day30: GiftRow[] = [{ calculated_date: '2026-01-31', calculated_amount: '1000', form_type: 'S497', filer_nid: 'R', filer_name: 'R' }]
+    const day31: GiftRow[] = [{ calculated_date: '2026-02-01', calculated_amount: '1000', form_type: 'S497', filer_nid: 'R', filer_name: 'R' }]
+    expect(matchNotices(gifts, day30).pending).toHaveLength(0)
+    expect(matchNotices(gifts, day31).pending).toHaveLength(1)
+  })
 })
 
 describe('commonNameGuard', () => {
@@ -108,6 +116,23 @@ describe('commonNameGuard', () => {
     expect(guard.tripped).toBe(true)
     expect(guard.cities).toHaveLength(2)
     expect(guard.zips).toHaveLength(5)
+    // I3: the masthead's "appears at {n} addresses" count is distinct (city, ZIP) pairs,
+    // NOT variants.length (variants group on 8 columns incl. employer — same address repeats
+    // across several rows). All 5 Moritz rows carry distinct city+ZIP pairs, so this happens
+    // to equal variants.length here; the next test (repeated address, different employer)
+    // is where they diverge.
+    expect(guard.addresses).toBe(5)
+  })
+
+  it('addresses counts distinct (city, ZIP) pairs, not variant rows — diverges from variants.length when the SAME address repeats under a different employer', () => {
+    const variants: FunderVariant[] = [
+      { last: 'Donor', city: 'San Francisco', zip: '94103', employer: 'Employer A', gifts: 1, total: 100 },
+      { last: 'Donor', city: 'San Francisco', zip: '94103', employer: 'Employer B', gifts: 1, total: 100 }, // same address, different employer row
+      { last: 'Donor', city: 'Oakland', zip: '94601', employer: 'Employer A', gifts: 1, total: 100 },
+    ]
+    const guard = commonNameGuard(variants)
+    expect(variants).toHaveLength(3)
+    expect(guard.addresses).toBe(2)
   })
 
   it('does not trip on a one-city three-ZIP variant set', () => {
@@ -120,6 +145,7 @@ describe('commonNameGuard', () => {
     expect(guard.tripped).toBe(false)
     expect(guard.cities).toEqual(['SAN FRANCISCO'])
     expect(guard.zips).toHaveLength(3)
+    expect(guard.addresses).toBe(3)
   })
 
   it('cities/zips are always filled, even when not tripped', () => {
@@ -175,11 +201,12 @@ describe('buildFunderProfile — Moritz-shaped fixture', () => {
     expect(y2026?.byType).toBeNull()
   })
 
-  it('guard trips on the fixture (2 cities, 5 zips)', () => {
+  it('guard trips on the fixture (2 cities, 5 zips, 5 distinct addresses)', () => {
     const profile = buildFunderProfile(moritzInput)
     expect(profile.guard.tripped).toBe(true)
     expect(profile.guard.cities).toHaveLength(2)
     expect(profile.guard.zips).toHaveLength(5)
+    expect(profile.guard.addresses).toBe(5)
   })
 
   it('byYear runs 2003..currentYear, zero-fills a dark year, and marks the last entry partial', () => {
@@ -224,7 +251,7 @@ describe('buildFunderProfile — Moritz-shaped fixture', () => {
   it('null variants → variants: [], guard untripped, no primary city / top employers', () => {
     const profile = buildFunderProfile({ ...moritzInput, variants: null })
     expect(profile.variants).toEqual([])
-    expect(profile.guard).toEqual({ tripped: false, cities: [], zips: [] })
+    expect(profile.guard).toEqual({ tripped: false, cities: [], zips: [], addresses: 0 })
     expect(profile.primaryCity).toBeUndefined()
     expect(profile.topEmployers).toEqual([])
   })
@@ -245,6 +272,15 @@ describe('buildFunderProfile — Moritz-shaped fixture', () => {
     expect(profile.byYear.every((y) => y.byType === null)).toBe(true)
     expect(profile.giftList).toEqual([])
     expect(profile.total).toBeCloseTo(1332418.42, 2)
+  })
+
+  it('I2: null gifts → pending is UNKNOWN, never inflated off the raw notice rows', () => {
+    // moritzInput's notices include one matched-looking and one genuinely-orphan notice, but
+    // with gifts: null there is nothing to match against — pending must read as unknown (0/0),
+    // not as "every notice is pending" (which would have read count: 2, total: 2050000).
+    const profile = buildFunderProfile({ ...moritzInput, gifts: null })
+    expect(profile.pending).toEqual({ count: 0, total: 0, unknown: true })
+    expect(profile.recipients.every((r) => r.pending === 0)).toBe(true)
   })
 
   it('empty (non-null) gifts array → median null, not capped', () => {

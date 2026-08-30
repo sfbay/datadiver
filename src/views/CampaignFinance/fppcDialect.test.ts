@@ -82,8 +82,8 @@ describe('SF funder builders — byte-pins (spec §3)', () => {
   const b = fppcBuildersFor('sf')
   const A = "record_type = 'RCPT' AND form_type IN ('A','C')"
   const NOTICE = "record_type IN ('S497','RCPT') AND form_type IN ('F497P1','F496P3')"
-  const N_PERSON = "upper(transaction_first_name) = 'MICHAEL' AND upper(transaction_last_name) = 'MORITZ'"
-  const N_ORG = "transaction_first_name IS NULL AND upper(transaction_last_name) = 'NEIGHBORS FOR A BETTER SAN FRANCISCO'"
+  const N_PERSON = "upper(trim(transaction_first_name)) IN ('MICHAEL','MICHAEL.') AND upper(trim(transaction_last_name)) IN ('MORITZ','MORITZ.')"
+  const N_ORG = "transaction_first_name IS NULL AND upper(trim(transaction_last_name)) IN ('NEIGHBORS FOR A BETTER SAN FRANCISCO','NEIGHBORS FOR A BETTER SAN FRANCISCO.')"
   const VARIANTS_GROUP = 'transaction_first_name, transaction_last_name, transaction_city, transaction_state, transaction_zip, transaction_employer, transaction_occupation, entity_code'
 
   it('funder is present on SF builders', () => {
@@ -94,6 +94,16 @@ describe('SF funder builders — byte-pins (spec §3)', () => {
     expect(b.funder!.variants('MICHAEL', 'MORITZ')).toEqual({ datasetKey: 'campaignFinance', params: {
       $select: `${VARIANTS_GROUP}, COUNT(*) as gifts, SUM(calculated_amount) as total`,
       $where: `${A} AND ${N_PERSON}`,
+      $group: VARIANTS_GROUP, $limit: 200 } })
+  })
+
+  it('variants — a first name with a trailing period (fold-equivalent IN-list, C1)', () => {
+    // funderKey.fold() strips a trailing period before the caller ever reaches this builder
+    // ("MICHAEL R." → "MICHAEL R"), so the predicate must match BOTH forms on the stored
+    // column — that's the fix for the "Michael R. Bloomberg" false-negative (30 rows, $9.4M).
+    expect(b.funder!.variants('MICHAEL R', 'BLOOMBERG')).toEqual({ datasetKey: 'campaignFinance', params: {
+      $select: `${VARIANTS_GROUP}, COUNT(*) as gifts, SUM(calculated_amount) as total`,
+      $where: `${A} AND upper(trim(transaction_first_name)) IN ('MICHAEL R','MICHAEL R.') AND upper(trim(transaction_last_name)) IN ('BLOOMBERG','BLOOMBERG.')`,
       $group: VARIANTS_GROUP, $limit: 200 } })
   })
 

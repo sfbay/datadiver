@@ -670,7 +670,13 @@ collapses repeated whitespace, and strips trailing periods — nothing fuzzier. 
 'IND'`) key on the organization name alone, in the same `last` slot. No punctuation or suffix stripping is
 attempted (a "Jr." is treated as a different person until a reader supplies more context), and no authored
 crosswalk maps one spelling to another — the merge is mechanical, and every variant it swept in is disclosed
-verbatim in the card's "Filed as" table.
+verbatim in the card's "Filed as" table. Because `fold` strips a trailing period but the query column does not, the
+five profile queries match a folded name against BOTH forms (`IN ('<X>','<X>.')`, `fppcDialect.ts`'s `funderName`) —
+without it, a donor recorded with a middle initial's period intact (e.g. "Michael R. Bloomberg", 30 rows / $9.4M)
+returned zero itemized gifts under his own name. One gap stays disclosed rather than silently fixed: `fold` also
+collapses INTERNAL double spaces, which the stored column does not, so the ~1,664 itemized rows whose name carries
+one stay unmatched under the collapsed-whitespace key and surface as a separate identity — an unmerged variant, not
+a fabricated zero.
 
 **The stance rule.** A recipient committee's political stance (candidate / yes on a measure / no on a measure /
 measure / PAC) is parsed from its own registered filer name and filer type — there is no separate stance field in

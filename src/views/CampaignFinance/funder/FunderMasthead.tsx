@@ -54,7 +54,11 @@ export default function FunderMasthead({ profile, failed, onSetZip, fzip }: {
       {profile.guard.tripped && (
         <div className="mt-2">
           <p className="text-micro font-mono text-ochre-500">
-            This name appears at {profile.variants.length} addresses in {profile.guard.cities.length} cities and may be more than one person.
+            {/* I3: `variants` groups on 8 columns incl. employer/occupation, so the SAME
+                city+ZIP address repeats across several rows whenever a donor reports a
+                different employer over time — `variants.length` overstated the address
+                count. `guard.addresses` is the distinct (city, ZIP) pair count instead. */}
+            This name appears at {profile.guard.addresses} addresses in {profile.guard.cities.length} cities and may be more than one person.
           </p>
           <div className="flex flex-wrap gap-1 mt-1">
             {profile.guard.zips.map((zip) => {
