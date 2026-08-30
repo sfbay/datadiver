@@ -635,6 +635,48 @@ Only a PDF index (`an34-qeyq`, unstructured) covers that window. Any trend line 
 that stretch as **absent**, never as zero — a naive splice would read as a mid-2024 collapse in consultant activity
 that never happened.
 
+### Funder identity and the notice double-count (funder card, Aug 2026)
+
+**Source:** the same committee-side ledger CampaignFinance already reads, `pitq-e56w` (SF Ethics campaign-finance
+filings). The funder card (`?funder=first|last`, `src/views/CampaignFinance/funder/`) rolls up every gift filed
+under one donor name across every SF committee, and two structural traps make a naive `SUM()` over rows matching a
+name wrong.
+
+**Probe fixture — Michael Moritz (2026-08-23).** Schedule A (regular contributions): $6,146,992 across 30 rows.
+Schedule C (in-kind): $512,418.42 across 3 rows. Those two add to the real total, **$6,659,410.42**. Separately,
+the same ledger holds an `S497` late-contribution notice total of $3,129,999 (16 rows) and an `F496P3`
+independent-expenditure-committee receipt total of $1,460,000 (6 rows) — both are the SAME underlying gifts,
+reported early on a different form. A query that sums every row bearing his name reads **$11.2M**, roughly 68%
+too high. He also appears under **12 identities**: name-casing variants (MICHAEL/Michael), five ZIP codes
+(94103, 94123, 94025, 94117, 94125 — San Francisco and Menlo Park), and four employer spellings (Sequoia Capital,
+Sequoia Heritage, HRTG Partners, Sequoia Investments), spanning 2003 → 2026.
+
+**The notice rule.** A `S497`/`F496P3` notice row is matched to a Schedule A/C gift when the recipient committee's
+`filer_nid` is equal, the amounts agree within $0.005, and the two dates fall within 30 days of each other. A
+matched notice is dropped — it is the same gift counted a second time, not new money. An unmatched notice (a gift
+still pending a statement) is kept, summed separately, and labeled "by notice" — it is never added to TOTAL, since
+it is not yet confirmed on a regular filing. The rule is implemented once, in `funderStats.matchNotices`, and pinned
+by test rather than re-derived per view.
+
+**The common-name guard.** Because nothing in this ledger links one donor's rows across filings with a persistent
+id, "a funder" is necessarily a name merge over `transaction_first_name`/`transaction_last_name`. The guard trips
+— and the card shows a warning plus per-ZIP chips to narrow the query — only when the merged variants span **more
+than one distinct city AND more than three distinct 5-digit ZIP codes**. Both conditions are required so an
+ordinary donor who moved once, or who gives from a P.O. box a mile from home, doesn't trip a false warning; Moritz's
+five ZIPs across two cities does trip it.
+
+**The identity key.** Rows are grouped by `fold(first) + '|' + fold(last)`, where `fold` trims, upper-cases,
+collapses repeated whitespace, and strips trailing periods — nothing fuzzier. Organizations (`entity_code !=
+'IND'`) key on the organization name alone, in the same `last` slot. No punctuation or suffix stripping is
+attempted (a "Jr." is treated as a different person until a reader supplies more context), and no authored
+crosswalk maps one spelling to another — the merge is mechanical, and every variant it swept in is disclosed
+verbatim in the card's "Filed as" table.
+
+**The stance rule.** A recipient committee's political stance (candidate / yes on a measure / no on a measure /
+measure / PAC) is parsed from its own registered filer name and filer type — there is no separate stance field in
+the dataset. The parser (`src/lib/funders/stance.ts`) is pinned against real committee names, including one that
+carries both a "yes" and a "no" clause for two different measures in the same name.
+
 ## Oakland
 
 Oakland went live at stage 3 (Aug 2026) with two views on `data.oaklandca.gov` —
