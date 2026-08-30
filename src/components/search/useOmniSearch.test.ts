@@ -1,7 +1,22 @@
 import { describe, it, expect } from 'vitest'
-import { buildSearchIndex, buildCityRows, buildRegionRows, buildFullIndex } from './useOmniSearch'
+import { buildSearchIndex, buildCityRows, buildRegionRows, buildFullIndex, type SearchResult } from './useOmniSearch'
 import { DATASETS } from '@/api/datasets'
 import { sfCity } from '@/cities/sf'
+
+// Type-level pin (spec §3.2 / §4 "Entry points"): 'funder' must be a valid
+// SearchCategory so a ⌘K funder row's SearchResult literal compiles. This
+// assertion has no runtime behavior — its only job is to fail `tsc -b` if
+// 'funder' is ever removed from the SearchCategory union.
+const _funderRowShape: SearchResult = {
+  id: 'funder:michael|moritz',
+  category: 'funder',
+  label: 'Michael Moritz',
+  sublabel: 'San francisco · $6.1M · 30 gifts',
+  icon: '◎',
+  path: '/campaign-finance',
+  params: { funder: 'michael|moritz' },
+}
+void _funderRowShape
 
 // The place + dataset pins reproduce, element for element, what the retired
 // module-eval SEARCH_INDEX + DATASET_ROUTES table emitted. View entries are a
