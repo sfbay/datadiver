@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAppStore } from '@/stores/appStore'
 import { useDataFreshness } from '@/hooks/useDataFreshness'
 import { useCampaignFinance } from '@/hooks/useCampaignFinance'
@@ -17,17 +18,53 @@ import ContributionTimeline from '@/components/charts/ContributionTimeline'
 import FundingSourcesChart, { buildSourceData } from '@/components/charts/FundingSourcesChart'
 import ForAgainstSplit from '@/components/charts/ForAgainstSplit'
 import FunderList, { funderFromDonorRow } from '@/components/charts/FunderList'
+import FunderCard from './funder/FunderCard'
+import { parseFunderParam, formatFunderParam } from '@/lib/funders/funderKey'
 import type { CampaignFilerAggRow } from '@/types/datasets'
 
 export default function CampaignFinance() {
   const { dateRange, setDateRange } = useAppStore()
   const [selectedEntity, setSelectedEntity] = useState<SelectedEntity | null>(null)
   const [searchFilter, setSearchFilter] = useState('')
+  const [sp, setSp] = useSearchParams()
 
   const { cityId } = useRouteView()
   const isSF = cityId === 'sf'
   const cycles = cityElections(cityId)
   const builders = fppcBuildersFor(cityId)
+
+  // Funder card (spec 2026-08-23) — `?funder=`/`&fzip=` are NOT touched by
+  // useUrlSync (pin test funderParams.test.ts); wired here only.
+  const funderParam = builders.funder ? parseFunderParam(sp.get('funder')) : null
+  const fzipRaw = sp.get('fzip')
+  const fzip = fzipRaw && /^\d{5}$/.test(fzipRaw) ? fzipRaw : null
+
+  const openFunder = useCallback((key: string) => {
+    setSp((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('funder', formatFunderParam(key))
+      next.delete('fzip')
+      return next
+    }, { replace: false }) // a card open is a navigation a reader may back out of
+  }, [setSp])
+
+  const closeFunder = useCallback(() => {
+    setSp((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('funder')
+      next.delete('fzip')
+      return next
+    }, { replace: true })
+  }, [setSp])
+
+  const setZip = useCallback((zip: string | null) => {
+    setSp((prev) => {
+      const next = new URLSearchParams(prev)
+      if (zip) next.set('fzip', zip)
+      else next.delete('fzip')
+      return next
+    }, { replace: true })
+  }, [setSp])
 
   // Use global dateRange but default to most recent election if it doesn't match any cycle
   const effectiveRange = useMemo(() => {
@@ -291,11 +328,12 @@ export default function CampaignFinance() {
                           topDonors={detail.topDonors}
                           ieSupport={detail.ieSupport}
                           ieOppose={detail.ieOppose}
+                          onOpenFunder={isSF ? openFunder : undefined}
                         />
                       ) : (
                         detail.topDonors.length > 0 && (
                           <div className="glass-card rounded-xl p-4 [&>div>div:first-child]:mt-0">
-                            <FunderList label="Top Donors" funders={detail.topDonors.map(funderFromDonorRow)} color="#8b6282" />
+                            <FunderList label="Top Donors" funders={detail.topDonors.map(funderFromDonorRow)} color="#8b6282" onOpenFunder={isSF ? openFunder : undefined} />
                           </div>
                         )
                       )}
@@ -517,6 +555,19 @@ export default function CampaignFinance() {
           </div>
         </aside>
       </div>
+
+      {/* Funder card (spec 2026-08-23) — sibling of #cf-capture so the
+          committee-view PNG export is unchanged; SF only (builders.funder
+          is null on Oakland, so funderParam never parses there). */}
+      {funderParam && builders.funder && (
+        <FunderCard
+          keyParam={funderParam.key}
+          fzip={fzip}
+          builders={builders.funder}
+          onClose={closeFunder}
+          onSetZip={setZip}
+        />
+      )}
 
       {/* Data source attribution */}
       <div className="px-6 py-2 text-[8px] font-mono text-slate-400/50 dark:text-slate-600 border-t border-slate-200/30 dark:border-white/[0.03]">
