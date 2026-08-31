@@ -336,7 +336,7 @@ export function subcategoryLabel(category: string, subcategory: string): string 
 - [ ] **Step 4: Run the test**
 
 Run: `npx vitest run src/views/CrimeIncidents/subcategoryWatch.test.ts`
-Expected: PASS, 15 tests.
+Expected: PASS, 16 tests.
 
 - [ ] **Step 5: Commit**
 
