@@ -21,6 +21,7 @@ import { usePoliceHourlyPattern, useOaklandPoliceHourlyPattern } from '@/hooks/u
 import { usePoliceComparisonData, useOaklandPoliceComparisonData, countDistinctCases, type OaklandCrimeComparisonRow } from '@/hooks/useComparisonDataFactory'
 import { CRIME_EYEBROWS, OAKLAND_CRIME_GROUPS, OAKLAND_CRIME_QUERY_FLOOR, titleCaseCrimetype, oaklandCategoryExpr, classifyOaklandCategory } from './crimeDialect'
 import { splitPairKey, parseSubParam, formatSubParam } from './subcategoryWatch'
+import { useSubcategoryMovers } from './useSubcategoryMovers'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useAppStore } from '@/stores/appStore'
@@ -220,6 +221,18 @@ export default function CrimeIncidents() {
     dateRange,
     { cityId: city.id },
   )
+
+  // SF only; withheld on any range that touches the pre-2018 historical
+  // extract (it publishes no incident_subcategory at all). Feeds both the
+  // sidebar turn-down (byCategory) and the movers strips (Task 6+).
+  const subcats = useSubcategoryMovers({
+    enabled: isSF && !hasHistorical,
+    dateRange,
+    comparisonMode,
+    latestDate: freshness.latestDate,
+    selectedNeighborhood,
+    timeOfDayFilter,
+  })
 
   const trendConfig = useMemo((): TrendConfig => isSF
     ? {
@@ -998,6 +1011,9 @@ export default function CrimeIncidents() {
                     onChange={setSelectedCategories}
                     groups={isSF ? undefined : OAKLAND_CRIME_GROUPS}
                     formatLabel={isSF ? undefined : titleCaseCrimetype}
+                    subcategories={isSF ? subcats.byCategory : undefined}
+                    selectedSubs={isSF ? selectedSubs : undefined}
+                    onToggleSub={isSF ? toggleSub : undefined}
                   />
                 )}
                 {/* Oakland only: OPD files coroner death probes under its

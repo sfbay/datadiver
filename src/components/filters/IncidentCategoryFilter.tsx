@@ -1,9 +1,25 @@
-import { useMemo, useCallback } from 'react'
+import { useMemo, useCallback, useState, Fragment } from 'react'
 import { availableInGroup, groupDisabled } from './categoryGroups'
 
 export interface IncidentCategoryEntry {
   category: string
   count: number
+}
+
+/** Structurally identical to `SubcategoryRow` (useSubcategoryMovers.ts) ON
+ *  PURPOSE — a shared src/components/ primitive must not import a type from
+ *  a single view, and TypeScript's structural typing makes the two
+ *  interchangeable at the call site. */
+export interface SubcategoryEntry {
+  key: string
+  subcategory: string
+  label: string
+  count: number
+  /** Every pair key this row's checkbox must filter on (self + authored
+   *  merges) — e.g. SFPD's two live vehicle-break-in strings fold into one
+   *  displayed row, so toggling it must filter on BOTH or the map undercounts
+   *  against the number shown right next to the checkbox. */
+  keys: string[]
 }
 
 interface IncidentCategoryFilterProps {
@@ -12,6 +28,11 @@ interface IncidentCategoryFilterProps {
   onChange: (selected: Set<string>) => void
   groups?: Record<string, string[]>
   formatLabel?: (name: string) => string
+  /** SF only. Keyed by category; a category absent here renders no chevron.
+   *  Oakland passes nothing and its render is byte-identical. */
+  subcategories?: Map<string, SubcategoryEntry[]>
+  selectedSubs?: Set<string>
+  onToggleSub?: (keys: string[]) => void
 }
 
 const SF_CATEGORY_GROUPS: Record<string, string[]> = {
@@ -20,11 +41,23 @@ const SF_CATEGORY_GROUPS: Record<string, string[]> = {
   'Quality of Life': ['Drug Offense', 'Drug Violation', 'Disorderly Conduct', 'Liquor Laws', 'Prostitution', 'Warrant'],
 }
 
-export default function IncidentCategoryFilter({ categories, selected, onChange, groups, formatLabel }: IncidentCategoryFilterProps) {
+export default function IncidentCategoryFilter({
+  categories, selected, onChange, groups, formatLabel,
+  subcategories, selectedSubs, onToggleSub,
+}: IncidentCategoryFilterProps) {
   const categoryGroups = groups ?? SF_CATEGORY_GROUPS
   const allTypes = useMemo(() => new Set(categories.map((c) => c.category)), [categories])
   const maxCount = useMemo(() => Math.max(...categories.map((c) => c.count), 1), [categories])
   const allSelected = selected.size === 0 || selected.size === allTypes.size
+
+  const [openCats, setOpenCats] = useState<Set<string>>(() => new Set())
+  const toggleOpen = useCallback((name: string) => {
+    setOpenCats((prev) => {
+      const n = new Set(prev)
+      if (n.has(name)) n.delete(name); else n.add(name)
+      return n
+    })
+  }, [])
 
   const handleToggle = useCallback((name: string) => {
     const next = new Set(selected.size === 0 ? allTypes : selected)
@@ -106,9 +139,17 @@ export default function IncidentCategoryFilter({ categories, selected, onChange,
         {categories.map((entry) => {
           const active = isSelected(entry.category)
           const barWidth = (entry.count / maxCount) * 100
+          const subs = subcategories?.get(entry.category) ?? []
+          const canDrill = subs.length > 0 && !!onToggleSub
+          const isOpen = openCats.has(entry.category)
+          // The gutter itself (chevron OR its alignment placeholder) only
+          // exists when the caller passed `subcategories` at all — i.e. SF.
+          // Oakland never passes it, so Oakland's controls cluster keeps its
+          // original two-button markup, byte-identical to before this task.
+          const showGutter = subcategories !== undefined
           return (
+            <Fragment key={entry.category}>
             <div
-              key={entry.category}
               className={`
                 group w-full flex items-center gap-2 py-1.5 px-2 rounded-lg text-left
                 transition-all duration-150 relative overflow-hidden
@@ -127,8 +168,24 @@ export default function IncidentCategoryFilter({ categories, selected, onChange,
                 }}
               />
 
-              {/* Controls cluster: checkbox + solo */}
+              {/* Controls cluster: chevron + checkbox + solo */}
               <div className="relative flex items-center gap-1 flex-shrink-0">
+                {showGutter && (
+                  canDrill ? (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleOpen(entry.category) }}
+                      aria-expanded={isOpen}
+                      aria-label={isOpen
+                        ? `Hide subcategories of ${entry.category}`
+                        : `Show subcategories of ${entry.category}`}
+                      className="flex-shrink-0 w-3 text-nano font-mono leading-none text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
+                    >
+                      {isOpen ? '▾' : '▸'}
+                    </button>
+                  ) : (
+                    <span className="flex-shrink-0 w-3" aria-hidden />
+                  )
+                )}
                 <button
                   onClick={() => handleToggle(entry.category)}
                   className={`
@@ -170,6 +227,34 @@ export default function IncidentCategoryFilter({ categories, selected, onChange,
                 {entry.count.toLocaleString()}
               </span>
             </div>
+            {isOpen && subs.map((s) => {
+              const on = selectedSubs?.has(s.key) ?? false
+              return (
+                <div
+                  key={s.key}
+                  className="flex items-center gap-2 py-1 pl-8 pr-2 rounded-lg hover:bg-white/60 dark:hover:bg-white/[0.03]"
+                >
+                  <button
+                    onClick={() => onToggleSub?.(s.keys)}
+                    aria-pressed={on}
+                    className={`flex-shrink-0 w-2.5 h-2.5 rounded-sm border transition-all cursor-pointer ${
+                      on ? 'bg-brick-500 border-brick-500' : 'border-slate-300 dark:border-slate-600'
+                    }`}
+                  />
+                  <button
+                    onClick={() => onToggleSub?.(s.keys)}
+                    title={s.subcategory}
+                    className="flex-1 min-w-0 text-micro text-slate-500 dark:text-slate-400 truncate text-left cursor-pointer"
+                  >
+                    {s.label}
+                  </button>
+                  <span className="text-nano font-mono text-slate-400 dark:text-slate-500 tabular-nums flex-shrink-0">
+                    {s.count.toLocaleString()}
+                  </span>
+                </div>
+              )
+            })}
+            </Fragment>
           )
         })}
       </div>
