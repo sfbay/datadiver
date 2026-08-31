@@ -115,6 +115,15 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     homeCard: { title: 'Elections', subtitle: 'SF Dept of Elections · Results & RCV', order: 11 },
   },
   {
+    viewId: 'campaign-finance',
+    navLabel: 'Campaign Finance',
+    navShortLabel: 'CF',
+    navDescription: 'Campaign contributions & spending',
+    accentColor: '#8b6282', // plum-500 — campaign finance / agency routing
+    homeCard: { title: 'Campaign Finance', subtitle: 'SF Ethics Commission Filings', order: 12 },
+    omniDatasetKeys: ['campaignFinance'],
+  },
+  {
     viewId: 'city-budget',
     navLabel: 'City Budget',
     navShortLabel: 'BU',
@@ -188,15 +197,6 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     navShortLabel: 'BS',
     navDescription: 'Search businesses, chains, and owners',
     accentColor: '#3f7573', // teal-600 — info, twin to BA but cooler
-  },
-  {
-    viewId: 'campaign-finance',
-    navLabel: 'Campaign Finance',
-    navShortLabel: 'CF',
-    navDescription: 'Campaign contributions & spending',
-    accentColor: '#8b6282', // plum-500 — campaign finance / agency routing
-    homeCard: { title: 'Campaign Finance', subtitle: 'SF Ethics Commission Filings', order: 12 },
-    omniDatasetKeys: ['campaignFinance'],
   },
   {
     viewId: 'demographics',
