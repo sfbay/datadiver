@@ -68,6 +68,16 @@ describe('eligibility', () => {
 })
 
 describe('authored merges', () => {
+  it('I2: survives a merged-away row with no canonical target in the window', () => {
+    // When the canonical target is absent, the merged-away row must not
+    // vanish — it survives on its own. This prevents manufacturing absence.
+    const out = foldMerges([row('Larceny Theft', 'Theft From Vehicle', 894, 1577)])
+    expect(out).toHaveLength(1)
+    expect(out[0].current).toBe(894)
+    expect(out[0].prior).toBe(1577)
+    expect(out[0].key).toBe('Larceny Theft|Theft From Vehicle')
+  })
+
   it('sums the two vehicle break-in strings and drops the merged row', () => {
     const out = foldMerges([
       row('Larceny Theft', 'Larceny - From Vehicle', 4166, 6586),
@@ -137,6 +147,14 @@ describe('slot allocation', () => {
 
   it('returns fewer than the slot count rather than padding', () => {
     expect(rankMovers([watched], 'crime', 3)).toHaveLength(1)
+  })
+
+  it('I1: respects the caller\'s slot count even for watched beats', () => {
+    // When slots = 1, only 1 row must be returned, even if 2 eligible watched
+    // beats are available. The watch loop must cap at Math.min(WATCH_SLOTS, slots).
+    const out = rankMovers([watched, watched2], 'crime', 1)
+    expect(out).toHaveLength(1)
+    expect(out[0].watched).toBe(true)
   })
 
   it('breaks ties deterministically — bigger bucket, then key', () => {

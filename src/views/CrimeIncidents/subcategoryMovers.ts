@@ -64,16 +64,21 @@ export function foldMerges(rows: MoverInput[]): MoverInput[] {
       targetOf.set(m, target)
     }
   }
+  const present = new Set(rows.map((r) => r.key))
   const byKey = new Map<string, MoverInput>()
   for (const r of rows) {
-    if (mergedAway.has(r.key)) continue
+    const target = targetOf.get(r.key)
+    // Fold only into a target that is in THIS window. Otherwise the row
+    // survives on its own — a merged pair with no canonical row to join is
+    // still real data, and dropping it manufactures absence.
+    if (target && present.has(target)) continue
     byKey.set(r.key, { ...r })
   }
   for (const r of rows) {
     const target = targetOf.get(r.key)
     if (!target) continue
     const t = byKey.get(target)
-    if (!t) continue // target absent from this window — nothing to fold into
+    if (!t) continue
     t.current += r.current
     t.prior += r.prior
   }
@@ -124,7 +129,7 @@ export function rankMovers(
 
   const chosen: Mover[] = []
   for (const m of eligible) {
-    if (chosen.length >= WATCH_SLOTS) break
+    if (chosen.length >= Math.min(WATCH_SLOTS, slots)) break
     if (m.watched) chosen.push(m)
   }
   const taken = new Set(chosen.map((m) => m.key))
