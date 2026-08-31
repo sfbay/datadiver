@@ -20,6 +20,7 @@ import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { usePoliceHourlyPattern, useOaklandPoliceHourlyPattern } from '@/hooks/useHourlyPatternFactory'
 import { usePoliceComparisonData, useOaklandPoliceComparisonData, countDistinctCases, type OaklandCrimeComparisonRow } from '@/hooks/useComparisonDataFactory'
 import { CRIME_EYEBROWS, OAKLAND_CRIME_GROUPS, OAKLAND_CRIME_QUERY_FLOOR, titleCaseCrimetype, oaklandCategoryExpr, classifyOaklandCategory } from './crimeDialect'
+import { splitPairKey } from './subcategoryWatch'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useAppStore } from '@/stores/appStore'
@@ -100,6 +101,34 @@ export default function CrimeIncidents() {
   }, [searchParams])
   const selectedNeighborhood = searchParams.get('neighborhood') || null
 
+  /** Subcategory selection. A subcategory's identity is the PAIR
+   *  `category|subcategory` — `Vandalism` exists under both `Malicious
+   *  Mischief` and `Vandalism`, so the string alone would merge two different
+   *  things. encodeURIComponent encodes both `|` and `,`, so the comma join
+   *  is safe for any published name. */
+  const selectedSubs = useMemo(() => {
+    const param = searchParams.get('sub')
+    if (!param) return new Set<string>()
+    return new Set(param.split(',').map(decodeURIComponent))
+  }, [searchParams])
+
+  const setSelectedSubs = useCallback((subs: Set<string>) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (subs.size === 0) next.delete('sub')
+      else next.set('sub', Array.from(subs).map(encodeURIComponent).join(','))
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
+
+  /** Toggle one pair, used by both the sidebar rows and the strip chips. */
+  const toggleSub = useCallback((keys: string[]) => {
+    const next = new Set(selectedSubs)
+    const allOn = keys.every((k) => next.has(k))
+    for (const k of keys) { if (allOn) next.delete(k); else next.add(k) }
+    setSelectedSubs(next)
+  }, [selectedSubs, setSelectedSubs])
+
   const setMapMode = useCallback((mode: MapMode) => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev)
@@ -114,9 +143,15 @@ export default function CrimeIncidents() {
       const next = new URLSearchParams(prev)
       if (cats.size === 0) next.delete('categories')
       else next.set('categories', Array.from(cats).map(encodeURIComponent).join(','))
+      // Checking a whole category makes its own subcategory picks redundant;
+      // leaving them would OR a subset into a superset for no visible reason.
+      const keptSubs = Array.from(selectedSubs)
+        .filter((k) => !cats.has(splitPairKey(k).category))
+      if (keptSubs.length === 0) next.delete('sub')
+      else next.set('sub', keptSubs.map(encodeURIComponent).join(','))
       return next
     }, { replace: true })
-  }, [setSearchParams])
+  }, [setSearchParams, selectedSubs])
 
   const setSelectedNeighborhood = useCallback((n: string | null) => {
     setSearchParams((prev) => {
@@ -128,15 +163,30 @@ export default function CrimeIncidents() {
   }, [setSearchParams])
 
   // --- WHERE clause construction ---
+  // Two grains, ONE selection, OR'd: check a whole category, check a single
+  // subcategory, or mix. An AND would return the empty set whenever the two
+  // picks did not overlap — plausible, silent, and wrong.
   const categoryClause = useMemo(() => {
-    if (selectedCategories.size === 0) return ''
-    const escaped = Array.from(selectedCategories).map((c) => `'${c.replace(/'/g, "''")}'`)
-    // Oakland's category is the DERIVED CASE expr (the HOMICIDE split), not raw
-    // crimetype — filtering on the same expr the count groups by keeps the
-    // sidebar row and its own filter in agreement. Plain crimetypes pass through.
-    const lhs = isSF ? 'incident_category' : `(${oaklandCategoryExpr()})`
-    return `${lhs} IN (${escaped.join(',')})`
-  }, [selectedCategories, isSF])
+    const esc = (v: string) => v.replace(/'/g, "''")
+    const parts: string[] = []
+    if (selectedCategories.size > 0) {
+      const escaped = Array.from(selectedCategories).map((c) => `'${esc(c)}'`)
+      // Oakland's category is the DERIVED CASE expr (the HOMICIDE split), not
+      // raw crimetype — filtering on the same expr the count groups by keeps
+      // the sidebar row and its own filter in agreement.
+      const lhs = isSF ? 'incident_category' : `(${oaklandCategoryExpr()})`
+      parts.push(`${lhs} IN (${escaped.join(',')})`)
+    }
+    if (isSF && selectedSubs.size > 0) {
+      const pairs = Array.from(selectedSubs).map((k) => {
+        const { category, subcategory } = splitPairKey(k)
+        return `(incident_category = '${esc(category)}' AND incident_subcategory = '${esc(subcategory)}')`
+      })
+      parts.push(`(${pairs.join(' OR ')})`)
+    }
+    if (parts.length === 0) return ''
+    return parts.length === 1 ? parts[0] : `(${parts.join(' OR ')})`
+  }, [selectedCategories, selectedSubs, isSF])
 
   // SFPD publishes 2003–May 2018 and 2018–present as two differently-shaped
   // datasets that overlap by 4.5 months. useCrimeEraData owns the seam: it
