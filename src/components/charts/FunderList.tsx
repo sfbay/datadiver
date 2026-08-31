@@ -6,6 +6,7 @@
 import { useState } from 'react'
 import { toSentenceCase } from '@/utils/format'
 import { formatCurrency } from './TopRecipientsChart'
+import { funderKey as computeFunderKey } from '@/lib/funders/funderKey'
 import type { CampaignDonorRow } from '@/types/datasets'
 
 export interface Funder {
@@ -19,6 +20,11 @@ export interface Funder {
   amount: number
   /** One-line detail behind the turn-down; rows without it render no chevron. */
   detail?: string
+  /** The funder card's identity key (funderKey.ts) — present only for rows
+   *  built from a real donor row (funderFromDonorRow); IE-only rows have no
+   *  funderKey and their name stays a plain span even when onOpenFunder is
+   *  passed (spec §4 "Entry points"). */
+  funderKey?: string
 }
 
 const ENTITY_CHIP: Record<string, string> = {
@@ -26,7 +32,7 @@ const ENTITY_CHIP: Record<string, string> = {
 }
 
 const AP_MONTHS = ['Jan.', 'Feb.', 'March', 'April', 'May', 'June', 'July', 'Aug.', 'Sept.', 'Oct.', 'Nov.', 'Dec.']
-function apDay(ymd: string | undefined): string | null {
+export function apDay(ymd: string | undefined): string | null {
   if (!ymd) return null
   const [, m, d] = ymd.slice(0, 10).split('-').map(Number)
   return m && d ? `${AP_MONTHS[m - 1]} ${d}` : null
@@ -62,6 +68,7 @@ export function funderFromDonorRow(d: CampaignDonorRow, i: number): Funder {
     chip: isPerson ? undefined : ENTITY_CHIP[d.entity_code ?? ''] ?? d.entity_code?.toLowerCase(),
     amount: parseFloat(d.total) || 0,
     detail: parts.length ? parts.join(' · ') : undefined,
+    funderKey: computeFunderKey(d),
   }
 }
 
@@ -74,18 +81,29 @@ function MiniBar({ value, max, color }: { value: number; max: number; color: str
   )
 }
 
-export default function FunderList({ label, funders, max, color, emptyText }: {
+export default function FunderList({ label, funders, max, color, emptyText, onOpenFunder, collapseAfter }: {
   label: string
   funders: Funder[]
   /** Bar scale; defaults to the largest amount in this list. */
   max?: number
   color: string
   emptyText?: string
+  /** Show only the first N rows (they arrive sorted by dollars) behind a
+   *  "show all" turn-down — a scannable card for donors with dozens of
+   *  recipients. Every row stays reachable; nothing is paged away. */
+  collapseAfter?: number
+  /** Opens the funder card for a clicked row (spec §4 "Entry points"). Only
+   *  rows carrying a `funderKey` (real donor rows, not IE-only rows) render
+   *  their name as a button — SF only; Oakland callers omit this prop. */
+  onOpenFunder?: (key: string) => void
 }) {
   const [open, setOpen] = useState<Set<string>>(() => new Set())
   const expandable = funders.filter((f) => f.detail)
   const allOpen = expandable.length > 0 && expandable.every((f) => open.has(f.key))
   const scale = max ?? Math.max(1, ...funders.map((f) => f.amount))
+  const [showAll, setShowAll] = useState(false)
+  const collapsed = collapseAfter !== undefined && !showAll && funders.length > collapseAfter
+  const visible = collapsed ? funders.slice(0, collapseAfter) : funders
 
   const toggle = (key: string) =>
     setOpen((prev) => { const n = new Set(prev); if (n.has(key)) n.delete(key); else n.add(key); return n })
@@ -102,7 +120,7 @@ export default function FunderList({ label, funders, max, color, emptyText }: {
         )}
       </div>
       <div className="space-y-1.5">
-        {funders.map((f) => {
+        {visible.map((f) => {
           const isOpen = open.has(f.key)
           return (
             <div key={f.key}>
@@ -117,7 +135,17 @@ export default function FunderList({ label, funders, max, color, emptyText }: {
                   ) : (
                     <span className="shrink-0 w-[0.875rem]" aria-hidden />
                   )}
-                  <span className="truncate text-slate-600 dark:text-slate-300">{f.name}</span>
+                  {onOpenFunder && f.funderKey ? (
+                    <button
+                      type="button"
+                      onClick={() => onOpenFunder(f.funderKey!)}
+                      className="truncate text-left text-slate-600 dark:text-slate-300 hover:text-plum-500 dark:hover:text-plum-400 transition-colors"
+                    >
+                      {f.name}
+                    </button>
+                  ) : (
+                    <span className="truncate text-slate-600 dark:text-slate-300">{f.name}</span>
+                  )}
                   {f.chip && <span className="shrink-0 px-1 rounded text-nano font-mono uppercase tracking-widest bg-slate-200/60 dark:bg-white/[0.06] text-slate-500">{f.chip}</span>}
                   {f.place && <span className="shrink-0 text-slate-400 dark:text-slate-500">· {f.place}</span>}
                 </span>
@@ -130,6 +158,12 @@ export default function FunderList({ label, funders, max, color, emptyText }: {
             </div>
           )
         })}
+        {collapseAfter !== undefined && funders.length > collapseAfter && (
+          <button type="button" onClick={() => setShowAll((v) => !v)}
+            className="mt-1 text-nano font-mono uppercase tracking-widest text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+            {showAll ? `show fewer ▴` : `show all ${funders.length} ▾`}
+          </button>
+        )}
         {funders.length === 0 && emptyText && (
           <p className="text-micro text-slate-400 dark:text-slate-500 italic">{emptyText}</p>
         )}

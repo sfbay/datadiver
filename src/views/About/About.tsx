@@ -440,6 +440,31 @@ export default function About() {
               </p>
             </Finding>
 
+            <Finding title="A funder&rsquo;s total is not the sum of every row with their name">
+              <p>
+                Late-contribution notices and independent-expenditure filings repeat a gift
+                that later shows up again on a committee&rsquo;s regular statement. The funder
+                card matches a notice to the statement row it duplicates (same committee, same
+                amount, filed within 30 days) and drops the match from the total; only a
+                notice with no matching statement counts, and it counts separately, labeled
+                &ldquo;by notice.&rdquo; One donor&rsquo;s rows, summed naively, read $11.2M;
+                matched and deduplicated, the real total is about $6.7M.
+              </p>
+              <p>
+                In-kind gifts (goods or services instead of cash) are shown separately from
+                cash, never merged into one figure. Gifts under $100 are never itemized under
+                SF Ethics rules, so they are not in this data at all &mdash; a funder&rsquo;s
+                true giving is always at least as large as what the card shows.
+              </p>
+              <p>
+                Nothing in SF Ethics filings links one donor&rsquo;s rows across filings with
+                an id &mdash; a funder here is a name merge. The card lists every spelling,
+                ZIP code, and employer that merged under that name as &ldquo;Filed as,&rdquo;
+                and warns when a name spans several cities, since a common name may belong to
+                more than one person.
+              </p>
+            </Finding>
+
             <div id="oakland-beats" className="scroll-mt-4">
               <Finding title="Oakland police beats get their names from an overlay, not from OPD">
                 <p>

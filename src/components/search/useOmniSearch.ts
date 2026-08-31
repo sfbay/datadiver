@@ -4,8 +4,25 @@ import { viewPath, type CityId } from '@/cities/routing'
 import { useRouteView } from '@/cities/useActiveCity'
 import { liveManifest } from '@/cities/manifest'
 import { composeAreaLabel, censusUnitLabel } from '@/cities/areaLabel'
+import { useFunderTypeahead } from '@/hooks/useFunderTypeahead'
+import { fppcBuildersFor } from '@/views/CampaignFinance/fppcDialect'
+import { funderKey, formatFunderParam, displayName } from '@/lib/funders/funderKey'
+import { toSentenceCase } from '@/utils/format'
 
-export type SearchCategory = 'view' | 'place' | 'dataset' | 'vendor' | 'time' | 'city' | 'region'
+// A local copy of TopRecipientsChart's `formatCurrency`, NOT an import of it:
+// this module is tested under vitest's node environment (pure functions
+// only, per vitest.config.ts), and TopRecipientsChart pulls in `useAppStore`
+// (`@/stores/appStore`), whose module-eval calls `window.matchMedia` —
+// importing it here would break useOmniSearch.test.ts with
+// "ReferenceError: window is not defined". Keep this in sync with
+// TopRecipientsChart.tsx's version if that formatting ever changes.
+function formatCurrency(value: number): string {
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`
+  if (value >= 1_000) return `$${(value / 1_000).toFixed(0)}K`
+  return `$${value.toFixed(0)}`
+}
+
+export type SearchCategory = 'view' | 'place' | 'dataset' | 'vendor' | 'time' | 'city' | 'region' | 'funder'
 
 export interface SearchResult {
   id: string
@@ -209,22 +226,83 @@ export function buildFullIndex(cityId: CityId, currentViewId: string): SearchRes
   ]
 }
 
-export function useOmniSearch() {
+/**
+ * Live ⌘K funder rows (spec §3.2, §4 "Entry points"). Row shape follows the
+ * typeahead builder's projection — `city` and `entity_code` are optional
+ * (an org row carries no first name), `gifts`/`total` arrive as strings
+ * (Socrata aggregate serialization) and are read verbatim into the sublabel.
+ * De-duped by `id` as a guard — the typeahead groups on
+ * first/last/entity so real duplicates shouldn't occur, but two rows
+ * sharing an `id` would collide as React list keys in OmniSearch.
+ */
+export function buildFunderRows(rows: {
+  transaction_first_name?: string
+  transaction_last_name: string
+  entity_code?: string
+  city?: string
+  gifts: string
+  total: string
+}[]): SearchResult[] {
+  const seen = new Set<string>()
+  const out: SearchResult[] = []
+  for (const row of rows) {
+    const key = funderKey(row)
+    const id = `funder:${key}`
+    if (seen.has(id)) continue
+    seen.add(id)
+    const total = formatCurrency(Number(row.total))
+    const gifts = row.gifts
+    out.push({
+      id,
+      category: 'funder',
+      label: displayName(key),
+      sublabel: `${row.city ? toSentenceCase(row.city) + ' · ' : ''}${total} · ${gifts} gift${gifts === '1' ? '' : 's'}`,
+      icon: '◎',
+      path: '/campaign-finance',
+      params: { funder: formatFunderParam(key) },
+    })
+  }
+  return out
+}
+
+export interface UseOmniSearchOptions {
+  /** Overrides the hook's internal `isOpen` as the "is the palette actually
+   *  showing" signal fed to the funder typeahead. Needed because the MODAL
+   *  surface (OmniSearch.tsx `mode="modal"`) tracks its own open/close state
+   *  in AppShell and passes it down as a PROP — it never calls this hook's
+   *  own `open`/`close`/`toggle`, so the internal `isOpen` here stays
+   *  permanently false for that surface and the typeahead would never fire.
+   *  Defaults to the internal `isOpen` so every other caller (the ribbon
+   *  surface, which DOES drive open/close through this hook) is unaffected. */
+  active?: boolean
+}
+
+export function useOmniSearch(options?: UseOmniSearchOptions) {
   const { cityId, viewId } = useRouteView()
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
+  const active = options?.active ?? isOpen
+
+  // Called UNCONDITIONALLY (hooks-order rule) — Oakland (and any future
+  // non-SF city) passes `null` builders, which the hook reads as "no
+  // funder dialect available" and never fetches.
+  const { rows: funderTypeaheadRows } = useFunderTypeahead(
+    query,
+    active,
+    cityId === 'sf' ? fppcBuildersFor('sf').funder : null
+  )
 
   const results = useMemo<SearchResult[]>(() => {
     const q = query.trim().toLowerCase()
     if (!q) return []
-    return buildFullIndex(cityId, viewId)
-      .filter(
-        (r) =>
-          r.label.toLowerCase().includes(q) ||
-          r.sublabel.toLowerCase().includes(q)
-      )
-      .slice(0, 8)
-  }, [query, cityId, viewId])
+    const staticFiltered = buildFullIndex(cityId, viewId).filter(
+      (r) =>
+        r.label.toLowerCase().includes(q) ||
+        r.sublabel.toLowerCase().includes(q)
+    )
+    // Static rows keep priority — funder rows only fill remaining slots.
+    return [...staticFiltered, ...buildFunderRows(funderTypeaheadRows)].slice(0, 8)
+  }, [query, cityId, viewId, funderTypeaheadRows])
 
   const open = () => setIsOpen(true)
   const close = () => {

@@ -1,7 +1,22 @@
 import { describe, it, expect } from 'vitest'
-import { buildSearchIndex, buildCityRows, buildRegionRows, buildFullIndex } from './useOmniSearch'
+import { buildSearchIndex, buildCityRows, buildRegionRows, buildFullIndex, buildFunderRows, type SearchResult } from './useOmniSearch'
 import { DATASETS } from '@/api/datasets'
 import { sfCity } from '@/cities/sf'
+
+// Type-level pin (spec §3.2 / §4 "Entry points"): 'funder' must be a valid
+// SearchCategory so a ⌘K funder row's SearchResult literal compiles. This
+// assertion has no runtime behavior — its only job is to fail `tsc -b` if
+// 'funder' is ever removed from the SearchCategory union.
+const _funderRowShape: SearchResult = {
+  id: 'funder:michael|moritz',
+  category: 'funder',
+  label: 'Michael Moritz',
+  sublabel: 'San francisco · $6.1M · 30 gifts',
+  icon: '◎',
+  path: '/campaign-finance',
+  params: { funder: 'michael|moritz' },
+}
+void _funderRowShape
 
 // The place + dataset pins reproduce, element for element, what the retired
 // module-eval SEARCH_INDEX + DATASET_ROUTES table emitted. View entries are a
@@ -266,5 +281,76 @@ describe('buildCityRows (⌘K city switching)', () => {
     const oakRows = buildCityRows('oakland', 'home')
     const q3 = 'sf'
     expect(oakRows.some((r) => r.id === 'city-sf' && (r.label.toLowerCase().includes(q3) || r.sublabel.toLowerCase().includes(q3)))).toBe(true)
+  })
+})
+
+// buildFunderRows is the pure mapper from useFunderTypeahead's raw typeahead
+// rows (spec §3 `typeahead` builder projection) to ⌘K SearchResults (spec
+// §3.2, §4 "Entry points"). Pure + node-safe — no hook involved.
+describe('buildFunderRows (⌘K funder rows, pure row builder)', () => {
+  it('maps a person row', () => {
+    const rows = buildFunderRows([
+      {
+        transaction_first_name: 'Michael',
+        transaction_last_name: 'Moritz',
+        city: 'San Francisco',
+        gifts: '30',
+        total: '6146992',
+      },
+    ])
+    expect(rows).toEqual([
+      {
+        id: 'funder:MICHAEL|MORITZ',
+        category: 'funder',
+        label: 'Michael Moritz',
+        sublabel: 'San Francisco · $6.1M · 30 gifts',
+        icon: '◎',
+        path: '/campaign-finance',
+        params: { funder: 'michael|moritz' },
+      },
+    ])
+  })
+
+  it('maps an org row (non-IND entity_code, no first name)', () => {
+    const rows = buildFunderRows([
+      {
+        transaction_last_name: 'Neighbors For A Better San Francisco',
+        entity_code: 'COM',
+        city: 'San Francisco',
+        gifts: '412',
+        total: '1200000',
+      },
+    ])
+    expect(rows).toEqual([
+      {
+        id: 'funder:|NEIGHBORS FOR A BETTER SAN FRANCISCO',
+        category: 'funder',
+        label: 'Neighbors For A Better San Francisco',
+        sublabel: 'San Francisco · $1.2M · 412 gifts',
+        icon: '◎',
+        path: '/campaign-finance',
+        params: { funder: '|neighbors for a better san francisco' },
+      },
+    ])
+  })
+
+  it('de-dupes by id, keeping the first occurrence', () => {
+    const row = {
+      transaction_first_name: 'Michael',
+      transaction_last_name: 'Moritz',
+      city: 'San Francisco',
+      gifts: '30',
+      total: '6146992',
+    }
+    const rows = buildFunderRows([row, { ...row, gifts: '999' }])
+    expect(rows).toHaveLength(1)
+    expect(rows[0].sublabel).toContain('30 gift')
+  })
+
+  it('singularizes "1 gift" and omits city when absent', () => {
+    const rows = buildFunderRows([
+      { transaction_first_name: 'Jane', transaction_last_name: 'Doe', gifts: '1', total: '500' },
+    ])
+    expect(rows[0].sublabel).toBe('$500 · 1 gift')
   })
 })

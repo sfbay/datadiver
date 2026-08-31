@@ -588,6 +588,16 @@ body {
   isolation: isolate;
 }
 
+/* A glow-host that is ALSO a scroll container (DetailPanelShell's inner
+   card) must scroll: `overflow: hidden` above would otherwise beat the
+   utility class and clip any card taller than its 80vh cap — the funder
+   card was the first with that much content (Aug 2026). The glow corner
+   still clips (auto on one axis clips the other). */
+.glow-host.overflow-y-auto {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
 .glow-corner {
   position: absolute;
   top: -40px;

@@ -10,11 +10,14 @@ interface Props {
   topDonors: CampaignDonorRow[]
   ieSupport: CampaignIERow[]
   ieOppose: CampaignIERow[]
+  /** Opens the funder card for a clicked donor row — SF only, forwarded to
+   *  both lists (IE-only rows have no funderKey and stay plain). */
+  onOpenFunder?: (key: string) => void
 }
 
 export default function ForAgainstSplit({
   supportTotal, opposeTotal, directContribTotal,
-  topDonors, ieSupport, ieOppose,
+  topDonors, ieSupport, ieOppose, onOpenFunder,
 }: Props) {
   const supportFunders: Funder[] = [
     ...topDonors.map(funderFromDonorRow),
@@ -43,7 +46,7 @@ export default function ForAgainstSplit({
           </p>
         )}
 
-        <FunderList label="Top Funders" funders={supportFunders} max={maxFunderAmount} color="#7a9954" emptyText="No direct contributions found" />
+        <FunderList label="Top Funders" funders={supportFunders} max={maxFunderAmount} color="#7a9954" emptyText="No direct contributions found" onOpenFunder={onOpenFunder} />
       </div>
 
       {/* Oppose side */}
@@ -55,7 +58,7 @@ export default function ForAgainstSplit({
           {formatCurrency(opposeTotal)}
         </p>
 
-        <FunderList label="Top Funders" funders={opposeFunders} max={maxFunderAmount} color="#b85545" emptyText="No opposing expenditures on record" />
+        <FunderList label="Top Funders" funders={opposeFunders} max={maxFunderAmount} color="#b85545" emptyText="No opposing expenditures on record" onOpenFunder={onOpenFunder} />
       </div>
     </div>
   )

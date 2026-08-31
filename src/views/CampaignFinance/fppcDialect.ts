@@ -3,10 +3,23 @@ export interface FppcQuerySpec {
   params: Record<string, string | number>
 }
 
+/** Funder-card ("baseball card") query builders — spec §3. SF only; Oakland's Sch A has the
+ *  matching columns (tran_namf/naml/city/zip4/emp/occ/entity_cd) but the card is banked there. */
+export interface FunderBuilders {
+  variants(first: string, last: string, fzip?: string): FppcQuerySpec
+  byYear(first: string, last: string, fzip?: string): FppcQuerySpec
+  recipients(first: string, last: string, fzip?: string): FppcQuerySpec
+  gifts(first: string, last: string, fzip?: string): FppcQuerySpec
+  notices(first: string, last: string, fzip?: string): FppcQuerySpec
+  typeahead(q: string): FppcQuerySpec
+}
+
 export interface FppcQueryBuilders {
   /** 'entity' → SF's entity-detail IE panels; 'view' → Oakland's LateFilingsSection. ONE fact gates both. */
   lateIEScope: 'entity' | 'view'
   freshness: { datasetKey: string; dateField: string }
+  /** Funder card (spec 2026-08-23): SF carries it; Oakland's builders are null — the card never mounts there. */
+  funder: FunderBuilders | null
   totals(start: string, end: string): FppcQuerySpec
   uniqueDonors(start: string, end: string): FppcQuerySpec
   smallDonorCount(start: string, end: string): FppcQuerySpec
@@ -42,9 +55,82 @@ export function dw(field: string, start: string, end: string): string {
 
 const CF = 'campaignFinance'
 
+// Funder card (spec §3). `A` = itemized SF receipts (cash Sch A + in-kind Sch C).
+// `NOTICE` = the two early-notice forms (§3.1) that duplicate an eventual A/C gift.
+const FUNDER_A = "record_type = 'RCPT' AND form_type IN ('A','C')"
+const FUNDER_NOTICE = "record_type IN ('S497','RCPT') AND form_type IN ('F497P1','F496P3')"
+const FUNDER_VARIANTS_GROUP = 'transaction_first_name, transaction_last_name, transaction_city, transaction_state, transaction_zip, transaction_employer, transaction_occupation, entity_code'
+
+/** Name predicate `N` (+ optional ZIP narrowing). `first === ''` → org (IS NULL form). Values arrive
+ *  already fold()-ed by the caller (funderKey.ts: trim → upper → collapse whitespace → strip
+ *  trailing periods) — only escaping happens here.
+ *
+ *  `fold` STRIPS a trailing period ("MICHAEL R." → "MICHAEL R") but the stored column does not,
+ *  so an equality against the folded value alone missed every row on record with the period kept
+ *  (Michael R. Bloomberg: 30 rows, $9.4M — a real "No itemized gifts found" false negative). The
+ *  fix is an IN-list that's fold-equivalent for the ONE normalization `fold` performs that the
+ *  column doesn't undo: `IN ('<X>','<X>.')`. `trim()` in the SQL guards stray column-side
+ *  whitespace the same way `fold`'s own trim does.
+ *
+ *  NOT fixed by this predicate, by design: ~1,664 itemized rows whose stored name carries an
+ *  INTERNAL double space (`fold` collapses whitespace runs to one; the column doesn't). Those
+ *  rows stay unmatched under the collapsed-whitespace key and surface to a reader as a *separate*
+ *  identity/card rather than being silently merged or (worse) silently dropped — an unmerged
+ *  variant is a disclosed gap, not a fabricated zero. */
+function funderName(first: string, last: string, fzip?: string): string {
+  const F = esc(first)
+  const L = esc(last)
+  const n = first === ''
+    ? `transaction_first_name IS NULL AND upper(trim(transaction_last_name)) IN ('${L}','${L}.')`
+    : `upper(trim(transaction_first_name)) IN ('${F}','${F}.') AND upper(trim(transaction_last_name)) IN ('${L}','${L}.')`
+  const zip = fzip ? ` AND transaction_zip LIKE '${esc(fzip)}%'` : ''
+  return `${n}${zip}`
+}
+
+/** WHERE fragment order is fixed across every funder builder: `${cond} AND ${N}${zipFragment}`. */
+function funderWhere(cond: string, first: string, last: string, fzip?: string): string {
+  return `${cond} AND ${funderName(first, last, fzip)}`
+}
+
+/** trim, upper-case, collapse whitespace runs — same fold used for name predicates. */
+function foldQuery(q: string): string {
+  return q.trim().toUpperCase().replace(/\s+/g, ' ')
+}
+
+const SF_FUNDER: FunderBuilders = {
+  variants: (first, last, fzip) => ({ datasetKey: CF, params: {
+    $select: `${FUNDER_VARIANTS_GROUP}, COUNT(*) as gifts, SUM(calculated_amount) as total`,
+    $where: funderWhere(FUNDER_A, first, last, fzip),
+    $group: FUNDER_VARIANTS_GROUP, $limit: 200 } }),
+  byYear: (first, last, fzip) => ({ datasetKey: CF, params: {
+    $select: 'date_extract_y(calculated_date) as y, form_type, COUNT(*) as gifts, SUM(calculated_amount) as total',
+    $where: funderWhere(FUNDER_A, first, last, fzip),
+    $group: 'y, form_type' } }),
+  recipients: (first, last, fzip) => ({ datasetKey: CF, params: {
+    $select: 'filer_nid, filer_name, filer_type, COUNT(*) as gifts, SUM(calculated_amount) as total, MIN(calculated_date) as first_date, MAX(calculated_date) as last_date',
+    $where: funderWhere(FUNDER_A, first, last, fzip),
+    $group: 'filer_nid, filer_name, filer_type', $order: 'total DESC', $limit: 500 } }),
+  gifts: (first, last, fzip) => ({ datasetKey: CF, params: {
+    $select: 'transaction_id, calculated_date, calculated_amount, form_type, filer_nid, filer_name, filer_type, transaction_zip, transaction_employer',
+    $where: funderWhere(FUNDER_A, first, last, fzip),
+    $order: 'calculated_date DESC', $limit: 5000 } }),
+  notices: (first, last, fzip) => ({ datasetKey: CF, params: {
+    $select: 'transaction_id, calculated_date, calculated_amount, form_type, filer_nid, filer_name, filer_type, transaction_zip, transaction_employer, record_type',
+    $where: funderWhere(FUNDER_NOTICE, first, last, fzip),
+    $limit: 2000 } }),
+  typeahead: (q) => {
+    const Q = esc(foldQuery(q))
+    return { datasetKey: CF, params: {
+      $select: 'transaction_first_name, transaction_last_name, entity_code, MAX(transaction_city) as city, COUNT(*) as gifts, SUM(calculated_amount) as total',
+      $where: `${FUNDER_A} AND (upper(transaction_last_name) LIKE '${Q}%' OR upper(transaction_first_name || ' ' || transaction_last_name) LIKE '${Q}%')`,
+      $group: 'transaction_first_name, transaction_last_name, entity_code', $order: 'total DESC', $limit: 8 } }
+  },
+}
+
 const SF_BUILDERS: FppcQueryBuilders = {
   lateIEScope: 'entity',
   freshness: { datasetKey: CF, dateField: 'calculated_date' },
+  funder: SF_FUNDER,
   totals: (s, e) => ({ datasetKey: CF, params: {
     $select: 'SUM(calculated_amount) as total, AVG(calculated_amount) as avg_amt',
     $where: `form_type='A' AND calculated_amount > 0 AND ${dw('calculated_date', s, e)}` } }),
@@ -120,6 +206,7 @@ const SF_BUILDERS: FppcQueryBuilders = {
 const OAK_BUILDERS: FppcQueryBuilders = {
   lateIEScope: 'view',
   freshness: { datasetKey: 'fppcSchA', dateField: 'tran_date' },
+  funder: null,
   totals: (s, e) => ({ datasetKey: 'fppcSchA', params: {
     $select: 'SUM(tran_amt1) as total, AVG(tran_amt1) as avg_amt',
     $where: `tran_amt1 > 0 AND ${dw('tran_date', s, e)}` } }),
