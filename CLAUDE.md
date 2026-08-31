@@ -300,7 +300,7 @@ Editorial framing: tone = stream-relative recency ("as fresh as this dataset get
 
 All map-based detail panels in DataDiver use `src/components/ui/DetailPanelShell` — top-right anchored (`absolute top-5 right-5`), slide-in-from-right animation, max-h-[80vh], corner-glow with dataset pigment color, X close button. Selection is click-driven (no hover-dwell — tried and abandoned in Phase 2.5b for The Last 48). The hover-to-show pattern doesn't translate cleanly to mobile and added complexity without clear value.
 
-Wrap dataset-specific body content inside DetailPanelShell. See `Last48EventCard.tsx`, `IncidentDetailPanel.tsx`, `CaseDetailPanel.tsx` for examples.
+Wrap dataset-specific body content inside DetailPanelShell. See `Last48EventCard.tsx`, `IncidentDetailPanel.tsx`, `CaseDetailPanel.tsx` for examples. **A card taller than its `max-h-[80vh]` cap scrolls inside the shell** — `.glow-host`'s `overflow: hidden` used to beat the `overflow-y-auto` utility on the same element (fixed Aug 2026 by the `.glow-host.overflow-y-auto` rule in `index.css`); test any long card with a TALL fixture, the short ones never showed it. The funder card (`src/views/CampaignFinance/funder/`) is the reference for a long card: fold long lists behind show-all turn-downs, never page.
 
 ## Deployment
 - **Vercel** auto-deploys from `main` branch
