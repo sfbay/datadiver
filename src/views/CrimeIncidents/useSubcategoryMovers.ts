@@ -12,11 +12,9 @@ import { useMemo } from 'react'
 import { useDataset } from '@/hooks/useDataset'
 import { buildSfCrimeDateOnly } from './crimeDialect'
 import { SF_CRIME_COUNT } from './crimeCount'
-import {
-  pairKey, splitPairKey, subcategoryLabel, isEcho, watchEntry, SUBCATEGORY_WATCH,
-} from './subcategoryWatch'
+import { pairKey, splitPairKey, subcategoryLabel } from './subcategoryWatch'
 import { rankMovers, type Mover, type MoverInput } from './subcategoryMovers'
-import { resolveMoverWindows } from './subcategoryWindows'
+import { resolveMoverWindows, foldSidebarCounts } from './subcategoryWindows'
 import type { ComparisonMode, DateRange } from '@/utils/comparisonMode'
 
 interface SubcatAggRow {
@@ -101,14 +99,6 @@ export function useSubcategoryMovers(opts: {
   return useMemo(() => {
     if (!enabled || !windows) return EMPTY
 
-    // Authored merges: SFPD publishes two live strings for vehicle break-ins.
-    // Fold the merged-away row into its canonical row, or the sidebar shows
-    // two rows where the strip shows one chip — three numbers for two things.
-    const mergedAway = new Map<string, string>()
-    for (const [target, e] of Object.entries(SUBCATEGORY_WATCH)) {
-      for (const m of e.merge ?? []) mergedAway.set(m, target)
-    }
-
     const counts = new Map<string, number>()
     for (const r of cur.data) {
       const category = r.incident_category ?? ''
@@ -118,13 +108,8 @@ export function useSubcategoryMovers(opts: {
     }
 
     const byCategory = new Map<string, SubcategoryRow[]>()
-    for (const [key] of counts) {
-      if (mergedAway.has(key)) continue            // folded into its canonical row
+    for (const { key, keys, count } of foldSidebarCounts(counts)) {
       const { category, subcategory } = splitPairKey(key)
-      // An echo row repeats its category and adds nothing to drill into.
-      if (isEcho(category, subcategory)) continue
-      const keys = [key, ...(watchEntry(key)?.merge ?? [])]
-      const count = keys.reduce((sum, k) => sum + (counts.get(k) ?? 0), 0)
       const list = byCategory.get(category) ?? []
       list.push({ key, subcategory, label: subcategoryLabel(category, subcategory), count, keys })
       byCategory.set(category, list)

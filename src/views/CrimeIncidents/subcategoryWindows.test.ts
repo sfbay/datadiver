@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resolveMoverWindows } from './subcategoryWindows'
+import { resolveMoverWindows, foldSidebarCounts } from './subcategoryWindows'
 
 const range = { start: '2025-08-01', end: '2026-08-01' }
 
@@ -49,5 +49,28 @@ describe('degenerate ranges', () => {
   it('returns null when the clamp empties the window', () => {
     // latestDate before the range start: there is no current window at all.
     expect(resolveMoverWindows(range, null, '2025-01-01')).toBeNull()
+  })
+})
+
+describe('foldSidebarCounts', () => {
+  const CANONICAL = 'Larceny Theft|Larceny - From Vehicle' // "Car break-ins"
+  const MERGED = 'Larceny Theft|Theft From Vehicle'
+
+  it('folds the merged-away row into its canonical row when both are present', () => {
+    const counts = new Map([[CANONICAL, 4166], [MERGED, 894]])
+    const rows = foldSidebarCounts(counts)
+    expect(rows).toHaveLength(1)
+    expect(rows[0].key).toBe(CANONICAL)
+    expect(rows[0].count).toBe(5060)
+    expect(rows[0].keys.sort()).toEqual([CANONICAL, MERGED].sort())
+  })
+
+  it('keeps the merged-away row standing on its own when the canonical target is absent — a narrow slice (one neighborhood, a short range) can carry one string and not the other', () => {
+    const counts = new Map([[MERGED, 12]])
+    const rows = foldSidebarCounts(counts)
+    expect(rows).toHaveLength(1)
+    expect(rows[0].key).toBe(MERGED)
+    expect(rows[0].count).toBe(12)
+    expect(rows[0].keys).toEqual([MERGED])
   })
 })
