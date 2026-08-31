@@ -66,11 +66,21 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     eraSource: {
       datasetKey: 'policeIncidents',
       dateField: 'incident_datetime',
+      // Rows are charge-level and cases carry supplemental reports, so
+      // count(*) counts charges-times-reports. Literal rather than an import:
+      // this manifest is a pure data leaf. Pinned to SF_CRIME_COUNT /
+      // HIST_CRIME_COUNT (src/views/CrimeIncidents/crimeCount.ts) by test.
+      countExpr: 'count(distinct incident_number)',
       clamp: [2003, null],
       // 2003–2017 lives in a separate extract with a different schema.
       // untilYear 2018 is also the modern query's lower bound, so the
       // 4.5-month overlap between the two datasets is never double-counted.
-      historical: { datasetKey: 'policeIncidentsHistorical', dateField: 'date', untilYear: 2018 },
+      historical: {
+        datasetKey: 'policeIncidentsHistorical',
+        dateField: 'date',
+        untilYear: 2018,
+        countExpr: 'count(distinct incidntnum)',
+      },
       // A definitional discontinuity, not a data gap: same city, same
       // phenomenon, different counting system. An unmarked continuous run
       // would imply the two eras are like-for-like.

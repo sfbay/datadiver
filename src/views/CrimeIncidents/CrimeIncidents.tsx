@@ -18,7 +18,7 @@ import { useCrimeEraData } from './useCrimeEraData'
 import { useMapLayer } from '@/hooks/useMapLayer'
 import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { usePoliceHourlyPattern, useOaklandPoliceHourlyPattern } from '@/hooks/useHourlyPatternFactory'
-import { usePoliceComparisonData, useOaklandPoliceComparisonData, type OaklandCrimeComparisonRow } from '@/hooks/useComparisonDataFactory'
+import { usePoliceComparisonData, useOaklandPoliceComparisonData, countDistinctCases, type OaklandCrimeComparisonRow } from '@/hooks/useComparisonDataFactory'
 import { CRIME_EYEBROWS, OAKLAND_CRIME_GROUPS, OAKLAND_CRIME_QUERY_FLOOR, titleCaseCrimetype, oaklandCategoryExpr, classifyOaklandCategory } from './crimeDialect'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
@@ -45,6 +45,7 @@ import { SkeletonStatCards, SkeletonSidebarRows, MapScanOverlay, MapProgressBar 
 import PeriodBreakdownChart from '@/components/charts/PeriodBreakdownChart'
 import { useDataFreshness } from '@/hooks/useDataFreshness'
 import { useTrendBaseline } from '@/hooks/useTrendBaseline'
+import { SF_CRIME_COUNT } from './crimeCount'
 import type { TrendConfig } from '@/types/trends'
 import { useProgressScope } from '@/hooks/useLoadingProgress'
 import InfoTip from '@/components/ui/InfoTip'
@@ -162,7 +163,10 @@ export default function CrimeIncidents() {
   )
 
   const trendConfig = useMemo((): TrendConfig => isSF
-    ? { datasetKey: 'policeIncidents', dateField: 'incident_datetime', neighborhoodField: 'analysis_neighborhood' }
+    ? {
+        datasetKey: 'policeIncidents', dateField: 'incident_datetime',
+        neighborhoodField: 'analysis_neighborhood', countExpr: SF_CRIME_COUNT,
+      }
     : {
         datasetKey: 'policeIncidents', dateField: 'datetime', neighborhoodField: 'policebeat',
         cityId: 'oakland', countExpr: 'count(distinct casenumber)',
@@ -308,10 +312,14 @@ export default function CrimeIncidents() {
       ? null
       : linked && linked.total > 0
         ? (linked.linked / linked.total) * 100
-        : (incidentData.filter((i) => i.cadNumber).length / incidentData.length) * 100
+        : (countDistinctCases(incidentData.filter((i) => i.cadNumber), (i) => i.incidentNumber)
+            / countDistinctCases(incidentData, (i) => i.incidentNumber)) * 100
 
     return {
-      total: incidentData.length,
+      // Case-level, like every server aggregate on this view: the 5K sample is
+      // charge-level, so its raw length would flash a ~30% high figure before
+      // the server count lands and silently correct it.
+      total: countDistinctCases(incidentData, (i) => i.incidentNumber),
       topCategory,
       linkedPct,
       peakHour: hourlyPattern.peakHour,
@@ -352,8 +360,8 @@ export default function CrimeIncidents() {
             ? `${formatDelta(comparison.deltas.total)} ${compLabel}`
             : comparison.suppressed && comparisonMode !== null
               ? 'Compare needs a narrower date range'
-              : isSF ? undefined : 'Multi-charge cases counted once',
-        wrapSubtitle: hasHistorical || !isSF,
+              : 'Multi-charge cases counted once',
+        wrapSubtitle: true,
         trend: !hasHistorical && comparison.deltas
           ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral')
           : undefined,

@@ -452,6 +452,75 @@ July 2026): 1998 all-time peak 2,917 (dot-com wave) → 2009 post-crash trough 1
 (highest since 2019). Both `neighborhood` (evictions) and `analysis_neighborhood`
 (buyouts) speak the 41 Analysis Neighborhoods vocabulary — joinable by exact name.
 
+## Police Incidents — a row is a CHARGE, not a crime (corrected Aug 31 2026)
+
+Until Aug 31 2026 every SF crime figure on DataDiver was a row count. A row is
+not an incident. Two independent multipliers sit between the two, and both are
+documented by DataSF itself in `wg3w-h783`'s `columns.json`:
+
+> **`incident_code`** — "A single incident report can have one or more incident
+> types associated. In those cases you will see multiple rows representing a
+> unique combination of the Incident ID and Incident Code."
+>
+> **`report_type_description`** — "Initial; Initial Supplement; Vehicle Initial;
+> Vehicle Supplement; Coplogic Initial; Coplogic Supplement"
+
+So one *case* can produce many *charges*, and one case can also produce an
+initial report plus any number of *supplements*, each with its own
+`incident_id` and its own full set of charge rows.
+
+**Worked example, `incident_number = 260084806`** — one event, **16 rows**
+across six report ids (one `Initial`, five `Initial Supplement`), spanning
+seven categories:
+
+| Category | Subcategory | Times counted |
+|---|---|---|
+| Robbery | Robbery - Commercial | **4** |
+| Fraud | Fraud | 3 |
+| Warrant | Other | 2 |
+| Non-Criminal | Non-Criminal | 2 |
+| Other Miscellaneous | Kidnapping | 2 |
+| Assault | Simple Assault | 1 |
+| Burglary | Burglary - Residential | 1 |
+
+That single event added 16 to the citywide total and 4 to Robbery alone.
+
+**Scale, 12 months to 2026-08-01:** 92,622 rows / 72,287 `incident_id` /
+**64,414 `incident_number`**. Within a single bucket the inflation averages
+**+10.3%** — but it is badly uneven, because a bucket's inflation is
+essentially *charges filed per arrest*:
+
+| Bucket | Rows | Cases | Inflated by |
+|---|---|---|---|
+| Weapons Carrying Etc \| Weapons Offense | 664 | 433 | **+53%** |
+| Drug Offense \| Drug Violation | 8,663 | 6,019 | **+44%** |
+| Assault \| Aggravated Assault | 2,418 | 1,989 | +22% |
+| Larceny Theft \| Larceny - From Vehicle | 4,349 | 4,340 | +0.2% |
+| Other Miscellaneous \| Loitering | 526 | 524 | +0.4% |
+
+Heavily-charged enforcement buckets inflate hardest, so **any ranking built on
+raw rows systematically promotes them** — which is why this had to be fixed
+before shipping a ranked view of the finer categories.
+
+**What changed and what did not.** Every SF crime count is now
+`count(distinct incident_number)` (historical extract: `incidntnum`) —
+`SF_CRIME_COUNT` / `HIST_CRIME_COUNT` in
+`src/views/CrimeIncidents/crimeCount.ts`, the same correction Oakland received
+in PR #154. Year-over-year **deltas are unaffected** — computed on rows versus
+on cases they differ by ≤4 points across every bucket above a 150 floor,
+because the ratio is stable year to year. So no trend, era bar, or arrow moved.
+The absolute figures fell about 30%. The city did not change; the unit did.
+
+Both extracts duplicate (`tmnf-yvry` 2015: 146,675 rows / 116,370 cases, +26%;
+`wg3w-h783` Jun 2018–Jun 2019: 143,227 / 104,204, +37%), so both eras had to
+move together — leaving either on `count(*)` would have put a ~10-point step at
+the 2018 seam that belongs to the unit, not to SFPD.
+
+**One consequence readers will notice:** a case involving both a robbery and a
+burglary is counted once in *each* bucket. Category counts therefore do not sum
+to the citywide total. That is correct — the event really did involve both —
+but it means the sidebar's numbers are not parts of a whole.
+
 ## Police Incidents — SFPD publishes the record as TWO overlapping extracts
 
 `wg3w-h783` ("2018 to Present", 1,050,739 rows) and `tmnf-yvry` ("Historical

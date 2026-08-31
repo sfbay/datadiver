@@ -422,11 +422,12 @@ export const usePoliceComparisonData = createComparisonDataHook<
     dateField: 'incident_datetime',
     selectFields: 'incident_id,incident_number,cad_number,incident_datetime,incident_category,resolution,analysis_neighborhood',
     computeStats(records) {
-      const linkedCount = records.filter((r) => r.cad_number).length
-      return {
-        total: records.length,
-        linkedPct: records.length > 0 ? (linkedCount / records.length) * 100 : 0,
-      }
+      // Case-level on BOTH the numerator and the denominator: a case with six
+      // charge rows, one of which carries a cad_number, is one linked case —
+      // counting rows would report it as 1-of-6 linked.
+      const total = distinctIncidents(records)
+      const linked = distinctIncidents(records.filter((r) => r.cad_number))
+      return { total, linkedPct: total > 0 ? (linked / total) * 100 : 0 }
     },
     computeDeltas(current, comparison) {
       return {
@@ -437,7 +438,7 @@ export const usePoliceComparisonData = createComparisonDataHook<
     buildTrendPoint(day, recs) {
       return {
         day,
-        callCount: recs.length,
+        callCount: distinctIncidents(recs),
         avgResponseTime: 0,
         medianResponseTime: 0,
       }
@@ -462,14 +463,32 @@ export interface OaklandCrimeComparisonRow {
 
 export interface ComparisonStatsOakCrime { total: number }
 
-export function distinctCases(records: { casenumber?: string }[]): number {
+/** Idempotent distinct count over a case-identifier field. A record with no
+ *  identifier counts as its own case rather than collapsing with every other
+ *  anonymous record — dropping them would understate, merging them would
+ *  understate worse. */
+export function countDistinctCases<T>(records: T[], pick: (r: T) => string | undefined): number {
   const seen = new Set<string>()
   let anonymous = 0
   for (const r of records) {
-    if (r.casenumber) seen.add(r.casenumber)
+    const id = pick(r)
+    if (id) seen.add(id)
     else anonymous++
   }
   return seen.size + anonymous
+}
+
+export function distinctCases(records: { casenumber?: string }[]): number {
+  return countDistinctCases(records, (r) => r.casenumber)
+}
+
+/** SF's equivalent. wg3w-h783 rows are charge-level AND a case carries
+ *  supplemental reports, so records.length counts charges-times-reports —
+ *  ~44% high on some buckets. BOTH comparison sides must dedupe or the delta
+ *  is fabricated (the asymmetry that produced Oakland's phantom ~13%
+ *  decline). See src/views/CrimeIncidents/crimeCount.ts. */
+export function distinctIncidents(records: { incident_number?: string }[]): number {
+  return countDistinctCases(records, (r) => r.incident_number)
 }
 
 export const useOaklandPoliceComparisonData = createComparisonDataHook<

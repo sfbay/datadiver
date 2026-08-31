@@ -47,7 +47,17 @@ export interface EraSource {
    *  `untilYear` is EXCLUSIVE and doubles as the modern query's lower bound,
    *  which is what stops the 4.5-month overlap between the two extracts from
    *  being counted twice (see src/views/CrimeIncidents/crimeEra.ts). */
-  historical?: { datasetKey: string; dateField: string; untilYear: number }
+  historical?: {
+    datasetKey: string
+    dateField: string
+    untilYear: number
+    /** The older extract names its case column differently (SFPD: incidntnum
+     *  vs incident_number), so the parent's countExpr would 400 against it.
+     *  Deliberately NOT inherited — an omission falls back to count(*), which
+     *  is wrong-but-loud rather than a hard failure on a column that does not
+     *  exist. */
+    countExpr?: string
+  }
   seams?: EraSeam[]
 }
 

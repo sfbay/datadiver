@@ -95,7 +95,7 @@ const SF_SOURCES: SourceRow[] = [
   { name: 'Fire Incidents', id: 'wr8u-xric', dateField: 'alarm_dttm' },
   { name: '911 Dispatch (Real-Time)', id: 'gnap-fj3t', dateField: 'received_datetime', note: 'Rolling 48h window; ~30min lag; no coordinates' },
   { name: '911 Dispatch (Historical)', id: '2zdj-bwza', dateField: 'received_datetime', note: 'Closed law-enforcement calls; no coordinates' },
-  { name: 'Police Incident Reports (2018+)', id: 'wg3w-h783', dateField: 'incident_datetime', note: '~39h publish lag' },
+  { name: 'Police Incident Reports (2018+)', id: 'wg3w-h783', dateField: 'incident_datetime', note: '~39h publish lag; rows are charge-level and cases carry supplemental reports — counts are distinct cases (see findings)' },
   { name: '311 Cases', id: 'vw6y-z8j6', dateField: 'requested_datetime', note: '~15h intrinsic lag' },
   { name: 'Traffic Crashes (TransBASE)', id: 'ubvf-ztfx', dateField: 'collision_datetime', note: 'Double lag: ~4–6wk publish + longer fatality coding (see findings)' },
   { name: 'High Injury Network (2024)', id: 'enwt-3u8m', note: 'Vision Zero street segments; updated annually' },
@@ -302,6 +302,37 @@ export default function About() {
             </p>
           </Prose>
           <div className="grid gap-4 max-w-[53.75rem]">
+            <Finding title="An SF crime row is a charge, not a crime">
+              <p>
+                SFPD publishes one row per <em>charge</em>, and a case can also carry
+                supplemental reports &mdash; each with its own full set of charge rows.
+                Both facts are the city&rsquo;s own, stated in the dataset&rsquo;s column
+                documentation. One case we examined,{' '}
+                <span className="font-mono text-[0.75rem]">260084806</span>, is a single
+                event published as <strong>16 rows</strong> across six reports and seven
+                categories, with a robbery counted four times inside its own category.
+                Over the twelve months to August 2026 the file holds 92,622 rows for
+                <strong> 64,414 cases</strong>.
+              </p>
+              <p className="mt-2">
+                Every SF crime figure here counts distinct cases, matching how Oakland has
+                always been counted. On August 31, 2026 this corrected our published totals
+                downward by roughly 30%. <em>Trends did not move</em> &mdash; year-over-year
+                changes computed on rows and on cases differ by no more than four points,
+                because the ratio holds steady from year to year. The city did not change;
+                the unit did.
+              </p>
+              <p className="mt-2">
+                The inflation was also uneven, which matters more than its size: a
+                bucket&rsquo;s duplicate rate is roughly how many charges get filed per
+                arrest, so drug and weapons offences ran 44&ndash;53% high while car
+                break-ins ran under 1% high. Any ranking built on raw rows quietly promotes
+                the most heavily charged offences. One consequence of counting properly:
+                a case involving both a robbery and a burglary is counted once in each,
+                so category figures do not sum to the citywide total.
+              </p>
+            </Finding>
+
             <Finding title="Traffic crash data has two lags, and the second is invisible">
               <p>
                 The TransBASE crash dataset (<span className="font-mono text-[0.75rem]">ubvf-ztfx</span>) publishes

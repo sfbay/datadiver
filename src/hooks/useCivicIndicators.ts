@@ -13,6 +13,11 @@ import { useAppStore } from '@/stores/appStore'
 import { yearAgo } from '@/utils/time'
 import { sfLocalCutoff } from '@/utils/sfTime'
 import { classifyCallType } from '@/lib/alerts/significance'
+import { SF_CRIME_COUNT } from '@/views/CrimeIncidents/crimeCount'
+
+/** The four categories the violent-crime card counts. Exported so the card's
+ *  deep link and its WHERE clause are built from ONE list. */
+export const VIOLENT_CATEGORIES = ['Assault', 'Robbery', 'Homicide', 'Rape'] as const
 import type { TickerItem, TickerCategory, TickerSeverity } from '@/types/ticker'
 
 // ── Module-level cache ──────────────────────────────────────────
@@ -243,7 +248,10 @@ async function fetchSparkline(
   dateField: string,
   curStart: string,
   curEnd: string,
-  extraWhere?: string
+  extraWhere?: string,
+  /** Override for datasets whose rows are not one-row-per-event (SF crime is
+   *  charge-level). Default count(*). */
+  countExpr?: string
 ): Promise<number[]> {
   try {
     const where = [
@@ -253,7 +261,7 @@ async function fetchSparkline(
     ].join(' AND ')
 
     const rows = await fetchDataset<SparkRow>(datasetKey as any, {
-      $select: `date_trunc_ymd(${dateField}) as day, count(*) as cnt`,
+      $select: `date_trunc_ymd(${dateField}) as day, ${countExpr ?? 'count(*)'} as cnt`,
       $where: where,
       $group: 'day',
       $order: 'day ASC',
@@ -407,20 +415,20 @@ async function fetch311Cases(ctx: QueryContext): Promise<TickerItem | null> {
 
 // 3. Crime Incidents — violent crime trend
 async function fetchCrimeIncidents(ctx: QueryContext): Promise<TickerItem | null> {
-  const violentWhere = "incident_category IN ('Assault', 'Robbery', 'Homicide', 'Rape')"
+  const violentWhere = `incident_category IN (${VIOLENT_CATEGORIES.map((c) => `'${c}'`).join(', ')})`
 
   const [curRows, priRows, spark] = await Promise.all([
     fetchDataset<CountRow>('policeIncidents', {
-      $select: 'count(*) as cnt',
+      $select: `${SF_CRIME_COUNT} as cnt`,
       $where: `incident_datetime >= '${ctx.curStart}' AND incident_datetime <= '${ctx.curEnd}' AND ${violentWhere}`,
       $limit: 1,
     }),
     fetchDataset<CountRow>('policeIncidents', {
-      $select: 'count(*) as cnt',
+      $select: `${SF_CRIME_COUNT} as cnt`,
       $where: `incident_datetime >= '${ctx.priStart}' AND incident_datetime <= '${ctx.priEnd}' AND ${violentWhere}`,
       $limit: 1,
     }),
-    fetchSparkline('policeIncidents', 'incident_datetime', ctx.curStart, ctx.curEnd, violentWhere),
+    fetchSparkline('policeIncidents', 'incident_datetime', ctx.curStart, ctx.curEnd, violentWhere, SF_CRIME_COUNT),
   ])
 
   const current = parseInt(curRows[0]?.cnt, 10) || 0
@@ -439,7 +447,10 @@ async function fetchCrimeIncidents(ctx: QueryContext): Promise<TickerItem | null
     severity,
     source: {
       view: '/crime-incidents',
-      params: { categories: 'violent' },
+      // The view parses ?categories= as LITERAL category names, so the old
+      // 'violent' shorthand landed readers on an empty view. Same constant
+      // that builds the WHERE above, so link and query cannot drift.
+      params: { categories: VIOLENT_CATEGORIES.join(',') },
       label: 'Crime Incidents · Violent',
       datasetId: 'wg3w-h783',
     },
