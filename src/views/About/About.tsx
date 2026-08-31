@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode, type CSSProperties } from 'react'
 import { useLocation } from 'react-router-dom'
+import { CORRECTIONS } from './corrections'
 
 /**
  * About — authorship, AI disclosure, stack, data sources, and a public
@@ -291,6 +292,53 @@ export default function About() {
           <SourcesTable rows={OAKLAND_SOURCES} host="data.oaklandca.gov" />
         </section>
 
+        {/* ── Corrections ────────────────────────────────── */}
+        <section id="corrections" className="mb-12 scroll-mt-4">
+          <SectionHead label="Corrections" glow="#b85a33" />
+          <Prose>
+            <p className="mb-3">
+              When a figure, a definition, or a verdict on this site turns out to be wrong,
+              the change is recorded here &mdash; dated, with what the old version said and
+              how long it was published. Entries are never removed or reworded.
+            </p>
+            <p className="mb-5">
+              An entry is earned when a reader could have quoted us and would now be wrong.
+              A change we make because a city dataset moved underneath us is not a
+              correction &mdash; that is a finding, and those are below.
+            </p>
+          </Prose>
+          <div className="grid gap-4 max-w-[53.75rem]">
+            {CORRECTIONS.map((c) => (
+              <div
+                key={c.id}
+                id={`correction-${c.id}`}
+                className="glass-card rounded-xl px-5 py-4 scroll-mt-4"
+              >
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-2">
+                  <span className="text-micro font-mono uppercase tracking-[0.2em] text-terracotta-600 dark:text-terracotta-400">
+                    {c.dateLabel}
+                  </span>
+                  <span className="text-micro font-mono text-slate-500 dark:text-slate-400">
+                    {c.views}
+                  </span>
+                  <span className="text-nano font-mono uppercase tracking-widest px-1.5 py-0.5 rounded bg-slate-200/60 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400">
+                    {c.window}
+                  </span>
+                </div>
+                <p className="text-[0.9375rem] leading-relaxed text-ink dark:text-white">
+                  {c.change}
+                </p>
+                <p className="mt-2.5 pt-2.5 border-t border-slate-300/40 dark:border-white/[0.06] text-[0.8125rem] leading-relaxed text-slate-600 dark:text-slate-300">
+                  <span className="font-mono text-nano uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500 mr-1.5">
+                    Before
+                  </span>
+                  {c.before}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* ── Findings ───────────────────────────────────── */}
         <section className="mb-12">
           <SectionHead label="What We Know About the Data — Findings & Methods" glow="#7a9954" />
@@ -317,7 +365,7 @@ export default function About() {
               <p className="mt-2">
                 Every SF crime figure here counts distinct cases, matching how Oakland has
                 always been counted. On August 31, 2026 this corrected our published totals
-                downward by roughly 30%. <em>Trends did not move</em> &mdash; year-over-year
+                downward by roughly 30% (<a href="#correction-2026-08-31-sf-crime-counts" className="underline decoration-dotted underline-offset-2 hover:text-ink dark:hover:text-white">see the correction</a>). <em>Trends did not move</em> &mdash; year-over-year
                 changes computed on rows and on cases differ by no more than four points,
                 because the ratio holds steady from year to year. The city did not change;
                 the unit did.
