@@ -127,3 +127,27 @@ describe('the violent-crime ticker card links somewhere real', () => {
     expect(['Assault', 'Robbery', 'Homicide', 'Rape'].some((c) => c.includes(','))).toBe(false)
   })
 })
+
+describe('the subcategory mover ticker card', () => {
+  const ind = readFileSync('src/hooks/useCivicIndicators.ts', 'utf8')
+
+  it('exists and is registered in the fetch fan-out', () => {
+    expect(ind).toContain('fetchCrimeSubcategoryMover')
+    expect(ind).toMatch(/fetchCrimeSubcategoryMover\(ctx\),/)
+  })
+
+  it('counts cases, like every other SF crime query', () => {
+    const fn = ind.slice(ind.indexOf('function fetchCrimeSubcategoryMover'))
+      .slice(0, 2000)
+    expect(fn).toContain('SF_CRIME_COUNT')
+    expect(fn).not.toContain('count(*)')
+  })
+
+  it('ranks with the shared ranker rather than its own arithmetic', () => {
+    expect(ind).toMatch(/topMover\(/)
+  })
+
+  it('deep-links with ?sub= pair keys', () => {
+    expect(ind).toMatch(/params: \{ sub:/)
+  })
+})
