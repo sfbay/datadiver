@@ -2,13 +2,8 @@
 // over enforcement. Same idiom, deliberately separate rankings — mixing an
 // arrest-generated number into a crime headline is the error this whole
 // design exists to avoid.
-import type { Mover } from './subcategoryMovers'
+import { formatMoverDelta, type Mover } from './subcategoryMovers'
 import { Skeleton } from '@/components/ui/Skeleton'
-
-function signed(pct: number): string {
-  const n = Math.round(pct)
-  return `${n > 0 ? '+' : ''}${n}%`
-}
 
 // Chip-shaped placeholders — same row height/gap as the real chips — for the
 // window while both aggregate queries are still in flight. Loading is its
@@ -85,7 +80,7 @@ export default function SubcategoryStrip({
                 >
                   <span className="truncate max-w-[9rem]">{m.label}</span>
                   <span className="font-mono tabular-nums text-brick-500 dark:text-brick-400">
-                    {signed(m.delta)}
+                    {formatMoverDelta(m.delta)}
                   </span>
                 </button>
               )

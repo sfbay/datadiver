@@ -231,7 +231,7 @@ export default function CrimeIncidents() {
     dateRange,
     comparisonMode,
     latestDate: freshness.latestDate,
-    selectedNeighborhood,
+    freshnessLoading: freshness.isLoading,
     timeOfDayFilter,
   })
 

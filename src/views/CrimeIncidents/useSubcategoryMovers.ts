@@ -5,9 +5,18 @@
 // never disagree between them. SF only; the historical extract publishes no
 // subcategory at all, so a range that touches it disables the hook entirely.
 //
-// The queries carry the view's neighborhood + time-of-day context but NOT its
-// category/subcategory selection: a strip that re-ranked what you had already
-// filtered to would only ever tell you about your own click.
+// CITYWIDE ALWAYS — deliberately NOT filtered to a selected neighborhood.
+// The parent category counts these child rows sit under (CrimeIncidents.tsx's
+// `categoryRows`, from useCrimeEraData's `categoryRows`) are themselves
+// citywide (CLAUDE.md's comparison-not-drilldown rule: the sidebar ranking
+// stays a citywide comparison frame even when a neighborhood is selected).
+// If this hook filtered by neighborhood, the sidebar drill's children would
+// answer a different, much smaller question than the parent total printed
+// above them, with no way for a reader to tell from two adjacent bare
+// numbers. Time-of-day stays in these queries (the parent category rows
+// carry it too); category/subcategory selection stays out — a strip that
+// re-ranked what you had already filtered to would only ever tell you about
+// your own click.
 import { useMemo } from 'react'
 import { useDataset } from '@/hooks/useDataset'
 import { buildSfCrimeDateOnly } from './crimeDialect'
@@ -58,27 +67,35 @@ export function useSubcategoryMovers(opts: {
   comparisonMode: ComparisonMode
   /** MAX(incident_datetime) from useDataFreshness — the clamp source. */
   latestDate: string | null
-  selectedNeighborhood: string | null
+  /** useDataFreshness's own isLoading. `latestDate === null` is AMBIGUOUS on
+   *  its own: it means "the probe hasn't returned yet" while loading, but
+   *  useDataFreshness also SWALLOWS its fetch error, so a failed probe reads
+   *  as the identical null forever after loading clears. Treating either
+   *  case as "safe to skip the clamp" would rank lag-biased declines —
+   *  silently, and possibly permanently. Both must read as NOT READY. */
+  freshnessLoading: boolean
   timeOfDayFilter: { startHour: number; endHour: number } | null
 }): SubcategoryData {
-  const { enabled, dateRange, comparisonMode, latestDate } = opts
+  const { enabled, dateRange, comparisonMode, latestDate, freshnessLoading } = opts
+  // Not ready until the freshness probe has both finished AND produced a
+  // real date. resolveMoverWindows itself still accepts a null latestDate
+  // (it's a pure fallback for callers with no freshness concept at all) —
+  // this hook must never be the caller that leans on that fallback while
+  // still waiting on its OWN probe.
+  const ready = !freshnessLoading && latestDate !== null
 
   const windows = useMemo(
-    () => (enabled ? resolveMoverWindows(dateRange, comparisonMode, latestDate) : null),
-    [enabled, dateRange, comparisonMode, latestDate],
+    () => (enabled && ready ? resolveMoverWindows(dateRange, comparisonMode, latestDate) : null),
+    [enabled, ready, dateRange, comparisonMode, latestDate],
   )
 
   const currentWhere = useMemo(() => (windows ? buildSfCrimeDateOnly({
     dateRange: windows.current, timeOfDayFilter: opts.timeOfDayFilter,
-  }) + (opts.selectedNeighborhood
-    ? ` AND analysis_neighborhood = '${opts.selectedNeighborhood.replace(/'/g, "''")}'`
-    : '') : ''), [windows, opts.selectedNeighborhood, opts.timeOfDayFilter])
+  }) : ''), [windows, opts.timeOfDayFilter])
 
   const priorWhere = useMemo(() => (windows ? buildSfCrimeDateOnly({
     dateRange: windows.comparison, timeOfDayFilter: opts.timeOfDayFilter,
-  }) + (opts.selectedNeighborhood
-    ? ` AND analysis_neighborhood = '${opts.selectedNeighborhood.replace(/'/g, "''")}'`
-    : '') : ''), [windows, opts.selectedNeighborhood, opts.timeOfDayFilter])
+  }) : ''), [windows, opts.timeOfDayFilter])
 
   const QUERY = {
     $select: `incident_category, incident_subcategory, ${SF_CRIME_COUNT} as n`,
@@ -97,7 +114,11 @@ export function useSubcategoryMovers(opts: {
   )
 
   return useMemo(() => {
-    if (!enabled || !windows) return EMPTY
+    if (!enabled) return EMPTY
+    // Not ready reads as LOADING, never as absence — the strip already has a
+    // loading state (skeleton, no sentence) for exactly this.
+    if (!ready) return { ...EMPTY, isLoading: true }
+    if (!windows) return EMPTY
 
     const counts = new Map<string, number>()
     for (const r of cur.data) {
@@ -147,5 +168,5 @@ export function useSubcategoryMovers(opts: {
       compared,
       isLoading: cur.isLoading || pri.isLoading,
     }
-  }, [enabled, windows, cur.data, cur.isLoading, pri.data, pri.isLoading])
+  }, [enabled, ready, windows, cur.data, cur.isLoading, pri.data, pri.isLoading])
 }

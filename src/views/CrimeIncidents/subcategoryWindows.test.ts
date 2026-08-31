@@ -25,7 +25,17 @@ describe('the lag clamp', () => {
       .toBe(days(w!.current.start, w!.current.end))
   })
 
-  it('survives a null latestDate by not clamping', () => {
+  it('a bare null latestDate does not clamp — but this is a PURE FALLBACK, not a licence for a caller to skip readiness', () => {
+    // resolveMoverWindows has no way to tell "the freshness probe hasn't
+    // returned yet" apart from "freshness genuinely doesn't apply here" —
+    // both arrive as latestDate === null, and this function stays honest
+    // about that ambiguity by not clamping either way. Production
+    // correctness does NOT rest on this behaviour: useSubcategoryMovers
+    // gates on useDataFreshness's own isLoading/error state BEFORE calling
+    // this function, and while not-ready renders as loading (skeleton, no
+    // sentence) rather than ranking an unclamped, lag-biased window. See
+    // useSubcategoryMovers.ts's `ready` guard — not reachable from this
+    // node-only suite (it's a React hook over useDataset).
     const w = resolveMoverWindows(range, { kind: 'preset', preset: '1yr' }, null)
     expect(w!.current.end).toBe('2026-08-01')
   })

@@ -155,4 +155,53 @@ describe('the subcategory mover ticker card', () => {
     const fn = ind.slice(ind.indexOf('function fetchCrimeSubcategoryMover')).slice(0, 2000)
     expect(fn).toMatch(/\$order: 'cnt DESC'/)
   })
+
+  it('deep-links through the ONE shared codec, not a second hand-rolled encode', () => {
+    // A second copy of formatSubParam's join/encode is how the two drift —
+    // subcategoryWatch.ts's own docblock warns about exactly this.
+    expect(ind).toContain('formatSubParam(top.keys)')
+    expect(ind).not.toMatch(/top\.keys\.map\(encodeURIComponent\)/)
+  })
+
+  it('the sparkline counts every folded pair, not just the canonical one', () => {
+    // A merged mover's `value`/`priorValue` are the SUMMED total, so a
+    // sparkline built from the canonical pair alone counts less than the
+    // number printed beside it (Car break-ins: card ~5,060, series ~4,166).
+    const fn = ind.slice(ind.indexOf('function fetchCrimeSubcategoryMover'))
+    const sparkCall = fn.slice(fn.indexOf('fetchSparkline('), fn.indexOf('fetchSparkline(') + 800)
+    expect(sparkCall).toContain('top.keys')
+    expect(sparkCall).toMatch(/\.join\(' OR '\)|sparkWhere/)
+    expect(fn.slice(0, fn.indexOf('fetchSparkline('))).not.toMatch(
+      /incident_category = '\$\{top\.category/
+    )
+  })
+
+  it('clamps the current window to MAX(incident_datetime) before querying, and refuses a card when the probe is empty', () => {
+    const fn = ind.slice(ind.indexOf('function fetchCrimeSubcategoryMover')).slice(0, 3000)
+    expect(fn).toMatch(/max\(incident_datetime\) as latest/)
+    expect(fn).toContain('resolveMoverWindows(')
+    // The probe result gates the card — no unclamped percentage on failure.
+    expect(fn).toMatch(/if \(!latestDate\) return null/)
+    expect(fn).toMatch(/if \(!windows\) return null/)
+  })
+
+  it('no longer reads ctx.curStart/ctx.curEnd straight into the crime WHERE clauses', () => {
+    // Those are the app's unclamped date range — SFPD publishes a few days
+    // behind, so an unclamped current window under a full prior window
+    // fabricates a decline on every bucket at once.
+    const fn = ind.slice(ind.indexOf('function fetchCrimeSubcategoryMover'), ind.indexOf('// 6. Parking Revenue'))
+    expect(fn).not.toMatch(/incident_datetime >= '\$\{ctx\.curStart\}'/)
+    expect(fn).not.toMatch(/incident_datetime >= '\$\{ctx\.priStart\}'/)
+  })
+
+  it('the headline uses the shared formatPct, never a hand-rolled round + up/down', () => {
+    // Math.round(-0.4) is -0, which used to render "down 0%" — a confident
+    // direction word over a number that rounds away its own sign.
+    const fn = ind.slice(
+      ind.indexOf('function fetchCrimeSubcategoryMover'),
+      ind.indexOf('// 6. Parking Revenue'),
+    )
+    expect(fn).toMatch(/headline: `\$\{top\.label\} \$\{formatPct\(top\.delta\)\}/)
+    expect(fn).not.toMatch(/top\.delta >= 0 \? 'up' : 'down'/)
+  })
 })

@@ -54,7 +54,27 @@ export function moverScore(delta: number, current: number): number {
   return Math.abs(delta) * Math.log10(Math.max(current, 10))
 }
 
-/** Sum authored merges into their target and drop the merged rows. */
+/** Chip-scale signed percent for the strip. Whole numbers normally
+ *  ("-38%"), but a delta that ROUNDS to zero keeps one decimal place and its
+ *  sign instead of printing a bare "0%" — `Math.round(-0.4)` is `-0`, and a
+ *  chip reading "0%" under a bucket that genuinely moved -0.4% asserts no
+ *  change when there was one. Never prints a signed zero: an actual-zero
+ *  delta (current === prior) still renders as the unsigned "0%". */
+export function formatMoverDelta(pct: number): string {
+  const rounded = Math.round(pct)
+  if (rounded === 0 && pct !== 0) {
+    return `${pct > 0 ? '+' : '-'}${Math.abs(pct).toFixed(1)}%`
+  }
+  return `${rounded > 0 ? '+' : ''}${rounded}%`
+}
+
+/** Sum authored merges into their target and drop the merged rows.
+ *
+ *  A duplicate `key` across input rows is SUMMED, not overwritten — callers
+ *  pass Socrata `GROUP BY` output, which cannot contain a duplicate group,
+ *  but a caller that pre-merges rows itself (or a future test fixture) could
+ *  hand this two rows for the same pair. Overwriting would silently keep
+ *  only the last one; a bucket's count must never depend on row order. */
 export function foldMerges(rows: MoverInput[]): MoverInput[] {
   const mergedAway = new Set<string>()
   const targetOf = new Map<string, string>()
@@ -72,7 +92,13 @@ export function foldMerges(rows: MoverInput[]): MoverInput[] {
     // survives on its own — a merged pair with no canonical row to join is
     // still real data, and dropping it manufactures absence.
     if (target && present.has(target)) continue
-    byKey.set(r.key, { ...r })
+    const existing = byKey.get(r.key)
+    if (existing) {
+      existing.current += r.current
+      existing.prior += r.prior
+    } else {
+      byKey.set(r.key, { ...r })
+    }
   }
   for (const r of rows) {
     const target = targetOf.get(r.key)

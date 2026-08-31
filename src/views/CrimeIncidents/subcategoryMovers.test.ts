@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { rankMovers, foldMerges, moverScore, MIN_COUNT, type MoverInput } from './subcategoryMovers'
+import { rankMovers, foldMerges, moverScore, formatMoverDelta, MIN_COUNT, type MoverInput } from './subcategoryMovers'
 
 function row(category: string, subcategory: string, current: number, prior: number): MoverInput {
   return { key: `${category}|${subcategory}`, category, subcategory, current, prior }
@@ -104,6 +104,37 @@ describe('authored merges', () => {
     const out = foldMerges([row('Larceny Theft', 'Larceny - From Vehicle', 4166, 6586)])
     expect(out).toHaveLength(1)
     expect(out[0].current).toBe(4166)
+  })
+
+  it('sums a duplicate input key instead of overwriting it', () => {
+    // Socrata GROUP BY output cannot contain a duplicate group, but a bucket's
+    // count must never silently depend on which of two identical-key rows
+    // happened to arrive last.
+    const out = foldMerges([
+      row('Burglary', 'Burglary - Commercial', 200, 400),
+      row('Burglary', 'Burglary - Commercial', 120, 300),
+    ])
+    expect(out).toHaveLength(1)
+    expect(out[0].current).toBe(320)
+    expect(out[0].prior).toBe(700)
+  })
+})
+
+describe('formatMoverDelta — never a signed zero', () => {
+  it('renders whole percents normally', () => {
+    expect(formatMoverDelta(-38.4)).toBe('-38%')
+    expect(formatMoverDelta(108.2)).toBe('+108%')
+  })
+
+  it('keeps the sign and a decimal when rounding would erase it', () => {
+    // Math.round(-0.4) is -0: a bare "0%" (or worse, a headline that pairs
+    // it with "down") asserts no change when the bucket genuinely moved.
+    expect(formatMoverDelta(-0.4)).toBe('-0.4%')
+    expect(formatMoverDelta(0.4)).toBe('+0.4%')
+  })
+
+  it('renders an ACTUAL zero delta unsigned', () => {
+    expect(formatMoverDelta(0)).toBe('0%')
   })
 })
 
