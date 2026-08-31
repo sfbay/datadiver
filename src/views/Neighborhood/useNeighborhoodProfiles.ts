@@ -1,6 +1,7 @@
 /** Merge 5 parallel useTrendBaseline calls into unified per-neighborhood profiles */
 
 import { useMemo } from 'react'
+import { SF_CRIME_COUNT } from '@/views/CrimeIncidents/crimeCount'
 import { useTrendBaseline } from '@/hooks/useTrendBaseline'
 import { SF_NEIGHBORHOODS, NON_RESIDENTIAL_NEIGHBORHOODS } from '@/utils/geo'
 import type { NeighborhoodProfile, DatasetMetric } from './types'
@@ -103,7 +104,7 @@ export function useNeighborhoodProfiles(
     opts
   )
   const trendCrime = useTrendBaseline(
-    { datasetKey: 'policeIncidents', dateField: 'incident_datetime', neighborhoodField: 'analysis_neighborhood' },
+    { datasetKey: 'policeIncidents', dateField: 'incident_datetime', neighborhoodField: 'analysis_neighborhood', countExpr: SF_CRIME_COUNT },
     dateRange,
     undefined,
     opts

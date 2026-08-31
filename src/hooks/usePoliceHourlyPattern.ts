@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useDataset } from '@/hooks/useDataset'
+import { SF_CRIME_COUNT } from '@/views/CrimeIncidents/crimeCount'
 import type { HourlyAggRow } from '@/types/datasets'
 
 interface PoliceHourlyPatternResult {
@@ -33,7 +34,7 @@ export function usePoliceHourlyPattern(
   const { data: rows, isLoading, error } = useDataset<HourlyAggRow>(
     'policeIncidents',
     {
-      $select: 'date_extract_hh(incident_datetime) as hour, date_extract_dow(incident_datetime) as dow, count(*) as call_count',
+      $select: `date_extract_hh(incident_datetime) as hour, date_extract_dow(incident_datetime) as dow, ${SF_CRIME_COUNT} as call_count`,
       $group: 'hour, dow',
       $where: where,
       $order: 'call_count DESC',

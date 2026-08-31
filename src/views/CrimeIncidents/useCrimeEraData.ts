@@ -37,6 +37,7 @@ import {
   type CrimeEraPlan,
   type HistoricalIncidentRow,
 } from './crimeEra'
+import { SF_CRIME_COUNT, HIST_CRIME_COUNT } from './crimeCount'
 import {
   adaptOaklandIncident, buildOaklandCrimeWhere, buildOaklandCrimeDateOnly,
   buildSfCrimeWhere, buildSfCrimeDateOnly,
@@ -169,13 +170,13 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
   // ── Aggregates ────────────────────────────────────────────────────────────
   const modernCount = useDataset<{ count: string }>(
     'policeIncidents',
-    { $select: 'count(*) as count', $where: modernWhere },
+    { $select: `${SF_CRIME_COUNT} as count`, $where: modernWhere },
     [modernWhere],
     { enabled: wantModern },
   )
   const histCount = useDataset<{ count: string }>(
     'policeIncidentsHistorical',
-    { $select: 'count(*) as count', $where: histWhere },
+    { $select: `${HIST_CRIME_COUNT} as count`, $where: histWhere },
     [histWhere],
     { enabled: wantHist },
   )
@@ -188,7 +189,7 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
 
   const modernLinked = useDataset<{ total_count: string; linked_count: string }>(
     'policeIncidents',
-    { $select: 'count(*) as total_count, count(cad_number) as linked_count', $where: modernWhere, $limit: 1 },
+    { $select: `${SF_CRIME_COUNT} as total_count, count(distinct cad_number) as linked_count`, $where: modernWhere, $limit: 1 },
     [modernWhere],
     { enabled: wantModern && plan.cadLinkAvailable },
   )
@@ -196,7 +197,7 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
   const modernCats = useDataset<IncidentCategoryAggRow>(
     'policeIncidents',
     {
-      $select: 'incident_category, count(*) as incident_count',
+      $select: `incident_category, ${SF_CRIME_COUNT} as incident_count`,
       $group: 'incident_category',
       $where: modernDateOnly,
       $order: 'incident_count DESC',
@@ -208,7 +209,7 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
   const histCats = useDataset<{ category: string; incident_count: string }>(
     'policeIncidentsHistorical',
     {
-      $select: `${HISTORICAL_FIELDS.category} as category, count(*) as incident_count`,
+      $select: `${HISTORICAL_FIELDS.category} as category, ${HIST_CRIME_COUNT} as incident_count`,
       $group: HISTORICAL_FIELDS.category,
       $where: histWhere,
       $order: 'incident_count DESC',
@@ -236,7 +237,7 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
   const modernNhoods = useDataset<NeighborhoodAggRowPolice>(
     'policeIncidents',
     {
-      $select: 'analysis_neighborhood, count(*) as incident_count',
+      $select: `analysis_neighborhood, ${SF_CRIME_COUNT} as incident_count`,
       $group: 'analysis_neighborhood',
       $where: modernWhere,
       $order: 'incident_count DESC',
@@ -248,7 +249,7 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
   const histNhoods = useDataset<{ region_id: string; incident_count: string }>(
     'policeIncidentsHistorical',
     {
-      $select: `${HISTORICAL_FIELDS.neighborhoodRegion} as region_id, count(*) as incident_count`,
+      $select: `${HISTORICAL_FIELDS.neighborhoodRegion} as region_id, ${HIST_CRIME_COUNT} as incident_count`,
       $group: HISTORICAL_FIELDS.neighborhoodRegion,
       $where: histWhere,
       $order: 'incident_count DESC',
@@ -278,7 +279,7 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
   const modernRes = useDataset<ResolutionAggRow>(
     'policeIncidents',
     {
-      $select: 'resolution, count(*) as incident_count',
+      $select: `resolution, ${SF_CRIME_COUNT} as incident_count`,
       $group: 'resolution',
       $where: modernWhere,
       $order: 'incident_count DESC',
@@ -290,7 +291,7 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
   const histRes = useDataset<ResolutionAggRow>(
     'policeIncidentsHistorical',
     {
-      $select: `${HISTORICAL_FIELDS.resolution} as resolution, count(*) as incident_count`,
+      $select: `${HISTORICAL_FIELDS.resolution} as resolution, ${HIST_CRIME_COUNT} as incident_count`,
       $group: HISTORICAL_FIELDS.resolution,
       $where: histWhere,
       $order: 'incident_count DESC',

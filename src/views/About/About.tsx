@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode, type CSSProperties } from 'react'
 import { useLocation } from 'react-router-dom'
+import { CORRECTIONS } from './corrections'
 
 /**
  * About — authorship, AI disclosure, stack, data sources, and a public
@@ -95,7 +96,7 @@ const SF_SOURCES: SourceRow[] = [
   { name: 'Fire Incidents', id: 'wr8u-xric', dateField: 'alarm_dttm' },
   { name: '911 Dispatch (Real-Time)', id: 'gnap-fj3t', dateField: 'received_datetime', note: 'Rolling 48h window; ~30min lag; no coordinates' },
   { name: '911 Dispatch (Historical)', id: '2zdj-bwza', dateField: 'received_datetime', note: 'Closed law-enforcement calls; no coordinates' },
-  { name: 'Police Incident Reports (2018+)', id: 'wg3w-h783', dateField: 'incident_datetime', note: '~39h publish lag' },
+  { name: 'Police Incident Reports (2018+)', id: 'wg3w-h783', dateField: 'incident_datetime', note: '~39h publish lag; rows are charge-level and cases carry supplemental reports — counts are distinct cases (see findings)' },
   { name: '311 Cases', id: 'vw6y-z8j6', dateField: 'requested_datetime', note: '~15h intrinsic lag' },
   { name: 'Traffic Crashes (TransBASE)', id: 'ubvf-ztfx', dateField: 'collision_datetime', note: 'Double lag: ~4–6wk publish + longer fatality coding (see findings)' },
   { name: 'High Injury Network (2024)', id: 'enwt-3u8m', note: 'Vision Zero street segments; updated annually' },
@@ -291,6 +292,53 @@ export default function About() {
           <SourcesTable rows={OAKLAND_SOURCES} host="data.oaklandca.gov" />
         </section>
 
+        {/* ── Corrections ────────────────────────────────── */}
+        <section id="corrections" className="mb-12 scroll-mt-4">
+          <SectionHead label="Corrections" glow="#b85a33" />
+          <Prose>
+            <p className="mb-3">
+              When a figure, a definition, or a verdict on this site turns out to be wrong,
+              the change is recorded here &mdash; dated, with what the old version said and
+              how long it was published. Entries are never removed or reworded.
+            </p>
+            <p className="mb-5">
+              An entry is earned when a reader could have quoted us and would now be wrong.
+              A change we make because a city dataset moved underneath us is not a
+              correction &mdash; that is a finding, and those are below.
+            </p>
+          </Prose>
+          <div className="grid gap-4 max-w-[53.75rem]">
+            {CORRECTIONS.map((c) => (
+              <div
+                key={c.id}
+                id={`correction-${c.id}`}
+                className="glass-card rounded-xl px-5 py-4 scroll-mt-4"
+              >
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-2">
+                  <span className="text-micro font-mono uppercase tracking-[0.2em] text-terracotta-600 dark:text-terracotta-400">
+                    {c.dateLabel}
+                  </span>
+                  <span className="text-micro font-mono text-slate-500 dark:text-slate-400">
+                    {c.views}
+                  </span>
+                  <span className="text-nano font-mono uppercase tracking-widest px-1.5 py-0.5 rounded bg-slate-200/60 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400">
+                    {c.window}
+                  </span>
+                </div>
+                <p className="text-[0.9375rem] leading-relaxed text-ink dark:text-white">
+                  {c.change}
+                </p>
+                <p className="mt-2.5 pt-2.5 border-t border-slate-300/40 dark:border-white/[0.06] text-[0.8125rem] leading-relaxed text-slate-600 dark:text-slate-300">
+                  <span className="font-mono text-nano uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500 mr-1.5">
+                    Before
+                  </span>
+                  {c.before}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* ── Findings ───────────────────────────────────── */}
         <section className="mb-12">
           <SectionHead label="What We Know About the Data — Findings & Methods" glow="#7a9954" />
@@ -302,6 +350,37 @@ export default function About() {
             </p>
           </Prose>
           <div className="grid gap-4 max-w-[53.75rem]">
+            <Finding title="An SF crime row is a charge, not a crime">
+              <p>
+                SFPD publishes one row per <em>charge</em>, and a case can also carry
+                supplemental reports &mdash; each with its own full set of charge rows.
+                Both facts are the city&rsquo;s own, stated in the dataset&rsquo;s column
+                documentation. One case we examined,{' '}
+                <span className="font-mono text-[0.75rem]">260084806</span>, is a single
+                event published as <strong>16 rows</strong> across six reports and seven
+                categories, with a robbery counted four times inside its own category.
+                Over the twelve months to August 2026 the file holds 92,622 rows for
+                <strong> 64,414 cases</strong>.
+              </p>
+              <p className="mt-2">
+                Every SF crime figure here counts distinct cases, matching how Oakland has
+                always been counted. On August 31, 2026 this corrected our published totals
+                downward by roughly 30% (<a href="#correction-2026-08-31-sf-crime-counts" className="underline decoration-dotted underline-offset-2 hover:text-ink dark:hover:text-white">see the correction</a>). <em>Trends did not move</em> &mdash; year-over-year
+                changes computed on rows and on cases differ by no more than four points,
+                because the ratio holds steady from year to year. The city did not change;
+                the unit did.
+              </p>
+              <p className="mt-2">
+                The inflation was also uneven, which matters more than its size: a
+                bucket&rsquo;s duplicate rate is roughly how many charges get filed per
+                arrest, so drug and weapons offences ran 44&ndash;53% high while car
+                break-ins ran under 1% high. Any ranking built on raw rows quietly promotes
+                the most heavily charged offences. One consequence of counting properly:
+                a case involving both a robbery and a burglary is counted once in each,
+                so category figures do not sum to the citywide total.
+              </p>
+            </Finding>
+
             <Finding title="Traffic crash data has two lags, and the second is invisible">
               <p>
                 The TransBASE crash dataset (<span className="font-mono text-[0.75rem]">ubvf-ztfx</span>) publishes

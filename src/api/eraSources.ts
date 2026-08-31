@@ -46,9 +46,10 @@ export function buildEraQuery(src: EraSource): EraQuery {
  *  (not including) `untilYear`. Null when the source has no second extract. */
 export function buildHistoricalEraQuery(src: EraSource): EraQuery | null {
   if (!src.historical) return null
-  const { dateField, untilYear } = src.historical
+  const { dateField, untilYear, countExpr } = src.historical
+  // NOT `src.countExpr` — the two extracts name their case column differently.
   return {
-    $select: `date_extract_y(${dateField}) as yr, ${src.countExpr ?? 'count(*)'} as n`,
+    $select: `date_extract_y(${dateField}) as yr, ${countExpr ?? 'count(*)'} as n`,
     $group: 'yr',
     $where: `${dateField} >= '${src.clamp[0]}-01-01' AND ${dateField} < '${untilYear}-01-01'`,
     $limit: 60,
