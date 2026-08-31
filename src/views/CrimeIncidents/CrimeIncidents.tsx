@@ -998,8 +998,9 @@ export default function CrimeIncidents() {
                       selectedSubs={selectedSubs}
                       onSelect={toggleSub}
                       emptyNote="Too few incidents in this range to rank movers."
+                      isLoading={subcats.isLoading}
                     />
-                    {subcats.enforcementMovers.length > 0 && (
+                    {!subcats.isLoading && subcats.enforcementMovers.length > 0 && (
                       <SubcategoryStrip
                         eyebrow="Enforcement activity · what police chose to act on"
                         movers={subcats.enforcementMovers}
@@ -1008,6 +1009,7 @@ export default function CrimeIncidents() {
                         selectedSubs={selectedSubs}
                         onSelect={toggleSub}
                         emptyNote=""
+                        isLoading={subcats.isLoading}
                       />
                     )}
                   </>

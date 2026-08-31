@@ -3,14 +3,31 @@
 // arrest-generated number into a crime headline is the error this whole
 // design exists to avoid.
 import type { Mover } from './subcategoryMovers'
+import { Skeleton } from '@/components/ui/Skeleton'
 
 function signed(pct: number): string {
   const n = Math.round(pct)
   return `${n > 0 ? '+' : ''}${n}%`
 }
 
+// Chip-shaped placeholders — same row height/gap as the real chips — for the
+// window while both aggregate queries are still in flight. Loading is its
+// own state, distinct from "queried and found nothing to rank": showing the
+// muted sentence before the data exists would state a conclusion early.
+const SKELETON_WIDTHS = ['5.5rem', '6.5rem', '4.5rem']
+
+function ChipsSkeleton() {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {SKELETON_WIDTHS.map((w, i) => (
+        <Skeleton key={i} className="h-6" style={{ width: w }} />
+      ))}
+    </div>
+  )
+}
+
 export default function SubcategoryStrip({
-  eyebrow, movers, comparisonLabel, compared, selectedSubs, onSelect, emptyNote,
+  eyebrow, movers, comparisonLabel, compared, selectedSubs, onSelect, emptyNote, isLoading,
 }: {
   eyebrow: string
   movers: Mover[]
@@ -20,6 +37,11 @@ export default function SubcategoryStrip({
   selectedSubs: Set<string>
   onSelect: (keys: string[]) => void
   emptyNote: string
+  /** True while either the current or comparison aggregate is still in
+   *  flight. A state that is both loading and uncompared renders as loading
+   *  — `compared` starts false before either query returns, so it can never
+   *  be trusted to mean "queried and found nothing" until loading clears. */
+  isLoading: boolean
 }) {
   return (
     <div className="mb-4">
@@ -28,14 +50,16 @@ export default function SubcategoryStrip({
           {eyebrow}
         </p>
         <div className="flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
-        {compared && comparisonLabel && (
+        {!isLoading && compared && comparisonLabel && (
           <span className="text-nano font-mono text-slate-400 dark:text-slate-500 shrink-0">
             {comparisonLabel}
           </span>
         )}
       </div>
 
-      {!compared || movers.length === 0 ? (
+      {isLoading ? (
+        <ChipsSkeleton />
+      ) : !compared || movers.length === 0 ? (
         <p className="text-micro text-slate-400 dark:text-slate-500 italic leading-snug">
           {emptyNote}
         </p>
