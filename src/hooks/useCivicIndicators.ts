@@ -477,11 +477,11 @@ async function fetchCrimeSubcategoryMover(ctx: QueryContext): Promise<TickerItem
 
   const [curRows, priRows] = await Promise.all([
     fetchDataset<Row>('policeIncidents', {
-      $select: select, $group: group, $limit: 200,
+      $select: select, $group: group, $order: 'cnt DESC', $limit: 200,
       $where: `incident_datetime >= '${ctx.curStart}' AND incident_datetime <= '${ctx.curEnd}'`,
     }),
     fetchDataset<Row>('policeIncidents', {
-      $select: select, $group: group, $limit: 200,
+      $select: select, $group: group, $order: 'cnt DESC', $limit: 200,
       $where: `incident_datetime >= '${ctx.priStart}' AND incident_datetime <= '${ctx.priEnd}'`,
     }),
   ])

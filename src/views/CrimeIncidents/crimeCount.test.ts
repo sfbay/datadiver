@@ -150,4 +150,9 @@ describe('the subcategory mover ticker card', () => {
   it('deep-links with ?sub= pair keys', () => {
     expect(ind).toMatch(/params: \{ sub:/)
   })
+
+  it('orders the GROUP BY so a 200-row cap cannot silently truncate the two windows differently', () => {
+    const fn = ind.slice(ind.indexOf('function fetchCrimeSubcategoryMover')).slice(0, 2000)
+    expect(fn).toMatch(/\$order: 'cnt DESC'/)
+  })
 })
