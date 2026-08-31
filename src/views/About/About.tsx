@@ -392,11 +392,12 @@ export default function About() {
               </p>
               <p className="mt-2">
                 A subcategory is identified by its <em>pair</em> with its parent category,
-                never by name alone. &ldquo;Vandalism&rdquo; exists under two different
-                categories, and so do &ldquo;Drug Violation&rdquo; and
-                &ldquo;Fraud.&rdquo; SFPD also publishes two live labels for vehicle
-                break-ins; we add them together and say so, because showing only the
-                larger understates the real figure by about 17%.
+                never by name alone. Thirteen of SFPD&rsquo;s 71 subcategory strings
+                appear under more than one category &mdash; &ldquo;Vandalism&rdquo; and
+                &ldquo;Drug Violation&rdquo; both do, and &ldquo;Other&rdquo; tops the
+                list, filed under ten different parents. SFPD also publishes two live
+                labels for vehicle break-ins; we add them together and say so, because
+                showing only the larger understates the real figure by about 17%.
               </p>
               <p className="mt-2">
                 The &ldquo;what&rsquo;s moving&rdquo; strip ranks change against a matched

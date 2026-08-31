@@ -455,18 +455,20 @@ July 2026): 1998 all-time peak 2,917 (dot-com wave) → 2009 post-crash trough 1
 ## Police Incidents — a subcategory's identity is its PAIR with the category
 
 `wg3w-h783` publishes three levels: `incident_category` (49 values),
-`incident_subcategory` (71) and `incident_description` (753). DataDiver ranked
-only the first until Aug 31 2026.
+`incident_subcategory` (71) and `incident_description` (755 as measured Aug 31
+2026 — this count drifts daily, so treat it as a snapshot, not a constant).
+DataDiver ranked only the first until Aug 31 2026.
 
 **The trap: subcategory strings repeat across parents.** Measured over the 12
-months to 2026-08-01:
+months to 2026-08-01, **13 of the 71 subcategory strings appear under more
+than one category**:
 
-| Subcategory string | Parents it appears under |
+| Subcategory string | Parent count |
 |---|---|
-| `Vandalism` | `Malicious Mischief` (4,867) **and** `Vandalism` (152) |
-| `Drug Violation` | `Drug Offense` (8,663) **and** `Disorderly Conduct` (591) |
-| `Weapons Offense` | `Weapons Offense` (752) **and** `Weapons Carrying Etc` (664) |
-| `Other` | seven different parents |
+| `Other` | 10 — Other Offenses, Miscellaneous Investigation, Warrant, Other, Civil Sidewalks, Malicious Mischief, Non-Criminal, Other Miscellaneous, Disorderly Conduct, Offences Against The Family And Children |
+| `Weapons Offense` | 5 |
+| `Intimidation`, `Drug Violation` | 3 each |
+| `Motor Vehicle Theft`, `Trespass`, `Vandalism`, `Fraud`, `Human Trafficking Commercial Sex Acts`, `Disorderly Conduct`, `Suspicious Occ`, `Liquor Law Violation`, `Loitering` | 2 each |
 
 So the key is `` `${incident_category}|${incident_subcategory}` `` everywhere —
 grouping, URL, watch table, filter. A flat list keyed on the string alone
