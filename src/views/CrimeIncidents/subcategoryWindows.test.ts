@@ -1,0 +1,53 @@
+import { describe, it, expect } from 'vitest'
+import { resolveMoverWindows } from './subcategoryWindows'
+
+const range = { start: '2025-08-01', end: '2026-08-01' }
+
+describe('the lag clamp', () => {
+  it('clamps the current window to the data’s real last day', () => {
+    // SFPD publishes days behind. An unclamped current window is SHORT while
+    // the prior window is full, which fabricates a decline on every bucket at
+    // once — the single most likely way this feature ships a confident lie.
+    const w = resolveMoverWindows(range, { kind: 'preset', preset: '1yr' }, '2026-07-28')
+    expect(w!.current.end).toBe('2026-07-28')
+  })
+
+  it('leaves the end alone when the data reaches it', () => {
+    const w = resolveMoverWindows(range, { kind: 'preset', preset: '1yr' }, '2026-08-05')
+    expect(w!.current.end).toBe('2026-08-01')
+  })
+
+  it('shifts the comparison by the CLAMPED length, not the requested one', () => {
+    const w = resolveMoverWindows(range, { kind: 'preset', preset: 'prev' }, '2026-07-28')
+    const days = (a: string, b: string) =>
+      (Date.parse(b) - Date.parse(a)) / 86_400_000
+    expect(days(w!.comparison.start, w!.comparison.end))
+      .toBe(days(w!.current.start, w!.current.end))
+  })
+
+  it('survives a null latestDate by not clamping', () => {
+    const w = resolveMoverWindows(range, { kind: 'preset', preset: '1yr' }, null)
+    expect(w!.current.end).toBe('2026-08-01')
+  })
+})
+
+describe('compare off', () => {
+  it('falls back to the immediately preceding window of equal length', () => {
+    const w = resolveMoverWindows(range, null, null)
+    expect(w!.comparison.end).toBe('2025-07-31')
+    expect(w!.label).toMatch(/^vs the previous \d+ days$/)
+  })
+
+  it('labels a resolved compare window with concrete dates', () => {
+    const w = resolveMoverWindows(range, { kind: 'preset', preset: '1yr' }, null)
+    expect(w!.label).toMatch(/^vs /)
+    expect(w!.label).not.toMatch(/previous/)
+  })
+})
+
+describe('degenerate ranges', () => {
+  it('returns null when the clamp empties the window', () => {
+    // latestDate before the range start: there is no current window at all.
+    expect(resolveMoverWindows(range, null, '2025-01-01')).toBeNull()
+  })
+})
