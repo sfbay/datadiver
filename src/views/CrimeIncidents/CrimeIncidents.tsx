@@ -22,6 +22,7 @@ import { usePoliceComparisonData, useOaklandPoliceComparisonData, countDistinctC
 import { CRIME_EYEBROWS, OAKLAND_CRIME_GROUPS, OAKLAND_CRIME_QUERY_FLOOR, titleCaseCrimetype, oaklandCategoryExpr, classifyOaklandCategory } from './crimeDialect'
 import { splitPairKey, parseSubParam, formatSubParam } from './subcategoryWatch'
 import { useSubcategoryMovers } from './useSubcategoryMovers'
+import SubcategoryStrip from './SubcategoryStrip'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useAppStore } from '@/stores/appStore'
@@ -987,6 +988,30 @@ export default function CrimeIncidents() {
           <div className="p-4 flex-1 overflow-y-auto">
             {sidebarTab === 'categories' && (
               <>
+                {isSF && !hasHistorical && (
+                  <>
+                    <SubcategoryStrip
+                      eyebrow="What's moving"
+                      movers={subcats.crimeMovers}
+                      comparisonLabel={subcats.comparisonLabel}
+                      compared={subcats.compared}
+                      selectedSubs={selectedSubs}
+                      onSelect={toggleSub}
+                      emptyNote="Too few incidents in this range to rank movers."
+                    />
+                    {subcats.enforcementMovers.length > 0 && (
+                      <SubcategoryStrip
+                        eyebrow="Enforcement activity · what police chose to act on"
+                        movers={subcats.enforcementMovers}
+                        comparisonLabel={subcats.comparisonLabel}
+                        compared={subcats.compared}
+                        selectedSubs={selectedSubs}
+                        onSelect={toggleSub}
+                        emptyNote=""
+                      />
+                    )}
+                  </>
+                )}
                 <div className="flex items-center gap-2 mb-4">
                   <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
                     Incident Categories
