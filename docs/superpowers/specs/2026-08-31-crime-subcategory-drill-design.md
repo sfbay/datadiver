@@ -3,7 +3,9 @@
 **Date:** 2026-08-31
 **Scope:** SF Crime Incidents (`/crime-incidents`), the civic ticker, and the
 crime deep-link grammar. Oakland is untouched.
-**Status:** approved (Jesse, 2026-08-31).
+**Status:** approved (Jesse, 2026-08-31), amended same day (§4 `kind`, §12).
+**Prerequisite:** the distinct-incident count fix ships FIRST, in its own PR
+(§12). This spec's counts assume it has landed.
 
 ## 1. Why
 
@@ -131,15 +133,27 @@ without a cycle.
 ### 4.2 Shape
 
 ```ts
-export type WatchBeat = 'watch' | 'mute'
+/** What a bucket MEASURES. Jesse's ruling, 2026-08-31: the buckets a
+ *  mechanical scan gets wrong are not noise — they are a different
+ *  variable, and silencing them threw away the more interesting one. */
+export type SubcategoryKind =
+  | 'crime'        // offences reported. Ranks the strip. The DEFAULT.
+  | 'enforcement'  // DISCRETIONARY police activity: warrants served,
+                   // traffic-violation arrests, drug violations, vehicle
+                   // recoveries. Its own lens and eyebrow; never mixed into
+                   // a crime headline, never silenced.
+  | 'admin'        // record-keeping with no civic reading: case closures,
+                   // lost property, `Other | Other`. The only kind muted.
 
 export interface WatchEntry {
   /** Display name. Overrides the mechanical prefix strip. */
   label?: string
-  /** 'watch' = curated beat, always eligible, owns a reserved slot.
-   *  'mute'  = never a headline (still listed, still counted).
-   *  Absent from the table entirely = eligible via the mover scan only. */
-  beat: WatchBeat
+  /** What this bucket measures. Absent from the table = 'crime'. */
+  kind?: SubcategoryKind
+  /** True = a curated beat: always eligible, owns a reserved strip slot.
+   *  A watched bucket may be any kind — an enforcement beat is watched on
+   *  the enforcement lens, not the crime strip. */
+  watch?: true
   /** One editorial line. Rendered as the chip's title attribute. */
   note?: string
   /** Additional pair keys folded into this display bucket. Display-only,
@@ -149,7 +163,7 @@ export interface WatchEntry {
   merge?: string[]
 }
 
-export const SUBCATEGORY_WATCH: Record<string, WatchEntry> = { /* … */ }
+export const SUBCATEGORY_WATCH: Record<string, WatchEntry> = { /* §4.3 */ }
 ```
 
 Key format: `` `${incident_category}|${incident_subcategory}` `` — exact
@@ -159,7 +173,7 @@ key is unlisted, which is the useful default.
 
 ### 4.3 Authored starters
 
-**`watch` (9):**
+**`kind: 'crime'`, watched (8)** — the strip ranks these:
 
 | Key | Label |
 |---|---|
@@ -170,24 +184,36 @@ key is unlisted, which is the useful default.
 | `Burglary\|Burglary - Commercial` | Business burglaries |
 | `Assault\|Aggravated Assault` | Aggravated assault |
 | `Robbery\|Robbery - Street` | Street robberies |
-| `Drug Offense\|Drug Violation` | Drug offenses |
 | `Malicious Mischief\|Vandalism` | Vandalism |
 
-**`mute` (14)** — administrative or police-activity measures:
-`Warrant|Warrant`, `Warrant|Other`,
-`Traffic Violation Arrest|Traffic Violation Arrest`,
-`Other Miscellaneous|Other`, `Other|Other`, `Other Offenses|Other`,
-`Other Offenses|Other Offenses`, `Non-Criminal|Non-Criminal`,
-`Non-Criminal|Other`, `Lost Property|Lost Property`,
-`Miscellaneous Investigation|Miscellaneous Investigation`,
-`Suspicious Occ|Suspicious Occ`, `Case Closure|Case Closure`,
-`Recovered Vehicle|Recovered Vehicle`.
+**`kind: 'enforcement'` (6), all watched** — discretionary police activity:
 
-The last of those measures recovery
-outcomes, not offences, and its −39% would otherwise read as a crime decline.
+| Key | Label |
+|---|---|
+| `Drug Offense\|Drug Violation` | Drug enforcement |
+| `Warrant\|Warrant` | Warrants served |
+| `Warrant\|Other` | Warrant arrests |
+| `Traffic Violation Arrest\|Traffic Violation Arrest` | Traffic-stop arrests |
+| `Recovered Vehicle\|Recovered Vehicle` | Vehicles recovered |
+| `Other Miscellaneous\|Trespass` | Trespass enforcement |
 
-Muting is a headline gate only. Muted pairs remain in the sidebar list, remain
-selectable, and remain in every total. Nothing is hidden from the data.
+**`Drug Offense | Drug Violation` was mis-filed as a crime beat in the first
+draft of this spec** and won the strip's top slot at "+61%". Drug violations
+are almost entirely arrest-generated: the number moves when policing changes,
+not when drug use changes. Its 44% duplicate inflation (§12) is the tell —
+many charges per arrest. Reading it as a crime surge would have been a
+confident, wrong headline on the front of the view.
+
+**`kind: 'admin'` (8), muted** — `Other Miscellaneous|Other`, `Other|Other`,
+`Other Offenses|Other`, `Other Offenses|Other Offenses`,
+`Non-Criminal|Non-Criminal`, `Non-Criminal|Other`,
+`Lost Property|Lost Property`, `Case Closure|Case Closure`.
+
+Muting is a **headline gate only**. Admin pairs stay in the sidebar list, stay
+selectable, and stay in every total. Nothing is hidden from the data.
+
+`Miscellaneous Investigation` and `Suspicious Occ` stay `crime`/unwatched
+rather than admin: they are genuine calls for service, merely vague.
 
 ## 5. The ranker
 
@@ -215,7 +241,8 @@ export interface Mover {
   current: number
   prior: number
   delta: number         // signed percent
-  beat: WatchBeat | null
+  kind: SubcategoryKind
+  watched: boolean
   note?: string
   /** Every pair key this chip's filter must match (self + authored merges). */
   keys: string[]
@@ -230,7 +257,8 @@ target and the merged row is dropped.
 **Eligibility** — all four must hold:
 - `current >= MIN_COUNT` **and** `prior >= MIN_COUNT` (a percent off a tiny
   prior window is noise, in both directions)
-- `beat !== 'mute'`
+- `kind !== 'admin'`
+- the mover's `kind` matches the lens being ranked (`crime` for the strip)
 - `subcategory !== ''`
 - `prior > 0`
 
@@ -239,7 +267,7 @@ move on 8,786 incidents outranks a 60% move on 200. Both of Jesse's signals
 are present in one number, which is why there is no separate "biggest volume"
 mode — a big flat bucket has no story, and a big moving one wins anyway.
 
-**Slots:** top `WATCH_SLOTS` by score among `beat === 'watch'`; then the
+**Slots:** top `WATCH_SLOTS` by score among watched entries of the lens's kind; then the
 remaining slot prefers the top-scoring **unlisted** mover, falling back to the
 next `watch` entry when no unlisted one qualifies. Curation cannot crowd out
 discovery; discovery cannot leave a hole.
@@ -284,15 +312,20 @@ quick-group buttons.
 
 ```
 ── WHAT'S MOVING                       vs the prior 12 months
-[ Drug offenses  +61% ]  [ Car break-ins  −38% ]  [ Hit & run  +108% ]
+[ Car break-ins  −38% ]  [ Business burglaries  −54% ]  [ Hit & run  +108% ]
 ```
 
-Worked against §2.1's live counts, the two watch slots go to Drug offenses
-(`61 × log10 8,663` = 240) and Car break-ins (merged: `38.4 × log10 5,252`
-= 143, beating Business burglaries' 139), and the open slot to the unlisted
-Hit & Run (`108 × log10 379` = 278). Note the open slot outscoring both
-curated ones — the reserved slots exist precisely so that cannot displace a
-followed beat.
+Worked against §2.1's live counts with Drug enforcement correctly excluded
+from the crime lens, the two watch slots go to Car break-ins (merged:
+`38.4 × log10 5,252` = 143) and Business burglaries (`54.2 × log10 372` =
+139), and the open slot to the unlisted Hit & Run (`108 × log10 379` = 278).
+Note the open slot outscoring both curated ones — the reserved slots exist
+precisely so that cannot displace a followed beat.
+
+The **enforcement lens** is a second eyebrow beneath the crime strip, same
+chip idiom, ranked over `kind: 'enforcement'`, labelled
+"── ENFORCEMENT ACTIVITY · what police chose to act on". It is never merged
+into the crime ranking and never contributes a ticker card in this PR.
 
 Chips are brick-pigment (the Crime view's colour), signed delta in mono
 tabular figures, `title` carrying the authored note plus both raw counts.
@@ -327,8 +360,8 @@ immediately preceding window of equal clamped length and labels it
 - **New** `fetchCrimeSubcategoryMover(ctx)` — two grouped queries over the
   engine's existing YoY window, ranked by the **same** `rankMovers`, taking
   slot 1. Emits one `TickerItem` — on today's data, headline
-  *"Drug offenses up 61% vs a year ago"*, value `8,663`, deep link
-  `{ sub: 'Drug Offense|Drug Violation' }`. A merged chip emits every key it
+  *"Car break-ins down 38% vs a year ago"*, value `4,340`, deep link
+  `{ sub: 'Larceny Theft|Larceny - From Vehicle,Larceny Theft|Theft From Vehicle' }`. A merged chip emits every key it
   folds, comma-joined (§8). Returns `null` when nothing is eligible — never a fabricated card.
 - **Fixed** `fetchCrimeIncidents` — `params: { categories: 'violent' }` becomes
   `{ categories: 'Assault,Robbery,Homicide,Rape' }`, the exact list its own
@@ -409,9 +442,10 @@ Pure, node-only Vitest — no network, no DOM:
 - every key contains exactly one `|`, with non-empty halves
 - every `merge` target is itself a well-formed key and is not also a top-level
   key (no merge cycles, no double-counting)
-- `beat` is exhaustively `'watch' | 'mute'`
-- at least one `watch` entry exists (an all-mute table would silently empty
-  the strip)
+- `kind` is exhaustively `'crime' | 'enforcement' | 'admin'`
+- no `admin` entry is also `watch: true` (it could never be shown)
+- at least one watched `crime` entry exists (an all-admin table would
+  silently empty the strip)
 
 **`crimeDeepLinks.test.ts`** — the bug class from §2.3. Reads
 `useCivicIndicators.ts` as source, extracts each crime `TickerItem`'s
@@ -436,3 +470,91 @@ non-empty view.
   headlines but not from counts.
 - `CLAUDE.md` → CrimeIncidents bullet: the pair key, the watch table's role,
   the lag clamp, and that `incident_description` stays out of the filter.
+
+---
+
+## 12. Prerequisite — the distinct-incident count fix (separate PR)
+
+Found while writing this spec; Jesse chose "scope A" (fix first, then build
+the drill) on 2026-08-31.
+
+### 12.1 The defect
+
+SF crime rows are **charge-level**, and cases carry **supplemental reports**.
+Both facts come from DataSF's own `columns.json`, not inference:
+
+> **`incident_code`** — "A single incident report can have one or more
+> incident types associated. In those cases you will see multiple rows
+> representing a unique combination of the Incident ID and Incident Code."
+>
+> **`report_type_description`** — "Initial; Initial Supplement; Vehicle
+> Initial; Vehicle Supplement; Coplogic Initial; Coplogic Supplement"
+
+Worked example, `incident_number = 260084806` (12 months to 2026-08-01):
+**16 rows**, across 6 `incident_id`s — one `Initial` plus five
+`Initial Supplement` reports — spanning 7 categories, with
+`Robbery | Robbery - Commercial` repeated **4 times inside its own bucket**.
+
+Citywide for that window: **92,622 rows / 72,287 incident_ids / 64,414
+incident_numbers.** Every count in the SF crime path is `count(*)`.
+
+### 12.2 The unit
+
+**`count(distinct incident_number)`.** A supplement is the same event
+re-reported, and a second charge on one arrest is not a second crime. This
+is the identical fix Oakland received in PR #154
+(`count(distinct casenumber)`) — SF is the worse case: 30% row-level
+inflation against Oakland's 15.5%.
+
+### 12.3 Measured impact
+
+Within-bucket inflation is **+10.3%** overall and badly uneven:
+
+| Bucket | Rows | Cases | Inflated |
+|---|---|---|---|
+| Weapons Carrying Etc \| Weapons Offense | 664 | 433 | **+53%** |
+| Drug Offense \| Drug Violation | 8,663 | 6,019 | **+44%** |
+| Assault \| Aggravated Assault | 2,418 | 1,989 | +22% |
+| Larceny Theft \| Larceny - From Vehicle | 4,349 | 4,340 | +0.2% |
+| Other Miscellaneous \| Loitering | 526 | 524 | +0.4% |
+
+A bucket's inflation is roughly *charges filed per arrest*, so heavily-charged
+enforcement buckets inflate hardest — which is exactly why a raw-row ranking
+promotes them, and why this fix must precede the strip.
+
+**Percent changes survive the fix; absolute counts do not.** Year-over-year
+deltas computed on rows versus on cases differ by ≤4 points across every
+bucket above the floor (Hit & Run's +17 is the sole outlier), because the
+inflation ratio is stable year over year. So no trend, era bar, or delta
+flips — but the citywide headline falls from 92,622 to 64,414 for a
+12-month window.
+
+### 12.4 The seam stays honest
+
+The historical extract duplicates too: `tmnf-yvry` 2015 = 146,675 rows /
+116,370 `incidntnum` (+26%); `wg3w-h783` Jun 2018–Jun 2019 = 143,227 rows /
+104,204 (+37%). Both sides must move together or the 2018 seam gains a
+~10-point artificial step. Historical uses `incidntnum`.
+
+### 12.5 Scope
+
+`count(distinct incident_number)` (historical: `incidntnum`) replaces
+`count(*)` at every SF crime count site: the 9 in `useCrimeEraData.ts`
+(total, cad-link, category, neighborhood, resolution — both eras), the era
+strip via `eraSource.countExpr` (the field Oakland already uses for exactly
+this), `useCivicIndicators`' crime card, `useComparisonDataFactory`,
+`usePoliceHourlyPattern` / `useHourlyPatternFactory`, and
+`useNeighborhoodProfiles`. Oakland's path is untouched — already correct.
+
+The cad-link tile needs care: `count(cad_number)` must become
+`count(distinct cad_number)` against a distinct-case denominator, or the
+"911 LINKED" percentage inherits the same inflation asymmetrically.
+
+### 12.6 Disclosure
+
+A case that involves both a robbery and a burglary is counted once in each
+bucket. So **category counts will not sum to the citywide total** — correct
+behaviour, and a question a reader will ask. Stated in About and in
+`docs/data-insights.md` → Crime, alongside the supplement/charge explanation
+and the note that DataDiver's crime figures fell ~30% on this date because
+the unit changed, not the city.
