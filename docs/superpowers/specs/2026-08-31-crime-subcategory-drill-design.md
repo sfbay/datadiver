@@ -38,7 +38,32 @@ the detail panel — and is explicitly out of scope.
 Windows: **current** = 2025-08-01 → 2026-08-01, **prior** = 2024-08-01 →
 2025-08-01. 96 distinct `(category, subcategory)` pairs in the current window.
 
-### 2.1 The raw mover scan, floor 150
+### 2.0 Re-measured on cases (2026-08-31, after the count fix)
+
+§2.1's table below is the original ROW-count scan that motivated this spec. It
+is kept as the historical record. The same scan on the corrected unit —
+`count(distinct incident_number)`, floor 150 on both sides — ranks by
+`|delta| × log10(current)`:
+
+| Score | Change | Now | Prior | Kind | Bucket |
+|---|---|---|---|---|---|
+| 318 | +125% | 349 | 155 | crime | Traffic Collision \| Hit & Run |
+| 283 | +93% | 1,109 | 575 | enforcement | Traffic Violation Arrest |
+| 237 | +63% | 6,019 | 3,701 | enforcement | Drug Offense \| Drug Violation |
+| 138 | −51% | 524 | 1,065 | enforcement | Other Miscellaneous \| Loitering |
+| 136 | −54% | 320 | 697 | crime | Burglary \| Burglary - Commercial |
+| 133 | −37% | 4,166 | 6,586 | crime | Larceny Theft \| Larceny - From Vehicle |
+| 130 | −39% | 2,109 | 3,457 | enforcement | Recovered Vehicle |
+| 113 | −32% | 3,211 | 4,747 | crime | Motor Vehicle Theft |
+
+**The crime lens's three chips on today's data:** Car break-ins (merged 5,060
+vs 8,163 = −38%, score 140) and Business burglaries (136) take the watch
+slots; Hit & Run (318) takes the open slot. Unchanged in shape from the
+row-count draft — the correction moved the absolute figures, not the ranking,
+exactly as §12.3 predicts. The `MIN_COUNT = 150` floor was set on rows and is
+KEPT on cases: it now excludes slightly more, which is the safe direction.
+
+### 2.1 The raw mover scan, floor 150 (row counts — historical record)
 
 | Change | Now | Prior | Pair |
 |---|---|---|---|
@@ -186,7 +211,7 @@ key is unlisted, which is the useful default.
 | `Robbery\|Robbery - Street` | Street robberies |
 | `Malicious Mischief\|Vandalism` | Vandalism |
 
-**`kind: 'enforcement'` (6), all watched** — discretionary police activity:
+**`kind: 'enforcement'` (7), all watched** — discretionary police activity:
 
 | Key | Label |
 |---|---|
@@ -196,6 +221,13 @@ key is unlisted, which is the useful default.
 | `Traffic Violation Arrest\|Traffic Violation Arrest` | Traffic-stop arrests |
 | `Recovered Vehicle\|Recovered Vehicle` | Vehicles recovered |
 | `Other Miscellaneous\|Trespass` | Trespass enforcement |
+| `Other Miscellaneous\|Loitering` | Loitering enforcement |
+
+`Other Miscellaneous | Loitering` was caught the same way, on the re-measure
+after the count fix landed: it scored third in the crime lens at −51%. Nobody
+reports a loitering — the number moves when officers decide to cite. Both
+misfilings were found by asking one question of a high-scoring bucket: *who
+generates this row, a victim or an officer?*
 
 **`Drug Offense | Drug Violation` was mis-filed as a crime beat in the first
 draft of this spec** and won the strip's top slot at "+61%". Drug violations
