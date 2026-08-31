@@ -452,6 +452,55 @@ July 2026): 1998 all-time peak 2,917 (dot-com wave) → 2009 post-crash trough 1
 (highest since 2019). Both `neighborhood` (evictions) and `analysis_neighborhood`
 (buyouts) speak the 41 Analysis Neighborhoods vocabulary — joinable by exact name.
 
+## Police Incidents — a subcategory's identity is its PAIR with the category
+
+`wg3w-h783` publishes three levels: `incident_category` (49 values),
+`incident_subcategory` (71) and `incident_description` (753). DataDiver ranked
+only the first until Aug 31 2026.
+
+**The trap: subcategory strings repeat across parents.** Measured over the 12
+months to 2026-08-01:
+
+| Subcategory string | Parents it appears under |
+|---|---|
+| `Vandalism` | `Malicious Mischief` (4,867) **and** `Vandalism` (152) |
+| `Drug Violation` | `Drug Offense` (8,663) **and** `Disorderly Conduct` (591) |
+| `Weapons Offense` | `Weapons Offense` (752) **and** `Weapons Carrying Etc` (664) |
+| `Other` | seven different parents |
+
+So the key is `` `${incident_category}|${incident_subcategory}` `` everywhere —
+grouping, URL, watch table, filter. A flat list keyed on the string alone
+merges unlike things or emits duplicate-looking rows.
+
+**Two live strings for one crime.** `Larceny Theft | Larceny - From Vehicle`
+(4,166 cases) and `Larceny Theft | Theft From Vehicle` (894) are the same
+concept, both populated, both declining. Rendering only the larger understates
+by ~17%. Handled by an authored `merge` field in `subcategoryWatch.ts` — never
+by an inferred string-similarity rule.
+
+**Why a mechanical mover scan is not shippable.** Ranked by change on cases,
+floor 150 both sides, the top movers include `Traffic Violation Arrest` +93%,
+`Warrant` +34% and `Other Offenses | Other` +63%. Those measure police activity
+and record-keeping, not crime. Meanwhile shoplifting is FLAT (3,269 vs 3,245)
+and would never surface, though it is among the most contested crime figures in
+SF politics. Newsworthiness is not a function the data carries.
+
+The authored `kind` answers one question of every bucket: **who generates this
+row, a victim or an officer?** A burglary exists because someone reported it; a
+loitering citation exists because an officer chose to write it. `crime` ranks
+the main strip, `enforcement` gets its own, and only `admin` (case closures,
+lost property, `Other | Other`) is muted — from headlines only, never from the
+list or the totals.
+
+**Publish lag is the failure mode to guard.** SFPD runs days behind. An
+unclamped current window is short while the comparison window is full, which
+fabricates a decline across every bucket at once. The current window's end
+clamps to `MAX(incident_datetime)` and the comparison shifts by the clamped
+length (`subcategoryWindows.ts`).
+
+Nothing here applies before 2018: the historical extract normalises
+`incident_subcategory` to `''`.
+
 ## Police Incidents — a row is a CHARGE, not a crime (corrected Aug 31 2026)
 
 Until Aug 31 2026 every SF crime figure on DataDiver was a row count. A row is
