@@ -20,7 +20,7 @@ import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { usePoliceHourlyPattern, useOaklandPoliceHourlyPattern } from '@/hooks/useHourlyPatternFactory'
 import { usePoliceComparisonData, useOaklandPoliceComparisonData, countDistinctCases, type OaklandCrimeComparisonRow } from '@/hooks/useComparisonDataFactory'
 import { CRIME_EYEBROWS, OAKLAND_CRIME_GROUPS, OAKLAND_CRIME_QUERY_FLOOR, titleCaseCrimetype, oaklandCategoryExpr, classifyOaklandCategory } from './crimeDialect'
-import { splitPairKey } from './subcategoryWatch'
+import { splitPairKey, parseSubParam, formatSubParam } from './subcategoryWatch'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useAppStore } from '@/stores/appStore'
@@ -104,30 +104,36 @@ export default function CrimeIncidents() {
   /** Subcategory selection. A subcategory's identity is the PAIR
    *  `category|subcategory` — `Vandalism` exists under both `Malicious
    *  Mischief` and `Vandalism`, so the string alone would merge two different
-   *  things. encodeURIComponent encodes both `|` and `,`, so the comma join
-   *  is safe for any published name. */
-  const selectedSubs = useMemo(() => {
-    const param = searchParams.get('sub')
-    if (!param) return new Set<string>()
-    return new Set(param.split(',').map(decodeURIComponent))
-  }, [searchParams])
+   *  things. Parse/serialise go through the shared codec in
+   *  subcategoryWatch.ts so the memo and every setter agree byte-for-byte. */
+  const selectedSubs = useMemo(() => parseSubParam(searchParams.get('sub')), [searchParams])
 
   const setSelectedSubs = useCallback((subs: Set<string>) => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev)
       if (subs.size === 0) next.delete('sub')
-      else next.set('sub', Array.from(subs).map(encodeURIComponent).join(','))
+      else next.set('sub', formatSubParam(subs))
       return next
     }, { replace: true })
   }, [setSearchParams])
 
-  /** Toggle one pair, used by both the sidebar rows and the strip chips. */
+  /** Toggle one pair, used by both the sidebar rows and the strip chips.
+   *  Reads the CURRENT `sub` set from `prev` inside the updater — never the
+   *  closed-over `selectedSubs` — so this setter and `setSelectedCategories`
+   *  firing in the same synchronous burst (a category check + a subcategory
+   *  click, which Tasks 5/6 make ordinary) each build on the other's
+   *  in-flight change instead of the second navigate clobbering the first. */
   const toggleSub = useCallback((keys: string[]) => {
-    const next = new Set(selectedSubs)
-    const allOn = keys.every((k) => next.has(k))
-    for (const k of keys) { if (allOn) next.delete(k); else next.add(k) }
-    setSelectedSubs(next)
-  }, [selectedSubs, setSelectedSubs])
+    setSearchParams((prev) => {
+      const current = parseSubParam(prev.get('sub'))
+      const allOn = keys.every((k) => current.has(k))
+      for (const k of keys) { if (allOn) current.delete(k); else current.add(k) }
+      const next = new URLSearchParams(prev)
+      if (current.size === 0) next.delete('sub')
+      else next.set('sub', formatSubParam(current))
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
 
   const setMapMode = useCallback((mode: MapMode) => {
     setSearchParams((prev) => {
@@ -145,13 +151,16 @@ export default function CrimeIncidents() {
       else next.set('categories', Array.from(cats).map(encodeURIComponent).join(','))
       // Checking a whole category makes its own subcategory picks redundant;
       // leaving them would OR a subset into a superset for no visible reason.
-      const keptSubs = Array.from(selectedSubs)
+      // Reads the CURRENT `sub` set from `prev`, not the closed-over
+      // `selectedSubs` — see toggleSub's comment for why that matters.
+      const currentSubs = parseSubParam(prev.get('sub'))
+      const keptSubs = Array.from(currentSubs)
         .filter((k) => !cats.has(splitPairKey(k).category))
       if (keptSubs.length === 0) next.delete('sub')
-      else next.set('sub', keptSubs.map(encodeURIComponent).join(','))
+      else next.set('sub', formatSubParam(keptSubs))
       return next
     }, { replace: true })
-  }, [setSearchParams, selectedSubs])
+  }, [setSearchParams])
 
   const setSelectedNeighborhood = useCallback((n: string | null) => {
     setSearchParams((prev) => {

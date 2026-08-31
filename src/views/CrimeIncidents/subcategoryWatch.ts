@@ -112,6 +112,19 @@ export const SUBCATEGORY_WATCH: Record<string, WatchEntry> = {
   // they are genuine calls for service, merely vague.
 }
 
+/** `?sub=` is a comma-joined list of encodeURIComponent'd pair keys.
+ *  encodeURIComponent encodes both `|` and `,`, so any published SFPD name
+ *  survives the round trip. One parser, shared by the memo and both setters —
+ *  a second copy is how the two drift. */
+export function parseSubParam(param: string | null): Set<string> {
+  if (!param) return new Set()
+  return new Set(param.split(',').map(decodeURIComponent))
+}
+
+export function formatSubParam(subs: Set<string> | readonly string[]): string {
+  return Array.from(subs).map(encodeURIComponent).join(',')
+}
+
 export function watchEntry(key: string): WatchEntry | undefined {
   return SUBCATEGORY_WATCH[key]
 }

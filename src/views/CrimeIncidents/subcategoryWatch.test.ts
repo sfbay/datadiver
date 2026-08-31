@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   SUBCATEGORY_WATCH, pairKey, splitPairKey, kindOf, isWatched,
-  subcategoryLabel, isEcho, watchEntry,
+  subcategoryLabel, isEcho, watchEntry, parseSubParam, formatSubParam,
 } from './subcategoryWatch'
 
 describe('pair keys', () => {
@@ -77,6 +77,26 @@ describe('table integrity', () => {
   it('merges vehicle break-ins, which SFPD publishes under two strings', () => {
     const e = watchEntry('Larceny Theft|Larceny - From Vehicle')!
     expect(e.merge).toContain('Larceny Theft|Theft From Vehicle')
+  })
+})
+
+describe('the ?sub= param codec', () => {
+  it('parses an absent or empty param as an empty set', () => {
+    expect(parseSubParam(null)).toEqual(new Set())
+    expect(parseSubParam('')).toEqual(new Set())
+  })
+
+  it('round-trips a pair key containing | through format then parse', () => {
+    const key = pairKey('Malicious Mischief', 'Vandalism')
+    expect(parseSubParam(formatSubParam([key]))).toEqual(new Set([key]))
+  })
+
+  it('round-trips a two-key list in order', () => {
+    const a = pairKey('Larceny Theft', 'Larceny - From Vehicle')
+    const b = pairKey('Burglary', 'Burglary - Residential')
+    const formatted = formatSubParam([a, b])
+    expect(formatted).toBe(`${encodeURIComponent(a)},${encodeURIComponent(b)}`)
+    expect(Array.from(parseSubParam(formatted))).toEqual([a, b])
   })
 })
 
