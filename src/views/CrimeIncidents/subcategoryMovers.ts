@@ -15,7 +15,7 @@
 // ones (Hit & Run 318 vs Car break-ins 140), which is the whole point:
 // curation cannot crowd out discovery, and discovery cannot leave a hole.
 import {
-  isWatched, kindOf, pairKey, splitPairKey, subcategoryLabel,
+  isWatched, kindOf, pairKey, splitPairKey, subcategoryChipLabel,
   watchEntry, SUBCATEGORY_WATCH, type SubcategoryKind,
 } from './subcategoryWatch'
 
@@ -120,7 +120,9 @@ function toMover(r: MoverInput): Mover {
   return {
     key: r.key,
     category, subcategory,
-    label: subcategoryLabel(category, subcategory),
+    // Chip label, not the sidebar's: a mover travels without its parent row,
+    // so a name that shortens to a bare "Other" must stay fully qualified.
+    label: subcategoryChipLabel(category, subcategory),
     current: r.current,
     prior: r.prior,
     delta: ((r.current - r.prior) / r.prior) * 100,

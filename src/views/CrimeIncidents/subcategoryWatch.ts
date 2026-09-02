@@ -144,6 +144,34 @@ export function isEcho(category: string, subcategory: string): boolean {
 
 /** Authored label, else the parent prefix stripped, else the raw string.
  *  Display ONLY. */
+/** Residues that carry no meaning once the parent category is stripped away.
+ *  "Larceny Theft - Other" shortens to "Other", which reads fine in the
+ *  sidebar (its parent row sits directly above it) and says nothing at all on
+ *  a chip that travels alone. Kept small and authored rather than inferred. */
+const GENERIC_RESIDUES = new Set(['other', 'other offenses', 'misc', 'miscellaneous', 'unknown'])
+
+/** The label for a surface that shows a subcategory WITHOUT its parent beside
+ *  it — the mover chips and the ticker card. Same as `subcategoryLabel`,
+ *  except it refuses to shorten a name down to a generic residue: there it
+ *  falls back to SFPD's full published string, which is self-describing.
+ *
+ *  Found by looking at the built page: the crime strip's open slot surfaced
+ *  `Larceny Theft | Larceny Theft - Other` (492 cases) and rendered it as a
+ *  headline reading "Other -14%". */
+export function subcategoryChipLabel(category: string, subcategory: string): string {
+  const authored = SUBCATEGORY_WATCH[pairKey(category, subcategory)]?.label
+  if (authored) return authored
+  const short = subcategoryLabel(category, subcategory)
+  if (!GENERIC_RESIDUES.has(short.trim().toLowerCase())) return short
+  // The name means nothing on its own. Put the parent back — either by
+  // un-shortening SFPD's own string, or by qualifying one that never carried
+  // the parent to begin with (`Offences Against The Family And Children |
+  // Other`). Long, and truncated with the full text in the chip's tooltip;
+  // a chip that reads "Other" is worse than a chip that reads long.
+  if (subcategory.toLowerCase().startsWith(category.toLowerCase())) return subcategory
+  return `${category} - ${subcategory}`
+}
+
 export function subcategoryLabel(category: string, subcategory: string): string {
   const authored = SUBCATEGORY_WATCH[pairKey(category, subcategory)]?.label
   if (authored) return authored

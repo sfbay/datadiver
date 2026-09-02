@@ -254,6 +254,20 @@ export default function IncidentCategoryFilter({
                 </div>
               )
             })}
+            {/* A case charged with two subcategories of one category counts
+                once in the parent row and once in EACH child, so the children
+                can total more than the number directly above them. Verified on
+                the built page: Larceny Theft read 1,168 over children summing
+                to 1,181. The same arithmetic already sits between category
+                counts and the citywide total, but never this close together —
+                two bare numbers an inch apart need the sentence. */}
+            {isOpen && subs.length > 1 &&
+              subs.reduce((sum, s) => sum + s.count, 0) > entry.count && (
+              <p className="pl-8 pr-2 pt-0.5 pb-1 text-nano text-slate-400 dark:text-slate-500 leading-snug italic">
+                These total more than {entry.category} above: a case charged with
+                two of them counts in each.
+              </p>
+            )}
             </Fragment>
           )
         })}

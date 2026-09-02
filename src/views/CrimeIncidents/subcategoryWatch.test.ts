@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   SUBCATEGORY_WATCH, pairKey, splitPairKey, kindOf, isWatched,
-  subcategoryLabel, isEcho, watchEntry, parseSubParam, formatSubParam,
+  subcategoryLabel, subcategoryChipLabel, isEcho, watchEntry, parseSubParam, formatSubParam,
 } from './subcategoryWatch'
 
 describe('pair keys', () => {
@@ -121,5 +121,53 @@ describe('labels', () => {
   it('flags echo rows so the sidebar can skip a pointless chevron', () => {
     expect(isEcho('Suspicious Occ', 'Suspicious Occ')).toBe(true)
     expect(isEcho('Larceny Theft', 'Larceny Theft - Shoplifting')).toBe(false)
+  })
+})
+
+const GENERIC_CHECK = (s: string) =>
+  ['other', 'other offenses', 'misc', 'miscellaneous', 'unknown'].includes(s.trim().toLowerCase())
+
+describe('chip labels — a mover travels without its parent row', () => {
+  it('keeps SFPD\'s full string when shortening would leave a bare "Other"', () => {
+    // Seen on the built page: the crime strip rendered this pair as a headline
+    // reading "Other -14%", which tells a reader nothing.
+    expect(subcategoryLabel('Larceny Theft', 'Larceny Theft - Other')).toBe('Other')
+    expect(subcategoryChipLabel('Larceny Theft', 'Larceny Theft - Other'))
+      .toBe('Larceny Theft - Other')
+  })
+
+  it('generalises to the other parents that publish an "Other" bucket', () => {
+    expect(subcategoryChipLabel('Burglary', 'Burglary - Other')).toBe('Burglary - Other')
+    expect(subcategoryChipLabel('Robbery', 'Robbery - Other')).toBe('Robbery - Other')
+  })
+
+  it('still shortens a name that survives the strip with meaning', () => {
+    expect(subcategoryChipLabel('Larceny Theft', 'Larceny Theft - Shoplifting')).toBe('Shoplifting')
+  })
+
+  it('an authored label always wins, generic or not', () => {
+    expect(subcategoryChipLabel('Larceny Theft', 'Larceny - From Vehicle')).toBe('Car break-ins')
+  })
+
+  it('an authored label wins even over a generic published name', () => {
+    expect(subcategoryChipLabel('Warrant', 'Other')).toBe('Warrant arrests')
+  })
+
+  it('qualifies a bare generic name that never carried its parent', () => {
+    // SFPD publishes this one as literally "Other" with no prefix to restore,
+    // so the parent is prepended rather than left off.
+    expect(subcategoryChipLabel('Offences Against The Family And Children', 'Other'))
+      .toBe('Offences Against The Family And Children - Other')
+  })
+
+  it('never renders a chip whose whole name is a generic word', () => {
+    for (const [cat, sub] of [
+      ['Larceny Theft', 'Larceny Theft - Other'],
+      ['Burglary', 'Burglary - Other'],
+      ['Offences Against The Family And Children', 'Other'],
+      ['Non-Criminal', 'Other'],
+    ] as const) {
+      expect(GENERIC_CHECK(subcategoryChipLabel(cat, sub))).toBe(false)
+    }
   })
 })
