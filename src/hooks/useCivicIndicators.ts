@@ -14,6 +14,9 @@ import { yearAgo } from '@/utils/time'
 import { sfLocalCutoff } from '@/utils/sfTime'
 import { classifyCallType } from '@/lib/alerts/significance'
 import { SF_CRIME_COUNT } from '@/views/CrimeIncidents/crimeCount'
+import { topMover, type MoverInput } from '@/views/CrimeIncidents/subcategoryMovers'
+import { formatSubParam, splitPairKey } from '@/views/CrimeIncidents/subcategoryWatch'
+import { resolveMoverWindows } from '@/views/CrimeIncidents/subcategoryWindows'
 
 /** The four categories the violent-crime card counts. Exported so the card's
  *  deep link and its WHERE clause are built from ONE list. */
@@ -158,6 +161,7 @@ async function computeAllIndicators(
     fetchEmergencyResponse(ctx),
     fetch311Cases(ctx),
     fetchCrimeIncidents(ctx),
+    fetchCrimeSubcategoryMover(ctx),
     fetchParkingRevenue(ctx),
     fetchParkingCitations(ctx),
     fetchCampaignFinance(ctx),
@@ -458,6 +462,106 @@ async function fetchCrimeIncidents(ctx: QueryContext): Promise<TickerItem | null
     delta,
     value: formatCount(current),
     priorValue: formatCount(prior),
+    freshness: 'daily',
+    computedAt: ctx.now,
+    priority: priorityFromCategory(category),
+  }
+}
+
+// 3b. Crime Incidents — the biggest mover among SFPD's own subcategories.
+// Same ranker as the in-view strip (subcategoryMovers.ts), deliberately a
+// DIFFERENT window: the strip follows the view's date range, this follows the
+// indicator engine's year-over-year context. Two callers, one ranking rule.
+async function fetchCrimeSubcategoryMover(ctx: QueryContext): Promise<TickerItem | null> {
+  const select = `incident_category, incident_subcategory, ${SF_CRIME_COUNT} as cnt`
+  const group = 'incident_category, incident_subcategory'
+  type Row = { incident_category: string; incident_subcategory: string; cnt: string }
+
+  // SFPD publishes a few days behind. ctx.curEnd runs to the app's date
+  // range unclamped — an unclamped current window is short while the prior
+  // window is full, which fabricates a decline on every bucket under a
+  // headline that asserts a direction. Clamp to MAX(incident_datetime), the
+  // same probe useDataFreshness uses, and shift the prior window by the
+  // CLAMPED length (resolveMoverWindows — the same load-bearing clamp the
+  // in-view strip uses, over this card's own YoY window rather than the
+  // view's date range).
+  const latestRows = await fetchDataset<{ latest: string }>('policeIncidents', {
+    $select: 'max(incident_datetime) as latest', $limit: 1,
+  })
+  const latestDate = latestRows[0]?.latest?.split('T')[0] ?? null
+  // No probe, no unclamped percentage — no card rather than a confident lie.
+  if (!latestDate) return null
+
+  const dateRange = { start: ctx.curStart.split('T')[0], end: ctx.curEnd.split('T')[0] }
+  const windows = resolveMoverWindows(dateRange, { kind: 'preset', preset: '1yr' }, latestDate)
+  if (!windows) return null
+  const curWhere = `incident_datetime >= '${windows.current.start}T00:00:00' AND incident_datetime <= '${windows.current.end}T23:59:59'`
+  const priWhere = `incident_datetime >= '${windows.comparison.start}T00:00:00' AND incident_datetime <= '${windows.comparison.end}T23:59:59'`
+
+  const [curRows, priRows] = await Promise.all([
+    fetchDataset<Row>('policeIncidents', {
+      $select: select, $group: group, $order: 'cnt DESC', $limit: 200, $where: curWhere,
+    }),
+    fetchDataset<Row>('policeIncidents', {
+      $select: select, $group: group, $order: 'cnt DESC', $limit: 200, $where: priWhere,
+    }),
+  ])
+  // A missing comparison side is ABSENCE, not zero — emit no card rather than
+  // announcing every bucket as newly invented.
+  if (priRows.length === 0 || curRows.length === 0) return null
+
+  const prior = new Map<string, number>()
+  for (const r of priRows) {
+    prior.set(`${r.incident_category}|${r.incident_subcategory}`, parseInt(r.cnt, 10) || 0)
+  }
+  const inputs: MoverInput[] = curRows.flatMap((r) => {
+    const category = r.incident_category ?? ''
+    const subcategory = r.incident_subcategory ?? ''
+    if (!category || !subcategory) return []
+    const key = `${category}|${subcategory}`
+    return [{ key, category, subcategory, current: parseInt(r.cnt, 10) || 0, prior: prior.get(key) ?? 0 }]
+  })
+
+  const top = topMover(inputs, 'crime')
+  if (!top) return null
+
+  // Every pair this chip folds, OR'd — not just the canonical pair. `value`
+  // and `priorValue` below are the MERGED totals topMover summed; a
+  // sparkline built from the canonical pair alone would count less than the
+  // number printed beside it (Car break-ins: card ~5,060, series ~4,166).
+  const sparkWhere = top.keys
+    .map((k) => {
+      const { category, subcategory } = splitPairKey(k)
+      return `(incident_category = '${category.replace(/'/g, "''")}' AND incident_subcategory = '${subcategory.replace(/'/g, "''")}')`
+    })
+    .join(' OR ')
+  const spark = await fetchSparkline(
+    'policeIncidents', 'incident_datetime', windows.current.start + 'T00:00:00', windows.current.end + 'T23:59:59',
+    sparkWhere,
+    SF_CRIME_COUNT,
+  )
+  const category = deltaCategory(top.delta)
+
+  return {
+    id: 'civic-crime-subcategory-mover',
+    headline: `${top.label} ${formatPct(top.delta)} vs a year ago`,
+    detail: `${formatCount(top.prior)} in the prior year period`,
+    category,
+    severity: deltaSeverity(top.delta, true),
+    source: {
+      view: '/crime-incidents',
+      // Every key the chip folds, so a merged bucket filters to all of them.
+      // formatSubParam is the ONE codec shared with the deep-link parser
+      // (subcategoryWatch.ts) — a second hand-rolled copy is how the two
+      // drift.
+      params: { sub: formatSubParam(top.keys) },
+      label: `Crime Incidents · ${top.label}`,
+      datasetId: 'wg3w-h783',
+    },
+    sparkData: spark,
+    delta: top.delta,
+    value: formatCount(top.current),
+    priorValue: formatCount(top.prior),
     freshness: 'daily',
     computedAt: ctx.now,
     priority: priorityFromCategory(category),

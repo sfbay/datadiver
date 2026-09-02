@@ -381,6 +381,40 @@ export default function About() {
               </p>
             </Finding>
 
+            <Finding title="Subcategories are SFPD’s; the plain-English names and the watch list are ours">
+              <p>
+                SFPD publishes a second level below its 49 crime categories &mdash; 71
+                subcategories, including shoplifting and vehicle break-ins. Those are the
+                city&rsquo;s own labels, not our inference, and the published string is
+                always one hover away from the friendly name we show. We rename only where
+                the official wording is opaque: &ldquo;Larceny - From Vehicle&rdquo; reads
+                here as &ldquo;Car break-ins.&rdquo;
+              </p>
+              <p className="mt-2">
+                A subcategory is identified by its <em>pair</em> with its parent category,
+                never by name alone. Thirteen of SFPD&rsquo;s 71 subcategory strings
+                appear under more than one category &mdash; &ldquo;Vandalism&rdquo; and
+                &ldquo;Drug Violation&rdquo; both do, and &ldquo;Other&rdquo; tops the
+                list, filed under ten different parents. SFPD also publishes two live
+                labels for vehicle break-ins; we add them together and say so, because
+                showing only the larger understates the real figure by about 17%.
+              </p>
+              <p className="mt-2">
+                The &ldquo;what&rsquo;s moving&rdquo; strip ranks change against a matched
+                earlier window, on buckets with at least 150 incidents on both sides. Two
+                slots are reserved for the beats we follow and one is always open to
+                whatever the data turns up, so curation cannot crowd out discovery. We
+                keep police-activity measures &mdash; warrants served, traffic-stop
+                arrests, drug violations, loitering citations &mdash; in a separate
+                &ldquo;enforcement&rdquo; strip. Those numbers move when policing changes,
+                not when crime does, and reading them as crime is a mistake we made in an
+                early draft of this feature. Record-keeping categories such as case
+                closures are excluded from headlines only; they remain in the list, remain
+                selectable, and remain in every total. None of this applies before 2018,
+                where SFPD published no subcategory at all.
+              </p>
+            </Finding>
+
             <Finding title="Traffic crash data has two lags, and the second is invisible">
               <p>
                 The TransBASE crash dataset (<span className="font-mono text-[0.75rem]">ubvf-ztfx</span>) publishes

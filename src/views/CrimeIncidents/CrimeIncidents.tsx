@@ -20,6 +20,9 @@ import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { usePoliceHourlyPattern, useOaklandPoliceHourlyPattern } from '@/hooks/useHourlyPatternFactory'
 import { usePoliceComparisonData, useOaklandPoliceComparisonData, countDistinctCases, type OaklandCrimeComparisonRow } from '@/hooks/useComparisonDataFactory'
 import { CRIME_EYEBROWS, OAKLAND_CRIME_GROUPS, OAKLAND_CRIME_QUERY_FLOOR, titleCaseCrimetype, oaklandCategoryExpr, classifyOaklandCategory } from './crimeDialect'
+import { splitPairKey, parseSubParam, formatSubParam } from './subcategoryWatch'
+import { useSubcategoryMovers } from './useSubcategoryMovers'
+import SubcategoryStrip from './SubcategoryStrip'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useAppStore } from '@/stores/appStore'
@@ -100,6 +103,40 @@ export default function CrimeIncidents() {
   }, [searchParams])
   const selectedNeighborhood = searchParams.get('neighborhood') || null
 
+  /** Subcategory selection. A subcategory's identity is the PAIR
+   *  `category|subcategory` — `Vandalism` exists under both `Malicious
+   *  Mischief` and `Vandalism`, so the string alone would merge two different
+   *  things. Parse/serialise go through the shared codec in
+   *  subcategoryWatch.ts so the memo and every setter agree byte-for-byte. */
+  const selectedSubs = useMemo(() => parseSubParam(searchParams.get('sub')), [searchParams])
+
+  const setSelectedSubs = useCallback((subs: Set<string>) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (subs.size === 0) next.delete('sub')
+      else next.set('sub', formatSubParam(subs))
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
+
+  /** Toggle one pair, used by both the sidebar rows and the strip chips.
+   *  Reads the CURRENT `sub` set from `prev` inside the updater — never the
+   *  closed-over `selectedSubs` — so this setter and `setSelectedCategories`
+   *  firing in the same synchronous burst (a category check + a subcategory
+   *  click, which Tasks 5/6 make ordinary) each build on the other's
+   *  in-flight change instead of the second navigate clobbering the first. */
+  const toggleSub = useCallback((keys: string[]) => {
+    setSearchParams((prev) => {
+      const current = parseSubParam(prev.get('sub'))
+      const allOn = keys.every((k) => current.has(k))
+      for (const k of keys) { if (allOn) current.delete(k); else current.add(k) }
+      const next = new URLSearchParams(prev)
+      if (current.size === 0) next.delete('sub')
+      else next.set('sub', formatSubParam(current))
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
+
   const setMapMode = useCallback((mode: MapMode) => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev)
@@ -114,6 +151,15 @@ export default function CrimeIncidents() {
       const next = new URLSearchParams(prev)
       if (cats.size === 0) next.delete('categories')
       else next.set('categories', Array.from(cats).map(encodeURIComponent).join(','))
+      // Checking a whole category makes its own subcategory picks redundant;
+      // leaving them would OR a subset into a superset for no visible reason.
+      // Reads the CURRENT `sub` set from `prev`, not the closed-over
+      // `selectedSubs` — see toggleSub's comment for why that matters.
+      const currentSubs = parseSubParam(prev.get('sub'))
+      const keptSubs = Array.from(currentSubs)
+        .filter((k) => !cats.has(splitPairKey(k).category))
+      if (keptSubs.length === 0) next.delete('sub')
+      else next.set('sub', formatSubParam(keptSubs))
       return next
     }, { replace: true })
   }, [setSearchParams])
@@ -128,15 +174,30 @@ export default function CrimeIncidents() {
   }, [setSearchParams])
 
   // --- WHERE clause construction ---
+  // Two grains, ONE selection, OR'd: check a whole category, check a single
+  // subcategory, or mix. An AND would return the empty set whenever the two
+  // picks did not overlap — plausible, silent, and wrong.
   const categoryClause = useMemo(() => {
-    if (selectedCategories.size === 0) return ''
-    const escaped = Array.from(selectedCategories).map((c) => `'${c.replace(/'/g, "''")}'`)
-    // Oakland's category is the DERIVED CASE expr (the HOMICIDE split), not raw
-    // crimetype — filtering on the same expr the count groups by keeps the
-    // sidebar row and its own filter in agreement. Plain crimetypes pass through.
-    const lhs = isSF ? 'incident_category' : `(${oaklandCategoryExpr()})`
-    return `${lhs} IN (${escaped.join(',')})`
-  }, [selectedCategories, isSF])
+    const esc = (v: string) => v.replace(/'/g, "''")
+    const parts: string[] = []
+    if (selectedCategories.size > 0) {
+      const escaped = Array.from(selectedCategories).map((c) => `'${esc(c)}'`)
+      // Oakland's category is the DERIVED CASE expr (the HOMICIDE split), not
+      // raw crimetype — filtering on the same expr the count groups by keeps
+      // the sidebar row and its own filter in agreement.
+      const lhs = isSF ? 'incident_category' : `(${oaklandCategoryExpr()})`
+      parts.push(`${lhs} IN (${escaped.join(',')})`)
+    }
+    if (isSF && selectedSubs.size > 0) {
+      const pairs = Array.from(selectedSubs).map((k) => {
+        const { category, subcategory } = splitPairKey(k)
+        return `(incident_category = '${esc(category)}' AND incident_subcategory = '${esc(subcategory)}')`
+      })
+      parts.push(`(${pairs.join(' OR ')})`)
+    }
+    if (parts.length === 0) return ''
+    return parts.length === 1 ? parts[0] : `(${parts.join(' OR ')})`
+  }, [selectedCategories, selectedSubs, isSF])
 
   // SFPD publishes 2003–May 2018 and 2018–present as two differently-shaped
   // datasets that overlap by 4.5 months. useCrimeEraData owns the seam: it
@@ -161,6 +222,18 @@ export default function CrimeIncidents() {
     dateRange,
     { cityId: city.id },
   )
+
+  // SF only; withheld on any range that touches the pre-2018 historical
+  // extract (it publishes no incident_subcategory at all). Feeds both the
+  // sidebar turn-down (byCategory) and the movers strips (Task 6+).
+  const subcats = useSubcategoryMovers({
+    enabled: isSF && !hasHistorical,
+    dateRange,
+    comparisonMode,
+    latestDate: freshness.latestDate,
+    freshnessLoading: freshness.isLoading,
+    timeOfDayFilter,
+  })
 
   const trendConfig = useMemo((): TrendConfig => isSF
     ? {
@@ -915,6 +988,32 @@ export default function CrimeIncidents() {
           <div className="p-4 flex-1 overflow-y-auto">
             {sidebarTab === 'categories' && (
               <>
+                {isSF && !hasHistorical && (
+                  <>
+                    <SubcategoryStrip
+                      eyebrow="What's moving"
+                      movers={subcats.crimeMovers}
+                      comparisonLabel={subcats.comparisonLabel}
+                      compared={subcats.compared}
+                      selectedSubs={selectedSubs}
+                      onSelect={toggleSub}
+                      emptyNote="Too few incidents in this range to rank movers."
+                      isLoading={subcats.isLoading}
+                    />
+                    {!subcats.isLoading && subcats.enforcementMovers.length > 0 && (
+                      <SubcategoryStrip
+                        eyebrow="Enforcement activity · what police chose to act on"
+                        movers={subcats.enforcementMovers}
+                        comparisonLabel={subcats.comparisonLabel}
+                        compared={subcats.compared}
+                        selectedSubs={selectedSubs}
+                        onSelect={toggleSub}
+                        emptyNote=""
+                        isLoading={subcats.isLoading}
+                      />
+                    )}
+                  </>
+                )}
                 <div className="flex items-center gap-2 mb-4">
                   <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
                     Incident Categories
@@ -928,9 +1027,10 @@ export default function CrimeIncidents() {
                     still LISTS whatever each era published — only the filter
                     is withheld, and it says why. */}
                 {hasHistorical ? (
-                  <p className="text-micro font-mono uppercase tracking-[0.18em] text-ink/45 dark:text-paper-100/45 leading-relaxed">
-                    Filtering unavailable — SFPD changed its category system in
-                    2018, and these counts are shown as each era published them.
+                  <p className="text-micro text-ink/60 dark:text-paper-100/55 leading-relaxed">
+                    <span className="font-semibold text-ink/80 dark:text-paper-100/75">Filtering unavailable</span>{' '}
+                    &mdash; SFPD changed its category system in 2018, and these counts are
+                    shown as each era published them.
                   </p>
                 ) : (
                   <IncidentCategoryFilter
@@ -939,6 +1039,9 @@ export default function CrimeIncidents() {
                     onChange={setSelectedCategories}
                     groups={isSF ? undefined : OAKLAND_CRIME_GROUPS}
                     formatLabel={isSF ? undefined : titleCaseCrimetype}
+                    subcategories={isSF ? subcats.byCategory : undefined}
+                    selectedSubs={isSF ? selectedSubs : undefined}
+                    onToggleSub={isSF ? toggleSub : undefined}
                   />
                 )}
                 {/* Oakland only: OPD files coroner death probes under its
