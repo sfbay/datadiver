@@ -419,7 +419,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         {children}
       </main>
 
-      <OmniSearch mode="modal" isOpen={omniOpen} onClose={() => setOmniOpen(false)} />
+      <OmniSearch isOpen={omniOpen} onClose={() => setOmniOpen(false)} />
     </div>
   )
 }
