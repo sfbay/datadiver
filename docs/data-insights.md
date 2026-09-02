@@ -490,7 +490,7 @@ SF politics. Newsworthiness is not a function the data carries.
 The authored `kind` answers one question of every bucket: **who generates this
 row, a victim or an officer?** A burglary exists because someone reported it; a
 loitering citation exists because an officer chose to write it. `crime` ranks
-the main strip, `enforcement` gets its own, and only `admin` (case closures,
+the main Movers list, `enforcement` gets its own list in the same panel, and only `admin` (case closures,
 lost property, `Other | Other`) is muted — from headlines only, never from the
 list or the totals.
 

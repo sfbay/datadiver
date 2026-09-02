@@ -1,8 +1,8 @@
 // src/views/CrimeIncidents/useSubcategoryMovers.ts
 //
 // Two grouped queries — the active window and its comparison — feeding BOTH
-// the sidebar turn-down and the two strips, so a subcategory's count can
-// never disagree between them. SF only; the historical extract publishes no
+// the sidebar turn-down and the Movers pill's two lists, so a subcategory's
+// count can never disagree between them. SF only; the historical extract publishes no
 // subcategory at all, so a range that touches it disables the hook entirely.
 //
 // CITYWIDE ALWAYS — deliberately NOT filtered to a selected neighborhood.
