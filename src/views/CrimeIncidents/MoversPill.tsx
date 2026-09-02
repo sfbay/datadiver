@@ -106,7 +106,7 @@ export default function MoversPill({ data, selectedSubs, onSelect, open, onOpenC
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1.5 w-80 max-w-[calc(100vw-2rem)] rounded-lg
+        <div className="absolute top-full left-0 mt-1.5 w-96 max-w-[calc(100vw-2rem)] max-h-[70vh] overflow-y-auto rounded-lg
           bg-slate-900/95 backdrop-blur-sm border border-white/[0.08]
           shadow-xl shadow-black/40 p-3 space-y-3 z-50"
         >
