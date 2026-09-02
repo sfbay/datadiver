@@ -8,6 +8,9 @@ import { useFunderTypeahead } from '@/hooks/useFunderTypeahead'
 import { fppcBuildersFor } from '@/views/CampaignFinance/fppcDialect'
 import { funderKey, formatFunderParam, displayName } from '@/lib/funders/funderKey'
 import { toSentenceCase } from '@/utils/format'
+import { SUBCATEGORY_WATCH, formatSubParam } from '@/views/CrimeIncidents/subcategoryWatch'
+import { SF_CRIME_GROUPS } from '@/views/CrimeIncidents/crimeGroups'
+import { SF_SERVICE_GROUPS } from '@/views/Cases311/serviceGroups'
 
 // A local copy of TopRecipientsChart's `formatCurrency`, NOT an import of it:
 // this module is tested under vitest's node environment (pure functions
@@ -22,7 +25,7 @@ function formatCurrency(value: number): string {
   return `$${value.toFixed(0)}`
 }
 
-export type SearchCategory = 'view' | 'place' | 'dataset' | 'vendor' | 'time' | 'city' | 'region' | 'funder'
+export type SearchCategory = 'view' | 'place' | 'dataset' | 'vendor' | 'time' | 'city' | 'region' | 'funder' | 'topic'
 
 export interface SearchResult {
   id: string
@@ -42,6 +45,7 @@ export interface SearchResult {
 // the old module-eval SF index, but the index now follows the URL's city.
 const indexCache = new Map<CityId, SearchResult[]>()
 const regionCache = new Map<CityId, SearchResult[]>()
+const topicCache = new Map<CityId, SearchResult[]>()
 
 export function buildSearchIndex(cityId: CityId): SearchResult[] {
   const cached = indexCache.get(cityId)
@@ -182,6 +186,104 @@ export function buildRegionRows(cityId: CityId): SearchResult[] {
   return rows
 }
 
+/** The crime quick groups as search rows: authored label + a sublabel naming
+ *  3–4 members that exist in the LIVE vocabulary. 'Weapons Offence',
+ *  'Vandalism' and 'Drug Violation' are legacy spellings — harmless inside
+ *  the `IN()` the row deep-links to, never advertised in copy. Keys are
+ *  SF_CRIME_GROUPS keys; a key missing there is a build-time error below. */
+const CRIME_GROUP_ROWS: { group: string; slug: string; label: string; sublabel: string }[] = [
+  { group: 'Violent', slug: 'violent', label: 'Violent crime', sublabel: 'Assault · Robbery · Homicide · Sex offenses' },
+  { group: 'Property', slug: 'property', label: 'Property crime', sublabel: 'Larceny theft · Burglary · Motor vehicle theft · Arson' },
+  { group: 'Quality of Life', slug: 'quality-of-life', label: 'Quality-of-life offenses', sublabel: 'Drug offense · Disorderly conduct · Liquor laws · Prostitution' },
+]
+
+/** The 311 quick groups as search rows. Keys are SF_SERVICE_GROUPS keys. */
+const SERVICE_GROUP_ROWS: { group: string; slug: string; label: string }[] = [
+  { group: 'Quality of Life', slug: 'quality-of-life', label: 'Graffiti & street cleaning' },
+  { group: 'Infrastructure', slug: 'infrastructure', label: 'Streetlights, potholes & sidewalks' },
+  { group: 'Enforcement', slug: 'enforcement', label: 'Encampments & abandoned vehicles' },
+]
+
+/** `?categories=` codec — byte-for-byte what CrimeIncidents.tsx and
+ *  Cases311.tsx write (`Array.from(cats).map(encodeURIComponent).join(',')`)
+ *  and parse (`split(',').map(decodeURIComponent)`). */
+function formatCategoriesParam(members: readonly string[]): string {
+  return members.map(encodeURIComponent).join(',')
+}
+
+/**
+ * Topic rows — SF only. The free-text gap the old ribbon died of ('car
+ * break-ins', 'shoplifting', 'graffiti', 'encampments' all returned nothing)
+ * closed with rows built from AUTHORED leaves, never from the live vocabulary:
+ *
+ *   1. Every SUBCATEGORY_WATCH pair that carries a `label` (the 'crime' and
+ *      'enforcement' kinds; 'admin' entries have no label and get no row) →
+ *      /crime-incidents?sub= via formatSubParam, the merge folded in so the
+ *      row lands on exactly the set the sidebar's checkbox filters on.
+ *      Enforcement rows say so in the sublabel — a 'drug' query must read
+ *      'Drug enforcement · Officer-initiated', never a crime headline.
+ *   2. The three crime quick groups → /crime-incidents?categories=
+ *   3. The three 311 quick groups → /311-cases?categories=
+ *
+ * Sublabels deliberately avoid the generic words 'crime' and 'report': the
+ * filter is a substring test with an 8-row cap, and a one-word query like
+ * 'crime' must keep landing on the view + dataset rows it lands on today,
+ * not spend the cap on 15 topic rows (pinned in useOmniSearch.test.ts).
+ *
+ * Oakland has no subcategory drill and no authored groups → []. Cached per
+ * city like the other builders.
+ */
+export function buildTopicRows(cityId: CityId): SearchResult[] {
+  const cached = topicCache.get(cityId)
+  if (cached) return cached
+  const rows: SearchResult[] = []
+  if (cityId === 'sf') {
+    const crimePath = viewPath('sf', 'crime-incidents')
+    for (const [key, entry] of Object.entries(SUBCATEGORY_WATCH)) {
+      if (!entry.label) continue
+      const enforcement = entry.kind === 'enforcement'
+      rows.push({
+        id: `topic-sub-${key}`,
+        category: 'topic',
+        label: entry.label,
+        sublabel: enforcement ? 'Officer-initiated · SFPD subcategory' : 'SFPD subcategory',
+        icon: '🏷',
+        path: crimePath,
+        params: { sub: formatSubParam([key, ...(entry.merge ?? [])]) },
+      })
+    }
+    for (const g of CRIME_GROUP_ROWS) {
+      const members = SF_CRIME_GROUPS[g.group]
+      if (!members) throw new Error(`buildTopicRows: no crime group '${g.group}'`)
+      rows.push({
+        id: `topic-crime-${g.slug}`,
+        category: 'topic',
+        label: g.label,
+        sublabel: g.sublabel,
+        icon: '🏷',
+        path: crimePath,
+        params: { categories: formatCategoriesParam(members) },
+      })
+    }
+    const casesPath = viewPath('sf', '311-cases')
+    for (const g of SERVICE_GROUP_ROWS) {
+      const members = SF_SERVICE_GROUPS[g.group]
+      if (!members) throw new Error(`buildTopicRows: no 311 group '${g.group}'`)
+      rows.push({
+        id: `topic-311-${g.slug}`,
+        category: 'topic',
+        label: g.label,
+        sublabel: `311 requests · ${g.group}`,
+        icon: '🏷',
+        path: casesPath,
+        params: { categories: formatCategoriesParam(members) },
+      })
+    }
+  }
+  topicCache.set(cityId, rows)
+  return rows
+}
+
 /** One "Switch to {city}" row per OTHER city — same-view path when live
  *  there, else that city's home (crossCityPath). Built per-render, never
  *  cached: the target moves with the current view. */
@@ -204,7 +306,12 @@ export function buildCityRows(currentCityId: CityId, currentViewId: string): Sea
  * hard 8-row cap, so a section's position in this array decides what a reader
  * ever sees.
  *
- * views → places → datasets → city switch → regions.
+ * views → places → datasets → topics → city switch → regions.
+ *
+ * Topics sit below datasets and above the city row: they are few (21 on SF)
+ * with specific labels, so they rarely crowd a query, but the city-switch
+ * row must stay reachable — a broad word that happened to hit several topic
+ * sublabels would otherwise push 'Switch to Oakland' past the cap.
  *
  * Regions go last because they are the only unbounded section (Oakland: 141
  * rows against 70 for everything else combined), and a broad substring hits a
@@ -221,6 +328,7 @@ export function buildCityRows(currentCityId: CityId, currentViewId: string): Sea
 export function buildFullIndex(cityId: CityId, currentViewId: string): SearchResult[] {
   return [
     ...buildSearchIndex(cityId),
+    ...buildTopicRows(cityId),
     ...buildCityRows(cityId, currentViewId),
     ...buildRegionRows(cityId),
   ]
@@ -230,10 +338,15 @@ export function buildFullIndex(cityId: CityId, currentViewId: string): SearchRes
  * Live ⌘K funder rows (spec §3.2, §4 "Entry points"). Row shape follows the
  * typeahead builder's projection — `city` and `entity_code` are optional
  * (an org row carries no first name), `gifts`/`total` arrive as strings
- * (Socrata aggregate serialization) and are read verbatim into the sublabel.
- * De-duped by `id` as a guard — the typeahead groups on
- * first/last/entity so real duplicates shouldn't occur, but two rows
- * sharing an `id` would collide as React list keys in OmniSearch.
+ * (Socrata aggregate serialization).
+ *
+ * Rows sharing a `funderKey` are SUMMED, not first-wins. The typeahead's
+ * GROUP BY is case-sensitive — 'DANIEL LURIE' (31 gifts) and 'Daniel Lurie'
+ * (34 gifts) come back as two groups — while the funder card the row lands
+ * on merges them by case-folded key. A hero-scale row must not show a
+ * different number than its destination, so gifts and totals are added
+ * across the group; `city` is the first row's. The merge also de-dupes ids,
+ * which would otherwise collide as React list keys.
  */
 export function buildFunderRows(rows: {
   transaction_first_name?: string
@@ -243,50 +356,58 @@ export function buildFunderRows(rows: {
   gifts: string
   total: string
 }[]): SearchResult[] {
-  const seen = new Set<string>()
-  const out: SearchResult[] = []
+  const order: string[] = []
+  const groups = new Map<string, { city?: string; gifts: number; total: number }>()
   for (const row of rows) {
     const key = funderKey(row)
-    const id = `funder:${key}`
-    if (seen.has(id)) continue
-    seen.add(id)
-    const total = formatCurrency(Number(row.total))
-    const gifts = row.gifts
-    out.push({
-      id,
-      category: 'funder',
+    const g = groups.get(key)
+    if (g) {
+      g.gifts += Number(row.gifts)
+      g.total += Number(row.total)
+    } else {
+      order.push(key)
+      groups.set(key, { city: row.city, gifts: Number(row.gifts), total: Number(row.total) })
+    }
+  }
+  return order.map((key) => {
+    const g = groups.get(key)!
+    const total = formatCurrency(g.total)
+    return {
+      id: `funder:${key}`,
+      category: 'funder' as const,
       label: displayName(key),
-      sublabel: `${row.city ? toSentenceCase(row.city) + ' · ' : ''}${total} · ${gifts} gift${gifts === '1' ? '' : 's'}`,
+      sublabel: `${g.city ? toSentenceCase(g.city) + ' · ' : ''}${total} · ${g.gifts} gift${g.gifts === 1 ? '' : 's'}`,
       icon: '◎',
       path: '/campaign-finance',
       params: { funder: formatFunderParam(key) },
-    })
-  }
-  return out
+    }
+  })
 }
 
 export interface UseOmniSearchOptions {
-  /** Overrides the hook's internal `isOpen` as the "is the palette actually
-   *  showing" signal fed to the funder typeahead. Needed because the MODAL
-   *  surface (OmniSearch.tsx `mode="modal"`) tracks its own open/close state
-   *  in AppShell and passes it down as a PROP — it never calls this hook's
-   *  own `open`/`close`/`toggle`, so the internal `isOpen` here stays
-   *  permanently false for that surface and the typeahead would never fire.
-   *  Defaults to the internal `isOpen` so every other caller (the ribbon
-   *  surface, which DOES drive open/close through this hook) is unaffected. */
+  /** "Is this search surface actually showing" — the gate on the funder
+   *  typeahead (a Socrata request per debounced keystroke). The hook holds
+   *  NO open/close state of its own: every surface owns its visibility and
+   *  passes it in — the ⌘K modal passes AppShell's `omniOpen`, the Home box
+   *  passes its input's focus state. Defaults to false, so a caller that
+   *  forgets never fires a request. */
   active?: boolean
+  /** A view row to drop from the static results — Home passes 'home' so
+   *  Enter on the Home box can never "navigate" to the page the reader is
+   *  already on. The modal passes nothing. */
+  omitViewId?: string
 }
 
 export function useOmniSearch(options?: UseOmniSearchOptions) {
   const { cityId, viewId } = useRouteView()
   const [query, setQuery] = useState('')
-  const [isOpen, setIsOpen] = useState(false)
-  const active = options?.active ?? isOpen
+  const active = options?.active ?? false
+  const omitId = options?.omitViewId ? `view-${options.omitViewId}` : null
 
   // Called UNCONDITIONALLY (hooks-order rule) — Oakland (and any future
   // non-SF city) passes `null` builders, which the hook reads as "no
   // funder dialect available" and never fetches.
-  const { rows: funderTypeaheadRows } = useFunderTypeahead(
+  const { rows: funderTypeaheadRows, pending: searching } = useFunderTypeahead(
     query,
     active,
     cityId === 'sf' ? fppcBuildersFor('sf').funder : null
@@ -297,19 +418,16 @@ export function useOmniSearch(options?: UseOmniSearchOptions) {
     if (!q) return []
     const staticFiltered = buildFullIndex(cityId, viewId).filter(
       (r) =>
-        r.label.toLowerCase().includes(q) ||
-        r.sublabel.toLowerCase().includes(q)
+        r.id !== omitId &&
+        (r.label.toLowerCase().includes(q) ||
+          r.sublabel.toLowerCase().includes(q))
     )
     // Static rows keep priority — funder rows only fill remaining slots.
     return [...staticFiltered, ...buildFunderRows(funderTypeaheadRows)].slice(0, 8)
-  }, [query, cityId, viewId, funderTypeaheadRows])
+  }, [query, cityId, viewId, omitId, funderTypeaheadRows])
 
-  const open = () => setIsOpen(true)
-  const close = () => {
-    setIsOpen(false)
-    setQuery('')
-  }
-  const toggle = () => (isOpen ? close() : open())
-
-  return { query, setQuery, results, isOpen, open, close, toggle }
+  /** `searching` = a funder typeahead request is in flight (or scheduled) —
+   *  the surface can say "Searching donors…" instead of "No matches" and
+   *  must refuse Enter on an empty, still-loading list. */
+  return { query, setQuery, results, searching }
 }

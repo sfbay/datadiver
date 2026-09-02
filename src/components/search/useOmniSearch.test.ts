@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildSearchIndex, buildCityRows, buildRegionRows, buildFullIndex, buildFunderRows, type SearchResult } from './useOmniSearch'
+import { buildSearchIndex, buildCityRows, buildRegionRows, buildFullIndex, buildFunderRows, buildTopicRows, type SearchResult } from './useOmniSearch'
 import { DATASETS } from '@/api/datasets'
 import { sfCity } from '@/cities/sf'
 
@@ -250,6 +250,98 @@ describe('OmniSearch index (SF parity)', () => {
   })
 })
 
+// Topic rows (SF only) + the SF rank order — added with the Home search box.
+// The Oakland pins above are untouched: Oakland emits no topic rows.
+describe('buildTopicRows + SF full-index order (Home search)', () => {
+  const sf = buildFullIndex('sf', 'home')
+  const matches = (q: string) =>
+    sf.filter((r) => r.label.toLowerCase().includes(q) || r.sublabel.toLowerCase().includes(q))
+  const visible = (q: string) => matches(q).slice(0, 8)
+
+  it('sf full-index rank order is views → places → datasets → topic → city, topic block contiguous', () => {
+    const cats = sf.map((r) => r.category)
+    expect(cats.lastIndexOf('view')).toBeLessThan(cats.indexOf('place'))
+    expect(cats.lastIndexOf('place')).toBeLessThan(cats.indexOf('dataset'))
+    expect(cats.lastIndexOf('dataset')).toBeLessThan(cats.indexOf('topic'))
+    expect(cats.lastIndexOf('topic')).toBeLessThan(cats.indexOf('city'))
+    const first = cats.indexOf('topic')
+    const last = cats.lastIndexOf('topic')
+    expect(cats.slice(first, last + 1).every((c) => c === 'topic')).toBe(true)
+  })
+
+  it('sf: 21 topic rows — 15 subcategory (?sub=) + 6 quick-group (?categories=); no generic words in sublabels', () => {
+    const topics = buildTopicRows('sf')
+    expect(topics).toHaveLength(21)
+    expect(topics.every((r) => r.category === 'topic' && r.icon === '🏷')).toBe(true)
+    expect(topics.filter((r) => r.params?.sub)).toHaveLength(15)
+    expect(topics.filter((r) => r.params?.categories)).toHaveLength(6)
+    // 'crime' and 'report' are the words a one-word query spends the cap on.
+    for (const r of topics) {
+      const sub = r.sublabel.toLowerCase()
+      expect(sub.includes('crime'), r.id).toBe(false)
+      expect(sub.includes('report'), r.id).toBe(false)
+    }
+    // Ids are unique (React keys).
+    expect(new Set(topics.map((r) => r.id)).size).toBe(21)
+    // The subcategory rows lead, then crime groups, then 311 groups.
+    expect(topics.slice(0, 15).every((r) => r.id.startsWith('topic-sub-'))).toBe(true)
+    expect(topics.slice(15, 18).map((r) => r.id)).toEqual([
+      'topic-crime-violent', 'topic-crime-property', 'topic-crime-quality-of-life',
+    ])
+    expect(topics.slice(18).map((r) => r.id)).toEqual([
+      'topic-311-quality-of-life', 'topic-311-infrastructure', 'topic-311-enforcement',
+    ])
+  })
+
+  it('subcategory rows carry the PAIR key via formatSubParam, merge folded in; enforcement is labelled', () => {
+    const topics = buildTopicRows('sf')
+    expect(topics.find((r) => r.id === 'topic-sub-Larceny Theft|Larceny - From Vehicle')).toMatchObject({
+      label: 'Car break-ins',
+      sublabel: 'SFPD subcategory',
+      path: '/crime-incidents',
+      params: { sub: 'Larceny%20Theft%7CLarceny%20-%20From%20Vehicle,Larceny%20Theft%7CTheft%20From%20Vehicle' },
+    })
+    expect(topics.find((r) => r.id === 'topic-sub-Drug Offense|Drug Violation')).toMatchObject({
+      label: 'Drug enforcement',
+      sublabel: 'Officer-initiated · SFPD subcategory',
+      params: { sub: 'Drug%20Offense%7CDrug%20Violation' },
+    })
+    // No admin pair gets a row.
+    expect(topics.some((r) => r.id.includes('Other Offenses'))).toBe(false)
+  })
+
+  it('quick-group rows encode ?categories= the way CrimeIncidents / Cases311 parse it', () => {
+    const topics = buildTopicRows('sf')
+    const violent = topics.find((r) => r.id === 'topic-crime-violent')!
+    expect(violent.path).toBe('/crime-incidents')
+    expect(violent.params!.categories.split(',').map(decodeURIComponent)).toEqual([
+      'Assault', 'Robbery', 'Homicide', 'Weapons Carrying Etc', 'Weapons Offence', 'Rape', 'Sex Offense',
+    ])
+    const enforcement = topics.find((r) => r.id === 'topic-311-enforcement')!
+    expect(enforcement).toMatchObject({ label: 'Encampments & abandoned vehicles', sublabel: '311 requests · Enforcement', path: '/311-cases' })
+    expect(enforcement.params!.categories.split(',').map(decodeURIComponent)).toEqual([
+      'Parking Enforcement', 'Abandoned Vehicle', 'Encampments', 'Encampment', 'Blocked Street or SideWalk',
+    ])
+  })
+
+  it('oakland emits no topic rows', () => {
+    expect(buildTopicRows('oakland')).toEqual([])
+    expect(buildFullIndex('oakland', 'crime-incidents').some((r) => r.category === 'topic')).toBe(false)
+  })
+
+  // Cap pin: the two rows 'crime' lands on today must not move. Topic rows
+  // ('Violent crime', 'Property crime') rank below both.
+  it("'crime' still shows view-crime-incidents FIRST and dataset-policeIncidents SECOND", () => {
+    const shown = visible('crime')
+    expect(shown[0].id).toBe('view-crime-incidents')
+    expect(shown[1].id).toBe('dataset-policeIncidents')
+  })
+
+  it("'tenderloin' → place-Tenderloin first", () => {
+    expect(visible('tenderloin')[0].id).toBe('place-Tenderloin')
+  })
+})
+
 describe('buildCityRows (⌘K city switching)', () => {
   it('one row per OTHER city, same-view path when live there', () => {
     expect(buildCityRows('sf', 'crime-incidents')).toEqual([
@@ -334,17 +426,29 @@ describe('buildFunderRows (⌘K funder rows, pure row builder)', () => {
     ])
   })
 
-  it('de-dupes by id, keeping the first occurrence', () => {
-    const row = {
-      transaction_first_name: 'Michael',
-      transaction_last_name: 'Moritz',
-      city: 'San Francisco',
-      gifts: '30',
-      total: '6146992',
-    }
-    const rows = buildFunderRows([row, { ...row, gifts: '999' }])
+  // The typeahead's GROUP BY is case-sensitive: 'DANIEL LURIE' and 'Daniel
+  // Lurie' arrive as two groups. The funder card the row lands on merges them
+  // by folded key, so the row must show the card's number, not the first
+  // group's — sum, and still emit ONE row (ids are React keys).
+  it('sums gifts and totals across rows sharing a funderKey; one row per key', () => {
+    const rows = buildFunderRows([
+      { transaction_first_name: 'DANIEL', transaction_last_name: 'LURIE', city: 'SAN FRANCISCO', gifts: '31', total: '8660000' },
+      { transaction_first_name: 'Daniel', transaction_last_name: 'Lurie', city: 'San Francisco', gifts: '34', total: '2040000' },
+    ])
     expect(rows).toHaveLength(1)
-    expect(rows[0].sublabel).toContain('30 gift')
+    expect(rows[0].id).toBe('funder:DANIEL|LURIE')
+    expect(rows[0].sublabel).toBe('San Francisco · $10.7M · 65 gifts')
+    expect(rows[0].params).toEqual({ funder: 'daniel|lurie' })
+  })
+
+  it('keeps first-appearance order across interleaved keys', () => {
+    const rows = buildFunderRows([
+      { transaction_first_name: 'A', transaction_last_name: 'ONE', gifts: '1', total: '10' },
+      { transaction_first_name: 'B', transaction_last_name: 'TWO', gifts: '2', total: '20' },
+      { transaction_first_name: 'a', transaction_last_name: 'one', gifts: '3', total: '30' },
+    ])
+    expect(rows.map((r) => r.id)).toEqual(['funder:A|ONE', 'funder:B|TWO'])
+    expect(rows[0].sublabel).toBe('$40 · 4 gifts')
   })
 
   it('singularizes "1 gift" and omits city when absent', () => {

@@ -1,5 +1,6 @@
 import { useMemo, useCallback } from 'react'
 import { availableInGroup, groupDisabled } from './categoryGroups'
+import { SF_SERVICE_GROUPS } from '@/views/Cases311/serviceGroups'
 
 export interface ServiceCategoryEntry {
   serviceName: string
@@ -14,14 +15,8 @@ interface ServiceCategoryFilterProps {
   formatLabel?: (name: string) => string
 }
 
-const SF_CATEGORY_GROUPS: Record<string, string[]> = {
-  'Quality of Life': ['Street and Sidewalk Cleaning', 'Graffiti', 'Graffiti Public', 'Graffiti Private', 'Noise Report', 'Litter Receptacles', 'Illegal Postings'],
-  'Infrastructure': ['Streetlights', 'Street Defects', 'Sidewalk or Curb', 'Sewer Issues', 'Sign Repair', 'MUNI Feedback', 'Damaged Property'],
-  'Enforcement': ['Parking Enforcement', 'Abandoned Vehicle', 'Encampments', 'Encampment', 'Blocked Street or SideWalk'],
-}
-
 export default function ServiceCategoryFilter({ categories, selected, onChange, groups, formatLabel }: ServiceCategoryFilterProps) {
-  const categoryGroups = groups ?? SF_CATEGORY_GROUPS
+  const categoryGroups = groups ?? SF_SERVICE_GROUPS
   const allTypes = useMemo(() => new Set(categories.map((c) => c.serviceName)), [categories])
   const maxCount = useMemo(() => Math.max(...categories.map((c) => c.count), 1), [categories])
   const allSelected = selected.size === 0 || selected.size === allTypes.size
