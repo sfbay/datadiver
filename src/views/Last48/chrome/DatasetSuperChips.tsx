@@ -11,7 +11,15 @@
 //     and a diagonal-hatch overlay marking the publish-lag zone, so the
 //     gap between "newest event" and "now" reads as latency rather than
 //     missing data (see feedback_latency_baseline_per_dataset.md)
+//   - the SAME hatch at the LEFT edge when the 5,000-row draw cap cut the
+//     window's oldest hours (see src/hooks/last48Truncation.ts) — one
+//     idiom, learned once: hatch = "no data here yet / anymore"
 //   - twin freshness indicators (data refresh + event lag, color-coded)
+//
+// Honesty under the cap: the big number is ALWAYS the loaded count. When a
+// stream is capped, the per-hour rate uses the window's true size (server
+// count) and a disclosure line states "N loaded of M · oldest hours not
+// loaded" — the true total is disclosed beside the figure, never swapped in.
 //
 // Active state earns the corner-glow signature (Tier 2 glow per
 // CLAUDE.md — subtle on interaction only). Inactive state is outline-
@@ -24,6 +32,7 @@ import {
   type FreshnessMap,
   type NormalizedEvent,
 } from '@/types/last48'
+import { cappedLeadingBins, truncationNote, windowTotal } from '@/hooks/last48Truncation'
 
 const PIGMENTS: Record<DatasetId, string> = {
   '911-realtime':      '#616a96',  // indigo
@@ -64,10 +73,13 @@ interface LiveSparklineProps {
   isLoaded: boolean
   eventLagMs: number | null
   patternId: string             // per-chip id so multiple SVGs can coexist
+  /** Oldest bins the row cap cut (no loaded data there) — hatched at the
+   *  LEFT edge with the same pattern as the publish-lag zone. 0 = none. */
+  cappedBins: number
 }
 
 function LiveSparkline({
-  values, pigment, isActive, isLoaded, eventLagMs, patternId,
+  values, pigment, isActive, isLoaded, eventLagMs, patternId, cappedBins,
 }: LiveSparklineProps) {
   const max     = Math.max(...values, 1)
   const barCount = values.length
@@ -123,6 +135,18 @@ function LiveSparkline({
         />
       )}
 
+      {/* Row-cap zone — the oldest bins hold nothing because the 5,000-row
+          draw stopped before reaching them. Same hatch as the lag zone. */}
+      {cappedBins > 0 && isLoaded && (
+        <rect
+          x={0}
+          y={0}
+          width={cappedBins * barUnit - 1}
+          height={SPARK_HEIGHT}
+          fill={`url(#${patternId})`}
+        />
+      )}
+
       {values.map((v, i) => {
         if (v <= 0) return null
         const h = Math.max(1, (v / max) * SPARK_HEIGHT)
@@ -160,6 +184,22 @@ function LiveSparkline({
 const SPARKLINE_BINS = 24
 const WINDOW_MS = 48 * 60 * 60 * 1000
 const BIN_MS = WINDOW_MS / SPARKLINE_BINS
+
+/** Sparkline bins the row cap emptied: bins wholly before the oldest loaded
+ *  event when the stream's full fetch hit the cap. Reads the clock inside
+ *  (like binEventsByHour) — the window start is "now − 48h" at render. */
+function capHatchBins(events: NormalizedEvent[], capped: boolean): number {
+  if (!capped || events.length === 0) return 0
+  let min = Number.POSITIVE_INFINITY
+  for (const e of events) if (e.receivedAt < min) min = e.receivedAt
+  return cappedLeadingBins({
+    truncated: capped,
+    oldestLoadedMs: Number.isFinite(min) ? min : null,
+    windowStartMs: Date.now() - WINDOW_MS,
+    binMs: BIN_MS,
+    binCount: SPARKLINE_BINS,
+  })
+}
 
 function binEventsByHour(events: NormalizedEvent[]): number[] {
   const now = Date.now()
@@ -215,6 +255,16 @@ interface SuperChipProps {
   isActive: boolean
   arrival: ChipArrival
   onToggle: () => void
+  /** The stream's FULL 48h fetch has completed (the head phase never trips
+   *  the cap, so truncation copy only renders once this is true). */
+  fullyLoaded: boolean
+  /** The rows HELD for this stream stop short of its window start —
+   *  coverageTruncated(), not "the last draw hit the cap" (held rows
+   *  accumulate across polls and can fill the cut back in). */
+  truncated: boolean
+  /** Server count for the capped window, in the stream's own unit
+   *  (LAST48_COUNT_EXPR); null = not capped or unknown. */
+  serverTotal: number | null
 }
 
 function SuperChip({
@@ -225,6 +275,9 @@ function SuperChip({
   isActive,
   arrival,
   onToggle,
+  fullyLoaded,
+  truncated,
+  serverTotal,
 }: SuperChipProps) {
   const pigment = PIGMENTS[datasetId]
   const label = LABELS[datasetId]
@@ -241,11 +294,33 @@ function SuperChip({
     const t = setTimeout(() => setSheenMounted(false), 700)
     return () => clearTimeout(t)
   }, [isArriving])
+  // The big number is the LOADED count, always. Under the cap the window's
+  // true size comes from the server count; the rate uses that (a rate from
+  // a capped sample is plausible and wrong), and it shows '—' when the count
+  // query failed rather than a fabricated figure.
   const count = events.length
-  const perHour = (count / 48).toFixed(count >= 100 ? 0 : 1)
+  const capped = fullyLoaded && truncated
+  const total = capped ? windowTotal(count, true, serverTotal) : count
+  const perHour = total === null ? '—' : (total / 48).toFixed(total >= 100 ? 0 : 1)
+  // The note takes the FLOORED total (the same figure the rate uses), so
+  // the sentence can never name a window smaller than the rows on screen.
+  const capNote = capped ? truncationNote(count, total) : null
+  // Phone form of the same fact: the chips sit 3-across in a flex row below
+  // desk:, ~96px each after padding, where the full sentence would clip
+  // mid-figure inside the button's overflow-hidden. Same null logic as the
+  // full note (derived from it), figures identical; the "oldest hours" clause
+  // is carried by the sparkline's hatch there.
+  const capNoteShort = capNote === null
+    ? null
+    : total === null
+      ? `${count.toLocaleString('en-US')} loaded · total unavailable`
+      : `${count.toLocaleString('en-US')} of ${total.toLocaleString('en-US')} loaded`
   const sparkData = isLoaded
     ? binEventsByHour(events)
     : new Array<number>(SPARKLINE_BINS).fill(0)
+  // Row-cap hatch width — bins wholly before the oldest loaded event hold
+  // nothing because the DESC draw stopped short of them.
+  const cappedBins = capHatchBins(events, capped)
 
   const refreshLag = freshness?.refreshLagMs ?? null
   const eventLag   = freshness?.eventLagMs ?? null
@@ -255,7 +330,7 @@ function SuperChip({
       type="button"
       onClick={onToggle}
       aria-pressed={isActive}
-      aria-label={`${label}, ${isActive ? 'active' : 'inactive'}. ${count} events. Click to toggle.`}
+      aria-label={`${label}, ${isActive ? 'active' : 'inactive'}. ${count} events.${capNote ? ` ${capNote}.` : ''} Click to toggle.`}
       className={`
         relative flex-1 min-w-0 desk:w-full text-left
         rounded-xl border transition-all duration-200
@@ -352,9 +427,27 @@ function SuperChip({
             isLoaded={isLoaded}
             eventLagMs={eventLag}
             patternId={`lag-hatch-${datasetId}`}
+            cappedBins={cappedBins}
           />
         </div>
       </div>
+
+      {/* ── Row-cap disclosure — only when this stream's full fetch hit the
+          5,000-row draw cap. The loaded figure above stays the loaded figure;
+          this line says how many the window really holds (or that we could
+          not count it). Renders on every viewport: it is the one line that
+          keeps the big number honest — so it WRAPS, never clips (the button
+          is overflow-hidden; a nowrap line cut mid-figure by overflow prints
+          a wrong number: "5,000 loaded of 5,5"). Two nano lines cost ~10px.
+          Below desk: the short form; from desk: up the full sentence, which
+          still wraps under Large Type xl where it outgrows the 228px grid
+          floor. ──────────────────────────────────────────────────────────── */}
+      {capNote && (
+        <p className="mt-1 font-mono text-nano text-paper-500 dark:text-paper-500 leading-tight">
+          <span className="desk:hidden">{capNoteShort}</span>
+          <span className="hidden desk:inline">{capNote}</span>
+        </p>
+      )}
 
       {/* ── Row 3: twin freshness indicators ───────────────────────────── */}
       {/* Twin freshness — hidden on the lean mobile chip (the sparkline's hatch
@@ -401,6 +494,10 @@ interface Props {
    *  (dots actively landing on the canvas), 'idle' (settled). See
    *  Last48.tsx arrivalByDataset. */
   arrivalByDataset: Record<DatasetId, ChipArrival>
+  /** Row-cap state from useLast48Window — see Last48WindowResult. */
+  fullyLoadedByDataset: Record<DatasetId, boolean>
+  truncatedByDataset: Record<DatasetId, boolean>
+  totalInWindowByDataset: Record<DatasetId, number | null>
 }
 
 export default function DatasetSuperChips({
@@ -410,6 +507,9 @@ export default function DatasetSuperChips({
   freshness,
   initialLoadedByDataset,
   arrivalByDataset,
+  fullyLoadedByDataset,
+  truncatedByDataset,
+  totalInWindowByDataset,
 }: Props) {
   return (
     // Liquid grid (auto-fit + minmax, no breakpoints — house convention):
@@ -428,6 +528,9 @@ export default function DatasetSuperChips({
           isActive={enabled.includes(id)}
           arrival={arrivalByDataset[id] ?? 'idle'}
           onToggle={() => onToggle(id)}
+          fullyLoaded={fullyLoadedByDataset[id] ?? false}
+          truncated={truncatedByDataset[id] ?? false}
+          serverTotal={totalInWindowByDataset[id] ?? null}
         />
       ))}
     </div>

@@ -3,6 +3,7 @@ import type { NormalizedEvent, DatasetId } from '@/types/last48'
 import type { KeyboardEvent } from 'react'
 import MapSidebar from '@/components/layout/MapSidebar'
 import { formatHeadline, formatApTime } from '@/utils/format'
+import { LAST48_ROW_CAP } from '@/hooks/last48Truncation'
 import ScannerFeedLinks from '../chrome/ScannerFeedLinks'
 
 const DATASET_LABEL: Record<DatasetId, { label: string; color: string }> = {
@@ -15,9 +16,15 @@ interface Props {
   events: NormalizedEvent[]
   selectedId?: string
   onSelect: (e: NormalizedEvent) => void
+  /** True window size across the enabled streams (server-counted where a
+   *  stream hit the row cap); null when a capped stream's count failed. */
+  windowTotal: number | null
+  /** Some enabled stream's FULL fetch hit the 5,000-row draw cap. The big
+   *  number stays the loaded count; this turns on the disclosure line. */
+  capped: boolean
 }
 
-export default function FlowRail({ events, selectedId, onSelect }: Props) {
+export default function FlowRail({ events, selectedId, onSelect, windowTotal, capped }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const lastFirstId = useRef<string | null>(null)
   const selectedRowRef = useRef<HTMLDivElement | null>(null)
@@ -197,6 +204,16 @@ export default function FlowRail({ events, selectedId, onSelect }: Props) {
             </p>
           </div>
         </div>
+        {/* Row-cap disclosure — INSIDE #last48-capture, so a PNG export
+            carries it. The loaded figure above is what's drawn; the window
+            holds more, and the oldest hours are what's missing. */}
+        {capped && (
+          <p className="mt-1.5 px-1 font-mono text-nano text-paper-500 dark:text-paper-600">
+            {windowTotal === null
+              ? `Capped at ${LAST48_ROW_CAP.toLocaleString('en-US')} per stream · window total unavailable`
+              : `Capped at ${LAST48_ROW_CAP.toLocaleString('en-US')} per stream · ${windowTotal.toLocaleString()} in window · oldest hours not drawn`}
+          </p>
+        )}
       </div>
 
       <div className="px-2 py-2 flex flex-col gap-0.5">

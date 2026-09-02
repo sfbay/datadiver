@@ -19,6 +19,7 @@ import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import type mapboxgl from 'mapbox-gl'
 import { useAnomalyBaseline } from '@/hooks/useAnomalyBaseline'
 import type { Last48WindowResult } from '@/hooks/useLast48Window'
+import { windowTotalAcross } from '@/hooks/last48Truncation'
 import { LAST48_DATASETS, type DatasetId, type NormalizedEvent } from '@/types/last48'
 import type { CensusVariable } from '@/types/census'
 import type { BaseFill } from '../chrome/LayerControls'
@@ -97,6 +98,29 @@ export default function Last48UnifiedView({
     [window48.events, datasets],
   )
 
+  // Row-cap state for the rail, restricted to the ENABLED streams (the rail's
+  // big number is visibleEvents.length, so its disclosure must speak the same
+  // scope). Truncation copy waits for the full fetch: a stream mid-backfill
+  // counts as uncapped for the beat before its count lands.
+  const railCap = useMemo(() => {
+    const parts = datasets.map((id) => ({
+      loaded: window48.byDataset[id].length,
+      truncated: window48.fullyLoadedByDataset[id] && window48.truncatedByDataset[id],
+      serverTotal: window48.totalInWindowByDataset[id],
+    }))
+    const { total, exact } = windowTotalAcross(parts)
+    return {
+      capped: parts.some((p) => p.truncated),
+      windowTotal: exact ? total : null,
+    }
+  }, [
+    datasets,
+    window48.byDataset,
+    window48.fullyLoadedByDataset,
+    window48.truncatedByDataset,
+    window48.totalInWindowByDataset,
+  ])
+
   const handleMapSelect = useCallback((ev: NormalizedEvent) => {
     setSelectedEvent((prev) => (prev?.id === ev.id ? null : ev))
   }, [])
@@ -141,10 +165,10 @@ export default function Last48UnifiedView({
   const setSelectedNh = onSelectedNeighborhoodChange
 
   // Always compute anomalies — so the choropleth is ready immediately when the
-  // user toggles fill=anomaly, without a cold-start wait.
-  const { anomalies, isLoading: anomalyLoading } = useAnomalyBaseline({
+  // user toggles fill=anomaly, without a cold-start wait. Current counts are
+  // server-side inside the hook (independent of the 5,000-row draw cap).
+  const { anomalies, isLoading: anomalyLoading, missingCurrent } = useAnomalyBaseline({
     datasets,
-    currentEvents: visibleEvents,
     freshness: window48.freshness,
   })
 
@@ -245,6 +269,8 @@ export default function Last48UnifiedView({
           <FlowRail
             events={visibleEvents}
             selectedId={selectedEvent?.id}
+            windowTotal={railCap.windowTotal}
+            capped={railCap.capped}
             onSelect={(ev) => {
               if (selectedEvent?.id === ev.id) {
                 setSelectedEvent(null)
@@ -355,12 +381,31 @@ export default function Last48UnifiedView({
             />
           )}
 
-          {/* ── Loading pills ─────────────────────────────────────────── */}
+          {/* ── Anomaly status pills ──────────────────────────────────── */}
           {/* isLoading gate REMOVED — events paint per-stream as they arrive.
               The StreamProgressBar (Task 6.3) replaces this inline pill. */}
-          {fill === 'anomaly' && anomalyLoading && (
-            <div className="absolute top-10 left-3 font-mono text-micro text-paper-500 bg-espresso-900/70 px-2 py-1 rounded">
-              computing 12-week baseline…
+          {fill === 'anomaly' && (anomalyLoading || missingCurrent.length > 0) && (
+            <div className="absolute top-10 left-3 flex flex-col items-start gap-1">
+              {anomalyLoading && (
+                <div className="font-mono text-micro text-paper-500 bg-espresso-900/70 px-2 py-1 rounded">
+                  computing 12-week baseline…
+                </div>
+              )}
+              {/* A stream whose current-count query failed contributes NO
+                  anomalies, so the choropleth, the rail and the peek would
+                  otherwise present the surviving stream(s) as the whole
+                  comparison (k=2 → k=1 in the Stouffer combine). Say so —
+                  inside #last48-capture, so a PNG carries it. Suppressed
+                  WITH the reason, never silently absent. */}
+              {missingCurrent.length > 0 && (
+                <div
+                  role="status"
+                  className="font-mono text-micro text-ochre-400 bg-espresso-900/70 px-2 py-1 rounded"
+                  title="This stream's current 48-hour counts could not be loaded, so it is left out of the neighborhood comparison rather than read as quiet."
+                >
+                  {missingCurrentNote(missingCurrent, datasets)}
+                </div>
+              )}
             </div>
           )}
 
@@ -446,6 +491,19 @@ const DATASET_LABELS: Record<DatasetId, string> = {
   '911-realtime': '911',
   'fire-ems-dispatch': 'Fire/EMS',
   '311-cases': '311',
+}
+
+/** Copy for the anomaly pill when a stream's current counts failed to load
+ *  (useAnomalyBaseline.missingCurrent). Names the stream(s) left out and says
+ *  what the map is comparing instead; when nothing survives, says the
+ *  comparison itself is unavailable. */
+function missingCurrentNote(missing: DatasetId[], enabled: DatasetId[]): string {
+  const survivors = enabled.filter((id) => !missing.includes(id))
+  if (survivors.length === 0) {
+    return 'Neighborhood comparison unavailable · current counts didn’t load'
+  }
+  const names = missing.map((id) => DATASET_LABELS[id]).join(' and ')
+  return `${names} left out · current counts didn’t load — comparing ${survivors.map((id) => DATASET_LABELS[id]).join(' and ')} only`
 }
 
 function Last48FailureBanner({

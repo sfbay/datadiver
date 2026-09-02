@@ -357,6 +357,48 @@ Neighborhoods. Filter `AND neighborhoods_analysis_boundaries != 'None'`. (311's
 ALL-CAPS/Title-Case duplicates) that cannot join the 41-name `nhood` polygon geometry — group on
 `analysis_neighborhood` when the result must meet a map.
 
+### The Last 48 Draws at Most 5,000 Rows per Stream — 311 Exceeds It on Busy Weekdays
+
+**Addendum (Sept. 2 2026) — the live window must be anchored at the publish edge, not the clock.** Walking the fix exposed a second, older bias: the anomaly "now" window ended at wall-clock now, but 311 publishes ~15h behind (Fire/EMS ~11h), so the window held only the published hours and was compared against complete 48h day-pairs. Measured at 15:06 SF: 311 wall-clock window 3,784 cases vs 5,517 in the 48h ending at its newest published case (23:58 the night before) — a structural ~31% "quiet" that survived `suppressStaleQuiet` (gate at 24h). The Pulse map painted most of the city teal every afternoon. Fix: `currentWindow(anchorMs)` anchors each stream's live window at its own newest published event — browser (`freshness[id].maxEventTime`) and cron (`max(dateField)` probe) alike, the same matched-window rule the YoY cards use. A stream whose edge can't be read contributes nothing rather than a clock-anchored undercount.
+
+
+**Datasets:** the three Last 48 streams (`gnap-fj3t`, `nuek-vuh3`, `vw6y-z8j6`); only 311 trips it.
+
+**Finding (Sept. 2 2026):** `useLast48Window` fetches each stream's 48-hour window with
+`$order <date> DESC, $limit 5000`, and nothing compared the row count to the limit. 311 runs
+**2,081–2,843 cases/day** (Aug 19–Sept 1 2026), so most weekday pairs exceed the cap —
+Aug 28+29 = **5,300**, Aug 31+Sept 1 = **5,516**. Because the query is DESC, **the oldest rows
+in the window are the ones that vanish**, silently: the sample looked complete (it ended at
+"now") while its far edge stopped hours short of 48h back.
+
+**What it corrupted:** every surface that read the drawn sample's length as the window's size —
+the super-chip count, per-hour rate and sparkline bins, the header "N events" pill, the rail's
+big number, the summary seed behind the loading tips and the Home card, and the heartbeat's
+rate-spike denominator (a capped 48h average inflates the recent-rate ratio). Worst was the
+anomaly math: `useAnomalyBaseline` tallied the CURRENT 48h counts from the drawn rows while the
+BASELINE was a server `GROUP BY`, so on a capped day the big neighborhoods leaned "quiet" by
+**~0.5σ**. Per-neighborhood 911 is structurally empty (finding above), so the Stouffer combine
+runs on k=2 and 311 is half the signal. The digest cron had already counted "now" server-side
+(`api/_lib/pulse.ts`), so the email and the site could disagree about the same neighborhood.
+
+**Resolution (Jesse's rulings):** keep the newest 5,000 dots per stream — do NOT raise the cap
+or page — and make every stated number true. The hook trips `truncatedByDataset` when a full
+fetch returns exactly the cap AND the rows it holds still stop short of the window start
+(`coverageTruncated`): held rows accumulate across polls, so a tab left open fills the cut in
+over a few hours and the flag clears on its own even though every poll keeps returning exactly
+the cap — "the last draw hit the cap" and "the oldest hours are missing" are different facts,
+and the review of the first draft caught the copy stating the second from the first. While
+coverage falls short it counts the window server-side (`count(*)` at the SAME cutoff string)
+into `totalInWindowByDataset`; every stated count goes through `windowTotal` /
+`windowTotalAcross` (`src/hooks/last48Truncation.ts`) — the loaded figure stays the loaded
+figure, the true total is disclosed beside it ("5,000 loaded of 5,516 · oldest hours not
+loaded"), and a failed count renders as "—", never a guess. The sparkline hatches the emptied
+oldest bins with the same pattern as the publish-lag zone (one idiom). `useAnomalyBaseline` now
+counts the current 48h on the server, one grouped query per stream in the cron's shape, and
+filters the Fire/EMS `'None'` sentinel on BOTH sides; `currentEvents` left its contract. The
+drawn sample only governs what is drawn. No corrections-log entry: the figures a reader could
+have quoted (the per-stream counts) were the loaded counts, stated as such.
+
 ---
 
 ## Vendor Payments (`n9pm-xkyq`, compliance reporting)

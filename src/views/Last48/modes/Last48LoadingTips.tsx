@@ -50,25 +50,34 @@ function volumeTip(
 
 // Mixed deck — data factoids interleaved with usability tips so the rotation
 // alternates "here's what's in the data" with "here's how to read it."
+//
+// Fallback figures (the "roughly N" voice) were re-measured Sept. 2 2026 via
+// count(*) over the SF-local 48h window — 911 3,683 · Fire/EMS 1,580 rows ·
+// 311 3,938 mid-week and 5,300–5,516 on full weekday pairs (2,081–2,843
+// cases/day, Aug 19–Sept 1). Re-measure when they drift; the previous set
+// (2,800 / 600 / 2,400) had fallen 2–2.6× low. Fire/EMS rows are unit
+// dispatches (~2 per call) and the seeded count is distinct calls: 6,965
+// distinct call_numbers over Aug 19–Sept 1 ≈ 995 per complete 48h, so the
+// fallback says "about a thousand" in the seeded figure's own unit.
 const TIPS: LoadingTip[] = [
   { kind: 'usage', text: 'Click anywhere on the map to skip ahead and jump straight to the loaded view.' },
   { kind: 'data',  text: (c) => volumeTip(
     c['911-realtime'],
     (n) => `In the last 48 hours, San Francisco logged ${n} emergency 911 calls.`,
-    'San Francisco dispatches roughly 2,800 emergency 911 calls every 48 hours.',
+    'San Francisco dispatches roughly 3,500 emergency 911 calls every 48 hours.',
   ) },
   { kind: 'usage', text: 'Solid dots are priority-A emergencies — the calls that matter most. Everything else is a hollow ring.' },
   { kind: 'data',  text: (c) => volumeTip(
     c['fire-ems-dispatch'],
     (n) => `Fire & EMS responded to ${n} incidents in the last 48 hours.`,
-    'Fire & EMS responds to about 600 incidents in a typical two-day window.',
+    'Fire & EMS responds to about a thousand incidents in a typical two-day window.',
   ) },
   { kind: 'usage', text: 'A dot’s color fades as the event ages — fresh events glow in full pigment, older ones drift toward paper.' },
   { kind: 'usage', text: 'Click any dot to open full incident details in the side panel.' },
   { kind: 'data',  text: (c) => volumeTip(
     c['311-cases'],
     (n) => `311 logged ${n} service requests in the last 48 hours — encampments, graffiti, street cleaning, noise.`,
-    '311 logs around 2,400 service requests every 48 hours — encampments, graffiti, street cleaning, noise.',
+    '311 logs somewhere between 4,000 and 5,500 service requests every 48 hours — encampments, graffiti, street cleaning, noise.',
   ) },
   { kind: 'usage', text: 'Click an event in the side rail to fly the map straight to its location.' },
   { kind: 'usage', text: 'Switch on AUTO and the map tours itself — a slow orbit gliding through the freshest events, hands-free. Made for a wall display.' },

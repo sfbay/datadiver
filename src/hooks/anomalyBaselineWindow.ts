@@ -48,3 +48,18 @@ export function baselineWindow(nowMs: number): { since: string; until: string } 
   const sinceIdx = untilIdx - BASELINE_PAIRS * 2
   return { since: sfMidnightOfDay(sinceIdx), until: sfMidnightOfDay(untilIdx) }
 }
+
+export const CURRENT_WINDOW_MS = 48 * 60 * 60 * 1000
+
+/** The live 48h window ANCHORED at a stream's newest PUBLISHED event, never
+ *  at the wall clock. DataSF streams publish behind real time (311 ~15h,
+ *  Fire/EMS ~11h), so a wall-clock window holds only the hours that have
+ *  been published and undercounts against the complete-pair baseline —
+ *  measured Sept. 2 2026: 311 wall-clock 3,784 vs 5,517 anchored, a
+ *  structural "quiet" of about a third that slipped under the 24h freshness
+ *  gate. Same rule as YoY windows: match the window to the data's real edge.
+ *  The browser anchors on `freshness[id].maxEventTime`; the cron probes
+ *  `max(dateField)`. Use as `dateField >= since AND dateField <= until`. */
+export function currentWindow(anchorMs: number): { since: string; until: string } {
+  return { since: sfLocalCutoff(anchorMs - CURRENT_WINDOW_MS), until: sfLocalCutoff(anchorMs) }
+}

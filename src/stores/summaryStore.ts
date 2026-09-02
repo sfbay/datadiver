@@ -20,13 +20,17 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { LAST48_DATASETS, type DatasetId } from '@/types/last48'
+import { LAST48_SUMMARY_VERSION, migrateLast48Summary } from './last48SummaryMigrate'
 
 /** Per-dataset 48h volumes as last observed on a completed Last 48 load. */
 export type Last48Counts = Partial<Record<DatasetId, number>>
 
 export interface Last48Summary {
-  /** 48h event counts per dataset. Partial: only datasets that reached FULL
-   *  load contributed (head-only / disabled streams are absent → fallback). */
+  /** 48h event counts per dataset — the window's TRUE size (server-counted
+   *  where the 5,000-row draw cap tripped), never the drawn sample's length.
+   *  Partial: only datasets that reached FULL load contributed (head-only /
+   *  disabled streams, and a capped stream whose count failed, are absent →
+   *  fallback). */
   counts: Last48Counts
   /** When these counts were last written (ms epoch); null if never. */
   updatedAt: number | null
@@ -68,7 +72,14 @@ export const useSummaryStore = create<SummaryState>()(
     {
       name: 'datadiver:summary',
       storage: createJSONStorage(() => localStorage),
-      version: 1,
+      // v1 stored the drawn-sample length, which on a busy 311 weekday was
+      // the 5,000-row cap rather than the window's size (2026-09-02). v2
+      // stores the window's true size. The migration is TARGETED (see
+      // last48SummaryMigrate.ts): a v1 seed below the cap came from an
+      // uncapped draw and is still a true count, so it is kept; only seeds
+      // at or above the cap are dropped and re-seeded by the next full load.
+      version: LAST48_SUMMARY_VERSION,
+      migrate: migrateLast48Summary,
       // Persist only the data slots, not the action functions.
       partialize: (s) => ({ last48: s.last48 }),
     },

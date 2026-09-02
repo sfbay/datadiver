@@ -7,7 +7,7 @@
 
 import { useMemo } from 'react'
 import type { AnomalyResult, DatasetId, NormalizedEvent } from '@/types/last48'
-import type { HeartbeatItem } from '@/types/heartbeat'
+import type { DetectorContext, HeartbeatItem } from '@/types/heartbeat'
 import { DETECTORS } from '@/views/Last48/heartbeat/detectors'
 import { rankHeartbeatItems, quietFallback } from '@/views/Last48/heartbeat/rank'
 
@@ -15,8 +15,12 @@ export function useLast48Heartbeat(opts: {
   events: NormalizedEvent[]
   anomalies: AnomalyResult[]
   datasets: DatasetId[]
+  /** Per-stream TRUE 48h window size (see DetectorContext) — the rate-spike
+   *  denominator. Without it a stream capped at 5,000 rows reads as quieter
+   *  than it is and its recent rate looks like a spike. */
+  windowTotalByDataset?: DetectorContext['windowTotalByDataset']
 }): HeartbeatItem[] {
-  const { events, anomalies, datasets } = opts
+  const { events, anomalies, datasets, windowTotalByDataset } = opts
   // NOTE: `events` (window48.events) and `anomalies` are fresh array refs on
   // every render, so this memo recomputes each render rather than caching —
   // by design. `now = Date.now()` lives INSIDE, which is what keeps the
@@ -28,8 +32,8 @@ export function useLast48Heartbeat(opts: {
   return useMemo(() => {
     const enabled = events.filter((e) => datasets.includes(e.datasetId))
     const now = Date.now()
-    const raw = DETECTORS.flatMap((d) => d({ events: enabled, anomalies, now }))
+    const raw = DETECTORS.flatMap((d) => d({ events: enabled, anomalies, now, windowTotalByDataset }))
     const ranked = rankHeartbeatItems(raw)
     return ranked.length > 0 ? ranked : [quietFallback(now)]
-  }, [events, anomalies, datasets])
+  }, [events, anomalies, datasets, windowTotalByDataset])
 }
