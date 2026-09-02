@@ -21,7 +21,7 @@ import { usePoliceHourlyPattern, useOaklandPoliceHourlyPattern } from '@/hooks/u
 import { usePoliceComparisonData, useOaklandPoliceComparisonData, countDistinctCases, type OaklandCrimeComparisonRow } from '@/hooks/useComparisonDataFactory'
 import { CRIME_EYEBROWS, OAKLAND_CRIME_GROUPS, OAKLAND_CRIME_QUERY_FLOOR, titleCaseCrimetype, oaklandCategoryExpr, classifyOaklandCategory } from './crimeDialect'
 import { splitPairKey, parseSubParam, formatSubParam, subcategoryChipLabel } from './subcategoryWatch'
-import { categoryCardState } from './categoryCard'
+import { categoryCardState, foldSelectedSubKeys } from './categoryCard'
 import { useSubcategoryMovers } from './useSubcategoryMovers'
 import MoversPill from './MoversPill'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
@@ -443,7 +443,9 @@ export default function CrimeIncidents() {
       citywideLoading: categoryLoading,
       areaLabel: selectedNeighborhood ? areaLabel(selectedNeighborhood) : null,
       selectedCategories: Array.from(selectedCategories).map(display),
-      selectedSubLabels: Array.from(selectedSubs).map((k) => {
+      // A chip click selects a pair AND its authored merges (one "Car
+      // break-ins" click = two keys); fold them so one click labels as one.
+      selectedSubLabels: foldSelectedSubKeys(Array.from(selectedSubs)).map((k) => {
         const { category, subcategory } = splitPairKey(k)
         return subcategoryChipLabel(category, subcategory)
       }),

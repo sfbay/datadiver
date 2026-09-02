@@ -1,5 +1,37 @@
 import { describe, it, expect } from 'vitest'
-import { categoryCardState, type CategoryCardInput } from './categoryCard'
+import { categoryCardState, foldSelectedSubKeys, type CategoryCardInput } from './categoryCard'
+import { splitPairKey, subcategoryChipLabel } from './subcategoryWatch'
+
+// The two live SFPD strings for vehicle break-ins; the second is authored to
+// merge into the first (subcategoryWatch.ts), and a chip click writes BOTH.
+const CAR_BREAK_INS = 'Larceny Theft|Larceny - From Vehicle'
+const CAR_BREAK_INS_MERGED = 'Larceny Theft|Theft From Vehicle'
+
+describe('foldSelectedSubKeys', () => {
+  it('drops a merged-away key when its target is also selected', () => {
+    expect(foldSelectedSubKeys([CAR_BREAK_INS, CAR_BREAK_INS_MERGED])).toEqual([CAR_BREAK_INS])
+    expect(foldSelectedSubKeys([CAR_BREAK_INS_MERGED, CAR_BREAK_INS])).toEqual([CAR_BREAK_INS])
+  })
+
+  it('keeps a merged-away key selected on its own', () => {
+    expect(foldSelectedSubKeys([CAR_BREAK_INS_MERGED])).toEqual([CAR_BREAK_INS_MERGED])
+  })
+
+  it('passes unrelated keys through in order', () => {
+    const keys = ['Assault|Aggravated Assault', CAR_BREAK_INS, 'Robbery|Robbery - Street']
+    expect(foldSelectedSubKeys(keys)).toEqual(keys)
+  })
+
+  it('one Car break-ins chip click labels as ONE subcategory on the card', () => {
+    const labels = foldSelectedSubKeys([CAR_BREAK_INS, CAR_BREAK_INS_MERGED]).map((k) => {
+      const { category, subcategory } = splitPairKey(k)
+      return subcategoryChipLabel(category, subcategory)
+    })
+    expect(categoryCardState(input({ selectedSubLabels: labels }))).toEqual({
+      value: 'Car break-ins', subtitle: 'Subcategory filter · citywide ranking', actionable: true,
+    })
+  })
+})
 
 const CITYWIDE = [
   { category: 'Larceny Theft', count: 21534 },

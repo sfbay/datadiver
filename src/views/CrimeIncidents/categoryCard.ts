@@ -1,7 +1,8 @@
 // src/views/CrimeIncidents/categoryCard.ts
 //
-// Pure state for the crime view's "Category" stat card. ZERO app imports;
-// node-tested. The card follows the selection — categories, subcategories,
+// Pure state for the crime view's "Category" stat card. Imports ONLY the
+// zero-import subcategoryWatch leaf (for the authored merges); node-tested.
+// The card follows the selection — categories, subcategories,
 // AND the selected neighborhood/beat — and names its scope, so a reader with
 // Assault checked never sees "Larceny Theft" as the headline (the old
 // "Top Category" read a citywide date-only aggregate no matter what was on).
@@ -11,6 +12,28 @@
 // Subcategory ranks stay citywide because the movers queries are citywide
 // (CLAUDE.md rule 1); the card says "citywide ranking" rather than claim an
 // area count it never measured.
+
+import { SUBCATEGORY_WATCH } from './subcategoryWatch'
+
+/** Drop any selected pair key whose authored merge TARGET is also selected.
+ *
+ *  A chip click writes the target AND its merges into `?sub=` (a mover's
+ *  `keys`), so one "Car break-ins" click selects two pair keys. Labeling
+ *  every key would print "2 subcategories" for one click — and the second
+ *  label is the raw SFPD string (`Theft From Vehicle`) the merge exists to
+ *  hide. Mirrors foldSidebarCounts: a merged-away key whose target is NOT
+ *  selected stands on its own, because it was selected on its own. */
+export function foldSelectedSubKeys(keys: readonly string[]): string[] {
+  const targetOf = new Map<string, string>()
+  for (const [target, entry] of Object.entries(SUBCATEGORY_WATCH)) {
+    for (const m of entry.merge ?? []) targetOf.set(m, target)
+  }
+  const selected = new Set(keys)
+  return keys.filter((k) => {
+    const target = targetOf.get(k)
+    return !(target && selected.has(target))
+  })
+}
 
 export interface CategoryCardInput {
   hasHistorical: boolean
