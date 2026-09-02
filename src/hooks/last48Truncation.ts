@@ -70,7 +70,12 @@ export function windowTotalAcross(
 }
 
 /** Reader-facing note for a capped stream. null when not capped (callers
- *  that have already gated on the capped state can omit the third argument).
+ *  that have already gated on the capped state can omit the third argument),
+ *  and null when the total is known and we hold at least that many rows —
+ *  nothing is missing, so there is nothing to disclose. Pass the total that
+ *  windowTotal() produced (floored at the loaded count), never the raw
+ *  server figure: "5,300 loaded of 5,100 · oldest hours not loaded" is a
+ *  sentence that contradicts itself.
  *
  *  capped, total known:  "5,000 loaded of 5,516 · oldest hours not loaded"
  *  capped, total null:   "5,000 loaded · window total unavailable" */
@@ -84,6 +89,7 @@ export function truncationNote(
   if (serverTotal === null || !Number.isFinite(serverTotal)) {
     return `${loadedText} loaded · window total unavailable`
   }
+  if (serverTotal <= loaded) return null
   return `${loadedText} loaded of ${serverTotal.toLocaleString('en-US')} · oldest hours not loaded`
 }
 

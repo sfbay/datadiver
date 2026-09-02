@@ -299,7 +299,9 @@ function SuperChip({
   const capped = fullyLoaded && truncated
   const total = capped ? windowTotal(count, true, serverTotal) : count
   const perHour = total === null ? '—' : (total / 48).toFixed(total >= 100 ? 0 : 1)
-  const capNote = capped ? truncationNote(count, serverTotal) : null
+  // The note takes the FLOORED total (the same figure the rate uses), so
+  // the sentence can never name a window smaller than the rows on screen.
+  const capNote = capped ? truncationNote(count, total) : null
   const sparkData = isLoaded
     ? binEventsByHour(events)
     : new Array<number>(SPARKLINE_BINS).fill(0)

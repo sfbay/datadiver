@@ -78,6 +78,13 @@ describe('truncationNote', () => {
   it('is null when explicitly not capped', () => {
     expect(truncationNote(1234, null, false)).toBeNull()
   })
+  it('never prints a total smaller than the loaded count — nothing is missing, so no note', () => {
+    // The chip passes windowTotal()'s floored figure; even handed the raw
+    // stale-low count, the note must not read "5,300 loaded of 5,100".
+    expect(truncationNote(5300, 5100)).toBeNull()
+    expect(truncationNote(5516, 5516)).toBeNull()
+    expect(truncationNote(5300, windowTotal(5300, true, 5100))).toBeNull()
+  })
 })
 
 describe('cappedLeadingBins', () => {
