@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef, type ReactNode } from 'react'
 import StatCard from '@/components/ui/StatCard'
 import { useCompactViewport } from '@/hooks/useCompactViewport'
 import ComparisonPopover from '@/components/filters/ComparisonPopover'
@@ -59,6 +59,8 @@ interface CardTrayProps {
   className?: string
   /** Hide the period-comparison popover (views whose data has no prior-period axis — e.g. certified election results). */
   hideComparison?: boolean
+  /** Extra pill-bar controls rendered AFTER the comparison popover (a self-contained trigger+dropdown like ComparisonPopover; the crime view's Movers pill). Absent = byte-identical bar. */
+  extras?: ReactNode
 }
 
 function getStorageKey(viewId: string) {
@@ -84,7 +86,7 @@ function saveCardStates(viewId: string, states: Record<string, CardState>) {
   } catch { /* ignore */ }
 }
 
-export default function CardTray({ viewId, cards, className = '', hideComparison = false }: CardTrayProps) {
+export default function CardTray({ viewId, cards, className = '', hideComparison = false, extras }: CardTrayProps) {
   const trayRef = useRef<HTMLDivElement>(null)
   const compact = useCompactViewport(trayRef)
   const [states, setStates] = useState<Record<string, CardState>>(() =>
@@ -233,6 +235,8 @@ export default function CardTray({ viewId, cards, className = '', hideComparison
               <ComparisonPopover />
             </div>
           )}
+
+          {extras && <div className="pointer-events-auto">{extras}</div>}
 
           {/* Menu toggle for hidden cards */}
           {hiddenCards.length > 0 && (
