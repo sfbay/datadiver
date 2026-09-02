@@ -835,6 +835,14 @@ export default function About() {
               rather than mistake a data gap for calm.
             </p>
             <p>
+              <strong className="text-ink dark:text-white">The draw cap.</strong>{' '}
+              Each stream draws at most 5,000 rows for its 48-hour window. 311 runs past
+              that on busy weekdays. When it does, the chip and the rail say how many rows
+              were loaded and how many the window holds, and the neighborhood comparison is
+              counted on the server rather than from the drawn rows, so the cap never reads
+              as a lull.
+            </p>
+            <p>
               <strong className="text-ink dark:text-white">Known limits.</strong>{' '}
               Every feed publishes with intrinsic lag (see the data-sources table above),
               so a spike in the last few hours may not be visible yet — the wire reflects
