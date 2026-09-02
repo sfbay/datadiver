@@ -20,6 +20,7 @@ import VisionZeroCounter from '@/components/investigations/VisionZeroCounter'
 import PulseTeaser from './PulseTeaser'
 import VizCard from '@/components/ui/VizCard'
 import AlertsRibbon from '@/components/home/AlertsRibbon'
+import HomeSearch from '@/components/search/HomeSearch'
 
 export default function Home() {
   const navigate = useNavigate()
@@ -89,13 +90,6 @@ export default function Home() {
           Echoes the 1990s/2000s LiquidEx pattern (percentage-width tables
           with spacer-GIF gutters), updated with modern clamp() controls. */}
       <div className="mx-auto pt-8 pb-16 relative w-full max-w-[1800px] px-[clamp(16px,3vw,64px)]">
-        {/* OmniSearch ribbon hidden pending entity-search infrastructure —
-            the static index only matches neighborhoods + dataset names, so
-            queries like "salesforce" or "uber" silently produced no results.
-            Ribbon will debut alongside vendor / business / committee
-            indexing in a follow-up PR. ⌘K modal kept active as a
-            power-user surface (limited but discoverable only by intent). */}
-
         {/* Hero — full-width background with Dana on right, text on left.
             min-height scales with the viewport so the hero stays cinematic at
             wide widths instead of looking shallow. clamp(0, 30vw, 600px) means:
@@ -103,7 +97,7 @@ export default function Home() {
             ~1280px+ where 30vw exceeds the natural text-panel height, and caps
             at 600px so it can't grow indefinitely on ultrawide. */}
         <header
-          className="glow-host mb-20 relative z-10 overflow-hidden rounded-3xl flex flex-col justify-center"
+          className="glow-host mb-10 relative z-10 overflow-hidden rounded-3xl flex flex-col justify-center"
           style={{
             '--glow': '#b85a33',
             minHeight: 'clamp(0px, 30vw, 600px)',
@@ -216,6 +210,11 @@ export default function Home() {
             </div>
           </div>
         </header>
+
+        {/* Search the city — the ⌘K index inline, hero-scale, with pinned
+            sample pills. z-20 wrapper: its results panel overlays the rows
+            below (see the stacking note at the top of HomeSearch.tsx). */}
+        <HomeSearch mounted={mounted} />
 
         {/* Mobile-only: the Explorations relocated under the hero as a swipeable
             rail (the desktop Explorations section below is hidden on mobile), so
