@@ -212,6 +212,13 @@ export interface UseAnomalyBaselineResult {
   /** First stream's current-count error, or null. A stream whose count
    *  failed contributes NO anomalies (absence, not "quiet"). */
   currentError: string | null
+  /** Enabled streams whose current-count query FAILED (no counts landed) and
+   *  that therefore contribute NO anomalies. The surviving streams then
+   *  render as the whole comparison — the Stouffer combine runs on k−1 — so
+   *  every consumer that shows anomalies must SAY so (the transparency rule:
+   *  suppressed WITH the reason, never silently absent). Empty when every
+   *  enabled stream has counts or is still pending. */
+  missingCurrent: DatasetId[]
 }
 
 export function useAnomalyBaseline(opts: {
@@ -333,11 +340,17 @@ export function useAnomalyBaseline(opts: {
   )
   const currentError =
     opts.datasets.map((id) => currentErrors[id]).find((e): e is string => typeof e === 'string') ?? null
+  // Memoized: consumers put this in effect/memo deps and render copy from it.
+  const missingCurrent = useMemo(
+    () => opts.datasets.filter((id) => currentCounts[id] === undefined && !!currentErrors[id]),
+    [opts.datasets, currentCounts, currentErrors],
+  )
 
   return {
     anomalies: suppressStaleQuiet(anomalies, opts.freshness),
     isLoading: isBaselineLoading || currentPending,
     error,
     currentError,
+    missingCurrent,
   }
 }

@@ -19,7 +19,7 @@ import { useMemo } from 'react'
 import { useCivicIndicators } from '@/hooks/useCivicIndicators'
 import { useLast48Window } from '@/hooks/useLast48Window'
 import { useAnomalyBaseline } from '@/hooks/useAnomalyBaseline'
-import { LAST48_DATASETS } from '@/types/last48'
+import { LAST48_DATASETS, type DatasetId } from '@/types/last48'
 import {
   anomalyToWireItem,
   tickerToWireItem,
@@ -35,11 +35,23 @@ import { FRESH_MAX_MS } from '@/lib/pulse/anomalyStats'
 export interface UsePulseWireResult {
   items: WireItem[]
   isLoading: boolean
+  /** Reader-facing notice when a stream's current 48h counts failed to load:
+   *  it then has NO neighborhood cards, and a wire that said nothing would
+   *  read as complete. null when every stream counted (or is still pending).
+   *  Same fact the Last 48 anomaly map discloses in its pill. */
+  notice: string | null
+}
+
+// Feed names as the Pulse legend prints them.
+const STREAM_LABEL: Record<DatasetId, string> = {
+  '911-realtime': '911',
+  'fire-ems-dispatch': 'Fire/EMS',
+  '311-cases': '311',
 }
 
 export function usePulseWire(): UsePulseWireResult {
   const window48 = useLast48Window({ datasets: LAST48_DATASETS })
-  const { anomalies } = useAnomalyBaseline({
+  const { anomalies, missingCurrent } = useAnomalyBaseline({
     datasets: LAST48_DATASETS,
     freshness: window48.freshness,
   })
@@ -74,5 +86,12 @@ export function usePulseWire(): UsePulseWireResult {
     return rankWire([...byId.values()])
   }, [anomalies, tickerItems, window48.freshness])
 
-  return { items, isLoading: window48.isLoading || tickerLoading }
+  const notice = useMemo(() => {
+    if (missingCurrent.length === 0) return null
+    const names = missingCurrent.map((id) => STREAM_LABEL[id]).join(' and ')
+    const one = missingCurrent.length === 1
+    return `${names} neighborhood signals unavailable — ${one ? 'its' : 'their'} current counts didn’t load, so ${one ? 'that stream has' : 'those streams have'} no cards on this wire.`
+  }, [missingCurrent])
+
+  return { items, isLoading: window48.isLoading || tickerLoading, notice }
 }

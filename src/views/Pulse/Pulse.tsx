@@ -16,7 +16,7 @@ import { formatApTime } from '@/utils/format'
 const MAX_VISIBLE = 24
 
 export default function Pulse() {
-  const { items, isLoading } = usePulseWire()
+  const { items, isLoading, notice } = usePulseWire()
 
   // Place filter lives in the URL (?nh=) so a filtered wire is a sendable
   // link — mirrors Last48's ?nh= pattern (replace, redundant-write guard).
@@ -114,6 +114,15 @@ export default function Pulse() {
             <span>arrow + bar = direction &amp; how far from normal</span>
           </div>
         </header>
+
+        {/* ── Suppressed-with-reason notice ─────────────────────────
+            A stream whose current counts failed has no neighborhood cards;
+            without this line the wire would read as complete. */}
+        {notice && (
+          <p role="status" className="mb-5 font-mono text-[0.6875rem] leading-relaxed text-ochre-600 dark:text-ochre-400 max-w-[70ch]">
+            {notice}
+          </p>
+        )}
 
         {/* ── Neighborhood filter ──────────────────────────────────
             overscroll-x-contain: keep the chip row's horizontal scroll from
