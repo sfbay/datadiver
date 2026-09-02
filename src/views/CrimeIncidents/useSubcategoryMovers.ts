@@ -22,7 +22,7 @@ import { useDataset } from '@/hooks/useDataset'
 import { buildSfCrimeDateOnly } from './crimeDialect'
 import { SF_CRIME_COUNT } from './crimeCount'
 import { pairKey, splitPairKey, subcategoryLabel } from './subcategoryWatch'
-import { rankMovers, type Mover, type MoverInput } from './subcategoryMovers'
+import { rankMovers, topMover, type Mover, type MoverInput } from './subcategoryMovers'
 import { resolveMoverWindows, foldSidebarCounts } from './subcategoryWindows'
 import type { ComparisonMode, DateRange } from '@/utils/comparisonMode'
 
@@ -47,6 +47,11 @@ export interface SubcategoryData {
   byCategory: Map<string, SubcategoryRow[]>
   crimeMovers: Mover[]
   enforcementMovers: Mover[]
+  /** The ticker's definition of the biggest crime mover (watched-first,
+   *  subcategoryMovers.topMover). The pill headline reads THIS, never
+   *  crimeMovers[0] — the open slot routinely outscores the watched beats and
+   *  two surfaces must never rank the same data differently. */
+  topCrimeMover: Mover | null
   /** "vs July 4, 2025". Empty when no comparison was possible. */
   comparisonLabel: string
   /** False when the comparison window could not be resolved or returned
@@ -56,7 +61,7 @@ export interface SubcategoryData {
 }
 
 const EMPTY: SubcategoryData = {
-  byCategory: new Map(), crimeMovers: [], enforcementMovers: [],
+  byCategory: new Map(), crimeMovers: [], enforcementMovers: [], topCrimeMover: null,
   comparisonLabel: '', compared: false, isLoading: false,
 }
 
@@ -164,6 +169,9 @@ export function useSubcategoryMovers(opts: {
       byCategory,
       crimeMovers: rankMovers(inputs, 'crime'),
       enforcementMovers: rankMovers(inputs, 'enforcement'),
+      // `inputs` is [] when !compared, and topMover([]) is null — absence,
+      // not a fabricated headline.
+      topCrimeMover: topMover(inputs, 'crime'),
       comparisonLabel: windows.label,
       compared,
       isLoading: cur.isLoading || pri.isLoading,
