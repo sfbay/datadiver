@@ -25,7 +25,7 @@
 // CLAUDE.md — subtle on interaction only). Inactive state is outline-
 // only with dimmed pigment.
 
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import {
   LAST48_DATASETS,
   type DatasetId,
@@ -185,6 +185,22 @@ const SPARKLINE_BINS = 24
 const WINDOW_MS = 48 * 60 * 60 * 1000
 const BIN_MS = WINDOW_MS / SPARKLINE_BINS
 
+/** Sparkline bins the row cap emptied: bins wholly before the oldest loaded
+ *  event when the stream's full fetch hit the cap. Reads the clock inside
+ *  (like binEventsByHour) — the window start is "now − 48h" at render. */
+function capHatchBins(events: NormalizedEvent[], capped: boolean): number {
+  if (!capped || events.length === 0) return 0
+  let min = Number.POSITIVE_INFINITY
+  for (const e of events) if (e.receivedAt < min) min = e.receivedAt
+  return cappedLeadingBins({
+    truncated: capped,
+    oldestLoadedMs: Number.isFinite(min) ? min : null,
+    windowStartMs: Date.now() - WINDOW_MS,
+    binMs: BIN_MS,
+    binCount: SPARKLINE_BINS,
+  })
+}
+
 function binEventsByHour(events: NormalizedEvent[]): number[] {
   const now = Date.now()
   const counts = new Array<number>(SPARKLINE_BINS).fill(0)
@@ -287,21 +303,9 @@ function SuperChip({
   const sparkData = isLoaded
     ? binEventsByHour(events)
     : new Array<number>(SPARKLINE_BINS).fill(0)
-  // Oldest loaded event — anchors the sparkline's row-cap hatch (bins wholly
-  // before it hold nothing because the DESC draw stopped short of them).
-  const oldestLoadedMs = useMemo(() => {
-    if (events.length === 0) return null
-    let min = Number.POSITIVE_INFINITY
-    for (const e of events) if (e.receivedAt < min) min = e.receivedAt
-    return Number.isFinite(min) ? min : null
-  }, [events])
-  const cappedBins = cappedLeadingBins({
-    truncated: capped,
-    oldestLoadedMs,
-    windowStartMs: Date.now() - WINDOW_MS,
-    binMs: BIN_MS,
-    binCount: SPARKLINE_BINS,
-  })
+  // Row-cap hatch width — bins wholly before the oldest loaded event hold
+  // nothing because the DESC draw stopped short of them.
+  const cappedBins = capHatchBins(events, capped)
 
   const refreshLag = freshness?.refreshLagMs ?? null
   const eventLag   = freshness?.eventLagMs ?? null
