@@ -13,6 +13,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { fetchDataset } from '@/api/client'
 import { useSummaryStore } from '@/stores/summaryStore'
+import { LAST48_COUNT_EXPR } from '@/hooks/last48Truncation'
 import { sfLocalCutoff } from '@/utils/sfTime'
 import { LAST48_DATASETS, type DatasetId } from '@/types/last48'
 
@@ -50,7 +51,7 @@ async function loadLiveCounts(): Promise<PulseCounts> {
     LAST48_DATASETS.map((id) => {
       const { key, dateField } = STREAM_QUERY[id]
       return fetchDataset<CountRow>(key as Parameters<typeof fetchDataset>[0], {
-        $select: 'count(*) as cnt',
+        $select: `${LAST48_COUNT_EXPR[id]} as cnt`,
         $where: `${dateField} >= '${cutoff}'`,
         $limit: 1,
       }, { timeoutMs: 15_000, retries: 1 })

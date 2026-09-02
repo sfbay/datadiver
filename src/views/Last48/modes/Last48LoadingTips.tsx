@@ -56,8 +56,9 @@ function volumeTip(
 // 311 3,938 mid-week and 5,300–5,516 on full weekday pairs (2,081–2,843
 // cases/day, Aug 19–Sept 1). Re-measure when they drift; the previous set
 // (2,800 / 600 / 2,400) had fallen 2–2.6× low. Fire/EMS rows are unit
-// dispatches (several per call) and the seeded count is distinct calls, so
-// that fallback is phrased as a floor rather than a point figure.
+// dispatches (~2 per call) and the seeded count is distinct calls: 6,965
+// distinct call_numbers over Aug 19–Sept 1 ≈ 995 per complete 48h, so the
+// fallback says "about a thousand" in the seeded figure's own unit.
 const TIPS: LoadingTip[] = [
   { kind: 'usage', text: 'Click anywhere on the map to skip ahead and jump straight to the loaded view.' },
   { kind: 'data',  text: (c) => volumeTip(
@@ -69,7 +70,7 @@ const TIPS: LoadingTip[] = [
   { kind: 'data',  text: (c) => volumeTip(
     c['fire-ems-dispatch'],
     (n) => `Fire & EMS responded to ${n} incidents in the last 48 hours.`,
-    'Fire & EMS responds to more than a thousand incidents in a typical two-day window.',
+    'Fire & EMS responds to about a thousand incidents in a typical two-day window.',
   ) },
   { kind: 'usage', text: 'A dot’s color fades as the event ages — fresh events glow in full pigment, older ones drift toward paper.' },
   { kind: 'usage', text: 'Click any dot to open full incident details in the side panel.' },

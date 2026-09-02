@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { LAST48_DATASETS } from '@/types/last48'
 import {
   LAST48_ROW_CAP,
   COVERAGE_SLACK_MS,
@@ -7,6 +8,7 @@ import {
   truncationNote,
   cappedLeadingBins,
   coverageTruncated,
+  LAST48_COUNT_EXPR,
 } from './last48Truncation'
 
 describe('LAST48_ROW_CAP', () => {
@@ -152,5 +154,14 @@ describe('coverageTruncated', () => {
   })
   it('honours a caller-supplied slack', () => {
     expect(coverageTruncated({ ...base, oldestHeldMs: START + 1 * H, slackMs: 2 * H })).toBe(false)
+  })
+})
+
+describe('LAST48_COUNT_EXPR', () => {
+  it('names a count for every Last 48 stream, in the stream’s own unit', () => {
+    for (const id of LAST48_DATASETS) expect(typeof LAST48_COUNT_EXPR[id]).toBe('string')
+    // Fire/EMS publishes one row per dispatched unit; the chip counts calls.
+    expect(LAST48_COUNT_EXPR['fire-ems-dispatch']).toBe('count(distinct call_number)')
+    expect(LAST48_COUNT_EXPR['311-cases']).toBe('count(*)')
   })
 })

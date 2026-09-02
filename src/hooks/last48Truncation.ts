@@ -16,7 +16,22 @@
 
 /** Mirror of useLast48Window's FULL_LIMIT — the hook imports THIS constant
  *  so the tripwire and the query limit cannot drift apart. */
+
+import type { DatasetId } from '@/types/last48'
+
 export const LAST48_ROW_CAP = 5000
+
+/** The server count that matches what each stream's chip COUNTS. Fire/EMS
+ *  publishes one row per dispatched UNIT (~2 per call) while the normalizer
+ *  keys events by call_number, so a bare count(*) would state ~2x the
+ *  figure beside it. 911 and 311 are one row per call/case. Every window
+ *  count — the cap tripwire and the Home card's live count — goes through
+ *  this map so the two can never speak in different units. */
+export const LAST48_COUNT_EXPR: Record<DatasetId, string> = {
+  '911-realtime': 'count(*)',
+  'fire-ems-dispatch': 'count(distinct call_number)',
+  '311-cases': 'count(*)',
+}
 
 /** Per-stream inputs the helpers read (the shape the hook exposes). */
 export interface WindowTotalPart {
@@ -98,9 +113,10 @@ export function truncationNote(
  *  between the rows query and the eviction clock plus a naturally quiet
  *  stretch at the window's far edge; anything larger means the DESC draw's
  *  cut is still inside the window. Fifteen minutes — deliberately smaller
- *  than a sparkline bin (2h): a sub-bin gap can't be hatched, but the FIGURES
- *  beside the sparkline stay true (the rate and the note still use the
- *  server total), and a wrong figure is the worse error. */
+ *  than a sparkline bin (2h): a gap at or under the slack is never counted
+ *  at all — the loaded count stands as the figure — so the most a stated
+ *  number can run short by is fifteen minutes of one stream, and a wrong
+ *  figure at bin scale is the worse error. */
 export const COVERAGE_SLACK_MS = 15 * 60 * 1000
 
 /** Whether the rows HELD for a stream fall short of its 48-hour window — the

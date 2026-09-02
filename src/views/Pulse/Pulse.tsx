@@ -119,7 +119,7 @@ export default function Pulse() {
             A stream whose current counts failed has no neighborhood cards;
             without this line the wire would read as complete. */}
         {notice && (
-          <p role="status" className="mb-5 font-mono text-[0.6875rem] leading-relaxed text-ochre-600 dark:text-ochre-400 max-w-[70ch]">
+          <p role="status" className="mb-5 font-mono text-label leading-relaxed text-ochre-600 dark:text-ochre-400 max-w-[70ch]">
             {notice}
           </p>
         )}

@@ -258,9 +258,12 @@ interface SuperChipProps {
   /** The stream's FULL 48h fetch has completed (the head phase never trips
    *  the cap, so truncation copy only renders once this is true). */
   fullyLoaded: boolean
-  /** The last full fetch returned exactly the row cap. */
+  /** The rows HELD for this stream stop short of its window start —
+   *  coverageTruncated(), not "the last draw hit the cap" (held rows
+   *  accumulate across polls and can fill the cut back in). */
   truncated: boolean
-  /** Server count(*) for the capped window; null = not capped or unknown. */
+  /** Server count for the capped window, in the stream's own unit
+   *  (LAST48_COUNT_EXPR); null = not capped or unknown. */
   serverTotal: number | null
 }
 

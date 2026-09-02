@@ -43,7 +43,7 @@ import {
 } from '@/types/last48'
 import { normalizeEvent } from '@/utils/eventNormalization'
 import { sfLocalCutoff } from '@/utils/sfTime'
-import { LAST48_ROW_CAP, coverageTruncated } from './last48Truncation'
+import { LAST48_ROW_CAP, coverageTruncated, LAST48_COUNT_EXPR } from './last48Truncation'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -164,7 +164,8 @@ export interface Last48WindowResult {
    *  its own once a long-open tab's polls have filled the cut in. Read it
    *  only alongside fullyLoadedByDataset — the head phase never trips it. */
   truncatedByDataset: Record<DatasetId, boolean>
-  /** Server `count(*)` for the SAME cutoff as the last capped full fetch;
+  /** Server count (LAST48_COUNT_EXPR — the stream's own unit, distinct
+   *  calls for Fire/EMS) for the SAME cutoff as the last capped full fetch;
    *  null when not capped (use the loaded count) or when the count query
    *  failed (ABSENT — render '—' for anything that depends on it). Go
    *  through windowTotal()/windowTotalAcross() rather than reading it raw. */
@@ -500,7 +501,7 @@ export function useLast48Window(opts: {
             try {
               const countRows = await fetchDataset<{ cnt: string }>(
                 registryKey as Parameters<typeof fetchDataset>[0],
-                { $select: 'count(*) as cnt', $where: `${dateField} >= '${cutoff}'`, $limit: 1 },
+                { $select: `${LAST48_COUNT_EXPR[datasetId]} as cnt`, $where: `${dateField} >= '${cutoff}'`, $limit: 1 },
                 { skipCache: true, timeoutMs: COUNT_TIMEOUT_MS, retries: COUNT_RETRIES },
               )
               const parsed = parseInt(countRows[0]?.cnt ?? '', 10)
