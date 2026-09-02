@@ -400,13 +400,13 @@ export default function About() {
                 showing only the larger understates the real figure by about 17%.
               </p>
               <p className="mt-2">
-                The &ldquo;what&rsquo;s moving&rdquo; strip ranks change against a matched
+                The &ldquo;Movers&rdquo; control on the map ranks change against a matched
                 earlier window, on buckets with at least 150 incidents on both sides. Two
                 slots are reserved for the beats we follow and one is always open to
                 whatever the data turns up, so curation cannot crowd out discovery. We
                 keep police-activity measures &mdash; warrants served, traffic-stop
                 arrests, drug violations, loitering citations &mdash; in a separate
-                &ldquo;enforcement&rdquo; strip. Those numbers move when policing changes,
+                &ldquo;enforcement&rdquo; list inside the same panel. Those numbers move when policing changes,
                 not when crime does, and reading them as crime is a mistake we made in an
                 early draft of this feature. Record-keeping categories such as case
                 closures are excluded from headlines only; they remain in the list, remain

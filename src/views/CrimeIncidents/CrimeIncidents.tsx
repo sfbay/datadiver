@@ -14,17 +14,19 @@ import { composeAreaLabel } from '@/cities/areaLabel'
 import { AreaRowLabel } from '@/components/ui/AreaLabel'
 import { useSearchParams } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
-import { useCrimeEraData } from './useCrimeEraData'
+import { useCrimeEraData, CATEGORY_ROW_CAP } from './useCrimeEraData'
 import { useMapLayer } from '@/hooks/useMapLayer'
 import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { usePoliceHourlyPattern, useOaklandPoliceHourlyPattern } from '@/hooks/useHourlyPatternFactory'
 import { usePoliceComparisonData, useOaklandPoliceComparisonData, countDistinctCases, type OaklandCrimeComparisonRow } from '@/hooks/useComparisonDataFactory'
 import { CRIME_EYEBROWS, OAKLAND_CRIME_GROUPS, OAKLAND_CRIME_QUERY_FLOOR, titleCaseCrimetype, oaklandCategoryExpr, classifyOaklandCategory } from './crimeDialect'
-import { splitPairKey, parseSubParam, formatSubParam } from './subcategoryWatch'
+import { splitPairKey, parseSubParam, formatSubParam, subcategoryChipLabel } from './subcategoryWatch'
+import { categoryCardState, foldSelectedSubKeys } from './categoryCard'
 import { useSubcategoryMovers } from './useSubcategoryMovers'
-import SubcategoryStrip from './SubcategoryStrip'
+import MoversPill from './MoversPill'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { useAppStore } from '@/stores/appStore'
 import { resolveComparisonStart, comparisonLabel } from '@/utils/comparisonMode'
 import type { PoliceIncident, IncidentCategoryAggRow, NeighborhoodAggRowPolice, ResolutionAggRow } from '@/types/datasets'
@@ -58,7 +60,10 @@ type MapMode = 'heatmap' | 'anomaly'
 type SidebarTab = 'categories' | 'neighborhoods'
 
 export default function CrimeIncidents() {
-  const { dateRange, timeOfDayFilter, comparisonMode, selectedCrimeIncident, setSelectedCrimeIncident } = useAppStore()
+  const {
+    dateRange, timeOfDayFilter, comparisonMode, selectedCrimeIncident, setSelectedCrimeIncident,
+    isContextSidebarOpen, toggleContextSidebar,
+  } = useAppStore()
   const city = useActiveCity()
   const isSF = city.id === 'sf'
   // Composed reader-facing beat labels ('Rockridge & Shafter · 12Y'); identity for SF.
@@ -73,7 +78,20 @@ export default function CrimeIncidents() {
   const underlayPreset = useViewEntry()?.underlayPreset ?? []
   const [searchParams, setSearchParams] = useSearchParams()
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('categories')
+  /** The Movers dropdown's open state lives HERE, not in the pill: the
+   *  CardTray (and the pill inside it) is swapped for a skeleton on every
+   *  row refetch, and a chip click IS a refetch. Local state would close the
+   *  panel on each toggle; this survives the remount. */
+  const [moversOpen, setMoversOpen] = useState(false)
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
+  const isMobile = useIsMobile()
+  /** "Change →" on the Category card lands on the picker. Desktop only:
+   *  toggleContextSidebar flips the persisted desktop flag, which the mobile
+   *  sheet ignores, so the action is withheld there (see canOpenPicker). */
+  const openPicker = useCallback(() => {
+    setSidebarTab('categories')
+    if (!isContextSidebarOpen) toggleContextSidebar()
+  }, [isContextSidebarOpen, toggleContextSidebar])
   const mapHandleRef = useRef<MapHandle>(null)
 
   // Deep-link: rehydrate detail panel from URL on mount.
@@ -215,6 +233,9 @@ export default function CrimeIncidents() {
   /** True while any pre-2018 rows are in range — gates the modern-only
    *  affordances (category filter, 911 linkage, year-over-year). */
   const hasHistorical = era.plan.era !== 'current'
+  // The Movers pill unmounts on Oakland and on historical ranges; a dropdown
+  // left open there would reopen by itself when the pill returns.
+  useEffect(() => { if (!isSF || hasHistorical) setMoversOpen(false) }, [isSF, hasHistorical])
 
   const freshness = useDataFreshness(
     'policeIncidents',
@@ -225,7 +246,7 @@ export default function CrimeIncidents() {
 
   // SF only; withheld on any range that touches the pre-2018 historical
   // extract (it publishes no incident_subcategory at all). Feeds both the
-  // sidebar turn-down (byCategory) and the movers strips (Task 6+).
+  // sidebar turn-down (byCategory) and the Movers pill's two lists.
   const subcats = useSubcategoryMovers({
     enabled: isSF && !hasHistorical,
     dateRange,
@@ -262,6 +283,9 @@ export default function CrimeIncidents() {
     totalCount,
     linked,
     categoryRows,
+    categoryLoading,
+    scopedCategoryRows,
+    scopedCategoryLoading,
     neighborhoodRows,
     resolutionRows,
   } = era
@@ -371,10 +395,7 @@ export default function CrimeIncidents() {
   }, [rawData, isSF])
 
   const stats = useMemo(() => {
-    if (incidentData.length === 0) return { total: 0, topCategory: 'N/A', linkedPct: 0, peakHour: 0 }
-
-    // Top category from aggregation
-    const topCategory = categoryRows.length > 0 ? categoryRows[0].incident_category : 'N/A'
+    if (incidentData.length === 0) return { total: 0, linkedPct: 0, peakHour: 0 }
 
     // 911 linked percentage — server-side counts; the 5K-sample ratio is
     // only an immediate-render fallback while the aggregate loads.
@@ -393,11 +414,10 @@ export default function CrimeIncidents() {
       // charge-level, so its raw length would flash a ~30% high figure before
       // the server count lands and silently correct it.
       total: countDistinctCases(incidentData, (i) => i.incidentNumber),
-      topCategory,
       linkedPct,
       peakHour: hourlyPattern.peakHour,
     }
-  }, [incidentData, categoryRows, linked, era.plan.cadLinkAvailable, hourlyPattern.peakHour])
+  }, [incidentData, linked, era.plan.cadLinkAvailable, hourlyPattern.peakHour])
 
   // Resolution bar data
   const resolutionBarData = useMemo((): BarDatum[] => {
@@ -407,6 +427,43 @@ export default function CrimeIncidents() {
       color: resolutionColor(r.resolution),
     }))
   }, [resolutionRows])
+
+  // Sidebar data — also the Category card's citywide rows
+  const categoryEntries = useMemo(
+    () => categoryRows.map((r) => ({ category: r.incident_category, count: parseInt(r.incident_count, 10) || 0 })),
+    [categoryRows]
+  )
+
+  // The Category card follows the selection AND the selected area (pure
+  // state machine in categoryCard.ts). Oakland's raw crimetypes are
+  // title-cased on BOTH the rows and the selection so the rank lookup
+  // compares like with like; SF strings pass through untouched.
+  const catCard = useMemo(() => {
+    const display = (c: string) => (isSF ? c : titleCaseCrimetype(c))
+    return categoryCardState({
+      hasHistorical,
+      citywide: categoryEntries.map((e) => ({ category: display(e.category), count: e.count })),
+      scoped: scopedCategoryRows.map((r) => ({
+        category: display(r.incident_category),
+        count: parseInt(r.incident_count, 10) || 0,
+      })),
+      scopedLoading: scopedCategoryLoading,
+      citywideLoading: categoryLoading,
+      areaLabel: selectedNeighborhood ? areaLabel(selectedNeighborhood) : null,
+      selectedCategories: Array.from(selectedCategories).map(display),
+      // A chip click selects a pair AND its authored merges (one "Car
+      // break-ins" click = two keys); fold them so one click labels as one.
+      selectedSubLabels: foldSelectedSubKeys(Array.from(selectedSubs)).map((k) => {
+        const { category, subcategory } = splitPairKey(k)
+        return subcategoryChipLabel(category, subcategory)
+      }),
+      canOpenPicker: !hasHistorical && !isMobile,
+      rowCap: CATEGORY_ROW_CAP,
+    })
+  }, [
+    isSF, hasHistorical, categoryEntries, categoryLoading, scopedCategoryRows, scopedCategoryLoading,
+    selectedNeighborhood, areaLabel, selectedCategories, selectedSubs, isMobile,
+  ])
 
   // Card tray definitions
   const cardDefs = useMemo((): CardDef[] => {
@@ -429,11 +486,16 @@ export default function CrimeIncidents() {
           ? (era.plan.era === 'straddle'
               ? 'Spans SFPD’s 2003–2017 archive and the 2018+ dataset'
               : 'SFPD’s 2003–2017 archive — categories as published then')
+          // A selected neighborhood/beat drills this card (the WHERE carries
+          // it), so the subtitle names the scope — the same rule Emergency
+          // Response follows on its drilled cards.
           : comparison.deltas
-            ? `${formatDelta(comparison.deltas.total)} ${compLabel}`
+            ? `${formatDelta(comparison.deltas.total)} ${compLabel}${selectedNeighborhood ? ` · in ${areaLabel(selectedNeighborhood)}` : ''}`
             : comparison.suppressed && comparisonMode !== null
               ? 'Compare needs a narrower date range'
-              : 'Multi-charge cases counted once',
+              : selectedNeighborhood
+                ? `In ${areaLabel(selectedNeighborhood)} — multi-charge cases counted once`
+                : 'Multi-charge cases counted once',
         wrapSubtitle: true,
         trend: !hasHistorical && comparison.deltas
           ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral')
@@ -441,14 +503,21 @@ export default function CrimeIncidents() {
         yoyDelta: !hasHistorical && !comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null,
       },
       {
-        id: 'top-category',
-        label: 'Top Category',
-        shortLabel: 'Top Cat',
-        value: isSF ? stats.topCategory : titleCaseCrimetype(stats.topCategory),
+        id: 'top-category',            // keep the id: localStorage tray state
+        label: 'Category',
+        shortLabel: 'Cat',
+        value: catCard.value,
+        valueFit: true,
         color: '#d4a435',
         delay: 80,
         info: 'top-category',
         defaultExpanded: true,
+        subtitle: catCard.subtitle,
+        wrapSubtitle: true,
+        // The action label rides as its own non-shrinking span: appended to
+        // the subtitle text it was the first thing the one-line clamp cut.
+        subtitleAction: catCard.actionable ? openPicker : undefined,
+        subtitleActionLabel: catCard.actionable ? '· Change →' : undefined,
       },
       {
         id: '911-linked',
@@ -486,7 +555,11 @@ export default function CrimeIncidents() {
     // SF subtitle 'Not recorded before 2018' would be a lie where the field
     // never existed.
     return isSF ? cards : cards.filter((c) => c.id !== '911-linked')
-  }, [stats, totalCount, comparison.deltas, comparison.suppressed, compLabel, comparisonMode, trend.cityWideYoY, isSF])
+  }, [
+    stats, totalCount, comparison.deltas, comparison.suppressed, compLabel, comparisonMode,
+    trend.cityWideYoY, isSF, hasHistorical, era.plan.era, selectedNeighborhood, areaLabel,
+    catCard, openPicker,
+  ])
 
   // Chart tray definitions (bottom-left overlay)
   const chartTiles = useMemo((): ChartTileDef[] => {
@@ -534,11 +607,6 @@ export default function CrimeIncidents() {
   }, [resolutionBarData, comparisonMode, comparison, isSF, era.plan])
 
   // Sidebar data
-  const categoryEntries = useMemo(
-    () => categoryRows.map((r) => ({ category: r.incident_category, count: parseInt(r.incident_count, 10) || 0 })),
-    [categoryRows]
-  )
-
   const neighborhoodEntries = useMemo(() => {
     return neighborhoodRows
       .map((r) => ({
@@ -929,7 +997,19 @@ export default function CrimeIncidents() {
             {/* Stat cards — top left */}
             {isLoading && <SkeletonStatCards count={3} />}
             {!isLoading && incidentData.length > 0 && (
-              <CardTray viewId="crimeIncidents" cards={cardDefs} />
+              <CardTray
+                viewId="crimeIncidents"
+                cards={cardDefs}
+                extras={isSF && !hasHistorical ? (
+                  <MoversPill
+                    data={subcats}
+                    selectedSubs={selectedSubs}
+                    onSelect={toggleSub}
+                    open={moversOpen}
+                    onOpenChange={setMoversOpen}
+                  />
+                ) : undefined}
+              />
             )}
 
             {/* Charts — bottom left */}
@@ -988,32 +1068,6 @@ export default function CrimeIncidents() {
           <div className="p-4 flex-1 overflow-y-auto">
             {sidebarTab === 'categories' && (
               <>
-                {isSF && !hasHistorical && (
-                  <>
-                    <SubcategoryStrip
-                      eyebrow="What's moving"
-                      movers={subcats.crimeMovers}
-                      comparisonLabel={subcats.comparisonLabel}
-                      compared={subcats.compared}
-                      selectedSubs={selectedSubs}
-                      onSelect={toggleSub}
-                      emptyNote="Too few incidents in this range to rank movers."
-                      isLoading={subcats.isLoading}
-                    />
-                    {!subcats.isLoading && subcats.enforcementMovers.length > 0 && (
-                      <SubcategoryStrip
-                        eyebrow="Enforcement activity · what police chose to act on"
-                        movers={subcats.enforcementMovers}
-                        comparisonLabel={subcats.comparisonLabel}
-                        compared={subcats.compared}
-                        selectedSubs={selectedSubs}
-                        onSelect={toggleSub}
-                        emptyNote=""
-                        isLoading={subcats.isLoading}
-                      />
-                    )}
-                  </>
-                )}
                 <div className="flex items-center gap-2 mb-4">
                   <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">
                     Incident Categories

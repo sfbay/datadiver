@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import InfoTip from '@/components/ui/InfoTip'
 import SparkBars from '@/components/charts/SparkBars'
 import PositionScale from '@/components/charts/PositionScale'
+import { fitValueClass } from '@/components/ui/statCardFit'
 
 interface StatCardProps {
   label: string
@@ -23,6 +24,12 @@ interface StatCardProps {
    *  on CardDef since its birth but never threaded until the what-if card
    *  needed "Reset to reality" as a card-native action. */
   subtitleAction?: () => void
+  /** With subtitleAction: a short trailing label ("· Change →") rendered as
+   *  a NON-SHRINKING span after the truncating subtitle, so the affordance
+   *  survives a long subtitle (the single-line clamp otherwise ellipsizes
+   *  the tail first — exactly where the label sat). Absent = the whole
+   *  subtitle is the button, byte-identical to before. */
+  subtitleActionLabel?: string
   /** Optional annual spark data: values for the last N years, last value = current period */
   sparkData?: { values: number[]; labels?: string[] }
   /** Optional smaller stat row between the value and subtitle — lets one
@@ -33,6 +40,10 @@ interface StatCardProps {
    *  default single-line truncate — for cards whose explainer text matters
    *  more than uniform tile height. */
   wrapSubtitle?: boolean
+  /** Long text values (category names): step the size down by length and
+   *  clamp with a title, so a 40-character SFPD category never wraps the
+   *  tray. */
+  valueFit?: boolean
   /** Optional "you are here" microvis — shows where this entity's value
    *  falls along the population's range. Use when the displayed `value`
    *  belongs to a selected entity (e.g., a neighborhood) and you want to
@@ -45,7 +56,7 @@ interface StatCardProps {
   }
 }
 
-export default function StatCard({ label, value, color, subtitle, delay = 0, trend, yoyDelta, zScore, info, sparkData, positionScale, badge, subtitleAction, secondary, wrapSubtitle }: StatCardProps) {
+export default function StatCard({ label, value, color, subtitle, delay = 0, trend, yoyDelta, zScore, info, sparkData, positionScale, badge, subtitleAction, subtitleActionLabel, secondary, wrapSubtitle, valueFit }: StatCardProps) {
   const [visible, setVisible] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -91,9 +102,16 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
           )}
           {info && <InfoTip term={info} size={11} />}
         </p>
+        {/* valueFit: `truncate` sets overflow:hidden, and at leading-none the
+            line box is shorter than Space Mono's descenders — the padding
+            makes room for them and the matching negative margin hands the
+            space back, so the card's layout height is unchanged. */}
         <p
-          className="relative text-2xl font-bold font-mono tracking-tight leading-none"
+          className={`relative ${valueFit
+            ? `${fitValueClass(value.length)} max-w-[16rem] truncate pb-[0.3em] -mb-[0.3em]`
+            : 'text-2xl'} font-bold font-mono tracking-tight leading-none`}
           style={{ color }}
+          title={valueFit ? value : undefined}
         >
           {value}
         </p>
@@ -131,7 +149,18 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
             {/* One-line clamp — subtitles vary in richness across a card row;
                 truncating (full text on hover via title) keeps every tile the
                 same height instead of wrapping the row. */}
-            {subtitleAction ? (
+            {subtitleAction && subtitleActionLabel ? (
+              // The subtitle truncates; the label sits after it and never
+              // shrinks, so "Change →" is visible however long the scope
+              // reads. min-w-0 lets the button shrink inside the flex <p>.
+              <button
+                onClick={subtitleAction}
+                className="flex items-center gap-1 min-w-0 underline decoration-dotted underline-offset-2 hover:text-ink dark:hover:text-paper-200 transition-colors cursor-pointer text-left"
+              >
+                <span className="truncate">{subtitle}</span>
+                <span className="shrink-0">{subtitleActionLabel}</span>
+              </button>
+            ) : subtitleAction ? (
               <button
                 onClick={subtitleAction}
                 className="truncate underline decoration-dotted underline-offset-2 hover:text-ink dark:hover:text-paper-200 transition-colors cursor-pointer text-left"

@@ -49,6 +49,17 @@ const MODERN_SELECT =
 
 const ROW_LIMIT = 5000
 
+/** $limit on every category aggregate. Oakland's raw `crimetype` vocabulary
+ *  runs to 357 distinct values over the full 2004+ era (measured 2026-09-02;
+ *  52 since 2018, 44 in 2025) plus the two derived HOMICIDE-split groups, and
+ *  the Era Track makes 2004→now one drag. The old cap of 60 truncated that
+ *  ranking, so a real category ranked 61st+ read as "No cases" — absence
+ *  fabricated from a truncated list. SF's vocabularies (49 modern, 37
+ *  historical) never approach this. A GROUP BY over ≤400 groups costs the
+ *  same scan as one over 60. Exported so the Category card can tell a
+ *  capped list from a complete one. */
+export const CATEGORY_ROW_CAP = 400
+
 const BEAT_SET: ReadonlySet<string> = new Set(OAKLAND_BEATS)
 
 export interface CrimeEraOpts {
@@ -72,6 +83,22 @@ export interface CrimeEraData {
    *  which have no cad_number — the card must say so, not show a wrong ratio. */
   linked: { total: number; linked: number } | null
   categoryRows: IncidentCategoryAggRow[]
+  /** True while any ACTIVE citywide category aggregate is in flight. The
+   *  Category card reads it — useDataset keeps the previous rows during a
+   *  refetch, and a rank + count from the old range under the new one is a
+   *  wrong figure. `categoryRows` itself keeps the previous list so the
+   *  sidebar doesn't blank on every date change (a list, not a figure). */
+  categoryLoading: boolean
+  /** Category counts INSIDE the selected neighborhood/beat (date + time-of-day
+   *  + area, never the category filter). Empty when no area is selected, on a
+   *  historical range, or WHILE THE ACTIVE CITY'S SCOPED QUERY IS IN FLIGHT —
+   *  never the previous area's rows under the new area's name. Feeds the
+   *  Category card only; the sidebar ranking stays citywide by design. */
+  scopedCategoryRows: IncidentCategoryAggRow[]
+  /** True while the ACTIVE city's scoped aggregate is in flight (with an area
+   *  selected). City-specific on purpose: the disabled sibling's initial
+   *  useState(true) must not leak into the card. */
+  scopedCategoryLoading: boolean
   neighborhoodRows: NeighborhoodAggRowPolice[]
   resolutionRows: ResolutionAggRow[]
   /** The ACTIVE row-WHERE for the view's comparison/trend hooks — SF modern
@@ -109,6 +136,22 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
     return buildSfCrimeDateOnly({ dateRange: r, timeOfDayFilter })
   }, [plan, dateRange, timeOfDayFilter])
 
+  /** The Category card's scope: the selected neighborhood WITHOUT the
+   *  category filter (an empty categoryClause is skipped by the builder, so
+   *  this is date + time-of-day + area). Same shape as modernWhere minus the
+   *  one clause; a ranking narrowed by the category filter would only ever
+   *  rank what was already selected. */
+  const modernScopeWhere = useMemo(() => {
+    const r = plan.currentRange ?? plan.historicalRange ?? dateRange
+    return buildSfCrimeWhere({
+      dateRange: r,
+      categoryClause: '',
+      selectedNeighborhood,
+      timeOfDayFilter,
+      categoryFilterAvailable: plan.categoryFilterAvailable,
+    })
+  }, [plan, dateRange, selectedNeighborhood, timeOfDayFilter])
+
   // ── Oakland clauses (ppgh-7dqv) ────────────────────────────────────────────
   const oakWhere = useMemo(
     () => buildOaklandCrimeWhere({ dateRange, categoryClause, selectedNeighborhood, timeOfDayFilter }),
@@ -117,6 +160,12 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
   const oakDateOnly = useMemo(
     () => buildOaklandCrimeDateOnly({ dateRange, timeOfDayFilter }),
     [dateRange, timeOfDayFilter],
+  )
+  // Beat kept, category clause dropped — the Oakland builder skips an empty
+  // clause the same way the SF one does.
+  const oakScopeWhere = useMemo(
+    () => buildOaklandCrimeWhere({ dateRange, categoryClause: '', selectedNeighborhood, timeOfDayFilter }),
+    [dateRange, selectedNeighborhood, timeOfDayFilter],
   )
 
   // ── Historical clauses (tmnf-yvry) ────────────────────────────────────────
@@ -142,6 +191,24 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
     }
     return c.join(' AND ')
   }, [plan, selectedNeighborhood, timeOfDayFilter])
+
+  /** Historical category aggregate: date + time-of-day only — CITYWIDE, the
+   *  same contract as modernDateOnly. It used to ride histWhere, which
+   *  carries the neighborhood clause, so with an area selected a pure
+   *  historical range ranked the area's categories under a card and sidebar
+   *  that never said so, and a straddling range merged a citywide modern
+   *  list with an area-scoped historical one into a single list. */
+  const histDateOnly = useMemo(() => {
+    const r = plan.historicalRange
+    if (!r) return ''
+    const D = HISTORICAL_FIELDS.date
+    const c: string[] = [`${D} >= '${r.start}' AND ${D} <= '${r.end}'`]
+    if (timeOfDayFilter) {
+      const clause = historicalHourClause(timeOfDayFilter.startHour, timeOfDayFilter.endHour)
+      if (clause) c.push(clause)
+    }
+    return c.join(' AND ')
+  }, [plan, timeOfDayFilter])
 
   const wantModern = isSF && plan.currentRange != null
   const wantHist = isSF && plan.historicalRange != null
@@ -201,7 +268,7 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
       $group: 'incident_category',
       $where: modernDateOnly,
       $order: 'incident_count DESC',
-      $limit: 60,
+      $limit: CATEGORY_ROW_CAP,
     },
     [modernDateOnly],
     { enabled: wantModern },
@@ -211,11 +278,11 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
     {
       $select: `${HISTORICAL_FIELDS.category} as category, ${HIST_CRIME_COUNT} as incident_count`,
       $group: HISTORICAL_FIELDS.category,
-      $where: histWhere,
+      $where: histDateOnly,
       $order: 'incident_count DESC',
-      $limit: 60,
+      $limit: CATEGORY_ROW_CAP,
     },
-    [histWhere],
+    [histDateOnly],
     { enabled: wantHist },
   )
   const oakCats = useDataset<IncidentCategoryAggRow>(
@@ -228,10 +295,40 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
       $group: oaklandCategoryExpr(),
       $where: oakDateOnly,
       $order: 'incident_count DESC',
-      $limit: 60,
+      $limit: CATEGORY_ROW_CAP,
     },
     [oakDateOnly],
     { enabled: wantOak },
+  )
+
+  // ── Scoped category aggregates (the Category card under a selected area) ──
+  // Enabled only while an area is selected; a disabled useDataset reports
+  // empty rows and not-loading, so the consumer can trust both fields.
+  // Historical: NONE — the card goes rank-less there anyway (withheld, not
+  // approximated from a vocabulary the archive never published).
+  const modernScopeCats = useDataset<IncidentCategoryAggRow>(
+    'policeIncidents',
+    {
+      $select: `incident_category, ${SF_CRIME_COUNT} as incident_count`,
+      $group: 'incident_category',
+      $where: modernScopeWhere,
+      $order: 'incident_count DESC',
+      $limit: CATEGORY_ROW_CAP,
+    },
+    [modernScopeWhere],
+    { enabled: wantModern && !wantHist && !!selectedNeighborhood },
+  )
+  const oakScopeCats = useDataset<IncidentCategoryAggRow>(
+    'policeIncidents',
+    {
+      $select: `${oaklandCategoryExpr()} as incident_category, ${OAKLAND_CRIME_COUNT} as incident_count`,
+      $group: oaklandCategoryExpr(),
+      $where: oakScopeWhere,
+      $order: 'incident_count DESC',
+      $limit: CATEGORY_ROW_CAP,
+    },
+    [oakScopeWhere],
+    { enabled: wantOak && !!selectedNeighborhood },
   )
 
   const modernNhoods = useDataset<NeighborhoodAggRowPolice>(
@@ -377,6 +474,19 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
     ) as unknown as IncidentCategoryAggRow[]
   }, [wantOak, oakCats.data, modernCats.data, histCats.data, wantModern, wantHist])
 
+  const scopedCategoryLoading =
+    !!selectedNeighborhood && (wantOak ? oakScopeCats.isLoading : modernScopeCats.isLoading)
+
+  const scopedCategoryRows = useMemo(() => {
+    if (!selectedNeighborhood || scopedCategoryLoading) return []
+    if (wantOak) return oakScopeCats.data
+    return wantModern && !wantHist ? modernScopeCats.data : []
+  }, [selectedNeighborhood, scopedCategoryLoading, wantOak, oakScopeCats.data, wantModern, wantHist, modernScopeCats.data])
+
+  const categoryLoading = wantOak
+    ? oakCats.isLoading
+    : (wantModern && modernCats.isLoading) || (wantHist && histCats.isLoading)
+
   const neighborhoodRows = useMemo(() => {
     if (wantOak) {
       return oakNhoods.data.filter(
@@ -445,6 +555,9 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
     totalCount,
     linked,
     categoryRows,
+    categoryLoading,
+    scopedCategoryRows,
+    scopedCategoryLoading,
     neighborhoodRows,
     resolutionRows,
     modernWhere: isSF ? modernWhere : oakWhere,
