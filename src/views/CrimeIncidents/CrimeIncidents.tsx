@@ -275,6 +275,7 @@ export default function CrimeIncidents() {
     totalCount,
     linked,
     categoryRows,
+    categoryLoading,
     scopedCategoryRows,
     scopedCategoryLoading,
     neighborhoodRows,
@@ -439,6 +440,7 @@ export default function CrimeIncidents() {
         count: parseInt(r.incident_count, 10) || 0,
       })),
       scopedLoading: scopedCategoryLoading,
+      citywideLoading: categoryLoading,
       areaLabel: selectedNeighborhood ? areaLabel(selectedNeighborhood) : null,
       selectedCategories: Array.from(selectedCategories).map(display),
       selectedSubLabels: Array.from(selectedSubs).map((k) => {
@@ -448,7 +450,7 @@ export default function CrimeIncidents() {
       canOpenPicker: !hasHistorical && !isMobile,
     })
   }, [
-    isSF, hasHistorical, categoryEntries, scopedCategoryRows, scopedCategoryLoading,
+    isSF, hasHistorical, categoryEntries, categoryLoading, scopedCategoryRows, scopedCategoryLoading,
     selectedNeighborhood, areaLabel, selectedCategories, selectedSubs, isMobile,
   ])
 

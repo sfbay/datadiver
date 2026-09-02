@@ -72,12 +72,21 @@ export interface CrimeEraData {
    *  which have no cad_number — the card must say so, not show a wrong ratio. */
   linked: { total: number; linked: number } | null
   categoryRows: IncidentCategoryAggRow[]
+  /** True while any ACTIVE citywide category aggregate is in flight. The
+   *  Category card reads it — useDataset keeps the previous rows during a
+   *  refetch, and a rank + count from the old range under the new one is a
+   *  wrong figure. `categoryRows` itself keeps the previous list so the
+   *  sidebar doesn't blank on every date change (a list, not a figure). */
+  categoryLoading: boolean
   /** Category counts INSIDE the selected neighborhood/beat (date + time-of-day
-   *  + area, never the category filter). Empty when no area is selected or
-   *  on a historical range. Feeds the Category card only; the sidebar
-   *  ranking stays citywide by design. */
+   *  + area, never the category filter). Empty when no area is selected, on a
+   *  historical range, or WHILE THE ACTIVE CITY'S SCOPED QUERY IS IN FLIGHT —
+   *  never the previous area's rows under the new area's name. Feeds the
+   *  Category card only; the sidebar ranking stays citywide by design. */
   scopedCategoryRows: IncidentCategoryAggRow[]
-  /** True while either city's scoped aggregate is in flight. */
+  /** True while the ACTIVE city's scoped aggregate is in flight (with an area
+   *  selected). City-specific on purpose: the disabled sibling's initial
+   *  useState(true) must not leak into the card. */
   scopedCategoryLoading: boolean
   neighborhoodRows: NeighborhoodAggRowPolice[]
   resolutionRows: ResolutionAggRow[]
@@ -436,11 +445,18 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
     ) as unknown as IncidentCategoryAggRow[]
   }, [wantOak, oakCats.data, modernCats.data, histCats.data, wantModern, wantHist])
 
+  const scopedCategoryLoading =
+    !!selectedNeighborhood && (wantOak ? oakScopeCats.isLoading : modernScopeCats.isLoading)
+
   const scopedCategoryRows = useMemo(() => {
-    if (!selectedNeighborhood) return []
+    if (!selectedNeighborhood || scopedCategoryLoading) return []
     if (wantOak) return oakScopeCats.data
     return wantModern && !wantHist ? modernScopeCats.data : []
-  }, [selectedNeighborhood, wantOak, oakScopeCats.data, wantModern, wantHist, modernScopeCats.data])
+  }, [selectedNeighborhood, scopedCategoryLoading, wantOak, oakScopeCats.data, wantModern, wantHist, modernScopeCats.data])
+
+  const categoryLoading = wantOak
+    ? oakCats.isLoading
+    : (wantModern && modernCats.isLoading) || (wantHist && histCats.isLoading)
 
   const neighborhoodRows = useMemo(() => {
     if (wantOak) {
@@ -510,8 +526,9 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
     totalCount,
     linked,
     categoryRows,
+    categoryLoading,
     scopedCategoryRows,
-    scopedCategoryLoading: modernScopeCats.isLoading || oakScopeCats.isLoading,
+    scopedCategoryLoading,
     neighborhoodRows,
     resolutionRows,
     modernWhere: isSF ? modernWhere : oakWhere,

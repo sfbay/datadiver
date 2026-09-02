@@ -18,7 +18,12 @@ export interface CategoryCardInput {
   citywide: Array<{ category: string; count: number }>
   /** Rows inside the selected area, ordered DESC (scopedCategoryRows), or [] when none selected. */
   scoped: Array<{ category: string; count: number }>
+  /** True while the ACTIVE city's scoped aggregate is in flight (scopedCategoryLoading). */
   scopedLoading: boolean
+  /** True while the citywide category aggregate is in flight (categoryLoading).
+   *  useDataset keeps the previous rows during a refetch, so without this a
+   *  date-range change would print the old range's rank and count. */
+  citywideLoading: boolean
   /** Display label of the selected area, or null. */
   areaLabel: string | null
   /** Array.from(selectedCategories), display-ready (already formatted for Oakland by the caller). */
@@ -43,7 +48,7 @@ export function categoryCardState(i: CategoryCardInput): CategoryCardState {
   //    card names the citywide leader with no rank, no count, no action.
   if (i.hasHistorical) {
     return {
-      value: i.citywide[0]?.category ?? '—',
+      value: i.citywideLoading ? '…' : (i.citywide[0]?.category ?? '—'),
       subtitle: 'Most reported · categories as each era published them',
       actionable: false,
     }
@@ -53,9 +58,12 @@ export function categoryCardState(i: CategoryCardInput): CategoryCardState {
   const rows = i.areaLabel ? i.scoped : i.citywide
   const N = rows.length
 
-  // 2. Area selected, its ranking still in flight: say so, don't fall back
-  //    to the citywide rows under a subtitle that names the area.
-  if (i.areaLabel && i.scopedLoading && i.scoped.length === 0) {
+  // 2. The scope's ranking is still in flight: say so. The previous scope's
+  //    rows are still in hand during a refetch (useDataset keeps them), so an
+  //    empty-rows check is NOT the test — switching Tenderloin → Mission would
+  //    print Tenderloin's leader and count under Mission's name until Socrata
+  //    answered. Loading is the test, whichever scope is on.
+  if (i.areaLabel ? i.scopedLoading : i.citywideLoading) {
     return { value: '…', subtitle: `Ranking ${scopeWord}`, actionable: false }
   }
 
@@ -102,7 +110,12 @@ export function categoryCardState(i: CategoryCardInput): CategoryCardState {
     }
   }
 
-  // 3. Nothing selected: the scope's own leader.
+  // 3. Nothing selected: the scope's own leader. (One painted frame after an
+  //    area is first selected, the just-enabled scoped query reports
+  //    not-loading with no rows — useDataset flips isLoading inside its
+  //    effect — so "No cases in <area>" can flash once. The row query is in
+  //    the same state that frame and the tray is unmounted behind its
+  //    skeleton, so it is not visible in practice.)
   const top = rows[0]
   return {
     value: top?.category ?? '—',

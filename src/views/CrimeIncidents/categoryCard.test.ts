@@ -19,6 +19,7 @@ function input(over: Partial<CategoryCardInput> = {}): CategoryCardInput {
     citywide: CITYWIDE,
     scoped: [],
     scopedLoading: false,
+    citywideLoading: false,
     areaLabel: null,
     selectedCategories: [],
     selectedSubLabels: [],
@@ -41,6 +42,35 @@ describe('categoryCardState', () => {
   it('rule 2 — area selected and its ranking still loading reads as loading, not citywide', () => {
     expect(categoryCardState(input({ areaLabel: 'Tenderloin', scopedLoading: true }))).toEqual({
       value: '…', subtitle: 'Ranking in Tenderloin', actionable: false,
+    })
+  })
+
+  it('rule 2 — a refetch with the PREVIOUS area\'s rows still in hand reads as loading, never as those rows', () => {
+    // Tenderloin → Mission: useDataset keeps Tenderloin's rows while Mission's
+    // query runs. Rows present + loading = loading; the old counts never
+    // print under the new name.
+    expect(categoryCardState(input({
+      areaLabel: 'Mission', scoped: SCOPED, scopedLoading: true, selectedCategories: ['Assault'],
+    }))).toEqual({
+      value: '…', subtitle: 'Ranking in Mission', actionable: false,
+    })
+  })
+
+  it('rule 2 — citywide ranking in flight (a date-range change) reads as loading', () => {
+    expect(categoryCardState(input({ citywideLoading: true, selectedCategories: ['Assault'] }))).toEqual({
+      value: '…', subtitle: 'Ranking citywide', actionable: false,
+    })
+    // With an area on, the citywide rows are not what the card reads.
+    expect(categoryCardState(input({ areaLabel: 'Tenderloin', scoped: SCOPED, citywideLoading: true }))).toEqual({
+      value: 'Assault', subtitle: '#1 of 3 · 812 in Tenderloin', actionable: true,
+    })
+  })
+
+  it('rule 1 — historical leader in flight reads as loading, keeps the era note', () => {
+    expect(categoryCardState(input({ hasHistorical: true, citywideLoading: true }))).toEqual({
+      value: '…',
+      subtitle: 'Most reported · categories as each era published them',
+      actionable: false,
     })
   })
 
