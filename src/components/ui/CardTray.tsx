@@ -32,6 +32,9 @@ export interface CardDef {
   sparkData?: { values: number[]; labels?: string[] }
   /** Optional click handler for the subtitle text (makes it a link) */
   subtitleAction?: () => void
+  /** Trailing non-shrinking action label beside a truncating subtitle (see
+   *  StatCard.subtitleActionLabel) — "· Change →" on the crime Category card. */
+  subtitleActionLabel?: string
   /** Optional "you are here" microvis — selected entity's position vs the
    *  population. Use to surface neighborhood-vs-citywide comparison. */
   positionScale?: {
@@ -307,6 +310,7 @@ export default function CardTray({ viewId, cards, className = '', hideComparison
                 positionScale={card.positionScale}
                 badge={card.badge}
                 subtitleAction={card.subtitleAction}
+                subtitleActionLabel={card.subtitleActionLabel}
                 secondary={card.secondary}
                 wrapSubtitle={card.wrapSubtitle}
                 valueFit={card.valueFit}

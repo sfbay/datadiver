@@ -24,6 +24,12 @@ interface StatCardProps {
    *  on CardDef since its birth but never threaded until the what-if card
    *  needed "Reset to reality" as a card-native action. */
   subtitleAction?: () => void
+  /** With subtitleAction: a short trailing label ("· Change →") rendered as
+   *  a NON-SHRINKING span after the truncating subtitle, so the affordance
+   *  survives a long subtitle (the single-line clamp otherwise ellipsizes
+   *  the tail first — exactly where the label sat). Absent = the whole
+   *  subtitle is the button, byte-identical to before. */
+  subtitleActionLabel?: string
   /** Optional annual spark data: values for the last N years, last value = current period */
   sparkData?: { values: number[]; labels?: string[] }
   /** Optional smaller stat row between the value and subtitle — lets one
@@ -50,7 +56,7 @@ interface StatCardProps {
   }
 }
 
-export default function StatCard({ label, value, color, subtitle, delay = 0, trend, yoyDelta, zScore, info, sparkData, positionScale, badge, subtitleAction, secondary, wrapSubtitle, valueFit }: StatCardProps) {
+export default function StatCard({ label, value, color, subtitle, delay = 0, trend, yoyDelta, zScore, info, sparkData, positionScale, badge, subtitleAction, subtitleActionLabel, secondary, wrapSubtitle, valueFit }: StatCardProps) {
   const [visible, setVisible] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -143,7 +149,18 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
             {/* One-line clamp — subtitles vary in richness across a card row;
                 truncating (full text on hover via title) keeps every tile the
                 same height instead of wrapping the row. */}
-            {subtitleAction ? (
+            {subtitleAction && subtitleActionLabel ? (
+              // The subtitle truncates; the label sits after it and never
+              // shrinks, so "Change →" is visible however long the scope
+              // reads. min-w-0 lets the button shrink inside the flex <p>.
+              <button
+                onClick={subtitleAction}
+                className="flex items-center gap-1 min-w-0 underline decoration-dotted underline-offset-2 hover:text-ink dark:hover:text-paper-200 transition-colors cursor-pointer text-left"
+              >
+                <span className="truncate">{subtitle}</span>
+                <span className="shrink-0">{subtitleActionLabel}</span>
+              </button>
+            ) : subtitleAction ? (
               <button
                 onClick={subtitleAction}
                 className="truncate underline decoration-dotted underline-offset-2 hover:text-ink dark:hover:text-paper-200 transition-colors cursor-pointer text-left"

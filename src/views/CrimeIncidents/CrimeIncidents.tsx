@@ -503,9 +503,12 @@ export default function CrimeIncidents() {
         delay: 80,
         info: 'top-category',
         defaultExpanded: true,
-        subtitle: catCard.actionable ? `${catCard.subtitle} · Change →` : catCard.subtitle,
+        subtitle: catCard.subtitle,
         wrapSubtitle: true,
+        // The action label rides as its own non-shrinking span: appended to
+        // the subtitle text it was the first thing the one-line clamp cut.
         subtitleAction: catCard.actionable ? openPicker : undefined,
+        subtitleActionLabel: catCard.actionable ? '· Change →' : undefined,
       },
       {
         id: '911-linked',
