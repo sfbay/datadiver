@@ -236,7 +236,7 @@ export default function HomeSearch({ mounted }: { mounted: boolean }) {
         </p>
         <div className="relative flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
         <span className="relative hidden desk:inline font-mono text-nano text-slate-500 dark:text-slate-400">
-          ⌘K anywhere
+          ⌘K / Ctrl K anywhere
         </span>
       </div>
 
