@@ -1027,9 +1027,10 @@ export default function CrimeIncidents() {
                     still LISTS whatever each era published — only the filter
                     is withheld, and it says why. */}
                 {hasHistorical ? (
-                  <p className="text-micro font-mono uppercase tracking-[0.18em] text-ink/45 dark:text-paper-100/45 leading-relaxed">
-                    Filtering unavailable — SFPD changed its category system in
-                    2018, and these counts are shown as each era published them.
+                  <p className="text-micro text-ink/60 dark:text-paper-100/55 leading-relaxed">
+                    <span className="font-semibold text-ink/80 dark:text-paper-100/75">Filtering unavailable</span>{' '}
+                    &mdash; SFPD changed its category system in 2018, and these counts are
+                    shown as each era published them.
                   </p>
                 ) : (
                   <IncidentCategoryFilter
