@@ -35,7 +35,7 @@ const GLOSSARY: Record<string, string> = {
   // Crime
   '911-linked': 'Percentage of SFPD incident reports that have a matching 911 dispatch call number. Reports without a link were filed directly (walk-in, online, officer-initiated).',
   'top-category': 'The category with the most cases in the current scope — citywide, or inside the selected neighborhood. With a filter on, it shows the selected category and its rank. Categories overlap: a case charged under two categories counts in each.',
-  'movers': 'The subcategories whose case counts changed most against the comparison window, on buckets with at least 150 cases on both sides. Crime and enforcement are ranked separately.',
+  'movers': 'The subcategories whose case counts changed most against the comparison window, on buckets with at least 150 cases on both sides. Crime and enforcement are ranked separately. Record-keeping categories are excluded.',
 
   // 311
   'open-cases': 'Service requests that haven\'t been marked as closed or resolved. A high open count may indicate a backlog.',
