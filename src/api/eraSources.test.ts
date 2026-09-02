@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, it, expect } from 'vitest'
 import { eraSourceFor, buildEraQuery, buildHistoricalEraQuery, eraDomain } from './eraSources'
 import { CITIES } from '@/cities/registry'
@@ -113,17 +114,34 @@ describe('buildHistoricalEraQuery', () => {
 })
 
 describe('clamp disclosure', () => {
-  // A clamp that hides published rows must SAY so on the axis. A clamp that
-  // merely matches the real data floor must not — a note there would be noise.
-  it('parking-citations discloses; the others do not', () => {
-    expect(eraSourceFor('sf', 'parking-citations')!.clampNote).toBeTruthy()
-    for (const view of ['crime-incidents', '311-cases', 'housing']) {
-      expect(eraSourceFor('sf', view)!.clampNote, view).toBeUndefined()
+  // A clamp that HIDES published rows must be disclosed — but in About's
+  // sources table, not on the era axis. Jesse's ruling, Sep 2 2026, after the
+  // Oakland note ("range clamped — published dates run back to 1950") was
+  // read as a warning about the 2026 data on screen: it named the excluded
+  // year and never the year the chart starts, and it was clipped mid-word at
+  // every type scale. A warning worn by the chrome reads as a warning about
+  // the numbers. Site-wide label audit banked as future work.
+  const about = readFileSync('src/views/About/About.tsx', 'utf8')
+  const noteFor = (id: string) =>
+    about.match(new RegExp(`id: '${id}'[^}]*note: '([^']*)'`))?.[1] ?? ''
+
+  it('no era source carries an axis note any more', () => {
+    for (const city of ['sf', 'oakland'] as const) {
+      for (const e of CITIES[city].manifest) {
+        if (!e.eraSource) continue
+        expect(e.eraSource, `${city}/${e.viewId}`).not.toHaveProperty('clampNote')
+      }
     }
   })
-  it('oakland crime discloses (junk 1950→2003 trickle); 311 and citations do not', () => {
-    expect(eraSourceFor('oakland', 'crime-incidents')!.clampNote).toBeTruthy()
-    expect(eraSourceFor('oakland', '311-cases')!.clampNote, '311').toBeUndefined()
-    expect(eraSourceFor('oakland', 'parking-citations')!.clampNote, 'citations').toBeUndefined()
+
+  it('SF parking citations discloses its 1951–2044 clamp in the sources table', () => {
+    const note = noteFor('ab4h-6ztd')
+    expect(note).toMatch(/2044/)
+    expect(note).toMatch(/clamp/i)
+  })
+
+  it('Oakland crime discloses its 2004 floor in the sources table', () => {
+    const note = noteFor('ppgh-7dqv')
+    expect(note).toMatch(/2004/)
   })
 })

@@ -237,7 +237,6 @@ export default function DateRangePicker() {
             years={era.years}
             domain={era.domain}
             seams={era.seams}
-            clampNote={era.clampNote}
             value={dateRange}
             isLoading={era.isLoading}
             compact={isMobile}

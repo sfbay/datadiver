@@ -102,7 +102,7 @@ const SF_SOURCES: SourceRow[] = [
   { name: 'High Injury Network (2024)', id: 'enwt-3u8m', note: 'Vision Zero street segments; updated annually' },
   { name: 'Speed Camera Citations', id: 'd5uh-bk84', dateField: 'date' },
   { name: 'Red Light Camera Citations', id: 'uzmr-g2uc' },
-  { name: 'Parking Citations', id: 'ab4h-6ztd', dateField: 'citation_issued_datetime', note: 'No coordinates after ~Oct 2025 (see findings)' },
+  { name: 'Parking Citations', id: 'ab4h-6ztd', dateField: 'citation_issued_datetime', note: 'No coordinates after ~Oct 2025 (see findings); published dates run 1951–2044 at both ends and are data-entry errors, so charts and queries are clamped to 2012–2026' },
   { name: 'Parking Meter Revenue', id: 'imvp-dq3v', dateField: 'session_start_dt' },
   { name: 'Parking Meter Inventory', id: '8vzz-qzz9' },
   { name: 'Pavement Condition Index', id: '5aye-4rtt' },

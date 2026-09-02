@@ -22,7 +22,6 @@ interface Props {
   domain: { start: string; end: string }
   seams: EraSeam[]
   /** Rendered on the axis when the domain clamp hides published rows. */
-  clampNote?: string
   value: { start: string; end: string }
   onChange: (w: { start: string; end: string }) => void
   isLoading?: boolean
@@ -32,7 +31,7 @@ interface Props {
 const yearOf = (iso: string) => Number(iso.slice(0, 4))
 
 export default function EraTrack({
-  years, domain, seams, clampNote, value, onChange, isLoading, compact,
+  years, domain, seams, value, onChange, isLoading, compact,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const [dragAnchor, setDragAnchor] = useState<number | null>(null)
@@ -259,13 +258,6 @@ export default function EraTrack({
       {/* A clamp that hides published rows is the one disclosure with no
           view-level home, so it stays — but only when it exists, and no longer
           competing with the year grid. */}
-      {clampNote && (
-        <p className="mt-0.5 text-nano font-mono truncate
-                      text-slate-400/60 dark:text-slate-600"
-           title={clampNote}>
-          {clampNote}
-        </p>
-      )}
     </div>
   )
 }

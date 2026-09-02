@@ -20,7 +20,6 @@ export interface UseEraSeriesResult {
   domain: { start: string; end: string }
   seams: EraSeam[]
   /** Present only when the domain clamp hides published rows. */
-  clampNote?: string
   isLoading: boolean
   /** false → the caller renders the legacy 730-day track instead. */
   available: boolean
@@ -75,7 +74,6 @@ export function useEraSeries(cityId: CityId, viewId: string): UseEraSeriesResult
     years,
     domain,
     seams: source?.seams ?? [],
-    clampNote: source?.clampNote,
     isLoading: anyLoading,
     // A source with zero returned years is a failed or empty query — fall back
     // rather than render an empty strip, which reads as "this city had no crime".

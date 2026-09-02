@@ -36,10 +36,6 @@ export interface EraSource {
   /** Inclusive year bounds; null upper = open to today. Guards published-range
    *  junk — this is load-bearing, not cosmetic (see parking-citations). */
   clamp: [number, number | null]
-  /** Set when the clamp HIDES published rows. Rendered on the axis, because a
-   *  silently narrowed domain is the same class of dishonesty as a silently
-   *  dropped row. Omit when the clamp merely matches the real data floor. */
-  clampNote?: string
   /** A second, older extract covering the years BELOW `untilYear`. SFPD is the
    *  only such case: wg3w-h783 starts 2018 and tmnf-yvry covers 2003–2017, so
    *  a single query against the modern set would leave the strip's pre-2018

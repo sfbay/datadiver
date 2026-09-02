@@ -42,7 +42,6 @@ export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
       // Published rows run back to 1950, but 1950→2003 is a ~1,400-row
       // junk trickle; real data starts Aug 2004.
       clamp: [2004, null],
-      clampNote: 'range clamped — published dates run back to 1950',
     },
     omniDatasetKeys: ['policeIncidents'],
   },

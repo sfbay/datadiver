@@ -181,12 +181,13 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     accentColor: '#d47149', // terracotta-500 — kin to PR teal but warmer
     homeCard: { title: 'Parking Citations', subtitle: 'SFMTA Citation Analysis', order: 6 },
     // Published range is 1951-01-21 → 2044-12-21; BOTH ends are data-entry
-    // junk. The only source whose clamp hides published rows — hence the note.
+    // junk. The only SF source whose clamp HIDES published rows — disclosed in
+    // About's sources table, not on the axis (a warning on the chrome reads as
+    // a warning about the data on screen; see the note in EraTrack).
     eraSource: {
       datasetKey: 'parkingCitations',
       dateField: 'citation_issued_datetime',
       clamp: [2012, 2026],
-      clampNote: 'range clamped — published dates run to 2044',
     },
     underlayPreset: ['medianIncome', 'renterPct', 'pctDriveAlone'],
     omniDatasetKeys: ['parkingCitations'],

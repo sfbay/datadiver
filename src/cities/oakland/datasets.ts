@@ -10,7 +10,7 @@ import type { RawDatasetConfig } from '../types'
 export const OAKLAND_DATASETS_RAW: Record<string, RawDatasetConfig> = {
   // OPD's full incident history in ONE extract (no SF-style two-extract
   // seam). Publishes a ~1,400-row junk trickle 1950→2003 — real data
-  // starts Aug 2004 (era clamp floor 2004, disclosed via clampNote).
+  // starts Aug 2004 (era clamp floor 2004, disclosed in About).
   // Geo `location` point: 95.4% all-time / 96.0% 2024+. Beat joins:
   // `policebeat` is zero-padded ('01X') and matches the beats asset's
   // `nhood`; the beats layer's OTHER id column (`cp_beat`, unpadded
