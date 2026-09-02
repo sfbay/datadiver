@@ -11,21 +11,31 @@
  *  Modeled on ComparisonPopover: same wrapper, same click-outside listener,
  *  same chevron. The dropdown STAYS OPEN after a chip click (a reader toggles
  *  several); Escape closes it. Tier 3 chrome — no glow on the pill or panel.
+ *
+ *  `open` is CONTROLLED by the view, not local state: a chip click changes
+ *  the row WHERE, the row query reloads, and CrimeIncidents swaps the whole
+ *  CardTray for its skeleton while it does — unmounting this pill. Local
+ *  state would re-initialise closed on every remount, so the panel shut
+ *  after each toggle. The view's state survives the remount.
  */
 
-import { useState, useEffect, useRef, type KeyboardEvent } from 'react'
+import { useEffect, useRef, type KeyboardEvent } from 'react'
 import SubcategoryStrip from './SubcategoryStrip'
 import { formatMoverDelta } from './subcategoryMovers'
 import type { SubcategoryData } from './useSubcategoryMovers'
 
-export default function MoversPill({ data, selectedSubs, onSelect }: {
+export default function MoversPill({ data, selectedSubs, onSelect, open, onOpenChange }: {
   /** From useSubcategoryMovers. */
   data: SubcategoryData
   selectedSubs: Set<string>
   /** The view's toggleSub. */
   onSelect: (keys: string[]) => void
+  /** Owned by the view — see the docblock: the pill is unmounted with the
+   *  CardTray on every row refetch, so its open state must live above it. */
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }) {
-  const [open, setOpen] = useState(false)
+  const setOpen = onOpenChange
   const ref = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
 
@@ -37,7 +47,7 @@ export default function MoversPill({ data, selectedSubs, onSelect }: {
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
-  }, [open])
+  }, [open, setOpen])
 
   // Escape closes — listened on the wrapper, not document, so it only fires
   // while focus is inside this control.
@@ -50,11 +60,17 @@ export default function MoversPill({ data, selectedSubs, onSelect }: {
 
   const m = data.compared ? data.topCrimeMover : null
   const isActive = m !== null
+  // Three honest resting states: a comparison window that resolved but
+  // produced no crime bucket over the 150-case floor (or none that moved)
+  // is NOT "no comparison window" — the panel beneath says "too few", and
+  // enforcement movers may still be listed. The tooltip must agree with it.
   const title = m
     ? `Biggest change ${data.comparisonLabel}: ${m.label} ${formatMoverDelta(m.delta)}`
     : data.isLoading
       ? 'Ranking movers…'
-      : 'What’s moving — no comparison window'
+      : data.compared
+        ? 'What’s moving — too few cases to rank a crime mover'
+        : 'What’s moving — no comparison window'
 
   return (
     <div className="relative" ref={ref} onKeyDown={onKeyDown}>

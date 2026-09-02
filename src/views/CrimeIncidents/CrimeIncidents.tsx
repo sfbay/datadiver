@@ -78,6 +78,11 @@ export default function CrimeIncidents() {
   const underlayPreset = useViewEntry()?.underlayPreset ?? []
   const [searchParams, setSearchParams] = useSearchParams()
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('categories')
+  /** The Movers dropdown's open state lives HERE, not in the pill: the
+   *  CardTray (and the pill inside it) is swapped for a skeleton on every
+   *  row refetch, and a chip click IS a refetch. Local state would close the
+   *  panel on each toggle; this survives the remount. */
+  const [moversOpen, setMoversOpen] = useState(false)
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
   const isMobile = useIsMobile()
   /** "Change →" on the Category card lands on the picker. Desktop only:
@@ -992,7 +997,13 @@ export default function CrimeIncidents() {
                 viewId="crimeIncidents"
                 cards={cardDefs}
                 extras={isSF && !hasHistorical ? (
-                  <MoversPill data={subcats} selectedSubs={selectedSubs} onSelect={toggleSub} />
+                  <MoversPill
+                    data={subcats}
+                    selectedSubs={selectedSubs}
+                    onSelect={toggleSub}
+                    open={moversOpen}
+                    onOpenChange={setMoversOpen}
+                  />
                 ) : undefined}
               />
             )}
