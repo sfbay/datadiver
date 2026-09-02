@@ -46,6 +46,8 @@ export interface CardDef {
   secondary?: { value: string; caption?: string }
   /** Let the subtitle wrap to two lines instead of truncating. */
   wrapSubtitle?: boolean
+  /** Step a long text value down by length and clamp it (see StatCard.valueFit). */
+  valueFit?: boolean
 }
 
 type CardState = 'expanded' | 'minimized' | 'hidden'
@@ -307,6 +309,7 @@ export default function CardTray({ viewId, cards, className = '', hideComparison
                 subtitleAction={card.subtitleAction}
                 secondary={card.secondary}
                 wrapSubtitle={card.wrapSubtitle}
+                valueFit={card.valueFit}
               />
               {/* Minimize button — top-left on hover */}
               <button
