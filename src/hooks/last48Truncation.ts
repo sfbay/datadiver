@@ -24,7 +24,10 @@ export interface WindowTotalPart {
    *  eviction). Can exceed the cap when earlier polls' rows are still inside
    *  the window. */
   loaded: number
-  /** True when the last FULL fetch returned exactly the cap. */
+  /** True when the rows held for the stream fall short of its window — see
+   *  coverageTruncated(). Not "the last draw hit the cap": held rows
+   *  accumulate across polls, so that alone stops being the missing-rows fact
+   *  a few hours into a session. */
   truncated: boolean
   /** Server `count(*)` for the same cutoff as the capped fetch; null when the
    *  count query failed (or the stream isn't capped). */
@@ -82,6 +85,58 @@ export function truncationNote(
     return `${loadedText} loaded · window total unavailable`
   }
   return `${loadedText} loaded of ${serverTotal.toLocaleString('en-US')} · oldest hours not loaded`
+}
+
+/** Slack for the coverage test: how far past the window start the oldest held
+ *  row may sit before the window counts as under-covered. Absorbs the seconds
+ *  between the rows query and the eviction clock plus a naturally quiet
+ *  stretch at the window's far edge; anything larger means the DESC draw's
+ *  cut is still inside the window. Fifteen minutes — deliberately smaller
+ *  than a sparkline bin (2h): a sub-bin gap can't be hatched, but the FIGURES
+ *  beside the sparkline stay true (the rate and the note still use the
+ *  server total), and a wrong figure is the worse error. */
+export const COVERAGE_SLACK_MS = 15 * 60 * 1000
+
+/** Whether the rows HELD for a stream fall short of its 48-hour window — the
+ *  fact the reader-facing "oldest hours not loaded" copy, the sparkline
+ *  hatch and the loaded-vs-total figures all describe.
+ *
+ *  Held rows accumulate across polls (each draw is merged into the prior
+ *  ones; only rows older than 48h are evicted), so a tab left open grows its
+ *  coverage back toward the window start even though every poll keeps
+ *  returning exactly the cap. "The last draw hit the cap" is therefore NOT
+ *  the same fact as "the oldest hours are missing". This decides the latter:
+ *    - never truncated unless the draw hit the cap — an uncapped draw IS the
+ *      whole window by construction;
+ *    - not truncated once the oldest held row reaches the window start
+ *      (within slackMs) — earlier polls have filled the cut in;
+ *    - not truncated when the server total is known and we hold at least
+ *      that many rows — a quiet stretch at the window's edge can't be told
+ *      from a cut by coverage alone; the count settles it (it can only ever
+ *      clear the flag, never set it, so the timing skew between the rows
+ *      query and the count — the count sees rows that arrived in between —
+ *      cannot fabricate a truncation).
+ *  Nothing held after a capped draw is treated as truncated: coverage can't
+ *  be proven, and the loaded figure is still stated as loaded. */
+export function coverageTruncated(opts: {
+  /** The full draw returned at least the cap. */
+  drewCap: boolean
+  /** Rows held for the stream after the 48h eviction. */
+  heldCount: number
+  /** receivedAt of the oldest held row; null when nothing is held. */
+  oldestHeldMs: number | null
+  /** The held set's own floor (the eviction cutoff). */
+  windowStartMs: number
+  /** Server count(*) for the window when known, else null. */
+  serverTotal: number | null
+  slackMs?: number
+}): boolean {
+  const { drewCap, heldCount, oldestHeldMs, windowStartMs, serverTotal } = opts
+  const slackMs = opts.slackMs ?? COVERAGE_SLACK_MS
+  if (!drewCap) return false
+  if (oldestHeldMs !== null && oldestHeldMs - windowStartMs <= slackMs) return false
+  if (serverTotal !== null && Number.isFinite(serverTotal) && heldCount >= serverTotal) return false
+  return true
 }
 
 /** How many of the sparkline's oldest bins hold no loaded data because the cap

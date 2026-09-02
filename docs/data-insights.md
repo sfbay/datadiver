@@ -380,8 +380,13 @@ runs on k=2 and 311 is half the signal. The digest cron had already counted "now
 
 **Resolution (Jesse's rulings):** keep the newest 5,000 dots per stream — do NOT raise the cap
 or page — and make every stated number true. The hook trips `truncatedByDataset` when a full
-fetch returns exactly the cap and counts the window server-side (`count(*)` at the SAME cutoff
-string) into `totalInWindowByDataset`; every stated count goes through `windowTotal` /
+fetch returns exactly the cap AND the rows it holds still stop short of the window start
+(`coverageTruncated`): held rows accumulate across polls, so a tab left open fills the cut in
+over a few hours and the flag clears on its own even though every poll keeps returning exactly
+the cap — "the last draw hit the cap" and "the oldest hours are missing" are different facts,
+and the review of the first draft caught the copy stating the second from the first. While
+coverage falls short it counts the window server-side (`count(*)` at the SAME cutoff string)
+into `totalInWindowByDataset`; every stated count goes through `windowTotal` /
 `windowTotalAcross` (`src/hooks/last48Truncation.ts`) — the loaded figure stays the loaded
 figure, the true total is disclosed beside it ("5,000 loaded of 5,516 · oldest hours not
 loaded"), and a failed count renders as "—", never a guess. The sparkline hatches the emptied

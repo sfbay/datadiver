@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import {
   LAST48_ROW_CAP,
+  COVERAGE_SLACK_MS,
   windowTotal,
   windowTotalAcross,
   truncationNote,
   cappedLeadingBins,
+  coverageTruncated,
 } from './last48Truncation'
 
 describe('LAST48_ROW_CAP', () => {
@@ -96,5 +98,52 @@ describe('cappedLeadingBins', () => {
   })
   it('is 0 when nothing is loaded (no anchor)', () => {
     expect(cappedLeadingBins({ truncated: true, oldestLoadedMs: null, windowStartMs: START, binMs: BIN, binCount: 24 })).toBe(0)
+  })
+})
+
+describe('coverageTruncated', () => {
+  const H = 60 * 60 * 1000
+  const START = 1_000_000_000_000 // the held set's floor (eviction cutoff)
+  const base = { drewCap: true, heldCount: 5000, windowStartMs: START, serverTotal: null as number | null }
+
+  it('is never truncated when the draw did not hit the cap', () => {
+    expect(coverageTruncated({ ...base, drewCap: false, heldCount: 3100, oldestHeldMs: START + 6 * H })).toBe(false)
+  })
+  it('is truncated on a cold capped draw whose oldest row sits hours past the window start', () => {
+    // 5,000 rows at ~115/hr reach ~42h back: a 6h cut at the far edge.
+    expect(coverageTruncated({ ...base, oldestHeldMs: START + 6 * H })).toBe(true)
+  })
+  it('clears once held rows accumulated across polls reach the window start', () => {
+    // A tab left open: every 30-min poll still returns exactly the cap, but
+    // the merged hold now starts at the eviction cutoff — nothing is missing.
+    expect(coverageTruncated({ ...base, heldCount: 5516, oldestHeldMs: START })).toBe(false)
+    expect(coverageTruncated({ ...base, heldCount: 5516, oldestHeldMs: START + 5 * 60 * 1000 })).toBe(false)
+  })
+  it('treats the slack as inclusive: a gap of exactly the slack is covered, one ms more is not', () => {
+    expect(coverageTruncated({ ...base, oldestHeldMs: START + COVERAGE_SLACK_MS })).toBe(false)
+    expect(coverageTruncated({ ...base, oldestHeldMs: START + COVERAGE_SLACK_MS + 1 })).toBe(true)
+  })
+  it('lets a known server total clear the flag when we hold at least that many rows', () => {
+    // A genuinely quiet stretch at the window's edge looks like a cut by
+    // coverage alone; the count says we have everything.
+    expect(coverageTruncated({ ...base, heldCount: 5516, oldestHeldMs: START + 3 * H, serverTotal: 5516 })).toBe(false)
+    expect(coverageTruncated({ ...base, heldCount: 5520, oldestHeldMs: START + 3 * H, serverTotal: 5516 })).toBe(false)
+  })
+  it('stays truncated when the server total exceeds what we hold', () => {
+    expect(coverageTruncated({ ...base, heldCount: 5000, oldestHeldMs: START + 3 * H, serverTotal: 5516 })).toBe(true)
+  })
+  it('a server total can only CLEAR the flag, never set it', () => {
+    // Coverage complete but the count (taken seconds later) saw a few newer
+    // rows: n > held by timing skew, not by a cut.
+    expect(coverageTruncated({ ...base, heldCount: 5514, oldestHeldMs: START, serverTotal: 5516 })).toBe(false)
+  })
+  it('ignores a non-finite server total', () => {
+    expect(coverageTruncated({ ...base, heldCount: 9999, oldestHeldMs: START + 3 * H, serverTotal: Number.NaN })).toBe(true)
+  })
+  it('is truncated when a capped draw left nothing held (coverage unprovable)', () => {
+    expect(coverageTruncated({ ...base, heldCount: 0, oldestHeldMs: null })).toBe(true)
+  })
+  it('honours a caller-supplied slack', () => {
+    expect(coverageTruncated({ ...base, oldestHeldMs: START + 1 * H, slackMs: 2 * H })).toBe(false)
   })
 })

@@ -20,11 +20,16 @@
 //    inequality ↔ "something changed").
 //
 // 4. The 5,000-row cap (LAST48_ROW_CAP) is a DRAW limit, not the window's
-//    truth: when a FULL fetch returns exactly the cap, the window holds more
-//    than we drew, and the hook counts the window's true size server-side
-//    (one count(*) at the same cutoff) into totalInWindowByDataset.
+//    truth: when a FULL fetch returns exactly the cap, the window may hold
+//    more than we drew, and the hook counts the window's true size server-
+//    side (one count(*) at the same cutoff) into totalInWindowByDataset.
 //    The OLDEST rows are the missing ones ($order DESC) — every consumer
 //    that states a count goes through src/hooks/last48Truncation.ts.
+//    truncatedByDataset is a COVERAGE fact, not a last-draw fact: held rows
+//    accumulate across polls (note 3 — the byId Map is merged, then evicted
+//    at 48h), so a tab left open fills the cut in over a few hours while
+//    every poll keeps returning exactly the cap. coverageTruncated() decides
+//    it from the oldest held row and the count, never from rows.length alone.
 
 import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
 import { fetchDataset } from '@/api/client'
@@ -38,7 +43,7 @@ import {
 } from '@/types/last48'
 import { normalizeEvent } from '@/utils/eventNormalization'
 import { sfLocalCutoff } from '@/utils/sfTime'
-import { LAST48_ROW_CAP } from './last48Truncation'
+import { LAST48_ROW_CAP, coverageTruncated } from './last48Truncation'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -78,8 +83,9 @@ const WINDOW_MS = 48 * 60 * 60 * 1000 // 48 hours
 // don't raise it, don't page. It is NOT the window's truth: 311 runs past it
 // on busy weekdays (measured 5,300–5,516 over two days), and because the
 // query is $order DESC the OLDEST hours are what go missing. The cap is
-// DISCLOSED, not silent — a full fetch that returns exactly the cap trips
-// truncatedByDataset and a server count(*) at the same cutoff fills
+// DISCLOSED, not silent — a full fetch that returns exactly the cap while
+// the held rows still stop short of the window start trips
+// truncatedByDataset, and a server count(*) at the same cutoff fills
 // totalInWindowByDataset, so every stated count can be true.
 const HEAD_WINDOW_MS = 6 * 60 * 60 * 1000 // 6 hours
 const HEAD_LIMIT = 200
@@ -151,9 +157,12 @@ export interface Last48WindowResult {
    *  failure banner + retry affordance, and lets the loading state SETTLE so
    *  the radar stops spinning instead of hanging on a failed stream. */
   errorByDataset: Record<DatasetId, string | null>
-  /** True when the last FULL fetch returned exactly the cap; the window holds
-   *  more than we drew. The oldest rows are the missing ones. Read it only
-   *  alongside fullyLoadedByDataset — the head phase never trips it. */
+  /** True when the rows HELD for the stream fall short of its window: the
+   *  last FULL fetch returned exactly the cap AND the held rows (which
+   *  accumulate across polls) still stop short of the window start — see
+   *  coverageTruncated(). The oldest rows are the missing ones. Clears on
+   *  its own once a long-open tab's polls have filled the cut in. Read it
+   *  only alongside fullyLoadedByDataset — the head phase never trips it. */
   truncatedByDataset: Record<DatasetId, boolean>
   /** Server `count(*)` for the SAME cutoff as the last capped full fetch;
    *  null when not capped (use the loaded count) or when the count query
@@ -186,7 +195,7 @@ interface InternalState {
   fullyLoadedByDataset: Record<DatasetId, boolean>
   /** Per-dataset terminal error (retries exhausted), or null. */
   errorByDataset: Record<DatasetId, string | null>
-  /** Last FULL fetch returned exactly the cap (see Last48WindowResult). */
+  /** Held rows fall short of the window (see Last48WindowResult). */
   truncatedByDataset: Record<DatasetId, boolean>
   /** Server count(*) for the capped window, or null (see Last48WindowResult). */
   totalInWindowByDataset: Record<DatasetId, number | null>
@@ -397,12 +406,20 @@ export function useLast48Window(opts: {
           if (event.receivedAt > maxEventTime) maxEventTime = event.receivedAt
         }
 
-        // 48h eviction for this dataset only
+        // 48h eviction for this dataset only. The same pass measures what we
+        // now HOLD for the stream — count + oldest row — which is what the
+        // row-cap tripwire below reads (coverage, not the size of this draw).
         const evictBefore = now - WINDOW_MS
+        let heldCount = 0
+        let oldestHeldMs: number | null = null
         for (const [key, ev] of newById) {
-          if (ev.datasetId === datasetId && ev.receivedAt < evictBefore) {
+          if (ev.datasetId !== datasetId) continue
+          if (ev.receivedAt < evictBefore) {
             newById.delete(key)
+            continue
           }
+          heldCount += 1
+          if (oldestHeldMs === null || ev.receivedAt < oldestHeldMs) oldestHeldMs = ev.receivedAt
         }
 
         // Update freshness — refreshLagMs derives from the row's own
@@ -443,14 +460,22 @@ export function useLast48Window(opts: {
           )
         } else {
           // ── Row-cap tripwire ──────────────────────────────────────────
-          // A full fetch that returns exactly the cap drew from a window
-          // that holds MORE rows; $order DESC means the oldest hours are the
-          // ones missing. Count the window's true size server-side at the
-          // SAME cutoff string as the rows query, so the total describes the
-          // window we drew from. Runs after the heavy fetch, sequentially —
-          // it never joins the cold-load burst. A count failure leaves the
-          // total null (ABSENT) and must NOT mark the stream errored: the
-          // rows arrived.
+          // A full fetch that returns exactly the cap MAY have drawn from a
+          // window that holds more rows; $order DESC means the oldest hours
+          // are the ones missing. But held rows accumulate across polls, so
+          // the fact that matters — "do the rows we hold stop short of the
+          // window start?" — is decided by coverageTruncated() from the
+          // oldest held row, not from this draw's size: a tab left open
+          // fills the cut in over a few hours and the flag clears, while
+          // every poll still returns exactly the cap. When coverage falls
+          // short, count the window's true size server-side at the SAME
+          // cutoff string as the rows query, so the total describes the
+          // window we drew from; the count also settles the one ambiguity
+          // coverage can't (a quiet stretch at the window's edge vs a cut —
+          // if we hold at least the counted rows, nothing is missing). Runs
+          // after the heavy fetch, sequentially — it never joins the
+          // cold-load burst. A count failure leaves the total null (ABSENT)
+          // and must NOT mark the stream errored: the rows arrived.
           //
           // On the cold-load backfill the drawn rows are published first (an
           // interim notify) so they paint while the count is in flight; the
@@ -459,7 +484,13 @@ export function useLast48Window(opts: {
           // chip/rail copy gates on it). Later polls notify once, after the
           // count — the page is already populated, and an interim null total
           // would flash "window total unavailable" every 30 minutes.
-          const truncated = rows.length >= limit
+          const coverage = {
+            drewCap: rows.length >= limit,
+            heldCount,
+            oldestHeldMs,
+            windowStartMs: evictBefore,
+          }
+          let truncated = coverageTruncated({ ...coverage, serverTotal: null })
           state.truncatedByDataset = { ...state.truncatedByDataset, [datasetId]: truncated }
           if (truncated) {
             if (!state.fullyLoadedByDataset[datasetId]) {
@@ -472,10 +503,15 @@ export function useLast48Window(opts: {
                 { $select: 'count(*) as cnt', $where: `${dateField} >= '${cutoff}'`, $limit: 1 },
                 { skipCache: true, timeoutMs: COUNT_TIMEOUT_MS, retries: COUNT_RETRIES },
               )
-              const n = parseInt(countRows[0]?.cnt ?? '', 10)
+              const parsed = parseInt(countRows[0]?.cnt ?? '', 10)
+              const n = Number.isFinite(parsed) ? parsed : null
+              // The count can only CLEAR the flag (we hold everything it
+              // counted), never set it — see coverageTruncated().
+              truncated = coverageTruncated({ ...coverage, serverTotal: n })
+              state.truncatedByDataset = { ...state.truncatedByDataset, [datasetId]: truncated }
               state.totalInWindowByDataset = {
                 ...state.totalInWindowByDataset,
-                [datasetId]: Number.isFinite(n) ? n : null,
+                [datasetId]: truncated ? n : null,
               }
             } catch {
               state.totalInWindowByDataset = { ...state.totalInWindowByDataset, [datasetId]: null }
