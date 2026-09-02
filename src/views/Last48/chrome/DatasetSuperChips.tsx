@@ -302,6 +302,16 @@ function SuperChip({
   // The note takes the FLOORED total (the same figure the rate uses), so
   // the sentence can never name a window smaller than the rows on screen.
   const capNote = capped ? truncationNote(count, total) : null
+  // Phone form of the same fact: the chips sit 3-across in a flex row below
+  // desk:, ~96px each after padding, where the full sentence would clip
+  // mid-figure inside the button's overflow-hidden. Same null logic as the
+  // full note (derived from it), figures identical; the "oldest hours" clause
+  // is carried by the sparkline's hatch there.
+  const capNoteShort = capNote === null
+    ? null
+    : total === null
+      ? `${count.toLocaleString('en-US')} loaded · total unavailable`
+      : `${count.toLocaleString('en-US')} of ${total.toLocaleString('en-US')} loaded`
   const sparkData = isLoaded
     ? binEventsByHour(events)
     : new Array<number>(SPARKLINE_BINS).fill(0)
@@ -423,10 +433,16 @@ function SuperChip({
           5,000-row draw cap. The loaded figure above stays the loaded figure;
           this line says how many the window really holds (or that we could
           not count it). Renders on every viewport: it is the one line that
-          keeps the big number honest. ──────────────────────────────────── */}
+          keeps the big number honest — so it WRAPS, never clips (the button
+          is overflow-hidden; a nowrap line cut mid-figure by overflow prints
+          a wrong number: "5,000 loaded of 5,5"). Two nano lines cost ~10px.
+          Below desk: the short form; from desk: up the full sentence, which
+          still wraps under Large Type xl where it outgrows the 228px grid
+          floor. ──────────────────────────────────────────────────────────── */}
       {capNote && (
-        <p className="mt-1 font-mono text-nano text-paper-500 dark:text-paper-500 leading-none whitespace-nowrap">
-          {capNote}
+        <p className="mt-1 font-mono text-nano text-paper-500 dark:text-paper-500 leading-tight">
+          <span className="desk:hidden">{capNoteShort}</span>
+          <span className="hidden desk:inline">{capNote}</span>
         </p>
       )}
 
