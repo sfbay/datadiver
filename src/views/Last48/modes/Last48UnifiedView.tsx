@@ -19,6 +19,7 @@ import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import type mapboxgl from 'mapbox-gl'
 import { useAnomalyBaseline } from '@/hooks/useAnomalyBaseline'
 import type { Last48WindowResult } from '@/hooks/useLast48Window'
+import { windowTotalAcross } from '@/hooks/last48Truncation'
 import { LAST48_DATASETS, type DatasetId, type NormalizedEvent } from '@/types/last48'
 import type { CensusVariable } from '@/types/census'
 import type { BaseFill } from '../chrome/LayerControls'
@@ -96,6 +97,29 @@ export default function Last48UnifiedView({
     () => window48.events.filter((e) => datasets.includes(e.datasetId)),
     [window48.events, datasets],
   )
+
+  // Row-cap state for the rail, restricted to the ENABLED streams (the rail's
+  // big number is visibleEvents.length, so its disclosure must speak the same
+  // scope). Truncation copy waits for the full fetch: a stream mid-backfill
+  // counts as uncapped for the beat before its count lands.
+  const railCap = useMemo(() => {
+    const parts = datasets.map((id) => ({
+      loaded: window48.byDataset[id].length,
+      truncated: window48.fullyLoadedByDataset[id] && window48.truncatedByDataset[id],
+      serverTotal: window48.totalInWindowByDataset[id],
+    }))
+    const { total, exact } = windowTotalAcross(parts)
+    return {
+      capped: parts.some((p) => p.truncated),
+      windowTotal: exact ? total : null,
+    }
+  }, [
+    datasets,
+    window48.byDataset,
+    window48.fullyLoadedByDataset,
+    window48.truncatedByDataset,
+    window48.totalInWindowByDataset,
+  ])
 
   const handleMapSelect = useCallback((ev: NormalizedEvent) => {
     setSelectedEvent((prev) => (prev?.id === ev.id ? null : ev))
@@ -245,6 +269,8 @@ export default function Last48UnifiedView({
           <FlowRail
             events={visibleEvents}
             selectedId={selectedEvent?.id}
+            windowTotal={railCap.windowTotal}
+            capped={railCap.capped}
             onSelect={(ev) => {
               if (selectedEvent?.id === ev.id) {
                 setSelectedEvent(null)

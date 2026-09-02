@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useLast48Window } from '@/hooks/useLast48Window'
+import { windowTotalAcross } from '@/hooks/last48Truncation'
 import { useSummaryStore } from '@/stores/summaryStore'
 import { LAST48_DATASETS, type DatasetId } from '@/types/last48'
 import type { CensusVariable } from '@/types/census'
@@ -125,6 +126,29 @@ export default function Last48() {
   const [underlayVariable, setUnderlayVariable] = useState<CensusVariable | null>('medianHomeValue')
 
   const window48 = useLast48Window({ datasets })
+
+  // Header pill total — the window's TRUE size across all streams, not the
+  // drawn sample's length: a capped stream contributes its server count. A
+  // stream mid-backfill (truncated but not yet fullyLoaded) contributes its
+  // loaded count for that beat — truncation copy waits for the full fetch.
+  // `exact` is false when a capped stream's count failed; the pill then
+  // renders "N+" and its title says why.
+  const headerTotal = useMemo(
+    () =>
+      windowTotalAcross(
+        LAST48_DATASETS.map((id) => ({
+          loaded: window48.byDataset[id].length,
+          truncated: window48.fullyLoadedByDataset[id] && window48.truncatedByDataset[id],
+          serverTotal: window48.totalInWindowByDataset[id],
+        })),
+      ),
+    [
+      window48.byDataset,
+      window48.fullyLoadedByDataset,
+      window48.truncatedByDataset,
+      window48.totalInWindowByDataset,
+    ],
+  )
 
   // DRIFT is armed only once every enabled stream has fully loaded or
   // terminally errored, and at least one ENABLED geo-bearing event exists —
@@ -371,10 +395,17 @@ export default function Last48() {
                 48 hours of civic data, updated continuously via official and public APIs
               </p>
             </div>
-            {!window48.isLoading && window48.events.length > 0 && (
-              <span className="inline-flex flex-shrink-0 items-center gap-1.5 text-micro font-mono text-moss-500/80 bg-moss-500/10 px-2 py-1 rounded-full whitespace-nowrap">
+            {!window48.isLoading && headerTotal.total > 0 && (
+              <span
+                className="inline-flex flex-shrink-0 items-center gap-1.5 text-micro font-mono text-moss-500/80 bg-moss-500/10 px-2 py-1 rounded-full whitespace-nowrap"
+                title={
+                  headerTotal.exact
+                    ? 'Events in the last 48 hours across all streams'
+                    : 'One stream is capped and its window total could not be counted — at least this many'
+                }
+              >
                 <span className="w-1 h-1 rounded-full bg-moss-500 pulse-live" />
-                {window48.events.length.toLocaleString()} events
+                {headerTotal.total.toLocaleString()}{headerTotal.exact ? '' : '+'} events
               </span>
             )}
           </div>
@@ -418,6 +449,9 @@ export default function Last48() {
           freshness={window48.freshness}
           initialLoadedByDataset={window48.initialLoadedByDataset}
           arrivalByDataset={arrivalByDataset}
+          fullyLoadedByDataset={window48.fullyLoadedByDataset}
+          truncatedByDataset={window48.truncatedByDataset}
+          totalInWindowByDataset={window48.totalInWindowByDataset}
         />
       </div>
 
