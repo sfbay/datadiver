@@ -268,11 +268,11 @@ export default function Last48() {
     }, { replace: true })
   }, [setSearchParams])
 
-  // Heartbeat: anomalies (module-cached fetch, shared with the map view) +
-  // the in-memory event window feed the detector registry.
+  // Heartbeat: anomalies (module-cached fetch, shared with the map view;
+  // current counts server-side) + the in-memory event window feed the
+  // detector registry.
   const { anomalies } = useAnomalyBaseline({
     datasets,
-    currentEvents: window48.events,
     freshness: window48.freshness,
   })
   const heartbeat = useLast48Heartbeat({

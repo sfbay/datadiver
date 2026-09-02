@@ -165,10 +165,10 @@ export default function Last48UnifiedView({
   const setSelectedNh = onSelectedNeighborhoodChange
 
   // Always compute anomalies — so the choropleth is ready immediately when the
-  // user toggles fill=anomaly, without a cold-start wait.
+  // user toggles fill=anomaly, without a cold-start wait. Current counts are
+  // server-side inside the hook (independent of the 5,000-row draw cap).
   const { anomalies, isLoading: anomalyLoading } = useAnomalyBaseline({
     datasets,
-    currentEvents: visibleEvents,
     freshness: window48.freshness,
   })
 
