@@ -80,6 +80,45 @@ describe('detectStreamRateSpike', () => {
     for (let i = 0; i < 48; i++) events.push(ev({ id: `s${i}`, receivedAt: NOW - i * 3600_000 })) // ~1/hr flat
     expect(detectStreamRateSpike({ events, anomalies: [], now: NOW })).toHaveLength(0)
   })
+
+  // The in-memory sample is capped at 5,000 rows per stream and the OLDEST
+  // rows are the ones missing, so a sample-length denominator understates
+  // the 48h average. The caller supplies the window's true size.
+  describe('under the row cap', () => {
+    // The fixture from the first test: 30 rows, 20 of them in the newest ~2h.
+    // Sample-only average = 30/48 ≈ 0.6/hr; recent ≈ 6.7/hr → "spike".
+    function cappedFixture(): NormalizedEvent[] {
+      const newest = NOW - 7 * 3600_000
+      const events: NormalizedEvent[] = []
+      for (let i = 0; i < 20; i++) events.push(ev({ id: `r${i}`, receivedAt: newest - i * 6 * 60_000 }))
+      for (let i = 0; i < 10; i++) events.push(ev({ id: `o${i}`, receivedAt: newest - (10 + i) * 3600_000 }))
+      return events
+    }
+    it('does NOT fire when the true window size says the recent rate is ordinary', () => {
+      const events = cappedFixture()
+      // Sample length alone fires (the pre-cap behaviour)…
+      expect(detectStreamRateSpike({ events, anomalies: [], now: NOW })).toHaveLength(1)
+      // …but the window really holds 400 rows → 8.3/hr average; 6.7/hr recent is not a spike.
+      expect(detectStreamRateSpike({
+        events, anomalies: [], now: NOW,
+        windowTotalByDataset: { '911-realtime': 400 },
+      })).toHaveLength(0)
+    })
+    it('withholds the judgment entirely when the capped stream has no count (explicit null)', () => {
+      const events = cappedFixture()
+      expect(detectStreamRateSpike({
+        events, anomalies: [], now: NOW,
+        windowTotalByDataset: { '911-realtime': null },
+      })).toHaveLength(0)
+    })
+    it('falls back to the sample length for a stream with no entry', () => {
+      const events = cappedFixture()
+      expect(detectStreamRateSpike({
+        events, anomalies: [], now: NOW,
+        windowTotalByDataset: { '311-cases': 5516 },
+      })).toHaveLength(1)
+    })
+  })
 })
 
 describe('detectRepeatedType', () => {

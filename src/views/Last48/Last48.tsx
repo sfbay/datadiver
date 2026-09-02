@@ -10,7 +10,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useLast48Window } from '@/hooks/useLast48Window'
-import { windowTotalAcross } from '@/hooks/last48Truncation'
+import { windowTotal, windowTotalAcross } from '@/hooks/last48Truncation'
 import { useSummaryStore } from '@/stores/summaryStore'
 import { LAST48_DATASETS, type DatasetId } from '@/types/last48'
 import type { CensusVariable } from '@/types/census'
@@ -171,21 +171,51 @@ export default function Last48() {
     [datasets, window48.events, window48.fullyLoadedByDataset, window48.errorByDataset],
   )
 
+  // Per-stream TRUE window size once the full fetch has landed: the loaded
+  // count when the fetch wasn't capped, the server count when it was, null
+  // when it was capped and the count failed (absent — never a guess). A
+  // stream still in its 200-row head phase is ALSO null: a head sample has
+  // no valid 48h denominator, and dividing by it made the ticker announce a
+  // false rate spike on every cold load. Feeds the summary seed (numbers
+  // only) and the heartbeat's rate-spike denominator below.
+  const windowTotalByDataset = useMemo(() => {
+    const out: Partial<Record<DatasetId, number | null>> = {}
+    for (const id of LAST48_DATASETS) {
+      if (!window48.fullyLoadedByDataset[id]) {
+        out[id] = null
+        continue
+      }
+      out[id] = windowTotal(
+        window48.byDataset[id].length,
+        window48.truncatedByDataset[id],
+        window48.totalInWindowByDataset[id],
+      )
+    }
+    return out
+  }, [
+    window48.fullyLoadedByDataset,
+    window48.byDataset,
+    window48.truncatedByDataset,
+    window48.totalInWindowByDataset,
+  ])
+
   // Seed the cross-view summary store: when a stream finishes its FULL 48h
-  // load, record its complete event count. The loading tips read these back on
+  // load, record the window's TRUE size (not the drawn sample's length, which
+  // is the 5,000 cap on a busy 311 day). The loading tips read these back on
   // the NEXT cold-load to show real per-stream volumes (a time-shifted cache —
-  // see summaryStore). Only fully-loaded streams contribute; the store no-ops
-  // when nothing changed, so this firing on every poll is cheap.
+  // see summaryStore). Only fully-loaded streams contribute, and a capped
+  // stream whose count failed contributes nothing rather than a wrong seed;
+  // the store no-ops when nothing changed, so this firing on every poll is
+  // cheap.
   const contributeLast48 = useSummaryStore((s) => s.contributeLast48)
   useEffect(() => {
     const counts: Partial<Record<DatasetId, number>> = {}
     for (const id of LAST48_DATASETS) {
-      if (window48.fullyLoadedByDataset[id]) {
-        counts[id] = window48.byDataset[id].length
-      }
+      const t = windowTotalByDataset[id]
+      if (typeof t === 'number') counts[id] = t
     }
     contributeLast48(counts)
-  }, [window48.fullyLoadedByDataset, window48.byDataset, contributeLast48])
+  }, [windowTotalByDataset, contributeLast48])
 
   // Sharable selected-neighborhood deep link (heartbeat surge items + the
   // anomaly rail both drive it). Mirrors the ?event= pattern.
@@ -245,7 +275,12 @@ export default function Last48() {
     currentEvents: window48.events,
     freshness: window48.freshness,
   })
-  const heartbeat = useLast48Heartbeat({ events: window48.events, anomalies, datasets })
+  const heartbeat = useLast48Heartbeat({
+    events: window48.events,
+    anomalies,
+    datasets,
+    windowTotalByDataset,
+  })
 
   const handleHeartbeatClick = useCallback((item: TickerItem) => {
     const intent = item.intent

@@ -77,6 +77,13 @@ export const detectNeighborhoodSurge: Detector = (ctx) => {
 // ── 3. Citywide stream rate spike ──────────────────────────────────────────
 // "Recent" is anchored to each stream's NEWEST event, not wall-clock now —
 // SF data publishes hours late, so a "last 3h of now" window is always empty.
+//
+// The 48h average's denominator is the window's TRUE size when the caller
+// supplies it (ctx.windowTotalByDataset): the in-memory sample is capped at
+// 5,000 rows per stream, and a capped denominator understates the average,
+// which inflates the ratio into a false spike. An explicit null (capped,
+// count failed) withholds the judgment for that stream — no denominator, no
+// verdict. A missing key falls back to the sample length.
 const RECENT_HOURS = 3
 const SPIKE_PCT = 0.30
 const MIN_RECENT = 5
@@ -98,7 +105,9 @@ export const detectStreamRateSpike: Detector = (ctx) => {
     if (recent.length < MIN_RECENT) continue
 
     const recentPerHour = recent.length / RECENT_HOURS
-    const avgPerHour = evs.length / 48
+    const windowSize = ctx.windowTotalByDataset?.[datasetId]
+    if (windowSize === null) continue // capped and uncounted — can't judge a rate
+    const avgPerHour = (windowSize ?? evs.length) / 48
     if (avgPerHour <= 0 || recentPerHour < avgPerHour * (1 + SPIKE_PCT)) continue
 
     const pct = recentPerHour / avgPerHour - 1
