@@ -46,6 +46,11 @@ const WINDOW = 5
 const ROTATE_MS = 6000
 const FADE_MS = 400
 
+// One string each, shared by the visible panel line and the live region so
+// what a sighted reader sees and what a screen reader hears cannot drift.
+const SEARCHING_COPY = 'Searching donors…'
+const NO_MATCHES_COPY = 'No matches. Try a neighborhood, a dataset or a donor’s name.'
+
 const PILL =
   'rounded-full border border-paper-300/60 dark:border-white/[0.08] bg-paper-100/60 dark:bg-white/[0.03] ' +
   'font-mono text-micro text-ink dark:text-paper-200 px-3 py-1.5 whitespace-nowrap transition-colors ' +
@@ -70,10 +75,21 @@ export default function HomeSearch({ mounted }: { mounted: boolean }) {
   const optionId = (i: number) => `${uid}-opt-${i}`
   const open = focused && query.trim() !== ''
 
-  // The active row follows the list: a new result set starts at the top.
+  // The active row belongs to the reader until they TYPE: a new query starts
+  // at the top; a new `results` array does not. `results` is re-created when
+  // the funder typeahead resolves (~250 ms debounce + network, even with zero
+  // donor rows), and keying the reset on that identity snapped a reader who
+  // had already arrowed to row 3 back to row 0 — Enter then took a row they
+  // never chose. Static rows keep priority in the composition, so rows the
+  // typeahead appends never displace the one under the cursor.
   useEffect(() => {
     setActiveIdx(0)
-  }, [results])
+  }, [query])
+
+  // …but the index can never point past the end of a list that shrank.
+  useEffect(() => {
+    setActiveIdx((i) => Math.min(i, Math.max(0, results.length - 1)))
+  }, [results.length])
 
   // Navigate contract = OmniSearch.handleSelect.
   const select = useCallback(
@@ -89,7 +105,15 @@ export default function HomeSearch({ mounted }: { mounted: boolean }) {
     // A still-loading empty list is not "no results" — never navigate on it.
     if (searching && results.length === 0) return
     const r = results[activeIdx] ?? results[0]
-    if (r) select(r)
+    if (!r) return
+    // `searching` means a NEW donor query is scheduled or in flight, so any
+    // funder row on screen right now answered an EARLIER query — the hook
+    // keeps the previous answer up while the next one loads (the modal shows
+    // it the same way). Static rows are filtered synchronously and are
+    // always current; a funder row is only Enter-able once its query has
+    // settled. 'luriez' must not land on Lurie's card.
+    if (searching && r.category === 'funder') return
+    select(r)
   }
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -259,16 +283,17 @@ export default function HomeSearch({ mounted }: { mounted: boolean }) {
           </button>
         </div>
 
-        {/* Results panel — solid background, no blur, no glow. */}
+        {/* Results panel — solid background, no blur, no glow. The listbox
+            owns OPTION rows only (ARIA: a listbox's children are options;
+            a status <p> inside it fails aria-required-children), so the
+            two status lines are its siblings, and they are aria-hidden
+            because the persistent live region below is what announces them. */}
         <div
-          role="listbox"
-          id={listboxId}
-          aria-label="Search results"
           hidden={!open}
           className="absolute left-0 right-0 top-full mt-2 z-20 max-h-[min(60vh,480px)] overflow-y-auto rounded-xl border border-paper-300/60 dark:border-white/10 bg-paper-50 dark:bg-espresso-950 shadow-2xl"
         >
-          {results.length > 0 ? (
-            results.map((r, i) => (
+          <div role="listbox" id={listboxId} aria-label="Search results" hidden={results.length === 0}>
+            {results.map((r, i) => (
               <ResultRow
                 key={r.id}
                 result={r}
@@ -279,16 +304,37 @@ export default function HomeSearch({ mounted }: { mounted: boolean }) {
                 active={i === activeIdx}
                 onHover={() => setActiveIdx(i)}
               />
-            ))
-          ) : searching ? (
-            <p className="px-5 py-4 font-mono text-label text-paper-600 dark:text-paper-400">Searching donors…</p>
-          ) : (
-            <p className="px-5 py-4 text-base text-paper-700 dark:text-paper-300">
-              No matches. Try a neighborhood, a dataset or a donor’s name.
-            </p>
-          )}
+            ))}
+          </div>
+          {results.length === 0 &&
+            (searching ? (
+              <p aria-hidden className="px-5 py-4 font-mono text-label text-paper-600 dark:text-paper-400">
+                {SEARCHING_COPY}
+              </p>
+            ) : (
+              <p aria-hidden className="px-5 py-4 text-base text-paper-700 dark:text-paper-300">
+                {NO_MATCHES_COPY}
+              </p>
+            ))}
         </div>
       </div>
+
+      {/* The announcer. A live region only announces CHANGES to an element
+          that was already in the accessibility tree, so it lives here —
+          always rendered, never inside the `hidden` panel — and its text
+          tracks the panel's state: the two status lines while the list is
+          empty, the row count once it fills (aria-activedescendant names the
+          active row, but nothing else says how many there are). Empty while
+          the panel is closed so closing announces nothing. */}
+      <p role="status" className="sr-only">
+        {!open
+          ? ''
+          : results.length > 0
+            ? `${results.length} result${results.length === 1 ? '' : 's'}`
+            : searching
+              ? SEARCHING_COPY
+              : NO_MATCHES_COPY}
+      </p>
 
       {/* Sample pills */}
       {isMobile ? (
