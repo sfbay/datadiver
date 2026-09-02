@@ -233,6 +233,9 @@ export default function CrimeIncidents() {
   /** True while any pre-2018 rows are in range — gates the modern-only
    *  affordances (category filter, 911 linkage, year-over-year). */
   const hasHistorical = era.plan.era !== 'current'
+  // The Movers pill unmounts on Oakland and on historical ranges; a dropdown
+  // left open there would reopen by itself when the pill returns.
+  useEffect(() => { if (!isSF || hasHistorical) setMoversOpen(false) }, [isSF, hasHistorical])
 
   const freshness = useDataFreshness(
     'policeIncidents',
@@ -491,7 +494,7 @@ export default function CrimeIncidents() {
             : comparison.suppressed && comparisonMode !== null
               ? 'Compare needs a narrower date range'
               : selectedNeighborhood
-                ? `In ${areaLabel(selectedNeighborhood)} · multi-charge cases counted once`
+                ? `In ${areaLabel(selectedNeighborhood)} — multi-charge cases counted once`
                 : 'Multi-charge cases counted once',
         wrapSubtitle: true,
         trend: !hasHistorical && comparison.deltas
@@ -992,7 +995,7 @@ export default function CrimeIncidents() {
             )}
 
             {/* Stat cards — top left */}
-            {isLoading && <SkeletonStatCards count={isSF ? 4 : 3} />}
+            {isLoading && <SkeletonStatCards count={3} />}
             {!isLoading && incidentData.length > 0 && (
               <CardTray
                 viewId="crimeIncidents"
