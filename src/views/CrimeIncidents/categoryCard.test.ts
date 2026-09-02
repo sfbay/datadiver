@@ -66,7 +66,7 @@ describe('categoryCardState', () => {
       hasHistorical: true, areaLabel: 'Tenderloin', scoped: SCOPED, selectedCategories: ['Assault'],
     }))).toEqual({
       value: 'Larceny Theft',
-      subtitle: 'Most reported · categories as each era published them',
+      subtitle: 'Most reported citywide · categories as each era published them',
       actionable: false,
     })
   })
@@ -101,7 +101,7 @@ describe('categoryCardState', () => {
   it('rule 1 — historical leader in flight reads as loading, keeps the era note', () => {
     expect(categoryCardState(input({ hasHistorical: true, citywideLoading: true }))).toEqual({
       value: '…',
-      subtitle: 'Most reported · categories as each era published them',
+      subtitle: 'Most reported citywide · categories as each era published them',
       actionable: false,
     })
   })

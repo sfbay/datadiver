@@ -73,10 +73,13 @@ const fmt = (n: number) => n.toLocaleString('en-US')
 export function categoryCardState(i: CategoryCardInput): CategoryCardState {
   // 1. Historical: the archive published no filterable vocabulary, so the
   //    card names the citywide leader with no rank, no count, no action.
+  //    "citywide" is literal: the historical aggregate carries no area
+  //    clause (useCrimeEraData's histDateOnly), so under a selected area the
+  //    card says which scope it is NOT following.
   if (i.hasHistorical) {
     return {
       value: i.citywideLoading ? '…' : (i.citywide[0]?.category ?? '—'),
-      subtitle: 'Most reported · categories as each era published them',
+      subtitle: 'Most reported citywide · categories as each era published them',
       actionable: false,
     }
   }

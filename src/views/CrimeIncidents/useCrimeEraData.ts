@@ -192,6 +192,24 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
     return c.join(' AND ')
   }, [plan, selectedNeighborhood, timeOfDayFilter])
 
+  /** Historical category aggregate: date + time-of-day only — CITYWIDE, the
+   *  same contract as modernDateOnly. It used to ride histWhere, which
+   *  carries the neighborhood clause, so with an area selected a pure
+   *  historical range ranked the area's categories under a card and sidebar
+   *  that never said so, and a straddling range merged a citywide modern
+   *  list with an area-scoped historical one into a single list. */
+  const histDateOnly = useMemo(() => {
+    const r = plan.historicalRange
+    if (!r) return ''
+    const D = HISTORICAL_FIELDS.date
+    const c: string[] = [`${D} >= '${r.start}' AND ${D} <= '${r.end}'`]
+    if (timeOfDayFilter) {
+      const clause = historicalHourClause(timeOfDayFilter.startHour, timeOfDayFilter.endHour)
+      if (clause) c.push(clause)
+    }
+    return c.join(' AND ')
+  }, [plan, timeOfDayFilter])
+
   const wantModern = isSF && plan.currentRange != null
   const wantHist = isSF && plan.historicalRange != null
   const wantOak = !isSF
@@ -260,11 +278,11 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
     {
       $select: `${HISTORICAL_FIELDS.category} as category, ${HIST_CRIME_COUNT} as incident_count`,
       $group: HISTORICAL_FIELDS.category,
-      $where: histWhere,
+      $where: histDateOnly,
       $order: 'incident_count DESC',
       $limit: CATEGORY_ROW_CAP,
     },
-    [histWhere],
+    [histDateOnly],
     { enabled: wantHist },
   )
   const oakCats = useDataset<IncidentCategoryAggRow>(
