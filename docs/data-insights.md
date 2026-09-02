@@ -359,6 +359,9 @@ ALL-CAPS/Title-Case duplicates) that cannot join the 41-name `nhood` polygon geo
 
 ### The Last 48 Draws at Most 5,000 Rows per Stream — 311 Exceeds It on Busy Weekdays
 
+**Addendum (Sept. 2 2026) — the live window must be anchored at the publish edge, not the clock.** Walking the fix exposed a second, older bias: the anomaly "now" window ended at wall-clock now, but 311 publishes ~15h behind (Fire/EMS ~11h), so the window held only the published hours and was compared against complete 48h day-pairs. Measured at 15:06 SF: 311 wall-clock window 3,784 cases vs 5,517 in the 48h ending at its newest published case (23:58 the night before) — a structural ~31% "quiet" that survived `suppressStaleQuiet` (gate at 24h). The Pulse map painted most of the city teal every afternoon. Fix: `currentWindow(anchorMs)` anchors each stream's live window at its own newest published event — browser (`freshness[id].maxEventTime`) and cron (`max(dateField)` probe) alike, the same matched-window rule the YoY cards use. A stream whose edge can't be read contributes nothing rather than a clock-anchored undercount.
+
+
 **Datasets:** the three Last 48 streams (`gnap-fj3t`, `nuek-vuh3`, `vw6y-z8j6`); only 311 trips it.
 
 **Finding (Sept. 2 2026):** `useLast48Window` fetches each stream's 48-hour window with

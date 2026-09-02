@@ -18,9 +18,9 @@
 // sffind-keyed z could never join the geometry. See the PR E spec.
 import type { AnomalyResult, DatasetId } from '../../src/types/last48'
 import { ALERT_STREAMS } from '../../src/lib/alerts/streams.js'
-import { baselineWindow } from '../../src/hooks/anomalyBaselineWindow.js'
+import { baselineWindow, currentWindow } from '../../src/hooks/anomalyBaselineWindow.js'
 import { bucketDailyCounts, computeAnomalies, type BaselineRow } from '../../src/lib/pulse/anomalyStats.js'
-import { sfLocalCutoff } from '../../src/utils/sfTime.js'
+import { parseSfLocal } from '../../src/utils/sfTime.js'
 import type { BoundaryCollection } from '../../src/utils/polygonRadius.js'
 // Shared allow-list — bucketPulse enforces the same exclusion downstream.
 import { PULSE_SIGNAL_STREAMS } from '../../src/lib/alerts/pulseDigest.js'
@@ -38,7 +38,6 @@ const NH_FIELD: Record<string, string> = {
   '311-cases': 'analysis_neighborhood',
 }
 
-const HOUR = 3600_000
 
 async function fetchRows<T>(socrataId: string, params: Record<string, string>): Promise<T[]> {
   const url = new URL(`https://data.sfgov.org/resource/${socrataId}.json`)
@@ -80,9 +79,21 @@ async function fetchStreamAnomalies(id: DatasetId, nowMs: number): Promise<Anoma
   // The cron's fetched event rows are watermark-scoped and page-capped, so
   // counting them would undercount; the anomaly window is also fixed at 48h
   // regardless of the welcome edition's 24h live override.
+  // Anchored at the stream's newest PUBLISHED event, never the wall clock —
+  // the same currentWindow rule the browser uses. A wall-clock window holds
+  // only the published hours (311 runs ~15h behind) and reads structurally
+  // quiet; a stream whose edge cannot be read contributes nothing rather
+  // than a clock-anchored undercount.
+  const maxRows = await fetchRows<{ m?: string }>(cfg.socrataId, {
+    $select: `max(${cfg.dateField}) as m`,
+    $limit: '1',
+  })
+  const maxRaw = maxRows[0]?.m
+  if (!maxRaw) throw new Error(`${id}: max(${cfg.dateField}) returned nothing — cannot anchor the live window`)
+  const { since: curSince, until: curUntil } = currentWindow(parseSfLocal(maxRaw))
   const currentRows = await fetchRows<{ neighborhood?: string; cnt: string }>(cfg.socrataId, {
     $select: `${nhField} as neighborhood, COUNT(*) as cnt`,
-    $where: `${cfg.dateField} >= '${sfLocalCutoff(nowMs - 48 * HOUR)}' AND ${nhFilter}`,
+    $where: `${cfg.dateField} >= '${curSince}' AND ${cfg.dateField} <= '${curUntil}' AND ${nhFilter}`,
     $group: nhField,
     $limit: '200',
   })

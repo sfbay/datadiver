@@ -27,14 +27,13 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { fetchDataset } from '@/api/client'
-import { baselineWindow } from './anomalyBaselineWindow'
+import { baselineWindow, currentWindow } from './anomalyBaselineWindow'
 import {
   bucketDailyCounts,
   computeAnomalies,
   suppressStaleQuiet,
   type BaselineRow,
 } from '@/lib/pulse/anomalyStats'
-import { sfLocalCutoff } from '@/utils/sfTime'
 import {
   LAST48_DATASETS,
   type AnomalyResult,
@@ -160,26 +159,30 @@ export function currentCountsFromRows(rows: CurrentCountRow[]): Record<string, n
  *  this keeps a chatty 911 poll from re-counting every two minutes. */
 export const CURRENT_MIN_INTERVAL_MS = 2 * 60 * 1000
 
-const WINDOW_MS = 48 * 60 * 60 * 1000
 
 // Single-flight per stream — Last48.tsx, Last48UnifiedView.tsx and the Pulse
 // wire each instantiate this hook; a shared promise means one request per
 // stream per refresh, however many instances are mounted.
 const currentInflight = new Map<DatasetId, Promise<Record<string, number>>>()
 
-async function fetchCurrentCounts(datasetId: DatasetId, nowMs: number): Promise<Record<string, number>> {
+/** @param anchorMs the stream's newest PUBLISHED event (freshness.maxEventTime)
+ *  — the live window is anchored there, never at the wall clock (see
+ *  currentWindow: 311 publishes ~15h behind and a clock window read a third
+ *  quiet every afternoon). */
+async function fetchCurrentCounts(datasetId: DatasetId, anchorMs: number): Promise<Record<string, number>> {
   const existing = currentInflight.get(datasetId)
   if (existing) return existing
   const dateField = DATE_FIELD[datasetId]
   const nhField = NEIGHBORHOOD_FIELD[datasetId]
   const registryKey = DATASET_REGISTRY_KEY[datasetId]
+  const { since, until } = currentWindow(anchorMs)
   const p = fetchDataset<CurrentCountRow>(
     registryKey as Parameters<typeof fetchDataset>[0],
     {
       $select: `${nhField} as neighborhood, COUNT(*) as cnt`,
       // SF wall-clock digits — see sfTime.ts; toISOString() would start the
-      // window 7–8h late.
-      $where: `${dateField} >= '${sfLocalCutoff(nowMs - WINDOW_MS)}' AND ${NH_FILTER(nhField)}`,
+      // window 7–8h late. Bounded on BOTH sides at the publish edge.
+      $where: `${dateField} >= '${since}' AND ${dateField} <= '${until}' AND ${NH_FILTER(nhField)}`,
       $group: nhField,
       $limit: 200,
     },
@@ -292,9 +295,12 @@ export function useAnomalyBaseline(opts: {
   for (const id of LAST48_DATASETS) {
     const enabled = enabledSet.has(id)
     const stamp = freshnessStamp(opts.freshness, id)
+    // The live window's anchor: the stream's newest PUBLISHED event. Null
+    // until its rows have arrived — nothing to anchor on, so wait.
+    const anchor = opts.freshness[id]?.maxEventTime ?? null
     // eslint-disable-next-line react-hooks/rules-of-hooks
     useEffect(() => {
-      if (!enabled) return
+      if (!enabled || anchor == null) return
       const now = Date.now()
       const lastAt = currentLoadedAt.current[id]
       const attempted = lastAt !== undefined
@@ -304,7 +310,7 @@ export function useAnomalyBaseline(opts: {
 
       currentLoadedAt.current[id] = now
       currentStampAt.current[id] = stamp
-      fetchCurrentCounts(id, now)
+      fetchCurrentCounts(id, anchor)
         .then((counts) => {
           if (!mountedRef.current) return
           setCurrentCounts((prev) => ({ ...prev, [id]: counts }))
@@ -319,7 +325,7 @@ export function useAnomalyBaseline(opts: {
           if (!mountedRef.current) return
           setCurrentErrors((prev) => ({ ...prev, [id]: e instanceof Error ? e.message : String(e) }))
         })
-    }, [id, enabled, stamp])
+    }, [id, enabled, stamp, anchor])
   }
 
   // ── Anomalies: only streams with BOTH a baseline and current counts ─────

@@ -58,3 +58,19 @@ describe('baselineWindow', () => {
     expect(until.endsWith('T00:00:00')).toBe(true)
   })
 })
+
+import { currentWindow, CURRENT_WINDOW_MS } from './anomalyBaselineWindow'
+
+describe('currentWindow', () => {
+  it('spans exactly 48h back from the anchor, in SF wall-clock digits', () => {
+    const anchor = parseSfLocal('2026-09-01T23:58:03')
+    expect(currentWindow(anchor)).toEqual({ since: '2026-08-30T23:58:03', until: '2026-09-01T23:58:03' })
+    expect(CURRENT_WINDOW_MS).toBe(48 * 60 * 60 * 1000)
+  })
+  it('is anchored at the argument, not at the wall clock', () => {
+    const a = parseSfLocal('2026-03-08T12:00:00') // across the DST change
+    const w = currentWindow(a)
+    expect(w.until).toBe('2026-03-08T12:00:00')
+    expect(parseSfLocal(w.until) - parseSfLocal(w.since)).toBe(CURRENT_WINDOW_MS)
+  })
+})
