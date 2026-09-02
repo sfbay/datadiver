@@ -1,5 +1,7 @@
 # Crime subcategory drill + "What's moving" — design
 
+> **As built, Sept. 2 2026 (PR #169):** the two strips no longer render in the sidebar. They live behind a **Movers pill** in the CardTray pill bar as TILES (one display figure per mover), and the Top Category card became a selection-aware **Category** card. `SubcategoryStrip.tsx` is deleted. CLAUDE.md → CrimeIncidents is the current truth; this spec is the design record.
+
 **Date:** 2026-08-31
 **Scope:** SF Crime Incidents (`/crime-incidents`), the civic ticker, and the
 crime deep-link grammar. Oakland is untouched.
