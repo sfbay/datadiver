@@ -211,3 +211,41 @@ describe('the rendered row', () => {
     expect(m.delta).toBeLessThan(0)
   })
 })
+
+describe('a bucket with nothing to report does not take a slot', () => {
+  it('drops an exact zero even when it is a watched beat', () => {
+    // Drug enforcement, live: 598 now vs 598 in the comparison window.
+    const out = rankMovers([row('Drug Offense', 'Drug Violation', 598, 598)], 'enforcement', 3)
+    expect(out).toEqual([])
+  })
+
+  it('drops a change too small to round to a whole percent', () => {
+    // 1000 -> 1004 is +0.4%: the chip would read "+0.4%" under an eyebrow
+    // that says these are what is moving.
+    const out = rankMovers([row('Burglary', 'Burglary - Commercial', 1004, 1000)], 'crime', 3)
+    expect(out).toEqual([])
+  })
+
+  it('keeps a watched beat the moment it does move', () => {
+    const out = rankMovers([row('Drug Offense', 'Drug Violation', 6019, 3701)], 'enforcement', 3)
+    expect(out.map((m) => m.key)).toEqual(['Drug Offense|Drug Violation'])
+  })
+
+  it('keeps a change of exactly one percent', () => {
+    const out = rankMovers([row('Burglary', 'Burglary - Commercial', 1010, 1000)], 'crime', 3)
+    expect(out).toHaveLength(1)
+  })
+
+  it('never lets a rendered chip read 0%', () => {
+    const rows = [
+      row('Drug Offense', 'Drug Violation', 598, 598),
+      row('Burglary', 'Burglary - Commercial', 1004, 1000),
+      row('Motor Vehicle Theft', 'Motor Vehicle Theft', 3211, 4747),
+    ]
+    for (const lens of ['crime', 'enforcement'] as const) {
+      for (const m of rankMovers(rows, lens, 3)) {
+        expect(Math.round(m.delta)).not.toBe(0)
+      }
+    }
+  })
+})

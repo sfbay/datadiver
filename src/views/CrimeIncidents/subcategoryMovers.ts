@@ -149,6 +149,14 @@ export function rankMovers(
   const eligible = foldMerges(rows)
     .filter((r) => r.subcategory !== '' && r.prior >= MIN_COUNT && r.current >= MIN_COUNT)
     .map(toMover)
+    // A bucket that cannot state a whole-percent change is not moving, and a
+    // reserved slot spent on it contradicts the eyebrow above it. Seen live:
+    // Drug enforcement sat in the strip at 598 vs 598 — "0%" under a heading
+    // about what's moving. The rule is tied to what the reader SEES rather
+    // than to an invented threshold: if it rounds to zero, it has no change
+    // to report. A watched beat is not exempt — it returns the moment it
+    // actually moves.
+    .filter((m) => Math.round(m.delta) !== 0)
     // 'admin' is muted from headlines only — the row still lives in the
     // sidebar and in every total.
     // 'admin' is never passed as a lens, so this one predicate also mutes it.
