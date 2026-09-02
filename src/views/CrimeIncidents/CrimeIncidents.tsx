@@ -20,11 +20,13 @@ import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { usePoliceHourlyPattern, useOaklandPoliceHourlyPattern } from '@/hooks/useHourlyPatternFactory'
 import { usePoliceComparisonData, useOaklandPoliceComparisonData, countDistinctCases, type OaklandCrimeComparisonRow } from '@/hooks/useComparisonDataFactory'
 import { CRIME_EYEBROWS, OAKLAND_CRIME_GROUPS, OAKLAND_CRIME_QUERY_FLOOR, titleCaseCrimetype, oaklandCategoryExpr, classifyOaklandCategory } from './crimeDialect'
-import { splitPairKey, parseSubParam, formatSubParam } from './subcategoryWatch'
+import { splitPairKey, parseSubParam, formatSubParam, subcategoryChipLabel } from './subcategoryWatch'
+import { categoryCardState } from './categoryCard'
 import { useSubcategoryMovers } from './useSubcategoryMovers'
 import MoversPill from './MoversPill'
 import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
 import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { useAppStore } from '@/stores/appStore'
 import { resolveComparisonStart, comparisonLabel } from '@/utils/comparisonMode'
 import type { PoliceIncident, IncidentCategoryAggRow, NeighborhoodAggRowPolice, ResolutionAggRow } from '@/types/datasets'
@@ -58,7 +60,10 @@ type MapMode = 'heatmap' | 'anomaly'
 type SidebarTab = 'categories' | 'neighborhoods'
 
 export default function CrimeIncidents() {
-  const { dateRange, timeOfDayFilter, comparisonMode, selectedCrimeIncident, setSelectedCrimeIncident } = useAppStore()
+  const {
+    dateRange, timeOfDayFilter, comparisonMode, selectedCrimeIncident, setSelectedCrimeIncident,
+    isContextSidebarOpen, toggleContextSidebar,
+  } = useAppStore()
   const city = useActiveCity()
   const isSF = city.id === 'sf'
   // Composed reader-facing beat labels ('Rockridge & Shafter · 12Y'); identity for SF.
@@ -74,6 +79,14 @@ export default function CrimeIncidents() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('categories')
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
+  const isMobile = useIsMobile()
+  /** "Change →" on the Category card lands on the picker. Desktop only:
+   *  toggleContextSidebar flips the persisted desktop flag, which the mobile
+   *  sheet ignores, so the action is withheld there (see canOpenPicker). */
+  const openPicker = useCallback(() => {
+    setSidebarTab('categories')
+    if (!isContextSidebarOpen) toggleContextSidebar()
+  }, [isContextSidebarOpen, toggleContextSidebar])
   const mapHandleRef = useRef<MapHandle>(null)
 
   // Deep-link: rehydrate detail panel from URL on mount.
@@ -262,6 +275,8 @@ export default function CrimeIncidents() {
     totalCount,
     linked,
     categoryRows,
+    scopedCategoryRows,
+    scopedCategoryLoading,
     neighborhoodRows,
     resolutionRows,
   } = era
@@ -371,10 +386,7 @@ export default function CrimeIncidents() {
   }, [rawData, isSF])
 
   const stats = useMemo(() => {
-    if (incidentData.length === 0) return { total: 0, topCategory: 'N/A', linkedPct: 0, peakHour: 0 }
-
-    // Top category from aggregation
-    const topCategory = categoryRows.length > 0 ? categoryRows[0].incident_category : 'N/A'
+    if (incidentData.length === 0) return { total: 0, linkedPct: 0, peakHour: 0 }
 
     // 911 linked percentage — server-side counts; the 5K-sample ratio is
     // only an immediate-render fallback while the aggregate loads.
@@ -393,11 +405,10 @@ export default function CrimeIncidents() {
       // charge-level, so its raw length would flash a ~30% high figure before
       // the server count lands and silently correct it.
       total: countDistinctCases(incidentData, (i) => i.incidentNumber),
-      topCategory,
       linkedPct,
       peakHour: hourlyPattern.peakHour,
     }
-  }, [incidentData, categoryRows, linked, era.plan.cadLinkAvailable, hourlyPattern.peakHour])
+  }, [incidentData, linked, era.plan.cadLinkAvailable, hourlyPattern.peakHour])
 
   // Resolution bar data
   const resolutionBarData = useMemo((): BarDatum[] => {
@@ -407,6 +418,39 @@ export default function CrimeIncidents() {
       color: resolutionColor(r.resolution),
     }))
   }, [resolutionRows])
+
+  // Sidebar data — also the Category card's citywide rows
+  const categoryEntries = useMemo(
+    () => categoryRows.map((r) => ({ category: r.incident_category, count: parseInt(r.incident_count, 10) || 0 })),
+    [categoryRows]
+  )
+
+  // The Category card follows the selection AND the selected area (pure
+  // state machine in categoryCard.ts). Oakland's raw crimetypes are
+  // title-cased on BOTH the rows and the selection so the rank lookup
+  // compares like with like; SF strings pass through untouched.
+  const catCard = useMemo(() => {
+    const display = (c: string) => (isSF ? c : titleCaseCrimetype(c))
+    return categoryCardState({
+      hasHistorical,
+      citywide: categoryEntries.map((e) => ({ category: display(e.category), count: e.count })),
+      scoped: scopedCategoryRows.map((r) => ({
+        category: display(r.incident_category),
+        count: parseInt(r.incident_count, 10) || 0,
+      })),
+      scopedLoading: scopedCategoryLoading,
+      areaLabel: selectedNeighborhood ? areaLabel(selectedNeighborhood) : null,
+      selectedCategories: Array.from(selectedCategories).map(display),
+      selectedSubLabels: Array.from(selectedSubs).map((k) => {
+        const { category, subcategory } = splitPairKey(k)
+        return subcategoryChipLabel(category, subcategory)
+      }),
+      canOpenPicker: !hasHistorical && !isMobile,
+    })
+  }, [
+    isSF, hasHistorical, categoryEntries, scopedCategoryRows, scopedCategoryLoading,
+    selectedNeighborhood, areaLabel, selectedCategories, selectedSubs, isMobile,
+  ])
 
   // Card tray definitions
   const cardDefs = useMemo((): CardDef[] => {
@@ -429,11 +473,16 @@ export default function CrimeIncidents() {
           ? (era.plan.era === 'straddle'
               ? 'Spans SFPD’s 2003–2017 archive and the 2018+ dataset'
               : 'SFPD’s 2003–2017 archive — categories as published then')
+          // A selected neighborhood/beat drills this card (the WHERE carries
+          // it), so the subtitle names the scope — the same rule Emergency
+          // Response follows on its drilled cards.
           : comparison.deltas
-            ? `${formatDelta(comparison.deltas.total)} ${compLabel}`
+            ? `${formatDelta(comparison.deltas.total)} ${compLabel}${selectedNeighborhood ? ` · in ${areaLabel(selectedNeighborhood)}` : ''}`
             : comparison.suppressed && comparisonMode !== null
               ? 'Compare needs a narrower date range'
-              : 'Multi-charge cases counted once',
+              : selectedNeighborhood
+                ? `In ${areaLabel(selectedNeighborhood)} · multi-charge cases counted once`
+                : 'Multi-charge cases counted once',
         wrapSubtitle: true,
         trend: !hasHistorical && comparison.deltas
           ? (comparison.deltas.total > 0 ? 'up' : comparison.deltas.total < 0 ? 'down' : 'neutral')
@@ -441,14 +490,18 @@ export default function CrimeIncidents() {
         yoyDelta: !hasHistorical && !comparison.deltas && trend.cityWideYoY ? trend.cityWideYoY.pct : null,
       },
       {
-        id: 'top-category',
-        label: 'Top Category',
-        shortLabel: 'Top Cat',
-        value: isSF ? stats.topCategory : titleCaseCrimetype(stats.topCategory),
+        id: 'top-category',            // keep the id: localStorage tray state
+        label: 'Category',
+        shortLabel: 'Cat',
+        value: catCard.value,
+        valueFit: true,
         color: '#d4a435',
         delay: 80,
         info: 'top-category',
         defaultExpanded: true,
+        subtitle: catCard.actionable ? `${catCard.subtitle} · Change →` : catCard.subtitle,
+        wrapSubtitle: true,
+        subtitleAction: catCard.actionable ? openPicker : undefined,
       },
       {
         id: '911-linked',
@@ -486,7 +539,11 @@ export default function CrimeIncidents() {
     // SF subtitle 'Not recorded before 2018' would be a lie where the field
     // never existed.
     return isSF ? cards : cards.filter((c) => c.id !== '911-linked')
-  }, [stats, totalCount, comparison.deltas, comparison.suppressed, compLabel, comparisonMode, trend.cityWideYoY, isSF])
+  }, [
+    stats, totalCount, comparison.deltas, comparison.suppressed, compLabel, comparisonMode,
+    trend.cityWideYoY, isSF, hasHistorical, era.plan.era, selectedNeighborhood, areaLabel,
+    catCard, openPicker,
+  ])
 
   // Chart tray definitions (bottom-left overlay)
   const chartTiles = useMemo((): ChartTileDef[] => {
@@ -534,11 +591,6 @@ export default function CrimeIncidents() {
   }, [resolutionBarData, comparisonMode, comparison, isSF, era.plan])
 
   // Sidebar data
-  const categoryEntries = useMemo(
-    () => categoryRows.map((r) => ({ category: r.incident_category, count: parseInt(r.incident_count, 10) || 0 })),
-    [categoryRows]
-  )
-
   const neighborhoodEntries = useMemo(() => {
     return neighborhoodRows
       .map((r) => ({
