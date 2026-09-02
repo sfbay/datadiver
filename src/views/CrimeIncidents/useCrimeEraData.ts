@@ -49,6 +49,17 @@ const MODERN_SELECT =
 
 const ROW_LIMIT = 5000
 
+/** $limit on every category aggregate. Oakland's raw `crimetype` vocabulary
+ *  runs to 357 distinct values over the full 2004+ era (measured 2026-09-02;
+ *  52 since 2018, 44 in 2025) plus the two derived HOMICIDE-split groups, and
+ *  the Era Track makes 2004→now one drag. The old cap of 60 truncated that
+ *  ranking, so a real category ranked 61st+ read as "No cases" — absence
+ *  fabricated from a truncated list. SF's vocabularies (49 modern, 37
+ *  historical) never approach this. A GROUP BY over ≤400 groups costs the
+ *  same scan as one over 60. Exported so the Category card can tell a
+ *  capped list from a complete one. */
+export const CATEGORY_ROW_CAP = 400
+
 const BEAT_SET: ReadonlySet<string> = new Set(OAKLAND_BEATS)
 
 export interface CrimeEraOpts {
@@ -239,7 +250,7 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
       $group: 'incident_category',
       $where: modernDateOnly,
       $order: 'incident_count DESC',
-      $limit: 60,
+      $limit: CATEGORY_ROW_CAP,
     },
     [modernDateOnly],
     { enabled: wantModern },
@@ -251,7 +262,7 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
       $group: HISTORICAL_FIELDS.category,
       $where: histWhere,
       $order: 'incident_count DESC',
-      $limit: 60,
+      $limit: CATEGORY_ROW_CAP,
     },
     [histWhere],
     { enabled: wantHist },
@@ -266,7 +277,7 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
       $group: oaklandCategoryExpr(),
       $where: oakDateOnly,
       $order: 'incident_count DESC',
-      $limit: 60,
+      $limit: CATEGORY_ROW_CAP,
     },
     [oakDateOnly],
     { enabled: wantOak },
@@ -284,7 +295,7 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
       $group: 'incident_category',
       $where: modernScopeWhere,
       $order: 'incident_count DESC',
-      $limit: 60,
+      $limit: CATEGORY_ROW_CAP,
     },
     [modernScopeWhere],
     { enabled: wantModern && !wantHist && !!selectedNeighborhood },
@@ -296,7 +307,7 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
       $group: oaklandCategoryExpr(),
       $where: oakScopeWhere,
       $order: 'incident_count DESC',
-      $limit: 60,
+      $limit: CATEGORY_ROW_CAP,
     },
     [oakScopeWhere],
     { enabled: wantOak && !!selectedNeighborhood },

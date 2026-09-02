@@ -55,6 +55,10 @@ export interface CategoryCardInput {
   selectedSubLabels: string[]
   /** isSF/Oakland both true on desk; false on mobile and on historical. */
   canOpenPicker: boolean
+  /** The aggregate's $limit (CATEGORY_ROW_CAP). A category missing from a
+   *  list that HIT the cap is outside the ranking, not absent — "No cases"
+   *  must never be printed from a truncated list. Absent = uncapped. */
+  rowCap?: number
 }
 
 export interface CategoryCardState {
@@ -91,6 +95,9 @@ export function categoryCardState(i: CategoryCardInput): CategoryCardState {
   }
 
   const cats = i.selectedCategories
+  // A list that filled its cap may have been cut, so a category it lacks is
+  // "outside the top N", not "no cases".
+  const capped = i.rowCap !== undefined && N >= i.rowCap
 
   // 4. Exactly one category (subs ignored): that category and its rank.
   if (cats.length === 1) {
@@ -100,7 +107,9 @@ export function categoryCardState(i: CategoryCardInput): CategoryCardState {
       value: cat,
       subtitle: idx >= 0
         ? `#${idx + 1} of ${N} · ${fmt(rows[idx].count)} ${scopeWord}`
-        : `No cases ${scopeWord}`,
+        : capped
+          ? `Outside the top ${N} ${scopeWord}`
+          : `No cases ${scopeWord}`,
       actionable: i.canOpenPicker,
     }
   }

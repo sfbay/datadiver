@@ -146,6 +146,22 @@ describe('categoryCardState', () => {
     })
   })
 
+  it('rule 4 — a category missing from a list that HIT the cap is outside the ranking, not absent', () => {
+    // Four rows against a cap of four: the list may have been cut.
+    expect(categoryCardState(input({ selectedCategories: ['Vandalism'], rowCap: 4 }))).toEqual({
+      value: 'Vandalism', subtitle: 'Outside the top 4 citywide', actionable: true,
+    })
+    expect(categoryCardState(input({
+      areaLabel: 'Tenderloin', scoped: SCOPED, selectedCategories: ['Vandalism'], rowCap: 3,
+    }))).toEqual({
+      value: 'Vandalism', subtitle: 'Outside the top 3 in Tenderloin', actionable: true,
+    })
+    // Under the cap the list is complete, so absence is real.
+    expect(categoryCardState(input({ selectedCategories: ['Vandalism'], rowCap: 400 }))).toEqual({
+      value: 'Vandalism', subtitle: 'No cases citywide', actionable: true,
+    })
+  })
+
   it('rule 5 — two or more: the count selected and the leader\'s rank, never a sum', () => {
     expect(categoryCardState(input({
       selectedCategories: ['Assault', 'Malicious Mischief'],

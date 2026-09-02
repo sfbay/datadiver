@@ -14,7 +14,7 @@ import { composeAreaLabel } from '@/cities/areaLabel'
 import { AreaRowLabel } from '@/components/ui/AreaLabel'
 import { useSearchParams } from 'react-router-dom'
 import mapboxgl from 'mapbox-gl'
-import { useCrimeEraData } from './useCrimeEraData'
+import { useCrimeEraData, CATEGORY_ROW_CAP } from './useCrimeEraData'
 import { useMapLayer } from '@/hooks/useMapLayer'
 import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { usePoliceHourlyPattern, useOaklandPoliceHourlyPattern } from '@/hooks/useHourlyPatternFactory'
@@ -455,6 +455,7 @@ export default function CrimeIncidents() {
         return subcategoryChipLabel(category, subcategory)
       }),
       canOpenPicker: !hasHistorical && !isMobile,
+      rowCap: CATEGORY_ROW_CAP,
     })
   }, [
     isSF, hasHistorical, categoryEntries, categoryLoading, scopedCategoryRows, scopedCategoryLoading,
