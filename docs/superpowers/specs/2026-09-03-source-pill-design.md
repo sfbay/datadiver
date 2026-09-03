@@ -274,7 +274,7 @@ Only the `$where`/`$select`/`$group` of a query render by default; a "Show full 
 
 ### 7.1 Inputs
 
-Registry entry (`publisher`, `name`, `id`, `dateField`, `completeness`), `city.portal`, `NON_SOCRATA` row, the view's `CitableQuery` records, live portal metadata (§8), `window.location.href`, and a clock. No component-side string assembly: every reader-facing source sentence is a pure function of these.
+Registry entry (`publisher`, `name`, `id`, `dateField`, `completeness`), `city.portal`, `NON_SOCRATA` row, the view's `CitableQuery` records, live portal metadata (§8), `window.location.href`, and a clock. No component-side string assembly: every reader-facing source sentence is a pure function of these. Date formatting: `apDate` moves from `src/views/Home/oaklandIndicators.ts` to a new leaf `src/utils/apDate.ts` (re-exported from its old home so its test and callers stand) beside `apMonthDay` from `comparisonMode.ts` — a lib module must not import a view module.
 
 ### 7.2 "Through" — per city, per view, never fabricated
 
@@ -325,7 +325,7 @@ The publisher's own files only, plain `<a target="_blank" rel="noopener noreferr
 
 ## 11. Riders — fixes the pill's truth depends on
 
-1. **ACS vintage label** — `NeighborhoodCensusContext.tsx:244` reads `vintage="2020-2024"` on seven map views; the data is the 2023 5-year (2019–2023). All four sites read the `acs-2023-5yr` row. **Corrections entry** (Jesse's ruling): `id: '2026-09-03-acs-vintage-label'`, views: the census sidebar on Emergency Response, Crime Incidents, Traffic Safety, 311 Cases, Parking Revenue, Parking Citations, Business Activity; window: March 17, 2026 (commit `cd5667f`) – Sept. 3, 2026; change: "The neighborhood census sidebar names its source as the American Community Survey 2019–2023 5-year estimates."; before: "It read 'ACS 2020-2024'. No 2020–2024 vintage exists in the data DataDiver serves; every figure was and is from the 2019–2023 estimates."
+1. **ACS vintage label** — `NeighborhoodCensusContext.tsx:244` reads `vintage="2020-2024"` on seven map views; the data is the 2023 5-year (2019–2023). All four sites read the `acs-2023-5yr` row. **Corrections entry** (Jesse's ruling): `id: '2026-09-03-acs-vintage-label'`, views: the census sidebar on Emergency Response, Crime Incidents, Traffic Safety, 311 Cases, Parking Revenue, Parking Citations, Business Activity; window: "Live from March 17, 2026 (commit `cd5667f`) to Sept. 3, 2026"; change: "The neighborhood census sidebar now names its source as the American Community Survey 2019–2023 5-year estimates."; before: "It read 'ACS 2020-2024'. No 2020–2024 vintage exists in the data DataDiver serves; every figure was and is from the 2019–2023 estimates." (`corrections.test.ts` pins `\bnow\b` in `change`, `/live/` in `window`, a digit in `before`, and no refin/enhanc/improv.)
 2. **Home health pill** (`Home.tsx:197,204`) names `datasf.sfgov.org`, which is not a host; it reads `city.portal.host` like `CityLanding` does.
 3. **Dead hook** `src/hooks/useDistrictBoundaries.ts` (`d4vc-q76h`, zero callers) is deleted rather than registered.
 4. **Registry comments vs the portal:** `wr8u-xric` "updated continuously" → Daily; `ab4h-6ztd` "updates infrequently" → Daily; `enwt-3u8m` "updated annually" → "not updated (historical)". Comments only; `cacheTTL` values unchanged.
