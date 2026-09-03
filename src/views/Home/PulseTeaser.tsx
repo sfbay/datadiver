@@ -35,21 +35,7 @@ export default function PulseTeaser({ items, isLoading }: { items: TickerItem[];
 
   return (
     <section aria-label="The Pulse — trending now in San Francisco">
-      <SectionHead
-        label="The Pulse"
-        icon="pulse"
-        color="#b85a33"
-        className="mb-3"
-        right={
-          <Link
-            to="/pulse"
-            className="font-mono text-label tracking-wide text-paper-600 dark:text-paper-400
-                       hover:text-terracotta-600 dark:hover:text-terracotta-400 transition-colors whitespace-nowrap"
-          >
-            See everything trending →
-          </Link>
-        }
-      />
+      <SectionHead label="The Pulse" icon="pulse" color="#b85a33" className="mb-3" />
 
       {isLoading ? (
         <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-3 animate-pulse">

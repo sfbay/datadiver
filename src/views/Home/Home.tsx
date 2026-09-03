@@ -131,8 +131,7 @@ export default function Home() {
               only the text panel inside it caps. */}
           <div className="relative py-6 px-8 desk:py-8 desk:px-14 desk:max-w-[min(50%,640px)]">
             <div className={`transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-              {/* Hero ledge — sits on the hero art, so no corner glow. */}
-              <SectionHead label="San Francisco Open Data" icon="city" color="#b85a33" glow={false} className="mb-6" />
+              <SectionHead label="San Francisco Open Data" icon="city" color="#b85a33" className="mb-6" />
             </div>
 
             <h1

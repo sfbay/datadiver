@@ -5,8 +5,9 @@
  *  the footholds a reader uses to find their place on a dense page; at
  *  text-micro slate-500 they were swallowed. So a ledge is body-size mono
  *  (text-sm — scales with Large Type), full ink, carries a pigment-coloured
- *  glyph, keeps the thin rule and the Tier-1 corner glow, and has a right
- *  slot for a link or a hint.
+ *  glyph, keeps the thin rule, and has a right slot for a hint. NO corner
+ *  glow: Jesse cut the "undergradient" the same day — the glyph is the
+ *  colour, the ledge itself is ink on ground (the one Tier-1 exception).
  *
  *  Only the Pulse glyph moves (that section is live data) and its ring is
  *  `.ledge-ping`, which index.css turns off under prefers-reduced-motion.
@@ -14,7 +15,7 @@
  *  do NOT use this.
  */
 
-import type { CSSProperties, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 
 export type LedgeIcon = 'search' | 'pulse' | 'viz' | 'explore' | 'city' | 'mail'
 
@@ -57,34 +58,27 @@ export default function SectionHead({
   icon,
   color,
   right,
-  glow = true,
   className = '',
 }: {
   label: string
   icon: LedgeIcon
-  /** The section's pigment — drives the glyph AND the corner glow. */
+  /** The section's pigment — drives the glyph. */
   color: string
-  /** Right-aligned slot: a link or a hint. */
+  /** Right-aligned slot: a hint or a status line. */
   right?: ReactNode
-  /** Tier-1 corner glow (default). The hero eyebrow sits on art and skips it. */
-  glow?: boolean
   /** Margin / transition classes from the caller (mb-*, entrance stagger). */
   className?: string
 }) {
   return (
-    <div
-      className={`${glow ? 'glow-host ' : ''}flex items-center gap-3 py-1 ${className}`}
-      style={{ '--glow': color } as CSSProperties}
-    >
-      {glow && <div className="glow-corner is-sm" />}
-      <span className="relative flex items-center">
+    <div className={`flex items-center gap-3 py-1 ${className}`}>
+      <span className="flex items-center">
         <LedgeGlyph icon={icon} color={color} />
       </span>
-      <p className="relative font-mono text-sm uppercase tracking-[0.2em] leading-none text-ink dark:text-paper-100 whitespace-nowrap">
+      <p className="font-mono text-sm uppercase tracking-[0.2em] leading-none text-ink dark:text-paper-100 whitespace-nowrap">
         {label}
       </p>
-      <div className="relative flex-1 h-[1px] bg-ink/[0.12] dark:bg-white/[0.08]" />
-      {right && <div className="relative shrink-0 flex items-center">{right}</div>}
+      <div className="flex-1 h-[1px] bg-ink/[0.12] dark:bg-white/[0.08]" />
+      {right && <div className="shrink-0 flex items-center">{right}</div>}
     </div>
   )
 }

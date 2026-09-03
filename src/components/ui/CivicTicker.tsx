@@ -149,31 +149,28 @@ function HeroTicker({ items, lastUpdated, className = '', heroHeader }: Omit<Civ
   return (
     <div className={`relative ${className}`}>
       {/* Header: LIVE CIVIC DATA + timestamp */}
-      <div className="flex items-center gap-3 mb-3 px-1">
-        <div className="flex items-center gap-1.5">
-          <span className="relative flex h-2 w-2">
-            {isLive && (
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-moss-400 opacity-75" />
-            )}
-            <span
-              className={`relative inline-flex rounded-full h-2 w-2 ${
-                isLive ? 'bg-moss-500' : 'bg-slate-400 dark:bg-slate-500'
-              }`}
-            />
-          </span>
+      {/* The ticker's ledge — Home's SectionHead register (body-size mono,
+          full ink, a pigment glyph, the rule). The glyph is the live dot:
+          moss + a slow ring while the feed is live, grey and still when
+          a caller says it is not (Oakland's "Updated …" header). */}
+      <div className="flex items-center gap-3 mb-3 py-1">
+        <span className="relative flex h-[18px] w-[18px] items-center justify-center shrink-0" aria-hidden>
+          {isLive && <span className="ledge-ping absolute h-3 w-3 rounded-full bg-moss-500" />}
           <span
-            className={`text-micro font-mono uppercase tracking-[0.25em] font-bold ${
-              isLive ? 'text-moss-500' : 'text-slate-500 dark:text-slate-400'
+            className={`relative h-2.5 w-2.5 rounded-full ${
+              isLive ? 'bg-moss-500' : 'bg-slate-400 dark:bg-slate-500'
             }`}
-          >
-            {heroHeader?.label ?? 'Live Civic Data'}
-          </span>
-        </div>
+          />
+        </span>
+        <span className="font-mono text-sm uppercase tracking-[0.2em] leading-none text-ink dark:text-paper-100 whitespace-nowrap">
+          {heroHeader?.label ?? 'Live Civic Data'}
+        </span>
         {lastUpdated && (
-          <span className="text-micro font-mono text-slate-400 dark:text-slate-500">
+          <span className="font-mono text-label text-paper-600 dark:text-paper-400 whitespace-nowrap">
             Updated {timeAgo(lastUpdated)}
           </span>
         )}
+        <div className="flex-1 h-[1px] bg-ink/[0.12] dark:bg-white/[0.08]" />
       </div>
 
       {/* Scrolling card track with edge fades */}

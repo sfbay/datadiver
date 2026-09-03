@@ -64,7 +64,7 @@ Sizes: `.is-sm` (80px, ticker cells), default (110px, stat cards), `.is-lg` (180
 
 **Glow tiers — where to use it, where NOT** (overusing dilutes the signature):
 
-- **Tier 1, always glows:** `<VizCard>`, `<StatCard>`, `<TickerCard>`, sidebar active nav item, hero, section heads, detail-view overlay panels.
+- **Tier 1, always glows:** `<VizCard>`, `<StatCard>`, `<TickerCard>`, sidebar active nav item, hero, detail-view overlay panels. **Home's section LEDGES are the exception (Sept. 2 2026):** `src/views/Home/SectionHead.tsx` — body-size mono, full ink, a pigment SVG glyph, the rule, NO glow (Jesse cut the "undergradient"); the hero ticker's header and the newsletter card's label share the register. "If it's worth an eyebrow it's worth doing at normal size" — a new Home section head uses SectionHead, never a fresh micro slate-500 label.
 - **Tier 2, subtle on interaction only:** `.btn-primary` hover, active date-preset chip, Dana ribbon hover.
 - **Tier 3, HOLD THE LINE (no glow):** body copy / prose blocks, secondary/tertiary/icon buttons, inputs, dropdowns, modals, tooltips, popovers, tables, list rows, comic-panel thumbnails (image IS the color), every neutral `bg-raised` card with no dataset pigment. If a reviewer adds a glow to one of these, push back.
 
