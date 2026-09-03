@@ -423,6 +423,10 @@ Found July 2026 while producing the FY2025-26 final Resolution 240210 report
 
 ---
 
+### Searching vendor names live (measured Sept. 2 2026)
+
+A GROUP BY `vendor` with a *contains* match (`UPPER(vendor) LIKE '%SALESFORCE%'`) took **~4.1 s**; the same aggregate with a *prefix* match (`LIKE 'SALESF%'`) took **0.5–0.8 s**. Socrata's `$q` text index is fast too but matches **every column** — `$q=salesforce` returned EIGHTCLOUD LLC, ACCENTURE and other consultancies whose payment descriptions mention Salesforce, not the vendor. The ⌘K / Home-search vendor typeahead (`useVendorTypeahead`) therefore uses the prefix form only. Vendor names are mixed-case in the ledger (`WCG Inc (West Coast Consulting Group)`), so both sides go through `UPPER()`. Two more facts a search surface must not paper over: the ledger does **not** merge spelling variants (`SALESFORCE.COM INC` is one vendor, `SALESFORCE INC` would be another — the Vendor Explorer matches `?vendor=` exactly, so the raw string travels), and "Uber" is not a city vendor at all (prefix and `$q` both return nothing).
+
 ## Housing (Eviction Notices `5cei-gny5` + Buyout Agreements `wmam-7g8d`)
 
 **Socrata's metadata LIES about `client_location`'s type.** `columns.json` reports
@@ -613,6 +617,10 @@ the 2018 seam that belongs to the unit, not to SFPD.
 burglary is counted once in *each* bucket. Category counts therefore do not sum
 to the citywide total. That is correct — the event really did involve both —
 but it means the sidebar's numbers are not parts of a whole.
+
+### Category spellings drift — the quick groups must carry the DOMINANT one (probed Sept. 2 2026)
+
+Twelve months of distinct incidents: `Weapons Offense` **681**, `Weapons Carrying Etc` 432, `Vandalism` 145, `Drug Violation` 53, `Weapons Offence` **3**. The Violent quick group had carried only the 3-incident `Offence` spelling since it was authored, so "Violent" silently omitted ~680 weapons cases a year. Fixed in PR #171 (`src/views/CrimeIncidents/crimeGroups.ts` — both spellings now, the old one kept for share links). The rare tails are live, not legacy: never describe a published string as "absent from the vocabulary" without a `GROUP BY` to prove it.
 
 ## Police Incidents — SFPD publishes the record as TWO overlapping extracts
 
