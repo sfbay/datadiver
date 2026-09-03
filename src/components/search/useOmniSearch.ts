@@ -5,6 +5,7 @@ import { useRouteView } from '@/cities/useActiveCity'
 import { liveManifest } from '@/cities/manifest'
 import { composeAreaLabel, censusUnitLabel } from '@/cities/areaLabel'
 import { useFunderTypeahead } from '@/hooks/useFunderTypeahead'
+import { useVendorTypeahead } from '@/hooks/useVendorTypeahead'
 import { fppcBuildersFor } from '@/views/CampaignFinance/fppcDialect'
 import { funderKey, formatFunderParam, displayName } from '@/lib/funders/funderKey'
 import { toSentenceCase } from '@/utils/format'
@@ -384,9 +385,37 @@ export function buildFunderRows(rows: {
   })
 }
 
+/**
+ * Live VENDOR rows from useVendorTypeahead (the city's vendor-payments
+ * ledger, n9pm-xkyq). One row per vendor NAME exactly as the Controller
+ * publishes it — no variant merging: 'SALESFORCE.COM INC' and
+ * 'SALESFORCE INC' would be two vendors here as they are in the Vendor
+ * Explorer, and the `?vendor=` param must carry the RAW string because the
+ * explorer matches it exactly. The label is title-cased for reading only.
+ */
+export function buildVendorRows(rows: { vendor: string; total: string; payments: string }[]): SearchResult[] {
+  const seen = new Set<string>()
+  const out: SearchResult[] = []
+  for (const row of rows) {
+    if (!row.vendor || seen.has(row.vendor)) continue
+    seen.add(row.vendor)
+    const payments = Number(row.payments)
+    out.push({
+      id: `vendor:${row.vendor}`,
+      category: 'vendor',
+      label: toSentenceCase(row.vendor),
+      sublabel: `${formatCurrency(Number(row.total))} paid · ${payments.toLocaleString('en-US')} payment${payments === 1 ? '' : 's'} · city vendor`,
+      icon: '🏛',
+      path: '/city-budget',
+      params: { tab: 'search', vendor: row.vendor },
+    })
+  }
+  return out
+}
+
 export interface UseOmniSearchOptions {
   /** "Is this search surface actually showing" — the gate on the funder
-   *  typeahead (a Socrata request per debounced keystroke). The hook holds
+   *  and vendor typeaheads (a Socrata request per debounced keystroke). The hook holds
    *  NO open/close state of its own: every surface owns its visibility and
    *  passes it in — the ⌘K modal passes AppShell's `omniOpen`, the Home box
    *  passes its input's focus state. Defaults to false, so a caller that
@@ -407,11 +436,18 @@ export function useOmniSearch(options?: UseOmniSearchOptions) {
   // Called UNCONDITIONALLY (hooks-order rule) — Oakland (and any future
   // non-SF city) passes `null` builders, which the hook reads as "no
   // funder dialect available" and never fetches.
-  const { rows: funderTypeaheadRows, pending: searching } = useFunderTypeahead(
+  const { rows: funderTypeaheadRows, pending: funderPending } = useFunderTypeahead(
     query,
     active,
     cityId === 'sf' ? fppcBuildersFor('sf').funder : null
   )
+  // Same gate, same contract, the vendor-payments ledger (SF only).
+  const { rows: vendorTypeaheadRows, pending: vendorPending } = useVendorTypeahead(
+    query,
+    active,
+    cityId === 'sf'
+  )
+  const searching = funderPending || vendorPending
 
   const results = useMemo<SearchResult[]>(() => {
     const q = query.trim().toLowerCase()
@@ -422,12 +458,17 @@ export function useOmniSearch(options?: UseOmniSearchOptions) {
         (r.label.toLowerCase().includes(q) ||
           r.sublabel.toLowerCase().includes(q))
     )
-    // Static rows keep priority — funder rows only fill remaining slots.
-    return [...staticFiltered, ...buildFunderRows(funderTypeaheadRows)].slice(0, 8)
-  }, [query, cityId, viewId, omitId, funderTypeaheadRows])
+    // Static rows keep priority — live rows (donors, then vendors) only fill
+    // the remaining slots.
+    return [
+      ...staticFiltered,
+      ...buildFunderRows(funderTypeaheadRows),
+      ...buildVendorRows(vendorTypeaheadRows),
+    ].slice(0, 8)
+  }, [query, cityId, viewId, omitId, funderTypeaheadRows, vendorTypeaheadRows])
 
-  /** `searching` = a funder typeahead request is in flight (or scheduled) —
-   *  the surface can say "Searching donors…" instead of "No matches" and
-   *  must refuse Enter on an empty, still-loading list. */
+  /** `searching` = a donor or vendor typeahead request is in flight (or
+   *  scheduled) — the surface can say "Searching…" instead of "No matches"
+   *  and must refuse Enter on an empty, still-loading list. */
   return { query, setQuery, results, searching }
 }

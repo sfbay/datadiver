@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildSearchIndex, buildCityRows, buildRegionRows, buildFullIndex, buildFunderRows, buildTopicRows, type SearchResult } from './useOmniSearch'
+import { buildSearchIndex, buildCityRows, buildRegionRows, buildFullIndex, buildFunderRows, buildTopicRows, buildVendorRows, type SearchResult } from './useOmniSearch'
 import { DATASETS } from '@/api/datasets'
 import { sfCity } from '@/cities/sf'
 
@@ -456,5 +456,34 @@ describe('buildFunderRows (⌘K funder rows, pure row builder)', () => {
       { transaction_first_name: 'Jane', transaction_last_name: 'Doe', gifts: '1', total: '500' },
     ])
     expect(rows[0].sublabel).toBe('$500 · 1 gift')
+  })
+})
+
+// buildVendorRows is the pure mapper from useVendorTypeahead's raw GROUP BY
+// vendor rows to ⌘K / Home-search rows.
+describe('buildVendorRows (city-vendor rows, pure row builder)', () => {
+  it('maps a vendor GROUP BY row: title-cased label, RAW name in ?vendor=, Vendor Explorer tab', () => {
+    const rows = buildVendorRows([{ vendor: 'SALESFORCE.COM INC', total: '359502.41', payments: '47' }])
+    expect(rows).toEqual([
+      {
+        id: 'vendor:SALESFORCE.COM INC',
+        category: 'vendor',
+        label: 'Salesforce.Com INC',
+        sublabel: '$360K paid · 47 payments · city vendor',
+        icon: '🏛',
+        path: '/city-budget',
+        params: { tab: 'search', vendor: 'SALESFORCE.COM INC' },
+      },
+    ])
+  })
+
+  it('singular payment, million-scale total, and de-duplicated names', () => {
+    const rows = buildVendorRows([
+      { vendor: 'EIGHTCLOUD LLC', total: '3676940', payments: '1' },
+      { vendor: 'EIGHTCLOUD LLC', total: '1', payments: '1' },
+      { vendor: '', total: '5', payments: '2' },
+    ])
+    expect(rows).toHaveLength(1)
+    expect(rows[0].sublabel).toBe('$3.7M paid · 1 payment · city vendor')
   })
 })

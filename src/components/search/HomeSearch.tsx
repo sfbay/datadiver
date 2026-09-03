@@ -48,8 +48,8 @@ const FADE_MS = 400
 
 // One string each, shared by the visible panel line and the live region so
 // what a sighted reader sees and what a screen reader hears cannot drift.
-const SEARCHING_COPY = 'Searching donors…'
-const NO_MATCHES_COPY = 'No matches. Try a neighborhood, a dataset or a donor’s name.'
+const SEARCHING_COPY = 'Searching donors and vendors…'
+const NO_MATCHES_COPY = 'No matches. Try a neighborhood, a dataset, a donor or a city vendor.'
 
 const PILL =
   'rounded-full border border-paper-300/60 dark:border-white/[0.08] bg-paper-100/60 dark:bg-white/[0.03] ' +
@@ -106,13 +106,13 @@ export default function HomeSearch({ mounted }: { mounted: boolean }) {
     if (searching && results.length === 0) return
     const r = results[activeIdx] ?? results[0]
     if (!r) return
-    // `searching` means a NEW donor query is scheduled or in flight, so any
-    // funder row on screen right now answered an EARLIER query — the hook
-    // keeps the previous answer up while the next one loads (the modal shows
-    // it the same way). Static rows are filtered synchronously and are
-    // always current; a funder row is only Enter-able once its query has
+    // `searching` means a NEW donor/vendor query is scheduled or in flight,
+    // so any live row on screen right now answered an EARLIER query — the
+    // hooks keep the previous answer up while the next one loads (the modal
+    // shows it the same way). Static rows are filtered synchronously and are
+    // always current; a live row is only Enter-able once its query has
     // settled. 'luriez' must not land on Lurie's card.
-    if (searching && r.category === 'funder') return
+    if (searching && (r.category === 'funder' || r.category === 'vendor')) return
     select(r)
   }
 
@@ -261,7 +261,7 @@ export default function HomeSearch({ mounted }: { mounted: boolean }) {
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             onKeyDown={onKeyDown}
-            placeholder="Any neighborhood, dataset, donor…"
+            placeholder="Any neighborhood, dataset, donor, city vendor…"
             // Fraunces italic at display scale; leading-[1.3] is load-bearing
             // (an input clips ink at its box edge; italic descenders need it).
             className="flex-1 min-w-0 bg-transparent outline-none font-display italic tabular-nums text-paper-900 dark:text-paper-100 leading-[1.3] placeholder:text-paper-500 dark:placeholder:text-paper-600"
