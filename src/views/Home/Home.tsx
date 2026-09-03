@@ -18,6 +18,7 @@ import ComplianceTracker from '@/components/investigations/ComplianceTracker'
 import Last48Pulse from '@/components/investigations/Last48Pulse'
 import VisionZeroCounter from '@/components/investigations/VisionZeroCounter'
 import PulseTeaser from './PulseTeaser'
+import SectionHead from './SectionHead'
 import VizCard from '@/components/ui/VizCard'
 import AlertsRibbon from '@/components/home/AlertsRibbon'
 import HomeSearch from '@/components/search/HomeSearch'
@@ -130,12 +131,8 @@ export default function Home() {
               only the text panel inside it caps. */}
           <div className="relative py-6 px-8 desk:py-8 desk:px-14 desk:max-w-[min(50%,640px)]">
             <div className={`transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-              <div className="flex items-center gap-2.5 mb-6">
-                <div className="h-[1px] w-8 bg-signal-blue/60" />
-                <p className="text-label font-mono tracking-[0.25em] uppercase text-signal-blue">
-                  San Francisco Open Data
-                </p>
-              </div>
+              {/* Hero ledge — sits on the hero art, so no corner glow. */}
+              <SectionHead label="San Francisco Open Data" icon="city" color="#b85a33" glow={false} className="mb-6" />
             </div>
 
             <h1
@@ -220,9 +217,7 @@ export default function Home() {
             rail (the desktop Explorations section below is hidden on mobile), so
             dataset discovery is immediate. Last 48 first. */}
         <div className="desk:hidden mb-12">
-          <p className="text-micro font-mono uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400 mb-3">
-            Explorations
-          </p>
+          <SectionHead label="Explorations" icon="explore" color="#5c9693" className="mb-3" />
           <div className="-mx-[clamp(16px,3vw,64px)]">
             <div className="flex gap-2.5 overflow-x-auto snap-x px-[clamp(16px,3vw,64px)] pb-1">
               {[...homeCards]
@@ -406,16 +401,7 @@ export default function Home() {
         <section
           className={`relative z-10 mb-8 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
         >
-          <div
-            className="glow-host flex items-center gap-2.5 mb-4 py-1"
-            style={{ '--glow': '#b85a33' } as CSSProperties}
-          >
-            <div className="glow-corner is-sm" />
-            <p className="relative text-micro font-mono uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400">
-              Visualizations
-            </p>
-            <div className="relative flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
-          </div>
+          <SectionHead label="Visualizations" icon="viz" color="#b85a33" className="mb-4" />
           {/* Auto-fit fluid grid: 1 column when viewport < 460px, 2 columns
               from there to ~960px, 3 columns at ~1380px, 4 columns at ~1840px+.
               No breakpoint jumps — the grid reflows continuously as the
@@ -524,16 +510,12 @@ export default function Home() {
         {/* Explorations — desktop only; on mobile these cards are relocated to
             the swipeable rail under the hero. */}
         <section className="relative z-10 hidden desk:block">
-          <div
-            className={`glow-host flex items-center gap-2.5 mb-6 py-1 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100' : 'opacity-0'}`}
-            style={{ '--glow': '#5c9693' } as CSSProperties}
-          >
-            <div className="glow-corner is-sm" />
-            <p className="relative text-micro font-mono uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400">
-              Explorations
-            </p>
-            <div className="relative flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
-          </div>
+          <SectionHead
+            label="Explorations"
+            icon="explore"
+            color="#5c9693"
+            className={`mb-6 transition-all duration-1000 delay-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mounted ? 'opacity-100' : 'opacity-0'}`}
+          />
 
           {/* Auto-fit explorations grid: ~2 columns at narrow viewports, scaling
               up to 6+ columns on ultrawide. Smaller minmax than the viz grid

@@ -4,7 +4,6 @@ import {
   useId,
   useRef,
   useState,
-  type CSSProperties,
   type KeyboardEvent,
   type FocusEvent,
 } from 'react'
@@ -14,6 +13,7 @@ import { ResultRow, SearchIcon } from './ResultRow'
 import { SEARCH_SAMPLES, type SearchSample } from './searchSamples'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
+import SectionHead from '@/views/Home/SectionHead'
 
 /**
  * The Home page's hero-scale search box — the ⌘K index, INLINE.
@@ -224,21 +224,19 @@ export default function HomeSearch({ mounted }: { mounted: boolean }) {
       onFocus={() => setFocusWithin(true)}
       onBlur={onSectionBlur}
     >
-      {/* Head row — mirrors Home's Visualizations head (Tier 1 glow). A
-          sibling of the field card: it must never contain the panel. */}
-      <div
-        className="glow-host flex items-center gap-2.5 mb-4 py-1"
-        style={{ '--glow': '#b85a33' } as CSSProperties}
-      >
-        <div className="glow-corner is-sm" />
-        <p className="relative text-micro font-mono uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400">
-          Search the city
-        </p>
-        <div className="relative flex-1 h-[1px] bg-slate-200/50 dark:bg-white/[0.04]" />
-        <span className="relative hidden desk:inline font-mono text-nano text-slate-500 dark:text-slate-400">
-          ⌘K / Ctrl K anywhere
-        </span>
-      </div>
+      {/* Head row — the shared Home ledge (Tier 1 glow). A sibling of the
+          field card: it must never contain the panel. */}
+      <SectionHead
+        label="Search the city"
+        icon="search"
+        color="#b85a33"
+        className="mb-4"
+        right={
+          <span className="hidden desk:inline font-mono text-label text-paper-600 dark:text-paper-400">
+            ⌘K / Ctrl K anywhere
+          </span>
+        }
+      />
 
       {/* Field card — Tier 3, no glow. `relative` so the panel hangs off it. */}
       <div className="relative rounded-2xl border border-paper-300/60 dark:border-white/10 bg-paper-50 dark:bg-espresso-950/95 shadow-sm transition-colors focus-within:border-paper-500 dark:focus-within:border-white/30">
@@ -263,7 +261,7 @@ export default function HomeSearch({ mounted }: { mounted: boolean }) {
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             onKeyDown={onKeyDown}
-            placeholder="A neighborhood, a dataset, a donor…"
+            placeholder="Any neighborhood, dataset, donor…"
             // Fraunces italic at display scale; leading-[1.3] is load-bearing
             // (an input clips ink at its box edge; italic descenders need it).
             className="flex-1 min-w-0 bg-transparent outline-none font-display italic tabular-nums text-paper-900 dark:text-paper-100 leading-[1.3] placeholder:text-paper-500 dark:placeholder:text-paper-600"
