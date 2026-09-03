@@ -27,8 +27,12 @@ export function useFunderTypeahead(
   query: string,
   active: boolean,
   builders: FunderBuilders | null
-): { rows: TypeaheadRow[] } {
+): { rows: TypeaheadRow[]; pending: boolean } {
   const [rows, setRows] = useState<TypeaheadRow[]>([])
+  // True from the moment a QUALIFYING query is scheduled (debounce included)
+  // until its response resolves or rejects; false whenever the gate fails.
+  // Generation-guarded like `rows`, so a superseded request can't flip it.
+  const [pending, setPending] = useState(false)
   const generationRef = useRef(0)
 
   useEffect(() => {
@@ -36,24 +40,28 @@ export function useFunderTypeahead(
 
     if (!active || !builders || fold(query).length < MIN_QUERY_LENGTH) {
       setRows([])
+      setPending(false)
       return
     }
 
+    setPending(true)
     const timer = setTimeout(() => {
       const spec = builders.typeahead(query)
       fetchDataset<TypeaheadRow>(spec.datasetKey, spec.params, TYPEAHEAD_FETCH_OPTS)
         .then((result) => {
           if (generation !== generationRef.current) return
           setRows(result)
+          setPending(false)
         })
         .catch(() => {
           if (generation !== generationRef.current) return
           setRows([])
+          setPending(false)
         })
     }, DEBOUNCE_MS)
 
     return () => clearTimeout(timer)
   }, [query, active, builders])
 
-  return { rows }
+  return { rows, pending }
 }

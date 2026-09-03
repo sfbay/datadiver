@@ -1,5 +1,6 @@
 import { useMemo, useCallback, useState, Fragment } from 'react'
 import { availableInGroup, groupDisabled } from './categoryGroups'
+import { SF_CRIME_GROUPS } from '@/views/CrimeIncidents/crimeGroups'
 
 export interface IncidentCategoryEntry {
   category: string
@@ -35,17 +36,11 @@ interface IncidentCategoryFilterProps {
   onToggleSub?: (keys: string[]) => void
 }
 
-const SF_CATEGORY_GROUPS: Record<string, string[]> = {
-  Violent: ['Assault', 'Robbery', 'Homicide', 'Weapons Carrying Etc', 'Weapons Offence', 'Rape', 'Sex Offense'],
-  Property: ['Larceny Theft', 'Burglary', 'Motor Vehicle Theft', 'Vandalism', 'Arson', 'Stolen Property'],
-  'Quality of Life': ['Drug Offense', 'Drug Violation', 'Disorderly Conduct', 'Liquor Laws', 'Prostitution', 'Warrant'],
-}
-
 export default function IncidentCategoryFilter({
   categories, selected, onChange, groups, formatLabel,
   subcategories, selectedSubs, onToggleSub,
 }: IncidentCategoryFilterProps) {
-  const categoryGroups = groups ?? SF_CATEGORY_GROUPS
+  const categoryGroups = groups ?? SF_CRIME_GROUPS
   const allTypes = useMemo(() => new Set(categories.map((c) => c.category)), [categories])
   const maxCount = useMemo(() => Math.max(...categories.map((c) => c.count), 1), [categories])
   const allSelected = selected.size === 0 || selected.size === allTypes.size

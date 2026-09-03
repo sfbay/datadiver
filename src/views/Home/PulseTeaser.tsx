@@ -19,6 +19,7 @@ import type { TickerItem } from '@/types/ticker'
 import { tickerToWireItem, rankWire, type WireItem } from '@/lib/pulse/pulsePhrase'
 import SignalGlyph from '@/views/Pulse/SignalGlyph'
 import DeviationBar from '@/views/Pulse/DeviationBar'
+import SectionHead from './SectionHead'
 
 const TEASER_COUNT = 3
 
@@ -34,18 +35,7 @@ export default function PulseTeaser({ items, isLoading }: { items: TickerItem[];
 
   return (
     <section aria-label="The Pulse — trending now in San Francisco">
-      <div className="flex items-baseline justify-between gap-4 mb-3">
-        <p className="font-mono text-label tracking-[0.25em] uppercase text-terracotta-600 dark:text-terracotta-400">
-          <span className="text-paper-600">──</span> The Pulse
-        </p>
-        <Link
-          to="/pulse"
-          className="font-mono text-label tracking-wide text-paper-600 dark:text-paper-400
-                     hover:text-terracotta-600 dark:hover:text-terracotta-400 transition-colors whitespace-nowrap"
-        >
-          See everything trending →
-        </Link>
-      </div>
+      <SectionHead label="The Pulse" icon="pulse" color="#b85a33" className="mb-3" />
 
       {isLoading ? (
         <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-3 animate-pulse">

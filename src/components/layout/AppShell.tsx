@@ -1,5 +1,6 @@
 import { type ReactNode, type CSSProperties, useState, useEffect } from 'react'
 import OmniSearch from '@/components/search/OmniSearch'
+import { SearchIcon } from '@/components/search/ResultRow'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAppStore } from '@/stores/appStore'
 import { useUrlSync } from '@/hooks/useUrlSync'
@@ -93,6 +94,15 @@ export default function AppShell({ children }: { children: ReactNode }) {
             Bring civic data to life, instantly
           </span>
         </div>
+        {/* Search opener — the ⌘K modal's only touch entry point. Same
+            36px hit-box as the drawer button. */}
+        <button
+          onClick={() => setOmniOpen(true)}
+          aria-label="Search"
+          className="ml-auto w-9 h-9 shrink-0 flex items-center justify-center rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10"
+        >
+          <SearchIcon size={18} />
+        </button>
       </div>
 
       {/* Drawer backdrop (mobile only) */}
@@ -419,7 +429,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         {children}
       </main>
 
-      <OmniSearch mode="modal" isOpen={omniOpen} onClose={() => setOmniOpen(false)} />
+      <OmniSearch isOpen={omniOpen} onClose={() => setOmniOpen(false)} />
     </div>
   )
 }

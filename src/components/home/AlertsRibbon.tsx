@@ -12,6 +12,7 @@
 
 import type { CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { LedgeGlyph } from '@/views/Home/SectionHead'
 
 const STREAMS = [
   { dot: '#616a96', label: '911 calls' },        // indigo
@@ -60,21 +61,17 @@ export default function AlertsRibbon({ mounted }: AlertsRibbonProps) {
         <div className="relative grid gap-[clamp(16px,2vw,32px)] lg:grid-cols-[1fr,auto] lg:items-center">
           {/* ── Left: editorial content ─────────────────────────────── */}
           <div className="min-w-0">
-            <div className="flex items-center gap-2.5 mb-3">
-              <span
-                className="w-[5px] h-[5px] rounded-full"
-                style={{
-                  backgroundColor: '#b85a33',
-                  animation: 'pulse 2.5s ease-in-out infinite',
-                }}
-              />
-              <p className="text-micro font-mono uppercase tracking-[0.22em] text-terracotta-500">
+            {/* The card's ledge — same register as Home's SectionHead (body-size
+                mono, full ink, pigment glyph); the NEW chip rides beside it. */}
+            <div className="flex items-center gap-3 mb-3">
+              <LedgeGlyph icon="mail" color="#b85a33" />
+              <p className="font-mono text-sm uppercase tracking-[0.2em] leading-none text-ink dark:text-paper-100 whitespace-nowrap">
                 Daily Newsletter
               </p>
-              <span className="text-nano font-mono uppercase tracking-[0.22em] px-1.5 py-0.5 rounded bg-terracotta-500/12 text-terracotta-500">
+              <span className="text-label font-mono uppercase tracking-[0.2em] px-1.5 py-0.5 rounded bg-terracotta-500/12 text-terracotta-500">
                 New
               </span>
-              <div className="flex-1 h-px bg-ink/[0.08] dark:bg-white/[0.06]" />
+              <div className="flex-1 h-px bg-ink/[0.12] dark:bg-white/[0.08]" />
             </div>
 
             <h2
