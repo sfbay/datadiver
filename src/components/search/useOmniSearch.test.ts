@@ -315,7 +315,7 @@ describe('buildTopicRows + SF full-index order (Home search)', () => {
     const violent = topics.find((r) => r.id === 'topic-crime-violent')!
     expect(violent.path).toBe('/crime-incidents')
     expect(violent.params!.categories.split(',').map(decodeURIComponent)).toEqual([
-      'Assault', 'Robbery', 'Homicide', 'Weapons Carrying Etc', 'Weapons Offence', 'Rape', 'Sex Offense',
+      'Assault', 'Robbery', 'Homicide', 'Weapons Carrying Etc', 'Weapons Offense', 'Weapons Offence', 'Rape', 'Sex Offense',
     ])
     const enforcement = topics.find((r) => r.id === 'topic-311-enforcement')!
     expect(enforcement).toMatchObject({ label: 'Encampments & abandoned vehicles', sublabel: '311 requests · Enforcement', path: '/311-cases' })
