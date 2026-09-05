@@ -56,6 +56,26 @@ const RESOLVED_KEYS: Record<string, readonly string[]> = {
   // Add rows here as the scan reports `unresolved` sites; never widen the regex.
 }
 
+/** Datasets a view ROUTES to from ⌘K but never fetches. `omniDatasetKeys` is
+ *  a routing table (where a dataset search lands); `sources` is a fetching
+ *  table. They usually coincide; where they do not, the reason is authored
+ *  here, so a NEW divergence still fails this test. */
+const OMNI_ROUTING_ONLY: Record<string, string> = {
+  'sf/dispatch-911/dispatch911Realtime':
+    'The realtime 911 feed has no view of its own, so ⌘K lands a searcher on the 911 Dispatch view, which charts the historical extract. The route is pinned by useOmniSearch.test.ts.',
+}
+
+/** Registry keys a SHARED view component can reach in one city but not
+ *  another, where the gate is a runtime condition no file scan can see.
+ *  Delete a row the day its gate is lifted — until then the view would
+ *  otherwise claim sources it never reads. */
+const NOT_FETCHED_HERE: Record<string, { keys: readonly string[]; why: string }> = {
+  'oakland/demographics': {
+    keys: ['policeIncidents', 'cases311', 'parkingCitations'],
+    why: 'The civic-metric scatter is withheld off SF, so useCivicMetrics never fires here even though Demographics.tsx and the hook are shared with San Francisco.',
+  },
+}
+
 function scanSet(viewId: ViewId) {
   return collectScanSet(join(ROOT, VIEW_DIRS[viewId]), { root: ROOT, allow: CROSS_CUTTING })
     .map((file) => ({ file: file.slice(ROOT.length + 1), text: readFileSync(file, 'utf8') }))
@@ -70,7 +90,10 @@ describe('manifest sources — membership', () => {
           expect(NON_SOCRATA[id], id).toBeDefined()
           expect(NON_SOCRATA[id].cities, `${id} lists ${city.id}`).toContain(city.id)
         }
-        for (const key of entry.omniDatasetKeys ?? []) expect(entry.sources ?? [], `omni ${key}`).toContain(key)
+        for (const key of entry.omniDatasetKeys ?? []) {
+          if (OMNI_ROUTING_ONLY[`${city.id}/${entry.viewId}/${key}`]) continue
+          expect(entry.sources ?? [], `omni ${key}`).toContain(key)
+        }
         if (entry.eraSource) {
           expect(entry.sources ?? []).toContain(entry.eraSource.datasetKey)
           if (entry.eraSource.historical) expect(entry.sources ?? []).toContain(entry.eraSource.historical.datasetKey)
@@ -89,8 +112,12 @@ describe('manifest sources — fetched ⇔ declared (per live view, per city)', 
         const { keys, unresolved } = scanFetchedKeys(files, RESOLVED_KEYS)
         expect(unresolved, 'variable-key fetchDataset sites need a RESOLVED_KEYS row').toEqual([])
         // Only keys this city's registry knows are this city's concern (a
-        // shared component may fetch a key the other city lacks).
-        const fetched = [...keys].filter((k) => k in city.datasets).sort()
+        // shared component may fetch a key the other city lacks). A shared
+        // component may also reach a key that DOES exist in this city's
+        // registry but is never fetched here because a runtime gate (not
+        // visible to a file scan) turns that fetch off — NOT_FETCHED_HERE.
+        const exclude = new Set(NOT_FETCHED_HERE[`${city.id}/${entry.viewId}`]?.keys ?? [])
+        const fetched = [...keys].filter((k) => k in city.datasets && !exclude.has(k)).sort()
         expect(fetched).toEqual([...(entry.sources ?? [])].sort())
       })
     }

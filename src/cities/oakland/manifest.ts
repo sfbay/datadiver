@@ -104,16 +104,15 @@ export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
     // unconditionally, so the control stays visible and inert exactly as it
     // already does on /live and /oakland.
     dateless: true,
-    // SURPRISING but scan-true: Demographics.tsx is the SAME component SF
-    // mounts, and it imports useCivicMetrics (the civic-metric scatter's data
-    // hook) even though that scatter is withheld on Oakland at render time
-    // (censusMatchesAreas() gates it off). The scan is static — it can't see
-    // that runtime gate — so it reports the 3 of useCivicMetrics's 6
-    // hardcoded keys that also happen to exist in Oakland's own registry
-    // (cases311, parkingCitations, policeIncidents; fireIncidents/
-    // trafficCrashes/businessLocations don't, so those three drop out here).
-    // None of these three ever actually fire a request on Oakland.
-    sources: ['cases311', 'parkingCitations', 'policeIncidents'],
+    // No `sources`: Demographics.tsx is the SAME component SF mounts, and it
+    // imports useCivicMetrics (the civic-metric scatter's data hook), but
+    // that scatter is WITHHELD on Oakland (censusMatchesAreas() gates it off
+    // — beats ≠ regions). useCivicMetrics never fires a request here, so
+    // policeIncidents/cases311/parkingCitations are deliberately absent even
+    // though a static scan of the shared file would otherwise find them —
+    // see sources.test.ts's NOT_FETCHED_HERE, which authors this exception
+    // for the fetched⇔declared test. This view's real sources are the two
+    // static ones below.
     staticSources: ['acs-2023-5yr', 'oak-neighborhoods'],
   },
 ]
