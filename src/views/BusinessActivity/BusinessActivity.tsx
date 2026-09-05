@@ -310,7 +310,7 @@ export default function BusinessActivity() {
       $limit: 1000,
     },
     [openingsDateOnlyClause],
-    { cite: { viewId: 'business-activity', purpose: 'breakdown' } }
+    { cite: { viewId: 'business-activity', purpose: 'breakdown', facet: 'Openings by sector' } }
   )
   const sectorRows: SectorAggRow[] = useMemo(() => {
     const totals = new Map<string, number>()

@@ -76,6 +76,23 @@ export function clearCitationScope(cityId: CityId, viewId: string): void {
   listeners.forEach((l) => l())
 }
 
+/** Removes exactly one slot from one scope — for a query whose `enabled`
+ *  gate went false. The pill promises the queries behind what is ON SCREEN;
+ *  a disabled query is no longer behind anything, so its slot must stop
+ *  standing rather than keep showing the last thing it fetched while it was
+ *  enabled. No-op when the scope (or the slot within it) doesn't exist —
+ *  mirrors clearCitationScope's no-op-when-absent shape — and never creates
+ *  a scope map that wasn't already there. */
+export function clearCitationSlot(cityId: CityId, viewId: string, purpose: QueryPurpose, datasetKey: string, facet?: string): void {
+  const key = scopeKey(cityId, viewId)
+  const scope = scopes.get(key)
+  if (!scope) return
+  const slot = slotKey(purpose, datasetKey, facet)
+  if (!scope.has(slot)) return
+  scope.delete(slot)
+  notify(key)
+}
+
 function subscribe(cb: () => void) { listeners.add(cb); return () => listeners.delete(cb) }
 
 export function useCitableQueries(cityId: CityId, viewId: ViewId): CitableQuery[] {

@@ -262,40 +262,36 @@ export default function TrafficSafety() {
     { cite: { viewId: 'traffic-safety', purpose: 'ranking' } }
   )
 
-  // --- Overlay data (conditionally fetched) ---
+  // --- Overlay data (conditionally fetched — enabled/disabled, not a
+  // $limit:0 dummy query, so a switched-off layer fires no request and cites
+  // nothing; see the High Injury Network overlay below for the same shape) ---
   const { data: speedCameraData } = useDataset<SpeedCameraRecord>(
     'speedCameras',
-    activeOverlays.has('speed')
-      ? {
-          $select: 'site_id, location, latitude, longitude, SUM(issued_citations) as issued_citations, AVG(avg_issued_speed) as avg_issued_speed',
-          $group: 'site_id, location, latitude, longitude',
-          $limit: 500,
-        }
-      : { $limit: 0 },
+    {
+      $select: 'site_id, location, latitude, longitude, SUM(issued_citations) as issued_citations, AVG(avg_issued_speed) as avg_issued_speed',
+      $group: 'site_id, location, latitude, longitude',
+      $limit: 500,
+    },
     [activeOverlays.has('speed')],
-    { cite: { viewId: 'traffic-safety', purpose: 'overlay', facet: 'Speed cameras' } }
+    { enabled: activeOverlays.has('speed'), cite: { viewId: 'traffic-safety', purpose: 'overlay', facet: 'Speed cameras' } }
   )
 
   const { data: redLightData } = useDataset<RedLightCameraRecord>(
     'redLightCameras',
-    activeOverlays.has('redlight')
-      ? {
-          $select: 'intersection, point, SUM(count) as count',
-          $group: 'intersection, point',
-          $limit: 500,
-        }
-      : { $limit: 0 },
+    {
+      $select: 'intersection, point, SUM(count) as count',
+      $group: 'intersection, point',
+      $limit: 500,
+    },
     [activeOverlays.has('redlight')],
-    { cite: { viewId: 'traffic-safety', purpose: 'overlay', facet: 'Red-light cameras' } }
+    { enabled: activeOverlays.has('redlight'), cite: { viewId: 'traffic-safety', purpose: 'overlay', facet: 'Red-light cameras' } }
   )
 
   const { data: pavementData } = useDataset<PavementConditionRecord>(
     'pavementCondition',
-    activeOverlays.has('pci')
-      ? { $select: 'latitude, longitude, pci_score', $where: 'pci_score IS NOT NULL', $limit: 5000 }
-      : { $limit: 0 },
+    { $select: 'latitude, longitude, pci_score', $where: 'pci_score IS NOT NULL', $limit: 5000 },
     [activeOverlays.has('pci')],
-    { cite: { viewId: 'traffic-safety', purpose: 'overlay', facet: 'Pavement condition' } }
+    { enabled: activeOverlays.has('pci'), cite: { viewId: 'traffic-safety', purpose: 'overlay', facet: 'Pavement condition' } }
   )
 
   // High Injury Network (GeoJSON line layer, via fetchDataset — Task 6 Step 4

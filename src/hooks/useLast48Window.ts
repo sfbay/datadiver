@@ -239,9 +239,11 @@ function buildEmptyFreshness(): FreshnessMap {
 
 export function useLast48Window(opts: {
   datasets: DatasetId[]
-  /** Identity metadata for the citation recorder — one facet per stream
-   *  (facet: datasetId) so the three streams never share a slot even though
-   *  purpose alone would collide. */
+  /** Identity metadata for the citation recorder. No facet: each of the
+   *  three streams is fetched under its own registry key, and the slot key
+   *  already includes the dataset key — a facet here would just print the
+   *  machine-shaped datasetId ('fire-ems-dispatch') as a reader-facing
+   *  label, buying no uniqueness. */
   cite?: { viewId: ViewId; sample: 'window-sample'; count: 'window-count' }
 }): Last48WindowResult {
   // ── Stable enabled-set memo ──────────────────────────────────────────────
@@ -385,7 +387,7 @@ export function useLast48Window(opts: {
           queryParams,
           {
             skipCache: true, timeoutMs: FETCH_TIMEOUT_MS, retries: FETCH_RETRIES,
-            cite: opts.cite ? { viewId: opts.cite.viewId, purpose: opts.cite.sample, facet: datasetId } : undefined,
+            cite: opts.cite ? { viewId: opts.cite.viewId, purpose: opts.cite.sample } : undefined,
           }
         )
 
@@ -512,7 +514,7 @@ export function useLast48Window(opts: {
                 { $select: `${LAST48_COUNT_EXPR[datasetId]} as cnt`, $where: `${dateField} >= '${cutoff}'`, $limit: 1 },
                 {
                   skipCache: true, timeoutMs: COUNT_TIMEOUT_MS, retries: COUNT_RETRIES,
-                  cite: opts.cite ? { viewId: opts.cite.viewId, purpose: opts.cite.count, facet: datasetId } : undefined,
+                  cite: opts.cite ? { viewId: opts.cite.viewId, purpose: opts.cite.count } : undefined,
                 },
               )
               const parsed = parseInt(countRows[0]?.cnt ?? '', 10)

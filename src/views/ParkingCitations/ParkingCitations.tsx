@@ -253,7 +253,7 @@ export default function ParkingCitations() {
           $limit: 50,
         },
     [isSF, dateOnlyClause],
-    { cite: { viewId: 'parking-citations', purpose: 'breakdown' } }
+    { cite: { viewId: 'parking-citations', purpose: 'breakdown', facet: 'Violations, citywide' } }
   )
 
   // Neighborhood agg: no geo filter
