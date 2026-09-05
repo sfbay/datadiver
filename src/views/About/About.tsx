@@ -1,6 +1,8 @@
 import { useEffect, type ReactNode, type CSSProperties } from 'react'
 import { useLocation } from 'react-router-dom'
 import { CORRECTIONS } from './corrections'
+import { buildSourceRows, type SourceTableRow } from './sourceRows'
+import { CITIES } from '@/cities/registry'
 
 /**
  * About — authorship, AI disclosure, stack, data sources, and a public
@@ -49,30 +51,32 @@ function Finding({ title, children }: { title: string; children: ReactNode }) {
   )
 }
 
-function SourcesTable({ rows, host }: { rows: SourceRow[]; host: string }) {
+function SourcesTable({ rows }: { rows: SourceTableRow[] }) {
   return (
     <div className="glass-card rounded-xl overflow-x-auto">
       <table className="w-full text-left min-w-[42.5rem]">
         <thead>
           <tr className="border-b-2 border-slate-300/50 dark:border-white/[0.08]">
             <th className="px-4 py-2.5 text-[0.625rem] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Dataset</th>
+            <th className="px-4 py-2.5 text-[0.625rem] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Publisher</th>
             <th className="px-4 py-2.5 text-[0.625rem] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Source ID</th>
             <th className="px-4 py-2.5 text-[0.625rem] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Date field</th>
             <th className="px-4 py-2.5 text-[0.625rem] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-medium">Known limitations</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((s) => (
-            <tr key={s.id + s.name} className="border-t border-slate-200/40 dark:border-white/[0.03]">
-              <td className="px-4 py-2.5 text-[0.8125rem] text-slate-700 dark:text-slate-200">{s.name}</td>
+          {rows.map((r) => (
+            <tr key={r.anchorId} id={r.anchorId} className="border-t border-slate-200/40 dark:border-white/[0.03] scroll-mt-4">
+              <td className="px-4 py-2.5 text-[0.8125rem] text-slate-700 dark:text-slate-200">{r.name}</td>
+              <td className="px-4 py-2.5 text-[0.75rem] font-mono text-slate-500 dark:text-slate-400">{r.publisher}</td>
               <td className="px-4 py-2.5 text-[0.75rem] font-mono text-slate-500 dark:text-slate-400">
-                <a href={s.url ?? `https://${host}/d/${s.id}`} target="_blank" rel="noopener noreferrer"
+                <a href={r.href} target="_blank" rel="noopener noreferrer"
                    className="hover:text-ink dark:hover:text-white underline decoration-slate-400/30 underline-offset-2 transition-colors">
-                  {s.id}
+                  {r.id}
                 </a>
               </td>
-              <td className="px-4 py-2.5 text-[0.75rem] font-mono text-slate-500 dark:text-slate-400">{s.dateField ?? '—'}</td>
-              <td className="px-4 py-2.5 text-[0.75rem] text-slate-500 dark:text-slate-400">{s.note ?? ''}</td>
+              <td className="px-4 py-2.5 text-[0.75rem] font-mono text-slate-500 dark:text-slate-400">{r.dateField ?? '—'}</td>
+              <td className="px-4 py-2.5 text-[0.75rem] text-slate-500 dark:text-slate-400">{r.note ?? ''}</td>
             </tr>
           ))}
         </tbody>
@@ -80,74 +84,6 @@ function SourcesTable({ rows, host }: { rows: SourceRow[]; host: string }) {
     </div>
   )
 }
-
-interface SourceRow {
-  name: string
-  id: string
-  dateField?: string
-  note?: string
-  /** Absolute link override (non-portal sources; the Oakland FPPC roll-up). */
-  url?: string
-}
-
-// Mirrors src/api/datasets.ts — update both when the registry changes.
-const SF_SOURCES: SourceRow[] = [
-  { name: 'Fire/EMS Dispatched Calls', id: 'nuek-vuh3', dateField: 'received_dttm', note: 'Publishes with ~12h intrinsic lag' },
-  { name: 'Fire Incidents', id: 'wr8u-xric', dateField: 'alarm_dttm' },
-  { name: '911 Dispatch (Real-Time)', id: 'gnap-fj3t', dateField: 'received_datetime', note: 'Rolling 48h window; ~30min lag; no coordinates' },
-  { name: '911 Dispatch (Historical)', id: '2zdj-bwza', dateField: 'received_datetime', note: 'Closed law-enforcement calls; no coordinates' },
-  { name: 'Police Incident Reports (2018+)', id: 'wg3w-h783', dateField: 'incident_datetime', note: '~39h publish lag; rows are charge-level and cases carry supplemental reports — counts are distinct cases (see findings)' },
-  { name: '311 Cases', id: 'vw6y-z8j6', dateField: 'requested_datetime', note: '~15h intrinsic lag' },
-  { name: 'Traffic Crashes (TransBASE)', id: 'ubvf-ztfx', dateField: 'collision_datetime', note: 'Double lag: ~4–6wk publish + longer fatality coding (see findings)' },
-  { name: 'High Injury Network (2024)', id: 'enwt-3u8m', note: 'Vision Zero street segments; updated annually' },
-  { name: 'Speed Camera Citations', id: 'd5uh-bk84', dateField: 'date' },
-  { name: 'Red Light Camera Citations', id: 'uzmr-g2uc' },
-  { name: 'Parking Citations', id: 'ab4h-6ztd', dateField: 'citation_issued_datetime', note: 'No coordinates after ~Oct 2025 (see findings); published dates run 1951–2044 at both ends and are data-entry errors, so charts and queries are clamped to 2012–2026' },
-  { name: 'Parking Meter Revenue', id: 'imvp-dq3v', dateField: 'session_start_dt' },
-  { name: 'Parking Meter Inventory', id: '8vzz-qzz9' },
-  { name: 'Pavement Condition Index', id: '5aye-4rtt' },
-  { name: 'Registered Business Locations', id: 'g8m3-pdis', dateField: 'dba_start_date', note: 'DataSF dropped industry labels (Jul 2026) — sectors derived from the raw NAICS code; ~96% of new registrations have no code (see findings)' },
-  { name: 'Eviction Notices', id: '5cei-gny5', dateField: 'file_date', note: 'Notices filed with the SF Rent Board since 1997 — not completed evictions (see findings)' },
-  { name: 'Buyout Agreements', id: 'wmam-7g8d', dateField: 'buyout_agreement_date', note: 'Disclosed tenant buyout agreements since March 2015; declarations excluded, amounts ~96% covered (see findings)' },
-  { name: 'Campaign Finance (SF Ethics)', id: 'pitq-e56w', dateField: 'calculated_date', note: 'SF filings only — excludes state FPPC/CAL-ACCESS' },
-  { name: 'Budget', id: 'xdgd-c79v' },
-  { name: 'Spending & Revenue', id: 'bpnb-jwfb' },
-  { name: 'Vendor Payments (Vouchers)', id: 'n9pm-xkyq', note: '7.9M rows, FY2007+; basis of the ad-spend compliance work' },
-  { name: 'Supplier Contracts', id: 'cqi5-hm2d', note: 'FY2018+' },
-  {
-    name: 'Election Results (Statement of the Vote)',
-    id: 'sfelections.org',
-    url: 'https://sfelections.org/results/',
-    note: 'NOT on DataSF — the Department of Elections publishes no results to the open data portal. Certified spreadsheets, read from the Department’s own archive (see findings)',
-  },
-  { name: 'Election Precincts — Current (2022)', id: 'd6x4-hefw', note: 'Precinct geometry, Nov 2022 onward' },
-  { name: 'Election Precincts — Historical (2012)', id: 'bsfq-aeyw', note: 'Precinct geometry through Jun 2022 — precinct numbers are NOT comparable across the 2022 renumbering (see findings)' },
-  {
-    name: 'American Community Survey (2019–2023 5-year)',
-    id: 'census.gov',
-    url: 'https://www.census.gov/programs-surveys/acs/',
-    note: 'NOT on DataSF — U.S. Census Bureau estimates, published by block group and summed here to the 41 Analysis Neighborhoods. Six measures (poverty, unemployment and the four commute shares) are not published at block-group scale, so those are averaged up from census tracts instead, using the city’s official tract-to-neighborhood assignment',
-  },
-]
-
-const OAKLAND_SOURCES: SourceRow[] = [
-  { name: 'Crime Reports (OPD)', id: 'ppgh-7dqv', dateField: 'datetime', note: 'Charge-level rows — every count dedupes by case number; the HOMICIDE code (mostly coroner death investigations) is split so it does not read as a murder count; ~3.4% carry no-location beat codes (77X/99X); clamped to 2004+ (earlier rows are a junk trickle)' },
-  { name: '311 Service Requests', id: 'quth-gb8e', dateField: 'datetimeinit', note: 'Coordinates from the srx/sry fields — the dataset’s own address point is junk; publishes next-day' },
-  { name: 'Parking Citations', id: '58em-y96b', dateField: 'ticket_iss', note: 'Publishes ~11 weeks behind; violation descriptions carry a 10-character truncation era, so codes are grouped instead' },
-  { name: 'Police Beats (boundaries)', id: '78s7-673i', note: 'Vendored as the 59-beat spine; the layer names only 2 of its 59 polygons' },
-  { name: 'Neighborhoods (boundaries)', id: 'sb4q-6bkc', note: 'The official 131-polygon layer — it names DataDiver’s beat labels and, dissolved by its own code prefixes, defines the 10 demographic regions (see findings)' },
-  {
-    name: 'American Community Survey (2019–2023 5-year)',
-    id: 'census.gov',
-    url: 'https://www.census.gov/programs-surveys/acs/',
-    note: 'NOT on the city portal — U.S. Census Bureau estimates, published by census tract and summed here to the 10 demographic regions (see findings)',
-  },
-  { name: 'Campaign Finance — Sch A contributions', id: '3xq4-ermg', dateField: 'tran_date', note: 'FPPC filings arrive in semiannual lumps — recent months are structurally incomplete until the next deadline' },
-  { name: 'Campaign Finance — Sch E expenditures', id: 'bvfu-nq99', dateField: 'expn_date', note: '1,553 rows carry no date ($3.39M) — disclosed in the view' },
-  { name: 'Campaign Finance — 496 late IEs', id: 'jkj3-8yq3', dateField: 'exp_date', note: 'Its date field differs from every sibling schedule (exp_date, not expn_date)' },
-  { name: 'Campaign Finance — 497 late contributions', id: 'qact-u8hq', dateField: 'ctrib_date' },
-  { name: 'FPPC filings — 12 further schedules', id: 'various', note: 'Registered, not yet read. Sch B2 is published empty; the 460 summary is deliberately never summed (its cumulative-ish figures fabricate money)', url: 'https://data.oaklandca.gov/browse?q=FPPC' },
-]
 
 const STACK: { area: string; tools: string }[] = [
   { area: 'Framework', tools: 'React 18 · TypeScript · Vite' },
@@ -251,7 +187,7 @@ export default function About() {
         </section>
 
         {/* ── Data sources ───────────────────────────────── */}
-        <section className="mb-12">
+        <section id="sources" className="mb-12 scroll-mt-4">
           <SectionHead label="Data Sources" glow="#d4a435" />
           <Prose>
             <p className="mb-5">
@@ -283,13 +219,13 @@ export default function About() {
             </p>
           </Prose>
           <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/80 dark:text-slate-600 mb-3 mt-2">
-            {'──'} San Francisco · data.sfgov.org
+            {'──'} San Francisco · {CITIES.sf.portal.host}
           </p>
-          <SourcesTable rows={SF_SOURCES} host="data.sfgov.org" />
+          <SourcesTable rows={buildSourceRows('sf')} />
           <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/80 dark:text-slate-600 mb-3 mt-8">
-            {'──'} Oakland · data.oaklandca.gov
+            {'──'} Oakland · {CITIES.oakland.portal.host}
           </p>
-          <SourcesTable rows={OAKLAND_SOURCES} host="data.oaklandca.gov" />
+          <SourcesTable rows={buildSourceRows('oakland')} />
         </section>
 
         {/* ── Corrections ────────────────────────────────── */}
