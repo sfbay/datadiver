@@ -52,7 +52,7 @@ export const CORRECTIONS: readonly Correction[] = [
     change:
       'The neighborhood census sidebar now names its source as the American Community Survey 2019–2023 5-year estimates.',
     before:
-      'It read "ACS 2020-2024". No 2020–2024 vintage exists in the data DataDiver serves; every figure on those seven sidebars was and is from the 2019–2023 5-year estimates, the same vintage the Demographics view and the About page already named.',
+      'The sidebar read "ACS 5-Year Estimates (2020-2024) · Census Bureau". No 2020–2024 vintage exists in the data DataDiver serves; every figure on those seven sidebars was and is from the 2019–2023 5-year estimates, the same vintage the Demographics view and the About page already named.',
   },
   {
     id: '2026-08-31-sf-crime-counts',
