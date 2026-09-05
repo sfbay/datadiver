@@ -83,7 +83,12 @@ export default function SourcePill({ inline = false }: { inline?: boolean }) {
           className={`shrink-0 transition-transform duration-150 ${open ? 'rotate-180' : ''}`}><path d="M2 5l2-2 2 2" /></svg>
       </button>
       {open && (
-        <div data-export-ignore className={`absolute bottom-full mb-1.5 z-50 ${inline ? 'right-0' : 'left-0'}`}>
+        // The pill must clear Mapbox's zoom column at x=10–39, but the panel is
+        // far wider than the pill and would overflow a phone if it inherited
+        // that same left offset — so on mobile it breaks out to sit flush with
+        // the map's own left edge (left: 0.75rem − var(--pill-left) = −94px
+        // relative to the pill), while desktop keeps it flush above the pill.
+        <div data-export-ignore className={`absolute bottom-full mb-1.5 z-50 ${inline ? 'right-0' : 'left-[calc(0.75rem-var(--pill-left))] desk:left-0'}`}>
           <SourcePanel cityId={cityId} entry={entry} records={records} labelledBy={id} />
         </div>
       )}
