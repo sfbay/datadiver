@@ -108,7 +108,11 @@ export function useDataset<T>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [datasetKey, paramsKey, refetchKey, enabled, cityId, ...deps])
 
-  const hitLimit = !isLoading && data.length > 0 && data.length === (params.$limit ?? DEFAULT_LIMIT)
+  // A $limit of 1 cannot signal truncation — see the matching comment on
+  // fetchDataset's own hitLimit in src/api/client.ts. Keep the two formulas
+  // in agreement.
+  const effectiveLimit = params.$limit ?? DEFAULT_LIMIT
+  const hitLimit = !isLoading && effectiveLimit > 1 && data.length > 0 && data.length === effectiveLimit
 
   return { data, isLoading, error, hitLimit, refetch }
 }
