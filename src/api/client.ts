@@ -3,9 +3,13 @@
 import type { DatasetKey } from './datasets'
 import { parseRoute, type CityId } from '@/cities/routing'
 import { getDatasetConfig } from '@/cities/registry'
+import type { DatasetConfig } from '@/cities/types'
+import type { ViewId } from '@/cities/manifest'
+import type { QueryPurpose } from '@/lib/provenance/purposes'
+import { recordCitation } from '@/lib/provenance/citations'
 
 const APP_TOKEN = import.meta.env.VITE_SOCRATA_APP_TOKEN || ''
-const DEFAULT_LIMIT = 1000
+export const DEFAULT_LIMIT = 1000
 const DEFAULT_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 
 interface CacheEntry<T> {
@@ -20,14 +24,14 @@ function getCacheKey(url: string): string {
   return url
 }
 
-function getFromCache<T>(key: string): T | null {
+function getFromCache<T>(key: string): CacheEntry<T> | null {
   const entry = cache.get(key) as CacheEntry<T> | undefined
   if (!entry) return null
   if (Date.now() - entry.timestamp > entry.ttl) {
     cache.delete(key)
     return null
   }
-  return entry.data
+  return entry
 }
 
 function setCache<T>(key: string, data: T, ttl: number): void {
@@ -56,6 +60,23 @@ function buildQueryString(params: SoQLParams): string {
   return searchParams.toString()
 }
 
+export interface CiteTag { viewId: ViewId; purpose: QueryPurpose; facet?: string }
+export interface ResolvedQuery { queryParams: SoQLParams; queryString: string; url: string }
+
+/** The ONE place a request URL is built. Pure, so the citable URL can be
+ *  pinned by test. Token-free by construction — the app token travels only
+ *  as the X-App-Token header. */
+export function resolveQuery(config: Pick<DatasetConfig, 'endpoint' | 'defaultSort'>, params: SoQLParams): ResolvedQuery {
+  const useDefaultSort = !params.$group && !params.$select?.match(/\b(SUM|COUNT|AVG|MIN|MAX|MEDIAN)\s*\(/i)
+  const queryParams: SoQLParams = {
+    ...(useDefaultSort && config.defaultSort ? { $order: config.defaultSort } : {}),
+    $limit: DEFAULT_LIMIT,
+    ...params,
+  }
+  const queryString = buildQueryString(queryParams)
+  return { queryParams, queryString, url: `${config.endpoint}?${queryString}` }
+}
+
 /** Fetch data from a Socrata dataset.
  *
  *  `timeoutMs` aborts a stalled request so it can't hang forever (bare fetch
@@ -71,7 +92,7 @@ function buildQueryString(params: SoQLParams): string {
 export async function fetchDataset<T>(
   datasetKey: DatasetKey,
   params: SoQLParams = {},
-  options: { skipCache?: boolean; timeoutMs?: number; retries?: number; cityId?: CityId } = {}
+  options: { skipCache?: boolean; timeoutMs?: number; retries?: number; cityId?: CityId; cite?: CiteTag } = {}
 ): Promise<T[]> {
   const config = getDatasetConfig(options.cityId ?? 'sf', datasetKey)
 
@@ -84,23 +105,28 @@ export async function fetchDataset<T>(
     }
   }
 
-  // Skip default sort for aggregation queries — ordering by a non-selected field causes Socrata 400 errors
-  const useDefaultSort = !params.$group && !params.$select?.match(/\b(SUM|COUNT|AVG|MIN|MAX|MEDIAN)\s*\(/i)
-
-  const queryParams: SoQLParams = {
-    ...(useDefaultSort && config.defaultSort ? { $order: config.defaultSort } : {}),
-    $limit: DEFAULT_LIMIT,
-    ...params,
-  }
-
-  const queryString = buildQueryString(queryParams)
-  const url = `${config.endpoint}?${queryString}`
+  const { queryParams, url } = resolveQuery(config, params)
   const cacheKey = getCacheKey(url)
+
+  const cityId = options.cityId ?? 'sf'
+  const cite = (rows: unknown[], fetchedAt: number, fromCache: boolean) => {
+    if (!options.cite) return
+    recordCitation({
+      cityId, viewId: options.cite.viewId, purpose: options.cite.purpose, facet: options.cite.facet,
+      datasetKey, datasetId: config.id, host: new URL(config.endpoint).host,
+      params: queryParams, url, fetchedAt, fromCache,
+      rowCount: rows.length, hitLimit: rows.length > 0 && rows.length === queryParams.$limit,
+      head: rows.slice(0, 5) as Record<string, unknown>[],
+    })
+  }
 
   // Check cache once, before the retry loop
   if (!options.skipCache) {
     const cached = getFromCache<T[]>(cacheKey)
-    if (cached) return cached
+    if (cached) {
+      cite(cached.data, cached.timestamp, true)
+      return cached.data
+    }
   }
 
   // Build headers
@@ -128,9 +154,13 @@ export async function fetchDataset<T>(
         throw new Error(`Socrata API error (${response.status}): ${errorBody}`)
       }
 
-      const data = (await response.json()) as T[]
+      const json = await response.json()
+      const data = (config.ext === 'geojson' && json && !Array.isArray(json) && Array.isArray(json.features)
+        ? json.features   // FeatureCollection → its features (the rows)
+        : json) as T[]
       const ttl = config.cacheTTL ?? DEFAULT_CACHE_TTL
       setCache(cacheKey, data, ttl)
+      cite(data, Date.now(), false)
       return data
     } catch (err) {
       // Normalize an abort into a clearer timeout error for surfacing.

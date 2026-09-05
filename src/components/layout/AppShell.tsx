@@ -11,6 +11,7 @@ import { useActiveCity, useRouteView } from '@/cities/useActiveCity'
 import { viewPath } from '@/cities/routing'
 import { liveManifest } from '@/cities/manifest'
 import CitySwitcher from '@/components/layout/CitySwitcher'
+import { useCitationScope } from '@/lib/provenance/citations'
 
 // Type-scale slider stops, in track order. Three stops per Jesse's
 // feedback that a plain large/default toggle wasn't enough runway — the
@@ -33,6 +34,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation()
   const { isDarkMode, toggleDarkMode, typeScale, setTypeScale, isSidebarOpen: deskRailOpen, toggleSidebar, dateRange } = useAppStore()
   useUrlSync()
+  useCitationScope()
 
   const city = useActiveCity()
   const { viewId } = useRouteView()
