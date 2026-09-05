@@ -16,6 +16,12 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     navShortLabel: 'OV',
     navDescription: 'Data stories & viz picker',
     accentColor: '#b85a33', // terracotta-600 — primary brand
+    // No `sources`: every dataset key Home touches (budget/vendor/fire/police/
+    // 311/business/campaign-finance) is fetched by usePreloadCache — a
+    // background cache-warmer for OTHER views' future navigation, not Home's
+    // own editorial content — and usePreloadCache is CROSS_CUTTING for
+    // exactly that reason (sources.test.ts).
+    staticSources: ['sf-analysis-neighborhoods', 'acs-2023-5yr'],
   },
   {
     viewId: 'alerts',
@@ -23,6 +29,8 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     navShortLabel: 'ALRT',
     navDescription: 'Email me events near my places',
     accentColor: '#b85a33', // terracotta-600 — the "alert" pigment
+    sources: ['cases311', 'dispatch911Realtime', 'fireEMSDispatch'],
+    staticSources: ['sf-analysis-neighborhoods'],
   },
   {
     viewId: 'live',
@@ -37,6 +45,8 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     // property values, monthly rent, household rent-stress, and elderly
     // concentration (the last correlates with EMS demand).
     underlayPreset: ['medianHomeValue', 'medianRent', 'rentBurden', 'pctOver65'],
+    sources: ['cases311', 'dispatch911Realtime', 'fireEMSDispatch'],
+    staticSources: ['sf-analysis-neighborhoods'],
   },
   {
     viewId: 'pulse',
@@ -44,6 +54,8 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     navShortLabel: 'PULSE',
     navDescription: 'Trending now in S.F.',
     accentColor: '#b85a33', // terracotta-600 — signal / front-door surface
+    sources: ['cases311', 'dispatch911Realtime', 'fireEMSDispatch'],
+    staticSources: ['sf-analysis-neighborhoods'],
   },
   {
     viewId: 'emergency-response',
@@ -55,6 +67,8 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     eraSource: { datasetKey: 'fireEMSDispatch', dateField: 'received_dttm', clamp: [2000, null] },
     underlayPreset: ['rentBurden', 'pctOver65', 'pctBlack'],
     omniDatasetKeys: ['fireEMSDispatch'],
+    sources: ['fireEMSDispatch', 'fireIncidents'],
+    staticSources: ['sf-analysis-neighborhoods', 'acs-2023-5yr'],
   },
   {
     viewId: 'crime-incidents',
@@ -88,6 +102,12 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     },
     underlayPreset: ['medianIncome', 'pctAsian', 'populationDensity'],
     omniDatasetKeys: ['policeIncidents'],
+    // NOT dispatch911Historical: cad_number is a COLUMN inside
+    // policeIncidents/policeIncidentsHistorical (the "911 LINKED" badge reads
+    // it off the crime row) — this view never fetches the 911 dispatch
+    // dataset itself.
+    sources: ['policeIncidents', 'policeIncidentsHistorical'],
+    staticSources: ['sf-analysis-neighborhoods', 'acs-2023-5yr'],
   },
   {
     viewId: 'traffic-safety',
@@ -99,6 +119,11 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     eraSource: { datasetKey: 'trafficCrashes', dateField: 'collision_datetime', clamp: [2005, null] },
     underlayPreset: ['medianAge', 'populationDensity', 'pctTransit'],
     omniDatasetKeys: ['trafficCrashes'],
+    // highInjuryNetwork is NOT here yet: TrafficSafety.tsx still fetches it
+    // via a raw `fetch()` (not fetchDataset) — the scan can't see it and the
+    // registry entry has no consumer today.
+    sources: ['pavementCondition', 'redLightCameras', 'speedCameras', 'trafficCrashes'],
+    staticSources: ['sf-analysis-neighborhoods', 'acs-2023-5yr'],
   },
   {
     viewId: 'housing',
@@ -115,6 +140,8 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     // worth to convert.
     underlayPreset: ['evictionRate', 'medianRent', 'rentBurden', 'renterPct', 'medianHomeValue'],
     omniDatasetKeys: ['evictionNotices', 'buyoutAgreements'],
+    sources: ['buyoutAgreements', 'evictionNotices'],
+    staticSources: ['sf-analysis-neighborhoods', 'acs-2023-5yr'],
   },
   {
     viewId: 'elections',
@@ -123,6 +150,10 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     navDescription: 'Live results, RCV & historical playback',
     accentColor: '#616a96', // indigo-500 — civic ceremony
     homeCard: { title: 'Elections', subtitle: 'SF Dept of Elections · Results & RCV', order: 11 },
+    // No `sources` — Elections is NOT Socrata (see CLAUDE.md); it reads
+    // static JSON built by scripts/build-election-results.mjs etc., never
+    // useDataset/fetchDataset against the city registry.
+    staticSources: ['sf-elections-results', 'sf-precincts-2012', 'sf-precincts-2022', 'sf-cvr-20241105', 'sf-analysis-neighborhoods'],
   },
   {
     viewId: 'campaign-finance',
@@ -132,6 +163,7 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     accentColor: '#8b6282', // plum-500 — campaign finance / agency routing
     homeCard: { title: 'Campaign Finance', subtitle: 'SF Ethics Commission Filings', order: 12 },
     omniDatasetKeys: ['campaignFinance'],
+    sources: ['campaignFinance'],
   },
   {
     viewId: 'city-budget',
@@ -141,6 +173,7 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     accentColor: '#b58620', // ochre-600 — money / traditional ledger
     homeCard: { title: 'City Budget', subtitle: 'SF Controller · Spending & Vendors', order: 13 },
     omniDatasetKeys: ['vendorPayments', 'budget', 'spendingRevenue'],
+    sources: ['budget', 'spendingRevenue', 'supplierContracts', 'vendorPayments'],
   },
   {
     viewId: 'parking-revenue',
@@ -152,6 +185,8 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     eraSource: { datasetKey: 'parkingRevenue', dateField: 'session_start_dt', clamp: [2017, null] },
     underlayPreset: ['medianIncome', 'populationDensity'],
     omniDatasetKeys: ['parkingRevenue'],
+    sources: ['parkingMeters', 'parkingRevenue'],
+    staticSources: ['sf-analysis-neighborhoods', 'acs-2023-5yr'],
   },
   {
     viewId: 'dispatch-911',
@@ -160,7 +195,15 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     navDescription: 'Sensitive call temporal patterns',
     accentColor: '#474e74', // indigo-600 — rare cool, sensitivity
     homeCard: { title: '911 Dispatch: Sensitive Calls', subtitle: 'SFPD Temporal Pattern Analysis', order: 3 },
+    // KNOWN CONFLICT (flagged to Jesse, task-5 report): this view never
+    // fetches dispatch911Realtime — the scan confirms 'dispatch911Historical'
+    // is the only key this view's own files or hooks touch — yet
+    // omniDatasetKeys below carries it because useOmniSearch.test.ts pins
+    // 'dataset-dispatch911Realtime' → '/dispatch-911'. `sources` here is the
+    // scan-true value, which means the `omni ⊆ sources` membership check
+    // FAILS for this entry until that routing decision is revisited.
     omniDatasetKeys: ['dispatch911Realtime', 'dispatch911Historical'],
+    sources: ['dispatch911Historical'],
   },
   {
     viewId: '311-cases',
@@ -172,6 +215,8 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     eraSource: { datasetKey: 'cases311', dateField: 'requested_datetime', clamp: [2008, null] },
     underlayPreset: ['rentBurden', 'lepRate', 'pctHispanic'],
     omniDatasetKeys: ['cases311'],
+    sources: ['cases311'],
+    staticSources: ['sf-analysis-neighborhoods', 'acs-2023-5yr'],
   },
   {
     viewId: 'parking-citations',
@@ -191,6 +236,8 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     },
     underlayPreset: ['medianIncome', 'renterPct', 'pctDriveAlone'],
     omniDatasetKeys: ['parkingCitations'],
+    sources: ['parkingCitations'],
+    staticSources: ['sf-analysis-neighborhoods', 'acs-2023-5yr'],
   },
   {
     viewId: 'business-activity',
@@ -201,6 +248,8 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     homeCard: { title: 'Business Activity', subtitle: 'Opening & Closing Trends', order: 9 },
     underlayPreset: ['medianIncome', 'pctBachelorsPlus', 'pctAsian'],
     omniDatasetKeys: ['businessLocations'],
+    sources: ['businessLocations'],
+    staticSources: ['sf-analysis-neighborhoods', 'acs-2023-5yr'],
   },
   {
     viewId: 'business',
@@ -208,6 +257,7 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     navShortLabel: 'BS',
     navDescription: 'Search businesses, chains, and owners',
     accentColor: '#3f7573', // teal-600 — info, twin to BA but cooler
+    sources: ['businessLocations'],
   },
   {
     viewId: 'demographics',
@@ -216,6 +266,11 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     navDescription: 'Census demographics & civic correlations',
     accentColor: '#8b6282', // plum-500 — editorial cool, civic profiling
     homeCard: { title: 'Demographics Explorer', subtitle: 'U.S. Census Bureau · ACS Estimates', order: 10 },
+    // Six keys behind the civic-metric scatter's Y axis (useCivicMetrics).
+    sources: ['businessLocations', 'cases311', 'fireIncidents', 'parkingCitations', 'policeIncidents', 'trafficCrashes'],
+    // ACS FIRST: this is a static-led view (no map-sample/window-sample
+    // citable purpose) — the panel and pill face lead with the first entry.
+    staticSources: ['acs-2023-5yr', 'sf-analysis-neighborhoods', 'sf-tract-assignment'],
   },
   {
     viewId: 'neighborhood',
@@ -223,6 +278,8 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     navShortLabel: 'NH',
     navDescription: 'Cross-dataset civic profiles',
     accentColor: '#5c9693', // teal-500 — Dana's color, civic-place
+    sources: ['cases311', 'fireEMSDispatch', 'parkingCitations', 'policeIncidents', 'trafficCrashes'],
+    staticSources: ['sf-analysis-neighborhoods', 'acs-2023-5yr'],
   },
   {
     viewId: 'about',
