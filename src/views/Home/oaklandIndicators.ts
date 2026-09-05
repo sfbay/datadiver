@@ -1,5 +1,6 @@
 import { parseSfLocal } from '@/utils/sfTime'
 import { apMonthDay } from '@/utils/comparisonMode'
+import { CITIES } from '@/cities/registry'
 
 /**
  * Pure framing logic for the Oakland landing ticker (spec §B2).
@@ -24,13 +25,17 @@ import { apMonthDay } from '@/utils/comparisonMode'
  * (complete by construction) and names the cycle — "filed through
  * max(tran_date)" was rejected as fabricated completeness (the current
  * semiannual is unfiled; that max rests on outlier rows).
+ * Edges are authored on the registry entries (`completeness.edgeDays`);
+ * this constant derives them.
  */
+const oakEdge = (key: string) => CITIES.oakland.datasets[key].completeness!.edgeDays
+
 export const OAK_TICKER_EDGES = {
-  crimeEdgeDays: 8,
+  crimeEdgeDays: oakEdge('policeIncidents'),
   crimeSuppressMaxAgeDays: 14,
-  threeOneOneEdgeDays: 1,
+  threeOneOneEdgeDays: oakEdge('cases311'),
   threeOneOneSuppressMaxAgeDays: 3,
-  citationsEdgeDays: 1,
+  citationsEdgeDays: oakEdge('parkingCitations'),
 } as const
 
 /** Date-only window [end − spanDays + 1, end] where end = max − edgeDays.

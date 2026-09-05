@@ -55,6 +55,20 @@ describe('city registry', () => {
   it('sf census has no regions block — its neighborhoods are both spines', () => {
     expect(CITIES.sf.census!.regions).toBeUndefined()
   })
+  it('every entry in BOTH cities names its publisher (short + full)', () => {
+    for (const city of Object.values(CITIES)) {
+      for (const [key, cfg] of Object.entries(city.datasets)) {
+        expect(cfg.publisher?.short.length, `${city.id}/${key}`).toBeGreaterThan(0)
+        expect(cfg.publisher?.full.length, `${city.id}/${key}`).toBeGreaterThan(0)
+        expect(cfg.publisher?.full, `${city.id}/${key}`).not.toMatch(/TransBASE/)
+      }
+    }
+  })
+  it('completeness edges exist on exactly the three measured Oakland streams', () => {
+    const withEdge = Object.entries(CITIES.oakland.datasets).filter(([, c]) => c.completeness).map(([k, c]) => `${k}:${c.completeness!.edgeDays}`)
+    expect(withEdge.sort()).toEqual(['cases311:1', 'parkingCitations:1', 'policeIncidents:8'])
+    expect(Object.values(CITIES.sf.datasets).some((c) => c.completeness)).toBe(false)
+  })
 })
 
 describe('manifest liveness (stage 3)', () => {
