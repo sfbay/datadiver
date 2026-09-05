@@ -111,7 +111,8 @@ export default function ChainMap({ locations, height = 280 }: ChainMapProps) {
 
   return (
     <div className="glass-card rounded-xl overflow-hidden" style={{ height }}>
-      <MapView onMapReady={handleReady} />
+      {/* overflow-hidden on this thumbnail would clip the pill's up-opening panel. */}
+      <MapView onMapReady={handleReady} showSourcePill={false} />
     </div>
   )
 }

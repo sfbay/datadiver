@@ -16,6 +16,16 @@ import { sfLocalCutoff } from '@/utils/sfTime'
 
 const LINK = 'underline decoration-paper-400/40 underline-offset-2 hover:text-ink dark:hover:text-paper-100 transition-colors'
 
+// Per-QUERY, not per-dataset (fix-round-1 finding 4): a dataset can register
+// both a distinct-count aggregate (stat-totals) and a plain row sample
+// (map-sample) — pasting the note under the sample too claimed a unit
+// correction that query never needed.
+const UNIT_NOTE_RE = /count\(distinct (incident_number|casenumber|call_number)\)/
+const unitNoteFor = (rec: CitableQuery): string | undefined =>
+  UNIT_NOTE_RE.test(rec.params.$select ?? '')
+    ? 'Counts are distinct cases or calls, not rows — the publisher files one row per charge or per unit dispatched.'
+    : undefined
+
 function CopyButton({ text, label }: { text: string; label: string }) {
   const [done, setDone] = useState(false)
   const copy = useCallback(() => {
@@ -31,7 +41,12 @@ function CopyButton({ text, label }: { text: string; label: string }) {
 function QueryBlock({ rec, unitNote }: { rec: CitableQuery; unitNote?: string }) {
   const [full, setFull] = useState(false)
   const label = `${PURPOSE_LABEL[rec.purpose]}${rec.facet ? ` — ${rec.facet}` : ''}`
-  const count = rec.hitLimit ? `newest ${rec.rowCount.toLocaleString('en-US')} rows (capped)` : `${rec.rowCount.toLocaleString('en-US')} row${rec.rowCount === 1 ? '' : 's'}`
+  // A one-row aggregate is a GROUP total, not "a record" — say so when the
+  // query grouped (fix-round-1 finding 5); an ungrouped query still counts rows.
+  const unit = rec.params.$group ? 'group' : 'row'
+  const count = rec.hitLimit
+    ? `newest ${rec.rowCount.toLocaleString('en-US')} rows (capped)`
+    : `${rec.rowCount.toLocaleString('en-US')} ${unit}${rec.rowCount === 1 ? '' : 's'}`
   return (
     <div className="mt-2">
       <p className="text-label text-ink dark:text-paper-100">
@@ -61,8 +76,6 @@ function DatasetBlock({ s, records, citable, nowYear, open, onTitle }: { s: Sour
   const updated = meta?.rowsUpdatedAt ? ` · publisher updated ${apDate(sfLocalCutoff(meta.rowsUpdatedAt), nowYear)}` : ''
   const license = meta ? (meta.licenseName ? <>License: {meta.licenseUrl ? <a className={LINK} href={meta.licenseUrl} target="_blank" rel="noopener noreferrer">{meta.licenseName}</a> : meta.licenseName}</> : <>License: not stated by the publisher</>) : null
   const ordered = citable.flatMap((p) => mine.filter((r) => r.purpose === p && r.purpose !== 'freshness'))
-  const unitNote = /count\(distinct (incident_number|casenumber|call_number)\)/.test(mine.map((r) => r.params.$select ?? '').join(' '))
-    ? 'Counts are distinct cases or calls, not rows — the publisher files one row per charge or per unit dispatched.' : undefined
   return (
     <section className="pb-3 mb-3 border-b border-paper-200/60 dark:border-espresso-800 last:border-0">
       <p className="text-nano font-mono uppercase tracking-[0.2em] text-paper-600 dark:text-paper-400">── {s.publisher.short}</p>
@@ -72,7 +85,7 @@ function DatasetBlock({ s, records, citable, nowYear, open, onTitle }: { s: Sour
       </p>
       {(through || updated) && <p className="text-micro text-paper-600 dark:text-paper-400">{through ?? ''}{updated}</p>}
       {license && <p className="text-micro text-paper-600 dark:text-paper-400">{license}</p>}
-      {ordered.map((r) => <QueryBlock key={`${r.purpose}|${r.facet ?? ''}`} rec={r} unitNote={unitNote} />)}
+      {ordered.map((r) => <QueryBlock key={`${r.purpose}|${r.facet ?? ''}`} rec={r} unitNote={unitNoteFor(r)} />)}
       {citable.length > 0 && ordered.length === 0 && <p className="text-micro text-paper-500 mt-1">— queries not registered yet</p>}
       <p className="text-micro font-mono mt-2"><a className={LINK} href={fullCsvUrl(s.host!, s.socrataId!)} target="_blank" rel="noopener noreferrer">Full dataset (CSV) ↗</a></p>
     </section>

@@ -172,9 +172,14 @@ interface MapViewProps {
   children?: React.ReactNode
   className?: string
   camera?: MapCamera
+  /** Opt out for embedded maps the pill was never meant for — a picker that
+   *  draws no dataset (LocationPicker) or a thumbnail whose clipped
+   *  container would cut off the up-opening panel (ChainMap). Defaults to
+   *  true; every dataset-view map keeps the pill with no call-site change. */
+  showSourcePill?: boolean
 }
 
-const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, className = '', camera }, ref) => {
+const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, className = '', camera, showSourcePill = true }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
   const [isReady, setIsReady] = useState(false)
@@ -377,9 +382,11 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
         <div className="pointer-events-auto">
           {children}
         </div>
-        <div className="pointer-events-auto">
-          <SourcePill />
-        </div>
+        {showSourcePill && (
+          <div className="pointer-events-auto">
+            <SourcePill />
+          </div>
+        )}
       </div>
       {/* Debug camera readout — opt-in via ?debug=map */}
       {debugCam && (
