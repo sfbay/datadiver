@@ -1,5 +1,6 @@
 import { InvestigationCard, ErrorState } from './InvestigationCard'
 import { useDispatchUnanswered } from '@/hooks/useDispatchUnanswered'
+import { CITIES } from '@/cities/registry'
 
 /** Color for an outcome label — earth-tone tier palette. */
 function outcomeColor(label: string): string {
@@ -22,7 +23,7 @@ export default function DispatchUnanswered() {
       headline={headline}
       subtitle="Fire/EMS Dispatch · Calls exceeding 10-min response target"
       explorePath="/emergency-response"
-      sourceName="SFFD Dispatch Data"
+      sourceName={`${CITIES.sf.datasets.fireEMSDispatch.publisher.short} · Fire/EMS dispatch`}
       isLoading={isLoading || (!data && !error)}
     >
       {error ? (

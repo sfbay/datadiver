@@ -5,6 +5,7 @@ import React, { useState } from 'react'
 import type { CensusVariable } from '../../types/census'
 import type { NeighborhoodCensusData } from '../../types/census'
 import DataSourceLine from './DataSourceLine'
+import { NON_SOCRATA } from '@/lib/provenance/nonSocrata'
 
 interface NeighborhoodCensusContextProps {
   neighborhood: string
@@ -239,9 +240,9 @@ export default function NeighborhoodCensusContext({
               {/* Attribution */}
               <div className="border-t border-white/8 pt-2">
                 <DataSourceLine
-                  dataset="ACS 5-Year Estimates"
-                  source="Census Bureau"
-                  vintage="2020-2024"
+                  dataset={NON_SOCRATA['acs-2023-5yr'].title}
+                  source={NON_SOCRATA['acs-2023-5yr'].publisher.short}
+                  vintage={NON_SOCRATA['acs-2023-5yr'].vintage}
                 />
               </div>
             </>

@@ -61,4 +61,11 @@ describe('NON_SOCRATA', () => {
   it('the CVR upstream URL matches the fetch script byte-for-byte', () => {
     expect(cvrSourcesText).toContain(NON_SOCRATA['sf-cvr-20241105'].upstreamUrl)
   })
+  it('the ACS vintage is the one real vintage DataDiver serves', () => {
+    expect(NON_SOCRATA['acs-2023-5yr'].vintage).toBe('ACS 2019–2023 5-year estimates')
+  })
+  it('the neighborhood census sidebar no longer hardcodes the wrong vintage', () => {
+    const src = readFileSync('src/components/ui/NeighborhoodCensusContext.tsx', 'utf8')
+    expect(src).not.toContain('2020-2024')
+  })
 })

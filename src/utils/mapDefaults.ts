@@ -408,6 +408,6 @@ export function applyCameraView(
     // it on selection flights must also pass it on reset flights, or the
     // reset inherits a stale offset (see useMapCameraPresets.viewportPadding).
     ...(padding ? { padding } : {}),
-    essential: true, // honors prefers-reduced-motion automatically
+    essential: true, // NOT reduced-motion aware: essential animations run even under prefers-reduced-motion (Mapbox semantics)
   })
 }

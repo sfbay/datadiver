@@ -21,7 +21,8 @@ import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
 import { useAppStore } from '@/stores/appStore'
 import { resolveComparisonStart, comparisonLabel } from '@/utils/comparisonMode'
 import type { TrafficCrashRecord, CrashModeAggRow, NeighborhoodAggRowCrashes, SpeedCameraRecord, RedLightCameraRecord, PavementConditionRecord } from '@/types/datasets'
-import { formatDelta, formatNumber, formatHour, formatDate } from '@/utils/time'
+import { formatDelta, formatNumber, formatHour } from '@/utils/time'
+import { apDate } from '@/utils/apDate'
 import { parseSfLocal } from '@/utils/sfTime'
 import { CRASH_SEVERITY_COLORS } from '@/utils/colors'
 import MapView, { type MapHandle } from '@/components/maps/MapView'
@@ -396,7 +397,7 @@ export default function TrafficSafety() {
   const cardDefsWithFreshness = useMemo(() => {
     if (trend.truncatedDays <= 2) return cardDefs
     return cardDefs.map((c) => c.id === 'total'
-      ? { ...c, subtitle: `Both windows end ${formatDate(trend.effectiveEnd)} — crash data publishes ~4–6 weeks behind` }
+      ? { ...c, subtitle: `Both windows end ${apDate(trend.effectiveEnd, new Date().getFullYear())} — crash data publishes ~4–6 weeks behind` }
       : c
     )
   }, [cardDefs, trend.truncatedDays, trend.effectiveEnd])
