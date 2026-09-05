@@ -430,7 +430,7 @@ export default function Neighborhood() {
         </div>
 
         {/* Legend */}
-        <div className="absolute bottom-6 left-4 z-10 glass-card rounded-xl px-3 py-2">
+        <div className="absolute bottom-11 left-4 z-10 glass-card rounded-xl px-3 py-2">
           <p className="text-[8px] font-mono uppercase tracking-[0.15em] text-slate-500 mb-1.5">
             Composite Z-Score
           </p>

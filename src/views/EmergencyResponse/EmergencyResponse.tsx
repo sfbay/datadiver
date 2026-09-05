@@ -915,7 +915,7 @@ export default function EmergencyResponse() {
 
             {/* Histogram + Trend — bottom left */}
             {isLoading && (
-              <div className="absolute bottom-6 left-5 z-10">
+              <div className="absolute bottom-11 left-5 z-10">
                 <SkeletonChart width={320} height={100} />
               </div>
             )}
