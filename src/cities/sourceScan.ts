@@ -2,7 +2,7 @@
 // Scans view source files for the dataset keys they fetch and the cite
 // purposes they tag, so sources.test.ts can pin manifest ⇔ code.
 import { readdirSync, readFileSync, statSync } from 'node:fs'
-import { join, resolve, dirname, extname } from 'node:path'
+import { join, resolve, dirname, extname, sep } from 'node:path'
 
 const FETCH_RE = /\b(?:useDataset|fetchDataset)(?:<[^();]*?>)?\(\s*('([A-Za-z0-9]+)'|[^'\s)])/g
 const IMPORT_RE = /from\s+'((?:\.{1,2}\/|@\/(?:hooks|views|components)\/)[^']+)'/g
@@ -27,19 +27,31 @@ function resolveImport(fromFile: string, spec: string, root: string): string | n
 }
 
 /** Every non-test .ts/.tsx under viewDir, plus every module those files
- *  import (one level) by a relative path or from @/hooks, @/views,
- *  @/components — minus the cross-cutting allow-list (basenames). */
+ *  import TRANSITIVELY by a relative path or from @/hooks, @/views,
+ *  @/components — minus the cross-cutting allow-list (basenames), applied at
+ *  every hop. This codebase's common shape is view → component → hook (depth
+ *  2+): a one-level walk was blind to it (a real, uncredited-source bug —
+ *  see sources.test.ts's history). Bounded to `<root>/src` so a walk can
+ *  never wander into node_modules or above the source tree. */
 export function collectScanSet(viewDir: string, opts: { root: string; allow: readonly string[] }): string[] {
+  const srcRoot = join(opts.root, 'src') + sep
   const own = listFiles(viewDir)
-  const set = new Set(own)
-  for (const file of own) {
+  const visited = new Set<string>(own)
+  const queue = [...own]
+  while (queue.length > 0) {
+    const file = queue.shift()!
     const text = readFileSync(file, 'utf8')
     for (const m of text.matchAll(IMPORT_RE)) {
       const target = resolveImport(file, m[1], opts.root)
-      if (target && !opts.allow.some((a) => target.endsWith(`/${a}.ts`) || target.endsWith(`/${a}.tsx`))) set.add(target)
+      if (!target) continue
+      if (opts.allow.some((a) => target.endsWith(`/${a}.ts`) || target.endsWith(`/${a}.tsx`))) continue
+      if (!target.startsWith(srcRoot)) continue
+      if (visited.has(target)) continue
+      visited.add(target)
+      queue.push(target)
     }
   }
-  return [...set].sort()
+  return [...visited].sort()
 }
 
 export function scanFetchedKeys(

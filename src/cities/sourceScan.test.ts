@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { scanFetchedKeys, scanCitePurposes } from './sourceScan'
+import { join } from 'node:path'
+import { collectScanSet, scanFetchedKeys, scanCitePurposes } from './sourceScan'
 
 const multiline = `
   const a = useDataset<Row>(
@@ -36,6 +37,21 @@ describe('scanFetchedKeys', () => {
     const { keys, unresolved } = scanFetchedKeys([{ file: 'y.ts', text }], {})
     expect([...keys].sort()).toEqual(['evictionNotices', 'parkingCitations'])
     expect(unresolved).toEqual([])
+  })
+})
+
+describe('collectScanSet', () => {
+  it('follows imports transitively — a hook reached through a component is in the set', () => {
+    const set = collectScanSet(join(process.cwd(), 'src/views/CrimeIncidents'), {
+      root: process.cwd(),
+      allow: ['useDataset', 'useDataFreshness'],
+    })
+    // CrimeIncidents → CrimeDetailPanel → useDispatchCrossRef is depth 2.
+    expect(set.some((f) => f.endsWith('/useDispatchCrossRef.ts'))).toBe(true)
+  })
+  it('never walks out of src/', () => {
+    const set = collectScanSet(join(process.cwd(), 'src/views/CrimeIncidents'), { root: process.cwd(), allow: [] })
+    for (const f of set) expect(f.startsWith(join(process.cwd(), 'src'))).toBe(true)
   })
 })
 

@@ -102,11 +102,13 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     },
     underlayPreset: ['medianIncome', 'pctAsian', 'populationDensity'],
     omniDatasetKeys: ['policeIncidents'],
-    // NOT dispatch911Historical: cad_number is a COLUMN inside
-    // policeIncidents/policeIncidentsHistorical (the "911 LINKED" badge reads
-    // it off the crime row) — this view never fetches the 911 dispatch
-    // dataset itself.
-    sources: ['policeIncidents', 'policeIncidentsHistorical'],
+    // dispatch911Historical IS fetched here, one level deeper than the row
+    // above once claimed: CrimeIncidents → CrimeDetailPanel.tsx →
+    // useDispatchCrossRef.ts, which fetches the matching 911 dispatch call
+    // for a selected incident carrying a CAD number (cad_number itself is
+    // still just a column on policeIncidents/policeIncidentsHistorical — the
+    // detail panel's cross-reference is the actual second fetch).
+    sources: ['dispatch911Historical', 'policeIncidents', 'policeIncidentsHistorical'],
     staticSources: ['sf-analysis-neighborhoods', 'acs-2023-5yr'],
   },
   {
