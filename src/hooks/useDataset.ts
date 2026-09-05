@@ -4,6 +4,7 @@ import type { DatasetKey } from '@/api/datasets'
 import { registerQuery, completeQuery } from '@/hooks/useLoadingProgress'
 import { useRouteView } from '@/cities/useActiveCity'
 import type { CityId } from '@/cities/routing'
+import { clearCitationSlot } from '@/lib/provenance/citations'
 
 interface UseDatasetResult<T> {
   data: T[]
@@ -66,6 +67,13 @@ export function useDataset<T>(
       setData([])
       setError(null)
       setIsLoading(false)
+      // A disabled query is no longer behind anything on screen — the
+      // citation pill must stop citing whatever it recorded while this
+      // query was last enabled, or it keeps showing a query for a layer the
+      // reader just turned off.
+      if (options.cite) {
+        clearCitationSlot(cityId, options.cite.viewId, options.cite.purpose, datasetKey, options.cite.facet)
+      }
       return
     }
     let cancelled = false
