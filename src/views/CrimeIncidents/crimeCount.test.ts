@@ -93,6 +93,13 @@ describe('no SF crime query counts rows', () => {
     })
   }
 
+  it('the Demographics civic-metric panel counts cases, not charge rows', () => {
+    const src = readFileSync('src/utils/censusVariables.ts', 'utf8')
+    const entry = src.slice(src.indexOf("key: 'crimeCount'"), src.indexOf("key: 'cases311Count'"))
+    expect(entry).toContain('count(distinct incident_number)')
+    expect(entry).not.toMatch(/COUNT\(\*\)/)
+  })
+
   it('the view feeds its trend baseline a case-level countExpr', () => {
     const src = readFileSync('src/views/CrimeIncidents/CrimeIncidents.tsx', 'utf8')
     expect(src).toContain('countExpr: SF_CRIME_COUNT')

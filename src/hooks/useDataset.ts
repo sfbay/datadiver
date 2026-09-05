@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { fetchDataset, type SoQLParams } from '@/api/client'
+import { fetchDataset, DEFAULT_LIMIT, type SoQLParams, type CiteTag } from '@/api/client'
 import type { DatasetKey } from '@/api/datasets'
 import { registerQuery, completeQuery } from '@/hooks/useLoadingProgress'
 import { useRouteView } from '@/cities/useActiveCity'
@@ -33,6 +33,9 @@ interface UseDatasetOptions {
   /** Forwarded to `fetchDataset` — re-attempts on timeout/network/non-OK. */
   retries?: number
   cityId?: CityId
+  /** Identity metadata for the citation recorder — NOT a query input, so it
+   *  is deliberately absent from the effect's dependency array below. */
+  cite?: CiteTag
 }
 
 /** React hook for fetching Socrata dataset data with loading/error state */
@@ -77,6 +80,7 @@ export function useDataset<T>(
           timeoutMs: options.timeoutMs,
           retries: options.retries,
           cityId,
+          cite: options.cite,
         })
         if (!cancelled) {
           setData(result)
@@ -104,7 +108,7 @@ export function useDataset<T>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [datasetKey, paramsKey, refetchKey, enabled, cityId, ...deps])
 
-  const hitLimit = !isLoading && data.length > 0 && data.length === (params.$limit ?? 1000)
+  const hitLimit = !isLoading && data.length > 0 && data.length === (params.$limit ?? DEFAULT_LIMIT)
 
   return { data, isLoading, error, hitLimit, refetch }
 }

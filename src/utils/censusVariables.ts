@@ -574,7 +574,7 @@ export const CIVIC_METRICS: CivicMetricConfig[] = [
     label: 'Crime Incidents',
     datasetKey: 'policeIncidents',
     neighborhoodField: 'analysis_neighborhood',
-    selectClause: 'analysis_neighborhood, COUNT(*) as value',
+    selectClause: 'analysis_neighborhood, count(distinct incident_number) as value',
     sourceView: 'Crime Incidents',
   },
   {

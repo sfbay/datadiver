@@ -33,6 +33,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
 import { fetchDataset } from '@/api/client'
+import type { ViewId } from '@/cities/manifest'
 import { usePollCadence } from '@/hooks/usePollCadence'
 import {
   LAST48_DATASETS,
@@ -238,6 +239,10 @@ function buildEmptyFreshness(): FreshnessMap {
 
 export function useLast48Window(opts: {
   datasets: DatasetId[]
+  /** Identity metadata for the citation recorder — one facet per stream
+   *  (facet: datasetId) so the three streams never share a slot even though
+   *  purpose alone would collide. */
+  cite?: { viewId: ViewId; sample: 'window-sample'; count: 'window-count' }
 }): Last48WindowResult {
   // ── Stable enabled-set memo ──────────────────────────────────────────────
   const enabledSet = useMemo(() => new Set(opts.datasets), [opts.datasets])
@@ -378,7 +383,10 @@ export function useLast48Window(opts: {
           // DATASET_REGISTRY_KEY values are verified against datasets.ts
           registryKey as Parameters<typeof fetchDataset>[0],
           queryParams,
-          { skipCache: true, timeoutMs: FETCH_TIMEOUT_MS, retries: FETCH_RETRIES }
+          {
+            skipCache: true, timeoutMs: FETCH_TIMEOUT_MS, retries: FETCH_RETRIES,
+            cite: opts.cite ? { viewId: opts.cite.viewId, purpose: opts.cite.sample, facet: datasetId } : undefined,
+          }
         )
 
         const now = Date.now()
@@ -502,7 +510,10 @@ export function useLast48Window(opts: {
               const countRows = await fetchDataset<{ cnt: string }>(
                 registryKey as Parameters<typeof fetchDataset>[0],
                 { $select: `${LAST48_COUNT_EXPR[datasetId]} as cnt`, $where: `${dateField} >= '${cutoff}'`, $limit: 1 },
-                { skipCache: true, timeoutMs: COUNT_TIMEOUT_MS, retries: COUNT_RETRIES },
+                {
+                  skipCache: true, timeoutMs: COUNT_TIMEOUT_MS, retries: COUNT_RETRIES,
+                  cite: opts.cite ? { viewId: opts.cite.viewId, purpose: opts.cite.count, facet: datasetId } : undefined,
+                },
               )
               const parsed = parseInt(countRows[0]?.cnt ?? '', 10)
               const n = Number.isFinite(parsed) ? parsed : null
