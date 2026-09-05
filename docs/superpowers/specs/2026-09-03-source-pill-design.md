@@ -364,3 +364,24 @@ Browser walk (not automatable here): pill + panel on all twelve views, both them
 ## 14. Plan Task 1 — measure first
 
 Before any component is built: run the fetched-⇔-declared scan against the tree and correct §4's table; in a browser measure the Mapbox bottom-left stack (`getBoundingClientRect` of `.mapboxgl-ctrl-logo`, `.mapboxgl-ctrl-group`, `.mapboxgl-ctrl-attrib`) at the three type scales and both themes, and confirm the PNG export renders the logo and the "i"; bake the pill's `left`/`bottom` constants and the `ChartTray` padding from those numbers.
+
+### Results (2026-09-05) — derived, not measured
+
+The Chrome bridge was down for the whole execution session (`list_connected_browsers`
+returned `[]`; Chrome's network process was not dialing Anthropic while the Claude
+desktop app held the bridge, and both rungs of the recovery ladder need the user).
+No measurement was taken. Task 8 bakes the expected values, which are derived from
+the Mapbox control stack's own margins:
+
+| constant | value | derivation |
+|---|---|---|
+| PILL_LEFT_PX | 106 | 10px control margin + 88px wordmark + 8px gap |
+| PILL_BOTTOM_PX | 10 | the wordmark's own bottom margin |
+| CHARTTRAY_PB (desk) | pb-10 (40px) | smallest Tailwind step clearing 10 + 23 + 6 |
+
+PNG: logo rendered = unverified · "i" rendered = unverified.
+
+These are the values Task 8 ships. The first browser walk after the bridge is
+restored is the acceptance gate: if the pill does not sit flush right of the
+wordmark, correct PILL_LEFT_PX / PILL_BOTTOM_PX in `src/components/maps/SourcePill.tsx`
+and re-run this block with real numbers.
