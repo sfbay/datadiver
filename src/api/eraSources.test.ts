@@ -1,7 +1,7 @@
-import { readFileSync } from 'node:fs'
 import { describe, it, expect } from 'vitest'
 import { eraSourceFor, buildEraQuery, buildHistoricalEraQuery, eraDomain } from './eraSources'
 import { CITIES } from '@/cities/registry'
+import { SOURCE_NOTES } from '@/views/About/sourceNotes'
 
 // Every registered era source, across every city — the integrity suite runs
 // on manifest entries so a stage-2 Oakland table inherits the same gates.
@@ -121,9 +121,7 @@ describe('clamp disclosure', () => {
   // year and never the year the chart starts, and it was clipped mid-word at
   // every type scale. A warning worn by the chrome reads as a warning about
   // the numbers. Site-wide label audit banked as future work.
-  const about = readFileSync('src/views/About/About.tsx', 'utf8')
-  const noteFor = (id: string) =>
-    about.match(new RegExp(`id: '${id}'[^}]*note: '([^']*)'`))?.[1] ?? ''
+  const noteFor = (id: string) => SOURCE_NOTES[id] ?? ''
 
   it('no era source carries an axis note any more', () => {
     for (const city of ['sf', 'oakland'] as const) {
