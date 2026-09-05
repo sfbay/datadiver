@@ -44,6 +44,8 @@ export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
       clamp: [2004, null],
     },
     omniDatasetKeys: ['policeIncidents'],
+    sources: ['policeIncidents'],
+    staticSources: ['oak-beats'],
   },
   {
     viewId: '311-cases',
@@ -54,6 +56,8 @@ export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
     homeCard: { title: '311 Service Requests', subtitle: 'Next-day civic maintenance signals', order: 2 },
     eraSource: { datasetKey: 'cases311', dateField: 'datetimeinit', clamp: [2013, null] },
     omniDatasetKeys: ['cases311'],
+    sources: ['cases311'],
+    staticSources: ['oak-beats'],
   },
   {
     viewId: 'parking-citations',
@@ -64,6 +68,8 @@ export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
     homeCard: { title: 'Parking Citations', subtitle: 'Enforcement patterns, beat by beat', order: 3 },
     eraSource: { datasetKey: 'parkingCitations', dateField: 'ticket_iss', clamp: [2018, null] },
     omniDatasetKeys: ['parkingCitations'],
+    sources: ['parkingCitations'],
+    staticSources: ['oak-beats'],
   },
   {
     viewId: 'campaign-finance',
@@ -77,6 +83,7 @@ export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
     // absent — its amount_a is cumulative-ish (10–20× transaction sums;
     // summing it fabricates money).
     omniDatasetKeys: ['fppcSchA', 'fppcSchE', 'fppc496', 'fppc497'],
+    sources: ['fppc496', 'fppc497', 'fppcSchA', 'fppcSchE'],
   },
   {
     viewId: 'demographics',
@@ -97,5 +104,16 @@ export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
     // unconditionally, so the control stays visible and inert exactly as it
     // already does on /live and /oakland.
     dateless: true,
+    // SURPRISING but scan-true: Demographics.tsx is the SAME component SF
+    // mounts, and it imports useCivicMetrics (the civic-metric scatter's data
+    // hook) even though that scatter is withheld on Oakland at render time
+    // (censusMatchesAreas() gates it off). The scan is static — it can't see
+    // that runtime gate — so it reports the 3 of useCivicMetrics's 6
+    // hardcoded keys that also happen to exist in Oakland's own registry
+    // (cases311, parkingCitations, policeIncidents; fireIncidents/
+    // trafficCrashes/businessLocations don't, so those three drop out here).
+    // None of these three ever actually fire a request on Oakland.
+    sources: ['cases311', 'parkingCitations', 'policeIncidents'],
+    staticSources: ['acs-2023-5yr', 'oak-neighborhoods'],
   },
 ]
