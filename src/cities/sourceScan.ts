@@ -26,16 +26,23 @@ function resolveImport(fromFile: string, spec: string, root: string): string | n
   return null
 }
 
-/** Every non-test .ts/.tsx under viewDir, plus every module those files
- *  import TRANSITIVELY by a relative path or from @/hooks, @/views,
+/** Every non-test .ts/.tsx reachable from `seed`, plus every module those
+ *  files import TRANSITIVELY by a relative path or from @/hooks, @/views,
  *  @/components — minus the cross-cutting allow-list (basenames), applied at
  *  every hop. This codebase's common shape is view → component → hook (depth
  *  2+): a one-level walk was blind to it (a real, uncredited-source bug —
  *  see sources.test.ts's history). Bounded to `<root>/src` so a walk can
- *  never wander into node_modules or above the source tree. */
-export function collectScanSet(viewDir: string, opts: { root: string; allow: readonly string[] }): string[] {
+ *  never wander into node_modules or above the source tree.
+ *
+ *  `seed` is usually a directory (every file under it starts the walk) — but
+ *  when one directory holds two different top-level components for two
+ *  different callers (e.g. `src/views/Home` is both SF's `Home.tsx` and
+ *  Oakland's `CityLanding.tsx`), pass the SPECIFIC entry file instead: only
+ *  that file (and whatever it transitively imports) seeds the walk, so the
+ *  scan can't charge one caller with the other's fetches. */
+export function collectScanSet(seed: string, opts: { root: string; allow: readonly string[] }): string[] {
   const srcRoot = join(opts.root, 'src') + sep
-  const own = listFiles(viewDir)
+  const own = statSync(seed).isDirectory() ? listFiles(seed) : [seed]
   const visited = new Set<string>(own)
   const queue = [...own]
   while (queue.length > 0) {

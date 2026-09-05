@@ -27,6 +27,11 @@ export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
     // header picker would be inert while ?start=&end= dirties every shared
     // link (declared delta from SF Home, which consumes dateRange).
     dateless: true,
+    // No `sources`: Oakland's real entry point here is CityLanding.tsx (NOT
+    // Home.tsx — src/views/Home holds both cities' unrelated top-level
+    // components, and sources.test.ts's CITY_VIEW_ENTRY seeds the scan from
+    // the right one per city). CityLanding.tsx's own tree fetches nothing
+    // from the dataset registry — omitted rather than written as `[]`.
   },
   {
     viewId: 'crime-incidents',
