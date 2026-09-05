@@ -95,11 +95,16 @@ const OMNI_ROUTING_ONLY: Record<string, string> = {
  *  otherwise claim sources it never reads. NOTE: this filters the FETCHED
  *  side, so it can only ever hide a false positive — it cannot detect a real
  *  new fetch of these same keys landing unnoticed; whoever lifts the gate
- *  must remember to delete the row rather than wait on a test failure. */
-const NOT_FETCHED_HERE: Record<string, { keys: readonly string[]; why: string }> = {
+ *  must remember to delete the row rather than wait on a test failure.
+ *  `purposes` is the same idea for the `cite` tagged ⇔ declared block below:
+ *  a purpose literal that appears in a shared view file for a reason that
+ *  doesn't apply to this city gets subtracted there too, on the SAME row —
+ *  one exception, one reason, covering both tests. */
+const NOT_FETCHED_HERE: Record<string, { keys: readonly string[]; purposes?: readonly string[]; why: string }> = {
   'oakland/demographics': {
     keys: ['policeIncidents', 'cases311', 'parkingCitations'],
-    why: 'The civic-metric scatter is withheld off SF, so useCivicMetrics never fires here even though Demographics.tsx and the hook are shared with San Francisco. The plausible trigger for deleting this row is Oakland stage 5b (the per-region neighborhood profile, CLAUDE.md → Oakland expansion) — whoever builds it and genuinely wires these three keys into an Oakland fetch path deletes this row.',
+    purposes: ['civic-metric'],
+    why: "The civic-metric scatter is withheld off SF, so useCivicMetrics never fires here even though Demographics.tsx and the hook are shared with San Francisco. The 'civic-metric' cite tag lives on that same shared useCivicMetric call in Demographics.tsx, so a file scan sees it here too even though the tagged query never runs on this city — hence `purposes` alongside `keys`. The plausible trigger for deleting this row is Oakland stage 5b (the per-region neighborhood profile, CLAUDE.md → Oakland expansion) — whoever builds it and genuinely wires these three keys (and the civic-metric axis) into an Oakland fetch path deletes this row.",
   },
 }
 
@@ -175,7 +180,11 @@ describe('manifest citable — tagged ⇔ declared (view files only)', () => {
     for (const entry of liveManifest(city.manifest)) {
       it(`${city.id}/${entry.viewId}`, () => {
         const own = scanSet(city.id, entry.viewId).filter((f) => f.file.startsWith(VIEW_DIRS[entry.viewId]))
-        const tagged = [...scanCitePurposes(own, QUERY_PURPOSES)].sort()
+        // A shared view file can carry a cite tag for a purpose this city's
+        // runtime gate never exercises (see NOT_FETCHED_HERE's `purposes`) —
+        // subtract those before comparing to what the manifest declares.
+        const excludePurposes = new Set(NOT_FETCHED_HERE[`${city.id}/${entry.viewId}`]?.purposes ?? [])
+        const tagged = [...scanCitePurposes(own, QUERY_PURPOSES)].filter((p) => !excludePurposes.has(p)).sort()
         expect(tagged).toEqual([...(entry.citable ?? [])].sort())
       })
     }

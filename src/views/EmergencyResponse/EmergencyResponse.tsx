@@ -123,7 +123,7 @@ export default function EmergencyResponse() {
     return conditions.join(' AND ')
   }, [dateRange, serviceClause, todClause])
 
-  const freshness = useDataFreshness('fireEMSDispatch', 'received_dttm', dateRange)
+  const freshness = useDataFreshness('fireEMSDispatch', 'received_dttm', dateRange, { cite: { viewId: 'emergency-response', purpose: 'freshness' } })
 
   const trendConfig = useMemo((): TrendConfig => ({
     datasetKey: 'fireEMSDispatch',
@@ -198,7 +198,8 @@ export default function EmergencyResponse() {
       $limit: 5000,
       $select: 'call_number,call_type,call_type_group,received_dttm,on_scene_dttm,transport_dttm,hospital_dttm,available_dttm,neighborhoods_analysis_boundaries,supervisor_district,final_priority,case_location',
     },
-    [mapWhereClause]
+    [mapWhereClause],
+    { cite: { viewId: 'emergency-response', purpose: 'map-sample' } }
   )
 
   // Total count query — uses mapWhereClause so the "X of Y" truncation
@@ -208,7 +209,8 @@ export default function EmergencyResponse() {
   const { data: countRows } = useDataset<{ count: string }>(
     'fireEMSDispatch',
     { $select: 'count(*) as count', $where: mapWhereClause },
-    [mapWhereClause]
+    [mapWhereClause],
+    { cite: { viewId: 'emergency-response', purpose: 'scope-count' } }
   )
   const totalCount = countRows[0] ? parseInt(countRows[0].count, 10) : null
 
@@ -226,7 +228,8 @@ export default function EmergencyResponse() {
       $where: validResponseWhere,
       $limit: 1,
     },
-    [validResponseWhere]
+    [validResponseWhere],
+    { cite: { viewId: 'emergency-response', purpose: 'stat-totals' } }
   )
 
   const { data: nhStatsRows } = useDataset<FireDispatchNhStatsRow>(
@@ -238,7 +241,8 @@ export default function EmergencyResponse() {
       $having: 'COUNT(*) > 5',
       $limit: 100,
     },
-    [validResponseWhere]
+    [validResponseWhere],
+    { cite: { viewId: 'emergency-response', purpose: 'ranking' } }
   )
 
   const { data: histogramRows } = useDataset<FireDispatchHistogramRow>(
@@ -250,7 +254,8 @@ export default function EmergencyResponse() {
       $order: 'minute_bucket',
       $limit: 200,
     },
-    [validResponseWhere]
+    [validResponseWhere],
+    { cite: { viewId: 'emergency-response', purpose: 'histogram' } }
   )
 
   // --- Computed data (extracted to hook) ---

@@ -188,7 +188,7 @@ export default function Demographics() {
   }, [scatterYMetric])
 
   const civicMetricKey = isCensusY || !civicMetricsJoin ? null : scatterYMetric
-  const { data: civicYData, isLoading: civicLoading } = useCivicMetric(civicMetricKey)
+  const { data: civicYData, isLoading: civicLoading } = useCivicMetric(civicMetricKey, { cite: { viewId: 'demographics', purpose: 'civic-metric' } })
 
   // When scatter Y is a Census variable, build the Map from neighborhoods directly
   const scatterYData = useMemo(() => {

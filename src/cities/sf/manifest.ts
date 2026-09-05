@@ -53,6 +53,7 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     underlayPreset: ['medianHomeValue', 'medianRent', 'rentBurden', 'pctOver65'],
     sources: ['cases311', 'dispatch911Realtime', 'fireEMSDispatch'],
     staticSources: ['sf-analysis-neighborhoods'],
+    citable: ['window-sample', 'window-count'],
   },
   {
     viewId: 'pulse',
@@ -75,6 +76,7 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     omniDatasetKeys: ['fireEMSDispatch'],
     sources: ['fireEMSDispatch', 'fireIncidents'],
     staticSources: ['sf-analysis-neighborhoods', 'acs-2023-5yr'],
+    citable: ['map-sample', 'scope-count', 'stat-totals', 'ranking', 'histogram', 'freshness'],
   },
   {
     viewId: 'crime-incidents',
@@ -116,6 +118,7 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     // detail panel's cross-reference is the actual second fetch).
     sources: ['dispatch911Historical', 'policeIncidents', 'policeIncidentsHistorical'],
     staticSources: ['sf-analysis-neighborhoods', 'acs-2023-5yr'],
+    citable: ['map-sample', 'stat-totals', 'ranking', 'freshness'],
   },
   {
     viewId: 'traffic-safety',
@@ -127,11 +130,9 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     eraSource: { datasetKey: 'trafficCrashes', dateField: 'collision_datetime', clamp: [2005, null] },
     underlayPreset: ['medianAge', 'populationDensity', 'pctTransit'],
     omniDatasetKeys: ['trafficCrashes'],
-    // highInjuryNetwork is NOT here yet: TrafficSafety.tsx still fetches it
-    // via a raw `fetch()` (not fetchDataset) — the scan can't see it and the
-    // registry entry has no consumer today.
-    sources: ['pavementCondition', 'redLightCameras', 'speedCameras', 'trafficCrashes'],
+    sources: ['highInjuryNetwork', 'pavementCondition', 'redLightCameras', 'speedCameras', 'trafficCrashes'],
     staticSources: ['sf-analysis-neighborhoods', 'acs-2023-5yr'],
+    citable: ['map-sample', 'stat-totals', 'ranking', 'overlay', 'freshness'],
   },
   {
     viewId: 'housing',
@@ -150,6 +151,7 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     omniDatasetKeys: ['evictionNotices', 'buyoutAgreements'],
     sources: ['buyoutAgreements', 'evictionNotices'],
     staticSources: ['sf-analysis-neighborhoods', 'acs-2023-5yr'],
+    citable: ['map-sample', 'stat-totals', 'ranking', 'freshness'],
   },
   {
     viewId: 'elections',
@@ -195,6 +197,7 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     omniDatasetKeys: ['parkingRevenue'],
     sources: ['parkingMeters', 'parkingRevenue'],
     staticSources: ['sf-analysis-neighborhoods', 'acs-2023-5yr'],
+    citable: ['map-sample', 'stat-totals', 'overlay', 'freshness'],
   },
   {
     viewId: 'dispatch-911',
@@ -224,6 +227,7 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     omniDatasetKeys: ['cases311'],
     sources: ['cases311'],
     staticSources: ['sf-analysis-neighborhoods', 'acs-2023-5yr'],
+    citable: ['map-sample', 'stat-totals', 'ranking', 'histogram', 'freshness'],
   },
   {
     viewId: 'parking-citations',
@@ -245,6 +249,7 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     omniDatasetKeys: ['parkingCitations'],
     sources: ['parkingCitations'],
     staticSources: ['sf-analysis-neighborhoods', 'acs-2023-5yr'],
+    citable: ['map-sample', 'stat-totals', 'breakdown', 'freshness'],
   },
   {
     viewId: 'business-activity',
@@ -257,6 +262,7 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     omniDatasetKeys: ['businessLocations'],
     sources: ['businessLocations'],
     staticSources: ['sf-analysis-neighborhoods', 'acs-2023-5yr'],
+    citable: ['map-sample', 'stat-totals', 'breakdown', 'freshness'],
   },
   {
     viewId: 'business',
@@ -278,6 +284,7 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     // ACS FIRST: this is a static-led view (no map-sample/window-sample
     // citable purpose) — the panel and pill face lead with the first entry.
     staticSources: ['acs-2023-5yr', 'sf-analysis-neighborhoods', 'sf-tract-assignment'],
+    citable: ['civic-metric'],
   },
   {
     viewId: 'neighborhood',

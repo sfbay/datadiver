@@ -153,7 +153,7 @@ export default function Cases311() {
     ? resolutionHoursExpr('closed_date', 'requested_datetime')
     : resolutionHoursExpr('datetimeclosed', 'datetimeinit')
 
-  const freshness = useDataFreshness('cases311', isSF ? 'requested_datetime' : 'datetimeinit', dateRange, { cityId: city.id })
+  const freshness = useDataFreshness('cases311', isSF ? 'requested_datetime' : 'datetimeinit', dateRange, { cityId: city.id, cite: { viewId: '311-cases', purpose: 'freshness' } })
 
   const trendConfig = useMemo((): TrendConfig => isSF
     ? { datasetKey: 'cases311', dateField: 'requested_datetime', neighborhoodField: 'analysis_neighborhood' }
@@ -171,14 +171,16 @@ export default function Cases311() {
   const { data: rawData, isLoading, error, hitLimit, refetch } = useDataset<Cases311Record>(
     'cases311',
     { $where: whereClause, $limit: 5000, $select: isSF ? SELECT_FIELDS : OAK311_SELECT },
-    [whereClause, isSF]
+    [whereClause, isSF],
+    { cite: { viewId: '311-cases', purpose: 'map-sample' } }
   )
 
   // Total count query (lightweight, for truncation indicator)
   const { data: countRows } = useDataset<{ count: string }>(
     'cases311',
     { $select: 'count(*) as count', $where: whereClause },
-    [whereClause]
+    [whereClause],
+    { cite: { viewId: '311-cases', purpose: 'stat-totals', facet: 'Cases' } }
   )
   const totalCount = countRows[0] ? parseInt(countRows[0].count, 10) : null
 
@@ -187,7 +189,8 @@ export default function Cases311() {
   const { data: openCountRows } = useDataset<{ count: string }>(
     'cases311',
     { $select: 'count(*) as count', $where: `${whereClause} AND ${isSF ? "status_description = 'Open'" : OAK311_OPEN_CLAUSE}` },
-    [whereClause, isSF]
+    [whereClause, isSF],
+    { cite: { viewId: '311-cases', purpose: 'stat-totals', facet: 'Open cases' } }
   )
   const openCount = openCountRows[0] ? parseInt(openCountRows[0].count, 10) : null
 
@@ -205,7 +208,8 @@ export default function Cases311() {
       $where: resolutionWhere,
       $limit: 1,
     },
-    [resolutionWhere, resolutionHours]
+    [resolutionWhere, resolutionHours],
+    { cite: { viewId: '311-cases', purpose: 'stat-totals', facet: 'Resolution time' } }
   )
 
   const { data: resolutionHistogramRows } = useDataset<{ hour_bucket: string; case_count: string }>(
@@ -217,7 +221,8 @@ export default function Cases311() {
       $order: 'hour_bucket',
       $limit: 1000,
     },
-    [resolutionWhere, resolutionHours]
+    [resolutionWhere, resolutionHours],
+    { cite: { viewId: '311-cases', purpose: 'histogram' } }
   )
 
   const { data: categoryRows } = useDataset<ServiceCategoryAggRow>(
@@ -247,7 +252,8 @@ export default function Cases311() {
       $order: 'case_count DESC',
       $limit: isSF ? 50 : 200,
     },
-    [whereClause, isSF]
+    [whereClause, isSF],
+    { cite: { viewId: '311-cases', purpose: 'ranking' } }
   )
 
   // Hourly pattern

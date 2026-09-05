@@ -170,7 +170,9 @@ export default function ParkingCitations() {
     'parkingCitations',
     isSF ? 'citation_issued_datetime' : 'ticket_iss',
     dateRange,
-    isSF ? { geoField: 'the_geom' } : { cityId }
+    isSF
+      ? { geoField: 'the_geom', cite: { viewId: 'parking-citations', purpose: 'freshness' } }
+      : { cityId, cite: { viewId: 'parking-citations', purpose: 'freshness' } }
   )
   useEffect(() => { setGeoGapDismissed(false) }, [dateRange.start, dateRange.end])
 
@@ -191,14 +193,16 @@ export default function ParkingCitations() {
   const { data: rawData, isLoading, error, hitLimit, refetch } = useDataset<ParkingCitationRecord | OakCitationRecord>(
     'parkingCitations',
     { $where: mapWhere, $limit: 5000, $select: isSF ? SELECT_FIELDS : OAK_CITATION_SELECT },
-    [mapWhere]
+    [mapWhere],
+    { cite: { viewId: 'parking-citations', purpose: 'map-sample' } }
   )
 
   // Stats: no geo filter
   const { data: countRows } = useDataset<{ count: string }>(
     'parkingCitations',
     { $select: 'count(*) as count', $where: statsWhere },
-    [statsWhere]
+    [statsWhere],
+    { cite: { viewId: 'parking-citations', purpose: 'stat-totals', facet: 'Citations' } }
   )
   const totalCount = countRows[0] ? parseInt(countRows[0].count, 10) : null
 
@@ -206,7 +210,8 @@ export default function ParkingCitations() {
   const { data: revenueRows } = useDataset<{ total_fines: string }>(
     'parkingCitations',
     { $select: 'SUM(fine_amount) as total_fines', $where: statsWhere },
-    [statsWhere]
+    [statsWhere],
+    { cite: { viewId: 'parking-citations', purpose: 'stat-totals', facet: 'Fines' } }
   )
   const totalRevenue = revenueRows[0] ? parseFloat(revenueRows[0].total_fines) || 0 : 0
 
@@ -215,7 +220,8 @@ export default function ParkingCitations() {
   const { data: avgFineRows } = useDataset<{ avg_fine: string }>(
     'parkingCitations',
     { $select: 'AVG(fine_amount) as avg_fine', $where: `${statsWhere} AND fine_amount > 0` },
-    [statsWhere]
+    [statsWhere],
+    { cite: { viewId: 'parking-citations', purpose: 'stat-totals', facet: 'Average fine' } }
   )
   const serverAvgFine = avgFineRows[0] ? parseFloat(avgFineRows[0].avg_fine) : NaN
 
@@ -225,7 +231,7 @@ export default function ParkingCitations() {
     'parkingCitations',
     { $select: 'count(*) as count', $where: `${statsWhere} AND vehicle_plate_state IS NOT NULL AND vehicle_plate_state != 'CA'` },
     [statsWhere],
-    { enabled: isSF }
+    { enabled: isSF, cite: { viewId: 'parking-citations', purpose: 'stat-totals', facet: 'Out-of-state plates' } }
   )
   const serverOosCount = oosCountRows[0] ? parseInt(oosCountRows[0].count, 10) : null
 
@@ -246,7 +252,8 @@ export default function ParkingCitations() {
           $order: 'citation_count DESC',
           $limit: 50,
         },
-    [isSF, dateOnlyClause]
+    [isSF, dateOnlyClause],
+    { cite: { viewId: 'parking-citations', purpose: 'breakdown' } }
   )
 
   // Neighborhood agg: no geo filter

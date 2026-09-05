@@ -113,6 +113,7 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
   const { dateRange, categoryClause, selectedNeighborhood, timeOfDayFilter } = opts
   const cityId = useRouteView().cityId
   const isSF = cityId === 'sf'
+  const viewId = 'crime-incidents' as const
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const plan = useMemo(() => planCrimeEra(dateRange, cityId), [dateRange.start, dateRange.end, cityId])
 
@@ -219,19 +220,19 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
     'policeIncidents',
     { $where: modernWhere, $limit: ROW_LIMIT, $select: MODERN_SELECT },
     [modernWhere],
-    { enabled: wantModern },
+    { enabled: wantModern, cite: { viewId, purpose: 'map-sample' } },
   )
   const hist = useDataset<HistoricalIncidentRow>(
     'policeIncidentsHistorical',
     { $where: histWhere, $limit: ROW_LIMIT, $select: HISTORICAL_SELECT_FIELDS },
     [histWhere],
-    { enabled: wantHist },
+    { enabled: wantHist, cite: { viewId, purpose: 'map-sample' } },
   )
   const oak = useDataset<OaklandCrimeRow>(
     'policeIncidents',
     { $where: oakWhere, $limit: ROW_LIMIT, $select: OAKLAND_CRIME_SELECT },
     [oakWhere],
-    { enabled: wantOak },
+    { enabled: wantOak, cite: { viewId, purpose: 'map-sample' } },
   )
 
   // ── Aggregates ────────────────────────────────────────────────────────────
@@ -239,19 +240,19 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
     'policeIncidents',
     { $select: `${SF_CRIME_COUNT} as count`, $where: modernWhere },
     [modernWhere],
-    { enabled: wantModern },
+    { enabled: wantModern, cite: { viewId, purpose: 'stat-totals' } },
   )
   const histCount = useDataset<{ count: string }>(
     'policeIncidentsHistorical',
     { $select: `${HIST_CRIME_COUNT} as count`, $where: histWhere },
     [histWhere],
-    { enabled: wantHist },
+    { enabled: wantHist, cite: { viewId, purpose: 'stat-totals' } },
   )
   const oakCount = useDataset<{ count: string }>(
     'policeIncidents',
     { $select: `${OAKLAND_CRIME_COUNT} as count`, $where: oakWhere },
     [oakWhere],
-    { enabled: wantOak },
+    { enabled: wantOak, cite: { viewId, purpose: 'stat-totals' } },
   )
 
   const modernLinked = useDataset<{ total_count: string; linked_count: string }>(
@@ -341,7 +342,7 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
       $limit: 50,
     },
     [modernWhere],
-    { enabled: wantModern },
+    { enabled: wantModern, cite: { viewId, purpose: 'ranking' } },
   )
   const histNhoods = useDataset<{ region_id: string; incident_count: string }>(
     'policeIncidentsHistorical',
@@ -353,7 +354,7 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
       $limit: 50,
     },
     [histWhere],
-    { enabled: wantHist },
+    { enabled: wantHist, cite: { viewId, purpose: 'ranking' } },
   )
   // $limit 200: 59 beats + junk codes (77X/99X) + the NULL row must ALL
   // arrive — the unmapped-share disclosure is computed from this result.
@@ -370,7 +371,7 @@ export function useCrimeEraData(opts: CrimeEraOpts): CrimeEraData {
       $limit: 200,
     },
     [oakWhere],
-    { enabled: wantOak },
+    { enabled: wantOak, cite: { viewId, purpose: 'ranking' } },
   )
 
   const modernRes = useDataset<ResolutionAggRow>(

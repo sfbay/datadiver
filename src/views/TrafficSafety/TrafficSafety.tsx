@@ -169,7 +169,7 @@ export default function TrafficSafety() {
   }, [dateRange, timeOfDayFilter])
 
   // Data freshness detection
-  const freshness = useDataFreshness('trafficCrashes', 'collision_datetime', dateRange)
+  const freshness = useDataFreshness('trafficCrashes', 'collision_datetime', dateRange, { cite: { viewId: 'traffic-safety', purpose: 'freshness' } })
 
   const trendConfig = useMemo((): TrendConfig => ({
     datasetKey: 'trafficCrashes',
@@ -187,13 +187,15 @@ export default function TrafficSafety() {
   const { data: rawData, isLoading, error, hitLimit, refetch } = useDataset<TrafficCrashRecord>(
     'trafficCrashes',
     { $where: whereClause, $limit: 5000, $select: SELECT_FIELDS },
-    [whereClause]
+    [whereClause],
+    { cite: { viewId: 'traffic-safety', purpose: 'map-sample' } }
   )
 
   const { data: countRows } = useDataset<{ count: string }>(
     'trafficCrashes',
     { $select: 'count(*) as count', $where: whereClause },
-    [whereClause]
+    [whereClause],
+    { cite: { viewId: 'traffic-safety', purpose: 'stat-totals', facet: 'Crashes' } }
   )
   const totalCount = countRows[0] ? parseInt(countRows[0].count, 10) : null
 
@@ -208,7 +210,8 @@ export default function TrafficSafety() {
       $select: 'count(*) as count, SUM(number_killed) as killed, SUM(number_injured) as injured',
       $where: duiWhere,
     },
-    [duiWhere]
+    [duiWhere],
+    { cite: { viewId: 'traffic-safety', purpose: 'stat-totals', facet: 'DUI crashes' } }
   )
   const duiCount = duiCountRows[0] ? parseInt(duiCountRows[0].count, 10) : 0
   const duiKilled = duiCountRows[0] ? parseInt(duiCountRows[0].killed, 10) || 0 : 0
@@ -255,7 +258,8 @@ export default function TrafficSafety() {
       $order: 'crash_count DESC',
       $limit: 50,
     },
-    [whereClause]
+    [whereClause],
+    { cite: { viewId: 'traffic-safety', purpose: 'ranking' } }
   )
 
   // --- Overlay data (conditionally fetched) ---
@@ -268,7 +272,8 @@ export default function TrafficSafety() {
           $limit: 500,
         }
       : { $limit: 0 },
-    [activeOverlays.has('speed')]
+    [activeOverlays.has('speed')],
+    { cite: { viewId: 'traffic-safety', purpose: 'overlay', facet: 'Speed cameras' } }
   )
 
   const { data: redLightData } = useDataset<RedLightCameraRecord>(
@@ -280,7 +285,8 @@ export default function TrafficSafety() {
           $limit: 500,
         }
       : { $limit: 0 },
-    [activeOverlays.has('redlight')]
+    [activeOverlays.has('redlight')],
+    { cite: { viewId: 'traffic-safety', purpose: 'overlay', facet: 'Red-light cameras' } }
   )
 
   const { data: pavementData } = useDataset<PavementConditionRecord>(
@@ -288,18 +294,23 @@ export default function TrafficSafety() {
     activeOverlays.has('pci')
       ? { $select: 'latitude, longitude, pci_score', $where: 'pci_score IS NOT NULL', $limit: 5000 }
       : { $limit: 0 },
-    [activeOverlays.has('pci')]
+    [activeOverlays.has('pci')],
+    { cite: { viewId: 'traffic-safety', purpose: 'overlay', facet: 'Pavement condition' } }
   )
 
-  // High Injury Network (GeoJSON line layer — fetched directly, cached 24h)
-  const [hinGeojson, setHinGeojson] = useState<GeoJSON.FeatureCollection | null>(null)
-  useEffect(() => {
-    if (!activeOverlays.has('hin') || hinGeojson) return
-    fetch('https://data.sfgov.org/resource/enwt-3u8m.geojson?$limit=10000')
-      .then((r) => r.json())
-      .then((data) => setHinGeojson(data as GeoJSON.FeatureCollection))
-      .catch(() => {})
-  }, [activeOverlays, hinGeojson])
+  // High Injury Network (GeoJSON line layer, via fetchDataset — Task 6 Step 4
+  // unwraps a GeoJSON FeatureCollection into its `features` array for
+  // `ext: 'geojson'` datasets, so the hook returns rows).
+  const { data: hinRows } = useDataset<GeoJSON.Feature>(
+    'highInjuryNetwork',
+    { $limit: 10000 },
+    [activeOverlays.has('hin')],
+    { enabled: activeOverlays.has('hin'), cite: { viewId: 'traffic-safety', purpose: 'overlay', facet: 'High Injury Network' } },
+  )
+  const hinGeojson = useMemo<GeoJSON.FeatureCollection | null>(
+    () => (hinRows.length ? { type: 'FeatureCollection', features: hinRows } : null),
+    [hinRows],
+  )
 
   // Hourly pattern
   const extraWhere = useMemo(() => {
