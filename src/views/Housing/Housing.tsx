@@ -321,28 +321,31 @@ export default function Housing() {
     return `pre_buyout_disclosure_declaration_date >= '${dateRange.start}' AND pre_buyout_disclosure_declaration_date <= '${dateRange.end}'`
   }, [dateRange])
 
-  const freshness = useDataFreshness('evictionNotices', 'file_date', dateRange, { geoField: 'shape' })
+  const freshness = useDataFreshness('evictionNotices', 'file_date', dateRange, { geoField: 'shape', cite: { viewId: 'housing', purpose: 'freshness' } })
 
   // --- Data queries (10 total) ---
   // 1. Eviction rows (map dots)
   const { data: evictionRows, isLoading: evictionsLoading, error: evictionsError, hitLimit: evictionsHitLimit, refetch: refetchEvictions } = useDataset<EvictionNoticeRow>(
     'evictionNotices',
     { $where: evictionWhere, $limit: 5000, $select: EVICTION_SELECT_FIELDS, $order: 'file_date DESC' },
-    [evictionWhere]
+    [evictionWhere],
+    { cite: { viewId: 'housing', purpose: 'map-sample' } }
   )
 
   // 2. Buyout rows (map rings)
   const { data: buyoutRows, isLoading: buyoutsLoading, error: buyoutsError, hitLimit: buyoutsHitLimit, refetch: refetchBuyouts } = useDataset<BuyoutRow>(
     'buyoutAgreements',
     { $where: buyoutWhere, $limit: 5000, $select: BUYOUT_SELECT_FIELDS, $order: 'buyout_agreement_date DESC' },
-    [buyoutWhere]
+    [buyoutWhere],
+    { cite: { viewId: 'housing', purpose: 'map-sample' } }
   )
 
   // 3. Eviction total count
   const { data: evictionCountRows } = useDataset<{ count: string }>(
     'evictionNotices',
     { $select: 'count(*) as count', $where: evictionWhere },
-    [evictionWhere]
+    [evictionWhere],
+    { cite: { viewId: 'housing', purpose: 'stat-totals', facet: 'Notices' } }
   )
   const evictionTotal = evictionCountRows[0] ? parseInt(evictionCountRows[0].count, 10) : null
 
@@ -350,7 +353,8 @@ export default function Housing() {
   const { data: buyoutCountRows } = useDataset<{ count: string }>(
     'buyoutAgreements',
     { $select: 'count(*) as count', $where: buyoutWhere },
-    [buyoutWhere]
+    [buyoutWhere],
+    { cite: { viewId: 'housing', purpose: 'stat-totals', facet: 'Buyouts' } }
   )
   const buyoutTotal = buyoutCountRows[0] ? parseInt(buyoutCountRows[0].count, 10) : null
 
@@ -358,7 +362,8 @@ export default function Housing() {
   const { data: noFaultRows } = useDataset<{ count: string }>(
     'evictionNotices',
     { $select: 'count(*) as count', $where: noFaultWhere },
-    [noFaultWhere]
+    [noFaultWhere],
+    { cite: { viewId: 'housing', purpose: 'stat-totals', facet: 'No-fault notices' } }
   )
   const noFaultCount = noFaultRows[0] ? parseInt(noFaultRows[0].count, 10) : null
 
@@ -367,7 +372,8 @@ export default function Housing() {
   const { data: evictionScopeTotalRows } = useDataset<{ count: string }>(
     'evictionNotices',
     { $select: 'count(*) as count', $where: evictionScopeWhere },
-    [evictionScopeWhere]
+    [evictionScopeWhere],
+    { cite: { viewId: 'housing', purpose: 'stat-totals', facet: 'Notices in scope' } }
   )
   const evictionScopeTotal = evictionScopeTotalRows[0] ? parseInt(evictionScopeTotalRows[0].count, 10) : null
 
@@ -382,7 +388,8 @@ export default function Housing() {
   const { data: medianBuyoutRows } = useDataset<{ med: string }>(
     'buyoutAgreements',
     { $select: 'median(buyout_amount) as med', $where: buyoutWhere, $limit: 1 },
-    [buyoutWhere]
+    [buyoutWhere],
+    { cite: { viewId: 'housing', purpose: 'stat-totals', facet: 'Median buyout' } }
   )
   const medianBuyout = medianBuyoutRows[0]?.med != null ? parseAmount(medianBuyoutRows[0].med) : null
 
@@ -390,7 +397,8 @@ export default function Housing() {
   const { data: declarationRows } = useDataset<{ count: string }>(
     'buyoutAgreements',
     { $select: 'count(*) as count', $where: declarationsWhere, $limit: 1 },
-    [declarationsWhere]
+    [declarationsWhere],
+    { cite: { viewId: 'housing', purpose: 'stat-totals', facet: 'Declarations' } }
   )
   const declarationsInRange = declarationRows[0] ? parseInt(declarationRows[0].count, 10) : null
 
@@ -400,12 +408,14 @@ export default function Housing() {
   const { data: evictionNeighborhoodRows } = useDataset<EvictionNeighborhoodAggRow>(
     'evictionNotices',
     { $select: 'neighborhood, count(*) as n', $where: evictionRankingWhere, $group: 'neighborhood', $order: 'n DESC', $limit: 50 },
-    [evictionRankingWhere]
+    [evictionRankingWhere],
+    { cite: { viewId: 'housing', purpose: 'ranking' } }
   )
   const { data: buyoutNeighborhoodRows } = useDataset<BuyoutNeighborhoodAggRow>(
     'buyoutAgreements',
     { $select: 'analysis_neighborhood, count(*) as n, sum(buyout_amount) as total', $where: buyoutDateOnlyClause, $group: 'analysis_neighborhood', $order: 'n DESC', $limit: 50 },
-    [buyoutDateOnlyClause]
+    [buyoutDateOnlyClause],
+    { cite: { viewId: 'housing', purpose: 'ranking' } }
   )
 
   // 10. Era strip years — stable storytelling context, NO date/cause filter (Task 8 mounts EraStrip)

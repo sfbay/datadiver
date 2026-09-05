@@ -71,7 +71,7 @@ export default function ParkingRevenue() {
 
   const deepLinkHandledRef = useRef(false)
 
-  const freshness = useDataFreshness('parkingRevenue', 'session_start_dt', dateRange)
+  const freshness = useDataFreshness('parkingRevenue', 'session_start_dt', dateRange, { cite: { viewId: 'parking-revenue', purpose: 'freshness' } })
 
   const trendConfig = useMemo((): TrendConfig => ({
     datasetKey: 'parkingRevenue',
@@ -94,7 +94,8 @@ export default function ParkingRevenue() {
   const { data: meters, isLoading: metersLoading } = useDataset<ParkingMeter>(
     'parkingMeters',
     { $limit: 50000 },
-    []
+    [],
+    { cite: { viewId: 'parking-revenue', purpose: 'overlay', facet: 'Meter inventory' } }
   )
 
   const meterMap = useMemo(() => {
@@ -182,7 +183,8 @@ export default function ParkingRevenue() {
       $order: 'total_revenue DESC',
       $limit: 10000,
     },
-    [revenueWhere]
+    [revenueWhere],
+    { cite: { viewId: 'parking-revenue', purpose: 'map-sample' } }
   )
 
   // Server-side aggregation for accurate headline totals
@@ -192,7 +194,8 @@ export default function ParkingRevenue() {
       $select: 'SUM(gross_paid_amt) as total_revenue, COUNT(*) as total_count, COUNT(DISTINCT post_id) as unique_meters',
       $where: revenueWhere,
     },
-    [revenueWhere]
+    [revenueWhere],
+    { cite: { viewId: 'parking-revenue', purpose: 'stat-totals' } }
   )
 
   // Server-side payment type breakdown

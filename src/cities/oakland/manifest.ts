@@ -51,6 +51,9 @@ export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
     omniDatasetKeys: ['policeIncidents'],
     sources: ['policeIncidents'],
     staticSources: ['oak-beats'],
+    // Same citable list as SF's crime-incidents twin — sources.test.ts's
+    // scanner reads the SAME shared view files for both cities.
+    citable: ['map-sample', 'stat-totals', 'ranking', 'freshness'],
   },
   {
     viewId: '311-cases',
@@ -63,6 +66,9 @@ export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
     omniDatasetKeys: ['cases311'],
     sources: ['cases311'],
     staticSources: ['oak-beats'],
+    // Same citable list as SF's 311-cases twin — sources.test.ts's scanner
+    // reads the SAME shared view files for both cities.
+    citable: ['map-sample', 'stat-totals', 'ranking', 'histogram', 'freshness'],
   },
   {
     viewId: 'parking-citations',
@@ -75,6 +81,9 @@ export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
     omniDatasetKeys: ['parkingCitations'],
     sources: ['parkingCitations'],
     staticSources: ['oak-beats'],
+    // Same citable list as SF's parking-citations twin — sources.test.ts's
+    // scanner reads the SAME shared view files for both cities.
+    citable: ['map-sample', 'stat-totals', 'breakdown', 'freshness'],
   },
   {
     viewId: 'campaign-finance',
