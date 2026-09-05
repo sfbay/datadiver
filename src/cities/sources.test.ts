@@ -33,6 +33,13 @@ const VIEW_DIRS: Record<ViewId, string> = {
 const CROSS_CUTTING = [
   'useCivicIndicators', 'useOaklandIndicators', 'usePreloadCache', 'useFunderTypeahead', 'useVendorTypeahead', 'useOmniSearch',
   'useDataset', 'useDataFreshness', 'useTrendBaseline', 'useComparisonDataFactory', 'useHourlyPatternFactory',
+  // Not a hook — the fetchDataset DEFINITION itself. useCivicMetrics.ts (and
+  // others) import '../api/client' by a relative path, which IMPORT_RE
+  // matches; now that collectScanSet walks transitively, an un-excluded
+  // client.ts would enter every view's scan set and its own
+  // `export async function fetchDataset<T>(datasetKey, …` signature would
+  // read as an unresolved variable-key fetch site everywhere.
+  'client',
 ]
 
 /** fetchDataset sites whose key is a variable — resolved by hand. Keyed by
@@ -53,6 +60,9 @@ const RESOLVED_KEYS: Record<string, readonly string[]> = {
   // SF's late-filing builders are all `() => null` (no view-level late
   // section there); only Oakland fires these three.
   'src/hooks/useLateFilings.ts': ['fppc496', 'fppc497', 'fppcSchE'],
+  // Home's pulse teaser card (Last48Pulse.tsx → useLast48Pulse.ts) mirrors
+  // useLast48Window's STREAM_QUERY table — same three keys.
+  'src/hooks/useLast48Pulse.ts': ['dispatch911Realtime', 'fireEMSDispatch', 'cases311'],
   // Add rows here as the scan reports `unresolved` sites; never widen the regex.
 }
 
@@ -68,11 +78,14 @@ const OMNI_ROUTING_ONLY: Record<string, string> = {
 /** Registry keys a SHARED view component can reach in one city but not
  *  another, where the gate is a runtime condition no file scan can see.
  *  Delete a row the day its gate is lifted — until then the view would
- *  otherwise claim sources it never reads. */
+ *  otherwise claim sources it never reads. NOTE: this filters the FETCHED
+ *  side, so it can only ever hide a false positive — it cannot detect a real
+ *  new fetch of these same keys landing unnoticed; whoever lifts the gate
+ *  must remember to delete the row rather than wait on a test failure. */
 const NOT_FETCHED_HERE: Record<string, { keys: readonly string[]; why: string }> = {
   'oakland/demographics': {
     keys: ['policeIncidents', 'cases311', 'parkingCitations'],
-    why: 'The civic-metric scatter is withheld off SF, so useCivicMetrics never fires here even though Demographics.tsx and the hook are shared with San Francisco.',
+    why: 'The civic-metric scatter is withheld off SF, so useCivicMetrics never fires here even though Demographics.tsx and the hook are shared with San Francisco. The plausible trigger for deleting this row is Oakland stage 5b (the per-region neighborhood profile, CLAUDE.md → Oakland expansion) — whoever builds it and genuinely wires these three keys into an Oakland fetch path deletes this row.',
   },
 }
 
@@ -102,6 +115,24 @@ describe('manifest sources — membership', () => {
       })
     }
   }
+
+  // Staleness pin for OMNI_ROUTING_ONLY, checked independently of the
+  // per-entry loop above (which only ever visits a key that's still IN
+  // omniDatasetKeys — it can't notice a row whose key was REMOVED from
+  // there, which would otherwise leave dead excuse-text nobody notices went
+  // obsolete). A row must describe a divergence that's still real on both
+  // sides: the key is still an actual omni route, AND it's still actually
+  // absent from sources.
+  it('OMNI_ROUTING_ONLY exceptions describe a real, current divergence', () => {
+    for (const routingOnlyId of Object.keys(OMNI_ROUTING_ONLY)) {
+      const [cityId, viewId, key] = routingOnlyId.split('/')
+      const city = Object.values(CITIES).find((c) => c.id === cityId)
+      const entry = city?.manifest.find((e) => e.viewId === viewId)
+      expect(entry, `${routingOnlyId}: no such manifest entry`).toBeDefined()
+      expect(entry!.omniDatasetKeys ?? [], `${routingOnlyId}: key is no longer an omni route — delete this row`).toContain(key)
+      expect(entry!.sources ?? [], `${routingOnlyId}: key is now in sources too — delete this row`).not.toContain(key)
+    }
+  })
 })
 
 describe('manifest sources — fetched ⇔ declared (per live view, per city)', () => {
