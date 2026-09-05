@@ -15,6 +15,15 @@ export interface DatasetConfig {
   dateField?: string
   /** Socrata export extension when not the default .json (highInjuryNetwork serves GeoJSON) */
   ext?: 'geojson'
+  /** Who publishes this dataset. `short` is the house form used on chips and
+   *  eyebrows; `full` is the legal name used in citations and the About table.
+   *  Authored — Socrata `attribution` is null on 20 of 52 ids and inconsistent
+   *  where present (probe 2026-09-03; spec §3.1). */
+  publisher: { short: string; full: string }
+  /** Oakland only: the measured completeness edge in days (the ticker's
+   *  OAK_TICKER_EDGES, authored here and derived there). A stream without an
+   *  edge omits the field and the source line omits "complete through". */
+  completeness?: { edgeDays: number }
 }
 
 export type RawDatasetConfig = Omit<DatasetConfig, 'endpoint'>
