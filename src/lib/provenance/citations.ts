@@ -35,9 +35,14 @@ type Scope = Map<string, CitableQuery>
 const scopes = new Map<string, Scope>()
 const snapshots = new Map<string, CitableQuery[]>()
 const listeners = new Set<() => void>()
-const EMPTY: CitableQuery[] = []
+const EMPTY: CitableQuery[] = Object.freeze([] as CitableQuery[]) as CitableQuery[]
 
-const scopeKey = (cityId: CityId, viewId: ViewId) => `${cityId}/${viewId}`
+/** Scope key. The view segment is lower-cased because parseRoute returns the
+ *  slug as the URL authored it (routing.ts) while React Router matches
+ *  case-insensitively — so `/Crime-Incidents` must key the same scope that
+ *  `cite: { viewId: 'crime-incidents' }` writes, or the pill reads empty and
+ *  the real scope is never cleared. */
+const scopeKey = (cityId: CityId, viewId: string) => `${cityId}/${viewId.toLowerCase()}`
 
 export function slotKey(purpose: QueryPurpose, datasetKey: string, facet?: string): string {
   return `${purpose}|${datasetKey}|${facet ?? ''}`
@@ -63,7 +68,7 @@ export function recordCitation(rec: CitableQuery): void {
   notify(key)
 }
 
-export function clearCitationScope(cityId: CityId, viewId: ViewId): void {
+export function clearCitationScope(cityId: CityId, viewId: string): void {
   const key = scopeKey(cityId, viewId)
   if (!scopes.has(key) && !snapshots.has(key)) return
   scopes.delete(key)
@@ -75,17 +80,15 @@ function subscribe(cb: () => void) { listeners.add(cb); return () => listeners.d
 
 export function useCitableQueries(cityId: CityId, viewId: ViewId): CitableQuery[] {
   const key = scopeKey(cityId, viewId)
-  return useSyncExternalStore(subscribe, () => snapshots.get(key) ?? EMPTY)
+  const getSnapshot = () => snapshots.get(key) ?? EMPTY
+  return useSyncExternalStore(subscribe, getSnapshot, () => EMPTY)
 }
 
 /** Mount ONCE (AppShell). Clears a scope when the route leaves it. A param
  *  change inside a view does not clear — the new query replaces its slot. */
 export function useCitationScope(): void {
   const { cityId, viewId } = useRouteView()
-  // RouteIdentity.viewId is an unvalidated router slug (string), not the
-  // ViewId union — safe to widen here: an unknown slug just clears a scope
-  // key that nothing else ever wrote to.
-  useEffect(() => () => clearCitationScope(cityId, viewId as ViewId), [cityId, viewId])
+  useEffect(() => () => clearCitationScope(cityId, viewId), [cityId, viewId])
 }
 
 /** Tests only. */

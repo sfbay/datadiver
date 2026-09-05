@@ -115,7 +115,11 @@ export async function fetchDataset<T>(
       cityId, viewId: options.cite.viewId, purpose: options.cite.purpose, facet: options.cite.facet,
       datasetKey, datasetId: config.id, host: new URL(config.endpoint).host,
       params: queryParams, url, fetchedAt, fromCache,
-      rowCount: rows.length, hitLimit: rows.length > 0 && rows.length === queryParams.$limit,
+      rowCount: rows.length,
+      // A $limit of 1 cannot signal truncation: the MAX() freshness probes and
+      // the Last-48 count query each return exactly one row by construction, so
+      // rows.length === $limit would report a cut that never happened.
+      hitLimit: (queryParams.$limit ?? 0) > 1 && rows.length === queryParams.$limit,
       head: rows.slice(0, 5) as Record<string, unknown>[],
     })
   }
@@ -158,6 +162,13 @@ export async function fetchDataset<T>(
       const data = (config.ext === 'geojson' && json && !Array.isArray(json) && Array.isArray(json.features)
         ? json.features   // FeatureCollection → its features (the rows)
         : json) as T[]
+      if (config.ext === 'geojson' && !Array.isArray(data)) {
+        // Fail loudly and specifically here — otherwise a malformed geojson
+        // response flows on as a non-array and dies later as an opaque
+        // "data.slice is not a function" inside the cite() call below,
+        // burning the retry budget on a parse problem retries can't fix.
+        throw new Error(`Socrata geojson response for '${datasetKey}' was not a FeatureCollection`)
+      }
       const ttl = config.cacheTTL ?? DEFAULT_CACHE_TTL
       setCache(cacheKey, data, ttl)
       cite(data, Date.now(), false)

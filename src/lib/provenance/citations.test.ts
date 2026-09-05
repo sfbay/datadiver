@@ -32,4 +32,12 @@ describe('citation recorder', () => {
     expect(slotKey('stat-totals', 'evictionNotices', 'No-fault share')).toBe('stat-totals|evictionNotices|No-fault share')
     expect(slotKey('map-sample', 'evictionNotices')).toBe('map-sample|evictionNotices|')
   })
+  it('normalises view-slug casing so a case-variant route clears what the canonical id wrote', () => {
+    // React Router matches routes case-insensitively while parseRoute leaves
+    // the slug as-authored, so a visit to /Crime-Incidents must still clear
+    // the scope that `cite: { viewId: 'crime-incidents' }` wrote.
+    recordCitation(base) // viewId: 'crime-incidents' (canonical, lower-case)
+    clearCitationScope('sf', 'Crime-Incidents')
+    expect(_snapshot('sf', 'crime-incidents')).toEqual([])
+  })
 })
