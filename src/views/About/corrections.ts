@@ -43,6 +43,17 @@ export interface Correction {
 /** Newest first. Append at the top; never edit or remove an existing entry. */
 export const CORRECTIONS: readonly Correction[] = [
   {
+    id: '2026-09-05-demographics-crime-axis',
+    date: '2026-09-05',
+    dateLabel: 'Sept. 5, 2026',
+    views: 'Demographics — the “Crime Incidents” axis of the neighborhood scatter',
+    window: 'live since launch, and for five days after the Aug. 31 correction reached the other views',
+    change:
+      'The crime axis of the Demographics scatter now counts cases, not charge rows — the same count the Crime Incidents view adopted on Aug. 31.',
+    before:
+      'SFPD publishes one row per charge, so this axis counted a case once for every charge filed against it. Each neighborhood’s plotted crime figure was too high by roughly 30%, and by uneven amounts: about 44% for drug offenses and 53% for weapons offenses against under 1% for car break-ins, so two neighborhoods with different charge mixes were not overstated by the same share. The Aug. 31 correction reached Crime Incidents, Overview and Neighborhoods; it did not reach this axis.',
+  },
+  {
     id: '2026-09-05-acs-vintage-label',
     date: '2026-09-05',
     dateLabel: 'Sept. 5, 2026',

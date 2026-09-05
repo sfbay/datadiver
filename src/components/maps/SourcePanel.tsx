@@ -7,7 +7,7 @@ import type { CityId } from '@/cities/routing'
 import type { ViewManifestEntry } from '@/cities/manifest'
 import { PURPOSE_LABEL } from '@/lib/provenance/purposes'
 import type { CitableQuery } from '@/lib/provenance/citations'
-import { summarizeSources, throughLine, queryClause, citationLines, type SourceSummary } from '@/lib/provenance/sourceLine'
+import { summarizeSources, throughLine, queryClause, resultLine, citationLines, type SourceSummary } from '@/lib/provenance/sourceLine'
 import { usePortalMeta } from '@/lib/provenance/portalMeta'
 import { csvUrl, fullCsvUrl, geojsonUrl, portalPageUrl } from '@/lib/provenance/downloads'
 import { apDate } from '@/utils/apDate'
@@ -38,15 +38,12 @@ function CopyButton({ text, label }: { text: string; label: string }) {
   )
 }
 
-function QueryBlock({ rec, unitNote }: { rec: CitableQuery; unitNote?: string }) {
+function QueryBlock({ rec, dateField, unitNote }: { rec: CitableQuery; dateField?: string; unitNote?: string }) {
   const [full, setFull] = useState(false)
   const label = `${PURPOSE_LABEL[rec.purpose]}${rec.facet ? ` — ${rec.facet}` : ''}`
-  // A one-row aggregate is a GROUP total, not "a record" — say so when the
-  // query grouped (fix-round-1 finding 5); an ungrouped query still counts rows.
-  const unit = rec.params.$group ? 'group' : 'row'
-  const count = rec.hitLimit
-    ? `newest ${rec.rowCount.toLocaleString('en-US')} rows (capped)`
-    : `${rec.rowCount.toLocaleString('en-US')} ${unit}${rec.rowCount === 1 ? '' : 's'}`
+  // Groups vs rows, and WHICH slice a cap kept, are both read off the query —
+  // see resultLine's docblock. No prose is assembled here.
+  const count = resultLine(rec, dateField)
   return (
     <div className="mt-2">
       <p className="text-label text-ink dark:text-paper-100">
@@ -85,8 +82,13 @@ function DatasetBlock({ s, records, citable, nowYear, open, onTitle }: { s: Sour
       </p>
       {(through || updated) && <p className="text-micro text-paper-600 dark:text-paper-400">{through ?? ''}{updated}</p>}
       {license && <p className="text-micro text-paper-600 dark:text-paper-400">{license}</p>}
-      {ordered.map((r) => <QueryBlock key={`${r.purpose}|${r.facet ?? ''}`} rec={r} unitNote={unitNoteFor(r)} />)}
-      {citable.length > 0 && ordered.length === 0 && <p className="text-micro text-paper-500 mt-1">— queries not registered yet</p>}
+      {ordered.map((r) => <QueryBlock key={`${r.purpose}|${r.facet ?? ''}`} rec={r} dateField={s.dateField} unitNote={unitNoteFor(r)} />)}
+      {/* Not a loading state — this is the settled, correct answer for a
+          source the CURRENT screen deliberately leaves alone: Traffic
+          Safety's four overlays ship off, and Crime's pre-2018 extract is
+          never asked about a modern date range. "not registered yet" read
+          as a spinner that never resolves. */}
+      {citable.length > 0 && ordered.length === 0 && <p className="text-micro text-paper-500 mt-1">— not queried for what’s on screen right now</p>}
       <p className="text-micro font-mono mt-2"><a className={LINK} href={fullCsvUrl(s.host!, s.socrataId!)} target="_blank" rel="noopener noreferrer">Full dataset (CSV) ↗</a></p>
     </section>
   )

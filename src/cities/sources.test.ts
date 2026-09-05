@@ -3,7 +3,7 @@
 // fetches an undeclared dataset, or declares one it never fetches, fails
 // here — the same allow-list-drift class as omniDatasetKeys (spec §4.1).
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { CITIES } from './registry'
 import { liveManifest, type ViewId } from './manifest'
@@ -151,6 +151,57 @@ describe('manifest sources — membership', () => {
       expect(entry, `${routingOnlyId}: no such manifest entry`).toBeDefined()
       expect(entry!.omniDatasetKeys ?? [], `${routingOnlyId}: key is no longer an omni route — delete this row`).toContain(key)
       expect(entry!.sources ?? [], `${routingOnlyId}: key is now in sources too — delete this row`).not.toContain(key)
+    }
+  })
+})
+
+/** Staleness pins for the two hand-maintained exception tables above.
+ *  OMNI_ROUTING_ONLY got one when it was written; these two did not, and an
+ *  unpinned exception rots in the direction that HIDES things: a
+ *  RESOLVED_KEYS row keeps a source declared but never read, and — because
+ *  listing a file also suppresses that file's unresolved reporting — a NEW
+ *  variable-key fetch inside a listed file is invisible. */
+describe('exception tables — still describing a real, current exception', () => {
+  it('every RESOLVED_KEYS row names a live file, a live variable-key site, and live registry keys', () => {
+    const registryKeys = [...new Set(Object.values(CITIES).flatMap((c) => Object.keys(c.datasets)))]
+    for (const [file, resolvedKeys] of Object.entries(RESOLVED_KEYS)) {
+      expect(existsSync(join(ROOT, file)), `${file}: no such file — delete or repoint this row`).toBe(true)
+      // Scanned with an EMPTY resolved map so the file reports its own
+      // variable-key sites: with the real map it lists itself and reports
+      // none, which is exactly the blindness this pin is about.
+      const { unresolved } = scanFetchedKeys([{ file, text: readFileSync(join(ROOT, file), 'utf8') }], {})
+      expect(unresolved.length, `${file}: every fetch here names its key literally now — delete this row`).toBeGreaterThan(0)
+      for (const key of resolvedKeys) {
+        expect(registryKeys, `${file}: '${key}' is no longer a dataset key in any city`).toContain(key)
+      }
+    }
+  })
+
+  it('every NOT_FETCHED_HERE row still subtracts something the scan would otherwise report', () => {
+    for (const [rowId, row] of Object.entries(NOT_FETCHED_HERE)) {
+      const [cityId, viewId] = rowId.split('/') as [string, ViewId]
+      const city = Object.values(CITIES).find((c) => c.id === cityId)
+      expect(city, `${rowId}: no such city`).toBeDefined()
+      const entry = city!.manifest.find((e) => e.viewId === viewId)
+      expect(entry, `${rowId}: no such manifest entry`).toBeDefined()
+      const files = scanSet(cityId, viewId)
+      const scanned = [...scanFetchedKeys(files, RESOLVED_KEYS).keys]
+      for (const key of row.keys) {
+        // Three ways the row could be dead, each a different kind of stale:
+        // the key left this registry (the `k in city.datasets` filter
+        // already drops it), the shared file stopped reaching it, or the
+        // gate was lifted and the view now legitimately declares it — in
+        // which case subtracting it would HIDE a real source.
+        expect(city!.datasets[key], `${rowId}: '${key}' is not in this city's registry — the row subtracts nothing`).toBeDefined()
+        expect(scanned, `${rowId}: '${key}' is no longer scanned as fetched here — delete it`).toContain(key)
+        expect(entry!.sources ?? [], `${rowId}: '${key}' is DECLARED now — deleting the row is the fix`).not.toContain(key)
+      }
+      const own = files.filter((f) => f.file.startsWith(VIEW_DIRS[viewId]))
+      const tagged = [...scanCitePurposes(own, QUERY_PURPOSES)]
+      for (const purpose of row.purposes ?? []) {
+        expect(tagged, `${rowId}: '${purpose}' is no longer tagged in this view's own files — delete it`).toContain(purpose)
+        expect(entry!.citable ?? [], `${rowId}: '${purpose}' is DECLARED citable now — deleting the row is the fix`).not.toContain(purpose)
+      }
     }
   })
 })

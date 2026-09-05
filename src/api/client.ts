@@ -92,7 +92,7 @@ export function resolveQuery(config: Pick<DatasetConfig, 'endpoint' | 'defaultSo
 export async function fetchDataset<T>(
   datasetKey: DatasetKey,
   params: SoQLParams = {},
-  options: { skipCache?: boolean; timeoutMs?: number; retries?: number; cityId?: CityId; cite?: CiteTag } = {}
+  options: { skipCache?: boolean; timeoutMs?: number; retries?: number; cityId?: CityId; cite?: CiteTag; citeGuard?: () => boolean } = {}
 ): Promise<T[]> {
   const config = getDatasetConfig(options.cityId ?? 'sf', datasetKey)
 
@@ -111,6 +111,16 @@ export async function fetchDataset<T>(
   const cityId = options.cityId ?? 'sf'
   const cite = (rows: unknown[], fetchedAt: number, fromCache: boolean) => {
     if (!options.cite) return
+    // A response can outlive the state that asked for it. `citeGuard` lets the
+    // caller say "this request is no longer the one on screen" at the moment
+    // the answer lands: useDataset passes `() => !cancelled`, the same flag
+    // that already gates setData. Without it a superseded response still wrote
+    // its slot, so a late arrival could hand the panel — and the COPYABLE
+    // CITATION — the previous date range's filter beside a map drawn from the
+    // new one, or re-add an overlay slot for a layer the reader just switched
+    // off. Absent guard = record, so every untagged/unguarded caller is
+    // unchanged.
+    if (options.citeGuard && !options.citeGuard()) return
     recordCitation({
       cityId, viewId: options.cite.viewId, purpose: options.cite.purpose, facet: options.cite.facet,
       datasetKey, datasetId: config.id, host: new URL(config.endpoint).host,

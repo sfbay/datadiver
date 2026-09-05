@@ -89,6 +89,10 @@ export function useDataset<T>(
           retries: options.retries,
           cityId,
           cite: options.cite,
+          // The citation slot obeys the same cancellation the rows do. A
+          // superseded response (date range moved, layer toggled off) must
+          // not write its query into the pill after a newer one already has.
+          citeGuard: () => !cancelled,
         })
         if (!cancelled) {
           setData(result)
