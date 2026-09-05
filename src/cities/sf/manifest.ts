@@ -195,13 +195,12 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     navDescription: 'Sensitive call temporal patterns',
     accentColor: '#474e74', // indigo-600 — rare cool, sensitivity
     homeCard: { title: '911 Dispatch: Sensitive Calls', subtitle: 'SFPD Temporal Pattern Analysis', order: 3 },
-    // KNOWN CONFLICT (flagged to Jesse, task-5 report): this view never
-    // fetches dispatch911Realtime — the scan confirms 'dispatch911Historical'
-    // is the only key this view's own files or hooks touch — yet
-    // omniDatasetKeys below carries it because useOmniSearch.test.ts pins
-    // 'dataset-dispatch911Realtime' → '/dispatch-911'. `sources` here is the
-    // scan-true value, which means the `omni ⊆ sources` membership check
-    // FAILS for this entry until that routing decision is revisited.
+    // omniDatasetKeys is a ROUTING table, not a fetching one: the realtime
+    // 911 feed has no view of its own, so a ⌘K search for it sensibly lands
+    // here even though this view charts the historical extract only.
+    // `sources` reflects what the view actually fetches; the routing-only
+    // divergence on dispatch911Realtime is authored in sources.test.ts's
+    // OMNI_ROUTING_ONLY (pinned by useOmniSearch.test.ts's ⌘K route).
     omniDatasetKeys: ['dispatch911Realtime', 'dispatch911Historical'],
     sources: ['dispatch911Historical'],
   },
