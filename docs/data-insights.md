@@ -1371,6 +1371,27 @@ all, an asymmetry between two versions of the same kind of layer. Both Oakland b
 resemblance to its siblings. Live portal metadata (`portalMeta.ts`) fills in a license only when
 the portal actually reports one; failure or absence never invents a value.
 
+### Update cadence is exposed inconsistently — SF names it, Oakland (mostly) doesn't
+
+**Finding:** SF's Socrata metadata carries a `Publishing Details` custom-field block in which the
+publishing department states its own update schedule — probed 2026-09-02: `wg3w-h783` (Police
+Incident Reports) reports "Publishing frequency: Daily, Data change frequency: Hourly"; the range
+across SF's probed sets ran from "Multiple times per hour" (`gnap-fj3t`) down to "Quarterly"
+(`ubvf-ztfx`, `d5uh-bk84`) and `tmnf-yvry`'s honest "Not updated (historical only)." Oakland's
+event datasets carry no such block at all — `ppgh-7dqv` (OPD Incident Reports) returns an empty
+`custom_fields` object on the same query — and only its FPPC campaign-finance sets expose a
+comparable cadence fact through the portal. Where the Oakland registry states a cadence today
+(`oakland/datasets.ts`'s `cacheTTL` comments, e.g. "daily update cadence, filing-lump data"),
+that is DataDiver's own authored guess, not a value the portal reports.
+
+**Rule:** cadence is not read live for the source panel — a field that is sometimes the
+publisher's own stated claim and sometimes DataDiver's authored guess cannot be presented to a
+reader as one fact, and Oakland's near-total absence of it means any uniform treatment would be
+fabricating a claim for most Oakland sources. The panel relies on freshness DataDiver measures
+itself instead (`Published through {date}`, from a `MAX(dateField)` query — §7.2) plus the
+separately-disclosed `rowsUpdatedAt` push-time line below; a portal's stated "Publishing
+frequency" is never surfaced as a promise about the data on screen.
+
 ### `rowsUpdatedAt` is the publisher's PUSH time — never "data through"
 
 **Finding:** Socrata's `rowsUpdatedAt` field records when the publisher last touched the table,
