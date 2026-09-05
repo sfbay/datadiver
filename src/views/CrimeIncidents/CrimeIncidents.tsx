@@ -241,7 +241,7 @@ export default function CrimeIncidents() {
     'policeIncidents',
     isSF ? 'incident_datetime' : 'datetime',
     dateRange,
-    { cityId: city.id },
+    { cityId: city.id, cite: { viewId: 'crime-incidents', purpose: 'freshness' } },
   )
 
   // SF only; withheld on any range that touches the pre-2018 historical

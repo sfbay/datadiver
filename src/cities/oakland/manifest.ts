@@ -27,6 +27,11 @@ export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
     // header picker would be inert while ?start=&end= dirties every shared
     // link (declared delta from SF Home, which consumes dateRange).
     dateless: true,
+    // No `sources`: Oakland's real entry point here is CityLanding.tsx (NOT
+    // Home.tsx — src/views/Home holds both cities' unrelated top-level
+    // components, and sources.test.ts's CITY_VIEW_ENTRY seeds the scan from
+    // the right one per city). CityLanding.tsx's own tree fetches nothing
+    // from the dataset registry — omitted rather than written as `[]`.
   },
   {
     viewId: 'crime-incidents',
@@ -44,6 +49,11 @@ export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
       clamp: [2004, null],
     },
     omniDatasetKeys: ['policeIncidents'],
+    sources: ['policeIncidents'],
+    staticSources: ['oak-beats'],
+    // Same citable list as SF's crime-incidents twin — sources.test.ts's
+    // scanner reads the SAME shared view files for both cities.
+    citable: ['map-sample', 'stat-totals', 'ranking', 'freshness'],
   },
   {
     viewId: '311-cases',
@@ -54,6 +64,11 @@ export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
     homeCard: { title: '311 Service Requests', subtitle: 'Next-day civic maintenance signals', order: 2 },
     eraSource: { datasetKey: 'cases311', dateField: 'datetimeinit', clamp: [2013, null] },
     omniDatasetKeys: ['cases311'],
+    sources: ['cases311'],
+    staticSources: ['oak-beats'],
+    // Same citable list as SF's 311-cases twin — sources.test.ts's scanner
+    // reads the SAME shared view files for both cities.
+    citable: ['map-sample', 'stat-totals', 'ranking', 'histogram', 'freshness'],
   },
   {
     viewId: 'parking-citations',
@@ -64,6 +79,11 @@ export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
     homeCard: { title: 'Parking Citations', subtitle: 'Enforcement patterns, beat by beat', order: 3 },
     eraSource: { datasetKey: 'parkingCitations', dateField: 'ticket_iss', clamp: [2018, null] },
     omniDatasetKeys: ['parkingCitations'],
+    sources: ['parkingCitations'],
+    staticSources: ['oak-beats'],
+    // Same citable list as SF's parking-citations twin — sources.test.ts's
+    // scanner reads the SAME shared view files for both cities.
+    citable: ['map-sample', 'stat-totals', 'breakdown', 'freshness'],
   },
   {
     viewId: 'campaign-finance',
@@ -77,6 +97,7 @@ export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
     // absent — its amount_a is cumulative-ish (10–20× transaction sums;
     // summing it fabricates money).
     omniDatasetKeys: ['fppcSchA', 'fppcSchE', 'fppc496', 'fppc497'],
+    sources: ['fppc496', 'fppc497', 'fppcSchA', 'fppcSchE'],
   },
   {
     viewId: 'demographics',
@@ -97,5 +118,15 @@ export const OAKLAND_MANIFEST: readonly ViewManifestEntry[] = [
     // unconditionally, so the control stays visible and inert exactly as it
     // already does on /live and /oakland.
     dateless: true,
+    // No `sources`: Demographics.tsx is the SAME component SF mounts, and it
+    // imports useCivicMetrics (the civic-metric scatter's data hook), but
+    // that scatter is WITHHELD on Oakland (censusMatchesAreas() gates it off
+    // — beats ≠ regions). useCivicMetrics never fires a request here, so
+    // policeIncidents/cases311/parkingCitations are deliberately absent even
+    // though a static scan of the shared file would otherwise find them —
+    // see sources.test.ts's NOT_FETCHED_HERE, which authors this exception
+    // for the fetched⇔declared test. This view's real sources are the two
+    // static ones below.
+    staticSources: ['acs-2023-5yr', 'oak-neighborhoods'],
   },
 ]

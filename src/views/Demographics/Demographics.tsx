@@ -22,7 +22,7 @@ import MapView from '@/components/maps/MapView'
 import CorrelationScatter from '@/components/charts/CorrelationScatter'
 import DorlingCartogram from '@/components/charts/DorlingCartogram'
 import DemographicCard from '@/components/charts/DemographicCard'
-import DataSourceLine from '@/components/ui/DataSourceLine'
+import SourcePill from '@/components/maps/SourcePill'
 import ExportButton from '@/components/export/ExportButton'
 import { SkeletonStatCards, SkeletonChart } from '@/components/ui/Skeleton'
 import {
@@ -188,7 +188,7 @@ export default function Demographics() {
   }, [scatterYMetric])
 
   const civicMetricKey = isCensusY || !civicMetricsJoin ? null : scatterYMetric
-  const { data: civicYData, isLoading: civicLoading } = useCivicMetric(civicMetricKey)
+  const { data: civicYData, isLoading: civicLoading } = useCivicMetric(civicMetricKey, { cite: { viewId: 'demographics', purpose: 'civic-metric' } })
 
   // When scatter Y is a Census variable, build the Map from neighborhoods directly
   const scatterYData = useMemo(() => {
@@ -476,15 +476,6 @@ export default function Demographics() {
             <ExportButton targetSelector="#demographics-capture" filename="demographics-explorer" />
           </div>
         </div>
-
-        {/* Source attribution */}
-        <div className="mt-1">
-          <DataSourceLine
-            dataset="American Community Survey 5-Year Estimates"
-            source="U.S. Census Bureau"
-            vintage="2019-2023"
-          />
-        </div>
       </header>
 
       {/* ── Content ───────────────────────────────────────────────── */}
@@ -655,9 +646,7 @@ export default function Demographics() {
                         {formatValue(legendStops[legendStops.length - 1].value, activeConfig.format)}
                       </span>
                     </div>
-                    <p className="text-[8px] font-mono text-slate-500/60 mt-1.5">
-                      Source: U.S. Census Bureau via DataDiver
-                    </p>
+                    <div className="mt-1.5"><SourcePill inline /></div>
                   </div>
                 )}
               </div>

@@ -125,7 +125,7 @@ export default function ChartTray({ viewId, tiles, className = '' }: ChartTrayPr
           back in with `pointer-events-auto` — a child without it is silently
           unclickable (same shipped bug as CardTray, July 2026). */}
       {(minimizedTiles.length > 0 || hiddenTiles.length > 0 || hasExpanded) && (
-        <div className="flex flex-wrap items-center gap-1.5 px-4 py-2 pointer-events-none">
+        <div className="flex flex-wrap items-center gap-1.5 px-4 pt-2 pb-[4.75rem] desk:pb-10 pointer-events-none">
           {minimizedTiles.map((tile) => (
             <button
               key={tile.id}

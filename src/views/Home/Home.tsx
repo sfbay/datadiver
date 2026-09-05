@@ -194,14 +194,14 @@ export default function Home() {
                   text-micro font-mono uppercase tracking-wider whitespace-nowrap text-[#f5ecd9]
                   shadow-sm cursor-pointer transition-[filter] hover:brightness-110
                   ${indicators.error ? 'bg-[#b58620]' : 'bg-[#5c7a3d]'}`}
-                title="When DataDiver last refreshed from datasf.sfgov.org — each dataset publishes on its own schedule. Open The Last 48 →"
+                title={`When DataDiver last refreshed from ${city.portal.host} — each dataset publishes on its own schedule. Open The Last 48 →`}
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-current pulse-live flex-shrink-0" />
                 {indicators.error
                   ? 'DataSF · retrying'
                   : indicators.lastUpdated
                     ? `Live · updated ${formatApTime(indicators.lastUpdated.getTime())}`
-                    : 'Live · datasf.sfgov.org'}
+                    : `Live · ${city.portal.host}`}
               </button>
             </div>
           </div>

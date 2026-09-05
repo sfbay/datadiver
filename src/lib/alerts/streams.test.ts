@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import {
   ALERT_STREAMS, ALERT_STREAM_IDS, isLiveStream, isReleasedStream, streamWhere,
 } from './streams.js'
+import { CITIES } from '../../cities/registry.js'
 
 describe('ALERT_STREAMS registry', () => {
   it('has exactly the five streams, three live + two released', () => {
@@ -130,5 +131,17 @@ describe('ALERT_STREAMS registry', () => {
       intersection_point: { type: 'Point', coordinates: [-122.42, 37.77] },
     })
     expect(ev!.id).toBe('911-realtime:C1')
+  })
+
+  it('socrataId + dateField match the SF registry (the ONE authored truth)', () => {
+    const byId = Object.fromEntries(Object.values(CITIES.sf.datasets).map((c) => [c.id, c]))
+    for (const [id, cfg] of Object.entries(ALERT_STREAMS)) {
+      expect(byId[cfg.socrataId], `${id} → ${cfg.socrataId}`).toBeDefined()
+      // business-openings deliberately reads location_start_date for the
+      // alert-window WHERE clause while the registry's own dateField is
+      // dba_start_date — a business's PHYSICAL move-in date, not its permit
+      // date, is what the "new business near you" alert means. Not a drift.
+      if (id !== 'business-openings') expect(byId[cfg.socrataId].dateField, id).toBe(cfg.dateField)
+    }
   })
 })

@@ -144,7 +144,8 @@ export function LocationPicker({ locations, radiusMiles, onAdd, className }: Loc
 
   return (
     <div className={className ?? 'h-72'}>
-      <MapView ref={mapRef} onMapReady={handleReady} className="w-full h-full" camera={PICKER_CAMERA} />
+      {/* No dataset ever draws here — a source pill would credit data this picker never shows. */}
+      <MapView ref={mapRef} onMapReady={handleReady} className="w-full h-full" camera={PICKER_CAMERA} showSourcePill={false} />
     </div>
   )
 }

@@ -1,5 +1,10 @@
 import { parseSfLocal } from '@/utils/sfTime'
-import { apMonthDay } from '@/utils/comparisonMode'
+import { CITIES } from '@/cities/registry'
+import { completeWindow } from '@/utils/completeWindow'
+import { apDate } from '@/utils/apDate'
+
+export { completeWindow } from '@/utils/completeWindow'
+export { apDate } from '@/utils/apDate'
 
 /**
  * Pure framing logic for the Oakland landing ticker (spec §B2).
@@ -24,47 +29,30 @@ import { apMonthDay } from '@/utils/comparisonMode'
  * (complete by construction) and names the cycle — "filed through
  * max(tran_date)" was rejected as fabricated completeness (the current
  * semiannual is unfiled; that max rests on outlier rows).
+ * Edges are authored on the registry entries (`completeness.edgeDays`);
+ * this constant derives them.
  */
+const oakEdge = (key: string) => CITIES.oakland.datasets[key].completeness!.edgeDays
+
 export const OAK_TICKER_EDGES = {
-  crimeEdgeDays: 8,
+  crimeEdgeDays: oakEdge('policeIncidents'),
   crimeSuppressMaxAgeDays: 14,
-  threeOneOneEdgeDays: 1,
+  threeOneOneEdgeDays: oakEdge('cases311'),
   threeOneOneSuppressMaxAgeDays: 3,
-  citationsEdgeDays: 1,
+  citationsEdgeDays: oakEdge('parkingCitations'),
 } as const
 
-/** Date-only window [end − spanDays + 1, end] where end = max − edgeDays.
- *  All math on UTC day numbers of the FLOATING local date — never string
- *  slicing across month boundaries, never toISOString on a local now. */
-export function completeWindow(
-  maxLocal: string,
-  edgeDays: number,
-  spanDays: number
-): { start: string; end: string } {
-  const day = (iso: string) => {
-    const [y, m, d] = iso.slice(0, 10).split('-').map(Number)
-    return Date.UTC(y, m - 1, d)
-  }
-  const fmt = (ms: number) => new Date(ms).toISOString().slice(0, 10)
-  const DAY = 86_400_000
-  const end = day(maxLocal) - edgeDays * DAY
-  return { start: fmt(end - (spanDays - 1) * DAY), end: fmt(end) }
-}
+// completeWindow moved to src/utils/completeWindow.ts (re-exported above) —
+// a library module (sourceLine.ts) needed it without depending on a view.
 
 /** True when the stream's max(dateField) is older than maxAgeDays. */
 export function isStaleLocal(maxLocal: string, maxAgeDays: number, nowMs: number): boolean {
   return nowMs - parseSfLocal(maxLocal) > maxAgeDays * 86_400_000
 }
 
-/** AP-style date; year appended only when it differs from nowYear.
- *  Month styling delegates to comparisonMode's apMonthDay — the repo's ONE
- *  AP-month authority (a second private table is the duplicated-allowlist
- *  class). */
-export function apDate(isoDate: string, nowYear: number): string {
-  const y = Number(isoDate.slice(0, 4))
-  const base = apMonthDay(isoDate.slice(0, 10))
-  return y === nowYear ? base : `${base}, ${y}`
-}
+// apDate moved to src/utils/apDate.ts (re-exported above) — the repo's ONE
+// AP-date authority, needed outside Home too (a second private table is the
+// duplicated-allowlist class).
 
 const n = (v: number) => v.toLocaleString('en-US')
 

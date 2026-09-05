@@ -10,6 +10,7 @@ import { HISTORICAL_FIELDS } from './crimeEra'
 import { SF_MANIFEST } from '@/cities/sf/manifest'
 import { buildEraQuery, buildHistoricalEraQuery } from '@/api/eraSources'
 import { countDistinctCases, distinctIncidents, distinctCases } from '@/hooks/useComparisonDataFactory'
+import { CITIES } from '@/cities/registry'
 
 const crimeEntry = SF_MANIFEST.find((e) => e.viewId === 'crime-incidents')!
 
@@ -92,6 +93,13 @@ describe('no SF crime query counts rows', () => {
       expect(readFileSync(f, 'utf8')).not.toContain('count(*)')
     })
   }
+
+  it('the Demographics civic-metric panel counts cases, not charge rows', () => {
+    const src = readFileSync('src/utils/censusVariables.ts', 'utf8')
+    const entry = src.slice(src.indexOf("key: 'crimeCount'"), src.indexOf("key: 'cases311Count'"))
+    expect(entry).toContain('count(distinct incident_number)')
+    expect(entry).not.toMatch(/COUNT\(\*\)/)
+  })
 
   it('the view feeds its trend baseline a case-level countExpr', () => {
     const src = readFileSync('src/views/CrimeIncidents/CrimeIncidents.tsx', 'utf8')
@@ -204,4 +212,24 @@ describe('the subcategory mover ticker card', () => {
     expect(fn).toMatch(/headline: `\$\{top\.label\} \$\{formatPct\(top\.delta\)\}/)
     expect(fn).not.toMatch(/top\.delta >= 0 \? 'up' : 'down'/)
   })
+})
+
+describe('ticker card datasetId literals match the registry (the ONE authored truth)', () => {
+  // A hand-typed 4x4 that drifts from the registry silently mislinks a
+  // ticker card's evidence view. Scan rather than import: the hooks pull
+  // appStore -> window.matchMedia, which the node-only suite has no DOM for.
+  const cases: [file: string, sfOrOak: 'sf' | 'oakland'][] = [
+    ['src/hooks/useCivicIndicators.ts', 'sf'],
+    ['src/hooks/useOaklandIndicators.ts', 'oakland'],
+  ]
+
+  for (const [file, cityId] of cases) {
+    it(`every datasetId literal in ${file} is a real ${cityId} dataset id`, () => {
+      const src = readFileSync(file, 'utf8')
+      const ids = [...src.matchAll(/datasetId:\s*'([a-z0-9]{4}-[a-z0-9]{4})'/g)].map((m) => m[1])
+      expect(ids.length).toBeGreaterThan(0)
+      const registryIds = new Set(Object.values(CITIES[cityId].datasets).map((d) => d.id))
+      for (const id of ids) expect(registryIds.has(id), `${file} → ${id}`).toBe(true)
+    })
+  }
 })

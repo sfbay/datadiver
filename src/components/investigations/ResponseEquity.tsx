@@ -1,5 +1,6 @@
 import { InvestigationCard, ErrorState } from './InvestigationCard'
 import { useResponseEquity } from '@/hooks/useResponseEquity'
+import { CITIES } from '@/cities/registry'
 
 /** Truncate a neighborhood name to maxLen chars with ellipsis */
 function truncateName(name: string, maxLen: number): string {
@@ -18,9 +19,9 @@ export default function ResponseEquity() {
       eyebrow="911 Response · The Equity Gap"
       accentColor="#b85a33"
       headline={headline}
-      subtitle="Fire/EMS Dispatch · Average response time by neighborhood"
+      subtitle="Average response time, fastest neighborhood against slowest"
       explorePath="/emergency-response"
-      sourceName="SFFD Dispatch Data"
+      sourceName={`${CITIES.sf.datasets.fireEMSDispatch.publisher.short} · ${CITIES.sf.datasets.fireEMSDispatch.name}`}
       isLoading={isLoading || (!data && !error)}
     >
       {error ? (
