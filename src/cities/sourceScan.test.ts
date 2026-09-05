@@ -53,6 +53,15 @@ describe('collectScanSet', () => {
     const set = collectScanSet(join(process.cwd(), 'src/views/CrimeIncidents'), { root: process.cwd(), allow: [] })
     for (const f of set) expect(f.startsWith(join(process.cwd(), 'src'))).toBe(true)
   })
+  it('a FILE seed scopes the walk to that entry point — src/views/Home holds two unrelated top-level components', () => {
+    const fromCityLanding = collectScanSet(join(process.cwd(), 'src/views/Home/CityLanding.tsx'), {
+      root: process.cwd(),
+      allow: [],
+    })
+    expect(fromCityLanding.some((f) => f.endsWith('/Home.tsx'))).toBe(false)
+    const fromDirectory = collectScanSet(join(process.cwd(), 'src/views/Home'), { root: process.cwd(), allow: [] })
+    expect(fromDirectory.some((f) => f.endsWith('/views/Home/Home.tsx'))).toBe(true)
+  })
 })
 
 describe('scanCitePurposes', () => {

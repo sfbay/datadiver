@@ -16,11 +16,17 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     navShortLabel: 'OV',
     navDescription: 'Data stories & viz picker',
     accentColor: '#b85a33', // terracotta-600 — primary brand
-    // No `sources`: every dataset key Home touches (budget/vendor/fire/police/
-    // 311/business/campaign-finance) is fetched by usePreloadCache — a
+    // Real front-page fetches, via the investigation cards Home.tsx mounts:
+    // dispatch911Realtime/fireEMSDispatch/cases311 (Last48Pulse → the pulse
+    // teaser's useLast48Pulse), fireEMSDispatch again (ResponseEquity),
+    // trafficCrashes (VisionZeroCounter), spendingRevenue (DeficitCounter),
+    // vendorPayments (ComplianceTracker's useAdvertisingData/
+    // useComplianceData). NOT included: everything usePreloadCache warms
+    // (budget/policeIncidents/businessLocations/campaignFinance/…) — that's a
     // background cache-warmer for OTHER views' future navigation, not Home's
-    // own editorial content — and usePreloadCache is CROSS_CUTTING for
-    // exactly that reason (sources.test.ts).
+    // own content, and is CROSS_CUTTING for exactly that reason
+    // (sources.test.ts).
+    sources: ['cases311', 'dispatch911Realtime', 'fireEMSDispatch', 'spendingRevenue', 'trafficCrashes', 'vendorPayments'],
     staticSources: ['sf-analysis-neighborhoods', 'acs-2023-5yr'],
   },
   {

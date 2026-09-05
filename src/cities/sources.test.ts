@@ -25,6 +25,16 @@ const VIEW_DIRS: Record<ViewId, string> = {
   demographics: 'src/views/Demographics', neighborhood: 'src/views/Neighborhood', about: 'src/views/About',
 }
 
+/** Per-(city, view) entry FILE, for the case where one directory holds two
+ *  different top-level components. `src/views/Home` is both San Francisco's
+ *  Home (Home.tsx) and Oakland's landing page (CityLanding.tsx); HomeRouter
+ *  picks by city, so seeding the scan from the directory would charge each
+ *  city with the other's fetches. */
+const CITY_VIEW_ENTRY: Record<string, string> = {
+  'sf/home': 'src/views/Home/Home.tsx',
+  'oakland/home': 'src/views/Home/CityLanding.tsx',
+}
+
 /** Cross-cutting hooks whose datasets belong to no single view. Generic data
  *  hooks whose dataset key arrives as a caller-supplied parameter (useDataset
  *  itself, and the factories/hooks built on it) live here too — their
@@ -47,6 +57,10 @@ const CROSS_CUTTING = [
 const RESOLVED_KEYS: Record<string, readonly string[]> = {
   'src/hooks/useLast48Window.ts': ['dispatch911Realtime', 'fireEMSDispatch', 'cases311'],
   'src/hooks/useAnomalyBaseline.ts': ['dispatch911Realtime', 'fireEMSDispatch', 'cases311'],
+  // Six of CIVIC_METRICS' seven. The seventh ("Avg Response Time",
+  // fireEMSDispatch) carries isClientSide: true — useCivicMetrics.ts returns
+  // before the fetch on that flag, and Demographics.tsx filters those metrics
+  // out of the scatter picker — so it is never fetched here.
   'src/hooks/useCivicMetrics.ts': ['policeIncidents', 'cases311', 'fireIncidents', 'trafficCrashes', 'parkingCitations', 'businessLocations'],
   // CampaignFinance's own hooks route through fppcBuildersFor(cityId), a
   // per-city query-builder table (src/views/CampaignFinance/fppcDialect.ts):
@@ -89,8 +103,9 @@ const NOT_FETCHED_HERE: Record<string, { keys: readonly string[]; why: string }>
   },
 }
 
-function scanSet(viewId: ViewId) {
-  return collectScanSet(join(ROOT, VIEW_DIRS[viewId]), { root: ROOT, allow: CROSS_CUTTING })
+function scanSet(cityId: string, viewId: ViewId) {
+  const seed = CITY_VIEW_ENTRY[`${cityId}/${viewId}`] ?? VIEW_DIRS[viewId]
+  return collectScanSet(join(ROOT, seed), { root: ROOT, allow: CROSS_CUTTING })
     .map((file) => ({ file: file.slice(ROOT.length + 1), text: readFileSync(file, 'utf8') }))
 }
 
@@ -139,7 +154,7 @@ describe('manifest sources — fetched ⇔ declared (per live view, per city)', 
   for (const city of Object.values(CITIES)) {
     for (const entry of liveManifest(city.manifest)) {
       it(`${city.id}/${entry.viewId}`, () => {
-        const files = scanSet(entry.viewId)
+        const files = scanSet(city.id, entry.viewId)
         const { keys, unresolved } = scanFetchedKeys(files, RESOLVED_KEYS)
         expect(unresolved, 'variable-key fetchDataset sites need a RESOLVED_KEYS row').toEqual([])
         // Only keys this city's registry knows are this city's concern (a
@@ -159,7 +174,7 @@ describe('manifest citable — tagged ⇔ declared (view files only)', () => {
   for (const city of Object.values(CITIES)) {
     for (const entry of liveManifest(city.manifest)) {
       it(`${city.id}/${entry.viewId}`, () => {
-        const own = scanSet(entry.viewId).filter((f) => f.file.startsWith(VIEW_DIRS[entry.viewId]))
+        const own = scanSet(city.id, entry.viewId).filter((f) => f.file.startsWith(VIEW_DIRS[entry.viewId]))
         const tagged = [...scanCitePurposes(own, QUERY_PURPOSES)].sort()
         expect(tagged).toEqual([...(entry.citable ?? [])].sort())
       })
