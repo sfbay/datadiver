@@ -10,7 +10,7 @@ export const SOURCE_NOTES: Readonly<Record<string, string>> = {
   'tmnf-yvry': 'The 2003–May 2018 extract: a different schema and category vocabulary, read only for ranges before 2018 (see findings)',
   'vw6y-z8j6': '~15h intrinsic lag',
   'ubvf-ztfx': 'Double lag: ~4–6wk publish + longer fatality coding (see findings)',
-  'enwt-3u8m': 'Vision Zero street segments; updated annually',
+  'enwt-3u8m': 'Vision Zero street segments; not updated (historical only)',
   'ab4h-6ztd': 'No coordinates after ~Oct 2025 (see findings); published dates run 1951–2044 at both ends and are data-entry errors, so charts and queries are clamped to 2012–2026',
   'g8m3-pdis': 'DataSF dropped industry labels (Jul 2026) — sectors derived from the raw NAICS code; ~96% of new registrations have no code (see findings)',
   '5cei-gny5': 'Notices filed with the SF Rent Board since 1997 — not completed evictions (see findings)',
