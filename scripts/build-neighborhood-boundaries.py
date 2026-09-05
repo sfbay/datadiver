@@ -4,17 +4,14 @@ Build public/data/geo/sf-analysis-neighborhoods.geojson.
 
 WHY THIS EXISTS
 ---------------
-DataDiver used to fetch SF's Analysis Neighborhood polygons at RUNTIME from a raw
-GitHub URL on a volunteer brigade repo:
-
-    raw.githubusercontent.com/sfbrigade/data-science-wg/master/.../city_analysis_neighbor.geojson
-
-Twelve views and two hooks depend on those polygons — effectively every map in the
-app. An unpinned `master` branch on a third-party repo is a single point of failure
-for all of them: rename the branch, move the file, or hit GitHub's raw rate limit,
-and every neighborhood layer in DataDiver dies at once. It was also the last
-render-blocking third-party origin in the app, after the Google Fonts removal
-(June 2026) took out the others for the same reason.
+The polygons are DataSF's official "Analysis Neighborhoods" layer (j2bu-swwd,
+PDDL, Publishing Department: Planning). Until Sept. 2026 DataDiver fetched a
+2016 export of the same geometry mirrored on a volunteer GitHub repo
+(sfbrigade/data-science-wg) — byte-identical to DataSF's tract layer
+m46u-xzix on all 195 features, but unlicensed and unpinned. Re-pointing here
+changed nothing measurable: the 41 names equal SF_NEIGHBORHOODS exactly and
+the census block-group crosswalk re-ran 677/677 identical (spec
+2026-09-03-source-pill-design.md §3.3).
 
 WHAT THIS DOES
 --------------
@@ -52,10 +49,7 @@ from pathlib import Path
 from shapely.geometry import MultiPolygon, mapping, shape
 from shapely.ops import unary_union
 
-SOURCE = (
-    'https://raw.githubusercontent.com/sfbrigade/data-science-wg/master/'
-    'projects-in-this-repo/SF_311_Data-Analysis/data/GeoJSON/city_analysis_neighbor.geojson'
-)
+SOURCE = 'https://data.sfgov.org/resource/j2bu-swwd.geojson?$limit=100'
 OUT = Path('public/data/geo/sf-analysis-neighborhoods.geojson')
 
 # A part smaller than this share of its neighborhood's area is an alignment
