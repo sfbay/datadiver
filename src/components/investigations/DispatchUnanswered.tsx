@@ -21,9 +21,9 @@ export default function DispatchUnanswered() {
       eyebrow="Fire/EMS Dispatch · Unanswered"
       accentColor="#d47149"
       headline={headline}
-      subtitle="Fire/EMS Dispatch · Calls exceeding 10-min response target"
+      subtitle="Calls that took longer than the 10-minute response target"
       explorePath="/emergency-response"
-      sourceName={`${CITIES.sf.datasets.fireEMSDispatch.publisher.short} · Fire/EMS dispatch`}
+      sourceName={`${CITIES.sf.datasets.fireEMSDispatch.publisher.short} · ${CITIES.sf.datasets.fireEMSDispatch.name}`}
       isLoading={isLoading || (!data && !error)}
     >
       {error ? (

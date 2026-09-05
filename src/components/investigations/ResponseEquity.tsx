@@ -19,9 +19,9 @@ export default function ResponseEquity() {
       eyebrow="911 Response · The Equity Gap"
       accentColor="#b85a33"
       headline={headline}
-      subtitle="Fire/EMS Dispatch · Average response time by neighborhood"
+      subtitle="Average response time, fastest neighborhood against slowest"
       explorePath="/emergency-response"
-      sourceName={`${CITIES.sf.datasets.fireEMSDispatch.publisher.short} · Fire/EMS dispatch`}
+      sourceName={`${CITIES.sf.datasets.fireEMSDispatch.publisher.short} · ${CITIES.sf.datasets.fireEMSDispatch.name}`}
       isLoading={isLoading || (!data && !error)}
     >
       {error ? (

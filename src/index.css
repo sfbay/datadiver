@@ -431,7 +431,11 @@ body {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.panel-rise { animation: panelRise 200ms var(--ease-snap) both; }
+/* fill-mode `backwards`, never `forwards`/`both` — a filled animation
+   OUTRANKS an inline style on the same property, so a `both` entrance
+   quietly pins opacity/transform for the element's whole life. House rule;
+   see the Elections RCVComposition stagger for the case that taught it. */
+.panel-rise { animation: panelRise 200ms var(--ease-snap) backwards; }
 @media (prefers-reduced-motion: reduce) {
   .panel-rise { animation: none; }
 }

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { CITIES } from '@/cities/registry'
-import { summarizeSources, pillFace, throughLine, queryClause, citationLines } from './sourceLine'
+import { summarizeSources, pillFace, throughLine, queryClause, resultLine, citationLines } from './sourceLine'
 import type { CitableQuery } from './citations'
 
 const sfCrime = CITIES.sf.manifest.find((e) => e.viewId === 'crime-incidents')!
@@ -82,6 +82,45 @@ describe('throughLine', () => {
   })
 })
 
+describe('resultLine', () => {
+  const dateField = (city: 'sf' | 'oakland', key: string) => CITIES[city].datasets[key].dateField
+  it('a capped row sample ordered by the dataset\u2019s own date field DESC is the newest rows', () => {
+    // The shape resolveQuery injects from `defaultSort` — the ONE case where
+    // "newest" is a true description of what the cap kept.
+    expect(resultLine(rec({}), dateField('sf', 'policeIncidents'))).toBe('newest 5,000 rows (capped)')
+  })
+  it('a capped GROUP BY names its groups and its real ordering, never "newest rows"', () => {
+    // ParkingRevenue's map sample. One month of imvp-dq3v holds ~14,229
+    // distinct meters, so this cap bites on an ordinary range — and what it
+    // keeps is the top-revenue meters, not the newest anything.
+    const meters = rec({
+      cityId: 'sf', viewId: 'parking-revenue', datasetKey: 'parkingRevenue', datasetId: 'imvp-dq3v',
+      params: { $select: 'post_id, SUM(gross_paid_amt) as total_revenue, COUNT(*) as tx_count', $group: 'post_id', $where: 'x', $order: 'total_revenue DESC', $limit: 10000 },
+      rowCount: 10000, hitLimit: true,
+    })
+    const line = resultLine(meters, dateField('sf', 'parkingRevenue'))
+    expect(line).toBe('first 10,000 groups by total_revenue DESC (capped)')
+    expect(line).not.toMatch(/newest|rows/)
+  })
+  it('an uncapped result is just a count — of rows, or of groups when it grouped', () => {
+    expect(resultLine(rec({ rowCount: 1204, hitLimit: false }), 'incident_datetime')).toBe('1,204 rows')
+    expect(resultLine(rec({ params: { $group: 'analysis_neighborhood' }, rowCount: 41, hitLimit: false }))).toBe('41 groups')
+    expect(resultLine(rec({ params: { $group: 'x' }, rowCount: 1, hitLimit: false }))).toBe('1 group')
+  })
+  it('a capped result with no $order says the cut was arbitrary', () => {
+    expect(resultLine(rec({ params: { $limit: 1000 }, rowCount: 1000, hitLimit: true }), 'incident_datetime'))
+      .toBe('1,000 rows in no stated order (capped)')
+  })
+  it('only DESC on the dataset\u2019s OWN date field earns "newest"', () => {
+    expect(resultLine(rec({ params: { $order: 'incident_datetime ASC', $limit: 5000 } }), 'incident_datetime'))
+      .toBe('first 5,000 rows by incident_datetime ASC (capped)')
+    expect(resultLine(rec({ params: { $order: 'report_datetime DESC', $limit: 5000 } }), 'incident_datetime'))
+      .toBe('first 5,000 rows by report_datetime DESC (capped)')
+    // A dataset with no declared date field can never claim the newest slice.
+    expect(resultLine(rec({}))).toBe('first 5,000 rows by incident_datetime DESC (capped)')
+  })
+})
+
 describe('queryClause', () => {
   it('shows $where/$select/$group only', () => {
     expect(queryClause(rec({}))).toBe("WHERE incident_datetime >= '2026-08-04T00:00:00'")
@@ -96,8 +135,26 @@ describe('citationLines', () => {
     expect(lines.join('\n')).not.toMatch(/Garnier|Claude/)
   })
   it('Oakland line uses the Oakland portal', () => {
-    const lines = citationLines({ cityId: 'oakland', entry: oakCrime, records: [], portalTitles: {}, pageUrl: 'https://datadiver.jlabsf.org/oakland/crime-incidents', accessed: '2026-09-03' })
+    const oakRec = rec({ cityId: 'oakland', viewId: 'crime-incidents', datasetId: 'ppgh-7dqv', host: 'data.oaklandca.gov', params: {}, hitLimit: false })
+    const lines = citationLines({ cityId: 'oakland', entry: oakCrime, records: [oakRec], portalTitles: {}, pageUrl: 'https://datadiver.jlabsf.org/oakland/crime-incidents', accessed: '2026-09-03' })
     expect(lines[0]).toMatch(/^Oakland Police Department\. "OPD Incident Reports" \(ppgh-7dqv\)\. Oakland Open Data, data\.oaklandca\.gov\. Accessed Sept\. 3, 2026, via DataDiver/)
+  })
+  it('a DECLARED dataset with no recorded query earns no line — the statics still do', () => {
+    // Traffic Safety declares five datasets; four of them (speed cameras,
+    // red-light cameras, pavement condition, the High Injury Network) are
+    // overlays that ship OFF, so a reader who never switched one on saw
+    // nothing from them. A citation is a claim about what was SEEN.
+    const crashes = rec({ viewId: 'traffic-safety', datasetKey: 'trafficCrashes', datasetId: 'ubvf-ztfx', params: { $where: 'collision_datetime > x' } })
+    const lines = citationLines({ cityId: 'sf', entry: sfTraffic, records: [crashes], portalTitles: {}, pageUrl: 'https://datadiver.jlabsf.org/traffic-safety', accessed: '2026-09-03' })
+    expect(lines).toHaveLength(3) // crashes + the two statics
+    expect(lines.join('\n')).not.toMatch(/speed|red.light|pavement|High Injury/i)
+    // The boundary layer and the ACS spine are joined onto every render and
+    // record no query of their own — they must never drop out.
+    expect(lines.some((l) => /Analysis Neighborhoods/i.test(l))).toBe(true)
+    expect(lines.some((l) => /American Community Survey/i.test(l))).toBe(true)
+    // …and with no records at all, a dataset-led view cites only its statics.
+    const bare = citationLines({ cityId: 'sf', entry: sfTraffic, records: [], portalTitles: {}, pageUrl: 'https://datadiver.jlabsf.org/traffic-safety', accessed: '2026-09-03' })
+    expect(bare).toHaveLength(2)
   })
   it('a static row cites the upstream document', () => {
     const lines = citationLines({ cityId: 'sf', entry: sfElections, records: [], portalTitles: {}, pageUrl: 'https://datadiver.jlabsf.org/elections', accessed: '2026-09-03' })
@@ -113,6 +170,18 @@ describe('citationLines', () => {
     // scope-count outranks stat-totals in the priority list, regardless of
     // which record resolved (and so was appended to `records`) first.
     expect(forward[0]).toContain('Filtered: b = 2')
+  })
+  it('purposes OUTSIDE the priority list are ranked too — Demographics records only civic-metric', () => {
+    // The old fallback was `mine[0]`, i.e. resolution order, for every
+    // purpose the priority list doesn't name. The tail now follows
+    // QUERY_PURPOSES' own authored order (breakdown before civic-metric).
+    const civic = rec({ purpose: 'civic-metric', params: { $where: 'c = 3' } })
+    const breakdown = rec({ purpose: 'breakdown', params: { $where: 'd = 4' } })
+    const args = (records: CitableQuery[]) => ({ cityId: 'sf' as const, entry: sfCrime, records, portalTitles: {}, pageUrl: 'https://datadiver.jlabsf.org/crime-incidents', accessed: '2026-09-03' })
+    expect(citationLines(args([civic, breakdown]))[0]).toBe(citationLines(args([breakdown, civic]))[0])
+    expect(citationLines(args([civic, breakdown]))[0]).toContain('Filtered: d = 4')
+    // A lone unranked purpose still supplies its own filter clause.
+    expect(citationLines(args([civic]))[0]).toContain('Filtered: c = 3')
   })
 })
 

@@ -5,6 +5,7 @@ import { CORRECTIONS } from './corrections'
 
 /** Every id ever published. Add to this list; never take one away. */
 const PUBLISHED_IDS = [
+  '2026-09-05-demographics-crime-axis',
   '2026-09-05-acs-vintage-label',
   '2026-08-31-sf-crime-counts',
   '2026-08-11-oakland-homicide',
