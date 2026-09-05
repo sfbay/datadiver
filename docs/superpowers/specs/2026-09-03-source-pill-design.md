@@ -644,6 +644,19 @@ the above:**
   scan set as a spurious unresolved site.
 - The "collectScanSet never walks out of `src/`" test passes vacuously against both the old and
   new (transitive) scanner — a safety net, not a test that currently discriminates a regression.
+- `collectScanSet` itself has no dedicated unit test — by the plan's own design it is exercised
+  indirectly, through `sources.test.ts`'s use of it across all 26 live manifest entries in both
+  cities, which is the coverage the team judged sufficient rather than a gap to close.
+- Three of the six `src/lib/provenance/` modules — `purposes.ts`, `nonSocrata.ts`, `citations.ts`
+  — omit the leading `// src/lib/provenance/<file>.ts` filename-header comment that their three
+  siblings (`sourceLine.ts`, `downloads.ts`, `portalMeta.ts`) carry (verified on disk against all
+  six files; the convention is still genuinely unsettled, not a one-off oversight in a single
+  file). Whoever next edits that directory should pick one convention and apply it to all six in
+  the same pass, rather than add a fourth exception.
+- Tailwind's content scan reaches `.superpowers/**/*.md`, so the built CSS carries a couple of
+  dead rules emitted from a scratch brief's own prose rather than from real source. Small, with
+  an obvious remedy — exclude the scratch directory from the Tailwind config's content globs —
+  left alone because it's outside this feature's scope.
 - A tagged citation response that lands after the reader has already navigated away can leave one
   stale scope entry uncleared — bounded by the number of views, and self-heals the next time that
   view is visited.
