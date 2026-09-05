@@ -68,4 +68,24 @@ describe('NON_SOCRATA', () => {
     const src = readFileSync('src/components/ui/NeighborhoodCensusContext.tsx', 'utf8')
     expect(src).not.toContain('2020-2024')
   })
+  it("DemographicCard's short-form vintage derivation is pinned to its exact rendered value", () => {
+    // DemographicCard's own context ("<city> · ACS 2019–2023") reads fine
+    // with the "ACS" prefix kept — this pin exists so a future edit to the
+    // authored vintage string can't silently change what that line renders.
+    const src = readFileSync('src/components/charts/DemographicCard.tsx', 'utf8')
+    expect(src).toContain("NON_SOCRATA['acs-2023-5yr'].vintage.replace(' 5-year estimates', '')")
+    expect(NON_SOCRATA['acs-2023-5yr'].vintage.replace(' 5-year estimates', '')).toBe('ACS 2019–2023')
+  })
+  it("NeighborhoodCensusContext derives a bare year-range vintage, not the full authored string (guards the DataSourceLine stutter)", () => {
+    // DataSourceLine composes "{dataset} ({vintage}) · {source}". Passing
+    // the full authored vintage here once rendered "American Community
+    // Survey 5-Year Estimates (ACS 2019–2023 5-year estimates) · U.S.
+    // Census Bureau" — accurate, but stuttering. The bare year range reads
+    // "American Community Survey 5-Year Estimates (2019–2023) · U.S.
+    // Census Bureau".
+    const src = readFileSync('src/components/ui/NeighborhoodCensusContext.tsx', 'utf8')
+    expect(src).toContain("NON_SOCRATA['acs-2023-5yr'].vintage.replace('ACS ', '').replace(' 5-year estimates', '')")
+    expect(NON_SOCRATA['acs-2023-5yr'].vintage.replace('ACS ', '').replace(' 5-year estimates', '')).toBe('2019–2023')
+    expect(src).not.toContain("vintage={NON_SOCRATA['acs-2023-5yr'].vintage}")
+  })
 })
