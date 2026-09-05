@@ -43,6 +43,18 @@ export interface Correction {
 /** Newest first. Append at the top; never edit or remove an existing entry. */
 export const CORRECTIONS: readonly Correction[] = [
   {
+    id: '2026-09-05-acs-vintage-label',
+    date: '2026-09-05',
+    dateLabel: 'Sept. 5, 2026',
+    views:
+      'Census sidebar on Emergency Response · Crime Incidents · Traffic Safety · 311 Cases · Parking Revenue · Parking Citations · Business Activity',
+    window: 'live from March 17, 2026 to Sept. 5, 2026',
+    change:
+      'The neighborhood census sidebar now names its source as the American Community Survey 2019–2023 5-year estimates.',
+    before:
+      'It read "ACS 2020-2024". No 2020–2024 vintage exists in the data DataDiver serves; every figure on those seven sidebars was and is from the 2019–2023 5-year estimates, the same vintage the Demographics view and the About page already named.',
+  },
+  {
     id: '2026-08-31-sf-crime-counts',
     date: '2026-08-31',
     dateLabel: 'Aug. 31, 2026',

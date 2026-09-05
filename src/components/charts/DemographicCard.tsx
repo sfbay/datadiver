@@ -5,6 +5,9 @@
 import SparkBars from './SparkBars'
 import { getVariableConfig } from '../../utils/censusVariables'
 import type { CensusVariable, NeighborhoodCensusData } from '../../types/census'
+import { NON_SOCRATA } from '@/lib/provenance/nonSocrata'
+
+const ACS_VINTAGE_LABEL = NON_SOCRATA['acs-2023-5yr'].vintage.replace(' 5-year estimates', '')
 
 // ---------------------------------------------------------------------------
 // Props
@@ -202,7 +205,7 @@ export default function DemographicCard({
           <span className="font-mono text-lg text-slate-500">—</span>
         )}
         <span className="ml-2 text-micro text-slate-500 font-mono">
-          {cityLabel ? `${cityLabel} · ACS 2019–2023` : 'ACS 2019–2023'}
+          {cityLabel ? `${cityLabel} · ${ACS_VINTAGE_LABEL}` : ACS_VINTAGE_LABEL}
         </span>
       </div>
 

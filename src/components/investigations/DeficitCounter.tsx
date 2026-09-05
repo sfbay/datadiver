@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { InvestigationCard } from './InvestigationCard'
 import { useDeficitData } from '@/hooks/useDeficitData'
+import { CITIES } from '@/cities/registry'
 
 // Earth-tone palette for top 3 dept bars + "other": brick → terracotta →
 // ochre → espresso. Same warm-to-deep gradient as the previous red→amber
@@ -116,7 +117,7 @@ export default function DeficitCounter() {
       headline="The deficit is growing faster than revenue"
       subtitle="SF Controller · Spending & Revenue"
       explorePath="/city-budget"
-      sourceName="Spending & Revenue Data"
+      sourceName={`${CITIES.sf.datasets.spendingRevenue.publisher.short} · Spending & Revenue`}
       isLoading={isLoading}
     >
       {data && (

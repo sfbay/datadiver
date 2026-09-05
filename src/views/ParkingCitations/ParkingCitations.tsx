@@ -849,7 +849,7 @@ export default function ParkingCitations() {
                 Parking Citations
               </h1>
               <p className="hidden sm:block truncate text-micro font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
-                {isSF ? 'SFMTA' : 'OakDOT'} &middot; Citation Patterns & Fines
+                {city.datasets.parkingCitations.publisher.short} &middot; Citation Patterns & Fines
               </p>
             </div>
             {!isLoading && citationData.length > 0 && (
