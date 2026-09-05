@@ -1337,6 +1337,97 @@ disclosed, hairline-visible improvement to the SF view too: SF's own
 Schedule A data includes 67 `PTY`-coded rows that previously fell through to
 the raw code / a generic fallback color rather than a labeled bucket.
 
+## Provenance (source registry, Sept. 2026)
+
+The source-pill feature (a per-view credit + citation panel, `src/lib/provenance/`) required
+auditing every dataset DataDiver reads for who publishes it, under what license, and how fresh
+it really is. Socrata's own metadata answered less of that than expected.
+
+### Socrata `attribution` is null on 20 of 52 dataset ids — publishers had to be authored
+
+**Finding:** across both cities' registries, the portal's own `attribution` field
+(`GET /api/views/<id>.json`) is empty on 20 of the 52 dataset ids DataDiver reads, and
+inconsistent where it IS present (some name a department, some name "City and County of San
+Francisco" regardless of which department actually runs the program). Socrata's metadata is not
+a usable publisher source on its own.
+
+**Rule:** `publisher: { short, full }` is now a required, hand-authored field on every registry
+entry (`src/cities/types.ts` `DatasetConfig`) — seeded from each portal's "Publishing Department"
+custom field plus manual research where that too was missing, never read live from `attribution`.
+A live `attribution` value is never trusted as a fallback either; an entry with no authored
+publisher fails `tsc -b`.
+
+### The license vocabulary on these two hosts is a small, closed set
+
+**Finding:** every dataset's live `licenseId` on `data.sfgov.org` and `data.oaklandca.gov` falls
+into one of four buckets: `PDDL` (×29), `CC0_10` (×16), `PUBLIC_DOMAIN` (×1), or absent (×6).
+The absent set is not random — it clusters on SF's newer election-geometry layers: the 2012
+precinct layer (`bsfq-aeyw`) is PDDL, but its 2022 successor (`d6x4-hefw`) states no license at
+all, an asymmetry between two versions of the same kind of layer. Both Oakland boundary layers
+(`78s7-673i` beats, `sb4q-6bkc` neighborhoods) also state no license.
+
+**Rule:** `NON_SOCRATA` and the registry both carry `license: { name, url } | 'not stated'` —
+"not stated" renders verbatim in the panel rather than being silently upgraded to PDDL by
+resemblance to its siblings. Live portal metadata (`portalMeta.ts`) fills in a license only when
+the portal actually reports one; failure or absence never invents a value.
+
+### `rowsUpdatedAt` is the publisher's PUSH time — never "data through"
+
+**Finding:** Socrata's `rowsUpdatedAt` field records when the publisher last touched the table,
+not the newest event date inside it. A department can push a metadata-only edit, a schema note,
+or a re-upload of the same rows and bump `rowsUpdatedAt` without adding a single new row; the
+same field also can lag well behind the true content edge on a dataset that streams continuously
+between infrequent "official" pushes.
+
+**Rule:** the source panel renders `rowsUpdatedAt` as "publisher updated {date}", strictly
+separate from — and never a substitute for — "Published through {date}", which comes only from a
+`MAX(dateField)` query DataDiver runs itself. The two lines can and do disagree; both render when
+both facts exist, and neither is inferred from the other.
+
+### The SF neighborhood polygons were a verbatim, unlicensed volunteer mirror
+
+**Finding:** the boundary file DataDiver had vendored for the 41 Analysis Neighborhoods traced
+back to `sfbrigade`'s civic-hacking GitHub repo, which itself carries no license. Comparing it
+byte-for-byte against DataSF's own 2016 export (`m46u-xzix`) showed the two identical on all
+195 features — the volunteer copy was a faithful mirror, just with no stated rights to redistribute
+it. DataSF's current, PDDL-licensed 41-polygon layer, `j2bu-swwd`, matches `SF_NEIGHBORHOODS`'s
+names byte-for-byte and its geometry to within 0.0023% area drift (the sliver-drop step in the
+build script) — and re-running the census tract-to-neighborhood, point-in-polygon crosswalk
+against all three polygon sets (the old mirror, the 2016 export, and `j2bu-swwd`) produced 677
+of 677 identical assignments.
+
+**Rule:** `scripts/build-neighborhood-boundaries.py` now sources from
+`https://data.sfgov.org/resource/j2bu-swwd.geojson` — a licensed, official layer, with the
+dissolve step now a no-op (source is already 41 dissolved polygons) rather than a functional
+change. `generate-census-static.ts`'s `NEIGHBORHOOD_GEOJSON_URL` points at the same URL. Nothing
+downstream (names, geometry, the census crosswalk) moved; only the license under the numbers did.
+
+### The legacy `/api/geospatial/<id>?method=export` endpoint is dead
+
+**Finding:** Socrata's older geospatial export form, once a documented way to pull a full
+boundary layer, now returns a 200 with a 53-byte truncated body on both `data.sfgov.org` and
+`data.oaklandca.gov` — a response that LOOKS successful (status 200, no error) but carries no
+usable geometry. Nothing that checks only the HTTP status would catch this.
+
+**Rule:** no download link, registry entry, or generator script may use the `/api/geospatial/…`
+form; `.geojson?$limit=n` (the resource endpoint, same as any other query) is what actually
+serves the file today. `nonSocrata.test.ts` greps every `upstreamUrl`/`landingUrl` in the table
+and fails on a match.
+
+### `/resource/<id>.csv` honours the same SoQL as the JSON endpoint, with no 50k cap
+
+**Finding:** the CSV download form of Socrata's resource endpoint (`/resource/<id>.csv?…`)
+accepts the identical `$select`/`$where`/`$group`/`$order`/`$limit` query string as the JSON
+endpoint on both `data.sfgov.org` and `data.oaklandca.gov`, and neither host enforces the
+commonly-assumed 50,000-row ceiling on it — a filtered CSV download can return everything a
+query asks for, not a truncated sample.
+
+**Rule:** the pill's CSV download link is built by swapping only the file extension on the exact
+resolved query URL (`src/lib/provenance/downloads.ts`) — never a separate, re-derived query —
+and never string-replaces `.json?` (a `.geojson` source like the High Injury Network would break).
+The unfiltered "Full dataset (CSV)" link is a different, deliberately SoQL-free form:
+`/api/views/<id>/rows.csv?accessType=DOWNLOAD`.
+
 ## General Patterns
 
 ### Floating SF-Local Timestamps (all DataSF datasets)
