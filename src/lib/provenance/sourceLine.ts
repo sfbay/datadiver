@@ -7,6 +7,7 @@ import type { CityId } from '@/cities/routing'
 import type { ViewManifestEntry } from '@/cities/manifest'
 import { NON_SOCRATA, type NonSocrataSource, type NonSocrataId } from './nonSocrata'
 import type { CitableQuery } from './citations'
+import type { QueryPurpose } from './purposes'
 import { completeWindow } from '@/utils/completeWindow'
 import { apDate } from '@/utils/apDate'
 
@@ -31,25 +32,36 @@ export interface SourceSummary {
  *  list on its own — a certified results file or a census release does. */
 const PRIMARY_STATIC_KINDS = new Set<NonSocrataSource['kind']>(['results', 'ballots', 'census'])
 
-/** A view is DATASET-LED when it draws rows from a Socrata dataset (its
- *  citable set carries map-sample or window-sample, or declares nothing AND
- *  its lead static source is mere infrastructure — a boundary/crosswalk/
- *  basemap layer) and STATIC-LED otherwise (Elections: results files;
- *  Demographics: ACS — both lead with a static source whose kind IS the
- *  view's actual content, not a joined-on layer). The lead group comes
- *  first — it is the primary source for the pill face and the About link.
- *  Within the dataset group, the view's own `eraSource.datasetKey` (its
- *  time-anchor dataset — CLAUDE.md's "Era Track" — when declared) leads;
- *  `entry.sources` is otherwise an unordered membership list (Task 5's scan
- *  output), not a narrative order, so a cross-reference dataset like
- *  crime-incidents' 911 lookup must never outrank the view's own dataset. */
+/** A view is DATASET-LED when it draws rows from a Socrata dataset AND
+ *  (an explicit `citable` says so via map-sample/window-sample, OR — the
+ *  unconditional default whenever `citable` doesn't say otherwise — its lead
+ *  static source is mere joined-on infrastructure: boundary/crosswalk/
+ *  basemap). STATIC-LED otherwise (Elections: results files; Demographics:
+ *  ACS — both lead with a static source whose kind IS the view's actual
+ *  content). Deliberately NOT gated on "citable is empty": Oakland's
+ *  311/parking-citations views carry OPD's beat polygon (kind 'boundary')
+ *  as their only static, and once THEY declare a real `citable` set for
+ *  their own purposes (stat-totals, freshness — never map/window-sample,
+ *  since neither view draws its map dots from a citable purpose today),
+ *  a citable-length gate would flip them to static-led and print "OPD · via
+ *  DataDiver" over service requests and parking tickets that have nothing
+ *  to do with the police. The static's own KIND is what earns the lead, not
+ *  whether some OTHER field happens to be declared — pinned by the
+ *  "non-empty citable … must not flip a boundary-led view" test.
+ *  The lead group comes first — it is the primary source for the pill face
+ *  and the About link. Within the dataset group, the view's own
+ *  `eraSource.datasetKey` and (SF crime's two-extract case)
+ *  `eraSource.historical.datasetKey` lead, modern first — `entry.sources`
+ *  is otherwise an unordered membership list (Task 5's scan output), not a
+ *  narrative order, so a same-view cross-reference dataset (crime-incidents'
+ *  911 lookup) or the older half of the view's own series must never
+ *  outrank the dataset the view is actually about. */
 export function summarizeSources(cityId: CityId, entry: ViewManifestEntry): SourceSummary[] {
   const city = getCity(cityId)
   const sourceKeys = entry.sources ?? []
-  const anchorKey = entry.eraSource?.datasetKey
-  const orderedKeys = anchorKey && sourceKeys.includes(anchorKey)
-    ? [anchorKey, ...sourceKeys.filter((k) => k !== anchorKey)]
-    : sourceKeys
+  const eraKeys = [entry.eraSource?.datasetKey, entry.eraSource?.historical?.datasetKey]
+    .filter((k): k is string => !!k && sourceKeys.includes(k))
+  const orderedKeys = eraKeys.length > 0 ? [...eraKeys, ...sourceKeys.filter((k) => !eraKeys.includes(k))] : sourceKeys
   const datasets = orderedKeys.map((key): SourceSummary => {
     const c = city.datasets[key]
     return { kind: 'dataset', id: c.id, key, cityId, publisher: c.publisher, title: c.name, portalName: city.portal.name, host: city.portal.host, dateField: c.dateField, socrataId: c.id }
@@ -62,13 +74,17 @@ export function summarizeSources(cityId: CityId, entry: ViewManifestEntry): Sour
   const citable = entry.citable ?? []
   const citableSaysDataset = citable.some((p) => p === 'map-sample' || p === 'window-sample')
   const leadStaticIsPrimary = statics.length > 0 && PRIMARY_STATIC_KINDS.has(statics[0].static!.kind)
-  const datasetLed = datasets.length > 0 && (citableSaysDataset || (citable.length === 0 && !leadStaticIsPrimary))
+  const datasetLed = datasets.length > 0 && (citableSaysDataset || !leadStaticIsPrimary)
   return datasetLed ? [...datasets, ...statics] : [...statics, ...datasets]
 }
 
 /** The closed pill's text. The LEAD group is every source of the primary
  *  kind (sources[0].kind); one shared publisher → the single form, else a
- *  count. The basemap row never counts. */
+ *  count. The basemap row never counts — defensive: no view's
+ *  `staticSources` lists `mapbox-basemap` today (its attribution is the
+ *  Mapbox wordmark + "i" control beside the map, and it's credited in
+ *  About's own generated tables), so this filter is currently a no-op, kept
+ *  so a view that ever DOES declare it doesn't inflate the pill/citation. */
 export function pillFace(sources: SourceSummary[]): string {
   const visible = sources.filter((s) => s.static?.kind !== 'basemap')
   if (visible.length === 0) return 'via DataDiver'
@@ -87,12 +103,20 @@ const latestOf = (f: CitableQuery | undefined) => {
   return typeof v === 'string' && v.length >= 10 ? v.slice(0, 10) : null
 }
 
-/** "Through" per city — null when no fact exists (spec §7.2). */
+/** "Through" per city — null when no fact exists (spec §7.2), including a
+ *  freshness record that names a DIFFERENT dataset than asked (a caller
+ *  bug should read as absence, never as license to look up some other
+ *  dataset's completeness edge). Gated on the completeness FACT
+ *  (`edge !== undefined`), not on `cityId === 'oakland'` — SF declares no
+ *  edges today so behavior is unchanged, and a third city that ever
+ *  declares one gets the right framing with no code change here (the
+ *  standing "gate on the fact, not the city" lesson). */
 export function throughLine(args: { cityId: CityId; datasetKey: string; freshness: CitableQuery | undefined; nowYear: number }): string | null {
+  if (!args.freshness || args.freshness.datasetKey !== args.datasetKey) return null
   const latest = latestOf(args.freshness)
   if (!latest) return null
   const edge = getCity(args.cityId).datasets[args.datasetKey]?.completeness?.edgeDays
-  if (args.cityId === 'oakland' && edge !== undefined) {
+  if (edge !== undefined) {
     const { end } = completeWindow(latest, edge, 1)
     return `Complete through ${apDate(end, args.nowYear)} · newest row ${apDate(latest, args.nowYear)}`
   }
@@ -109,19 +133,40 @@ export function queryClause(rec: CitableQuery): string {
   return parts.join(' ')
 }
 
+/** Priority order for picking WHICH fired query's $where becomes a
+ *  dataset's citation filter, when more than one purpose was recorded
+ *  against it this session. Explicit and total — never "whichever query
+ *  happened to resolve first": `records` is populated in RESOLUTION order
+ *  (a race), not priority order, so a first-write-wins fallback let the
+ *  same URL print two different copyable citations across two loads. */
+const CITE_FILTER_PRIORITY: readonly QueryPurpose[] = ['map-sample', 'window-sample', 'scope-count', 'stat-totals', 'ranking']
+
+function filterRecordFor(records: CitableQuery[], key: string): CitableQuery | undefined {
+  const mine = records.filter((r) => r.datasetKey === key)
+  for (const p of CITE_FILTER_PRIORITY) {
+    const hit = mine.find((r) => r.purpose === p)
+    if (hit) return hit
+  }
+  return mine[0]
+}
+
 export function citationLines(args: {
   cityId: CityId; entry: ViewManifestEntry; records: CitableQuery[]
   portalTitles: Record<string, string>; pageUrl: string; accessed: string
 }): string[] {
   const accessed = `${apDate(args.accessed, 0)}` // year always shown (nowYear 0 never matches)
+  // One line per DECLARED source, always — even one this date range fired no
+  // query against. The citation states the view's provenance (the same set
+  // the pill face and About link name), not this session's query log;
+  // varying it by date range would under- or over-credit a source from one
+  // visit to the next.
   return summarizeSources(args.cityId, args.entry)
+    // Defensive, matching pillFace's filter above — see its comment.
     .filter((s) => s.static?.kind !== 'basemap')
     .map((s) => {
       const title = (s.socrataId && args.portalTitles[s.socrataId]) || s.title
       const idPart = s.socrataId ? ` (${s.socrataId})` : ''
-      const where = s.kind === 'dataset'
-        ? (args.records.find((r) => r.datasetKey === s.key && r.purpose === 'map-sample') ?? args.records.find((r) => r.datasetKey === s.key))?.params.$where
-        : undefined
+      const where = s.kind === 'dataset' ? filterRecordFor(args.records, s.key)?.params.$where : undefined
       const origin = s.kind === 'dataset' ? `${s.portalName}, ${s.host}` : new URL(s.static!.landingUrl).host
       const filtered = where ? ` Filtered: ${where}.` : ''
       return `${s.publisher.full}. "${title}"${idPart}. ${origin}.${filtered} Accessed ${accessed}, via DataDiver, ${args.pageUrl}.`

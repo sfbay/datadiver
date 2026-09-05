@@ -138,7 +138,7 @@ export const NON_SOCRATA: Record<NonSocrataId, NonSocrataSource> = {
   'mapbox-basemap': {
     id: 'mapbox-basemap', cities: ['sf', 'oakland'], kind: 'basemap',
     publisher: { short: 'Mapbox · OpenStreetMap', full: 'Mapbox and OpenStreetMap contributors' },
-    title: 'Basemap (Mapbox Light / Dark v11)', vintage: 'live tiles',
+    title: 'Basemap (Mapbox Light / Dark v11)', vintage: 'always-current tiles',
     upstreamUrl: 'https://www.mapbox.com/about/maps/', landingUrl: 'https://www.openstreetmap.org/copyright',
     license: { name: 'Mapbox Terms of Service; OpenStreetMap data under ODbL', url: 'https://www.openstreetmap.org/copyright' },
   },
