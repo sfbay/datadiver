@@ -25,6 +25,18 @@ describe('scanFetchedKeys', () => {
     expect(keys.has('dispatch911Realtime')).toBe(true)
     expect(unresolved).toEqual([])
   })
+  it('matches nested generics — the form that silently dropped keys before', () => {
+    const text = `
+      const a = useDataset<Record<CauseColumn, string>>('evictionNotices', {}, [], {})
+      const b = useDataset<Record<string, string>>(
+        'parkingCitations',
+        params,
+      )
+    `
+    const { keys, unresolved } = scanFetchedKeys([{ file: 'y.ts', text }], {})
+    expect([...keys].sort()).toEqual(['evictionNotices', 'parkingCitations'])
+    expect(unresolved).toEqual([])
+  })
 })
 
 describe('scanCitePurposes', () => {
@@ -38,5 +50,14 @@ describe('scanCitePurposes', () => {
     const known = ['map-sample', 'freshness', 'window-sample', 'window-count', 'ranking']
     expect([...scanCitePurposes([{ file: 'x.ts', text }], known)].sort())
       .toEqual(['freshness', 'map-sample', 'window-count', 'window-sample'])
+  })
+  it('does not match properties ending in cite like recite', () => {
+    const text = `
+      const obj1 = { cite: { purpose: 'map-sample' } }
+      const obj2 = { recite: { purpose: 'ranking' } }
+    `
+    const known = ['map-sample', 'ranking']
+    expect([...scanCitePurposes([{ file: 'x.ts', text }], known)].sort())
+      .toEqual(['map-sample'])
   })
 })

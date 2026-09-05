@@ -4,9 +4,9 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, resolve, dirname, extname } from 'node:path'
 
-const FETCH_RE = /\b(?:useDataset|fetchDataset)(?:<[^>]*>)?\(\s*('([A-Za-z0-9]+)'|[^'\s)])/g
+const FETCH_RE = /\b(?:useDataset|fetchDataset)(?:<[^();]*?>)?\(\s*('([A-Za-z0-9]+)'|[^'\s)])/g
 const IMPORT_RE = /from\s+'((?:\.{1,2}\/|@\/(?:hooks|views|components)\/)[^']+)'/g
-const CITE_RE = /cite:\s*\{([^}]*)\}/g
+const CITE_RE = /\bcite:\s*\{([^}]*)\}/g
 
 function listFiles(dir: string): string[] {
   const out: string[] = []
