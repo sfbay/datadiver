@@ -13,8 +13,8 @@ const sfElections = CITIES.sf.manifest.find((e) => e.viewId === 'elections')!
 const oak311 = CITIES.oakland.manifest.find((e) => e.viewId === '311-cases')!
 
 const rec = (over: Partial<CitableQuery>): CitableQuery => ({
-  cityId: 'sf', viewId: 'crime-incidents', purpose: 'map-sample', datasetKey: 'policeIncidents', datasetId: 'wg3w-h783', host: 'data.sfgov.org',
-  params: { $where: "incident_datetime >= '2026-08-04T00:00:00'", $limit: 5000, $order: 'incident_datetime DESC' }, url: 'https://data.sfgov.org/resource/wg3w-h783.json?x',
+  cityId: 'sf', viewId: 'crime-incidents', purpose: 'map-sample', datasetKey: 'policeIncidents', datasetId: 'wg3w-h783', host: 'data.sf.gov',
+  params: { $where: "incident_datetime >= '2026-08-04T00:00:00'", $limit: 5000, $order: 'incident_datetime DESC' }, url: 'https://data.sf.gov/resource/wg3w-h783.json?x',
   fetchedAt: 0, fromCache: false, rowCount: 5000, hitLimit: true, head: [], ...over,
 })
 
@@ -131,7 +131,7 @@ describe('queryClause', () => {
 describe('citationLines', () => {
   it('SF dataset line is name-free and carries the filter + page URL', () => {
     const lines = citationLines({ cityId: 'sf', entry: sfCrime, records: [rec({})], portalTitles: { 'wg3w-h783': 'Police Department Incident Reports: 2018 to Present' }, pageUrl: 'https://datadiver.jlabsf.org/crime-incidents?start=2026-08-04', accessed: '2026-09-03' })
-    expect(lines[0]).toBe("San Francisco Police Department. \"Police Department Incident Reports: 2018 to Present\" (wg3w-h783). DataSF, data.sfgov.org. Filtered: incident_datetime >= '2026-08-04T00:00:00'. Accessed Sept. 3, 2026, via DataDiver, https://datadiver.jlabsf.org/crime-incidents?start=2026-08-04.")
+    expect(lines[0]).toBe("San Francisco Police Department. \"Police Department Incident Reports: 2018 to Present\" (wg3w-h783). DataSF, data.sf.gov. Filtered: incident_datetime >= '2026-08-04T00:00:00'. Accessed Sept. 3, 2026, via DataDiver, https://datadiver.jlabsf.org/crime-incidents?start=2026-08-04.")
     expect(lines.join('\n')).not.toMatch(/Garnier|Claude/)
   })
   it('Oakland line uses the Oakland portal', () => {

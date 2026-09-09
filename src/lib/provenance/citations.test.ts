@@ -3,7 +3,7 @@ import { recordCitation, clearCitationScope, clearCitationSlot, slotKey, _resetC
 
 const base: CitableQuery = {
   cityId: 'sf', viewId: 'crime-incidents', purpose: 'map-sample', datasetKey: 'policeIncidents', datasetId: 'wg3w-h783',
-  host: 'data.sfgov.org', params: { $limit: 5000 }, url: 'https://x/?a', fetchedAt: 1, fromCache: false, rowCount: 5000, hitLimit: true, head: [],
+  host: 'data.sf.gov', params: { $limit: 5000 }, url: 'https://x/?a', fetchedAt: 1, fromCache: false, rowCount: 5000, hitLimit: true, head: [],
 }
 
 describe('citation recorder', () => {

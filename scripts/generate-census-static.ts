@@ -497,7 +497,7 @@ async function fetchCensusLive(
 // ---------------------------------------------------------------------------
 
 const TIGERWEB_URL = 'https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_ACS2023/MapServer/10/query'
-const NEIGHBORHOOD_GEOJSON_URL = 'https://data.sfgov.org/resource/j2bu-swwd.geojson?$limit=100'
+const NEIGHBORHOOD_GEOJSON_URL = 'https://data.sf.gov/resource/j2bu-swwd.geojson?$limit=100'
 
 /** Ray-casting point-in-polygon (works for simple and multi-polygons) */
 function pointInPolygon(lat: number, lng: number, coordinates: number[][][]): boolean {

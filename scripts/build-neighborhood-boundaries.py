@@ -51,7 +51,7 @@ from pathlib import Path
 from shapely.geometry import MultiPolygon, mapping, shape
 from shapely.ops import unary_union
 
-SOURCE = 'https://data.sfgov.org/resource/j2bu-swwd.geojson?$limit=100'
+SOURCE = 'https://data.sf.gov/resource/j2bu-swwd.geojson?$limit=100'
 OUT = Path('public/data/geo/sf-analysis-neighborhoods.geojson')
 
 # A part smaller than this share of its neighborhood's area is an alignment

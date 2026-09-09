@@ -2,13 +2,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { fetchDataset, resolveQuery } from './client'
 import { _resetCitations, _snapshot } from '@/lib/provenance/citations'
 
-const cfg = { endpoint: 'https://data.sfgov.org/resource/wg3w-h783.json', defaultSort: 'incident_datetime DESC' }
+const cfg = { endpoint: 'https://data.sf.gov/resource/wg3w-h783.json', defaultSort: 'incident_datetime DESC' }
 
 describe('resolveQuery', () => {
   it('injects the default sort and limit for a row query', () => {
     const r = resolveQuery(cfg, { $where: "a = 'b'", $limit: 5000 })
     expect(r.queryParams).toEqual({ $order: 'incident_datetime DESC', $limit: 5000, $where: "a = 'b'" })
-    expect(r.url).toBe("https://data.sfgov.org/resource/wg3w-h783.json?%24order=incident_datetime+DESC&%24limit=5000&%24where=a+%3D+%27b%27")
+    expect(r.url).toBe("https://data.sf.gov/resource/wg3w-h783.json?%24order=incident_datetime+DESC&%24limit=5000&%24where=a+%3D+%27b%27")
   })
   it('skips the default sort for an aggregate', () => {
     const r = resolveQuery(cfg, { $select: 'count(*) as n' })
