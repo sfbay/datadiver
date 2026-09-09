@@ -165,7 +165,7 @@
 ## Architecture Notes
 
 ### Data Sources
-- **Socrata SODA API**: 14 datasets from data.sfgov.org
+- **Socrata SODA API**: 14 datasets from data.sf.gov
 - **SF Elections**: Static JSON parsed from sfelections.org (5 elections)
 - **Census ACS**: Static JSON with background refresh
 - **CivicAPI**: Planned for live election night mode

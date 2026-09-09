@@ -8,7 +8,7 @@ import { SF_MANIFEST } from './manifest'
 export const sfCity: CityConfig = {
   id: 'sf',
   name: 'San Francisco', short: 'S.F.', abbrev: 'SF',
-  portal: { name: 'DataSF', host: 'data.sfgov.org' },
+  portal: { name: 'DataSF', host: 'data.sf.gov' },
   areas: {
     noun: 'neighborhood', nounPlural: 'neighborhoods',
     geojsonPath: '/data/geo/sf-analysis-neighborhoods.geojson',
@@ -22,7 +22,7 @@ export const sfCity: CityConfig = {
     },
   },
   census: { stateFips: '06', countyFips: '075' },
-  datasets: buildDatasets('data.sfgov.org', SF_DATASETS_RAW),
+  datasets: buildDatasets('data.sf.gov', SF_DATASETS_RAW),
   manifest: SF_MANIFEST,
   redirects: [{ from: 'live-feeds', to: 'live' }],
 }

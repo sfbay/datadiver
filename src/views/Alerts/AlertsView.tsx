@@ -797,11 +797,11 @@ function Colophon() {
           what the daily digest sends — there is no separate preview pipeline
           to drift from. Data flows from{' '}
           <a
-            href="https://data.sfgov.org"
+            href="https://data.sf.gov"
             target="_blank" rel="noopener noreferrer"
             className="underline underline-offset-2 text-ink/55 dark:text-slate-400 hover:text-terracotta-500 transition-colors"
           >
-            data.sfgov.org
+            data.sf.gov
           </a>{' '}
           via the Socrata SODA API.
         </p>

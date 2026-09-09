@@ -3,7 +3,7 @@
 // filters, normalizer) lives in the ALERT_STREAMS registry.
 import { ALERT_STREAMS, streamWhere, type AlertEvent, type AlertStreamId } from '../../src/lib/alerts/streams.js'
 
-const BASE = 'https://data.sfgov.org/resource'
+const BASE = 'https://data.sf.gov/resource'
 
 export interface StreamFetchResult {
   events: AlertEvent[]

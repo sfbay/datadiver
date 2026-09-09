@@ -40,7 +40,7 @@ const NH_FIELD: Record<string, string> = {
 
 
 async function fetchRows<T>(socrataId: string, params: Record<string, string>): Promise<T[]> {
-  const url = new URL(`https://data.sfgov.org/resource/${socrataId}.json`)
+  const url = new URL(`https://data.sf.gov/resource/${socrataId}.json`)
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v)
   const token = process.env.SOCRATA_APP_TOKEN
   const res = await fetch(url, token ? { headers: { 'X-App-Token': token } } : undefined)

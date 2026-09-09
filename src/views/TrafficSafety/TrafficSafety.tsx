@@ -295,7 +295,7 @@ export default function TrafficSafety() {
   const [hinGeojson, setHinGeojson] = useState<GeoJSON.FeatureCollection | null>(null)
   useEffect(() => {
     if (!activeOverlays.has('hin') || hinGeojson) return
-    fetch('https://data.sfgov.org/resource/enwt-3u8m.geojson?$limit=10000')
+    fetch('https://data.sf.gov/resource/enwt-3u8m.geojson?$limit=10000')
       .then((r) => r.json())
       .then((data) => setHinGeojson(data as GeoJSON.FeatureCollection))
       .catch(() => {})

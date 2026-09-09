@@ -43,7 +43,7 @@ for k in KEYS:
     print(f'  {k}: {have}/{len(tracts)} tracts')
 
 # 2. Official assignment: tractce → analysis neighborhood
-url = 'https://data.sfgov.org/resource/sevw-6tgi.json?$select=tractce,neighborhoods_analysis_boundaries&$limit=400'
+url = 'https://data.sf.gov/resource/sevw-6tgi.json?$select=tractce,neighborhoods_analysis_boundaries&$limit=400'
 assign = json.load(urllib.request.urlopen(url))
 tract_to_nh = {r['tractce']: r['neighborhoods_analysis_boundaries'] for r in assign if r.get('tractce')}
 print(f'assignment rows: {len(tract_to_nh)}')

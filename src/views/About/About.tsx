@@ -256,11 +256,11 @@ export default function About() {
           <Prose>
             <p className="mb-5">
               Nearly all data comes from two municipal open-data portals —{' '}
-              <a href="https://data.sfgov.org" target="_blank" rel="noopener noreferrer"
+              <a href="https://data.sf.gov" target="_blank" rel="noopener noreferrer"
                  className="underline decoration-slate-400/50 underline-offset-2 hover:text-ink dark:hover:text-white transition-colors">
                 DataSF
               </a>{' '}
-              (data.sfgov.org) and the{' '}
+              (data.sf.gov) and the{' '}
               <a href="https://data.oaklandca.gov" target="_blank" rel="noopener noreferrer"
                  className="underline decoration-slate-400/50 underline-offset-2 hover:text-ink dark:hover:text-white transition-colors">
                 City of Oakland&rsquo;s open data portal
@@ -283,9 +283,9 @@ export default function About() {
             </p>
           </Prose>
           <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/80 dark:text-slate-600 mb-3 mt-2">
-            {'──'} San Francisco · data.sfgov.org
+            {'──'} San Francisco · data.sf.gov
           </p>
-          <SourcesTable rows={SF_SOURCES} host="data.sfgov.org" />
+          <SourcesTable rows={SF_SOURCES} host="data.sf.gov" />
           <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/80 dark:text-slate-600 mb-3 mt-8">
             {'──'} Oakland · data.oaklandca.gov
           </p>
