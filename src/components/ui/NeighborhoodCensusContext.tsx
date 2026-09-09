@@ -5,6 +5,14 @@ import React, { useState } from 'react'
 import type { CensusVariable } from '../../types/census'
 import type { NeighborhoodCensusData } from '../../types/census'
 import DataSourceLine from './DataSourceLine'
+import { NON_SOCRATA } from '@/lib/provenance/nonSocrata'
+
+// DataSourceLine composes "{dataset} ({vintage}) · {source}" — passing the
+// full authored vintage string here (which already starts with "ACS " and
+// ends with " 5-year estimates") stutters against the "American Community
+// Survey 5-Year Estimates" dataset name it sits beside. Trim to the bare
+// year range, still derived from the one authored string.
+const ACS_VINTAGE_YEARS = NON_SOCRATA['acs-2023-5yr'].vintage.replace('ACS ', '').replace(' 5-year estimates', '')
 
 interface NeighborhoodCensusContextProps {
   neighborhood: string
@@ -239,9 +247,9 @@ export default function NeighborhoodCensusContext({
               {/* Attribution */}
               <div className="border-t border-white/8 pt-2">
                 <DataSourceLine
-                  dataset="ACS 5-Year Estimates"
-                  source="Census Bureau"
-                  vintage="2020-2024"
+                  dataset={NON_SOCRATA['acs-2023-5yr'].title}
+                  source={NON_SOCRATA['acs-2023-5yr'].publisher.short}
+                  vintage={ACS_VINTAGE_YEARS}
                 />
               </div>
             </>

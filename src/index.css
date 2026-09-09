@@ -209,12 +209,21 @@ body {
 .mapboxgl-map {
   font-family: var(--font-sans) !important;
 }
+/* The Mapbox compact attribution "i" — legible in both themes (Mapbox:
+   "attribution must be legible"); the wordmark is never restyled. */
 .mapboxgl-ctrl-attrib {
   font-size: 0.5625rem !important;
-  opacity: 0.5;
+  opacity: 0.85;
 }
 .mapboxgl-ctrl-attrib a {
   color: inherit !important;
+}
+.dark .mapboxgl-ctrl-attrib.mapboxgl-compact {
+  background-color: rgba(30, 20, 13, 0.85) !important;
+  color: #e8dcc4;
+}
+.dark .mapboxgl-ctrl-attrib-button {
+  filter: invert(1) brightness(0.85);
 }
 /* Light mode (default) — cream paper feel with subtle warm border */
 .mapboxgl-ctrl-group {
@@ -415,6 +424,20 @@ body {
 @keyframes fadeSlideIn {
   from { opacity: 0; transform: translateX(-6px); }
   to { opacity: 1; transform: translateX(0); }
+}
+
+/* Source panel entrance — opens upward from the credit row. */
+@keyframes panelRise {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+/* fill-mode `backwards`, never `forwards`/`both` — a filled animation
+   OUTRANKS an inline style on the same property, so a `both` entrance
+   quietly pins opacity/transform for the element's whole life. House rule;
+   see the Elections RCVComposition stagger for the case that taught it. */
+.panel-rise { animation: panelRise 200ms var(--ease-snap) backwards; }
+@media (prefers-reduced-motion: reduce) {
+  .panel-rise { animation: none; }
 }
 
 /* FreshnessChipStrip — resolve pulse when a per-stream chip flips loading → value */

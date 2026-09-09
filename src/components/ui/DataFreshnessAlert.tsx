@@ -1,5 +1,5 @@
 import { useAppStore } from '@/stores/appStore'
-import { formatDate } from '@/utils/time'
+import { apDate } from '@/utils/apDate'
 
 interface DataFreshnessAlertProps {
   latestDate: string | null
@@ -47,8 +47,8 @@ export default function DataFreshnessAlert({
 
         {mode === 'geo-gap' && latestGeoDate && (
           <p className="text-xs text-slate-400 dark:text-slate-500 mb-3">
-            Coordinates end <span className="font-mono text-slate-300">{formatDate(latestGeoDate, 'long')}</span> — the map is
-            incomplete for this range. Stat cards remain accurate{latestDate ? ` through ${formatDate(latestDate)}` : ''}.
+            Coordinates end <span className="font-mono text-slate-300">{apDate(latestGeoDate, new Date().getFullYear())}</span> — the map is
+            incomplete for this range. Stat cards remain accurate{latestDate ? ` through ${apDate(latestDate, new Date().getFullYear())}` : ''}.
           </p>
         )}
 
@@ -56,14 +56,14 @@ export default function DataFreshnessAlert({
           <>
             {latestDate && (
               <p className="text-xs text-slate-400 dark:text-slate-500 mb-3">
-                Latest available: <span className="font-mono text-slate-300">{formatDate(latestDate, 'long')}</span>
+                Latest available: <span className="font-mono text-slate-300">{apDate(latestDate, new Date().getFullYear())}</span>
               </p>
             )}
 
             {hasGeoGap && (
               <p className="text-micro text-slate-500 dark:text-slate-600 mb-3 font-mono">
-                Map data ends {formatDate(latestGeoDate)}.
-                Stats available through {formatDate(latestDate)}.
+                Map data ends {apDate(latestGeoDate, new Date().getFullYear())}.
+                Stats available through {apDate(latestDate, new Date().getFullYear())}.
               </p>
             )}
           </>
@@ -77,7 +77,7 @@ export default function DataFreshnessAlert({
           >
             Show latest data
             <span className="ml-1.5 opacity-70 font-mono">
-              {formatDate(suggestedRange.start)} - {formatDate(suggestedRange.end)}
+              {apDate(suggestedRange.start, new Date().getFullYear())} - {apDate(suggestedRange.end, new Date().getFullYear())}
             </span>
           </button>
         )}

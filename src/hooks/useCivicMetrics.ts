@@ -3,7 +3,7 @@
 // neighborhood for the Census Explorer scatter plot Y-axis.
 
 import { useState, useEffect, useRef } from 'react'
-import { fetchDataset } from '../api/client'
+import { fetchDataset, type CiteTag } from '../api/client'
 import { DATASETS } from '../api/datasets'
 import type { DatasetKey } from '../api/datasets'
 import { useAppStore } from '../stores/appStore'
@@ -21,7 +21,7 @@ export interface CivicMetricResult {
  *
  * @param metricKey - Key from CIVIC_METRICS, or null to return empty immediately.
  */
-export function useCivicMetric(metricKey: string | null): CivicMetricResult {
+export function useCivicMetric(metricKey: string | null, opts?: { cite?: CiteTag }): CivicMetricResult {
   const dateRange = useAppStore(state => state.dateRange)
 
   const [data, setData] = useState<Map<string, number>>(new Map())
@@ -86,7 +86,8 @@ export function useCivicMetric(metricKey: string | null): CivicMetricResult {
             $where: where,
             $group: config.neighborhoodField,
             $limit: 50,
-          }
+          },
+          { cite: opts?.cite }
         )
 
         // Guard against stale responses

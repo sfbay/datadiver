@@ -1219,7 +1219,7 @@ export default function Elections() {
                 (Jesse: callout butted against the panel edge). */}
             {!isLoading && !timeMachineActive && activeRace?.isRCV && rcvData && (
               <div
-                className={`absolute bottom-6 left-5 z-10 glass-card rounded-xl max-w-[calc(100vw-2.5rem)] ${rcvCollapsed ? 'px-3 py-2 cursor-pointer' : 'p-4'}`}
+                className={`absolute bottom-11 left-5 z-10 glass-card rounded-xl max-w-[calc(100vw-2.5rem)] ${rcvCollapsed ? 'px-3 py-2 cursor-pointer' : 'p-4'}`}
                 style={{
                   // min() keeps the viewport guard live in the expanded states
                   // too — a plain inline maxWidth would override the class

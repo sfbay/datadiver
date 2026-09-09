@@ -6,6 +6,8 @@
 // registry). Type-only imports are fine: they erase at compile time.
 
 import type { CensusVariable } from '@/types/census'
+import type { NonSocrataId } from '@/lib/provenance/nonSocrata'
+import type { QueryPurpose } from '@/lib/provenance/purposes'
 
 /** Every view family the app can mount — one per top-level route. Detail
  *  routes collapse to their family ('/business/chain/x' → 'business', per
@@ -79,6 +81,18 @@ export interface ViewManifestEntry {
   dateless?: true
   /** Dataset keys (into the city's registry) that surface this view in ⌘K. */
   omniDatasetKeys?: readonly string[]
+  /** Registry keys this view FETCHES — every useDataset/fetchDataset key in
+   *  its own files and the hooks it imports, cross-cutting hooks excluded
+   *  (sources.test.ts pins declared ⇔ fetched). Superset of omniDatasetKeys
+   *  and of eraSource's keys. */
+  sources?: readonly string[]
+  /** Non-Socrata sources the view paints or reads (NON_SOCRATA ids). */
+  staticSources?: readonly NonSocrataId[]
+  /** Query purposes the view registers for the source panel, in display
+   *  order. Every member must be tagged (`cite: { purpose }`) in the view's
+   *  OWN files and every tag declared here — sources.test.ts pins both ways.
+   *  Absent = the panel lists sources with no query block. */
+  citable?: readonly QueryPurpose[]
   /** Registered (era facts, ⌘K claims) but not yet routable: the city's
    *  catch-all still redirects this slug Home. Dormant entries are excluded
    *  from routes, nav, ⌘K, era activation, and URL param sync — one authored

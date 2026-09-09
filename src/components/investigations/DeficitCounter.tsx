@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { InvestigationCard } from './InvestigationCard'
 import { useDeficitData } from '@/hooks/useDeficitData'
+import { CITIES } from '@/cities/registry'
 
 // Earth-tone palette for top 3 dept bars + "other": brick → terracotta →
 // ochre → espresso. Same warm-to-deep gradient as the previous red→amber
@@ -109,14 +110,17 @@ export default function DeficitCounter() {
       ? displayAmount - originalDeficitRef.current
       : 0
 
+  // The footer credit names the SOURCE (publisher + dataset, both read from
+  // the registry); the subtitle says what the card is ABOUT. They were the
+  // same sentence, so Home printed it twice on one card.
   return (
     <InvestigationCard
       eyebrow="Budget Gap · This Fiscal Year"
       accentColor="#d4a435"
       headline="The deficit is growing faster than revenue"
-      subtitle="SF Controller · Spending & Revenue"
+      subtitle="The projected shortfall, its daily rate, and the departments behind it"
       explorePath="/city-budget"
-      sourceName="Spending & Revenue Data"
+      sourceName={`${CITIES.sf.datasets.spendingRevenue.publisher.short} · ${CITIES.sf.datasets.spendingRevenue.name}`}
       isLoading={isLoading}
     >
       {data && (

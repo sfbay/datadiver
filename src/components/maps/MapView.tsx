@@ -7,6 +7,7 @@ import { SCALE_FACTORS } from '@/stores/typeScale'
 import MapLabelTuner from './MapLabelTuner'
 import { classifyLabelLayer, type LabelGroup } from './labelGroups'
 import { scaleTextSizeValue } from './labelTextSize'
+import SourcePill from './SourcePill'
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN || ''
 
@@ -171,9 +172,14 @@ interface MapViewProps {
   children?: React.ReactNode
   className?: string
   camera?: MapCamera
+  /** Opt out for embedded maps the pill was never meant for — a picker that
+   *  draws no dataset (LocationPicker) or a thumbnail whose clipped
+   *  container would cut off the up-opening panel (ChainMap). Defaults to
+   *  true; every dataset-view map keeps the pill with no call-site change. */
+  showSourcePill?: boolean
 }
 
-const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, className = '', camera }, ref) => {
+const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, className = '', camera, showSourcePill = true }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
   const [isReady, setIsReady] = useState(false)
@@ -232,8 +238,9 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
         attributionControl: false,
       })
 
-      // Zoom on the LEFT (bottom-right is occupied by the underlay/anomaly legend,
-      // which was hiding it); stacks above the compact attribution.
+      // Zoom on the LEFT (bottom-right is occupied by the underlay/anomaly legend).
+      // Mapbox PREPENDS bottom-* controls, so the column reads top→bottom:
+      // attribution "i" · zoom · wordmark. The SourcePill sits right of the wordmark.
       map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'bottom-left')
       map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-left')
 
@@ -375,6 +382,11 @@ const MapView = forwardRef<MapHandle, MapViewProps>(({ onMapReady, children, cla
         <div className="pointer-events-auto">
           {children}
         </div>
+        {showSourcePill && (
+          <div className="pointer-events-auto">
+            <SourcePill />
+          </div>
+        )}
       </div>
       {/* Debug camera readout — opt-in via ?debug=map */}
       {debugCam && (

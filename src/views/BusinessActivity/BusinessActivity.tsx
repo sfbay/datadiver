@@ -199,7 +199,7 @@ export default function BusinessActivity() {
   }, [dateRange, corridorClause, neighborhoodClause])
 
   // Data freshness detection
-  const freshness = useDataFreshness('businessLocations', 'dba_start_date', dateRange)
+  const freshness = useDataFreshness('businessLocations', 'dba_start_date', dateRange, { cite: { viewId: 'business-activity', purpose: 'freshness' } })
 
   const trendConfig = useMemo((): TrendConfig => ({
     datasetKey: 'businessLocations',
@@ -214,12 +214,14 @@ export default function BusinessActivity() {
   const { data: openingsRaw, isLoading: openingsLoading, error: openingsError, hitLimit: openingsHitLimit, refetch: refetchOpenings } = useDataset<BusinessLocationRecord>(
     'businessLocations',
     { $where: openingsClause, $limit: 3000, $select: SELECT_FIELDS, $order: 'dba_start_date DESC' },
-    [openingsClause]
+    [openingsClause],
+    { cite: { viewId: 'business-activity', purpose: 'map-sample', facet: 'Openings' } }
   )
   const { data: closuresRaw, isLoading: closuresLoading, error: closuresError, refetch: refetchClosures } = useDataset<BusinessLocationRecord>(
     'businessLocations',
     { $where: closuresClause, $limit: 3000, $select: SELECT_FIELDS, $order: 'dba_end_date DESC' },
-    [closuresClause]
+    [closuresClause],
+    { cite: { viewId: 'business-activity', purpose: 'map-sample', facet: 'Closures' } }
   )
   const rawData = useMemo(() => {
     // Deduplicate: a business that opened AND closed in range appears in both queries
@@ -241,14 +243,16 @@ export default function BusinessActivity() {
   const { data: openingsCountRows } = useDataset<{ count: string }>(
     'businessLocations',
     { $select: 'count(*) as count', $where: openingsClause },
-    [openingsClause]
+    [openingsClause],
+    { cite: { viewId: 'business-activity', purpose: 'stat-totals', facet: 'Openings' } }
   )
   const openingsCount = openingsCountRows[0] ? parseInt(openingsCountRows[0].count, 10) : null
 
   const { data: closuresCountRows } = useDataset<{ count: string }>(
     'businessLocations',
     { $select: 'count(*) as count', $where: closuresClause },
-    [closuresClause]
+    [closuresClause],
+    { cite: { viewId: 'business-activity', purpose: 'stat-totals', facet: 'Closures' } }
   )
   const closuresCount = closuresCountRows[0] ? parseInt(closuresCountRows[0].count, 10) : null
 
@@ -261,7 +265,8 @@ export default function BusinessActivity() {
   const { data: adminClosuresCountRows } = useDataset<{ count: string }>(
     'businessLocations',
     { $select: 'count(*) as count', $where: adminClosuresClause },
-    [adminClosuresClause]
+    [adminClosuresClause],
+    { cite: { viewId: 'business-activity', purpose: 'stat-totals', facet: 'Administrative closures' } }
   )
   const adminClosuresCount = adminClosuresCountRows[0] ? parseInt(adminClosuresCountRows[0].count, 10) : null
 
@@ -277,14 +282,16 @@ export default function BusinessActivity() {
   const { data: activeCountRows } = useDataset<{ count: string }>(
     'businessLocations',
     { $select: 'count(*) as count', $where: activeCountWhere },
-    [activeCountWhere]
+    [activeCountWhere],
+    { cite: { viewId: 'business-activity', purpose: 'stat-totals', facet: 'Active' } }
   )
   const activeCount = activeCountRows[0] ? parseInt(activeCountRows[0].count, 10) : null
 
   const { data: totalCountRows } = useDataset<{ count: string }>(
     'businessLocations',
     { $select: 'count(*) as count', $where: whereClause },
-    [whereClause]
+    [whereClause],
+    { cite: { viewId: 'business-activity', purpose: 'stat-totals', facet: 'All in range' } }
   )
   const totalCount = totalCountRows[0] ? parseInt(totalCountRows[0].count, 10) : null
 
@@ -302,7 +309,8 @@ export default function BusinessActivity() {
       $order: 'cnt DESC',
       $limit: 1000,
     },
-    [openingsDateOnlyClause]
+    [openingsDateOnlyClause],
+    { cite: { viewId: 'business-activity', purpose: 'breakdown', facet: 'Openings by sector' } }
   )
   const sectorRows: SectorAggRow[] = useMemo(() => {
     const totals = new Map<string, number>()

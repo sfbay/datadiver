@@ -125,7 +125,7 @@ export default function Last48() {
   // see parseFill) leads with home-value context.
   const [underlayVariable, setUnderlayVariable] = useState<CensusVariable | null>('medianHomeValue')
 
-  const window48 = useLast48Window({ datasets })
+  const window48 = useLast48Window({ datasets, cite: { viewId: 'live', sample: 'window-sample', count: 'window-count' } })
 
   // Header pill total — the window's TRUE size across all streams, not the
   // drawn sample's length: a capped stream contributes its server count. A

@@ -1,5 +1,6 @@
 import { InvestigationCard, ErrorState } from './InvestigationCard'
 import { useVisionZero } from '@/hooks/useVisionZero'
+import { CITIES } from '@/cities/registry'
 
 /** AP-style date: months with ≤5 letters spelled out, others abbreviated
  *  with a period. (House convention — see feedback_ap_style_dates.) */
@@ -36,7 +37,7 @@ export default function VisionZeroCounter() {
           : 'Traffic crashes · severe & fatal'
       }
       explorePath="/traffic-safety"
-      sourceName="TransBASE Crash Data"
+      sourceName={`${CITIES.sf.datasets.trafficCrashes.publisher.short} · Traffic Crashes`}
       isLoading={isLoading || (!data && !error)}
     >
       {error ? (

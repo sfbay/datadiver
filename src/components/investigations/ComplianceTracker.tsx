@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { InvestigationCard } from './InvestigationCard'
 import { useAdvertisingData } from '@/hooks/useAdvertisingData'
 import { useComplianceData } from '@/hooks/useComplianceData'
+import { CITIES } from '@/cities/registry'
 
 function fmtK(n: number): string {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`
@@ -59,7 +60,7 @@ export default function ComplianceTracker() {
       headline={`The city spends ${pct.toFixed(1)}% where law requires 50%`}
       subtitle="Discretionary ad spend → Community & ethnic media"
       explorePath="/city-budget"
-      sourceName="SF Controller · Vendor Payments"
+      sourceName={`${CITIES.sf.datasets.vendorPayments.publisher.short} · Vendor Payments`}
       isLoading={compliance.isLoading}
     >
       <div className="space-y-3">

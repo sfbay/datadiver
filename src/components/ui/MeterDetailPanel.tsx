@@ -3,6 +3,7 @@ import { useAppStore } from '@/stores/appStore'
 import { fetchDataset } from '@/api/client'
 import type { ParkingMeter, ParkingTransaction } from '@/types/datasets'
 import { formatCurrency, formatNumber, formatDate, diffMinutes, formatDuration } from '@/utils/time'
+import { apDate } from '@/utils/apDate'
 import { CAP_COLORS } from '@/utils/colors'
 import DetailPanelShell from '@/components/ui/DetailPanelShell'
 
@@ -214,7 +215,7 @@ export default function MeterDetailPanel() {
             <>
               <div className="flex items-center gap-2 mb-2">
                 <p className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                  {formatDate(dateRange.start, 'short')} – {formatDate(dateRange.end, 'short')}
+                  {apDate(dateRange.start, new Date().getFullYear())} – {apDate(dateRange.end, new Date().getFullYear())}
                 </p>
                 <div className="flex-1 h-[1px] bg-slate-200 dark:bg-white/[0.08]" />
               </div>
