@@ -170,7 +170,7 @@ const PITQ_EXP_PROJECTION = [
   'transaction_first_name',
 ]
 
-const HOST = 'https://data.sfgov.org'
+const HOST = 'https://data.sf.gov'
 const DS = {
   parent: 'iv34-5p9x',
   clients: 'm75g-xpci',

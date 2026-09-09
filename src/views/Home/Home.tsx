@@ -549,12 +549,12 @@ export default function Home() {
           <p className="text-micro text-slate-400/60 dark:text-slate-600 font-mono">
             Data sourced from{' '}
             <a
-              href="https://data.sfgov.org"
+              href="https://data.sf.gov"
               target="_blank"
               rel="noopener noreferrer"
               className="underline underline-offset-2 hover:text-slate-500 dark:hover:text-slate-400 transition-colors"
             >
-              data.sfgov.org
+              data.sf.gov
             </a>{' '}
             via the Socrata SODA API
           </p>

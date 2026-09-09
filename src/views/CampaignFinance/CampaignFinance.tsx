@@ -572,7 +572,7 @@ export default function CampaignFinance() {
       {/* Data source attribution */}
       <div className="px-6 py-2 text-[8px] font-mono text-slate-400/50 dark:text-slate-600 border-t border-slate-200/30 dark:border-white/[0.03]">
         {isSF
-          ? <>Source: SF Ethics Commission via data.sfgov.org (dataset pitq-e56w). Local filings only — state-level FPPC/CAL-ACCESS filings not included. Figures may differ from statewide totals reported by news organizations.</>
+          ? <>Source: SF Ethics Commission via data.sf.gov (dataset pitq-e56w). Local filings only — state-level FPPC/CAL-ACCESS filings not included. Figures may differ from statewide totals reported by news organizations.</>
           : <>Source: City of Oakland FPPC filings via data.oaklandca.gov (view reads Sch A, Sch E, 496, 497 of 16 published sets). Local filings only — state CAL-ACCESS filings not included.</>}
       </div>
     </div>

@@ -4,6 +4,52 @@ Notes on data quality, known biases, and interpretation guidance for SF open dat
 
 ---
 
+## The DataSF portal moved — and the promised redirect drops `$select`
+
+**Sept. 1 2026: DataSF moved the open data portal to `data.sf.gov`.** The old
+`data.sfgov.org` host still answers, so the move reads as a non-event. It is
+not, and the city's own migration notice is wrong on the one point that matters
+to anybody querying the API:
+
+> "All existing links, bookmarks, and API queries will automatically redirect to
+> the new domain." — DataSF, *Open Data Portal website update*
+
+The redirect is real for `$where`, `$order`, `$limit` and `$q`. It is **not**
+real for `$select`. Measured against the legacy host on 2026-09-09:
+
+| request | legacy `data.sfgov.org` | new `data.sf.gov` |
+|---|---|---|
+| `?$select=count(*)` | **403 Forbidden** (nginx, no `Location`) | 200 — returns the count |
+| `?$select=<any column>` | **403 Forbidden** | 200 |
+| `?$limit=1` | 301 → `data.sf.gov` | 200 |
+| `?$where=…` / `?$order=…` / `?$q=…` | 301 → `data.sf.gov` | 200 |
+| `?$query=SELECT …` (full SoQL) | 301 → `data.sf.gov` | 200 |
+| `/api/views/<id>.json`, `.geojson`, `rows.csv` | 301 → `data.sf.gov` | 200 |
+
+A 403 is not a redirect, so a browser cannot follow it. **Every aggregate died
+at once** — stat cards, neighborhood rankings, freshness probes, the era strip,
+and the digest's neighborhood pulse — while map tiles, the basemap and all page
+chrome kept loading normally. The failure therefore did not look like an outage.
+It looked like a quiet city: `DataFreshnessAlert` rendered **"No data in
+selected range"** over an empty map on a range holding 6,855 incidents.
+
+**Two lessons, and the second is the sharper one.**
+
+1. *Pin the host and let a test hold it.* `src/cities/portalHost.test.ts` pins
+   `CITIES.sf.portal.host` and scans `src/`, `api/` and `scripts/` for the
+   retired host, so this cannot drift back quietly. Oakland is a separate
+   portal and was never affected.
+2. *A failed read must never render as an empty result.* `useDataFreshness`
+   carries no error state, so a 403 on the `MAX(dateField)` probe is
+   indistinguishable from a genuine empty window, and the view then states an
+   absence it never verified. That is the house rule — never fabricate absence —
+   losing to a code path, and it is what made a total upstream outage read as an
+   editorial fact about San Francisco. Tracked as a follow-up.
+
+**If you are reading this after Dec. 31 2026:** the city's notice says the
+legacy host's redirect goes away entirely on that date. By then nothing should
+reference it, and the scan test above is what proves it.
+
 ## Business Activity (Registered Business Locations)
 
 **Dataset:** `g8m3-pdis` — SF Registered Business Locations
@@ -13,7 +59,7 @@ Notes on data quality, known biases, and interpretation guidance for SF open dat
 
 **Finding:** DataSF removed `naic_code`, `naic_code_description`, and `naics_code_descriptions_list` from `g8m3-pdis`. Only the raw `self_reported_naics_code` (e.g. `722511`) survives — the dataset no longer ships **any** human-readable industry label.
 
-**How it surfaced:** every query still selecting the dead column started returning `400 query.soql.no-such-column`, taking Business Search *and* Business Activity down together (they shared a field list). The lesson generalizes: **a Socrata dataset's schema is not a stable contract.** When a query 400s on a column that "has always been there," check `https://data.sfgov.org/api/views/<id>/columns.json` — the live schema is the only ground truth, and memory of it is worthless.
+**How it surfaced:** every query still selecting the dead column started returning `400 query.soql.no-such-column`, taking Business Search *and* Business Activity down together (they shared a field list). The lesson generalizes: **a Socrata dataset's schema is not a stable contract.** When a query 400s on a column that "has always been there," check `https://data.sf.gov/api/views/<id>/columns.json` — the live schema is the only ground truth, and memory of it is worthless.
 
 **Mitigation:** sectors are now **reconstructed** client-side from the raw code by `src/utils/naicsSector.ts` — a pure, unit-tested longest-prefix crosswalk. Three digits are needed only where NAICS 72 splits into two DataDiver categories (721 Accommodations vs 722 Food Services); every other sector resolves at two digits. The self-reported field is noisy — it carries junk prefixes like `00`, `20`, `59` that are not valid NAICS sectors — and those resolve to "Uncategorized" rather than being force-fit into a plausible-looking bucket.
 

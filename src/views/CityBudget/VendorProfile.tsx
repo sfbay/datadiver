@@ -383,7 +383,7 @@ export default function VendorProfile({ vendor, fiscalYear, onBack: _onBack }: V
             {profile.contractData.length > 0 && (
               <> · Supplier Contracts (<span className="tabular-nums">cqi5-hm2d</span>)</>
             )}
-            {' '}· data.sfgov.org
+            {' '}· data.sf.gov
           </p>
         </div>
       )}

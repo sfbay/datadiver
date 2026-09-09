@@ -148,7 +148,7 @@ async function main() {
 
   for (const era of PRECINCT_ERAS) {
     const file = join(OUT, `${era.id}.geojson`)
-    const url = `https://data.sfgov.org/resource/${era.socrata}.geojson?$limit=2000`
+    const url = `https://data.sf.gov/resource/${era.socrata}.geojson?$limit=2000`
     const { cached } = await download(url, file)
     const gj = JSON.parse(await readFile(file, 'utf8'))
     console.log(`  ${cached ? '·' : '↓'} ${era.id}  ${gj.features.length} precincts`)

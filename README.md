@@ -87,7 +87,7 @@ src/
 
 ## Data Sources
 
-All data is fetched live from [data.sfgov.org](https://data.sfgov.org) via the Socrata SODA API:
+All data is fetched live from [data.sf.gov](https://data.sf.gov) via the Socrata SODA API:
 
 | Dataset | Endpoint | Description |
 |---------|----------|-------------|

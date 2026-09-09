@@ -4,16 +4,16 @@ import { liveManifest } from './manifest'
 import { DATASETS } from '@/api/datasets'
 
 describe('city registry', () => {
-  it('derives SF endpoints from host + id, identical to the pre-refactor URLs', () => {
+  it('derives SF endpoints from host + id', () => {
     expect(getDatasetConfig('sf', 'policeIncidents').endpoint)
-      .toBe('https://data.sfgov.org/resource/wg3w-h783.json')
+      .toBe('https://data.sf.gov/resource/wg3w-h783.json')
     for (const cfg of Object.values(CITIES.sf.datasets)) {
-      expect(cfg.endpoint).toBe(`https://data.sfgov.org/resource/${cfg.id}.${cfg.ext ?? 'json'}`)
+      expect(cfg.endpoint).toBe(`https://data.sf.gov/resource/${cfg.id}.${cfg.ext ?? 'json'}`)
     }
   })
   it('preserves the non-default .geojson extension for highInjuryNetwork, byte-identical to the pre-refactor URL', () => {
     expect(getDatasetConfig('sf', 'highInjuryNetwork').endpoint)
-      .toBe('https://data.sfgov.org/resource/enwt-3u8m.geojson')
+      .toBe('https://data.sf.gov/resource/enwt-3u8m.geojson')
   })
   it('keeps the back-compat DATASETS export pointing at the SF registry', () => {
     expect(DATASETS).toBe(CITIES.sf.datasets)

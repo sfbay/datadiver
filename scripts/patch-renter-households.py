@@ -26,7 +26,7 @@ by_tract = {r[t]: int(r[v]) for r in data if r[v] is not None and int(r[v]) >= 0
 print(f'ACS tracts: {len(by_tract)}, citywide renter HH: {sum(by_tract.values()):,}')
 
 # 2. Official assignment: tractce → analysis neighborhood
-url2 = 'https://data.sfgov.org/resource/sevw-6tgi.json?$select=tractce,neighborhoods_analysis_boundaries&$limit=400'
+url2 = 'https://data.sf.gov/resource/sevw-6tgi.json?$select=tractce,neighborhoods_analysis_boundaries&$limit=400'
 assign = json.load(urllib.request.urlopen(url2))
 tract_to_nh = {r['tractce']: r['neighborhoods_analysis_boundaries'] for r in assign if r.get('tractce')}
 print(f'assignment rows: {len(tract_to_nh)}')
