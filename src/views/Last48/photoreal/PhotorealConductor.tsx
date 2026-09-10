@@ -47,8 +47,12 @@ export default function PhotorealConductor({ viewer, tileset, markers, events, a
   useEffect(() => {
     if (ambientOn) {
       // The tour itself lands the camera — just remember where, so exiting
-      // right after doesn't re-fly to the same spot.
+      // right after doesn't re-fly to the same spot. Also clear any stale
+      // free-look target from BEFORE the tour armed (e.g. a marker click
+      // landed on A, then AUTO started): left set, it would still be truthy
+      // when the tour exits back to 'off' and the director would fly to A.
       landedRef.current = selectedEvent?.id ?? null
+      setFreeTarget(null)
       return
     }
     if (selectedEvent?.longitude == null || selectedEvent?.latitude == null) {
