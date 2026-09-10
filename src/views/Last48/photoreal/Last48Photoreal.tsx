@@ -52,7 +52,6 @@ export default function Last48Photoreal(props: Last48PhotorealProps) {
   const [viewer, setViewer] = useState<Cesium.Viewer | null>(null)
   const [tileset, setTileset] = useState<Cesium.Cesium3DTileset | null>(null)
   const [markers, setMarkers] = useState<PhotorealMarkers | null>(null)
-  const [resting, setResting] = useState(false)
   const [tileLoads, setTileLoads] = useState(0)
 
   // ── Viewer + tileset lifecycle ─────────────────────────────────────────
@@ -103,11 +102,13 @@ export default function Last48Photoreal(props: Last48PhotorealProps) {
 
     function rest() {
       if (cancelled) return
-      setResting(true)
       // Session-only: the STORE flips to classic so the page swaps renderers;
       // the persisted preference is left alone (Photoreal comes back tomorrow).
-      // setMapEngine persists, so write the store field directly.
-      useAppStore.setState({ mapEngine: 'classic' })
+      // setMapEngine persists, so write the store field directly. The note
+      // itself CANNOT live here — this same write unmounts this component
+      // before it could paint — so it rides the store as photorealResting and
+      // Last48.tsx renders it over the classic map.
+      useAppStore.setState({ mapEngine: 'classic', photorealResting: true })
     }
 
     return () => {
@@ -161,13 +162,6 @@ export default function Last48Photoreal(props: Last48PhotorealProps) {
   return (
     <div className="relative w-full h-full">
       <div ref={hostRef} className="w-full h-full" data-photoreal-host />
-      {resting && (
-        // Reader-facing prose — body serif, not a mono label (matches the
-        // one-line editorial note pattern in Last48NeighborhoodPeek).
-        <p className="absolute left-1/2 top-4 -translate-x-1/2 rounded-full bg-paper-50/90 dark:bg-espresso-900/90 px-3 py-1 text-label italic text-paper-700 dark:text-paper-300">
-          Photoreal is resting for today — showing the classic map.
-        </p>
-      )}
       {props.tuneOn && (
         <div className="absolute right-4 top-4 rounded-md bg-espresso-900/80 px-2 py-1 text-micro font-mono text-paper-200">
           tiles loaded {tileLoads}

@@ -137,6 +137,11 @@ export default function Last48() {
   // resolved against this route/device/key via effectiveMapEngine. This
   // route is /live, so viewId is the literal 'live'.
   const mapEnginePref = useAppStore((s) => s.mapEngine)
+  // Set (session-only) when the photoreal renderer stood down on a Google
+  // quota/auth refusal — it flips the engine to classic in the same write, so
+  // the note it wants to show has to be rendered from HERE, over the classic
+  // map that replaced it.
+  const photorealResting = useAppStore((s) => s.photorealResting)
   const isMobile = useIsMobile()
   const engine = effectiveMapEngine(mapEnginePref, { isMobile, viewId: 'live', hasKey: !!import.meta.env.VITE_GOOGLE_TILES_KEY })
   const photoreal = engine === 'photoreal'
@@ -614,6 +619,13 @@ export default function Last48() {
             ambientPace={ambientPace}
             onAmbientExit={() => setAmbientOn(false)}
           />
+        )}
+        {!photoreal && photorealResting && (
+          // Reader-facing prose — body serif, not a mono label (matches the
+          // one-line editorial note pattern in Last48NeighborhoodPeek).
+          <p className="pointer-events-none absolute left-1/2 top-4 z-20 -translate-x-1/2 rounded-full bg-paper-50/90 dark:bg-espresso-900/90 px-3 py-1 text-label italic text-paper-700 dark:text-paper-300">
+            Photoreal is resting for today — showing the classic map.
+          </p>
         )}
         {/* Dev-only pace tuning (?tune=1) — finds preset values live;
             never discoverable in the UI. */}

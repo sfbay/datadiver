@@ -23,6 +23,9 @@ const ROWS: Array<{ id: MapEngine; label: string; hint: string }> = [
 export default function MapPicker({ scope }: { scope: 'rail' | 'live' }) {
   const mapEngine = useAppStore((s) => s.mapEngine)
   const setMapEngine = useAppStore((s) => s.setMapEngine)
+  // Photoreal stood down this session (Google quota/auth refusal). Offering
+  // the row again would hand the reader a switch that bounces straight back.
+  const photorealResting = useAppStore((s) => s.photorealResting)
   const isMobile = useIsMobile()
   const { viewId } = useRouteView()
   const [open, setOpen] = useState(false)
@@ -38,7 +41,7 @@ export default function MapPicker({ scope }: { scope: 'rail' | 'live' }) {
   const ctx = { isMobile, viewId: viewId ?? null, hasKey: HAS_GOOGLE_KEY }
   const rows = ROWS.filter((r) => {
     if (r.id === 'standard') return STANDARD_SHIPPED
-    if (r.id === 'photoreal') return scope === 'live' && effectiveMapEngine('photoreal', ctx) === 'photoreal'
+    if (r.id === 'photoreal') return scope === 'live' && !photorealResting && effectiveMapEngine('photoreal', ctx) === 'photoreal'
     return true
   })
   if (rows.length < 2) return null

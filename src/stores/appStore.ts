@@ -25,6 +25,15 @@ interface AppState {
    *  honoured only on /live, desktop, with a Google key. */
   mapEngine: MapEngine
 
+  /** Photoreal hit a Google quota/auth refusal THIS SESSION and stood down.
+   *  Session-only and deliberately NOT persisted (Photoreal is offered again
+   *  on the next load): the renderer writes it with mapEngine: 'classic' in
+   *  one setState, The Last 48 renders the "resting for today" note in its
+   *  classic branch, and MapPicker drops the Photoreal row while it is true.
+   *  It lives here rather than in the renderer because flipping the engine
+   *  unmounts the renderer before any note of its own could paint. */
+  photorealResting: boolean
+
   /** Global date range filter */
   dateRange: { start: string; end: string }
 
@@ -99,6 +108,7 @@ export const useAppStore = create<AppState>((set) => ({
   isContextSidebarOpen: localStorage.getItem('dd-context-sidebar') !== 'collapsed',
   typeScale: parseTypeScale(localStorage.getItem('dd-type-scale')),
   mapEngine: parseMapEngine(localStorage.getItem(MAP_ENGINE_STORAGE_KEY)),
+  photorealResting: false,
   dateRange: {
     start: thirtyDaysAgo.toISOString().split('T')[0],
     end: now.toISOString().split('T')[0],
