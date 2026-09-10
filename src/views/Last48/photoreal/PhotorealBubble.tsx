@@ -46,7 +46,9 @@ export default function PhotorealBubble({ viewer, tileset, event, onClose }: Pro
     const tick = () => {
       const p = viewer.scene.cartesianToCanvasCoordinates(anchor)
       const el = ref.current
-      if (!p || !el) return
+      if (!el) return
+      if (!p) { el.style.visibility = 'hidden'; return } // anchor off-canvas — don't leave a stale transform
+      el.style.visibility = 'visible'
       el.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -100%)`
     }
     viewer.scene.postRender.addEventListener(tick)

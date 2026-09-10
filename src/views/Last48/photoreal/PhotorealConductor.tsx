@@ -38,12 +38,28 @@ export default function PhotorealConductor({ viewer, tileset, markers, events, a
   // Free-look / deep-link selection: a one-stop "tour" of the chosen event.
   // Mirrors Last48UnifiedView's DeepLinkLander, which bails while ambientOn.
   const [freeTarget, setFreeTarget] = useState<PhotorealTarget>(null)
+  // The id already landed (by the tour or a prior free-look leg) — guards
+  // against re-arming a fresh flight to the event the user just exited on.
+  // `onAmbientExit` doesn't clear the selected event, so without this guard
+  // exiting the tour re-triggers this effect with the SAME selectedEvent and
+  // launches a fresh 9s flight + orbit to it.
+  const landedRef = useRef<string | null>(null)
   useEffect(() => {
-    if (ambientOn) return
-    if (selectedEvent?.longitude != null && selectedEvent.latitude != null) {
-      markers.setFocus(selectedEvent.longitude, selectedEvent.latitude)
-      setFreeTarget({ lng: selectedEvent.longitude, lat: selectedEvent.latitude })
-    } else setFreeTarget(null)
+    if (ambientOn) {
+      // The tour itself lands the camera — just remember where, so exiting
+      // right after doesn't re-fly to the same spot.
+      landedRef.current = selectedEvent?.id ?? null
+      return
+    }
+    if (selectedEvent?.longitude == null || selectedEvent?.latitude == null) {
+      landedRef.current = null
+      setFreeTarget(null)
+      return
+    }
+    if (selectedEvent.id === landedRef.current) return // already there — no new leg
+    landedRef.current = selectedEvent.id
+    markers.setFocus(selectedEvent.longitude, selectedEvent.latitude)
+    setFreeTarget({ lng: selectedEvent.longitude, lat: selectedEvent.latitude })
   }, [ambientOn, selectedEvent, markers])
   const onExitRef = useRef(onExit)
   // eslint-disable-next-line react-hooks/refs
@@ -92,14 +108,17 @@ export default function PhotorealConductor({ viewer, tileset, markers, events, a
 
   // The director runs the tour when armed; otherwise it runs the free-look
   // one-stop leg (phase 'on' with the selected target) and yields on input.
+  // The free-look substitution only applies AT REST ('off') — while the
+  // machine is mid-ramp-out it must keep seeing 'ramp-out' through to
+  // completion (as AmbientConductor does), or the director never fires
+  // onRampOutDone and `phase` sticks, swallowing the next AUTO click.
   useCesiumDirector({
     viewer, tileset,
-    phase: ambientOn ? phase : (freeTarget ? 'on' : 'off'),
+    phase: phase !== 'off' ? phase : (freeTarget ? 'on' : 'off'),
     target: ambientOn ? target : freeTarget,
     pace,
     onRampInDone: () => setPhase('on'),
     onRampOutDone: () => { setPhase('off'); onExitRef.current() },
-    onSettled: () => { /* the bubble polls tileset.tilesLoaded itself (Task 11) */ },
   })
 
   return null

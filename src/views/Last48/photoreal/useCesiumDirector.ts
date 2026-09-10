@@ -5,8 +5,10 @@
 // the orbit starts from; a HOLD is a per-frame setView along orbitPose()
 // with the heading advancing at pace.orbitDegPerS. Both come from the same
 // pure function (cameraPose.ts), so the hand-off is seamless by
-// construction. Tile detail is coarse in flight and fine in orbit; the
-// settle gate fires once the tileset reports tilesLoaded (12 s cap).
+// construction. Tile detail is coarse in flight and fine in orbit. The
+// settle GATE (tilesLoaded, 12s cap) lives in PhotorealBubble — the
+// director used to poll it too, but that poll was dead (nothing read it)
+// and was the one timer this hook didn't clear in its effect return.
 import { useEffect, useRef } from 'react'
 import * as Cesium from 'cesium'
 import type { AmbientPhase } from '../ambient/useAmbientDirector'
@@ -31,8 +33,6 @@ export function useCesiumDirector(opts: {
   pace: PaceValues
   onRampInDone: () => void
   onRampOutDone: () => void
-  /** Tiles at the current stop have settled (or the cap elapsed). */
-  onSettled: () => void
 }) {
   const { viewer, tileset, phase, target } = opts
   const headingRef = useRef(35)
@@ -83,12 +83,6 @@ export function useCesiumDirector(opts: {
       complete: () => {
         if (disposed) return
         tileset.maximumScreenSpaceError = SSE_ORBIT
-        // Settle gate.
-        const t0 = Date.now()
-        const poll = setInterval(() => {
-          if (disposed) { clearInterval(poll); return }
-          if (tileset.tilesLoaded || Date.now() - t0 > SETTLE_CAP_MS) { clearInterval(poll); cbRef.current.onSettled() }
-        }, 150)
         // Hold: advance heading every frame from the SAME pose function.
         let last = performance.now()
         holdTick = () => {
