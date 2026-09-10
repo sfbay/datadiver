@@ -462,7 +462,11 @@ export default function Last48() {
         out[id] = 'idle'
         continue
       }
-      if (pointsOn && !anyStreamError) {
+      // The sweep phases come from the flat FlowMapLayer's cascade; the
+      // photoreal renderer has no sweep to report, so reading sweepPhase there
+      // left every chip shimmering "loading" forever with DOTS on. In photoreal
+      // the chips settle when the DATA lands, exactly as with points off.
+      if (pointsOn && !photoreal && !anyStreamError) {
         const ph = sweepPhase[id]
         out[id] = ph === 'settled' ? 'idle' : ph === 'sweeping' ? 'streaming' : 'loading'
       } else {
@@ -470,7 +474,7 @@ export default function Last48() {
       }
     }
     return out
-  }, [datasets, pointsOn, sweepPhase, window48.fullyLoadedByDataset, window48.errorByDataset])
+  }, [datasets, pointsOn, photoreal, sweepPhase, window48.fullyLoadedByDataset, window48.errorByDataset])
 
   return (
     <div className="flex flex-col h-full">
@@ -513,8 +517,9 @@ export default function Last48() {
               </span>
             )}
           </div>
+          {/* Control row, spec §3 order: underlay · DOTS · AUTO · MAP (export
+              rides at the end beside the picker). */}
           <div className="flex flex-wrap items-center justify-end gap-2 flex-shrink-0">
-            <MapPicker scope="live" />
             {!photoreal && (
               <LayerControls
                 pointsOn={pointsOn}
@@ -524,6 +529,17 @@ export default function Last48() {
                 underlayVariable={underlayVariable}
                 onUnderlayChange={setUnderlayVariable}
               />
+            )}
+            {photoreal && (
+              // Stands where the underlay/fill picker sits on the flat map, so
+              // the absence is stated rather than silent (the export note's
+              // sibling). Mono because it is a label, not prose.
+              <span
+                className="font-mono text-nano text-paper-500 dark:text-paper-600"
+                title="Choropleth and demographic underlays stay on the flat map"
+              >
+                no underlay in photoreal
+              </span>
             )}
             {photoreal && (
               <button
@@ -552,6 +568,7 @@ export default function Last48() {
                 </span>
               )
               : <ExportButton targetSelector="#last48-capture" filename="last-48" />}
+            <MapPicker scope="live" />
           </div>
         </div>
       </header>
@@ -584,10 +601,12 @@ export default function Last48() {
       {/* Unified composable view — swapped for the photoreal renderer when
           the effective engine resolves to it (route /live, desktop, key
           present). Photoreal owns its own capture-block absence: no export
-          affordance renders in that branch (see the control row above). */}
+          affordance renders in that branch (see the control row above).
+          The Suspense fallback is theme-aware: a flat espresso block flashed
+          BLACK in light mode while the Cesium chunk loaded. */}
       <div id="last48-capture" className="flex-1 relative">
         {photoreal ? (
-          <Suspense fallback={<div className="w-full h-full bg-espresso-950" />}>
+          <Suspense fallback={<div className="w-full h-full bg-paper-50 dark:bg-espresso-950" />}>
             <Last48Photoreal
               window48={window48}
               datasets={datasets}

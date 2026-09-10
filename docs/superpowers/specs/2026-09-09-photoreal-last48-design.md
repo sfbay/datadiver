@@ -258,3 +258,4 @@ Oakland (no Google 3D Tiles decision yet, and the Last 48 is SF-only).
 - On the engine flip to photoreal a non-`cinema` URL pace is rewritten to `cinema` (and `cinema` back to the default on the flip to classic); a later explicit pick in photoreal is honoured.
 - The "Photoreal is resting" note is body serif (house mono-prose rule), not the mono label the plan drafted.
 - Cesium 1.145 typings: two-arg `createGooglePhotorealistic3DTileset(apiOptions, tilesetOptions)`; `skyAtmosphere` is optional; `Scene.pick()` is `any`.
+- The `?tune=1` gauge reads "tiles loaded N" — a CUMULATIVE count of `tileLoad` events for the session, not a per-stop or per-minute rate. Per-stop/per-minute accounting, and live sliders for the orbit range and pitch, are deferred.

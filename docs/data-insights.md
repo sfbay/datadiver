@@ -453,7 +453,7 @@ have quoted (the per-stream counts) were the loaded counts, stated as such.
 | Fire/EMS dispatch `nuek-vuh3` | `case_location` | intersection, e.g. "MISSION ST/PARK ST" | 697 (35%) |
 | 311 `vw6y-z8j6` | `point` | street address, e.g. "831 FULTON ST" | 1,802 (90%) |
 
-911 and Fire/EMS coordinates are the nearest intersection — roughly half a block of true uncertainty — while 311 is address-level. Any marker finer than a corner is false precision for two of the three streams, so the photoreal mode draws intersection streams as a ~40 m ground disc and 311 as a column, and every card leads its location row with the precision word ("Nearest intersection · …" / "Address · …"). The probe: `$select=<geo>&$order=<date> DESC&$limit=2000`, count distinct rounded coordinates. The registry had carried `hasGeo: false` / "no coordinates" for `gnap-fj3t` since the view launched while the app drew its points the whole time — corrected the same day.
+911 and Fire/EMS coordinates are the nearest intersection — roughly half a block of true uncertainty — while 311 is address-level. Any marker finer than a corner is false precision for two of the three streams, so the photoreal mode draws intersection streams as a ~40 m ground disc and 311 as a column, and every card leads its location row with the precision word ("Nearest intersection · …" / "Address · …"). The probe: `$select=<geo>&$order=<date> DESC&$limit=2000`, count distinct rounded coordinates. The registry had carried `hasGeo: false` / "no coordinates" for `gnap-fj3t` since the view launched while the app drew its points the whole time — corrected the next day (Sept. 10).
 
 ---
 

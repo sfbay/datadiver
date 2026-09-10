@@ -12,7 +12,11 @@ if (!entry) { console.error('entry script not found in dist/index.html'); proces
 const bad = []
 if (/cesium/i.test(html)) bad.push('index.html references a cesium chunk (modulepreload?)')
 const entrySrc = readFileSync(join(dist, entry), 'utf8')
-if (/CESIUM_BASE_URL|cesium/.test(entrySrc)) bad.push(`${entry} references cesium`)
+// Anchored to how an eager Cesium IMPORT actually shows up in the entry chunk:
+// the base-URL global, a reference to the emitted cesium-*.js chunk, or a
+// surviving bare specifier. A bare /cesium/ would also fail on a reader-facing
+// "Cesium" string (a credit line, a picker hint) that ships no code at all.
+if (/CESIUM_BASE_URL|cesium-[\w-]+\.js|from ?["']cesium["']/.test(entrySrc)) bad.push(`${entry} references cesium`)
 const cesiumChunks = readdirSync(join(dist, 'assets')).filter((f) => /^cesium-.*\.js$/.test(f))
 if (cesiumChunks.length === 0) bad.push('no cesium-*.js chunk was emitted (manualChunks rule missing?)')
 if (bad.length) { console.error('entry-bundle check FAILED:\n - ' + bad.join('\n - ')); process.exit(1) }
