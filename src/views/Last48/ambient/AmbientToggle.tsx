@@ -24,6 +24,8 @@ interface Props {
   onToggle: (next: boolean) => void
   /** Choose a pace: switches live when on, arms at that pace when off. */
   onPaceSelect: (id: PaceId) => void
+  /** Show photoreal-only paces (cinema). */
+  photoreal?: boolean
 }
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)'
@@ -38,7 +40,7 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia(REDUCED_MOTION_QUERY).matches
 }
 
-export default function AmbientToggle({ on, disabled, activePaceId, onToggle, onPaceSelect }: Props) {
+export default function AmbientToggle({ on, disabled, activePaceId, onToggle, onPaceSelect, photoreal }: Props) {
   const reducedMotion = useSyncExternalStore(subscribeReducedMotion, prefersReducedMotion)
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -136,7 +138,7 @@ export default function AmbientToggle({ on, disabled, activePaceId, onToggle, on
           <div className="px-2 pb-1 text-nano font-mono uppercase tracking-[0.2em] text-paper-500/70 dark:text-paper-600">
             Auto-tour pace
           </div>
-          {Object.values(PACE_PRESETS).map((preset) => {
+          {Object.values(PACE_PRESETS).filter((p) => !p.photorealOnly || photoreal).map((preset) => {
             const active = preset.id === activePaceId
             return (
               <button

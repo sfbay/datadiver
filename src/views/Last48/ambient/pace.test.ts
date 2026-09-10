@@ -19,3 +19,15 @@ describe('parsePaceId', () => {
     expect(parsePaceId('0')).toBeNull()
   })
 })
+
+describe('cinema pace (photoreal only)', () => {
+  it('has the approved values and is flagged photorealOnly', () => {
+    expect(PACE_PRESETS.cinema).toMatchObject({
+      id: 'cinema', orbitDegPerS: 1, tweenMs: 9000, dwellMs: 30000, breathMs: 14000, pitchMin: 30, photorealOnly: true,
+    })
+    expect(parsePaceId('cinema')).toBe('cinema')
+  })
+  it('the flat-map presets are not flagged', () => {
+    for (const id of ['stroll', 'drift', 'sweep'] as const) expect(PACE_PRESETS[id].photorealOnly).toBeUndefined()
+  })
+})
