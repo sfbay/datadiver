@@ -32,6 +32,9 @@ export function useAmbientTour(opts: {
   breathMs: number
   onVisit: (ev: NormalizedEvent) => void
   onBreath: () => void
+  /** Pass ORDER strategy; defaults to buildPass (newest first). The
+   *  photoreal tour passes chainTour (nearest-neighbour from the newest). */
+  order?: (events: NormalizedEvent[]) => string[]
 }): void {
   const { active } = opts
 
@@ -44,6 +47,9 @@ export function useAmbientTour(opts: {
   const eventsRef = useRef(opts.events)
   // eslint-disable-next-line react-hooks/refs
   eventsRef.current = opts.events
+  const orderRef = useRef(opts.order)
+  // eslint-disable-next-line react-hooks/refs
+  orderRef.current = opts.order
   const onVisitRef = useRef(opts.onVisit)
   // eslint-disable-next-line react-hooks/refs
   onVisitRef.current = opts.onVisit
@@ -107,7 +113,7 @@ export function useAmbientTour(opts: {
         currentId = null
         onBreathRef.current()
         arm(breathMsRef.current, () => {
-          pass = buildPass(eventsRef.current)
+          pass = (orderRef.current ?? buildPass)(eventsRef.current)
           step()
         })
         return
@@ -140,7 +146,7 @@ export function useAmbientTour(opts: {
     }
     document.addEventListener('visibilitychange', onVisibility)
 
-    pass = buildPass(eventsRef.current)
+    pass = (orderRef.current ?? buildPass)(eventsRef.current)
     step()
 
     return () => {
