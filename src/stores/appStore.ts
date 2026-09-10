@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { ComparisonMode } from '@/utils/comparisonMode'
 import { parseTypeScale, type TypeScale } from '@/stores/typeScale'
+import { parseMapEngine, MAP_ENGINE_STORAGE_KEY, type MapEngine } from '@/stores/mapEngine'
 import { syncViewportMode } from '@/hooks/effectiveViewport'
 
 interface AppState {
@@ -18,6 +19,11 @@ interface AppState {
    *  Pulse/About rem conversions in this phase. String union so 'xl' —
    *  added per Jesse's feedback — needed no migration. */
   typeScale: TypeScale
+
+  /** Map-engine PREFERENCE (classic | standard | photoreal). Render from
+   *  effectiveMapEngine(), never from this field directly — photoreal is
+   *  honoured only on /live, desktop, with a Google key. */
+  mapEngine: MapEngine
 
   /** Global date range filter */
   dateRange: { start: string; end: string }
@@ -66,6 +72,7 @@ interface AppState {
   toggleSidebar: () => void
   toggleContextSidebar: () => void
   setTypeScale: (scale: TypeScale) => void
+  setMapEngine: (engine: MapEngine) => void
   setDateRange: (start: string, end: string) => void
   setSelectedNeighborhood: (neighborhood: string | null) => void
   setTimeOfDayFilter: (filter: { startHour: number; endHour: number } | null) => void
@@ -91,6 +98,7 @@ export const useAppStore = create<AppState>((set) => ({
   isSidebarOpen: localStorage.getItem('dd-sidebar') !== 'collapsed',
   isContextSidebarOpen: localStorage.getItem('dd-context-sidebar') !== 'collapsed',
   typeScale: parseTypeScale(localStorage.getItem('dd-type-scale')),
+  mapEngine: parseMapEngine(localStorage.getItem(MAP_ENGINE_STORAGE_KEY)),
   dateRange: {
     start: thirtyDaysAgo.toISOString().split('T')[0],
     end: now.toISOString().split('T')[0],
@@ -135,6 +143,15 @@ export const useAppStore = create<AppState>((set) => ({
     document.documentElement.setAttribute('data-type-scale', scale)
     syncViewportMode() // scale change moves the effective breakpoint
     return { typeScale: scale }
+  }),
+  setMapEngine: (engine) => set(() => {
+    try {
+      localStorage.setItem(MAP_ENGINE_STORAGE_KEY, engine)
+    } catch {
+      // Private-mode / quota failures must not block the in-session switch;
+      // the preference just won't persist.
+    }
+    return { mapEngine: engine }
   }),
   setDateRange: (start, end) => set({ dateRange: { start, end } }),
   setSelectedNeighborhood: (neighborhood) => set({ selectedNeighborhood: neighborhood }),
