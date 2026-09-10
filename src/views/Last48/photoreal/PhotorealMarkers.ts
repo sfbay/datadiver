@@ -115,9 +115,16 @@ export class PhotorealMarkers {
   }
 
   destroy() {
+    // React runs passive-effect cleanups PARENT-first on a deleted subtree, so
+    // this can be reached after the host effect already called viewer.destroy()
+    // (Cesium nulls scene/entities there and every touch throws). isDestroyed()
+    // is explicitly safe to call on a destroyed object — it is the only method
+    // that is. Belt two lives in Last48Photoreal's cleanup (queueMicrotask).
+    if (this.viewer.isDestroyed()) { this.ents.clear(); this.hero = []; return }
     this.handler.destroy()
     for (const ents of this.ents.values()) ents.forEach((x) => this.viewer.entities.remove(x))
     this.hero.forEach((x) => this.viewer.entities.remove(x))
     this.ents.clear()
+    this.hero = []
   }
 }

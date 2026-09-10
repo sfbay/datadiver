@@ -58,7 +58,19 @@ export function useCesiumDirector(opts: {
     let disposed = false
     let holdTick: (() => void) | null = null
 
-    const stopHold = () => { if (holdTick) { viewer.scene.preRender.removeEventListener(holdTick); holdTick = null } }
+    // Every Cesium touch in a CLEANUP goes through this gate. React runs
+    // passive-effect cleanups PARENT-first on a deleted subtree, so the host's
+    // viewer.destroy() has already run by the time this hook's cleanups fire on
+    // a photoreal → classic switch; after destroy, viewer.scene and
+    // viewer.camera are undefined and every access throws. isDestroyed() is
+    // the only method Cesium keeps callable on a destroyed object.
+    const alive = () => !viewer.isDestroyed()
+    const stopHold = () => {
+      if (holdTick) {
+        if (alive()) viewer.scene.preRender.removeEventListener(holdTick)
+        holdTick = null
+      }
+    }
 
     if (!target) {
       // Breath: pull back to the city.
@@ -68,7 +80,7 @@ export function useCesiumDirector(opts: {
         orientation: { heading: 0, pitch: Cesium.Math.toRadians(-40), roll: 0 },
         duration: cbRef.current.pace.tweenMs / 1000,
       })
-      return () => { viewer.camera.cancelFlight() }
+      return () => { if (alive()) viewer.camera.cancelFlight() }
     }
 
     const center = { lng: target.lng, lat: target.lat, height: TARGET_HEIGHT_M }
@@ -81,7 +93,7 @@ export function useCesiumDirector(opts: {
       duration: cbRef.current.pace.tweenMs / 1000,
       easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
       complete: () => {
-        if (disposed) return
+        if (disposed || !alive()) return
         tileset.maximumScreenSpaceError = SSE_ORBIT
         // Hold: advance heading every frame from the SAME pose function.
         let last = performance.now()
@@ -96,6 +108,6 @@ export function useCesiumDirector(opts: {
         viewer.scene.preRender.addEventListener(holdTick)
       },
     })
-    return () => { disposed = true; viewer.camera.cancelFlight(); stopHold() }
+    return () => { disposed = true; if (alive()) viewer.camera.cancelFlight(); stopHold() }
   }, [phase, target, viewer, tileset])
 }

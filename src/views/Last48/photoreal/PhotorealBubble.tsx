@@ -52,7 +52,10 @@ export default function PhotorealBubble({ viewer, tileset, event, onClose }: Pro
       el.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -100%)`
     }
     viewer.scene.postRender.addEventListener(tick)
-    return () => { viewer.scene.postRender.removeEventListener(tick) }
+    // Parent-first cleanup order: the host's viewer.destroy() may already have
+    // run (engine switch with the bubble open), and viewer.scene is undefined
+    // after it. isDestroyed() is the one call that stays safe post-destroy.
+    return () => { if (!viewer.isDestroyed()) viewer.scene.postRender.removeEventListener(tick) }
   }, [viewer, event])
 
   useEffect(() => {

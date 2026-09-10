@@ -111,9 +111,18 @@ export default function Last48Photoreal(props: Last48PhotorealProps) {
     }
 
     return () => {
+      // `cancelled` must flip SYNCHRONOUSLY — the in-flight tileset promise
+      // above reads it to decide whether to attach to a viewer that is going
+      // away. The DESTROY, though, is deferred one microtask: React runs
+      // passive-effect cleanups PARENT-first on a deleted subtree, so the
+      // bubble's postRender listener and the director's cancelFlight/preRender
+      // cleanups all run AFTER this one, and viewer.scene/camera are undefined
+      // the instant destroy() returns. A microtask scheduled during the commit
+      // pass runs after the whole pass, so the children unhook from a live
+      // viewer first. (Belt two: each of those cleanups also gates on
+      // viewer.isDestroyed().)
       cancelled = true
-      m.destroy()
-      v.destroy()
+      queueMicrotask(() => { m.destroy(); v.destroy() })
     }
   }, [])
 
