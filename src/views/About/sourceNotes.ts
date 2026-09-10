@@ -3,12 +3,12 @@
 // key that resolves to no source. Text is reader-facing — keep it in the
 // About voice. Two notes are test-pinned (the era clamps).
 export const SOURCE_NOTES: Readonly<Record<string, string>> = {
-  'nuek-vuh3': 'Publishes with ~12h intrinsic lag',
-  'gnap-fj3t': 'Rolling 48h window; ~30min lag; no coordinates',
+  'nuek-vuh3': 'Publishes with ~12h intrinsic lag; locations are the nearest intersection (~half-block precision)',
+  'gnap-fj3t': 'Rolling 48h window; ~30min lag; locations are the nearest intersection (~half-block precision), suppressed on sensitive calls',
   '2zdj-bwza': 'Closed law-enforcement calls; no coordinates',
   'wg3w-h783': '~39h publish lag; rows are charge-level and cases carry supplemental reports — counts are distinct cases (see findings)',
   'tmnf-yvry': 'The 2003–May 2018 extract: a different schema and category vocabulary, read only for ranges before 2018 (see findings)',
-  'vw6y-z8j6': '~15h intrinsic lag',
+  'vw6y-z8j6': '~15h intrinsic lag; locations are address-level',
   'ubvf-ztfx': 'Double lag: ~4–6wk publish + longer fatality coding (see findings)',
   'enwt-3u8m': 'Vision Zero street segments; not updated (historical only)',
   'ab4h-6ztd': 'No coordinates after ~Oct 2025 (see findings); published dates run 1951–2044 at both ends and are data-entry errors, so charts and queries are clamped to 2012–2026',
