@@ -20,6 +20,12 @@ const DISC_M = 20          // radius → ~40 m across
 const BEAM_M = 30
 const COLUMN_M = 40
 const HERO_SCALE = 1.6
+/** Free-look focus probe: ~4 Hz, and only when the camera's ground target has
+ *  actually moved. Without it the layer had no focus at all until the tour (or
+ *  a deep link) set one — a fresh mount with AUTO off drew zero markers, and
+ *  after a tour exited they stayed clustered at the last stop. */
+const FOCUS_PROBE_MS = 250
+const FOCUS_MOVE_KM = 0.3
 
 function colorFor(e: NormalizedEvent, now: number): Cesium.Color {
   const isPriorityA = e.datasetId === '911-realtime' && e.priority === 'A'
@@ -37,6 +43,8 @@ export class PhotorealMarkers {
   onPick?: (id: string) => void
   private handler: Cesium.ScreenSpaceEventHandler
   private viewer: Cesium.Viewer
+  private probeAt = 0
+  private probe: () => void
 
   constructor(viewer: Cesium.Viewer) {
     // Explicit field assignment, not a constructor parameter property —
@@ -51,6 +59,37 @@ export class PhotorealMarkers {
       const id = picked?.id?.properties?.eventId?.getValue?.()
       if (typeof id === 'string') this.onPick?.(id)
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+
+    // In FREE LOOK the draw radius is measured from wherever the camera is
+    // looking (spec §4). The conductor's explicit setFocus() still wins the
+    // instant it fires at each stop — this only takes over once the ground
+    // target has drifted FOCUS_MOVE_KM away from it.
+    this.probe = () => {
+      const now = performance.now()
+      if (now - this.probeAt < FOCUS_PROBE_MS) return
+      this.probeAt = now
+      if (this.viewer.isDestroyed()) return
+      const scene = this.viewer.scene
+      const canvas = scene.canvas
+      if (!canvas.clientWidth || !canvas.clientHeight) return
+      const center = new Cesium.Cartesian2(canvas.clientWidth / 2, canvas.clientHeight / 2)
+      // The globe is hidden but its ellipsoid still picks; pickPosition (which
+      // reads the depth buffer, i.e. the tiles themselves) is the fallback and
+      // throws on hardware with no depth texture.
+      let hit = this.viewer.camera.pickEllipsoid(center, scene.globe.ellipsoid)
+      if (!hit) { try { hit = scene.pickPosition(center) } catch { return } }
+      if (!hit) return
+      const c = Cesium.Cartographic.fromCartesian(hit)
+      if (!c) return
+      const lng = Cesium.Math.toDegrees(c.longitude)
+      const lat = Cesium.Math.toDegrees(c.latitude)
+      if (this.focus) {
+        const dx = (lng - this.focus.lng) * 88, dy = (lat - this.focus.lat) * 111
+        if (Math.hypot(dx, dy) < FOCUS_MOVE_KM) return
+      }
+      this.setFocus(lng, lat)
+    }
+    viewer.scene.postRender.addEventListener(this.probe)
   }
 
   setEvents(events: NormalizedEvent[]) { this.events = events; this.sync() }
@@ -121,6 +160,7 @@ export class PhotorealMarkers {
     // is explicitly safe to call on a destroyed object — it is the only method
     // that is. Belt two lives in Last48Photoreal's cleanup (queueMicrotask).
     if (this.viewer.isDestroyed()) { this.ents.clear(); this.hero = []; return }
+    this.viewer.scene.postRender.removeEventListener(this.probe)
     this.handler.destroy()
     for (const ents of this.ents.values()) ents.forEach((x) => this.viewer.entities.remove(x))
     this.hero.forEach((x) => this.viewer.entities.remove(x))

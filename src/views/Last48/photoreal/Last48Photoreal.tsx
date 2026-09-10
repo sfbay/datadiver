@@ -21,6 +21,7 @@ import { GRADES, GRADE_CLOCK_ISO, GRADE_FRAGMENT_GLSL, gradeForTheme } from './g
 import { PhotorealMarkers } from './PhotorealMarkers'
 import PhotorealConductor from './PhotorealConductor'
 import PhotorealBubble from './PhotorealBubble'
+import Last48EventCard from '../detail/Last48EventCard'
 
 ;(window as unknown as { CESIUM_BASE_URL: string }).CESIUM_BASE_URL = '/cesium/'
 
@@ -150,10 +151,38 @@ export default function Last48Photoreal(props: Last48PhotorealProps) {
     ),
     [props.window48.events, props.datasets],
   )
-  const selected = useMemo(
-    () => (props.selectedEventId ? events.find((e) => e.id === props.selectedEventId) ?? null : null),
-    [events, props.selectedEventId],
-  )
+  // The OPEN event is derived from the UNFILTERED window (still dataset-gated),
+  // not from `events` above: a sensitive 911 call publishes no coordinates, and
+  // deriving it from the coordinate-filtered list made ?event=<that call> a
+  // silent no-op in photoreal. Markers, the conductor and the bubble stay
+  // coordinate-guarded; the coordinate-less case renders the flat event card.
+  //
+  // Identity is STABILISED: useLast48Window re-creates every event object on
+  // each poll (911 every 2 min), so an unchanged open event used to arrive as
+  // a brand-new object — restarting the bubble's settle gate (a blink),
+  // re-staggering its rows and resetting the hero's breathing. Return the
+  // PREVIOUS object whenever the fields anything downstream reads are equal.
+  const stableSelected = useRef<NormalizedEvent | null>(null)
+  const selected = useMemo(() => {
+    const next = props.selectedEventId
+      ? props.window48.events.find(
+          (e) => e.id === props.selectedEventId && props.datasets.includes(e.datasetId),
+        ) ?? null
+      : null
+    const prev = stableSelected.current
+    const unchanged =
+      prev != null && next != null &&
+      prev.id === next.id &&
+      prev.longitude === next.longitude && prev.latitude === next.latitude &&
+      prev.receivedAt === next.receivedAt && prev.state === next.state
+    // Ref write inside the memo: the memo IS the identity cache, and it only
+    // ever stores the value it is about to return, so a re-run with the same
+    // inputs is a no-op (the house pattern used for preferredPaceRef).
+    const out = unchanged ? prev : next
+    stableSelected.current = out
+    return out
+  }, [props.window48.events, props.datasets, props.selectedEventId])
+  const selectedHasCoords = selected?.longitude != null && selected?.latitude != null
 
   useEffect(() => { markers?.setVisible(props.pointsOn) }, [markers, props.pointsOn])
   useEffect(() => { markers?.setEvents(events) }, [markers, events])
@@ -185,6 +214,12 @@ export default function Last48Photoreal(props: Last48PhotorealProps) {
       )}
       {viewer && (
         <PhotorealBubble viewer={viewer} tileset={tileset} event={selected} onClose={() => props.onSelectedEventIdChange(null)} />
+      )}
+      {/* A selected event with no published coordinates (a sensitive 911 call)
+          has nothing to pin a bubble to — it gets the flat map's own top-right
+          card, mounted exactly as Last48UnifiedView mounts it. */}
+      {selected && !selectedHasCoords && (
+        <Last48EventCard event={selected} onClose={() => props.onSelectedEventIdChange(null)} />
       )}
     </div>
   )

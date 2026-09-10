@@ -65,7 +65,9 @@ export default function PhotorealBubble({ viewer, tileset, event, onClose }: Pro
     return () => window.removeEventListener('keydown', onKey)
   }, [event, onClose])
 
-  if (!event) return null
+  // No coordinates → nothing to pin to. The host renders the flat
+  // Last48EventCard for that case instead (a sensitive 911 call).
+  if (!event || event.longitude == null || event.latitude == null) return null
   const meta = DATASET_META[event.datasetId]
   const { magnitude, unit } = formatAge(event.receivedAt)
   const loc = locationLine(event)
@@ -74,7 +76,10 @@ export default function PhotorealBubble({ viewer, tileset, event, onClose }: Pro
     ? classifyCaseMedia((event.raw as { media_url?: { url?: string } | null }).media_url?.url) : null
   const rows: Array<[string, string]> = [
     ...(event.datasetId === '911-realtime' && event.priority ? [['Priority', event.priority === 'A' ? 'A — life-threatening' : event.priority] as [string, string]] : []),
-    ...(loc ? [[loc.label, loc.place] as [string, string]] : [['Location', 'Suppressed; sensitive call'] as [string, string]]),
+    // locationLine() returns null only when coordinates are missing, and the
+    // early return above already sent that case to the flat card — so there is
+    // no "Suppressed; sensitive call" row to render here any more.
+    ...(loc ? [[loc.label, loc.place] as [string, string]] : []),
     ...populatedFields(event),
   ]
 
