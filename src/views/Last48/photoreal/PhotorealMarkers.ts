@@ -45,6 +45,8 @@ export class PhotorealMarkers {
     this.viewer = viewer
     this.handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas)
     this.handler.setInputAction((m: { position: Cesium.Cartesian2 }) => {
+      // Scene.pick() is typed `any` in Cesium's d.ts, so this optional chain
+      // compiles as-is — no cast needed to reach into `.id.properties`.
       const picked = viewer.scene.pick(m.position)
       const id = picked?.id?.properties?.eventId?.getValue?.()
       if (typeof id === 'string') this.onPick?.(id)

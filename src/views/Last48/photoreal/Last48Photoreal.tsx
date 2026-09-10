@@ -153,7 +153,9 @@ export default function Last48Photoreal(props: Last48PhotorealProps) {
     <div className="relative w-full h-full">
       <div ref={hostRef} className="w-full h-full" data-photoreal-host />
       {resting && (
-        <p className="absolute left-1/2 top-4 -translate-x-1/2 rounded-full bg-paper-50/90 dark:bg-espresso-900/90 px-3 py-1 text-label font-mono text-paper-700 dark:text-paper-300">
+        // Reader-facing prose — body serif, not a mono label (matches the
+        // one-line editorial note pattern in Last48NeighborhoodPeek).
+        <p className="absolute left-1/2 top-4 -translate-x-1/2 rounded-full bg-paper-50/90 dark:bg-espresso-900/90 px-3 py-1 text-label italic text-paper-700 dark:text-paper-300">
           Photoreal is resting for today — showing the classic map.
         </p>
       )}
