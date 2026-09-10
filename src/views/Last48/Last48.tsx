@@ -106,6 +106,16 @@ export default function Last48() {
   // eslint-disable-next-line react-hooks/refs
   const activePaceId = ambientPaceId ?? preferredPaceRef.current
 
+  // Latest ambientPaceId/setAmbientPace, for the engine-flip effect below —
+  // it must read the CURRENT armed pace without re-running every time that
+  // pace changes (see the effect's comment for why).
+  const ambientPaceIdRef = useRef(ambientPaceId)
+  // eslint-disable-next-line react-hooks/refs
+  ambientPaceIdRef.current = ambientPaceId
+  const setAmbientPaceRef = useRef(setAmbientPace)
+  // eslint-disable-next-line react-hooks/refs
+  setAmbientPaceRef.current = setAmbientPace
+
   const setAmbientOn = useCallback(
     (next: boolean) => setAmbientPace(next ? preferredPaceRef.current : null),
     [setAmbientPace],
@@ -135,10 +145,37 @@ export default function Last48() {
   const todOverride = searchParams.get('tod')
 
   // Photoreal defaults to the slow cinema pace; leaving photoreal restores
-  // whatever pace was preferred before (DEFAULT_PACE_ID if none).
+  // the default. This effect must fire ONLY on the photoreal transition —
+  // never on a later explicit pace pick, or choosing 'stroll' from the AUTO
+  // menu while in photoreal would immediately get stomped back to cinema.
+  // Hence the [photoreal]-only dep array, with the current ambientPaceId /
+  // setAmbientPace read through refs so they don't have to be (and can't
+  // accidentally become) dependencies.
+  //
+  // Ordering vs. the render-time sync above (`if (ambientPaceId)
+  // preferredPaceRef.current = ambientPaceId`): that line runs on EVERY
+  // render and unconditionally wins, so a stale non-cinema ?ambient= still
+  // sitting in the URL (a ?ambient=stroll deep link, or a mid-tour engine
+  // switch) would clobber 'cinema' back to 'stroll' the very next render if
+  // this effect only touched the ref. So on the flip into photoreal this
+  // effect also rewrites the URL via setAmbientPace('cinema') when a
+  // non-cinema pace is currently armed — that makes the render-time sync
+  // agree with the ref instead of fighting it. Symmetric on the way out.
   useEffect(() => {
-    if (photoreal && preferredPaceRef.current !== 'cinema') preferredPaceRef.current = 'cinema'
-    if (!photoreal && preferredPaceRef.current === 'cinema') preferredPaceRef.current = DEFAULT_PACE_ID
+    if (photoreal) {
+      if (ambientPaceIdRef.current && ambientPaceIdRef.current !== 'cinema') {
+        setAmbientPaceRef.current('cinema')
+      }
+      preferredPaceRef.current = 'cinema'
+    } else {
+      if (ambientPaceIdRef.current === 'cinema') {
+        setAmbientPaceRef.current(DEFAULT_PACE_ID)
+      }
+      if (preferredPaceRef.current === 'cinema') {
+        preferredPaceRef.current = DEFAULT_PACE_ID
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [photoreal])
 
   const [tuneOverrides, setTuneOverrides] = useState<Partial<PaceValues>>({})
