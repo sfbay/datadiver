@@ -27,6 +27,7 @@ export const SOURCE_NOTES: Readonly<Record<string, string>> = {
   // is one NON_SOCRATA entry shared by both cities, so one key must now carry
   // both. See task-10-report.md for the full note.
   'acs-2023-5yr': 'NOT on either portal — U.S. Census Bureau estimates, published by block group (San Francisco) and census tract (Oakland) and summed here to the neighborhoods and regions each map is drawn on. Six SF measures (poverty, unemployment and the four commute shares) are averaged up from census tracts using the city’s official tract-to-neighborhood assignment',
+  'google-3d-tiles': 'Daylight photo tiles; the dusk look in dark mode is a colour grade, not a night photo',
   'ppgh-7dqv': 'Charge-level rows — every count dedupes by case number; the HOMICIDE code (mostly coroner death investigations) is split so it does not read as a murder count; ~3.4% carry no-location beat codes (77X/99X); clamped to 2004+ (earlier rows are a junk trickle)',
   'quth-gb8e': 'Coordinates from the srx/sry fields — the dataset’s own address point is junk; publishes next-day',
   '58em-y96b': 'Publishes ~11 weeks behind; violation descriptions carry a 10-character truncation era, so codes are grouped instead',
