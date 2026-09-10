@@ -7,7 +7,7 @@
 //   - Layout chrome (freshness chips, dataset filter chips, layer controls, scanner strip)
 //   - Last48UnifiedView — single persistent MapView with composable layers
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useLast48Window } from '@/hooks/useLast48Window'
 import { windowTotal, windowTotalAcross } from '@/hooks/last48Truncation'
@@ -26,6 +26,11 @@ import CivicTicker from '@/components/ui/CivicTicker'
 import { useAnomalyBaseline } from '@/hooks/useAnomalyBaseline'
 import { useLast48Heartbeat } from '@/hooks/useLast48Heartbeat'
 import type { TickerItem } from '@/types/ticker'
+
+// TODO(Task 12): drives the photoreal map picker's Cesium mode. Declared
+// lazy now so scripts/check-entry-bundle.mjs can prove Cesium never reaches
+// the eager entry chunk (Task 5).
+const Last48Photoreal = lazy(() => import('./photoreal/Last48Photoreal'))
 
 // ── URL param parsers ──────────────────────────────────────────────────────
 
@@ -405,6 +410,10 @@ export default function Last48() {
 
   return (
     <div className="flex flex-col h-full">
+      {/* Never-true — forces Rollup to emit the lazy photoreal/cesium chunk
+          so scripts/check-entry-bundle.mjs has something to check (Task 5).
+          Task 12 replaces this with the real map-picker-gated render. */}
+      {false && <Last48Photoreal />}
       {/* Header — Phase 1's compact-blur chrome with the rule-leading LIVE
           eyebrow + italic display h1 + descriptive subtitle. The right
           cluster now hosts Phase 5's LayerControls (FLOW toggle + base-fill

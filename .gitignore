@@ -57,3 +57,6 @@ public/DataDiver Design System.zip
 # generator emits into public/data/elections/ is committed — the build is local,
 # Vercel just serves the output.
 data/elections-src/
+
+# Cesium runtime assets, copied from node_modules at build/dev
+public/cesium
