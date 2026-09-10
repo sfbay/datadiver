@@ -245,3 +245,16 @@ Files under `src/views/Last48/photoreal/`.
 Spec B (Mapbox Standard on every map view); PNG export of the Cesium canvas;
 `night` in the picker; mobile photoreal; kiosk wiring beyond `?ambient=cinema`;
 Oakland (no Google 3D Tiles decision yet, and the Last 48 is SF-only).
+
+## 11. As built (2026-09-10)
+
+- §6 deviation: `google-3d-tiles` is a `NON_SOCRATA` row only; NOT added to the manifest's `staticSources` — the pill filters `basemap` rows by design and no manifest lists `mapbox-basemap` either. About shows it via `nonSocrataFor('sf')`.
+- §5: the orbit is driven by `camera.setView` along the pure `orbitPose()` every frame (not `lookAt`), so the flight target and frame 0 are literally the same function output.
+- §5: `useAmbientTour` gained an optional `order` strategy (default `buildPass`); the photoreal conductor passes `chainTour`.
+- `cinema` carries `photorealOnly: true`; the AUTO pill hides it on the flat map.
+- The rail `MapPicker` renders null until Spec B (fewer than two offerable rows).
+- The `preload-helper` Vite chunk rule: Vite's preload helper co-located with the cesium chunk and index.html eagerly modulepreloaded it; `vite.config.ts` pins the helper to its own micro-chunk; the guard is unchanged.
+- The conductor feeds the director `phase` whenever the machine is not at rest (so `ramp-out` completes), lands a free-look target only when the selected event ID changes (`landedRef`), and clears a stale free target when the tour arms; the director's settle gate was removed (the bubble polls `tilesLoaded` itself).
+- On the engine flip to photoreal a non-`cinema` URL pace is rewritten to `cinema` (and `cinema` back to the default on the flip to classic); a later explicit pick in photoreal is honoured.
+- The "Photoreal is resting" note is body serif (house mono-prose rule), not the mono label the plan drafted.
+- Cesium 1.145 typings: two-arg `createGooglePhotorealistic3DTileset(apiOptions, tilesetOptions)`; `skyAtmosphere` is optional; `Scene.pick()` is `any`.
