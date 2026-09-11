@@ -28,7 +28,7 @@ import { HERO_COLUMN_M } from './PhotorealMarkers'
 import { SETTLE_CAP_MS } from './useCesiumDirector'
 
 /** Clear air between the card's bottom edge and the top of the column. */
-const GAP_PX = 24
+const GAP_PX = 6   // the column's top must visibly TOUCH the card (Jesse, 2026-09-10)
 /** The card never comes closer than this to either side of the host. */
 const EDGE_PX = 12
 /** Height-sample cadence: eager until the tiles resolve, then slow enough to

@@ -21,11 +21,12 @@ import { GRADES, GRADE_CLOCK_ISO, GRADE_FRAGMENT_GLSL, gradeForTheme } from './g
 import { PhotorealMarkers } from './PhotorealMarkers'
 import PhotorealConductor from './PhotorealConductor'
 import PhotorealBubble from './PhotorealBubble'
+import PhotorealTunePanel from './PhotorealTunePanel'
+import { quality, type Quality } from './quality'
 import Last48EventCard from '../detail/Last48EventCard'
 
 ;(window as unknown as { CESIUM_BASE_URL: string }).CESIUM_BASE_URL = '/cesium/'
 
-export const RESOLUTION_SCALE = 0.65
 
 export interface Last48PhotorealProps {
   window48: Last48WindowResult
@@ -47,6 +48,21 @@ export interface Last48PhotorealProps {
  *  page, never by importing this chunk (that would defeat the lazy split). */
 export const GOOGLE_TILES_KEY: string = import.meta.env.VITE_GOOGLE_TILES_KEY || ''
 
+/** Push the live quality knobs onto the viewer and (once it exists) the
+ *  tileset. Called at mount, when the tileset lands, and from the ?tune=1
+ *  sliders. Orbit tile detail is applied by the director at each phase
+ *  change (it reads quality.sseOrbit), not here. */
+export function applyQuality(v: Cesium.Viewer, ts: Cesium.Cesium3DTileset | null, q: Quality) {
+  if (v.isDestroyed()) return
+  v.targetFrameRate = q.fpsCap
+  v.resolutionScale = q.resolution
+  if (ts && !ts.isDestroyed()) {
+    ts.foveatedScreenSpaceError = q.foveation > 0
+    ts.foveatedMinimumScreenSpaceErrorRelaxation = q.foveation
+    ts.dynamicScreenSpaceError = q.dynamicSse
+  }
+}
+
 export default function Last48Photoreal(props: Last48PhotorealProps) {
   const isDarkMode = useAppStore((s) => s.isDarkMode)
   const hostRef = useRef<HTMLDivElement>(null)
@@ -63,7 +79,6 @@ export default function Last48Photoreal(props: Last48PhotorealProps) {
       baseLayerPicker: false, navigationHelpButton: false, infoBox: false, selectionIndicator: false,
       baseLayer: false, requestRenderMode: false,
     })
-    v.resolutionScale = RESOLUTION_SCALE
     v.scene.globe.show = false
     if (v.scene.skyAtmosphere) v.scene.skyAtmosphere.show = true
     v.scene.fog.enabled = true
@@ -74,6 +89,7 @@ export default function Last48Photoreal(props: Last48PhotorealProps) {
       destination: Cesium.Cartesian3.fromDegrees(-122.42, 37.70, 7000),
       orientation: { heading: 0, pitch: Cesium.Math.toRadians(-40), roll: 0 },
     })
+    applyQuality(v, null, quality)
     setViewer(v)
     const m = new PhotorealMarkers(v)
     setMarkers(m)
@@ -93,6 +109,7 @@ export default function Last48Photoreal(props: Last48PhotorealProps) {
           if (/\b(403|429)\b/.test(e?.message ?? '')) rest()
         })
         ts.tileLoad.addEventListener(() => setTileLoads((n) => n + 1))
+        applyQuality(v, ts, quality)
         v.scene.primitives.add(ts)
         setTileset(ts)
       } catch (err) {
@@ -194,10 +211,8 @@ export default function Last48Photoreal(props: Last48PhotorealProps) {
   return (
     <div className="relative w-full h-full">
       <div ref={hostRef} className="w-full h-full" data-photoreal-host />
-      {props.tuneOn && (
-        <div className="absolute right-4 top-4 rounded-md bg-espresso-900/80 px-2 py-1 text-micro font-mono text-paper-200">
-          tiles loaded {tileLoads}
-        </div>
+      {props.tuneOn && viewer && (
+        <PhotorealTunePanel viewer={viewer} tileset={tileset} tileLoads={tileLoads} onApply={applyQuality} />
       )}
       {viewer && tileset && markers && (
         <PhotorealConductor

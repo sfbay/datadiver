@@ -14,11 +14,13 @@ import * as Cesium from 'cesium'
 import type { AmbientPhase } from '../ambient/useAmbientDirector'
 import type { PaceValues } from '../ambient/pace'
 import { orbitPose, ORBIT_RANGE_M, ORBIT_PITCH_DEG } from './cameraPose'
+import { quality } from './quality'
 
 export type PhotorealTarget = { lng: number; lat: number } | null
 
 export const SSE_FLIGHT = 40
-export const SSE_ORBIT = 10
+/** Orbit/rest detail is a LIVE knob (quality.ts, ?tune=1 slider); the flight
+ *  value stays fixed — coarse in flight is what keeps legs smooth. */
 export const SETTLE_CAP_MS = 12_000
 const TARGET_HEIGHT_M = 30
 const CITY_VIEW = { lng: -122.42, lat: 37.70, height: 7000 }
@@ -46,7 +48,7 @@ export function useCesiumDirector(opts: {
     if (phase === 'ramp-in') cbRef.current.onRampInDone()
     if (phase === 'ramp-out') {
       viewer.camera.cancelFlight()
-      tileset.maximumScreenSpaceError = SSE_ORBIT
+      tileset.maximumScreenSpaceError = quality.sseOrbit
       const t = setTimeout(() => cbRef.current.onRampOutDone(), 300)
       return () => clearTimeout(t)
     }
@@ -94,7 +96,7 @@ export function useCesiumDirector(opts: {
       easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
       complete: () => {
         if (disposed || !alive()) return
-        tileset.maximumScreenSpaceError = SSE_ORBIT
+        tileset.maximumScreenSpaceError = quality.sseOrbit
         // Hold: advance heading every frame from the SAME pose function.
         let last = performance.now()
         holdTick = () => {
