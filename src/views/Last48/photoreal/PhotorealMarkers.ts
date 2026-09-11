@@ -46,16 +46,18 @@ const DISC_M = 20          // radius → ~40 m across
 const BEAM_M = 30
 const COLUMN_M = 40
 const HERO_SCALE = 1.6
-const HERO_BOTTOM_R = 6    // the hero column stays WIDE at the top — no point
-const HERO_TOP_R = 3.6
+const HERO_BOTTOM_R = 6    // the hero column FLARES toward the card — a funnel
+const HERO_TOP_R = 10      // that opens upward, never a point (Jesse, 2026-09-10)
 const HALO_SCALE = 1.8     // hero ground halo, as a multiple of the disc radius
 const DISC_LIFT_M = 1      // metres above the tile surface (anti-coplanar)
 const HALO_LIFT_M = 0.4
 /** Breathing/pulse period. One number so rim, fill and halo stay in phase. */
 const PULSE_MS = 1200
-/** Rising bands: one full band every 0.7 s, six bands up the column. */
-const BAND_MS = 700
-const BAND_REPEAT = 6
+/** Rising pulse: ONE bright band climbs the whole column every 0.75 s,
+ *  starting slow and finishing fast (cubic ease-in on the offset). Jesse
+ *  asked for fewer, stronger pulses than the original six-band flow. */
+const BAND_MS = 750
+const BAND_REPEAT = 1
 /** Free-look focus probe: ~4 Hz, and only when the camera's ground target has
  *  actually moved. Without it the layer had no focus at all until the tour (or
  *  a deep link) set one — a fresh mount with AUTO off drew zero markers, and
@@ -316,12 +318,17 @@ export class PhotorealMarkers {
         // (count − 1)), so the bands sit ACROSS the column. HORIZONTAL would
         // read st.t, which on a polyline runs across the ribbon's WIDTH.
         orientation: Cesium.StripeOrientation.VERTICAL,
-        evenColor: col.withAlpha(0.55),
-        oddColor: col.brighten(0.5, new Cesium.Color()).withAlpha(0.15),
+        evenColor: col.brighten(0.35, new Cesium.Color()).withAlpha(0.8),
+        oddColor: col.withAlpha(0.1),
         repeat: BAND_REPEAT,
         // A band sits where (s − offset) is fixed, so s = offset + k: offset
         // must RISE for the bands to rise.
-        offset: new Cesium.CallbackProperty(() => ((performance.now() - this.heroT0) / BAND_MS) % 1, false),
+        // Cubic ease-in: the pulse leaves the ground slowly and arrives at
+        // the card fast (Jesse: "start slow, then fast finish").
+        offset: new Cesium.CallbackProperty(() => {
+          const t = ((performance.now() - this.heroT0) / BAND_MS) % 1
+          return t * t * t
+        }, false),
       }),
     }
     this.heroEvent = e
