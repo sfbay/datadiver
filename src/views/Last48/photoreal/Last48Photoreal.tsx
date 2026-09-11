@@ -184,6 +184,9 @@ export default function Last48Photoreal(props: Last48PhotorealProps) {
   }, [props.window48.events, props.datasets, props.selectedEventId])
   const selectedHasCoords = selected?.longitude != null && selected?.latitude != null
 
+  // The marker layer clamps its hero's band core by hand (polylines carry no
+  // heightReference) and needs the tileset to sample the surface height.
+  useEffect(() => { markers?.setTileset(tileset) }, [markers, tileset])
   useEffect(() => { markers?.setVisible(props.pointsOn) }, [markers, props.pointsOn])
   useEffect(() => { markers?.setEvents(events) }, [markers, events])
   useEffect(() => { markers?.setHero(selected) }, [markers, selected])
