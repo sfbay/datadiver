@@ -66,6 +66,7 @@ export default function PhotorealConductor({ viewer, tileset, markers, events, a
     setFreeTarget({ lng: selectedEvent.longitude, lat: selectedEvent.latitude })
   }, [ambientOn, selectedEvent, markers])
   const onExitRef = useRef(onExit)
+  const arrivedRef = useRef<(() => void) | null>(null)
   // eslint-disable-next-line react-hooks/refs
   onExitRef.current = onExit
 
@@ -106,6 +107,9 @@ export default function PhotorealConductor({ viewer, tileset, markers, events, a
       onVisit(ev)
       markers.setFocus(ev.longitude!, ev.latitude!)
       setTarget({ lng: ev.longitude!, lat: ev.latitude! })
+      // The dwell clock starts when the director reports arrival (flight done
+      // + tiles settled), not now — see useAmbientTour's onVisit contract.
+      return new Promise<void>((resolve) => { arrivedRef.current = resolve })
     },
     onBreath: () => { onClearSelection(); setTarget(null) },
   })
@@ -123,6 +127,7 @@ export default function PhotorealConductor({ viewer, tileset, markers, events, a
     pace,
     onRampInDone: () => setPhase('on'),
     onRampOutDone: () => { setPhase('off'); onExitRef.current() },
+    onArrived: () => { arrivedRef.current?.(); arrivedRef.current = null },
   })
 
   return null

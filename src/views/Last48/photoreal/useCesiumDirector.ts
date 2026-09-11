@@ -35,6 +35,9 @@ export function useCesiumDirector(opts: {
   pace: PaceValues
   onRampInDone: () => void
   onRampOutDone: () => void
+  /** The leg is over AND the tiles at the stop have settled (or the 12 s cap
+   *  elapsed). The conductor resolves the tour's arrival promise on it. */
+  onArrived?: () => void
 }) {
   const { viewer, tileset, phase, target } = opts
   const headingRef = useRef(35)
@@ -59,6 +62,7 @@ export function useCesiumDirector(opts: {
     if (phase !== 'on') return
     let disposed = false
     let holdTick: (() => void) | null = null
+    let settle: ReturnType<typeof setInterval> | undefined
 
     // Every Cesium touch in a CLEANUP goes through this gate. React runs
     // passive-effect cleanups PARENT-first on a deleted subtree, so the host's
@@ -97,6 +101,15 @@ export function useCesiumDirector(opts: {
       complete: () => {
         if (disposed || !alive()) return
         tileset.maximumScreenSpaceError = quality.sseOrbit
+        // Settle gate → onArrived. Cleared with the leg (see the return below).
+        const t0 = Date.now()
+        settle = setInterval(() => {
+          if (disposed || !alive()) { clearInterval(settle); return }
+          if (tileset.tilesLoaded || Date.now() - t0 > SETTLE_CAP_MS) {
+            clearInterval(settle)
+            cbRef.current.onArrived?.()
+          }
+        }, 150)
         // Hold: advance heading every frame from the SAME pose function.
         let last = performance.now()
         holdTick = () => {
@@ -110,6 +123,6 @@ export function useCesiumDirector(opts: {
         viewer.scene.preRender.addEventListener(holdTick)
       },
     })
-    return () => { disposed = true; if (alive()) viewer.camera.cancelFlight(); stopHold() }
+    return () => { disposed = true; if (settle) clearInterval(settle); if (alive()) viewer.camera.cancelFlight(); stopHold() }
   }, [phase, target, viewer, tileset])
 }
