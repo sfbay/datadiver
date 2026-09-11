@@ -52,25 +52,13 @@ const HALO_SCALE = 1.8     // hero ground halo, as a multiple of the disc radius
 const DISC_LIFT_M = 1      // metres above the tile surface (anti-coplanar)
 const HALO_LIFT_M = 0.4
 /** Breathing/pulse period. One number so rim, fill and halo stay in phase. */
-const PULSE_MS = 1200
-/** Rising pulse: ONE bright band climbs the whole column every 0.75 s,
- *  starting slow and finishing fast (cubic ease-in on the offset). Jesse
- *  asked for fewer, stronger pulses than the original six-band flow. */
-const BAND_MS = 750
-const BAND_REPEAT = 1
+const PULSE_MS = 1800   // Jesse (2026-09-10): "slow the pulsing just a bit"
 /** Free-look focus probe: ~4 Hz, and only when the camera's ground target has
  *  actually moved. Without it the layer had no focus at all until the tour (or
  *  a deep link) set one — a fresh mount with AUTO off drew zero markers, and
- *  after a tour exited they stayed clustered at the last stop. The same tick
- *  re-samples the hero's ground height (see probeHeroGround). */
+ *  after a tour exited they stayed clustered at the last stop. */
 const FOCUS_PROBE_MS = 250
 const FOCUS_MOVE_KM = 0.3
-/** Once the hero's surface height has resolved, re-sample only this often. */
-const HERO_REPROBE_MS = 2000
-/** How many points the hero's band core is subdivided into. Polyline texture
- *  coordinate s is vertexIndex / (count − 1), so evenly spaced points give
- *  evenly spaced bands; two points alone band with perspective skew. */
-const CORE_SEGMENTS = 12
 
 const CLAMP_TILE = Cesium.HeightReference.CLAMP_TO_3D_TILE
 const ABOVE_TILE = Cesium.HeightReference.RELATIVE_TO_3D_TILE
@@ -85,8 +73,6 @@ interface HeroPaint {
   /** The larger ground ring: a fixed-size alpha pulse reads as an outward
    *  swell without any size change. */
   halo: Cesium.MaterialProperty
-  /** Rising bands up the column core. */
-  bands: Cesium.MaterialProperty
 }
 
 function colorFor(e: NormalizedEvent, now: number): Cesium.Color {
@@ -105,11 +91,7 @@ export class PhotorealMarkers {
   /** The hero's band core, and the surface height its positions were built
    *  at. Polylines carry no heightReference, so this one entity is clamped by
    *  hand off the same tileset sampler Cesium's own clamping uses. */
-  private heroCore: Cesium.Entity | null = null
   private heroEvent: NormalizedEvent | null = null
-  private heroGroundM: number | null = null
-  private heroProbeAt = 0
-  private tileset: Cesium.Cesium3DTileset | null = null
   onPick?: (id: string) => void
   private handler: Cesium.ScreenSpaceEventHandler
   private viewer: Cesium.Viewer
@@ -135,7 +117,6 @@ export class PhotorealMarkers {
       if (now - this.probeAt < FOCUS_PROBE_MS) return
       this.probeAt = now
       if (this.viewer.isDestroyed()) return
-      this.probeHeroGround()
       this.probeFocus()
     }
     viewer.scene.postRender.addEventListener(this.probe)
@@ -167,42 +148,9 @@ export class PhotorealMarkers {
     this.setFocus(lng, lat)
   }
 
-  /** Re-seat the hero's band core on the tile surface. Returns undefined until
-   *  a tile covering the point has loaded, and keeps refining as better tiles
-   *  arrive — exactly like the height reference on the other hero entities,
-   *  because it is the same sampler underneath. */
-  private probeHeroGround() {
-    const e = this.heroEvent
-    if (!e || !this.tileset || !this.heroCore?.polyline) return
-    // Eager until it resolves, then slow: getHeight is a CPU ray pick against
-    // the loaded tiles, not a lookup.
-    const now = performance.now()
-    if (now - this.heroProbeAt < (this.heroGroundM == null ? FOCUS_PROBE_MS : HERO_REPROBE_MS)) return
-    this.heroProbeAt = now
-    const carto = Cesium.Cartographic.fromDegrees(e.longitude!, e.latitude!)
-    let h: number | undefined
-    try { h = this.tileset.getHeight(carto, this.viewer.scene) } catch { return }
-    if (h == null) return
-    if (this.heroGroundM != null && Math.abs(h - this.heroGroundM) < 0.5) return
-    this.heroGroundM = h
-    this.heroCore.polyline.positions = new Cesium.ConstantProperty(this.corePositions(e))
-  }
-
-  private corePositions(e: NormalizedEvent): Cesium.Cartesian3[] {
-    const base = this.heroGroundM ?? 0
-    const out: Cesium.Cartesian3[] = []
-    for (let i = 0; i <= CORE_SEGMENTS; i++) {
-      out.push(Cesium.Cartesian3.fromDegrees(e.longitude!, e.latitude!, base + (HERO_COLUMN_M * i) / CORE_SEGMENTS))
-    }
-    return out
-  }
-
   setEvents(events: NormalizedEvent[]) { this.events = events; this.sync() }
   setVisible(on: boolean) { this.visible = on; this.sync() }
   setFocus(lng: number, lat: number) { this.focus = { lng, lat }; this.sync() }
-  /** The tileset arrives a beat after the viewer; the hero core clamps itself
-   *  as soon as it does. */
-  setTileset(ts: Cesium.Cesium3DTileset | null) { this.tileset = ts; this.heroGroundM = null; this.heroProbeAt = 0 }
 
   private near(e: NormalizedEvent): boolean {
     if (!this.focus) return false
@@ -213,7 +161,9 @@ export class PhotorealMarkers {
   private sync() {
     const now = Date.now()
     const want = new Set<string>()
-    if (this.visible) for (const e of this.events) if (this.near(e)) want.add(e.id)
+    // The hero's ORDINARY marker is not drawn while it is the hero — its short
+    // cone showed through the column's base (Jesse, 2026-09-10).
+    if (this.visible) for (const e of this.events) if (this.near(e) && e.id !== this.heroEvent?.id) want.add(e.id)
     for (const [id, ents] of this.ents) if (!want.has(id)) { ents.forEach((x) => this.viewer.entities.remove(x)); this.ents.delete(id) }
     for (const e of this.events) {
       if (!want.has(e.id) || this.ents.has(e.id)) continue
@@ -272,34 +222,16 @@ export class PhotorealMarkers {
       },
     }))
 
-    if (hero) {
-      const core = this.viewer.entities.add({
-        properties: props,
-        polyline: {
-          positions: this.corePositions(e),
-          width: 10,
-          // NONE: the points share one lng/lat and differ only in height, so
-          // geodesic subdivision would be degenerate.
-          arcType: Cesium.ArcType.NONE,
-          material: hero.bands,
-        },
-      })
-      this.heroCore = core
-      out.push(core)
-    }
     return out
   }
 
-  /** The current stop / selected event: a 90 m column of light with rising
-   *  bands, a breathing rim and a pulsing ground halo. */
+  /** The current stop / selected event: a wide ground disc, a pulsing outer
+   *  ring, and a 90 m flared column of light that breathes — all colour-only. */
   setHero(e: NormalizedEvent | null) {
     this.hero.forEach((x) => this.viewer.entities.remove(x))
     this.hero = []
-    this.heroCore = null
     this.heroEvent = null
-    this.heroGroundM = null
-    this.heroProbeAt = 0
-    if (!e || e.longitude == null || e.latitude == null) return
+    if (!e || e.longitude == null || e.latitude == null) { this.sync(); return }
     const col = Cesium.Color.fromCssColorString(COLORS[e.datasetId])
     this.heroT0 = performance.now()
     const phase = () => Math.sin(((performance.now() - this.heroT0) / PULSE_MS) * 2 * Math.PI)
@@ -312,28 +244,10 @@ export class PhotorealMarkers {
       halo: new Cesium.ColorMaterialProperty(
         new Cesium.CallbackProperty(() => col.withAlpha(0.11 + 0.11 * phase()), false),
       ),
-      bands: new Cesium.StripeMaterialProperty({
-        // VERTICAL, not HORIZONTAL: the stripe shader reads st.s under
-        // VERTICAL, and a polyline's s runs ALONG the line (vertexIndex /
-        // (count − 1)), so the bands sit ACROSS the column. HORIZONTAL would
-        // read st.t, which on a polyline runs across the ribbon's WIDTH.
-        orientation: Cesium.StripeOrientation.VERTICAL,
-        evenColor: col.brighten(0.35, new Cesium.Color()).withAlpha(0.8),
-        oddColor: col.withAlpha(0.1),
-        repeat: BAND_REPEAT,
-        // A band sits where (s − offset) is fixed, so s = offset + k: offset
-        // must RISE for the bands to rise.
-        // Cubic ease-in: the pulse leaves the ground slowly and arrives at
-        // the card fast (Jesse: "start slow, then fast finish").
-        offset: new Cesium.CallbackProperty(() => {
-          const t = ((performance.now() - this.heroT0) / BAND_MS) % 1
-          return t * t * t
-        }, false),
-      }),
     }
     this.heroEvent = e
     this.hero = this.build(e, col, HERO_SCALE, paint)
-    this.probeHeroGround()
+    this.sync() // drops the ordinary marker underneath
   }
 
   destroy() {
@@ -344,18 +258,16 @@ export class PhotorealMarkers {
     // that is. Belt two lives in Last48Photoreal's cleanup (queueMicrotask).
     if (this.viewer.isDestroyed()) {
       this.ents.clear(); this.hero = []
-      this.heroCore = null; this.heroEvent = null; this.tileset = null
+      this.heroEvent = null
       return
     }
     this.viewer.scene.postRender.removeEventListener(this.probe)
     this.handler.destroy()
     for (const ents of this.ents.values()) ents.forEach((x) => this.viewer.entities.remove(x))
-    // `hero` holds the halo and the band core as well as the disc and column.
+    // `hero` holds the halo as well as the disc and column.
     this.hero.forEach((x) => this.viewer.entities.remove(x))
     this.ents.clear()
     this.hero = []
-    this.heroCore = null
     this.heroEvent = null
-    this.tileset = null
   }
 }
