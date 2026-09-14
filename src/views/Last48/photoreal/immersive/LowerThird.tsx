@@ -1,108 +1,89 @@
 // src/views/Last48/photoreal/immersive/LowerThird.tsx
 //
-// The fixed band under the map — Spec A2 §2: controls (~15%) · carousel
-// (~60%) · queue (~25%). Height clamp(220px, 30vh, 340px); the band SHRINKS
-// the map viewport above it (fewer pixels, cheaper). Follows the theme (Plan
-// ruling 2); the tiles above it are always dusk. Mono for labels, serif for
-// anything read as prose. The parent UNMOUNTS it for the `O` overlay
-// toggle — this component never hides itself.
+// The horizontal arm of the L — the band under the map. Jesse's walk
+// (2026-09-13) called the first version "a big patch of brown, monolithic":
+// the controls moved out to the RightRail, the queue LIST is gone, and the
+// room it freed pays for a fourth tile. Four slots left to right —
+// prev · ACTIVE · ahead[0] · ahead[1] — at a fixed width each, so the active
+// tile never shifts when a neighbour is missing. Textured (`.noise-bg`),
+// double-ruled at the top edge (the house newspaper divider) and lit by one
+// `.glow-corner is-lg` in the ACTIVE stream's pigment. Height
+// clamp(220px, 30vh, 340px); the band SHRINKS the map viewport above it
+// (fewer pixels, cheaper). Follows the theme (Plan ruling 2); the tiles above
+// it are always dusk. Mono for labels, serif for anything read as prose. The
+// parent UNMOUNTS it for the `O` overlay toggle — it never hides itself.
 import type { NormalizedEvent } from '@/types/last48'
-import { DATASET_META, formatAge, locationLine } from '../../detail/eventCardModel'
-import { formatHeadline } from '@/utils/format'
+import { DATASET_META } from '../../detail/eventCardModel'
 import ImmersiveCard from './ImmersiveCard'
 
-export const HOLD_MS = 10_000
-
 interface Props {
-  active: NormalizedEvent | null
   prev: NormalizedEvent | null
-  next: NormalizedEvent | null
-  queue: NormalizedEvent[]
-  playing: boolean
-  /** > 0 while a hold is running (drives the countdown ring). */
-  holdLeftMs: number
-  onStep: (delta: 1 | -1) => void
+  active: NormalizedEvent | null
+  /** The next two stops — the same two the map draws as discs. */
+  ahead: NormalizedEvent[]
   onJump: (id: string) => void
-  onPlayToggle: () => void
-  onHold: () => void
-  onOverlayToggle: () => void
-  onExit: () => void
+  onStep: (delta: 1 | -1) => void
 }
 
-const BTN = 'flex items-center gap-2 rounded-md px-2.5 py-1.5 font-mono text-label uppercase tracking-wider transition-colors text-paper-600 hover:text-ink hover:bg-paper-200/60 dark:text-paper-400 dark:hover:text-paper-100 dark:hover:bg-espresso-800/60'
-const BTN_ON = 'bg-ochre-500/15 text-ink dark:text-paper-100'
+/** Every slot is the same width whether or not it holds a card, so the
+ *  ACTIVE tile keeps its position at the edges of the pass. */
+const SLOT = 'w-[min(300px,24%)] shrink-0'
+const PEEK_SLOT = `${SLOT} hidden desk:block`
+const STEP_BTN = 'rounded px-1.5 py-0.5 font-mono text-nano uppercase tracking-[0.25em] text-paper-600 dark:text-paper-500 transition-colors hover:text-ink dark:hover:text-paper-100'
 
-export default function LowerThird({ active, prev, next, queue, playing, holdLeftMs, onStep, onJump, onPlayToggle, onHold, onOverlayToggle, onExit }: Props) {
-  const holding = holdLeftMs > 0
-  // Countdown ring: r=9 → circumference ≈ 56.5.
-  const ringLen = 2 * Math.PI * 9
-  const ringOff = ringLen * (1 - holdLeftMs / HOLD_MS)
+/** The band's glow takes the active stream's pigment; ochre is the house
+ *  neutral for "nothing selected yet". */
+const FALLBACK_GLOW = '#d4a435'
+
+export default function LowerThird({ prev, active, ahead, onJump, onStep }: Props) {
+  const meta = active ? DATASET_META[active.datasetId] : null
+  const glow = meta?.color ?? FALLBACK_GLOW
+
   return (
     <div
       id="immersive-lower-third"
       data-export-ignore
-      className="relative z-20 flex-shrink-0 grid grid-cols-[minmax(9rem,15%)_1fr_minmax(14rem,25%)] gap-6 px-[clamp(16px,3vw,64px)] py-4 h-[clamp(220px,30vh,340px)]
-        bg-paper-50/90 dark:bg-espresso-950/85 backdrop-blur-xl border-t border-paper-200/40 dark:border-espresso-800"
+      style={{ ['--glow' as string]: glow }}
+      className="relative flex-shrink-0 h-[clamp(220px,30vh,340px)] noise-bg glow-host overflow-hidden
+        bg-paper-100/95 dark:bg-espresso-900/90 backdrop-blur-xl
+        border-t border-paper-400/60 dark:border-paper-300/25"
     >
-      {/* Controls */}
-      <div className="flex flex-col gap-1.5 justify-center">
-        <div className="font-mono text-nano tracking-widest text-paper-500 dark:text-paper-600 mb-1">IMMERSIVE</div>
-        <button type="button" onClick={onPlayToggle} aria-pressed={playing} className={`${BTN} ${playing ? BTN_ON : ''}`} title="Auto-advance (Space)">
-          <span aria-hidden>{playing ? '❚❚' : '▶'}</span><span>{playing ? 'playing' : 'play'}</span>
-        </button>
-        <button type="button" onClick={onHold} aria-pressed={holding} className={`${BTN} ${holding ? BTN_ON : ''}`} title="Hold 10 s (H)">
-          <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden className="-ml-0.5">
-            <circle cx="11" cy="11" r="9" fill="none" stroke="currentColor" strokeOpacity="0.25" strokeWidth="1.5" />
-            {holding && <circle cx="11" cy="11" r="9" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray={ringLen} strokeDashoffset={ringOff} transform="rotate(-90 11 11)" />}
-          </svg>
-          <span>{holding ? `hold · ${Math.ceil(holdLeftMs / 1000)}s` : 'hold'}</span>
-        </button>
-        <button type="button" onClick={onOverlayToggle} className={BTN} title="Hide the lower third (O)">
-          <span aria-hidden>▭</span><span>overlay off</span>
-        </button>
-        <button type="button" onClick={onExit} className={BTN} title="Back to The Last 48 (Escape)">
-          <span aria-hidden>✕</span><span>leave</span>
-        </button>
-      </div>
+      {/* Double rule: the wrapper's own top border plus this one, 3px under it. */}
+      <div className="absolute inset-x-0 top-[3px] h-px bg-paper-400/40 dark:bg-paper-300/15" aria-hidden />
+      <div className="glow-corner is-lg" />
 
-      {/* Carousel */}
-      <div className="relative flex items-center justify-center gap-4 min-w-0 overflow-hidden">
-        <button type="button" onClick={() => onStep(-1)} aria-label="Previous stop" className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-paper-100/70 dark:bg-espresso-900/70 text-paper-700 dark:text-paper-300 hover:text-ink dark:hover:text-paper-100 font-display text-xl">‹</button>
-        <div className="hidden desk:block shrink-0">{prev && <ImmersiveCard key={prev.id} event={prev} role="peek" onClick={() => onJump(prev.id)} />}</div>
-        <div className="shrink-0">
-          {active
-            ? <ImmersiveCard key={active.id} event={active} role="active" />
-            : <p className="font-display italic text-paper-500">Waiting for the first events…</p>}
+      <div className="relative z-[1] flex h-full flex-col">
+        {/* Rule-leading eyebrow + the two step buttons */}
+        <div className="flex items-center justify-between gap-4 px-[clamp(16px,3vw,64px)] pt-4 pb-2">
+          <span className="font-mono text-nano tracking-[0.25em] uppercase text-paper-600 dark:text-paper-500">
+            ── NOW{meta ? ` · ${meta.label}` : ''}
+          </span>
+          <span className="flex items-center gap-1">
+            <button type="button" onClick={() => onStep(-1)} aria-label="Previous stop" className={STEP_BTN}>‹ prev</button>
+            <span className="font-mono text-nano text-paper-500 dark:text-paper-600" aria-hidden>·</span>
+            <button type="button" onClick={() => onStep(1)} aria-label="Next stop" className={STEP_BTN}>next ›</button>
+          </span>
         </div>
-        <div className="hidden desk:block shrink-0">{next && <ImmersiveCard key={next.id} event={next} role="peek" onClick={() => onJump(next.id)} />}</div>
-        <button type="button" onClick={() => onStep(1)} aria-label="Next stop" className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-paper-100/70 dark:bg-espresso-900/70 text-paper-700 dark:text-paper-300 hover:text-ink dark:hover:text-paper-100 font-display text-xl">›</button>
-      </div>
 
-      {/* Queue */}
-      <div className="flex flex-col min-w-0">
-        <div className="font-mono text-nano tracking-widest text-paper-500 dark:text-paper-600 mb-1.5">NEXT</div>
-        <ol className="flex flex-col gap-0.5 overflow-hidden">
-          {queue.map((e, i) => {
-            const meta = DATASET_META[e.datasetId]
-            const age = formatAge(e.receivedAt)
-            const loc = locationLine(e)
+        {/* Four slots: prev · ACTIVE · ahead[0] · ahead[1] */}
+        <div className="flex items-stretch gap-4 px-[clamp(16px,3vw,64px)] pb-4 min-h-0">
+          <div className={PEEK_SLOT}>
+            {prev && <ImmersiveCard key={prev.id} event={prev} role="peek" onClick={() => onJump(prev.id)} />}
+          </div>
+          <div className={SLOT}>
+            {active
+              ? <ImmersiveCard key={active.id} event={active} role="active" glow />
+              : <p className="font-display italic text-paper-500">Waiting for the first events…</p>}
+          </div>
+          {[0, 1].map((i) => {
+            const e = ahead[i]
             return (
-              <li key={e.id}>
-                <button
-                  type="button"
-                  onClick={() => onJump(e.id)}
-                  className={`flex w-full items-baseline gap-2 rounded px-1.5 py-1 text-left hover:bg-paper-200/60 dark:hover:bg-espresso-800/60 ${i < 2 ? '' : 'opacity-70'}`}
-                  title={i < 2 ? 'On the map now' : undefined}
-                >
-                  <span className="font-mono text-nano tabular-nums text-paper-500 w-9 shrink-0">{age.magnitude}{age.unit.slice(0, 1)}</span>
-                  <span className="w-1.5 h-1.5 rounded-full shrink-0 self-center" style={{ background: meta.color }} aria-hidden />
-                  <span className="truncate text-[12px] text-ink dark:text-paper-200">{e.headline ? formatHeadline(e.headline) : 'Event'}</span>
-                  {loc && <span className="ml-auto truncate font-mono text-nano text-paper-500 max-w-[40%]">{loc.place}</span>}
-                </button>
-              </li>
+              <div key={i} className={PEEK_SLOT}>
+                {e && <ImmersiveCard key={e.id} event={e} role="peek" onClick={() => onJump(e.id)} />}
+              </div>
             )
           })}
-        </ol>
+        </div>
       </div>
     </div>
   )

@@ -15,9 +15,10 @@ import { useLast48Window } from '@/hooks/useLast48Window'
 import { LAST48_DATASETS, type NormalizedEvent } from '@/types/last48'
 import { PACE_PRESETS } from '../../ambient/pace'
 import { chainTour } from '../tourChain'
-import { carouselIndex, stepIndex, peekIds, queueIds, queueDiscIds } from './carousel'
+import { carouselIndex, stepIndex, peekIds, queueIds } from './carousel'
 import { useAutoAdvance } from './useAutoAdvance'
-import LowerThird, { HOLD_MS } from './LowerThird'
+import LowerThird from './LowerThird'
+import RightRail, { HOLD_MS } from './RightRail'
 import FrameTicks from './FrameTicks'
 import ImmersiveScene from './ImmersiveScene'
 
@@ -113,22 +114,17 @@ export default function Last48Immersive() {
 
   const peeks = peekIds(order, index)
   const prev = peeks.prev ? byId.get(peeks.prev) ?? null : null
-  const next = peeks.next ? byId.get(peeks.next) ?? null : null
-  // The lists are stabilised too: their members are identity-stable above, but
-  // a fresh array on every poll would still re-run ImmersiveScene's setQueue
-  // effect (and rebuild the discs) for no change.
-  const queueRef = useRef<NormalizedEvent[]>([])
-  const queue = useMemo(() => {
-    const fresh = queueIds(order, index).map((id) => byId.get(id)).filter((e): e is NormalizedEvent => !!e)
-    const out = sameList(queueRef.current, fresh) ? queueRef.current : fresh
-    queueRef.current = out
-    return out
-  }, [order, index, byId])
-  const discsRef = useRef<NormalizedEvent[]>([])
-  const discs = useMemo(() => {
-    const fresh = queueDiscIds(order, index).map((id) => byId.get(id)).filter((e): e is NormalizedEvent => !!e)
-    const out = sameList(discsRef.current, fresh) ? discsRef.current : fresh
-    discsRef.current = out
+  // The next TWO stops: the band's two forward tiles AND the map's two dim
+  // discs are the same pair, so there is one list (the old six-row queue went
+  // with the queue list itself — Jesse, 2026-09-13). Stabilised because its
+  // members are identity-stable above but a fresh array on every poll would
+  // still re-run ImmersiveScene's setQueue effect (rebuilding the discs) for
+  // no change.
+  const aheadRef = useRef<NormalizedEvent[]>([])
+  const ahead = useMemo(() => {
+    const fresh = queueIds(order, index, 2).map((id) => byId.get(id)).filter((e): e is NormalizedEvent => !!e)
+    const out = sameList(aheadRef.current, fresh) ? aheadRef.current : fresh
+    aheadRef.current = out
     return out
   }, [order, index, byId])
 
@@ -192,41 +188,49 @@ export default function Last48Immersive() {
     return () => window.removeEventListener('keydown', onKey)
   }, [step, playing, overlayOn, setParam, startHold, leave])
 
+  // The chrome is an L: controls down the RIGHT, content along the BOTTOM
+  // (Jesse, 2026-09-13). Both arms mount and unmount together with the
+  // overlay, so `O` leaves the map filling the whole window.
   return (
-    <div className="flex h-full flex-col bg-espresso-950">
-      <div ref={hostRef} className="relative flex-1 min-h-0" data-photoreal-host>
-        <ImmersiveScene
-          hostRef={hostRef}
-          active={active}
-          next={discs[0] ?? null}
-          queue={discs}
-          pace={pace}
-          hold={hold}
-          reducedMotion={reducedMotion}
-          todOverride={todOverride}
-          tuneOn={tuneOn}
-          onArrived={() => setArrived(true)}
-          onPick={jump}
-          onUserInput={() => { if (playing) setParam('play', null) }}
-          onRest={rest}
-        />
-        {!overlayOn && <FrameTicks hostRef={hostRef} />}
-        {!overlayOn && (
-          <p className="pointer-events-none absolute left-1/2 top-3 z-10 -translate-x-1/2 rounded-full bg-espresso-900/70 px-3 py-1 font-mono text-nano uppercase tracking-widest text-paper-300/80">
-            O · overlay
-          </p>
+    <div className="flex h-full flex-row bg-espresso-950">
+      <div className="flex-1 min-w-0 flex flex-col">
+        <div ref={hostRef} className="relative flex-1 min-h-0" data-photoreal-host>
+          <ImmersiveScene
+            hostRef={hostRef}
+            active={active}
+            next={ahead[0] ?? null}
+            queue={ahead}
+            pace={pace}
+            hold={hold}
+            reducedMotion={reducedMotion}
+            todOverride={todOverride}
+            tuneOn={tuneOn}
+            onArrived={() => setArrived(true)}
+            onPick={jump}
+            onUserInput={() => { if (playing) setParam('play', null) }}
+            onRest={rest}
+          />
+          {!overlayOn && <FrameTicks hostRef={hostRef} />}
+          {!overlayOn && (
+            <p className="pointer-events-none absolute left-1/2 top-3 z-10 -translate-x-1/2 rounded-full bg-espresso-900/70 px-3 py-1 font-mono text-nano uppercase tracking-widest text-paper-300/80">
+              O · overlay
+            </p>
+          )}
+        </div>
+        {overlayOn && (
+          <LowerThird
+            prev={prev}
+            active={active}
+            ahead={ahead}
+            onJump={jump}
+            onStep={step}
+          />
         )}
       </div>
       {overlayOn && (
-        <LowerThird
-          active={active}
-          prev={prev}
-          next={next}
-          queue={queue}
+        <RightRail
           playing={playing}
           holdLeftMs={holdLeftMs}
-          onStep={step}
-          onJump={jump}
           onPlayToggle={() => setParam('play', playing ? null : '1')}
           onHold={startHold}
           onOverlayToggle={() => setOverlayOn(false)}
