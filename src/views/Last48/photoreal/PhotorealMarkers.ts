@@ -92,6 +92,9 @@ export class PhotorealMarkers {
    *  at. Polylines carry no heightReference, so this one entity is clamped by
    *  hand off the same tileset sampler Cesium's own clamping uses. */
   private heroEvent: NormalizedEvent | null = null
+  /** Spec A2 §4: the next stops as plain dim discs (no tube, no ring). */
+  private queue: Cesium.Entity[] = []
+  private queueIds = new Set<string>()
   onPick?: (id: string) => void
   private handler: Cesium.ScreenSpaceEventHandler
   private viewer: Cesium.Viewer
@@ -163,7 +166,7 @@ export class PhotorealMarkers {
     const want = new Set<string>()
     // The hero's ORDINARY marker is not drawn while it is the hero — its short
     // cone showed through the column's base (Jesse, 2026-09-10).
-    if (this.visible) for (const e of this.events) if (this.near(e) && e.id !== this.heroEvent?.id) want.add(e.id)
+    if (this.visible) for (const e of this.events) if (this.near(e) && e.id !== this.heroEvent?.id && !this.queueIds.has(e.id)) want.add(e.id)
     for (const [id, ents] of this.ents) if (!want.has(id)) { ents.forEach((x) => this.viewer.entities.remove(x)); this.ents.delete(id) }
     for (const e of this.events) {
       if (!want.has(e.id) || this.ents.has(e.id)) continue
@@ -250,6 +253,34 @@ export class PhotorealMarkers {
     this.sync() // drops the ordinary marker underneath
   }
 
+  /** The next stops as plain dim discs in their stream pigment — the same
+   *  ground disc idiom as the hero, no tube, no ring, 0.35 alpha. Clamped
+   *  like everything else; click = jump (the pick handler reads eventId).
+   *  Precision-honesty holds: an intersection stream gets the ~40 m disc,
+   *  an address stream a 10 m one. */
+  setQueue(events: NormalizedEvent[]) {
+    this.queue.forEach((x) => this.viewer.entities.remove(x))
+    this.queue = []
+    this.queueIds = new Set()
+    for (const e of events) {
+      if (e.longitude == null || e.latitude == null) continue
+      const col = Cesium.Color.fromCssColorString(COLORS[e.datasetId])
+      const r = PRECISION[e.datasetId] === 'intersection' ? DISC_M : DISC_M * 0.5
+      this.queue.push(this.viewer.entities.add({
+        properties: new Cesium.PropertyBag({ eventId: e.id }),
+        position: Cesium.Cartesian3.fromDegrees(e.longitude, e.latitude, 0),
+        ellipse: {
+          semiMajorAxis: r, semiMinorAxis: r,
+          height: DISC_LIFT_M, heightReference: ABOVE_TILE,
+          material: col.withAlpha(0.35),
+          outline: true, outlineColor: col.withAlpha(0.5),
+        },
+      }))
+      this.queueIds.add(e.id)
+    }
+    this.sync()
+  }
+
   destroy() {
     // React runs passive-effect cleanups PARENT-first on a deleted subtree, so
     // this can be reached after the host effect already called viewer.destroy()
@@ -259,6 +290,7 @@ export class PhotorealMarkers {
     if (this.viewer.isDestroyed()) {
       this.ents.clear(); this.hero = []
       this.heroEvent = null
+      this.queue = []; this.queueIds = new Set()
       return
     }
     this.viewer.scene.postRender.removeEventListener(this.probe)
@@ -269,5 +301,8 @@ export class PhotorealMarkers {
     this.ents.clear()
     this.hero = []
     this.heroEvent = null
+    this.queue.forEach((x) => this.viewer.entities.remove(x))
+    this.queue = []
+    this.queueIds = new Set()
   }
 }
