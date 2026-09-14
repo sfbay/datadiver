@@ -17,7 +17,13 @@ export default function ImmersiveGate() {
   const isMobile = useIsMobile()
   const { search } = useLocation()
   const photorealResting = useAppStore((s) => s.photorealResting)
-  if (isMobile || !HAS_GOOGLE_KEY || photorealResting) return <Navigate to={`/live${search}`} replace />
+  if (isMobile || !HAS_GOOGLE_KEY || photorealResting) {
+    // Carry the STOP over, nothing else: ?play= / ?tune= / ?tod= are immersive
+    // controls and would otherwise stick to the classic page (and ?tune= means
+    // something different there).
+    const event = new URLSearchParams(search).get('event')
+    return <Navigate to={event ? `/live?event=${encodeURIComponent(event)}` : '/live'} replace />
+  }
   return (
     <Suspense fallback={<div className="h-full w-full bg-espresso-950" />}>
       <Page />

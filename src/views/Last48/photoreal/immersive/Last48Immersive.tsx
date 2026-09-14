@@ -21,6 +21,23 @@ import LowerThird, { HOLD_MS } from './LowerThird'
 import FrameTicks from './FrameTicks'
 import ImmersiveScene from './ImmersiveScene'
 
+/** Value equality over the fields anything downstream reads (the director's
+ *  target, the hero/disc discs, the card). A poll that changes none of these
+ *  must not produce a new object. */
+function sameEvent(a: NormalizedEvent | undefined, b: NormalizedEvent | undefined): boolean {
+  return (
+    a != null && b != null &&
+    a.id === b.id &&
+    a.longitude === b.longitude && a.latitude === b.latitude &&
+    a.receivedAt === b.receivedAt && a.state === b.state
+  )
+}
+
+/** Element-wise identity — the members are already stabilised by `sameEvent`. */
+function sameList(a: readonly NormalizedEvent[], b: readonly NormalizedEvent[]): boolean {
+  return a.length === b.length && a.every((e, i) => e === b[i])
+}
+
 export default function Last48Immersive() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -34,10 +51,6 @@ export default function Last48Immersive() {
     () => window48.events.filter((e) => e.longitude != null && e.latitude != null),
     [window48.events],
   )
-  // The pass: newest 24, nearest-neighbour chain. Recomputed when the window
-  // polls; the id-based index below survives the reorder.
-  const order = useMemo(() => chainTour(events), [events])
-  const byId = useMemo(() => new Map(events.map((e) => [e.id, e])), [events])
 
   // ── URL contract ──────────────────────────────────────────────────────
   const activeId = searchParams.get('event')
@@ -53,6 +66,43 @@ export default function Last48Immersive() {
     }, { replace: true })
   }, [setSearchParams])
 
+  // Identity is STABILISED by VALUE: useLast48Window re-creates every event
+  // object on each poll (911 every 2 min), so an unchanged active stop used to
+  // arrive as a brand-new object — and the director memoises its leg on the
+  // target's identity, so the camera re-flew 18 s to the SAME stop every two
+  // minutes (hero + discs rebuilt, preload re-aimed). Cache by id and return
+  // the PREVIOUS object whenever the fields anything downstream reads are
+  // equal; everything below (active / prev / next / queue / discs) inherits it.
+  // Same pattern as Spec A's `stableSelected` in Last48Photoreal.tsx.
+  const stableById = useRef(new Map<string, NormalizedEvent>())
+  const byId = useMemo(() => {
+    const was = stableById.current
+    const out = new Map<string, NormalizedEvent>()
+    for (const e of events) {
+      const prior = was.get(e.id)
+      out.set(e.id, sameEvent(prior, e) ? prior! : e)
+    }
+    // Ref write inside the memo: the memo IS the identity cache and only ever
+    // stores what it is about to return (the house pattern). Rebuilding the map
+    // also drops ids that have left the 48 h window.
+    stableById.current = out
+    return out
+  }, [events])
+
+  // The pass: newest 24, nearest-neighbour chain. Recomputed when the window
+  // polls; the id-based index below survives the reorder.
+  const chain = useMemo(() => chainTour(events), [events])
+  // The active stop must never age out mid-dwell. chainTour keeps only the
+  // newest 24, so once the current stop slips out of that set carouselIndex
+  // fell back to 0 and the write-back effect rewrote ?event= to the newest
+  // stop under the viewer — a camera jump mid-dwell. While the id is still
+  // inside the 48 h window, keep it as the head of the pass and let the chain
+  // continue behind it (index 0 ⇒ the write-back below stays quiet).
+  const order = useMemo(() => {
+    if (!activeId || !byId.has(activeId) || chain.includes(activeId)) return chain
+    return [activeId, ...chain]
+  }, [chain, activeId, byId])
+
   const index = carouselIndex(order, activeId)
   const active = index >= 0 ? byId.get(order[index]) ?? null : null
   // Keep ?event= truthful: an absent/stale id resolves to the newest stop and
@@ -64,14 +114,23 @@ export default function Last48Immersive() {
   const peeks = peekIds(order, index)
   const prev = peeks.prev ? byId.get(peeks.prev) ?? null : null
   const next = peeks.next ? byId.get(peeks.next) ?? null : null
-  const queue = useMemo(
-    () => queueIds(order, index).map((id) => byId.get(id)).filter((e): e is NormalizedEvent => !!e),
-    [order, index, byId],
-  )
-  const discs = useMemo(
-    () => queueDiscIds(order, index).map((id) => byId.get(id)).filter((e): e is NormalizedEvent => !!e),
-    [order, index, byId],
-  )
+  // The lists are stabilised too: their members are identity-stable above, but
+  // a fresh array on every poll would still re-run ImmersiveScene's setQueue
+  // effect (and rebuild the discs) for no change.
+  const queueRef = useRef<NormalizedEvent[]>([])
+  const queue = useMemo(() => {
+    const fresh = queueIds(order, index).map((id) => byId.get(id)).filter((e): e is NormalizedEvent => !!e)
+    const out = sameList(queueRef.current, fresh) ? queueRef.current : fresh
+    queueRef.current = out
+    return out
+  }, [order, index, byId])
+  const discsRef = useRef<NormalizedEvent[]>([])
+  const discs = useMemo(() => {
+    const fresh = queueDiscIds(order, index).map((id) => byId.get(id)).filter((e): e is NormalizedEvent => !!e)
+    const out = sameList(discsRef.current, fresh) ? discsRef.current : fresh
+    discsRef.current = out
+    return out
+  }, [order, index, byId])
 
   const jump = useCallback((id: string) => { setParam('event', id) }, [setParam])
   const step = useCallback((delta: 1 | -1) => {
@@ -117,6 +176,9 @@ export default function Last48Immersive() {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return
+      // Never swallow a browser/OS chord — ⌘← and Alt← are Back, and this page
+      // is one keypress from the classic view.
+      if (e.metaKey || e.ctrlKey || e.altKey) return
       switch (e.key) {
         case 'ArrowLeft': e.preventDefault(); step(-1); break
         case 'ArrowRight': e.preventDefault(); step(1); break

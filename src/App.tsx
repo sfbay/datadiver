@@ -9,10 +9,9 @@ import { useRouteView } from '@/cities/useActiveCity'
 import { CITY_SELECTION_FIELDS, type CitySelectionField } from '@/stores/citySelections'
 import { sfCity } from '@/cities/sf'
 import { oaklandCity } from '@/cities/oakland'
-import { viewPath } from '@/cities/routing'
+import { viewPath, IMMERSIVE_PATH } from '@/cities/routing'
 import { liveManifest } from '@/cities/manifest'
 import type { ViewId } from '@/cities/manifest'
-import { IMMERSIVE_PATH } from '@/cities/routing'
 // Eager: ONLY the landing page. Every dataset view is route-split — including
 // The Last 48, whose import graph carries Mapbox GL (~467 KB gzip): keeping it
 // lazy keeps the GL engine off Home's critical path (the manualChunks split in

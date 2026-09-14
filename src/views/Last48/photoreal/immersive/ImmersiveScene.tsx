@@ -69,7 +69,10 @@ export default function ImmersiveScene(props: Props) {
     let cancelled = false
     void loadGoogleTileset(v, () => cancelled, {
       onRest: () => { if (!cancelled) cb.current.onRest() },
-      onTileLoad: () => setTileLoads((n) => n + 1),
+      // The counter feeds the tune panel and nothing else, so only count when
+      // the panel is open — otherwise every streamed tile re-rendered the
+      // scene (hundreds of renders per flight, for a number nobody reads).
+      onTileLoad: () => { if (cb.current.tuneOn) setTileLoads((n) => n + 1) },
     }).then((ts) => {
       if (!ts) return
       applyQuality(v, ts, quality)
@@ -90,8 +93,19 @@ export default function ImmersiveScene(props: Props) {
   }, [viewer, tileset, props.todOverride])
 
   // ── Hero + queue discs; click = pick ──────────────────────────────────
-  useEffect(() => { markers?.setHero(props.active) }, [markers, props.active])
-  useEffect(() => { markers?.setQueue(props.queue) }, [markers, props.queue])
+  // Each ends with a render request: in render-on-demand mode a queue-only
+  // change (or a hero swap while nothing is breathing) would otherwise sit
+  // unpainted until the next breath tick or camera move.
+  useEffect(() => {
+    if (!markers) return
+    markers.setHero(props.active)
+    if (viewer && !viewer.isDestroyed()) viewer.scene.requestRender()
+  }, [markers, viewer, props.active])
+  useEffect(() => {
+    if (!markers) return
+    markers.setQueue(props.queue)
+    if (viewer && !viewer.isDestroyed()) viewer.scene.requestRender()
+  }, [markers, viewer, props.queue])
   useEffect(() => {
     if (!markers) return
     markers.onPick = (id) => cb.current.onPick(id)
@@ -151,9 +165,16 @@ function Director(p: {
   // eslint-disable-next-line react-hooks/refs
   cb.current = p
   // The hook's leg effect depends on `target` by identity — memoise so a
-  // parent render with the same event does not re-fly.
-  const target = useMemo(() => toTarget(p.active), [p.active])
-  const next = useMemo(() => toTarget(p.next), [p.next])
+  // parent render with the same event does not re-fly. Keyed on the PRIMITIVE
+  // fields, not the event object: the page stabilises event identity by value,
+  // and this is the belt to that braces (a fresh object with the same id and
+  // coordinates must never restart an 18 s flight).
+  const aId = p.active?.id, aLng = p.active?.longitude, aLat = p.active?.latitude
+  const nId = p.next?.id, nLng = p.next?.longitude, nLat = p.next?.latitude
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const target = useMemo(() => toTarget(p.active), [aId, aLng, aLat])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const next = useMemo(() => toTarget(p.next), [nId, nLng, nLat])
   const { cancel } = useDreamDirector({
     viewer: p.viewer, tileset: p.tileset,
     target, next,
