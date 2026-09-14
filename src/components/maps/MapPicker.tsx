@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useRouteView } from '@/cities/useActiveCity'
-import { effectiveMapEngine, STANDARD_SHIPPED, type MapEngine } from '@/stores/mapEngine'
+import { effectiveMapEngine, PHOTOREAL_OFFERED, STANDARD_SHIPPED, type MapEngine } from '@/stores/mapEngine'
 
 const HAS_GOOGLE_KEY = !!import.meta.env.VITE_GOOGLE_TILES_KEY
 
@@ -41,7 +41,7 @@ export default function MapPicker({ scope }: { scope: 'rail' | 'live' }) {
   const ctx = { isMobile, viewId: viewId ?? null, hasKey: HAS_GOOGLE_KEY }
   const rows = ROWS.filter((r) => {
     if (r.id === 'standard') return STANDARD_SHIPPED
-    if (r.id === 'photoreal') return scope === 'live' && !photorealResting && effectiveMapEngine('photoreal', ctx) === 'photoreal'
+    if (r.id === 'photoreal') return PHOTOREAL_OFFERED && scope === 'live' && !photorealResting && effectiveMapEngine('photoreal', ctx) === 'photoreal'
     return true
   })
   if (rows.length < 2) return null

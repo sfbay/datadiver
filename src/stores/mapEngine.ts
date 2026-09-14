@@ -19,6 +19,13 @@ export const MAP_ENGINE_STORAGE_KEY = 'dd-map-engine'
  *  stored 'standard' preference renders classic and the picker hides it. */
 export const STANDARD_SHIPPED = false
 
+/** Spec A2 §7 DARK LAUNCH: the MapPicker hides the Photoreal row until the
+ *  immersive route (/live/immersive) ships. `?engine=photoreal` on /live
+ *  still mounts the renderer — parsed by Last48.tsx, session-only, never
+ *  persisted — so it can be tested on production hardware behind the real
+ *  key and quota. effectiveMapEngine is unchanged; only the picker reads this. */
+export const PHOTOREAL_OFFERED = false
+
 /** Allow-list parse of the raw localStorage value; anything else → classic. */
 export function parseMapEngine(raw: string | null): MapEngine {
   return VALID.includes(raw as MapEngine) ? (raw as MapEngine) : 'classic'

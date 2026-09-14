@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseMapEngine, effectiveMapEngine, STANDARD_SHIPPED, MAP_ENGINE_STORAGE_KEY } from './mapEngine'
+import { parseMapEngine, effectiveMapEngine, STANDARD_SHIPPED, MAP_ENGINE_STORAGE_KEY, PHOTOREAL_OFFERED } from './mapEngine'
 
 describe('parseMapEngine', () => {
   it('accepts the three engines', () => {
@@ -32,5 +32,11 @@ describe('effectiveMapEngine', () => {
   })
   it('classic passes through', () => {
     expect(effectiveMapEngine('classic', ok)).toBe('classic')
+  })
+})
+
+describe('dark launch (Spec A2 §7)', () => {
+  it('the picker hides Photoreal until the immersive route ships', () => {
+    expect(PHOTOREAL_OFFERED).toBe(false)
   })
 })

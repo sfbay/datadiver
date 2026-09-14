@@ -136,12 +136,19 @@ export default function Last48() {
   // Which map engine this page actually renders — the PREFERENCE (store)
   // resolved against this route/device/key via effectiveMapEngine. This
   // route is /live, so viewId is the literal 'live'.
-  const mapEnginePref = useAppStore((s) => s.mapEngine)
+  const storedEngine = useAppStore((s) => s.mapEngine)
   // Set (session-only) when the photoreal renderer stood down on a Google
   // quota/auth refusal — it flips the engine to classic in the same write, so
   // the note it wants to show has to be rendered from HERE, over the classic
   // map that replaced it.
   const photorealResting = useAppStore((s) => s.photorealResting)
+  // Spec A2 §7 dark launch: `?engine=photoreal` overrides the stored
+  // preference for THIS render only — never written to the store — so the
+  // renderer stays reachable while the picker hides its row. The resting flag
+  // wins over it: a quota refusal sets the store to classic, and an override
+  // that ignored it would re-mount photoreal on the next render and loop.
+  const engineParam = searchParams.get('engine')
+  const mapEnginePref = engineParam === 'photoreal' && !photorealResting ? 'photoreal' : storedEngine
   const isMobile = useIsMobile()
   const engine = effectiveMapEngine(mapEnginePref, { isMobile, viewId: 'live', hasKey: !!import.meta.env.VITE_GOOGLE_TILES_KEY })
   const photoreal = engine === 'photoreal'
