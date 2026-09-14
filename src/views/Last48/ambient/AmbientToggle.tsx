@@ -138,7 +138,7 @@ export default function AmbientToggle({ on, disabled, activePaceId, onToggle, on
           <div className="px-2 pb-1 text-nano font-mono uppercase tracking-[0.2em] text-paper-500/70 dark:text-paper-600">
             Auto-tour pace
           </div>
-          {Object.values(PACE_PRESETS).filter((p) => !p.photorealOnly || photoreal).map((preset) => {
+          {Object.values(PACE_PRESETS).filter((p) => !p.hidden && (!p.photorealOnly || photoreal)).map((preset) => {
             const active = preset.id === activePaceId
             return (
               <button

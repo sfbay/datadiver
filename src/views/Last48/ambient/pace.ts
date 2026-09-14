@@ -12,7 +12,7 @@
 // arm syntax. Dev tuning happens via ?tune=1 (AmbientTunePanel), which
 // overrides the active preset's values live.
 
-export type PaceId = 'stroll' | 'drift' | 'sweep' | 'cinema'
+export type PaceId = 'stroll' | 'drift' | 'sweep' | 'cinema' | 'dream'
 
 export interface PaceValues {
   /** Orbit sweep speed, degrees per second — the TIME-AVERAGE of the sine
@@ -34,6 +34,9 @@ export interface PacePreset extends PaceValues {
   hint: string
   /** Offered only in photoreal mode (the AUTO pill hides it on the flat map). */
   photorealOnly?: true
+  /** Never offered by the AUTO pill and never armable via ?ambient= — read
+   *  directly by the surface that owns it (the immersive route reads `dream`). */
+  hidden?: true
 }
 
 export const PACE_PRESETS: Record<PaceId, PacePreset> = {
@@ -79,6 +82,22 @@ export const PACE_PRESETS: Record<PaceId, PacePreset> = {
     tweenMs: 9000,
     pitchMin: 30,
     photorealOnly: true,
+  },
+  dream: {
+    id: 'dream',
+    label: 'Dream',
+    hint: 'immersive',
+    // Spec A2 §3: a stop is ONE slow LINEAR flight across the whole dwell.
+    // 0.05°/s over 75 s is ≈3.75° — a barely-moving camera that Cesium still
+    // treats as a flight, which is what unlocks the next-stop tile preload.
+    // breathMs 0: the carousel IS the pass and the queue never empties.
+    orbitDegPerS: 0.05,
+    dwellMs: 75000,
+    breathMs: 0,
+    tweenMs: 18000,
+    pitchMin: 30,
+    photorealOnly: true,
+    hidden: true,
   },
 }
 

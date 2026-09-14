@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseRoute, viewPath } from './routing'
+import { parseRoute, viewPath, routeChrome, IMMERSIVE_PATH } from './routing'
 
 describe('parseRoute', () => {
   it('parses SF root and single-segment views', () => {
@@ -42,5 +42,22 @@ describe('viewPath', () => {
     for (const [c, v] of [['sf', 'housing'], ['oakland', 'crime-incidents']] as const) {
       expect(parseRoute(viewPath(c, v))).toEqual({ cityId: c, viewId: v })
     }
+  })
+})
+
+describe('routeChrome', () => {
+  it('only the immersive Last 48 drops the shell', () => {
+    expect(IMMERSIVE_PATH).toBe('/live/immersive')
+    expect(routeChrome('/live/immersive')).toBe('none')
+    expect(routeChrome('/live/immersive/')).toBe('none')
+    expect(routeChrome('/Live/Immersive')).toBe('none')
+  })
+  it('everything else keeps the shell', () => {
+    for (const p of ['/', '/live', '/live-feeds', '/live/x', '/oakland/live/immersive', '/business/chain/abc']) {
+      expect(routeChrome(p), p).toBe('shell')
+    }
+  })
+  it('the immersive path is still the live family to parseRoute', () => {
+    expect(parseRoute('/live/immersive')).toEqual({ cityId: 'sf', viewId: 'live' })
   })
 })

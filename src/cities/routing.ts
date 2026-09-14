@@ -41,3 +41,20 @@ export function viewPath(cityId: CityId, viewId: string): string {
   const view = viewId === 'home' ? '' : `/${viewId}`
   return cityId === 'sf' ? (view || '/') : `/${cityId}${view}`
 }
+
+/** Spec A2 §2: the immersive Last 48 renders WITHOUT the app shell (no rail,
+ *  no mobile top bar). It is a DETAIL route of the `live` family — parseRoute
+ *  still reports viewId 'live', so useUrlSync's dateless rule and the
+ *  manifest's sources carry over — and this is the one extra fact the shell
+ *  needs. Case-insensitive to agree with the router's matching. */
+export const IMMERSIVE_PATH = '/live/immersive'
+export type RouteChrome = 'shell' | 'none'
+
+export function routeChrome(pathname: string): RouteChrome {
+  const segments = pathname.split('/').filter(Boolean)
+  return segments.length === 2 &&
+    segments[0].toLowerCase() === 'live' &&
+    segments[1].toLowerCase() === 'immersive'
+    ? 'none'
+    : 'shell'
+}

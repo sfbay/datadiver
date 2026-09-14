@@ -30,6 +30,17 @@ export const QUALITY_DEFAULT: Quality = {
   dynamicSse: true,
 }
 
+/** Spec A2 §3 — the immersive route: full resolution in a smaller viewport,
+ *  finer rest detail (the camera barely moves, so tiles get the whole dwell
+ *  to refine), gentler edge relaxation. fps cap unchanged. */
+export const QUALITY_IMMERSIVE: Quality = {
+  fpsCap: 30,
+  sseOrbit: 12,
+  resolution: 1,
+  foveation: 4,
+  dynamicSse: true,
+}
+
 /** Slider ranges for the ?tune=1 panel. */
 export const QUALITY_RANGE = {
   fpsCap: { min: 15, max: 60, step: 5 },
@@ -59,5 +70,13 @@ export const quality: Quality = { ...QUALITY_DEFAULT }
 
 export function setQuality(patch: Partial<Quality>): Quality {
   Object.assign(quality, normalizeQuality(patch, quality))
+  return quality
+}
+
+/** Load a MODE's defaults into the live object at mount. `quality` is
+ *  module-level on purpose (see above), so without this a ?tune=1 edit — or
+ *  the other renderer's defaults — would leak from one mount into the next. */
+export function resetQuality(base: Quality): Quality {
+  Object.assign(quality, normalizeQuality({}, base))
   return quality
 }

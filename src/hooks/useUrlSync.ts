@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useSearchParams, useLocation } from 'react-router-dom'
 import { useAppStore } from '@/stores/appStore'
 import { parseComparison, serializeComparison } from '@/utils/comparisonMode'
-import { parseRoute } from '@/cities/routing'
+import { parseRoute, routeChrome } from '@/cities/routing'
 import { getCity } from '@/cities/registry'
 
 /**
@@ -28,8 +28,13 @@ export function useUrlSync() {
   // clause guards any future city's dormant slugs). Liveness replaced the
   // old blanket cityId !== 'sf' clause when the first Oakland views went
   // live (stage-3 spec §2).
+  // …and CHROME-LESS routes: the immersive gate renders <Navigate to="/live">
+  // on mobile / no key / resting, and the dateless write below would re-commit
+  // /live/immersive over it (the redirect-clobber class). Immersive carries no
+  // date params by contract, so nothing is lost by standing down.
   const skipSync =
-    city.redirects.some((r) => r.from === viewId) || entry === undefined || entry.dormant === true
+    city.redirects.some((r) => r.from === viewId) || entry === undefined || entry.dormant === true ||
+    routeChrome(pathname) === 'none'
   const {
     dateRange, setDateRange,
     timeOfDayFilter, setTimeOfDayFilter,
