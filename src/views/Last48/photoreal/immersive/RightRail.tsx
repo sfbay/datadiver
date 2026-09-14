@@ -51,6 +51,9 @@ export default function RightRail({
   // Playing: the rule fills across the dwell. Parked: it sits full and faint,
   // because the reading then is "this stop is yours for as long as you want".
   const pct = playing ? Math.max(0, Math.min(1, dwellProgress)) * 100 : 100
+  // Before the first event lands there is no pass to be a stop in. Em dashes
+  // say "not yet"; `0 / 0` would read as a real, empty count.
+  const known = stopIndex >= 1 && stopCount >= 1
 
   return (
     <nav
@@ -107,7 +110,7 @@ export default function RightRail({
       {/* ── Stop ledger: where you are, and how far the camera has to run. */}
       <div className="mt-3 pt-3 border-t border-paper-400/40 dark:border-paper-300/15">
         <p className="font-mono text-label tabular-nums uppercase tracking-wider text-paper-700 dark:text-paper-300">
-          STOP {stopIndex} / {stopCount}
+          STOP {known ? stopIndex : '—'} / {known ? stopCount : '—'}
         </p>
         <div className="mt-2 h-1 rounded-full bg-paper-400/30 dark:bg-paper-300/15 overflow-hidden">
           <div

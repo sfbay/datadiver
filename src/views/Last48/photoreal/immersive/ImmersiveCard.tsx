@@ -94,7 +94,15 @@ export default function ImmersiveCard({ event, role, onClick, glow }: Props) {
       <p className={`font-mono text-label mt-1 tabular-nums ${labelTone}`}>{formatApDate(event.receivedAt)} · {formatApTime(event.receivedAt)} PT</p>
       <div className="mt-2 flex items-center gap-2">
         <span className="w-2 h-2 rounded-full" style={{ background: meta.color, boxShadow: `0 0 10px ${meta.color}` }} aria-hidden />
-        <span className="font-mono text-nano tracking-[0.18em] uppercase" style={{ color: meta.color }}>{meta.label}</span>
+        {/* The DOT carries the pigment; the LABEL does not. On the inverted
+            face the cool pigments fall under 4:1 against espresso-950 at nano
+            size, so the words take a neutral tone and identity stays with the
+            dot beside them. Peeks keep the pigment — they sit on the band's
+            own register, where it reads. */}
+        <span
+          className={`font-mono text-nano tracking-[0.18em] uppercase ${peek ? '' : 'text-paper-300 dark:text-paper-600'}`}
+          style={peek ? { color: meta.color } : undefined}
+        >{meta.label}</span>
         {event.state && <span className={`font-mono text-nano tracking-wider uppercase ${labelTone}`}>{event.state === 'open' ? 'open' : `closed · ${event.disposition ?? '—'}`}</span>}
       </div>
       <h3 className={`font-display italic text-[22px] leading-tight mt-1 mb-2 ${primary}`}>{event.headline ? formatHeadline(event.headline) : 'Event'}</h3>

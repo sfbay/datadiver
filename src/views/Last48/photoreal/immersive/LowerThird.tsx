@@ -67,8 +67,10 @@ export default function LowerThird({ prev, active, ahead, onJump, onStep }: Prop
 
         {/* Four slots, flanked by the step controls: ‹ · prev · ACTIVE ·
             ahead[0] · ahead[1] · ›. `items-end` so the lifted active card
-            grows UPWARD instead of pushing the row. */}
-        <div className="flex items-end gap-4 px-[clamp(16px,3vw,64px)] pb-4 min-h-0">
+            grows UPWARD instead of pushing the row — and `pt-3` is the room
+            that rise needs, or the active card's top edge lands in the
+            eyebrow above it. */}
+        <div className="flex items-end gap-4 px-[clamp(16px,3vw,64px)] pt-3 pb-4 min-h-0">
           <button type="button" onClick={() => onStep(-1)} aria-label="Previous stop" title="Previous stop (←)" className={STEP_BTN}>‹</button>
           <div className={PEEK_SLOT}>
             {prev && <ImmersiveCard key={prev.id} event={prev} role="peek" onClick={() => onJump(prev.id)} />}
