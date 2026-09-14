@@ -7,7 +7,7 @@ import { useUrlSync } from '@/hooks/useUrlSync'
 import DateRangePicker from '@/components/filters/DateRangePicker'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import type { TypeScale } from '@/stores/typeScale'
-import { useActiveCity, useRouteView } from '@/cities/useActiveCity'
+import { useActiveCity, useRouteView, useRouteChrome } from '@/cities/useActiveCity'
 import { viewPath } from '@/cities/routing'
 import { liveManifest } from '@/cities/manifest'
 import CitySwitcher from '@/components/layout/CitySwitcher'
@@ -39,6 +39,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   const city = useActiveCity()
   const { viewId } = useRouteView()
+  const chrome = useRouteChrome()
   // Nav rows ARE the city's LIVE manifest entries, in array order — path
   // derived, never authored. Dormant entries (still redirecting) get no row;
   // the one pre-redirect frame on a dormant slug paints the city's live rows
@@ -70,6 +71,17 @@ export default function AppShell({ children }: { children: ReactNode }) {
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
   }, [])
+
+  // Spec A2 §2: chrome-less routes render only the page. useUrlSync and
+  // useCitationScope have already run above, so hook order is stable across
+  // the two branches.
+  if (chrome === 'none') {
+    return (
+      <div className="h-screen overflow-hidden bg-espresso-950">
+        <main className="h-full overflow-hidden relative">{children}</main>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-paper dark:bg-slate-950 noise-bg">
