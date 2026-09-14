@@ -12,7 +12,7 @@
 // arm syntax. Dev tuning happens via ?tune=1 (AmbientTunePanel), which
 // overrides the active preset's values live.
 
-export type PaceId = 'stroll' | 'drift' | 'sweep'
+export type PaceId = 'stroll' | 'drift' | 'sweep' | 'cinema'
 
 export interface PaceValues {
   /** Orbit sweep speed, degrees per second — the TIME-AVERAGE of the sine
@@ -32,6 +32,8 @@ export interface PacePreset extends PaceValues {
   id: PaceId
   label: string
   hint: string
+  /** Offered only in photoreal mode (the AUTO pill hides it on the flat map). */
+  photorealOnly?: true
 }
 
 export const PACE_PRESETS: Record<PaceId, PacePreset> = {
@@ -65,6 +67,19 @@ export const PACE_PRESETS: Record<PaceId, PacePreset> = {
     tweenMs: 1800,
     pitchMin: 50,
   },
+  cinema: {
+    id: 'cinema',
+    label: 'Cinema',
+    hint: 'photoreal',
+    // 1°/s is the orbit speed Jesse picked on the 2026-09-09 spike: slow
+    // enough that Google's tile-streaming dips never read as stutter.
+    orbitDegPerS: 1,
+    dwellMs: 30000,
+    breathMs: 14000,
+    tweenMs: 9000,
+    pitchMin: 30,
+    photorealOnly: true,
+  },
 }
 
 export const DEFAULT_PACE_ID: PaceId = 'drift'
@@ -73,6 +88,6 @@ export const DEFAULT_PACE_ID: PaceId = 'drift'
  *  '1' (the original arm syntax) maps to the default pace. */
 export function parsePaceId(s: string | null): PaceId | null {
   if (s === '1') return DEFAULT_PACE_ID
-  if (s === 'stroll' || s === 'drift' || s === 'sweep') return s
+  if (s === 'stroll' || s === 'drift' || s === 'sweep' || s === 'cinema') return s
   return null
 }

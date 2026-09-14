@@ -28,8 +28,21 @@ export default defineConfig({
           // whole 1.7 MB GL engine for a three-line function. Pin it to its
           // own micro-chunk so nothing drags the whale.
           if (id.startsWith('\0commonjsHelpers')) return 'cjs-helpers'
+          // Same class of bug as commonjsHelpers above, different helper:
+          // Vite's own dynamic-import preload-helper runtime (needed by
+          // EVERY lazy chunk's import() call site, not just Cesium's) is
+          // unassigned by the rules below, so Rollup co-locates it with
+          // whichever named chunk happens to be its sole non-entry consumer.
+          // Left unassigned, that was the 'cesium' chunk — which then earned
+          // an eager <link rel="modulepreload"> in index.html, defeating the
+          // whole point of splitting it out. Pin it to its own micro-chunk.
+          if (id === '\0vite/preload-helper.js') return 'preload-helper'
           if (!id.includes('node_modules')) return
           if (id.includes('mapbox-gl') || id.includes('@mapbox')) return 'mapbox'
+          // Cesium (~3 MB) is imported only by the lazy photoreal chunk of
+          // The Last 48; give it a named chunk so Rollup never hoists it into
+          // the entry. scripts/check-entry-bundle.mjs enforces this at build.
+          if (id.includes('/cesium/')) return 'cesium'
         },
       },
     },

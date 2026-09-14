@@ -445,6 +445,16 @@ filters the Fire/EMS `'None'` sentinel on BOTH sides; `currentEvents` left its c
 drawn sample only governs what is drawn. No corrections-log entry: the figures a reader could
 have quoted (the per-stream counts) were the loaded counts, stated as such.
 
+### Location precision on the three Last 48 streams (probed Sept. 9, 2026)
+
+| Stream | Geo column | Address form | Distinct coordinates in the newest 2,000 rows |
+|---|---|---|---|
+| 911 realtime `gnap-fj3t` | `intersection_point` | intersection (`intersection_name`) | 1,200 (60%) |
+| Fire/EMS dispatch `nuek-vuh3` | `case_location` | intersection, e.g. "MISSION ST/PARK ST" | 697 (35%) |
+| 311 `vw6y-z8j6` | `point` | street address, e.g. "831 FULTON ST" | 1,802 (90%) |
+
+911 and Fire/EMS coordinates are the nearest intersection — roughly half a block of true uncertainty — while 311 is address-level. Any marker finer than a corner is false precision for two of the three streams, so the photoreal mode draws intersection streams as a ~40 m ground disc and 311 as a column, and every card leads its location row with the precision word ("Nearest intersection · …" / "Address · …"). The probe: `$select=<geo>&$order=<date> DESC&$limit=2000`, count distinct rounded coordinates. The registry had carried `hasGeo: false` / "no coordinates" for `gnap-fj3t` since the view launched while the app drew its points the whole time — corrected the next day (Sept. 10).
+
 ---
 
 ## Vendor Payments (`n9pm-xkyq`, compliance reporting)

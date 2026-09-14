@@ -6,7 +6,7 @@ import type { CityId } from '@/cities/routing'
 export type NonSocrataId =
   | 'sf-analysis-neighborhoods' | 'sf-precincts-2012' | 'sf-precincts-2022'
   | 'sf-elections-results' | 'sf-cvr-20241105' | 'sf-tract-assignment'
-  | 'acs-2023-5yr' | 'oak-beats' | 'oak-neighborhoods' | 'mapbox-basemap'
+  | 'acs-2023-5yr' | 'oak-beats' | 'oak-neighborhoods' | 'mapbox-basemap' | 'google-3d-tiles'
 
 export interface NonSocrataElection {
   dateCode: string
@@ -141,6 +141,15 @@ export const NON_SOCRATA: Record<NonSocrataId, NonSocrataSource> = {
     title: 'Basemap (Mapbox Light / Dark v11)', vintage: 'always-current tiles',
     upstreamUrl: 'https://www.mapbox.com/about/maps/', landingUrl: 'https://www.openstreetmap.org/copyright',
     license: { name: 'Mapbox Terms of Service; OpenStreetMap data under ODbL', url: 'https://www.openstreetmap.org/copyright' },
+  },
+  'google-3d-tiles': {
+    id: 'google-3d-tiles', cities: ['sf'], kind: 'basemap',
+    publisher: { short: 'Google', full: 'Google Maps Platform — Photorealistic 3D Tiles' },
+    title: '3D city model (Google Photorealistic 3D Tiles, photoreal mode of The Last 48)',
+    vintage: 'always-current tiles; imagery dates vary by block',
+    upstreamUrl: 'https://developers.google.com/maps/documentation/tile/3d-tiles',
+    landingUrl: 'https://developers.google.com/maps/documentation/tile/policies',
+    license: { name: 'Google Maps Platform Terms of Service', url: 'https://cloud.google.com/maps-platform/terms' },
   },
 }
 

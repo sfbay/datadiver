@@ -7,11 +7,14 @@
 //   - Layout chrome (freshness chips, dataset filter chips, layer controls, scanner strip)
 //   - Last48UnifiedView — single persistent MapView with composable layers
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useLast48Window } from '@/hooks/useLast48Window'
 import { windowTotal, windowTotalAcross } from '@/hooks/last48Truncation'
 import { useSummaryStore } from '@/stores/summaryStore'
+import { useAppStore } from '@/stores/appStore'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { effectiveMapEngine } from '@/stores/mapEngine'
 import { LAST48_DATASETS, type DatasetId } from '@/types/last48'
 import type { CensusVariable } from '@/types/census'
 import Last48UnifiedView from './modes/Last48UnifiedView'
@@ -22,10 +25,15 @@ import LayerControls, { type BaseFill } from './chrome/LayerControls'
 import DatasetSuperChips from './chrome/DatasetSuperChips'
 import ScannerStrip from './chrome/ScannerStrip'
 import ExportButton from '@/components/export/ExportButton'
+import MapPicker from '@/components/maps/MapPicker'
 import CivicTicker from '@/components/ui/CivicTicker'
 import { useAnomalyBaseline } from '@/hooks/useAnomalyBaseline'
 import { useLast48Heartbeat } from '@/hooks/useLast48Heartbeat'
 import type { TickerItem } from '@/types/ticker'
+
+// Photoreal renderer — lazy so scripts/check-entry-bundle.mjs can prove
+// Cesium never reaches the eager entry chunk (Task 5).
+const Last48Photoreal = lazy(() => import('./photoreal/Last48Photoreal'))
 
 // ── URL param parsers ──────────────────────────────────────────────────────
 
@@ -98,6 +106,16 @@ export default function Last48() {
   // eslint-disable-next-line react-hooks/refs
   const activePaceId = ambientPaceId ?? preferredPaceRef.current
 
+  // Latest ambientPaceId/setAmbientPace, for the engine-flip effect below —
+  // it must read the CURRENT armed pace without re-running every time that
+  // pace changes (see the effect's comment for why).
+  const ambientPaceIdRef = useRef(ambientPaceId)
+  // eslint-disable-next-line react-hooks/refs
+  ambientPaceIdRef.current = ambientPaceId
+  const setAmbientPaceRef = useRef(setAmbientPace)
+  // eslint-disable-next-line react-hooks/refs
+  setAmbientPaceRef.current = setAmbientPace
+
   const setAmbientOn = useCallback(
     (next: boolean) => setAmbientPace(next ? preferredPaceRef.current : null),
     [setAmbientPace],
@@ -114,6 +132,64 @@ export default function Last48() {
   // Dev-only live tuning (?tune=1): slider overrides merge over the active
   // preset; COPY in the panel exports the result for pace.ts.
   const tuneOn = searchParams.get('tune') === '1'
+
+  // Which map engine this page actually renders — the PREFERENCE (store)
+  // resolved against this route/device/key via effectiveMapEngine. This
+  // route is /live, so viewId is the literal 'live'.
+  const storedEngine = useAppStore((s) => s.mapEngine)
+  // Set (session-only) when the photoreal renderer stood down on a Google
+  // quota/auth refusal — it flips the engine to classic in the same write, so
+  // the note it wants to show has to be rendered from HERE, over the classic
+  // map that replaced it.
+  const photorealResting = useAppStore((s) => s.photorealResting)
+  // Spec A2 §7 dark launch: `?engine=photoreal` overrides the stored
+  // preference for THIS render only — never written to the store — so the
+  // renderer stays reachable while the picker hides its row. The resting flag
+  // wins over it: a quota refusal sets the store to classic, and an override
+  // that ignored it would re-mount photoreal on the next render and loop.
+  const engineParam = searchParams.get('engine')
+  const mapEnginePref = engineParam === 'photoreal' && !photorealResting ? 'photoreal' : storedEngine
+  const isMobile = useIsMobile()
+  const engine = effectiveMapEngine(mapEnginePref, { isMobile, viewId: 'live', hasKey: !!import.meta.env.VITE_GOOGLE_TILES_KEY })
+  const photoreal = engine === 'photoreal'
+  // ?tod= override (day|dusk|night) — hidden dev/editor knob, read by the
+  // photoreal grade only.
+  const todOverride = searchParams.get('tod')
+
+  // Photoreal defaults to the slow cinema pace; leaving photoreal restores
+  // the default. This effect must fire ONLY on the photoreal transition —
+  // never on a later explicit pace pick, or choosing 'stroll' from the AUTO
+  // menu while in photoreal would immediately get stomped back to cinema.
+  // Hence the [photoreal]-only dep array, with the current ambientPaceId /
+  // setAmbientPace read through refs so they don't have to be (and can't
+  // accidentally become) dependencies.
+  //
+  // Ordering vs. the render-time sync above (`if (ambientPaceId)
+  // preferredPaceRef.current = ambientPaceId`): that line runs on EVERY
+  // render and unconditionally wins, so a stale non-cinema ?ambient= still
+  // sitting in the URL (a ?ambient=stroll deep link, or a mid-tour engine
+  // switch) would clobber 'cinema' back to 'stroll' the very next render if
+  // this effect only touched the ref. So on the flip into photoreal this
+  // effect also rewrites the URL via setAmbientPace('cinema') when a
+  // non-cinema pace is currently armed — that makes the render-time sync
+  // agree with the ref instead of fighting it. Symmetric on the way out.
+  useEffect(() => {
+    if (photoreal) {
+      if (ambientPaceIdRef.current && ambientPaceIdRef.current !== 'cinema') {
+        setAmbientPaceRef.current('cinema')
+      }
+      preferredPaceRef.current = 'cinema'
+    } else {
+      if (ambientPaceIdRef.current === 'cinema') {
+        setAmbientPaceRef.current(DEFAULT_PACE_ID)
+      }
+      if (preferredPaceRef.current === 'cinema') {
+        preferredPaceRef.current = DEFAULT_PACE_ID
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photoreal])
+
   const [tuneOverrides, setTuneOverrides] = useState<Partial<PaceValues>>({})
   const ambientPace = useMemo<PaceValues>(
     () => ({ ...PACE_PRESETS[activePaceId], ...tuneOverrides }),
@@ -393,7 +469,11 @@ export default function Last48() {
         out[id] = 'idle'
         continue
       }
-      if (pointsOn && !anyStreamError) {
+      // The sweep phases come from the flat FlowMapLayer's cascade; the
+      // photoreal renderer has no sweep to report, so reading sweepPhase there
+      // left every chip shimmering "loading" forever with DOTS on. In photoreal
+      // the chips settle when the DATA lands, exactly as with points off.
+      if (pointsOn && !photoreal && !anyStreamError) {
         const ph = sweepPhase[id]
         out[id] = ph === 'settled' ? 'idle' : ph === 'sweeping' ? 'streaming' : 'loading'
       } else {
@@ -401,7 +481,7 @@ export default function Last48() {
       }
     }
     return out
-  }, [datasets, pointsOn, sweepPhase, window48.fullyLoadedByDataset, window48.errorByDataset])
+  }, [datasets, pointsOn, photoreal, sweepPhase, window48.fullyLoadedByDataset, window48.errorByDataset])
 
   return (
     <div className="flex flex-col h-full">
@@ -444,23 +524,58 @@ export default function Last48() {
               </span>
             )}
           </div>
+          {/* Control row, spec §3 order: underlay · DOTS · AUTO · MAP (export
+              rides at the end beside the picker). */}
           <div className="flex flex-wrap items-center justify-end gap-2 flex-shrink-0">
-            <LayerControls
-              pointsOn={pointsOn}
-              onPointsToggle={setPointsOn}
-              fill={fill}
-              onFillChange={setFill}
-              underlayVariable={underlayVariable}
-              onUnderlayChange={setUnderlayVariable}
-            />
+            {!photoreal && (
+              <LayerControls
+                pointsOn={pointsOn}
+                onPointsToggle={setPointsOn}
+                fill={fill}
+                onFillChange={setFill}
+                underlayVariable={underlayVariable}
+                onUnderlayChange={setUnderlayVariable}
+              />
+            )}
+            {photoreal && (
+              // Stands where the underlay/fill picker sits on the flat map, so
+              // the absence is stated rather than silent (the export note's
+              // sibling). Mono because it is a label, not prose.
+              <span
+                className="font-mono text-nano text-paper-500 dark:text-paper-600"
+                title="Choropleth and demographic underlays stay on the flat map"
+              >
+                no underlay in photoreal
+              </span>
+            )}
+            {photoreal && (
+              <button
+                onClick={() => setPointsOn(!pointsOn)}
+                aria-pressed={pointsOn}
+                className={`px-3 py-1.5 rounded-md text-label font-mono uppercase tracking-wider transition-all duration-200 ${pointsOn ? 'bg-paper-200 dark:bg-espresso-800 text-ink dark:text-paper-100' : 'text-paper-500 dark:text-paper-600 hover:text-paper-300'}`}
+              >
+                {pointsOn ? '● dots' : '○ dots'}
+              </button>
+            )}
             <AmbientToggle
               on={ambientOn}
               disabled={!ambientReady}
               activePaceId={activePaceId}
               onToggle={setAmbientOn}
               onPaceSelect={handlePaceSelect}
+              photoreal={photoreal}
             />
-            <ExportButton targetSelector="#last48-capture" filename="last-48" />
+            {photoreal
+              ? (
+                <span
+                  className="font-mono text-nano text-paper-500 dark:text-paper-600"
+                  title="PNG export is not available in photoreal mode yet"
+                >
+                  no export in photoreal
+                </span>
+              )
+              : <ExportButton targetSelector="#last48-capture" filename="last-48" />}
+            <MapPicker scope="live" />
           </div>
         </div>
       </header>
@@ -490,24 +605,54 @@ export default function Last48() {
         />
       </div>
 
-      {/* Unified composable view */}
+      {/* Unified composable view — swapped for the photoreal renderer when
+          the effective engine resolves to it (route /live, desktop, key
+          present). Photoreal owns its own capture-block absence: no export
+          affordance renders in that branch (see the control row above).
+          The Suspense fallback is theme-aware: a flat espresso block flashed
+          BLACK in light mode while the Cesium chunk loaded. */}
       <div id="last48-capture" className="flex-1 relative">
-        <Last48UnifiedView
-          window48={window48}
-          datasets={datasets}
-          pointsOn={pointsOn}
-          fill={fill}
-          underlayVariable={underlayVariable}
-          selectedEventId={selectedEventId}
-          onSelectedEventIdChange={setSelectedEventId}
-          selectedNeighborhoodId={selectedNeighborhoodId}
-          onSelectedNeighborhoodChange={setSelectedNeighborhoodId}
-          onSweepPhase={handleSweepPhase}
-          ambientOn={ambientOn}
-          ambientReady={ambientReady}
-          ambientPace={ambientPace}
-          onAmbientExit={() => setAmbientOn(false)}
-        />
+        {photoreal ? (
+          <Suspense fallback={<div className="w-full h-full bg-paper-50 dark:bg-espresso-950" />}>
+            <Last48Photoreal
+              window48={window48}
+              datasets={datasets}
+              pointsOn={pointsOn}
+              selectedEventId={selectedEventId}
+              onSelectedEventIdChange={setSelectedEventId}
+              ambientOn={ambientOn}
+              ambientReady={ambientReady}
+              ambientPace={ambientPace}
+              onAmbientExit={() => setAmbientOn(false)}
+              todOverride={todOverride}
+              tuneOn={tuneOn}
+            />
+          </Suspense>
+        ) : (
+          <Last48UnifiedView
+            window48={window48}
+            datasets={datasets}
+            pointsOn={pointsOn}
+            fill={fill}
+            underlayVariable={underlayVariable}
+            selectedEventId={selectedEventId}
+            onSelectedEventIdChange={setSelectedEventId}
+            selectedNeighborhoodId={selectedNeighborhoodId}
+            onSelectedNeighborhoodChange={setSelectedNeighborhoodId}
+            onSweepPhase={handleSweepPhase}
+            ambientOn={ambientOn}
+            ambientReady={ambientReady}
+            ambientPace={ambientPace}
+            onAmbientExit={() => setAmbientOn(false)}
+          />
+        )}
+        {!photoreal && photorealResting && (
+          // Reader-facing prose — body serif, not a mono label (matches the
+          // one-line editorial note pattern in Last48NeighborhoodPeek).
+          <p className="pointer-events-none absolute left-1/2 top-4 z-20 -translate-x-1/2 rounded-full bg-paper-50/90 dark:bg-espresso-900/90 px-3 py-1 text-label italic text-paper-700 dark:text-paper-300">
+            Photoreal is resting for today — showing the classic map.
+          </p>
+        )}
         {/* Dev-only pace tuning (?tune=1) — finds preset values live;
             never discoverable in the UI. */}
         {tuneOn && (

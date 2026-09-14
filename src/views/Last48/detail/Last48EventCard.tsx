@@ -9,196 +9,13 @@
 //   • Click X, press Esc, or click outside → parent clears selectedEvent → panel closes
 
 import { Link } from 'react-router-dom'
-import type { NormalizedEvent, DatasetId } from '@/types/last48'
+import type { NormalizedEvent } from '@/types/last48'
 import DetailPanelShell from '@/components/ui/DetailPanelShell'
 import { formatApTime, formatHeadline } from '@/utils/format'
 import { classifyCaseMedia } from '@/utils/caseMedia'
-
-// ---------------------------------------------------------------------------
-// Dataset display metadata — label + pigment accent. Routing is computed
-// separately by resolveExplore() (below) because the destination is
-// conditional: 911 has no map view of its own, so it routes by call type and
-// geocoding rather than to a fixed sibling.
-// ---------------------------------------------------------------------------
-
-const DATASET_META: Record<DatasetId, { label: string; color: string }> = {
-  '911-realtime':      { label: '911 DISPATCH', color: '#616a96' },
-  'fire-ems-dispatch': { label: 'FIRE/EMS',     color: '#b85a33' },
-  '311-cases':         { label: '311 CASE',     color: '#7a9954' },
-}
-
-// ---------------------------------------------------------------------------
-// Age formatting — returns magnitude + a full-word "X ago" unit phrase
-// so the headline reads as one line: "43 minutes ago", "2 hours ago", etc.
-// ---------------------------------------------------------------------------
-
-function formatAge(receivedAt: number): { magnitude: string; unit: string } {
-  const ms = Date.now() - receivedAt
-  const sec = Math.max(1, Math.floor(ms / 1000))
-  if (sec < 90) return { magnitude: String(sec), unit: sec === 1 ? 'second ago' : 'seconds ago' }
-  const min = Math.floor(sec / 60)
-  if (min < 90) return { magnitude: String(min), unit: min === 1 ? 'minute ago' : 'minutes ago' }
-  const h = Math.floor(min / 60)
-  if (h < 48) return { magnitude: String(h), unit: h === 1 ? 'hour ago' : 'hours ago' }
-  const d = Math.floor(h / 24)
-  return { magnitude: String(d), unit: d === 1 ? 'day ago' : 'days ago' }
-}
-
-// AP-style month abbreviations: short forms get a period; months ≤5 letters
-// (March, April, May, June, July) remain unabbreviated.
-const AP_MONTH: Record<string, string> = {
-  January: 'Jan.',
-  February: 'Feb.',
-  March: 'March',
-  April: 'April',
-  May: 'May',
-  June: 'June',
-  July: 'July',
-  August: 'Aug.',
-  September: 'Sept.',
-  October: 'Oct.',
-  November: 'Nov.',
-  December: 'Dec.',
-}
-
-// Pinned to Pacific: the row renders "… PT", so the date/weekday must come
-// from the SF calendar, not the viewer's (a late-night SF event is "Tue."
-// even when the reader's clock in New York already says Wednesday).
-const SF_TZ = 'America/Los_Angeles'
-
-/** AP style: "Wed. May 13, 2026" — weekday abbreviated w/ period; month per AP_MONTH. */
-function formatApDate(ms: number): string {
-  const d = new Date(ms)
-  const weekday = d.toLocaleDateString('en-US', { weekday: 'short', timeZone: SF_TZ }) // "Wed"
-  const monthLong = d.toLocaleDateString('en-US', { month: 'long', timeZone: SF_TZ }) // "September"
-  const month = AP_MONTH[monthLong] ?? monthLong
-  const day = d.toLocaleDateString('en-US', { day: 'numeric', timeZone: SF_TZ })
-  const year = d.toLocaleDateString('en-US', { year: 'numeric', timeZone: SF_TZ })
-  return `${weekday}. ${month} ${day}, ${year}`
-}
-
-/** Just the AP-style weekday abbreviation, e.g. "Mon." — disambiguates the day
- *  within the 48h window without the full date's width (used on mobile). */
-function formatApWeekday(ms: number): string {
-  const weekday = new Date(ms).toLocaleDateString('en-US', { weekday: 'short', timeZone: SF_TZ })
-  return `${weekday}.`
-}
-
-// ---------------------------------------------------------------------------
-// Field helpers — compact dataset-specific metadata rows
-// ---------------------------------------------------------------------------
-
-function extractField(raw: Record<string, unknown>, ...keys: string[]): string | null {
-  for (const k of keys) {
-    const v = raw[k]
-    if (v != null && v !== '') return String(v)
-  }
-  return null
-}
-
-/** Per-dataset compact fields. Returns [[label, value], …]. */
-function compactFields(event: NormalizedEvent): Array<[string, string]> {
-  const { raw, datasetId } = event
-  switch (datasetId) {
-    case '911-realtime':
-      return [
-        ['Disposition', extractField(raw, 'disposition') ?? '—'],
-        ['Unit',        extractField(raw, 'unit_id', 'primary_unit') ?? '—'],
-      ]
-    case 'fire-ems-dispatch':
-      return [
-        ['Unit',    extractField(raw, 'unit_id') ?? '—'],
-        ['Station', extractField(raw, 'station_area') ?? '—'],
-      ]
-    case '311-cases':
-      return [
-        ['Status', extractField(raw, 'status_description', 'status') ?? '—'],
-        ['Agency', extractField(raw, 'agency_responsible') ?? '—'],
-      ]
-  }
-}
-
-/** Derive the dataset-native ID for the explore link. */
-function extractId(event: NormalizedEvent): string {
-  const { raw } = event
-  return String(
-    raw.cad_number ??
-    raw.incident_id ??
-    raw.service_request_id ??
-    raw.post_id ??
-    raw.call_number ??
-    event.id
-  )
-}
-
-// Violent-911 keywords matched against `call_type_final_desc`. SF 911 CAD
-// values include "Shooting", "Person w/Gun", "Stabbing", "Robbery",
-// "Aggravated Assault", "Strongarm Robbery", "Shots Fired", etc.
-const VIOLENT_911 =
-  /\b(shoot|shots?|gun|firearm|armed|weapon|stab|knife|assault|batter|robber|homicide|fight|strongarm)\b/i
-
-interface ExploreLink {
-  to: string
-  label: string
-  caption: string
-}
-
-/**
- * Resolve where the card's "explore" link should go — the "understand more"
- * leg of the editorial link path.
- *
- *   • Fire/EMS, 311  → their sibling MAP view, deep-linked to THIS record
- *     (those views read ?incident= / ?case= and select + fly to it).
- *   • 911            → has no map view of its own, so route by CALL TYPE to a
- *     related map (violent → Crime Incidents, else → Emergency Response),
- *     landing on the event's NEIGHBORHOOD. We deliberately do NOT pin a
- *     record there: a 911 cad_number doesn't share an id with crime/Fire-EMS
- *     rows, and recent 911 calls predate any crime report (police publish
- *     lag), so a record pin would resolve to nothing. Land on place instead.
- *   • Suppressed 911 (no neighborhood) → fall back to the only 911-native
- *     surface, the chart-centric Dispatch view. This is the design note's
- *     "non-geocoded → keep the stats-view link" rule, falling out naturally.
- */
-function resolveExplore(event: NormalizedEvent): ExploreLink | null {
-  const enc = encodeURIComponent
-  switch (event.datasetId) {
-    case 'fire-ems-dispatch':
-      return {
-        to: `/emergency-response?incident=${enc(extractId(event))}`,
-        label: 'Open on the Emergency Response map',
-        caption: 'See this incident and its full response timeline.',
-      }
-    case '311-cases':
-      return {
-        to: `/cases-311?case=${enc(extractId(event))}`,
-        label: 'Open on the 311 map',
-        caption: 'See this case in the 311 map view.',
-      }
-    case '911-realtime': {
-      const nh = event.neighborhood
-      if (!nh) {
-        return {
-          to: `/dispatch-911?incident=${enc(extractId(event))}`,
-          label: 'Open in 911 Dispatch',
-          caption: 'Sensitive call — explore patterns in the Dispatch view.',
-        }
-      }
-      if (VIOLENT_911.test(event.callType ?? event.headline ?? '')) {
-        return {
-          to: `/crime-incidents?neighborhood=${enc(nh)}`,
-          label: 'See crime context',
-          caption: `Violent-crime map for ${nh}.`,
-        }
-      }
-      return {
-        to: `/emergency-response?neighborhood=${enc(nh)}`,
-        label: 'See response context',
-        caption: `Fire/EMS response map for ${nh}.`,
-      }
-    }
-  }
-  return null // unreachable (switch is exhaustive over DatasetId)
-}
+import {
+  DATASET_META, formatAge, formatApDate, formatApWeekday, populatedFields, resolveExplore, locationLine,
+} from './eventCardModel'
 
 // ---------------------------------------------------------------------------
 // Component
@@ -240,7 +57,7 @@ export default function Last48EventCard({ event, onClose }: Props) {
     >
       {event && meta && (() => {
         const { magnitude, unit } = formatAge(event.receivedAt)
-        const fields = compactFields(event)
+        const populated = populatedFields(event)
         const explore = resolveExplore(event)
 
         return (
@@ -369,20 +186,21 @@ export default function Last48EventCard({ event, onClose }: Props) {
             {/* ── Location ─────────────────────────────────────────── */}
             <div className="mt-3 mb-3 flex justify-between items-baseline gap-3 desk:block">
               <div className="font-mono text-micro tracking-widest text-paper-500 dark:text-paper-600 shrink-0">LOCATION</div>
-              {(event.longitude != null && event.latitude != null) ? (
-                <div className="font-mono text-label text-paper-800 dark:text-paper-300 text-right desk:text-left desk:mt-0.5">
-                  {event.neighborhood ?? 'SF'}
-                  {/* coords: desktop only — not human-actionable, and the map shows position */}
-                  <span className="hidden desk:inline text-paper-600 dark:text-paper-700">
-                    {' · '}
-                    {event.latitude.toFixed(4)}, {event.longitude.toFixed(4)}
-                  </span>
-                </div>
-              ) : (
-                <div className="font-mono text-label italic text-paper-500 dark:text-paper-600 text-right desk:text-left desk:mt-0.5">
-                  Suppressed; sensitive call
-                </div>
-              )}
+              {(() => {
+                const loc = locationLine(event)
+                return loc ? (
+                  <div className="font-mono text-label text-paper-800 dark:text-paper-300 text-right desk:text-left desk:mt-0.5">
+                    <span className="text-paper-600 dark:text-paper-500">{loc.label} · </span>{loc.place}
+                    <span className="hidden desk:inline text-paper-600 dark:text-paper-700">
+                      {' · '}{event.latitude!.toFixed(4)}, {event.longitude!.toFixed(4)}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="font-mono text-label italic text-paper-500 dark:text-paper-600 text-right desk:text-left desk:mt-0.5">
+                    Suppressed; sensitive call
+                  </div>
+                )
+              })()}
             </div>
 
             {/* ── Compact field rows ──────────────────────────────────
@@ -392,7 +210,6 @@ export default function Last48EventCard({ event, onClose }: Props) {
                 lack agency, etc.). Visual hierarchy: tiny mono-caps label
                 recedes, the value reads as the data. */}
             {(() => {
-              const populated = fields.filter(([, v]) => v !== '—' && v.trim() !== '')
               if (populated.length === 0) return null
               return (
                 <ul className="mb-3 flex flex-col gap-1.5">

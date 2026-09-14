@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && tsc --noEmit -p api/tsconfig.json && vite build",
+    "dev": "node scripts/copy-cesium-assets.mjs && vite",
+    "build": "node scripts/copy-cesium-assets.mjs && tsc -b && tsc --noEmit -p api/tsconfig.json && vite build && node scripts/check-entry-bundle.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "build:elections": "tsx scripts/build-election-archive.ts",
@@ -19,6 +19,7 @@
     "@fontsource-variable/roboto-serif": "^5.2.9",
     "@fontsource/space-mono": "^5.2.9",
     "@neondatabase/serverless": "^1.1.0",
+    "cesium": "1.145.0",
     "d3": "^7.9.0",
     "html2canvas-pro": "^2.0.4",
     "mapbox-gl": "^3.19.0",

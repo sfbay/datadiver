@@ -30,12 +30,24 @@ export function useAmbientTour(opts: {
   dwellMs: number
   /** Citywide breath between passes, ms — from the active pace preset. */
   breathMs: number
-  onVisit: (ev: NormalizedEvent) => void
+  /** Select + publish the visit target. May return a promise: the DWELL
+   *  clock then starts when it settles (the photoreal camera has arrived and
+   *  its tiles have loaded) instead of at the moment of selection, capped by
+   *  arrivalCapMs. The flat map returns void — its timing is unchanged. */
+  onVisit: (ev: NormalizedEvent) => void | Promise<void>
+  /** Longest the dwell clock waits for onVisit's promise (default 30 s). */
+  arrivalCapMs?: number
   onBreath: () => void
+  /** Pass ORDER strategy; defaults to buildPass (newest first). The
+   *  photoreal tour passes chainTour (nearest-neighbour from the newest). */
+  order?: (events: NormalizedEvent[]) => string[]
 }): void {
   const { active } = opts
 
   const dwellMsRef = useRef(opts.dwellMs)
+  const arrivalCapRef = useRef(opts.arrivalCapMs ?? 30_000)
+  // eslint-disable-next-line react-hooks/refs
+  arrivalCapRef.current = opts.arrivalCapMs ?? 30_000
   // eslint-disable-next-line react-hooks/refs
   dwellMsRef.current = opts.dwellMs
   const breathMsRef = useRef(opts.breathMs)
@@ -44,6 +56,9 @@ export function useAmbientTour(opts: {
   const eventsRef = useRef(opts.events)
   // eslint-disable-next-line react-hooks/refs
   eventsRef.current = opts.events
+  const orderRef = useRef(opts.order)
+  // eslint-disable-next-line react-hooks/refs
+  orderRef.current = opts.order
   const onVisitRef = useRef(opts.onVisit)
   // eslint-disable-next-line react-hooks/refs
   onVisitRef.current = opts.onVisit
@@ -107,7 +122,7 @@ export function useAmbientTour(opts: {
         currentId = null
         onBreathRef.current()
         arm(breathMsRef.current, () => {
-          pass = buildPass(eventsRef.current)
+          pass = (orderRef.current ?? buildPass)(eventsRef.current)
           step()
         })
         return
@@ -120,8 +135,23 @@ export function useAmbientTour(opts: {
         return
       }
       currentId = nextId
-      onVisitRef.current(ev)
-      arm(dwellMsRef.current, step)
+      const arrival = onVisitRef.current(ev)
+      // Photoreal: the dwell counts from ARRIVAL (flight done, tiles settled),
+      // not from selection — otherwise a 9 s flight plus a tile settle ate
+      // half of every 30 s stop (Jesse, 2026-09-10). One timer at a time:
+      // the cap is armed through arm() and the real dwell re-arms over it.
+      let dwellArmed = false
+      const armDwell = () => {
+        if (!isCurrent() || dwellArmed) return
+        dwellArmed = true
+        arm(dwellMsRef.current, step)
+      }
+      if (arrival && typeof (arrival as Promise<void>).then === 'function') {
+        arm(arrivalCapRef.current, armDwell)
+        ;(arrival as Promise<void>).then(armDwell, armDwell)
+      } else {
+        armDwell()
+      }
     }
 
     // Pause the rhythm while the tab is hidden so selection doesn't walk
@@ -140,7 +170,7 @@ export function useAmbientTour(opts: {
     }
     document.addEventListener('visibilitychange', onVisibility)
 
-    pass = buildPass(eventsRef.current)
+    pass = (orderRef.current ?? buildPass)(eventsRef.current)
     step()
 
     return () => {

@@ -3,12 +3,12 @@
 // key that resolves to no source. Text is reader-facing — keep it in the
 // About voice. Two notes are test-pinned (the era clamps).
 export const SOURCE_NOTES: Readonly<Record<string, string>> = {
-  'nuek-vuh3': 'Publishes with ~12h intrinsic lag',
-  'gnap-fj3t': 'Rolling 48h window; ~30min lag; no coordinates',
+  'nuek-vuh3': 'Publishes with ~12h intrinsic lag; locations are the nearest intersection (~half-block precision)',
+  'gnap-fj3t': 'Rolling 48h window; ~30min lag; locations are the nearest intersection (~half-block precision), suppressed on sensitive calls',
   '2zdj-bwza': 'Closed law-enforcement calls; no coordinates',
   'wg3w-h783': '~39h publish lag; rows are charge-level and cases carry supplemental reports — counts are distinct cases (see findings)',
   'tmnf-yvry': 'The 2003–May 2018 extract: a different schema and category vocabulary, read only for ranges before 2018 (see findings)',
-  'vw6y-z8j6': '~15h intrinsic lag',
+  'vw6y-z8j6': '~15h intrinsic lag; locations are address-level',
   'ubvf-ztfx': 'Double lag: ~4–6wk publish + longer fatality coding (see findings)',
   'enwt-3u8m': 'Vision Zero street segments; not updated (historical only)',
   'ab4h-6ztd': 'No coordinates after ~Oct 2025 (see findings); published dates run 1951–2044 at both ends and are data-entry errors, so charts and queries are clamped to 2012–2026',
@@ -27,6 +27,7 @@ export const SOURCE_NOTES: Readonly<Record<string, string>> = {
   // is one NON_SOCRATA entry shared by both cities, so one key must now carry
   // both. See task-10-report.md for the full note.
   'acs-2023-5yr': 'NOT on either portal — U.S. Census Bureau estimates, published by block group (San Francisco) and census tract (Oakland) and summed here to the neighborhoods and regions each map is drawn on. Six SF measures (poverty, unemployment and the four commute shares) are averaged up from census tracts using the city’s official tract-to-neighborhood assignment',
+  'google-3d-tiles': 'Daylight photo tiles; the dusk look in dark mode is a colour grade, not a night photo',
   'ppgh-7dqv': 'Charge-level rows — every count dedupes by case number; the HOMICIDE code (mostly coroner death investigations) is split so it does not read as a murder count; ~3.4% carry no-location beat codes (77X/99X); clamped to 2004+ (earlier rows are a junk trickle)',
   'quth-gb8e': 'Coordinates from the srx/sry fields — the dataset’s own address point is junk; publishes next-day',
   '58em-y96b': 'Publishes ~11 weeks behind; violation descriptions carry a 10-character truncation era, so codes are grouped instead',

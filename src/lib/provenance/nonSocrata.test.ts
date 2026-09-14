@@ -10,9 +10,9 @@ import { NON_SOCRATA, NON_SOCRATA_IDS, nonSocrataFor } from './nonSocrata'
 const cvrSourcesText = readFileSync('scripts/fetch-cvr-sources.mjs', 'utf8')
 
 describe('NON_SOCRATA', () => {
-  it('has the ten authored ids', () => {
+  it('has the eleven authored ids', () => {
     expect([...NON_SOCRATA_IDS].sort()).toEqual([
-      'acs-2023-5yr', 'mapbox-basemap', 'oak-beats', 'oak-neighborhoods',
+      'acs-2023-5yr', 'google-3d-tiles', 'mapbox-basemap', 'oak-beats', 'oak-neighborhoods',
       'sf-analysis-neighborhoods', 'sf-cvr-20241105', 'sf-elections-results',
       'sf-precincts-2012', 'sf-precincts-2022', 'sf-tract-assignment',
     ])

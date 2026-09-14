@@ -67,7 +67,12 @@ export const SF_DATASETS_RAW: Record<string, RawDatasetConfig> = {
     description: 'Live 911 dispatched calls, rolling 48-hour window',
     publisher: { short: 'SF DEM', full: 'San Francisco Department of Emergency Management' },
     category: 'public-safety',
-    hasGeo: false,
+    // Coordinates ARE published (intersection_point) — snapped to the nearest
+    // intersection, suppressed on sensitive calls. Was wrongly hasGeo:false
+    // ("no coordinates" in About) until 2026-09-09; the Last 48 had drawn
+    // them all along. See photoreal/markerPrecision.ts for the probe.
+    hasGeo: true,
+    geoField: 'intersection_point',
     defaultSort: 'received_datetime DESC',
     cacheTTL: 60_000, // 1 min for real-time data
     dateField: 'received_datetime',

@@ -402,6 +402,11 @@ body {
   100% { transform: scale(2.9); opacity: 0;    }
 }
 
+/* Photoreal bubble rows fill in one at a time (PhotorealBubble.tsx). */
+@keyframes rowin { to { opacity: 1; transform: none; } }
+.bubble-row { opacity: 0; transform: translateY(4px); animation: rowin 0.5s ease-out forwards; }
+@media (prefers-reduced-motion: reduce) { .bubble-row { opacity: 1; transform: none; animation: none; } }
+
 /* Radar scan overlay */
 @keyframes radarSweep {
   from { transform: rotate(0deg); }

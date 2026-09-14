@@ -12,6 +12,7 @@ import { viewPath } from '@/cities/routing'
 import { liveManifest } from '@/cities/manifest'
 import CitySwitcher from '@/components/layout/CitySwitcher'
 import { useCitationScope } from '@/lib/provenance/citations'
+import MapPicker from '@/components/maps/MapPicker'
 
 // Type-scale slider stops, in track order. Three stops per Jesse's
 // feedback that a plain large/default toggle wasn't enough runway — the
@@ -313,6 +314,13 @@ export default function AppShell({ children }: { children: ReactNode }) {
               <span className="text-[13px] font-medium">{isDarkMode ? 'Light' : 'Dark'}</span>
             )}
           </button>
+
+          {/* Map-engine picker — expanded rail only (the collapsed rail has
+              no room for a labelled menu, and the picker itself renders
+              null today since Standard 3D is unshipped and Photoreal is
+              live-only — see MapPicker.tsx). Renders nothing when it has
+              fewer than two offerable rows, so this adds no empty gap. */}
+          {isSidebarOpen && <MapPicker scope="rail" />}
 
           {/* Type-scale control — sibling of dark mode. Expanded rail: a
               3-stop segmented radiogroup slider (Default / Large / XL)

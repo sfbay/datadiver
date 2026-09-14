@@ -20,15 +20,15 @@ describe('ALERT_STREAMS registry', () => {
   })
 
   it('live hexes are pinned to FlowMapLayer COLORS (the app canon)', () => {
-    // Source-scrape instead of importing FlowMapLayer (it pulls mapbox-gl,
-    // which cannot load in the node test environment).
+    // Source-scrape instead of importing ageRamp (we want node-only tests,
+    // so we can't import anything that imports mapbox-gl).
     const src = readFileSync(
-      fileURLToPath(new URL('../../views/Last48/modes/FlowMapLayer.tsx', import.meta.url)),
+      fileURLToPath(new URL('../../views/Last48/ageRamp.ts', import.meta.url)),
       'utf8',
     )
     for (const id of ['911-realtime', 'fire-ems-dispatch', '311-cases'] as const) {
       const m = src.match(new RegExp(`'${id}':\\s+'(#[0-9a-fA-F]{6})'`))
-      expect(m, `FlowMapLayer COLORS entry for ${id}`).toBeTruthy()
+      expect(m, `ageRamp COLORS entry for ${id}`).toBeTruthy()
       expect(ALERT_STREAMS[id].hex).toBe(m![1])
     }
   })
