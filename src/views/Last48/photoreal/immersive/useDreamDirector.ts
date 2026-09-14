@@ -59,23 +59,28 @@ export function useDreamDirector(opts: {
   const driftRef = useRef<Drift | null>(null)
   const arrivedRef = useRef(false)
   const centerRef = useRef<Center | null>(null)
-  /** Set by cancel() (user camera input). The arrival flight's `complete`
-   *  can fire synchronously from cancelFlight, and without this flag it
-   *  would start the settle gate and then the drift on top of the reader's
-   *  own camera. Cleared when a new target starts a new leg. */
+  /** Set by cancel() (user camera input). cancelFlight() fires a running
+   *  flight's `cancel` callback, not `complete` — the one path where
+   *  `complete` fires synchronously (in the same tick cancel() could run)
+   *  is a duration<=0 flight, i.e. the reducedMotion arrival leg. Without
+   *  this flag that synchronous completion would start the settle gate and
+   *  then the drift on top of the reader's own camera. Cleared when a new
+   *  target starts a new leg. */
   const cancelledRef = useRef(false)
 
   // Stable helpers in a ref so the effects below never re-run for them.
   const api = useRef({
     alive: () => !viewer.isDestroyed(),
     pitch: () => Math.min(ORBIT_PITCH_DEG, -cbRef.current.pace.pitchMin),
-    preloadNext() {
+    /** `headingDeg` is where the camera will actually BE for this dwell —
+     *  callers must pass the drift's end heading, not its start. */
+    preloadNext(headingDeg: number) {
       const nxt = cbRef.current.next
       if (!nxt || viewer.isDestroyed()) return
       const s = viewer.scene as unknown as PreloadScene
       const cam = s.preloadFlightCamera
       if (!cam) return
-      const p = orbitPose({ lng: nxt.lng, lat: nxt.lat, height: TARGET_HEIGHT_M }, headingRef.current, this.pitch(), RANGE_M.immersive)
+      const p = orbitPose({ lng: nxt.lng, lat: nxt.lat, height: TARGET_HEIGHT_M }, headingDeg, this.pitch(), RANGE_M.immersive)
       cam.setView({ destination: toC3(p.position), orientation: { direction: toC3(p.direction), up: toC3(p.up) } })
       // Camera.frustum is a union in the d.ts; every member has computeCullingVolume.
       s.preloadFlightCullingVolume = (cam.frustum as Cesium.PerspectiveFrustum)
@@ -95,15 +100,19 @@ export function useDreamDirector(opts: {
         orientation: { direction: toC3(end.direction), up: toC3(end.up) },
         duration: pace.dwellMs / 1000,
         easingFunction: Cesium.EasingFunction.LINEAR_NONE,
-        // `complete` can fire synchronously from cancelFlight (observed on
-        // Spec A) — only a drift that is still the current one may commit
-        // its end heading.
+        // cancelFlight() (stopDrift/cancel) fires this flight's `cancel`
+        // callback, not `complete` — `complete` only fires on a genuine
+        // full-duration finish. Guard by identity anyway: a stale `me`
+        // (a callback from a drift already superseded by a newer leg) must
+        // not commit a heading or null out the current drift.
         complete: () => { if (driftRef.current === me) { headingRef.current = to % 360; driftRef.current = null } },
         cancel: () => { if (driftRef.current === me) driftRef.current = null },
       })
       // flyTo just pointed the preload camera at the drift's own end —
-      // overwrite it with the NEXT stop for the whole dwell.
-      this.preloadNext()
+      // overwrite it with the NEXT stop for the whole dwell. Use the
+      // heading the camera will actually reach (`to`), not the one it's
+      // leaving (`from`/headingRef.current).
+      this.preloadNext(to)
     },
     /** Stop the drift where it is and record the heading reached. */
     stopDrift() {
@@ -118,8 +127,15 @@ export function useDreamDirector(opts: {
 
   // One leg per target.
   useEffect(() => {
-    if (!target) return
     const a = api.current
+    if (!target) {
+      // Nothing selected: don't leave a stale center/drift/arrival state
+      // that a later hold-release could resume around.
+      a.stopDrift()
+      arrivedRef.current = false
+      centerRef.current = null
+      return
+    }
     let disposed = false
     let settle: ReturnType<typeof setInterval> | undefined
     arrivedRef.current = false
@@ -140,9 +156,10 @@ export function useDreamDirector(opts: {
         tileset.maximumScreenSpaceError = quality.sseOrbit
         const t0 = Date.now()
         settle = setInterval(() => {
-          if (disposed || !a.alive()) { clearInterval(settle); return }
+          if (disposed || cancelledRef.current || !a.alive()) { clearInterval(settle); return }
           if (tileset.tilesLoaded || Date.now() - t0 > SETTLE_CAP_MS) {
             clearInterval(settle)
+            if (cancelledRef.current) return
             arrivedRef.current = true
             cbRef.current.onArrived()
             if (!cbRef.current.hold) a.startDrift(center)
@@ -165,7 +182,7 @@ export function useDreamDirector(opts: {
     const a = api.current
     if (hold) { a.stopDrift(); return }
     const c = centerRef.current
-    if (arrivedRef.current && c && !driftRef.current) a.startDrift(c)
+    if (arrivedRef.current && c && !driftRef.current && !cancelledRef.current) a.startDrift(c)
   }, [hold])
 
   return {
