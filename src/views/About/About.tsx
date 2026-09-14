@@ -438,6 +438,19 @@ export default function About() {
               </p>
             </Finding>
 
+            <Finding title="Recording the immersive Last 48 — b-roll, by design">
+              <p>
+                The immersive mode at <code>/live/immersive</code> is built as a plate for
+                someone else&rsquo;s recorder: one incident at a time over Google&rsquo;s
+                photorealistic 3D tiles, a slow camera, a lower third you can hide with
+                the <kbd>O</kbd> key and hold in place for ten seconds with <kbd>H</kbd>. Any
+                screen recorder will do; two to ten seconds per stop reads well. Google&rsquo;s
+                terms allow this imagery to be shown in the app with its credits on screen
+                and nowhere else, so the credit bar stays in frame and DataDiver provides
+                no downloads, clips or exports of it &mdash; that absence is deliberate.
+              </p>
+            </Finding>
+
             <Finding title="Server-side aggregation, never client-side sampling">
               <p>
                 Socrata caps query results (default 1,000 rows, max 50,000). Fetching recent
