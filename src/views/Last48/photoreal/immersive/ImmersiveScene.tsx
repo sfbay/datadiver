@@ -98,7 +98,8 @@ export default function ImmersiveScene(props: Props) {
   // unpainted until the next breath tick or camera move.
   useEffect(() => {
     if (!markers) return
-    markers.setHero(props.active)
+    // Disc-only: no column of light on this page (Jesse, 2026-09-13).
+    markers.setHero(props.active, 'disc')
     if (viewer && !viewer.isDestroyed()) viewer.scene.requestRender()
   }, [markers, viewer, props.active])
   useEffect(() => {
@@ -139,7 +140,7 @@ export default function ImmersiveScene(props: Props) {
         />
       )}
       {props.tuneOn && viewer && (
-        <PhotorealTunePanel viewer={viewer} tileset={tileset} tileLoads={tileLoads} onApply={applyQuality} />
+        <PhotorealTunePanel viewer={viewer} tileset={tileset} tileLoads={tileLoads} onApply={applyQuality} side="left" />
       )}
     </>
   )

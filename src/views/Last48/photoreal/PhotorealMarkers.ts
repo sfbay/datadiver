@@ -63,6 +63,10 @@ const FOCUS_MOVE_KM = 0.3
 const CLAMP_TILE = Cesium.HeightReference.CLAMP_TO_3D_TILE
 const ABOVE_TILE = Cesium.HeightReference.RELATIVE_TO_3D_TILE
 
+/** How the hero draws: Spec A's column of light, or the immersive page's
+ *  disc-only dot (no z-axis geometry at all). */
+export type HeroStyle = 'column' | 'disc'
+
 /** The four animated paints that make the hero read as ACTIVE. Colour and
  *  material only — never a radius, a length or a width. */
 interface HeroPaint {
@@ -174,13 +178,19 @@ export class PhotorealMarkers {
     }
   }
 
-  private build(e: NormalizedEvent, col: Cesium.Color, scale: number, hero?: HeroPaint): Cesium.Entity[] {
+  private build(e: NormalizedEvent, col: Cesium.Color, scale: number, hero?: HeroPaint, heroStyle: HeroStyle = 'column'): Cesium.Entity[] {
     const props = new Cesium.PropertyBag({ eventId: e.id })
     const lng = e.longitude!, lat = e.latitude!
     // Height 0 everywhere: the tile height reference supplies the real one.
     const ground = Cesium.Cartesian3.fromDegrees(lng, lat, 0)
     const out: Cesium.Entity[] = []
     const isIntersection = PRECISION[e.datasetId] === 'intersection'
+    // Jesse (2026-09-13): "drop the z-axis column rising from the ground —
+    // only the dot really needs to do the work." A disc hero keeps the halo
+    // and the ground disc (both still pulsing) and pushes no cylinder at all;
+    // an ADDRESS stream, which normally has no disc, gets a half-radius one so
+    // there is always a dot under the card.
+    const discHero = !!hero && heroStyle === 'disc'
 
     // The halo goes down first and lowest — a wide, soft ground ring that
     // pulses in phase with the rim.
@@ -197,12 +207,13 @@ export class PhotorealMarkers {
       }))
     }
 
-    if (isIntersection) {
+    if (isIntersection || discHero) {
+      const r = isIntersection ? DISC_M * scale : DISC_M * scale * 0.5
       out.push(this.viewer.entities.add({
         properties: props,
         position: ground,
         ellipse: {
-          semiMajorAxis: DISC_M * scale, semiMinorAxis: DISC_M * scale,
+          semiMajorAxis: r, semiMinorAxis: r,
           height: DISC_LIFT_M, heightReference: ABOVE_TILE,
           material: hero?.body ?? col.withAlpha(0.18),
           outline: true, outlineColor: hero?.rim ?? col.withAlpha(0.8),
@@ -211,26 +222,31 @@ export class PhotorealMarkers {
     }
 
     // Non-hero: the short wide faded beam / the slim column, unchanged.
-    // Hero: both become the same 90 m column of light.
-    const length = hero ? HERO_COLUMN_M : isIntersection ? BEAM_M * scale : COLUMN_M * scale
-    out.push(this.viewer.entities.add({
-      properties: props,
-      position: ground,
-      cylinder: {
-        length,
-        bottomRadius: hero ? HERO_BOTTOM_R : isIntersection ? 5 * scale : 2.2 * scale,
-        topRadius: hero ? HERO_TOP_R : isIntersection ? 0.6 : 2.2 * scale,
-        heightReference: CLAMP_TILE,
-        material: hero?.body ?? col.withAlpha(isIntersection ? 0.25 : 0.55),
-      },
-    }))
+    // Column hero: both become the same 90 m column of light.
+    // Disc hero: no cylinder at all.
+    if (!discHero) {
+      const length = hero ? HERO_COLUMN_M : isIntersection ? BEAM_M * scale : COLUMN_M * scale
+      out.push(this.viewer.entities.add({
+        properties: props,
+        position: ground,
+        cylinder: {
+          length,
+          bottomRadius: hero ? HERO_BOTTOM_R : isIntersection ? 5 * scale : 2.2 * scale,
+          topRadius: hero ? HERO_TOP_R : isIntersection ? 0.6 : 2.2 * scale,
+          heightReference: CLAMP_TILE,
+          material: hero?.body ?? col.withAlpha(isIntersection ? 0.25 : 0.55),
+        },
+      }))
+    }
 
     return out
   }
 
   /** The current stop / selected event: a wide ground disc, a pulsing outer
-   *  ring, and a 90 m flared column of light that breathes — all colour-only. */
-  setHero(e: NormalizedEvent | null) {
+   *  ring, and — in `'column'` style (Spec A, the default) — a 90 m flared
+   *  column of light that breathes. All colour-only. `'disc'` (the immersive
+   *  page) drops the column and lets the dot do the work. */
+  setHero(e: NormalizedEvent | null, style: HeroStyle = 'column') {
     this.hero.forEach((x) => this.viewer.entities.remove(x))
     this.hero = []
     this.heroEvent = null
@@ -249,7 +265,7 @@ export class PhotorealMarkers {
       ),
     }
     this.heroEvent = e
-    this.hero = this.build(e, col, HERO_SCALE, paint)
+    this.hero = this.build(e, col, HERO_SCALE, paint, style)
     this.sync() // drops the ordinary marker underneath
   }
 
