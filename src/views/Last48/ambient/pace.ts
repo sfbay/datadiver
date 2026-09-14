@@ -88,10 +88,12 @@ export const PACE_PRESETS: Record<PaceId, PacePreset> = {
     label: 'Dream',
     hint: 'immersive',
     // Spec A2 §3: a stop is ONE slow LINEAR flight across the whole dwell.
-    // 0.05°/s over 75 s is ≈3.75° — a barely-moving camera that Cesium still
-    // treats as a flight, which is what unlocks the next-stop tile preload.
+    // 0.28°/s over 75 s is ≈21° — a hero rotation you can actually see. The
+    // original 0.05 (≈3.75° across the dwell) read as a frozen frame in the
+    // design critique of 2026-09-13; the flight is still ONE linear leg, so
+    // the next-stop tile preload is unchanged.
     // breathMs 0: the carousel IS the pass and the queue never empties.
-    orbitDegPerS: 0.05,
+    orbitDegPerS: 0.28,
     dwellMs: 75000,
     breathMs: 0,
     tweenMs: 18000,

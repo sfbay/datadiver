@@ -29,7 +29,12 @@ interface Props {
  *  ACTIVE tile keeps its position at the edges of the pass. */
 const SLOT = 'w-[min(300px,24%)] shrink-0'
 const PEEK_SLOT = `${SLOT} hidden desk:block`
-const STEP_BTN = 'rounded px-1.5 py-0.5 font-mono text-nano uppercase tracking-[0.25em] text-paper-600 dark:text-paper-500 transition-colors hover:text-ink dark:hover:text-paper-100'
+/** The two step controls flank the slot row — 40 px round targets either side
+ *  of the four tiles, where a viewer's hand already is (design critique,
+ *  2026-09-13; they used to hide in the eyebrow row as nano word links). */
+const STEP_BTN = `h-10 w-10 shrink-0 self-end rounded-full flex items-center justify-center
+  font-mono text-[15px] leading-none text-paper-700 dark:text-paper-300 transition-colors
+  hover:bg-paper-200/60 hover:text-ink dark:hover:bg-espresso-800/60 dark:hover:text-paper-100`
 
 /** The band's glow takes the active stream's pigment; ochre is the house
  *  neutral for "nothing selected yet". */
@@ -53,20 +58,18 @@ export default function LowerThird({ prev, active, ahead, onJump, onStep }: Prop
       <div className="glow-corner is-lg" />
 
       <div className="relative z-[1] flex h-full flex-col">
-        {/* Rule-leading eyebrow + the two step buttons */}
-        <div className="flex items-center justify-between gap-4 px-[clamp(16px,3vw,64px)] pt-4 pb-2">
-          <span className="font-mono text-nano tracking-[0.25em] uppercase text-paper-600 dark:text-paper-500">
+        {/* Rule-leading eyebrow */}
+        <div className="flex items-center gap-4 px-[clamp(16px,3vw,64px)] pt-4 pb-2">
+          <span className="font-mono text-nano tracking-[0.25em] uppercase text-paper-700 dark:text-paper-400">
             ── NOW{meta ? ` · ${meta.label}` : ''}
-          </span>
-          <span className="flex items-center gap-1">
-            <button type="button" onClick={() => onStep(-1)} aria-label="Previous stop" className={STEP_BTN}>‹ prev</button>
-            <span className="font-mono text-nano text-paper-500 dark:text-paper-600" aria-hidden>·</span>
-            <button type="button" onClick={() => onStep(1)} aria-label="Next stop" className={STEP_BTN}>next ›</button>
           </span>
         </div>
 
-        {/* Four slots: prev · ACTIVE · ahead[0] · ahead[1] */}
-        <div className="flex items-stretch gap-4 px-[clamp(16px,3vw,64px)] pb-4 min-h-0">
+        {/* Four slots, flanked by the step controls: ‹ · prev · ACTIVE ·
+            ahead[0] · ahead[1] · ›. `items-end` so the lifted active card
+            grows UPWARD instead of pushing the row. */}
+        <div className="flex items-end gap-4 px-[clamp(16px,3vw,64px)] pb-4 min-h-0">
+          <button type="button" onClick={() => onStep(-1)} aria-label="Previous stop" title="Previous stop (←)" className={STEP_BTN}>‹</button>
           <div className={PEEK_SLOT}>
             {prev && <ImmersiveCard key={prev.id} event={prev} role="peek" onClick={() => onJump(prev.id)} />}
           </div>
@@ -83,6 +86,7 @@ export default function LowerThird({ prev, active, ahead, onJump, onStep }: Prop
               </div>
             )
           })}
+          <button type="button" onClick={() => onStep(1)} aria-label="Next stop" title="Next stop (→)" className={STEP_BTN}>›</button>
         </div>
       </div>
     </div>

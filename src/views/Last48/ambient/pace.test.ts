@@ -36,13 +36,13 @@ describe('dream pace (immersive only)', () => {
   it('has the Spec A2 §3 values, is photorealOnly and hidden from the AUTO pill', () => {
     expect(PACE_PRESETS.dream).toMatchObject({
       id: 'dream', label: 'Dream', hint: 'immersive',
-      orbitDegPerS: 0.05, dwellMs: 75000, breathMs: 0, tweenMs: 18000, pitchMin: 30,
+      orbitDegPerS: 0.28, dwellMs: 75000, breathMs: 0, tweenMs: 18000, pitchMin: 30,
       photorealOnly: true, hidden: true,
     })
     expect(parsePaceId('dream')).toBeNull()
   })
-  it('drifts about four degrees across one dwell', () => {
+  it('drifts about twenty-one degrees across one dwell', () => {
     const d = PACE_PRESETS.dream
-    expect(d.orbitDegPerS * (d.dwellMs / 1000)).toBeCloseTo(3.75, 5)
+    expect(d.orbitDegPerS * (d.dwellMs / 1000)).toBeCloseTo(21, 5)
   })
 })

@@ -14,6 +14,7 @@ import { useAppStore } from '@/stores/appStore'
 import { useLast48Window } from '@/hooks/useLast48Window'
 import { LAST48_DATASETS, type NormalizedEvent } from '@/types/last48'
 import { PACE_PRESETS } from '../../ambient/pace'
+import { DATASET_META } from '../../detail/eventCardModel'
 import { chainTour } from '../tourChain'
 import { carouselIndex, stepIndex, peekIds, queueIds } from './carousel'
 import { useAutoAdvance } from './useAutoAdvance'
@@ -136,7 +137,15 @@ export default function Last48Immersive() {
 
   // ── Arrival, play, hold, overlay ──────────────────────────────────────
   const [arrived, setArrived] = useState(false)
-  useEffect(() => { setArrived(false) }, [activeId])
+  // When the camera reached THIS stop — the zero of the dwell rule the rail
+  // draws. 0 means "not arrived"; reset with `arrived` on every stop change.
+  const arrivedAtRef = useRef(0)
+  const [dwellProgress, setDwellProgress] = useState(-1)
+  useEffect(() => { arrivedAtRef.current = 0; setArrived(false); setDwellProgress(-1) }, [activeId])
+  const handleArrived = useCallback(() => {
+    if (arrivedAtRef.current === 0) arrivedAtRef.current = Date.now()
+    setArrived(true)
+  }, [])
   const [holdLeftMs, setHoldLeftMs] = useState(0)
   const holdUntilRef = useRef(0)
   const startHold = useCallback(() => {
@@ -152,10 +161,31 @@ export default function Last48Immersive() {
     return () => clearInterval(id)
   }, [hold])
   const [overlayOn, setOverlayOn] = useState(true)
+  // The "O · overlay" reminder is a HINT, not chrome: it says its piece for
+  // 3 s each time the band goes away, then leaves the frame clean (which is
+  // the whole point of hiding the band). Every later `O` re-shows it.
+  const [hintOn, setHintOn] = useState(false)
+  useEffect(() => {
+    if (overlayOn) { setHintOn(false); return }
+    setHintOn(true)
+    const id = setTimeout(() => setHintOn(false), 3000)
+    return () => clearTimeout(id)
+  }, [overlayOn])
   const reducedMotion = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, [])
   const pace = PACE_PRESETS.dream
 
   useAutoAdvance({ playing, arrived, hold, dwellMs: pace.dwellMs, stopKey: activeId, onAdvance: () => step(1) })
+
+  // The dwell rule in the rail. One 250 ms ticker, armed only while the clock
+  // it draws is actually running — a hold freezes the bar where it stood
+  // (no ticker), which is exactly what a hold does to the auto-advance.
+  useEffect(() => {
+    if (!playing || !arrived || hold) return
+    const tick = () => setDwellProgress(Math.min(1, (Date.now() - arrivedAtRef.current) / pace.dwellMs))
+    tick()
+    const id = setInterval(tick, 250)
+    return () => clearInterval(id)
+  }, [playing, arrived, hold, pace.dwellMs])
 
   const leave = useCallback(() => {
     navigate(activeId ? `/live?event=${encodeURIComponent(activeId)}` : '/live')
@@ -205,14 +235,14 @@ export default function Last48Immersive() {
             reducedMotion={reducedMotion}
             todOverride={todOverride}
             tuneOn={tuneOn}
-            onArrived={() => setArrived(true)}
+            onArrived={handleArrived}
             onPick={jump}
             onUserInput={() => { if (playing) setParam('play', null) }}
             onRest={rest}
           />
           {!overlayOn && <FrameTicks hostRef={hostRef} />}
           {!overlayOn && (
-            <p className="pointer-events-none absolute left-1/2 top-3 z-10 -translate-x-1/2 rounded-full bg-espresso-900/70 px-3 py-1 font-mono text-nano uppercase tracking-widest text-paper-300/80">
+            <p className={`pointer-events-none absolute left-1/2 top-3 z-10 -translate-x-1/2 rounded-full bg-espresso-900/70 px-3 py-1 font-mono text-nano uppercase tracking-widest text-paper-300/80 transition-opacity duration-700 ${hintOn ? 'opacity-100' : 'opacity-0'}`}>
               O · overlay
             </p>
           )}
@@ -231,6 +261,10 @@ export default function Last48Immersive() {
         <RightRail
           playing={playing}
           holdLeftMs={holdLeftMs}
+          stopIndex={index + 1}
+          stopCount={order.length}
+          stream={active ? DATASET_META[active.datasetId] : null}
+          dwellProgress={dwellProgress}
           onPlayToggle={() => setParam('play', playing ? null : '1')}
           onHold={startHold}
           onOverlayToggle={() => setOverlayOn(false)}
