@@ -11,9 +11,12 @@
 // what you can click.
 //
 // A tile is a DETOUR: the page flies there, pauses play, keeps the active
-// card. The active tile wears the rail's ochre like a pressed control.
+// card. The active tile wears the rail's ochre like a pressed control, and
+// clicking it again clears the detour (`aria-pressed` promises a toggle).
 // Hotspots: an empty list says so ("Nothing unusual right now") — absence
-// stated, never a blank; loading says it is reading.
+// stated, never a blank; loading says it is reading; and when the engine
+// itself failed (a baseline error, or a stream whose current counts didn't
+// load), `hotspotsNote` says THAT instead — never absence over a failure.
 import { useState } from 'react'
 import type { Place } from './places'
 import { PLACES_SHOWN } from './places'
@@ -23,10 +26,18 @@ interface Props {
   places: readonly Place[]
   hotspots: readonly Hotspot[]
   hotspotsLoading: boolean
+  /** Set when the anomaly engine couldn't produce a trustworthy hotspot list
+   *  — a baseline fetch error, or a stream whose current counts didn't load.
+   *  Transparency rule: never let an empty list read as "nothing unusual"
+   *  when the truth is "we couldn't tell". */
+  hotspotsNote: string | null
   /** The current detour's key (`place:<id>` / `hot:<neighborhood>`), or null. */
   activeKey: string | null
   onPlace: (id: string) => void
   onHot: (neighborhood: string) => void
+  /** Clicking the ACTIVE tile clears the detour rather than doing nothing —
+   *  `aria-pressed` promises a toggle. */
+  onClear: () => void
 }
 
 /** Places have no data tier — one house colour, the rail's ochre. */
@@ -34,9 +45,9 @@ const PLACE_COLOR = '#d4a435'
 
 const HEADING = 'text-[1vw] leading-none text-paper-800 dark:text-paper-200'
 const TILE = `h-[3.5rem] w-full rounded-lg flex items-center gap-3 px-2 text-left transition-colors
-  ring-1 ring-transparent hover:ring-paper-500/60 hover:bg-paper-200/40 dark:hover:bg-espresso-800/60`
-const TILE_ON = 'bg-ochre-500/18 ring-paper-400/40 dark:ring-paper-300/20'
-const NAME = 'font-display italic text-[1.2vw] leading-none text-ink dark:text-paper-100 truncate'
+  hover:ring-1 hover:ring-paper-500/60 hover:bg-paper-200/40 dark:hover:bg-espresso-800/60`
+const TILE_ON = 'bg-ochre-500/18 ring-1 ring-paper-400/40 dark:ring-paper-300/20'
+const NAME = 'font-display italic text-[min(1.2vw,1.05rem)] leading-none text-ink dark:text-paper-100 truncate'
 const CAPTION = 'text-label leading-none text-paper-600 dark:text-paper-400 truncate'
 const NOTE = 'px-2 py-2 text-label leading-snug text-paper-600 dark:text-paper-500'
 
@@ -52,7 +63,7 @@ function Tile({ color, name, caption, on, onClick }: { color: string; name: stri
   )
 }
 
-export default function Presets({ places, hotspots, hotspotsLoading, activeKey, onPlace, onHot }: Props) {
+export default function Presets({ places, hotspots, hotspotsLoading, hotspotsNote, activeKey, onPlace, onHot, onClear }: Props) {
   const [more, setMore] = useState(false)
   const shown = more ? places : places.slice(0, PLACES_SHOWN)
 
@@ -61,10 +72,13 @@ export default function Presets({ places, hotspots, hotspotsLoading, activeKey, 
       <section aria-label="Places">
         <p className={`${HEADING} px-2 pb-2`}>Places</p>
         <div className="flex flex-col gap-1">
-          {shown.map((p) => (
-            <Tile key={p.id} color={PLACE_COLOR} name={p.name} caption={p.caption}
-              on={activeKey === `place:${p.id}`} onClick={() => onPlace(p.id)} />
-          ))}
+          {shown.map((p) => {
+            const on = activeKey === `place:${p.id}`
+            return (
+              <Tile key={p.id} color={PLACE_COLOR} name={p.name} caption={p.caption}
+                on={on} onClick={() => (on ? onClear() : onPlace(p.id))} />
+            )
+          })}
         </div>
         {places.length > PLACES_SHOWN && (
           <button type="button" onClick={() => setMore((v) => !v)} aria-expanded={more}
@@ -76,15 +90,19 @@ export default function Presets({ places, hotspots, hotspotsLoading, activeKey, 
 
       <section aria-label="Hotspots">
         <p className={`${HEADING} px-2 pb-2`}>Hotspots</p>
+        {hotspotsNote && <p className={NOTE}>{hotspotsNote}</p>}
         {hotspots.length > 0 ? (
           <div className="flex flex-col gap-1">
-            {hotspots.map((h) => (
-              <Tile key={h.neighborhood} color={HOTSPOT_TIER_COLOR[h.tier]} name={h.neighborhood} caption={h.caption}
-                on={activeKey === `hot:${h.neighborhood}`} onClick={() => onHot(h.neighborhood)} />
-            ))}
+            {hotspots.map((h) => {
+              const on = activeKey === `hot:${h.neighborhood}`
+              return (
+                <Tile key={h.neighborhood} color={HOTSPOT_TIER_COLOR[h.tier]} name={h.neighborhood} caption={h.caption}
+                  on={on} onClick={() => (on ? onClear() : onHot(h.neighborhood))} />
+              )
+            })}
           </div>
         ) : (
-          <p className={NOTE}>{hotspotsLoading ? 'Reading the last 48 hours…' : 'Nothing unusual right now'}</p>
+          !hotspotsNote && <p className={NOTE}>{hotspotsLoading ? 'Reading the last 48 hours…' : 'Nothing unusual right now'}</p>
         )}
       </section>
     </div>

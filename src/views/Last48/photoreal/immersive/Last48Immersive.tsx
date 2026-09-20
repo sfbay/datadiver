@@ -27,6 +27,7 @@ import { formatNextIn } from './nextIn'
 import { PLACES } from './places'
 import { selectHotspots } from './hotspots'
 import { detourFromPlace, detourFromHotspot, sameDetour, type DetourTarget } from './detour'
+import { STREAM_WORD } from './streamWords'
 import LowerThird from './LowerThird'
 import RightRail, { HOLD_MS } from './RightRail'
 import FrameTicks from './FrameTicks'
@@ -161,8 +162,20 @@ export default function Last48Immersive() {
   // ── Presets (Round B §2) ──────────────────────────────────────────────
   // The same anomaly engine /live and the Pulse read (baseline cached 4 h,
   // current counts server-side, single-flighted across consumers).
-  const { anomalies, isLoading: anomaliesLoading } = useAnomalyBaseline({ datasets: LAST48_DATASETS, freshness: window48.freshness })
+  const { anomalies, isLoading: anomaliesLoading, error: anomaliesError, missingCurrent } = useAnomalyBaseline({ datasets: LAST48_DATASETS, freshness: window48.freshness })
   const hotspots = useMemo(() => selectHotspots(anomalies, window48.freshness, events), [anomalies, window48.freshness, events])
+  // Transparency rule (useAnomalyBaseline's own docblock): a suppressed or
+  // failed reading must be SAID, never rendered as a silent "nothing here".
+  // A baseline fetch error takes priority — it means every hotspot is
+  // unknown, not just the streams that failed their current count.
+  const hotspotsNote = useMemo(() => {
+    if (anomaliesError) return 'Hotspots unavailable — the 12-week baseline didn’t load'
+    if (missingCurrent.length > 0) {
+      const names = missingCurrent.map((id) => STREAM_WORD[id]).join(' and ')
+      return `Without ${names}: current counts didn’t load`
+    }
+    return null
+  }, [anomaliesError, missingCurrent])
   const placeId = searchParams.get('place')
   const hotNh = searchParams.get('hot')
   // A detour is stabilised by VALUE like the events: a hotspot's centroid
@@ -182,12 +195,20 @@ export default function Last48Immersive() {
     if (placeId && !PLACES.some((x) => x.id === placeId)) setParam('place', null)
   }, [placeId, setParam])
   useEffect(() => {
-    if (hotNh && !anomaliesLoading && !hotspots.some((x) => x.neighborhood === hotNh)) setParam('hot', null)
-  }, [hotNh, anomaliesLoading, hotspots, setParam])
+    // A missed neighborhood is only "gone" once the engine has actually read
+    // AND read cleanly — a baseline error or a missing current count means
+    // "unknown", not "not there", and must not evict a deep-linked ?hot=.
+    if (hotNh && !anomaliesLoading && !anomaliesError && missingCurrent.length === 0 && !hotspots.some((x) => x.neighborhood === hotNh)) {
+      setParam('hot', null)
+    }
+  }, [hotNh, anomaliesLoading, anomaliesError, missingCurrent, hotspots, setParam])
   // A preset is user input: play pauses (Round B §2). ← → and a card click
   // resume the chain from the active card (they clear place/hot above).
   const goPlace = useCallback((id: string) => setParams({ place: id, hot: null, play: null }), [setParams])
   const goHot = useCallback((nh: string) => setParams({ hot: nh, place: null, play: null }), [setParams])
+  // Clicking the ACTIVE tile clears the detour (Presets' toggle) — the
+  // camera returns to the active stop and play stays paused.
+  const clearDetour = useCallback(() => setParams({ place: null, hot: null }), [setParams])
 
   const jump = useCallback((id: string) => { setParams({ event: id, place: null, hot: null }) }, [setParams])
   // A click on the ground snaps to the nearest stop IN THE PASS — the reader
@@ -259,7 +280,15 @@ export default function Last48Immersive() {
   const rangeM = Number.isFinite(rangeParam) && rangeParam >= 150 && rangeParam <= 3000 ? rangeParam : undefined
   const pace = PACE_PRESETS.dream
 
-  const { remainingMs } = useAutoAdvance({ playing, arrived, hold, dwellMs: pace.dwellMs, stopKey: activeId, onAdvance: () => step(1) })
+  // A detour changes what the camera is looking at without changing the
+  // active stop, so the dwell clock must reset too — otherwise pressing
+  // Space mid-detour spends whatever was left on the PREVIOUS stop's clock
+  // and pulls the reader off the place a few seconds later.
+  const { remainingMs } = useAutoAdvance({
+    playing, arrived, hold, dwellMs: pace.dwellMs,
+    stopKey: activeId ? `${activeId}|${detour?.key ?? ''}` : null,
+    onAdvance: () => step(1),
+  })
 
   // ONE clock, three readers (Round B §4): the band's "next in", the active
   // card's stripe and the rail's rule all come from remainingMs(). Sampled
@@ -385,9 +414,11 @@ export default function Last48Immersive() {
               places={PLACES}
               hotspots={hotspots}
               hotspotsLoading={anomaliesLoading}
+              hotspotsNote={hotspotsNote}
               activeKey={detour?.key ?? null}
               onPlace={goPlace}
               onHot={goHot}
+              onClear={clearDetour}
             />
           )}
           onPlayToggle={() => setParam('play', playing ? null : '1')}
