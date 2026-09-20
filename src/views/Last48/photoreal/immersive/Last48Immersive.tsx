@@ -303,9 +303,6 @@ export default function Last48Immersive() {
               altitudeM={telemetry?.altitudeM ?? null}
               tilesLoaded={telemetry?.tilesLoaded ?? false}
               grade={tod}
-              streamId={active?.datasetId ?? null}
-              stopIndex={index + 1}
-              stopCount={order.length}
             />
           )}
           {!overlayOn && (
@@ -321,6 +318,8 @@ export default function Last48Immersive() {
             ahead={ahead}
             onJump={jump}
             onStep={step}
+            stopIndex={index + 1}
+            stopCount={order.length}
           />
         )}
       </div>

@@ -66,7 +66,7 @@ const ROW = `h-[3.5rem] w-full rounded-lg flex items-center gap-3 px-4 relative 
 const ROW_ON = 'bg-ochre-500/18 text-ink dark:text-paper-100'
 /** The signature: the control's NAME in the display face, big enough to read
  *  from across a room. */
-const NAME = 'relative z-[1] font-display italic text-[22px] leading-none text-ink dark:text-paper-100'
+const NAME = 'relative z-[1] font-display italic text-[1.7vw] leading-none text-ink dark:text-paper-100'
 /** The key that does the same thing, parked at the far edge. paper-600 in
  *  light mode rather than the 500 the dark side wears: 9 px of #a8926a on
  *  cream does not clear the contrast floor. */
@@ -81,7 +81,7 @@ const GLYPH = 28
 function ViewRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="h-[2.75rem] flex items-center justify-between gap-2">
-      <span className="text-[15px] leading-none text-paper-800 dark:text-paper-200">{label}</span>
+      <span className="text-[1vw] leading-none text-paper-800 dark:text-paper-200">{label}</span>
       {children}
     </div>
   )
@@ -158,7 +158,7 @@ export default function RightRail({
       <div className="px-1 pb-4 mb-1">
         <h1
           className="font-display italic leading-[1.05] text-ink dark:text-paper-100"
-          style={{ fontSize: 'clamp(24px, 2vw, 30px)' }}
+          style={{ fontSize: '1.7vw' }}
         >
           The Last 48
           <span className="block text-paper-700 dark:text-paper-400">Immersive</span>
@@ -216,8 +216,9 @@ export default function RightRail({
       {/* ── VIEW: what the scene wears. Not playback — these three stay put
           while the pass runs, which is why they are a group of their own at
           settings scale rather than three more buttons. */}
-      <div className="mt-3 pt-3 border-t border-paper-400/40 dark:border-paper-300/15">
-        <div className={EYEBROW}>── View</div>
+      {/* View settings — no eyebrow, no rule (Jesse, 2026-09-20): the rows
+          read as a group on their own. */}
+      <div className="mt-4">
         <ViewRow label="Light">
           <Seg value={tod} options={TOD_OPTIONS} onChange={onTod} label="Time of day" />
         </ViewRow>

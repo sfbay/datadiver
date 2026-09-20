@@ -13,21 +13,7 @@
 // no noise, no pigment. A dark plate, a double rule at its bottom edge (the
 // house newspaper divider, the same two lines the band under the map wears)
 // and mono figures that change under you.
-import type { DatasetId } from '@/types/last48'
-import { DATASET_META } from '../../detail/eventCardModel'
 import type { Grade } from '../grade'
-
-/** The strip's own case for the stream names. `DATASET_META.label` is set
- *  for the map's mono chips, where everything is shouted in caps; this band
- *  is a sentence of readings, and `911 DISPATCH` shouts across it. Spelled
- *  the way the band reads them — and `Fire/EMS` keeps its caps because the
- *  lowercase of an initialism is not a word. Falls back to the authored
- *  label so a new stream can never render blank. */
-const STREAM_LABEL: Record<DatasetId, string> = {
-  '911-realtime': '911 dispatch',
-  'fire-ems-dispatch': 'Fire/EMS',
-  '311-cases': '311 case',
-}
 
 interface Props {
   /** The camera TARGET: the active stop, or the camera's own ground point
@@ -41,18 +27,14 @@ interface Props {
   tilesLoaded: boolean
   /** The grade the tiles are wearing. */
   grade: Grade
-  /** The active stop's stream, and where it sits in the pass. */
-  streamId: DatasetId | null
-  stopIndex: number
-  stopCount: number
 }
 
 /** A measured cell: the spelled-out name, then the figure. */
-function Cell({ label, value }: { label: string; value: string }) {
+function Cell({ label, value, pill }: { label: string; value: string; pill?: boolean }) {
   return (
     <span className="whitespace-nowrap flex items-center gap-1.5">
       <span className="text-paper-400">{label}</span>
-      <span className={PILL} style={PILL_STYLE}>{value}</span>
+      {pill ? <span className={PILL} style={PILL_STYLE}>{value}</span> : <span>{value}</span>}
     </span>
   )
 }
@@ -89,15 +71,13 @@ function formatTilt(deg: number): string {
 }
 
 export default function TelemetryStrip({
-  lat, lng, headingDeg, tiltDeg, altitudeM, tilesLoaded, grade, streamId, stopIndex, stopCount,
+  lat, lng, headingDeg, tiltDeg, altitudeM, tilesLoaded, grade,
 }: Props) {
-  const known = stopIndex >= 1 && stopCount >= 1
-  const stream = streamId ? STREAM_LABEL[streamId] ?? DATASET_META[streamId].label : null
 
   return (
     <div
-      className="pointer-events-none absolute inset-x-0 top-0 z-20 h-8 flex items-center gap-6 px-4 overflow-hidden
-        font-mono text-label tabular-nums text-paper-300
+      className="pointer-events-none absolute inset-x-0 top-0 z-20 h-9 flex items-center gap-6 px-4 overflow-hidden
+        font-mono text-[13px] tabular-nums text-paper-300
         bg-espresso-950/85 backdrop-blur-md border-b border-paper-300/15"
     >
       {/* Double rule: the plate's own bottom border plus this one, 3 px under
@@ -109,9 +89,9 @@ export default function TelemetryStrip({
         <span className="hidden xl:inline"><Dot /></span>
         {lat != null && lng != null ? (
           <>
-            <Cell label="Latitude" value={formatLat(lat)} />
+            <Cell label="Latitude" value={formatLat(lat)} pill />
             <Dot />
-            <Cell label="Longitude" value={formatLng(lng)} />
+            <Cell label="Longitude" value={formatLng(lng)} pill />
           </>
         ) : (
           <span className="text-paper-400">Finding the ground…</span>
@@ -132,11 +112,7 @@ export default function TelemetryStrip({
         <Cell label="Light" value={`${grade[0].toUpperCase()}${grade.slice(1)}`} />
       </div>
 
-      <div className={`${GROUP} ml-auto gap-6`}>
-        <span className="flex items-center gap-2">
-          {stream && <><span className={PILL} style={PILL_STYLE}>{stream}</span><Dot /></>}
-          <span className={PILL} style={PILL_STYLE}>Stop {known ? stopIndex : '—'} of {known ? stopCount : '—'}</span>
-        </span>
+      <div className={`${GROUP} ml-auto`}>
         <span className="text-paper-400">{tilesLoaded ? 'Tiles settled' : 'Loading tiles…'}</span>
       </div>
     </div>

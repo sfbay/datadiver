@@ -23,6 +23,19 @@ interface Props {
   ahead: NormalizedEvent[]
   onJump: (id: string) => void
   onStep: (delta: 1 | -1) => void
+  /** Where the active card sits in the pass — the band's own status line
+   *  (moved here from the telemetry strip, Jesse 2026-09-20: "its status
+   *  connects directly with that set of information"). */
+  stopIndex: number
+  stopCount: number
+}
+
+/** Reader-facing stream names for the status line (the map chips shout in
+ *  caps; this is a sentence). */
+const STREAM_LABEL: Record<string, string> = {
+  '911-realtime': '911 dispatch',
+  'fire-ems-dispatch': 'Fire/EMS',
+  '311-cases': '311 case',
 }
 
 /** Every slot is the same width whether or not it holds a card, so the
@@ -43,7 +56,8 @@ const STEP_BTN = `h-10 w-10 shrink-0 self-center rounded-full flex items-center 
  *  neutral for "nothing selected yet". */
 const FALLBACK_GLOW = '#d4a435'
 
-export default function LowerThird({ prev, active, ahead, onJump, onStep }: Props) {
+export default function LowerThird({ prev, active, ahead, onJump, onStep, stopIndex, stopCount }: Props) {
+  const known = stopIndex >= 1 && stopCount >= 1
   const meta = active ? DATASET_META[active.datasetId] : null
   const glow = meta?.color ?? FALLBACK_GLOW
 
@@ -64,11 +78,17 @@ export default function LowerThird({ prev, active, ahead, onJump, onStep }: Prop
       <div className="glow-corner is-lg glow-static" />
 
       <div className="relative z-[1] flex h-full flex-col">
-        {/* Rule-leading eyebrow */}
-        <div className="flex items-center gap-4 px-[clamp(16px,3vw,64px)] pt-4 pb-2">
-          <span className="font-mono text-nano tracking-[0.25em] uppercase text-paper-700 dark:text-paper-400">
-            ── NOW{meta ? ` · ${meta.label}` : ''}
-          </span>
+        {/* Status line: the active stream and where this card sits in the
+            pass. Replaces the old "── NOW" eyebrow. */}
+        <div className="flex items-center gap-3 px-[clamp(16px,3vw,64px)] pt-4 pb-2 font-mono text-label tabular-nums text-paper-700 dark:text-paper-400">
+          {meta && active && (
+            <span className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full" style={{ background: meta.color, boxShadow: `0 0 8px ${meta.color}` }} aria-hidden />
+              <span style={{ color: meta.color }}>{STREAM_LABEL[active.datasetId] ?? meta.label}</span>
+            </span>
+          )}
+          {meta && <span aria-hidden>·</span>}
+          <span>Stop {known ? stopIndex : '—'} of {known ? stopCount : '—'}</span>
         </div>
 
         {/* Four slots, flanked by the step controls: ‹ · prev · ACTIVE ·
