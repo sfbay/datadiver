@@ -33,18 +33,24 @@ interface Props {
 // ── The latte ─────────────────────────────────────────────────────────────
 // coffee with cream — Jesse 2026-09-20; deliberately theme-independent.
 // Three tones on one ground, authored together. Measured against LATTE_BG:
-// text-ink (#4b3827) 6.84:1, LATTE_INK_2 4.27:1, LATTE_LABEL 3.32:1.
+// text-ink (#4b3827) 6.84:1, LATTE_INK_2 4.72:1, LATTE_LABEL 5.02:1 — every
+// tier clears 4.5:1, so nothing on this face is decorative-only text. The
+// two lower tiers were darkened from the first pass (#6b5640 4.27, #7d6748
+// 3.32) once the measurements came back under the line; the SEPARATION
+// between them now comes from hue and size, not from letting the smallest
+// type be the faintest.
 /** The active face's ground. */
 const LATTE_BG = '#dcc9a6'
 /** Secondary: the age unit, the date line, the state chip, the stream label. */
-const LATTE_INK_2 = '#6b5640'
+const LATTE_INK_2 = '#63503b'
 /** Mono caps — the row labels. */
-const LATTE_LABEL = '#7d6748'
+const LATTE_LABEL = '#5f4c38'
 
 // Whether the STREAM PIGMENT could carry the stream label as text on the
 // latte was checked per stream, by hand, against #dcc9a6: indigo #616a96 →
 // 3.23:1, terracotta #b85a33 → 2.85:1, moss #7a9954 → 1.99:1. None of the
-// three clears 4.5:1, so on the active face the label takes LATTE_INK_2 and
+// three clears 4.5:1 (and no darkening would keep them recognisable as the
+// stream pigments), so on the active face the label takes LATTE_INK_2 and
 // identity stays with the pigment DOT beside it — and with the corner glow,
 // which is decoration and carries no contrast duty. Peeks keep the pigment:
 // they sit on the band's own register, where it reads.
@@ -135,9 +141,11 @@ export default function ImmersiveCard({ event, role, onClick, glow }: Props) {
         </ul>
       )}
       {/* Terracotta, not ochre: ochre was picked to carry a link across an
-          inverting face, and on the latte it goes to butter. */}
+          inverting face, and on the latte it goes to butter. Hover goes
+          DARKER (#7a3920, 5.32:1) — terracotta-600 would have been 2.85:1,
+          i.e. pointing at the link made it harder to read. */}
       {explore && (
-        <Link to={explore.to} className="bubble-row mt-3 block font-mono text-label tracking-wider text-terracotta-700 hover:text-terracotta-600" style={{ animationDelay: `${0.6 + rows.length * 0.9}s` }}>
+        <Link to={explore.to} className="bubble-row mt-3 block font-mono text-label tracking-wider text-terracotta-700 hover:text-[#7a3920]" style={{ animationDelay: `${0.6 + rows.length * 0.9}s` }}>
           {explore.label} →
         </Link>
       )}
