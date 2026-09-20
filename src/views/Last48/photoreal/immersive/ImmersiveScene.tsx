@@ -40,6 +40,8 @@ interface Props {
   pace: PaceValues
   hold: boolean
   reducedMotion: boolean
+  /** ?range= dev knob; undefined = RANGE_M.immersive. */
+  rangeM?: number
   todOverride: string | null
   tuneOn: boolean
   onArrived: () => void
@@ -200,7 +202,7 @@ export default function ImmersiveScene(props: Props) {
         <Director
           viewer={viewer} tileset={tileset}
           active={props.active} next={props.next}
-          pace={props.pace} hold={props.hold} reducedMotion={props.reducedMotion}
+          pace={props.pace} hold={props.hold} reducedMotion={props.reducedMotion} rangeM={props.rangeM}
           onArrived={props.onArrived} onUserInput={props.onUserInput}
         />
       )}
@@ -233,6 +235,7 @@ function Director(p: {
   pace: PaceValues
   hold: boolean
   reducedMotion: boolean
+  rangeM?: number
   onArrived: () => void
   onUserInput: () => void
 }) {
@@ -253,7 +256,7 @@ function Director(p: {
   const { cancel } = useDreamDirector({
     viewer: p.viewer, tileset: p.tileset,
     target, next,
-    pace: p.pace, hold: p.hold, reducedMotion: p.reducedMotion,
+    pace: p.pace, hold: p.hold, reducedMotion: p.reducedMotion, rangeM: p.rangeM,
     onArrived: () => cb.current.onArrived(),
   })
   const cancelRef = useRef(cancel)

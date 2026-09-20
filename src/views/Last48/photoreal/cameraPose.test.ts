@@ -40,8 +40,8 @@ describe('orbitPose at (0°,0°)', () => {
     const t = geodeticToEcef(-122.41, 37.78, 30)
     expect(Math.abs(norm([p.position[0] - t[0], p.position[1] - t[1], p.position[2] - t[2]]) - ORBIT_RANGE_M)).toBeLessThan(1e-6)
   })
-  it('ranges: 620 m orbit (the spike), 900 m immersive (Spec A2 §3); pitch −30', () => {
-    expect(RANGE_M).toEqual({ orbit: 620, immersive: 900 })
+  it('ranges: 620 m orbit (the spike), 550 m immersive (Spec A2 §3); pitch −30', () => {
+    expect(RANGE_M).toEqual({ orbit: 620, immersive: 550 })
     expect(ORBIT_RANGE_M).toBe(RANGE_M.orbit)
     expect(ORBIT_PITCH_DEG).toBe(-30)
   })

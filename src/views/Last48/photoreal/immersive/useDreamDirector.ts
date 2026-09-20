@@ -50,6 +50,9 @@ export function useDreamDirector(opts: {
   reducedMotion: boolean
   /** Flight done + tiles settled (or the cap). The page starts the dwell on it. */
   onArrived: () => void
+  /** Camera distance from the stop, metres. Default RANGE_M.immersive; the
+   *  page passes ?range= as a dev knob (Jesse 2026-09-20: closer). */
+  rangeM?: number
 }): { cancel: () => void } {
   const { viewer, tileset, target, hold } = opts
   const headingRef = useRef(35)
@@ -80,7 +83,7 @@ export function useDreamDirector(opts: {
       const s = viewer.scene as unknown as PreloadScene
       const cam = s.preloadFlightCamera
       if (!cam) return
-      const p = orbitPose({ lng: nxt.lng, lat: nxt.lat, height: TARGET_HEIGHT_M }, headingDeg, this.pitch(), RANGE_M.immersive)
+      const p = orbitPose({ lng: nxt.lng, lat: nxt.lat, height: TARGET_HEIGHT_M }, headingDeg, this.pitch(), (cbRef.current.rangeM ?? RANGE_M.immersive))
       cam.setView({ destination: toC3(p.position), orientation: { direction: toC3(p.direction), up: toC3(p.up) } })
       // Camera.frustum is a union in the d.ts; every member has computeCullingVolume.
       s.preloadFlightCullingVolume = (cam.frustum as Cesium.PerspectiveFrustum)
@@ -92,7 +95,7 @@ export function useDreamDirector(opts: {
       if (reducedMotion) return
       const from = headingRef.current
       const to = from + pace.orbitDegPerS * (pace.dwellMs / 1000)
-      const end = orbitPose(center, to, this.pitch(), RANGE_M.immersive)
+      const end = orbitPose(center, to, this.pitch(), (cbRef.current.rangeM ?? RANGE_M.immersive))
       const me: Drift = { from, to, t0: performance.now(), ms: pace.dwellMs, center }
       driftRef.current = me
       viewer.camera.flyTo({
@@ -143,7 +146,7 @@ export function useDreamDirector(opts: {
     a.stopDrift()
     const center: Center = { lng: target.lng, lat: target.lat, height: TARGET_HEIGHT_M }
     centerRef.current = center
-    const arrival = orbitPose(center, headingRef.current, a.pitch(), RANGE_M.immersive)
+    const arrival = orbitPose(center, headingRef.current, a.pitch(), (cbRef.current.rangeM ?? RANGE_M.immersive))
     const { pace, reducedMotion } = cbRef.current
     tileset.maximumScreenSpaceError = SSE_FLIGHT
     viewer.camera.flyTo({

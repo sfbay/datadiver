@@ -201,6 +201,9 @@ export default function Last48Immersive() {
     return () => clearTimeout(id)
   }, [overlayOn])
   const reducedMotion = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, [])
+  // ?range= — dev knob for the hero sweep's camera distance (metres).
+  const rangeParam = Number(searchParams.get('range'))
+  const rangeM = Number.isFinite(rangeParam) && rangeParam >= 150 && rangeParam <= 3000 ? rangeParam : undefined
   const pace = PACE_PRESETS.dream
 
   useAutoAdvance({ playing, arrived, hold, dwellMs: pace.dwellMs, stopKey: activeId, onAdvance: () => step(1) })
@@ -262,6 +265,7 @@ export default function Last48Immersive() {
             pace={pace}
             hold={hold}
             reducedMotion={reducedMotion}
+            rangeM={rangeM}
             todOverride={todOverride}
             tuneOn={tuneOn}
             onArrived={handleArrived}

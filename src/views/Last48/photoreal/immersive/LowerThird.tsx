@@ -79,7 +79,7 @@ export default function LowerThird({ prev, active, ahead, onJump, onStep }: Prop
             different heights. Every card carries `origin-top` so the active
             lift and the peek shrink both leave that edge alone, and `pt-3`
             is the room the lift needs or its top lands in the eyebrow. */}
-        <div className="flex items-start gap-4 px-[clamp(16px,3vw,64px)] pt-3 pb-4 min-h-0">
+        <div className="flex items-start gap-4 px-[clamp(16px,3vw,64px)] pt-3 pb-4 min-h-0 overflow-x-auto overflow-y-auto">
           <button type="button" onClick={() => onStep(-1)} aria-label="Previous stop" title="Previous stop (←)" className={STEP_BTN}>‹</button>
           <div className={PEEK_SLOT}>
             {prev && <ImmersiveCard key={prev.id} event={prev} role="peek" onClick={() => onJump(prev.id)} />}
