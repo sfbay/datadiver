@@ -1,7 +1,9 @@
 // src/views/Last48/photoreal/immersive/useDreamDirector.ts
 //
-// The immersive camera (Spec A2 §3). Unlike useCesiumDirector there is no
-// per-frame orbit. A stop is:
+// The immersive camera (Spec A2 §3). Round B: an optional `detour` (a Place
+// or a Hotspot) replaces the target as the leg's destination with its own
+// heading/pitch/range; the preload still aims at `next`. Unlike
+// useCesiumDirector there is no per-frame orbit. A stop is:
 //   1. ONE flight (pace.tweenMs, eased) to the arrival pose;
 //   2. the settle gate (tiles loaded, or SETTLE_CAP_MS) → onArrived;
 //   3. ONE slow LINEAR flight across the whole dwell — a few degrees of
@@ -22,6 +24,7 @@ import type { PaceValues } from '../../ambient/pace'
 import { orbitPose, RANGE_M, ORBIT_PITCH_DEG } from '../cameraPose'
 import { quality } from '../quality'
 import { SSE_FLIGHT, SETTLE_CAP_MS, type PhotorealTarget } from '../useCesiumDirector'
+import type { DetourTarget } from './detour'
 
 const TARGET_HEIGHT_M = 30
 const toC3 = (v: [number, number, number]) => new Cesium.Cartesian3(v[0], v[1], v[2])
@@ -53,8 +56,14 @@ export function useDreamDirector(opts: {
   /** Camera distance from the stop, metres. Default RANGE_M.immersive; the
    *  page passes ?range= as a dev knob (Jesse 2026-09-20: closer). */
   rangeM?: number
+  /** Round B: a detour (a Place or a Hotspot). When set it REPLACES the
+   *  target as the camera's destination — same flight, same settle gate,
+   *  same drift — but with its own heading/pitch/range. The preload still
+   *  aims at `next` (the chain resumes from the active card). */
+  detour?: DetourTarget | null
 }): { cancel: () => void } {
   const { viewer, tileset, target, hold } = opts
+  const detour = opts.detour ?? null
   const headingRef = useRef(35)
   const cbRef = useRef(opts)
   // eslint-disable-next-line react-hooks/refs
@@ -62,6 +71,10 @@ export function useDreamDirector(opts: {
   const driftRef = useRef<Drift | null>(null)
   const arrivedRef = useRef(false)
   const centerRef = useRef<Center | null>(null)
+  /** The pitch/range of the CURRENT leg — a detour's own, or the house
+   *  hero pose. startDrift and the hold-release read it so a detour drifts
+   *  at its own distance rather than snapping back to 200 m. */
+  const legRef = useRef<{ pitchDeg: number; rangeM: number } | null>(null)
   /** Set by cancel() (user camera input). cancelFlight() fires a running
    *  flight's `cancel` callback, not `complete` — the one path where
    *  `complete` fires synchronously (in the same tick cancel() could run)
@@ -74,7 +87,8 @@ export function useDreamDirector(opts: {
   // Stable helpers in a ref so the effects below never re-run for them.
   const api = useRef({
     alive: () => !viewer.isDestroyed(),
-    pitch: () => Math.min(ORBIT_PITCH_DEG, -cbRef.current.pace.pitchMin),
+    pitch: () => legRef.current?.pitchDeg ?? Math.min(ORBIT_PITCH_DEG, -cbRef.current.pace.pitchMin),
+    range: () => legRef.current?.rangeM ?? cbRef.current.rangeM ?? RANGE_M.immersive,
     /** `headingDeg` is where the camera will actually BE for this dwell —
      *  callers must pass the drift's end heading, not its start. */
     preloadNext(headingDeg: number) {
@@ -83,7 +97,8 @@ export function useDreamDirector(opts: {
       const s = viewer.scene as unknown as PreloadScene
       const cam = s.preloadFlightCamera
       if (!cam) return
-      const p = orbitPose({ lng: nxt.lng, lat: nxt.lat, height: TARGET_HEIGHT_M }, headingDeg, this.pitch(), (cbRef.current.rangeM ?? RANGE_M.immersive))
+      // The next stop is a STOP, not a detour — always the house hero pose.
+      const p = orbitPose({ lng: nxt.lng, lat: nxt.lat, height: TARGET_HEIGHT_M }, headingDeg, Math.min(ORBIT_PITCH_DEG, -cbRef.current.pace.pitchMin), (cbRef.current.rangeM ?? RANGE_M.immersive))
       cam.setView({ destination: toC3(p.position), orientation: { direction: toC3(p.direction), up: toC3(p.up) } })
       // Camera.frustum is a union in the d.ts; every member has computeCullingVolume.
       s.preloadFlightCullingVolume = (cam.frustum as Cesium.PerspectiveFrustum)
@@ -95,7 +110,7 @@ export function useDreamDirector(opts: {
       if (reducedMotion) return
       const from = headingRef.current
       const to = from + pace.orbitDegPerS * (pace.dwellMs / 1000)
-      const end = orbitPose(center, to, this.pitch(), (cbRef.current.rangeM ?? RANGE_M.immersive))
+      const end = orbitPose(center, to, this.pitch(), this.range())
       const me: Drift = { from, to, t0: performance.now(), ms: pace.dwellMs, center }
       driftRef.current = me
       viewer.camera.flyTo({
@@ -128,15 +143,20 @@ export function useDreamDirector(opts: {
     },
   })
 
-  // One leg per target.
+  // One leg per destination: the detour when there is one, else the target.
   useEffect(() => {
     const a = api.current
-    if (!target) {
-      // Nothing selected: don't leave a stale center/drift/arrival state
-      // that a later hold-release could resume around.
+    const dest = detour
+      ? { lng: detour.lng, lat: detour.lat, headingDeg: detour.headingDeg, pitchDeg: detour.pitchDeg, rangeM: detour.rangeM }
+      : target
+        ? { lng: target.lng, lat: target.lat, headingDeg: headingRef.current,
+            pitchDeg: Math.min(ORBIT_PITCH_DEG, -cbRef.current.pace.pitchMin), rangeM: cbRef.current.rangeM ?? RANGE_M.immersive }
+        : null
+    if (!dest) {
       a.stopDrift()
       arrivedRef.current = false
       centerRef.current = null
+      legRef.current = null
       return
     }
     let disposed = false
@@ -144,9 +164,12 @@ export function useDreamDirector(opts: {
     arrivedRef.current = false
     cancelledRef.current = false
     a.stopDrift()
-    const center: Center = { lng: target.lng, lat: target.lat, height: TARGET_HEIGHT_M }
+    // A detour brings its own heading; a stop continues from the last one.
+    headingRef.current = dest.headingDeg
+    legRef.current = { pitchDeg: dest.pitchDeg, rangeM: dest.rangeM }
+    const center: Center = { lng: dest.lng, lat: dest.lat, height: TARGET_HEIGHT_M }
     centerRef.current = center
-    const arrival = orbitPose(center, headingRef.current, a.pitch(), (cbRef.current.rangeM ?? RANGE_M.immersive))
+    const arrival = orbitPose(center, dest.headingDeg, dest.pitchDeg, dest.rangeM)
     const { pace, reducedMotion } = cbRef.current
     tileset.maximumScreenSpaceError = SSE_FLIGHT
     viewer.camera.flyTo({
@@ -176,7 +199,7 @@ export function useDreamDirector(opts: {
       a.stopDrift()
       if (a.alive()) viewer.camera.cancelFlight()
     }
-  }, [target, viewer, tileset])
+  }, [target, detour, viewer, tileset])
 
   // Hold / release. Release resumes the drift only once the stop has arrived
   // (a hold pressed mid-flight lets the flight finish; the settle gate then

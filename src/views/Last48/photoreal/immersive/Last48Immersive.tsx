@@ -282,6 +282,7 @@ export default function Last48Immersive() {
             hold={hold}
             reducedMotion={reducedMotion}
             rangeM={rangeM}
+            detour={null /* Round B: Task 6 wires the presets rail's selection here */}
             todOverride={todOverride}
             tuneOn={tuneOn}
             beaconOn={beaconOn}

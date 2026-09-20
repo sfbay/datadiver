@@ -22,6 +22,7 @@ import Beacon from './Beacon'
 import { useDreamDirector } from './useDreamDirector'
 import { useCameraFloor } from './useCameraFloor'
 import type { PhotorealTarget } from '../useCesiumDirector'
+import { sameDetour, type DetourTarget } from './detour'
 
 /** Spec A2 §3: MSAA on. 4 is Cesium's default; stated, not assumed. */
 export const IMMERSIVE_MSAA = 4
@@ -60,6 +61,9 @@ interface Props {
   reducedMotion: boolean
   /** ?range= dev knob; undefined = RANGE_M.immersive. */
   rangeM?: number
+  /** Round B: a preset destination. Replaces the active stop as the camera's
+   *  target while set. */
+  detour: DetourTarget | null
   todOverride: string | null
   tuneOn: boolean
   /** The screen-pinned mark over the active stop (rail: View · Beacon). */
@@ -261,6 +265,7 @@ export default function ImmersiveScene(props: Props) {
           viewer={viewer} tileset={tileset}
           active={props.active} next={props.next}
           pace={props.pace} hold={props.hold} reducedMotion={props.reducedMotion} rangeM={props.rangeM}
+          detour={props.detour}
           onArrived={props.onArrived} onUserInput={props.onUserInput}
         />
       )}
@@ -294,6 +299,7 @@ function Director(p: {
   hold: boolean
   reducedMotion: boolean
   rangeM?: number
+  detour: DetourTarget | null
   onArrived: () => void
   onUserInput: () => void
 }) {
@@ -311,10 +317,19 @@ function Director(p: {
   const target = useMemo(() => toTarget(p.active), [aId, aLng, aLat])
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const next = useMemo(() => toTarget(p.next), [nId, nLng, nLat])
+  // Same belt-and-braces as `target`/`next`: memoise the detour BY VALUE so a
+  // parent render carrying an equal-but-fresh DetourTarget never re-flies.
+  const detourRef = useRef<DetourTarget | null>(null)
+  const detour = useMemo(() => {
+    const cur = sameDetour(detourRef.current, p.detour) ? detourRef.current : p.detour
+    detourRef.current = cur
+    return cur
+  }, [p.detour])
   const { cancel } = useDreamDirector({
     viewer: p.viewer, tileset: p.tileset,
     target, next,
     pace: p.pace, hold: p.hold, reducedMotion: p.reducedMotion, rangeM: p.rangeM,
+    detour,
     onArrived: () => cb.current.onArrived(),
   })
   const cancelRef = useRef(cancel)
