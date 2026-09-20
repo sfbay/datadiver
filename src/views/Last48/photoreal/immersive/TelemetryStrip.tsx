@@ -2,7 +2,7 @@
 //
 // The instrument band across the top of the map (Jesse, 2026-09-20): the
 // top strip is TELEMETRY ONLY — where the camera is pointed, how it is
-// pointed, what time the scene is wearing and whether the tiles have
+// pointed, what light the scene is wearing and whether the tiles have
 // caught up. Everything you DO lives in the right rail; nothing in here is
 // a control.
 //
@@ -13,17 +13,9 @@
 // no noise, no pigment. A dark plate, a double rule at its bottom edge (the
 // house newspaper divider, the same two lines the band under the map wears)
 // and mono figures that change under you.
-//
-// The clock lives here rather than in the page: it ticks once a minute and
-// re-rendering the whole immersive page for a minute hand would be silly.
-import { useEffect, useState } from 'react'
-import { formatApTime } from '@/utils/format'
 import type { DatasetId } from '@/types/last48'
 import { DATASET_META } from '../../detail/eventCardModel'
 import type { Grade } from '../grade'
-
-/** The clock reads to the minute, so half a minute is a tight enough leash. */
-const CLOCK_MS = 30_000
 
 /** The strip's own case for the stream names. `DATASET_META.label` is set
  *  for the map's mono chips, where everything is shouted in caps; this band
@@ -58,11 +50,17 @@ interface Props {
 /** A measured cell: the spelled-out name, then the figure. */
 function Cell({ label, value }: { label: string; value: string }) {
   return (
-    <span className="whitespace-nowrap">
-      <span className="text-paper-400">{label}</span> {value}
+    <span className="whitespace-nowrap flex items-center gap-1.5">
+      <span className="text-paper-400">{label}</span>
+      <span className={PILL} style={PILL_STYLE}>{value}</span>
     </span>
   )
 }
+
+/** Each reading sits in its own latte pill — the coffee-with-cream tone the
+ *  active card wears — so the figures separate from their names at a glance. */
+const PILL = 'inline-block rounded-full px-2 py-px leading-[1.15] text-ink'
+const PILL_STYLE = { background: '#dcc9a6' } as const
 
 /** The separator between cells INSIDE a group. Groups themselves are spaced. */
 const Dot = () => <span className="text-paper-400" aria-hidden>·</span>
@@ -93,12 +91,6 @@ function formatTilt(deg: number): string {
 export default function TelemetryStrip({
   lat, lng, headingDeg, tiltDeg, altitudeM, tilesLoaded, grade, streamId, stopIndex, stopCount,
 }: Props) {
-  const [now, setNow] = useState(() => Date.now())
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), CLOCK_MS)
-    return () => clearInterval(id)
-  }, [])
-
   const known = stopIndex >= 1 && stopCount >= 1
   const stream = streamId ? STREAM_LABEL[streamId] ?? DATASET_META[streamId].label : null
 
@@ -134,16 +126,16 @@ export default function TelemetryStrip({
         <Cell label="Altitude" value={altitudeM != null ? `${altitudeM} m` : '—'} />
       </div>
 
+      {/* No clock: a wall time beside a photograph reads as "live imagery",
+          which these tiles are not (Jesse, 2026-09-20). The grade alone. */}
       <div className={`${GROUP} hidden xl:flex`}>
-        <span>{formatApTime(now)} PT</span>
-        <Dot />
-        <span className="text-paper-400">{grade[0].toUpperCase()}{grade.slice(1)}</span>
+        <Cell label="Light" value={`${grade[0].toUpperCase()}${grade.slice(1)}`} />
       </div>
 
       <div className={`${GROUP} ml-auto gap-6`}>
         <span className="flex items-center gap-2">
-          {stream && <><span>{stream}</span><Dot /></>}
-          <span>Stop {known ? stopIndex : '—'} of {known ? stopCount : '—'}</span>
+          {stream && <><span className={PILL} style={PILL_STYLE}>{stream}</span><Dot /></>}
+          <span className={PILL} style={PILL_STYLE}>Stop {known ? stopIndex : '—'} of {known ? stopCount : '—'}</span>
         </span>
         <span className="text-paper-400">{tilesLoaded ? 'Tiles settled' : 'Loading tiles…'}</span>
       </div>

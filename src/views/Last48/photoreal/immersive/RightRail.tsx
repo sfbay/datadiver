@@ -81,7 +81,7 @@ const GLYPH = 28
 function ViewRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="h-[2.75rem] flex items-center justify-between gap-2">
-      <span className="font-display italic text-lg leading-none text-paper-800 dark:text-paper-200">{label}</span>
+      <span className="text-[15px] leading-none text-paper-800 dark:text-paper-200">{label}</span>
       {children}
     </div>
   )
@@ -152,15 +152,17 @@ export default function RightRail({
       {/* ── Masthead: the page's own name, and the page's only h1. The route
           runs with the app shell off, so nothing else on screen says where
           the reader is. */}
-      <div className="px-1 pb-3 mb-1 border-b border-paper-400/50 dark:border-paper-300/20">
-        <div className={EYEBROW}>── Live</div>
+      {/* No eyebrow and no "Live" anywhere near the tiles (Jesse, 2026-09-20:
+          the word would read as a claim about the imagery). Two lines, one
+          size, two colours — and only empty space under them, no rule. */}
+      <div className="px-1 pb-4 mb-1">
         <h1
-          className="font-display italic leading-[0.95] text-ink dark:text-paper-100"
-          style={{ fontSize: 'clamp(26px, 2.2vw, 34px)' }}
+          className="font-display italic leading-[1.05] text-ink dark:text-paper-100"
+          style={{ fontSize: 'clamp(24px, 2vw, 30px)' }}
         >
           The Last 48
+          <span className="block text-paper-700 dark:text-paper-400">Immersive</span>
         </h1>
-        <div className="font-display italic text-xl text-paper-700 dark:text-paper-400 leading-tight">Immersive</div>
       </div>
 
       <button
@@ -239,7 +241,7 @@ export default function RightRail({
 
       {/* ── Stop ledger: where you are, and how far the camera has to run. */}
       <div className="pt-3 border-t border-paper-400/40 dark:border-paper-300/15">
-        <p className="font-display italic text-lg leading-none text-ink dark:text-paper-100">
+        <p className="text-[15px] leading-none text-ink dark:text-paper-100">
           Stop <span className="tabular-nums">{known ? stopIndex : '—'}</span> of <span className="tabular-nums">{known ? stopCount : '—'}</span>
         </p>
         <div className="mt-2 h-1 rounded-full bg-paper-400/30 dark:bg-paper-300/15 overflow-hidden">
