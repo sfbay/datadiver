@@ -14,6 +14,10 @@ interface Props {
   tileset: Cesium.Cesium3DTileset | null
   tileLoads: number
   onApply: (v: Cesium.Viewer, ts: Cesium.Cesium3DTileset | null, q: Quality) => void
+  /** Which edge the panel hangs off. Spec A (the flat photoreal page) keeps
+   *  the right; /live/immersive puts it LEFT so it never sits under the
+   *  right-hand control rail (Jesse, 2026-09-13). */
+  side?: 'left' | 'right'
 }
 
 const SLIDERS: Array<{ key: 'fpsCap' | 'sseOrbit' | 'resolution' | 'foveation'; label: string; hint: string }> = [
@@ -23,7 +27,7 @@ const SLIDERS: Array<{ key: 'fpsCap' | 'sseOrbit' | 'resolution' | 'foveation'; 
   { key: 'foveation', label: 'edge relax', hint: '0 = full detail everywhere' },
 ]
 
-export default function PhotorealTunePanel({ viewer, tileset, tileLoads, onApply }: Props) {
+export default function PhotorealTunePanel({ viewer, tileset, tileLoads, onApply, side = 'right' }: Props) {
   const [q, setQ] = useState<Quality>({ ...quality })
   const [fps, setFps] = useState(0)
 
@@ -50,7 +54,7 @@ export default function PhotorealTunePanel({ viewer, tileset, tileLoads, onApply
   }
 
   return (
-    <div className="absolute right-4 top-4 z-20 w-56 rounded-md bg-espresso-900/85 px-3 py-2 font-mono text-micro text-paper-200 backdrop-blur-sm">
+    <div className={`absolute top-4 z-20 w-56 rounded-md bg-espresso-900/85 px-3 py-2 font-mono text-micro text-paper-200 backdrop-blur-sm ${side === 'left' ? 'left-4' : 'right-4'}`}>
       <div className="flex justify-between text-nano uppercase tracking-widest text-paper-500">
         <span>photoreal tune</span>
         <span>{fps} fps · {tileLoads} tiles</span>

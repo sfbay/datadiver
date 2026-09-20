@@ -11,21 +11,21 @@
 // Delegates: markers (PhotorealMarkers), the tour (PhotorealConductor), the
 // bubble (PhotorealBubble).
 import { useEffect, useMemo, useRef, useState } from 'react'
-import * as Cesium from 'cesium'
+import type * as Cesium from 'cesium'
 import './photoreal.css'
 import { useAppStore } from '@/stores/appStore'
 import type { Last48WindowResult } from '@/hooks/useLast48Window'
 import type { DatasetId, NormalizedEvent } from '@/types/last48'
 import type { PaceValues } from '../ambient/pace'
-import { GRADES, GRADE_CLOCK_ISO, GRADE_FRAGMENT_GLSL, gradeForTheme } from './grade'
 import { PhotorealMarkers } from './PhotorealMarkers'
 import PhotorealConductor from './PhotorealConductor'
 import PhotorealBubble from './PhotorealBubble'
 import PhotorealTunePanel from './PhotorealTunePanel'
-import { quality, type Quality } from './quality'
+import { quality, resetQuality, QUALITY_DEFAULT } from './quality'
+import { createViewer, loadGoogleTileset, applyGrade, applyQuality } from './viewerHost'
 import Last48EventCard from '../detail/Last48EventCard'
 
-;(window as unknown as { CESIUM_BASE_URL: string }).CESIUM_BASE_URL = '/cesium/'
+export { GOOGLE_TILES_KEY, applyQuality } from './viewerHost'
 
 
 export interface Last48PhotorealProps {
@@ -44,25 +44,6 @@ export interface Last48PhotorealProps {
   tuneOn: boolean
 }
 
-/** Whether Photoreal can be offered at all — read by the picker via the
- *  page, never by importing this chunk (that would defeat the lazy split). */
-export const GOOGLE_TILES_KEY: string = import.meta.env.VITE_GOOGLE_TILES_KEY || ''
-
-/** Push the live quality knobs onto the viewer and (once it exists) the
- *  tileset. Called at mount, when the tileset lands, and from the ?tune=1
- *  sliders. Orbit tile detail is applied by the director at each phase
- *  change (it reads quality.sseOrbit), not here. */
-export function applyQuality(v: Cesium.Viewer, ts: Cesium.Cesium3DTileset | null, q: Quality) {
-  if (v.isDestroyed()) return
-  v.targetFrameRate = q.fpsCap
-  v.resolutionScale = q.resolution
-  if (ts && !ts.isDestroyed()) {
-    ts.foveatedScreenSpaceError = q.foveation > 0
-    ts.foveatedMinimumScreenSpaceErrorRelaxation = q.foveation
-    ts.dynamicScreenSpaceError = q.dynamicSse
-  }
-}
-
 export default function Last48Photoreal(props: Last48PhotorealProps) {
   const isDarkMode = useAppStore((s) => s.isDarkMode)
   const hostRef = useRef<HTMLDivElement>(null)
@@ -74,49 +55,22 @@ export default function Last48Photoreal(props: Last48PhotorealProps) {
   // ── Viewer + tileset lifecycle ─────────────────────────────────────────
   useEffect(() => {
     if (!hostRef.current) return
-    const v = new Cesium.Viewer(hostRef.current, {
-      animation: false, timeline: false, geocoder: false, homeButton: false, sceneModePicker: false,
-      baseLayerPicker: false, navigationHelpButton: false, infoBox: false, selectionIndicator: false,
-      baseLayer: false, requestRenderMode: false,
-    })
-    v.scene.globe.show = false
-    if (v.scene.skyAtmosphere) v.scene.skyAtmosphere.show = true
-    v.scene.fog.enabled = true
-    v.scene.fog.density = 0.00025
-    v.scene.postProcessStages.fxaa.enabled = true
-    v.clock.shouldAnimate = false
-    v.camera.setView({
-      destination: Cesium.Cartesian3.fromDegrees(-122.42, 37.70, 7000),
-      orientation: { heading: 0, pitch: Cesium.Math.toRadians(-40), roll: 0 },
-    })
+    const v = createViewer(hostRef.current, { requestRenderMode: false, msaaSamples: 4 })
+    // This renderer's defaults, every mount — the live object is module-level
+    // and the immersive route loads ITS defaults into the same object.
+    resetQuality(QUALITY_DEFAULT)
     applyQuality(v, null, quality)
     setViewer(v)
     const m = new PhotorealMarkers(v)
     setMarkers(m)
 
     let cancelled = false
-    ;(async () => {
-      try {
-        const ts = await Cesium.createGooglePhotorealistic3DTileset(
-          { key: GOOGLE_TILES_KEY },
-          { maximumScreenSpaceError: 40, preloadFlightDestinations: true, skipLevelOfDetail: true },
-        )
-        if (cancelled) { ts.destroy(); return }
-        // Quota/auth refusals surface here per tile; one is enough to rest.
-        // tileFailed's payload is { url, message }; a quota/auth refusal
-        // carries the HTTP status in the message text.
-        ts.tileFailed.addEventListener((e: { url?: string; message?: string }) => {
-          if (/\b(403|429)\b/.test(e?.message ?? '')) rest()
-        })
-        ts.tileLoad.addEventListener(() => setTileLoads((n) => n + 1))
+    void loadGoogleTileset(v, () => cancelled, { onRest: rest, onTileLoad: () => setTileLoads((n) => n + 1) })
+      .then((ts) => {
+        if (!ts) return
         applyQuality(v, ts, quality)
-        v.scene.primitives.add(ts)
         setTileset(ts)
-      } catch (err) {
-        console.error('[photoreal] tileset failed', err)
-        rest()
-      }
-    })()
+      })
 
     function rest() {
       if (cancelled) return
@@ -148,17 +102,7 @@ export default function Last48Photoreal(props: Last48PhotorealProps) {
   // ── Theme grade + sun ─────────────────────────────────────────────────
   useEffect(() => {
     if (!tileset || !viewer) return
-    const grade = gradeForTheme(isDarkMode, props.todOverride)
-    const g = GRADES[grade]
-    tileset.customShader = new Cesium.CustomShader({
-      uniforms: {
-        u_tint: { type: Cesium.UniformType.VEC3, value: new Cesium.Cartesian3(...g.tint) },
-        u_mul: { type: Cesium.UniformType.FLOAT, value: g.mul },
-        u_win: { type: Cesium.UniformType.FLOAT, value: g.win },
-      },
-      fragmentShaderText: GRADE_FRAGMENT_GLSL,
-    })
-    viewer.clock.currentTime = Cesium.JulianDate.fromIso8601(GRADE_CLOCK_ISO[grade])
+    applyGrade(viewer, tileset, isDarkMode, props.todOverride)
   }, [tileset, viewer, isDarkMode, props.todOverride])
 
   // ── Events visible to markers + tour ──────────────────────────────────

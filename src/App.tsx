@@ -9,7 +9,7 @@ import { useRouteView } from '@/cities/useActiveCity'
 import { CITY_SELECTION_FIELDS, type CitySelectionField } from '@/stores/citySelections'
 import { sfCity } from '@/cities/sf'
 import { oaklandCity } from '@/cities/oakland'
-import { viewPath } from '@/cities/routing'
+import { viewPath, IMMERSIVE_PATH } from '@/cities/routing'
 import { liveManifest } from '@/cities/manifest'
 import type { ViewId } from '@/cities/manifest'
 // Eager: ONLY the landing page. Every dataset view is route-split — including
@@ -42,6 +42,17 @@ const Alerts = lazy(() => import('@/views/Alerts/AlertsView'))
 const About = lazy(() => import('@/views/About/About'))
 const Pulse = lazy(() => import('@/views/Pulse/Pulse'))
 const Housing = lazy(() => import('@/views/Housing/Housing'))
+// Lazy, not the plain import the task brief showed: ImmersiveGate's own
+// module carries a nested `lazy(() => import('./photoreal/immersive/…'))`
+// (Task 10's gate step), and Rollup inlines that call's chunk-preload
+// literal — which names the cesium chunk — into whatever chunk holds the
+// call. A plain top-level import puts ImmersiveGate in App's entry chunk,
+// so the literal lands there too and check-entry-bundle.mjs fails ("index
+// references cesium"). Last48.tsx's own nested photoreal lazy() already
+// relies on the same one-more-level trick — its chunk carries the literal,
+// not entry — so this mirrors an established pattern rather than inventing
+// one. ImmersiveGate.tsx itself is unchanged and still imports no Cesium.
+const ImmersiveGate = lazy(() => import('@/views/Last48/ImmersiveGate'))
 
 /** Route components for every view family. Typed Record<ViewId, …> so a
  *  manifest view with no component (or a stray key) fails `tsc -b` —
@@ -186,6 +197,11 @@ export default function App() {
           )}
           {/* Detail routes stay hand-written — deeper pages of the business
               family, not view identities (parseRoute collapses them). */}
+          {/* The immersive Last 48 — a detail route of the `live` family
+              (Spec A2, plan ruling 1): parseRoute reports 'live', the shell
+              reads routeChrome for its chrome-off, the gate coerces mobile /
+              no key / resting back to /live. */}
+          <Route path={IMMERSIVE_PATH} element={<ImmersiveGate />} />
           <Route path="/business/chain/:ban" element={<ChainProfile />} />
           <Route path="/business/owner/:name" element={<OwnerProfile />} />
           <Route path="/business/:uniqueid" element={<BusinessProfile />} />

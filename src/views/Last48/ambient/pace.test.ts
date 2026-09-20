@@ -6,9 +6,9 @@ describe('parsePaceId', () => {
     expect(parsePaceId('1')).toBe(DEFAULT_PACE_ID)
   })
 
-  it('accepts each preset id', () => {
-    for (const id of Object.keys(PACE_PRESETS)) {
-      expect(parsePaceId(id)).toBe(id)
+  it('accepts each OFFERED preset id (hidden presets are not URL-armable)', () => {
+    for (const p of Object.values(PACE_PRESETS)) {
+      expect(parsePaceId(p.id)).toBe(p.hidden ? null : p.id)
     }
   })
 
@@ -29,5 +29,20 @@ describe('cinema pace (photoreal only)', () => {
   })
   it('the flat-map presets are not flagged', () => {
     for (const id of ['stroll', 'drift', 'sweep'] as const) expect(PACE_PRESETS[id].photorealOnly).toBeUndefined()
+  })
+})
+
+describe('dream pace (immersive only)', () => {
+  it('has the Spec A2 §3 values, is photorealOnly and hidden from the AUTO pill', () => {
+    expect(PACE_PRESETS.dream).toMatchObject({
+      id: 'dream', label: 'Dream', hint: 'immersive',
+      orbitDegPerS: 0.28, dwellMs: 75000, breathMs: 0, tweenMs: 18000, pitchMin: 30,
+      photorealOnly: true, hidden: true,
+    })
+    expect(parsePaceId('dream')).toBeNull()
+  })
+  it('drifts about twenty-one degrees across one dwell', () => {
+    const d = PACE_PRESETS.dream
+    expect(d.orbitDegPerS * (d.dwellMs / 1000)).toBeCloseTo(21, 5)
   })
 })

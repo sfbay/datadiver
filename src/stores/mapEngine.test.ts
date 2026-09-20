@@ -35,8 +35,8 @@ describe('effectiveMapEngine', () => {
   })
 })
 
-describe('dark launch (Spec A2 §7)', () => {
-  it('the picker hides Photoreal until the immersive route ships', () => {
-    expect(PHOTOREAL_OFFERED).toBe(false)
+describe('photoreal offered (Spec A2 §7)', () => {
+  it('the picker offers Photoreal now that the immersive route ships', () => {
+    expect(PHOTOREAL_OFFERED).toBe(true)
   })
 })

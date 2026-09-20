@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { geodeticToEcef, orbitPose, ORBIT_RANGE_M, ORBIT_PITCH_DEG } from './cameraPose'
+import { geodeticToEcef, orbitPose, ORBIT_RANGE_M, ORBIT_PITCH_DEG, RANGE_M } from './cameraPose'
 
 const A = 6378137 // WGS84 semi-major axis
 const close = (a: number[], b: number[], eps = 1e-3) => a.forEach((v, i) => expect(Math.abs(v - b[i])).toBeLessThan(eps))
@@ -40,7 +40,9 @@ describe('orbitPose at (0°,0°)', () => {
     const t = geodeticToEcef(-122.41, 37.78, 30)
     expect(Math.abs(norm([p.position[0] - t[0], p.position[1] - t[1], p.position[2] - t[2]]) - ORBIT_RANGE_M)).toBeLessThan(1e-6)
   })
-  it('defaults are the spike values', () => {
-    expect(ORBIT_RANGE_M).toBe(620); expect(ORBIT_PITCH_DEG).toBe(-30)
+  it('ranges: 620 m orbit (the spike), 200 m immersive (Spec A2 §3); pitch −30', () => {
+    expect(RANGE_M).toEqual({ orbit: 620, immersive: 200 })
+    expect(ORBIT_RANGE_M).toBe(RANGE_M.orbit)
+    expect(ORBIT_PITCH_DEG).toBe(-30)
   })
 })

@@ -7,18 +7,26 @@
 // empty affordance reads as broken, the UnderlayPicker rule). Standard stays
 // hidden until Spec B flips STANDARD_SHIPPED.
 import { useEffect, useRef, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/stores/appStore'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useRouteView } from '@/cities/useActiveCity'
 import { effectiveMapEngine, PHOTOREAL_OFFERED, STANDARD_SHIPPED, type MapEngine } from '@/stores/mapEngine'
+import { IMMERSIVE_PATH } from '@/cities/routing'
 
 const HAS_GOOGLE_KEY = !!import.meta.env.VITE_GOOGLE_TILES_KEY
 
 const ROWS: Array<{ id: MapEngine; label: string; hint: string }> = [
   { id: 'classic', label: 'Classic', hint: 'today’s map' },
   { id: 'standard', label: 'Standard 3D', hint: 'buildings · light' },
-  { id: 'photoreal', label: 'Photoreal', hint: 'Google 3D photos · slow and cinematic · desktop' },
+  { id: 'photoreal', label: 'Photoreal', hint: 'immersive · desktop' },
 ]
+
+/** Carry only ?event= across — the immersive URL contract has no other /live params. */
+function keepEvent(search: string): string {
+  const ev = new URLSearchParams(search).get('event')
+  return ev ? `?event=${encodeURIComponent(ev)}` : ''
+}
 
 export default function MapPicker({ scope }: { scope: 'rail' | 'live' }) {
   const mapEngine = useAppStore((s) => s.mapEngine)
@@ -28,6 +36,8 @@ export default function MapPicker({ scope }: { scope: 'rail' | 'live' }) {
   const photorealResting = useAppStore((s) => s.photorealResting)
   const isMobile = useIsMobile()
   const { viewId } = useRouteView()
+  const navigate = useNavigate()
+  const { search } = useLocation()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -62,7 +72,14 @@ export default function MapPicker({ scope }: { scope: 'rail' | 'live' }) {
       {open && (
         <div role="menu" className="absolute right-0 top-full mt-1.5 z-50 min-w-[15rem] rounded-lg bg-paper-50/95 dark:bg-espresso-900/95 backdrop-blur-lg border border-paper-200/50 dark:border-espresso-800 shadow-xl shadow-black/20 p-2">
           {rows.map((r) => (
-            <button key={r.id} role="menuitem" onClick={() => { setMapEngine(r.id); setOpen(false) }}
+            <button key={r.id} role="menuitem" onClick={() => {
+              setOpen(false)
+              // Spec A2 §2: Photoreal IS the immersive route. The stored preference stays
+              // what it was — the in-page Spec A renderer remains a ?engine=photoreal
+              // dev/QA path, never something the picker sets.
+              if (r.id === 'photoreal') { navigate(`${IMMERSIVE_PATH}${keepEvent(search)}`); return }
+              setMapEngine(r.id)
+            }}
               className={`flex flex-col w-full text-left px-2 py-1.5 rounded-md text-[12px] transition-colors ${r.id === effective ? 'bg-ochre-500/15 text-ink dark:text-paper-100' : 'text-paper-800 dark:text-paper-300 hover:bg-paper-100/60 dark:hover:bg-espresso-800/60'}`}>
               <span className="leading-tight">{r.label}</span>
               <span className="text-nano font-mono uppercase tracking-widest text-paper-500/70 dark:text-paper-600">{r.hint}</span>

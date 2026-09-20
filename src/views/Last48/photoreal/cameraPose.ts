@@ -11,7 +11,12 @@
 // WGS84 ECEF (what Cesium.Cartesian3 holds).
 export type Vec3 = [number, number, number]
 
-export const ORBIT_RANGE_M = 620
+/** Camera distance from the stop, metres, per mode. 620 was the 2026-09-09
+ *  spike's orbit range; the immersive route sat at 900 (Spec A2 §5, mesh
+ *  detail) until Jesse's 2026-09-20 walk asked for a significantly closer
+ *  hero sweep — 200 now (his pick after trying ?range=); `?range=` on the page overrides for tuning. */
+export const RANGE_M = { orbit: 620, immersive: 200 } as const
+export const ORBIT_RANGE_M: number = RANGE_M.orbit
 export const ORBIT_PITCH_DEG = -30
 
 const A = 6378137

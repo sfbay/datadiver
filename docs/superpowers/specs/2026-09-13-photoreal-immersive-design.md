@@ -190,3 +190,30 @@ display in-app with attribution only; no export or redistribution).
 Mobile immersive; PNG/video export of any kind; Oakland; night in the
 picker; a second Viewer preload unless the flight-preload trick fails; Spec B
 (Mapbox Standard).
+
+## 10. As built (plan `docs/superpowers/plans/2026-09-13-photoreal-immersive.md`)
+
+- **Route identity (plan ruling 1).** `/live/immersive` is a hand-written
+  detail route of the `live` family, not a manifest entry: `parseRoute`
+  collapses deeper segments to their family, so `useUrlSync` keeps it
+  dateless and the manifest's `sources`/`citable` cover it unchanged.
+  Chrome-off is `routeChrome(pathname)` in `src/cities/routing.ts`
+  (`useRouteChrome()` in the shell); `useUrlSync` stands down on it.
+- **Band register (ruling 2).** The band follows the theme; only the tiles
+  are always dusk.
+- **Keys.** `Space` also toggles play (ruling 3). `H` hold = 10 s
+  (`HOLD_MS`); release resumes the drift from the heading reached.
+- **Pace.** `dream` carries `hidden: true` — never offered by the AUTO pill
+  and `?ambient=dream` parses to null; the page reads `PACE_PRESETS.dream`
+  directly.
+- **Preload.** `useDreamDirector` overwrites `scene.preloadFlightCamera` and
+  `scene.preloadFlightCullingVolume` (undocumented; one cast) right after the
+  drift `flyTo` starts. If a Cesium upgrade drops the fields the cast reads
+  `undefined` and the preload silently does nothing — check the tile gauge
+  after any Cesium bump.
+- **Quality.** `QUALITY_IMMERSIVE` is loaded into the live object at the
+  immersive scene's mount and `QUALITY_DEFAULT` at Spec A's, via
+  `resetQuality`; MSAA is set explicitly to 4 (`IMMERSIVE_MSAA`).
+- **Ticks.** The 16:9 ticks render only while the overlay is hidden.
+- **User input.** Pointer/wheel on the canvas cancels the running flight or
+  drift and pauses play; the next `←`/`→` re-flies.
