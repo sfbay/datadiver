@@ -13,7 +13,12 @@
 // no noise, no pigment. A dark plate, a double rule at its bottom edge (the
 // house newspaper divider, the same two lines the band under the map wears)
 // and mono figures that change under you.
+//
+// Round B: when the reader clicks open ground the left cell becomes the
+// HERE reading (neighborhood, corner, the last 48 hours within 300 m, one
+// ACS line) — still a reading, not a control; the ✕ is its only button.
 import type { Grade } from '../grade'
+import type { HereReading } from './useHereCard'
 
 interface Props {
   /** The camera TARGET: the active stop, or the camera's own ground point
@@ -27,6 +32,10 @@ interface Props {
   tilesLoaded: boolean
   /** The grade the tiles are wearing. */
   grade: Grade
+  /** Round B §3: the here reading, when a ground click opened one. Replaces
+   *  the San Francisco · Latitude · Longitude cell while open. */
+  here: HereReading | null
+  onCloseHere: () => void
 }
 
 /** A measured cell: the spelled-out name, then the figure. */
@@ -71,12 +80,12 @@ function formatTilt(deg: number): string {
 }
 
 export default function TelemetryStrip({
-  lat, lng, headingDeg, tiltDeg, altitudeM, tilesLoaded, grade,
+  lat, lng, headingDeg, tiltDeg, altitudeM, tilesLoaded, grade, here, onCloseHere,
 }: Props) {
 
   return (
     <div
-      className="pointer-events-none absolute inset-x-0 top-0 z-20 h-9 flex items-center gap-6 px-4 overflow-hidden
+      className="pointer-events-none absolute inset-x-0 top-0 z-20 min-h-9 py-1 flex flex-wrap items-center gap-x-6 gap-y-1 px-4
         font-mono text-[13px] tabular-nums text-paper-300
         bg-espresso-950/85 backdrop-blur-md border-b border-paper-300/15"
     >
@@ -84,19 +93,36 @@ export default function TelemetryStrip({
           it — the same divider the band below the map wears, inverted. */}
       <div className="absolute inset-x-0 -bottom-[3px] h-px bg-paper-300/15" aria-hidden />
 
-      <div className={GROUP}>
-        <span className="hidden xl:inline">San Francisco</span>
-        <span className="hidden xl:inline"><Dot /></span>
-        {lat != null && lng != null ? (
-          <>
-            <Cell label="Latitude" value={formatLat(lat)} pill />
-            <Dot />
-            <Cell label="Longitude" value={formatLng(lng)} pill />
-          </>
-        ) : (
-          <span className="text-paper-400">Finding the ground…</span>
-        )}
-      </div>
+      {here ? (
+        // The here reading: neighborhood as the leading pill (it is the
+        // answer to "where is this"), then the corner, the counts, the ACS
+        // line — each omitted when unknown, never printed as a dash.
+        <div className={`${GROUP} pointer-events-auto flex-wrap gap-y-1`} role="status" aria-live="polite">
+          {here.neighborhood && <span className={PILL} style={PILL_STYLE}>{here.neighborhood}</span>}
+          {here.corner && (<><Dot /><span>{here.corner}</span></>)}
+          <Dot />
+          <span>{here.nearby}</span>
+          {here.acs && (<><Dot /><span>{here.acs}</span></>)}
+          <button
+            type="button" onClick={onCloseHere} aria-label="Close" title="Close (Escape)"
+            className="ml-1 h-5 w-5 rounded-full text-paper-400 hover:text-paper-100 hover:bg-paper-300/15 leading-none"
+          >×</button>
+        </div>
+      ) : (
+        <div className={GROUP}>
+          <span className="hidden xl:inline">San Francisco</span>
+          <span className="hidden xl:inline"><Dot /></span>
+          {lat != null && lng != null ? (
+            <>
+              <Cell label="Latitude" value={formatLat(lat)} pill />
+              <Dot />
+              <Cell label="Longitude" value={formatLng(lng)} pill />
+            </>
+          ) : (
+            <span className="text-paper-400">Finding the ground…</span>
+          )}
+        </div>
+      )}
 
       <div className={GROUP}>
         <Cell label="Heading" value={headingDeg != null ? formatHeading(headingDeg) : '—'} />

@@ -23,6 +23,7 @@ import { useDreamDirector } from './useDreamDirector'
 import { useCameraFloor } from './useCameraFloor'
 import type { PhotorealTarget } from '../useCesiumDirector'
 import { sameDetour, type DetourTarget } from './detour'
+import type { HerePoint } from './useHereCard'
 
 /** Spec A2 §3: MSAA on. 4 is Cesium's default; stated, not assumed. */
 export const IMMERSIVE_MSAA = 4
@@ -81,6 +82,8 @@ interface Props {
   /** Google quota/auth refusal — the page leaves to /live (the resting note). */
   onRest: () => void
   hostRef: RefObject<HTMLDivElement | null>
+  /** Round B §3: the here card's point — a small paper ring marks it. */
+  probe: HerePoint | null
 }
 
 const toTarget = (e: NormalizedEvent | null): PhotorealTarget =>
@@ -272,11 +275,15 @@ export default function ImmersiveScene(props: Props) {
       {/* The beacon rides the host div (a sibling of the tune panel), not the
           Cesium scene — it is screen space by design. The ground disc stays:
           the two split the job, anchoring below and visibility above. */}
-      {viewer && props.active && props.beaconOn && (
+      {viewer && props.active && props.active.longitude != null && props.active.latitude != null && props.beaconOn && (
         <Beacon
-          viewer={viewer} tileset={tileset} event={props.active}
+          viewer={viewer} tileset={tileset}
+          lng={props.active.longitude} lat={props.active.latitude}
           color={DATASET_META[props.active.datasetId].color}
         />
+      )}
+      {viewer && props.probe && (
+        <Beacon viewer={viewer} tileset={tileset} lng={props.probe.lng} lat={props.probe.lat} color="#f5ecd9" variant="probe" />
       )}
       {props.tuneOn && viewer && (
         <PhotorealTunePanel viewer={viewer} tileset={tileset} tileLoads={tileLoads} onApply={applyQuality} side="left" />

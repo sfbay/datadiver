@@ -34,6 +34,7 @@ import FrameTicks from './FrameTicks'
 import TelemetryStrip from './TelemetryStrip'
 import ImmersiveScene, { type Telemetry } from './ImmersiveScene'
 import Presets from './Presets'
+import { useHereCard, type HerePoint } from './useHereCard'
 
 /** How close a ground click has to land to count as "that stop". */
 const NEAREST_M = 150
@@ -210,13 +211,16 @@ export default function Last48Immersive() {
   // camera returns to the active stop and play stays paused.
   const clearDetour = useCallback(() => setParams({ place: null, hot: null }), [setParams])
 
-  const jump = useCallback((id: string) => { setParams({ event: id, place: null, hot: null }) }, [setParams])
-  // A click on the ground snaps to the nearest stop IN THE PASS — the reader
-  // steers the tour by pointing at the city instead of stepping through it.
-  // Round A's minimal click: no new card, no new stop, and a click further
-  // than NEAREST_M from anything on the pass does nothing at all rather than
-  // teleporting to a stop across town (Round B adds the "here" card).
-  const clickNearest = useCallback((lng: number, lat: number) => {
+  // ── The "here" card (Round B §3) ──────────────────────────────────────
+  const [herePoint, setHerePoint] = useState<HerePoint | null>(null)
+  const here = useHereCard(herePoint, events)
+  const closeHere = useCallback(() => setHerePoint(null), [])
+
+  const jump = useCallback((id: string) => { setHerePoint(null); setParams({ event: id, place: null, hot: null }) }, [setParams])
+  // A click on the ground: within NEAREST_M of a stop in the pass it snaps
+  // there (Round A); further away it opens the "here" reading for that point
+  // (Round B §3). A jump closes any open reading.
+  const clickGround = useCallback((lng: number, lat: number) => {
     let bestId: string | null = null
     let bestD = Number.POSITIVE_INFINITY
     for (const id of order) {
@@ -228,9 +232,8 @@ export default function Last48Immersive() {
       const d = dx * dx + dy * dy
       if (d < bestD) { bestD = d; bestId = id }
     }
-    if (!bestId) return
-    if (Math.sqrt(bestD) * DEG_LAT_M > NEAREST_M) return
-    jump(bestId)
+    if (bestId && Math.sqrt(bestD) * DEG_LAT_M <= NEAREST_M) { setHerePoint(null); jump(bestId); return }
+    setHerePoint({ lng, lat })
   }, [order, byId, jump])
   const step = useCallback((delta: 1 | -1) => {
     const i = stepIndex(order, index, delta)
@@ -331,12 +334,12 @@ export default function Last48Immersive() {
         case ' ': e.preventDefault(); setParam('play', playing ? null : '1'); break
         case 'o': case 'O': setOverlayOn((v) => !v); break
         case 'h': case 'H': startHold(); break
-        case 'Escape': if (!overlayOn) setOverlayOn(true); else leave(); break
+        case 'Escape': if (herePoint) closeHere(); else if (!overlayOn) setOverlayOn(true); else leave(); break
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [step, playing, overlayOn, setParam, startHold, leave])
+  }, [step, playing, overlayOn, setParam, startHold, leave, herePoint, closeHere])
 
   // The chrome is an L: controls down the RIGHT, content along the BOTTOM
   // (Jesse, 2026-09-13). Both arms mount and unmount together with the
@@ -362,9 +365,10 @@ export default function Last48Immersive() {
             onTelemetry={handleTelemetry}
             onArrived={handleArrived}
             onPick={jump}
-            onMapClick={clickNearest}
+            onMapClick={clickGround}
             onUserInput={() => { if (playing) setParam('play', null) }}
             onRest={rest}
+            probe={herePoint}
           />
           {(ticksOn || !overlayOn) && <FrameTicks hostRef={hostRef} />}
           {overlayOn && (
@@ -376,6 +380,8 @@ export default function Last48Immersive() {
               altitudeM={telemetry?.altitudeM ?? null}
               tilesLoaded={telemetry?.tilesLoaded ?? false}
               grade={tod}
+              here={here}
+              onCloseHere={closeHere}
             />
           )}
           {!overlayOn && (
