@@ -303,7 +303,7 @@ export default function Last48Immersive() {
               altitudeM={telemetry?.altitudeM ?? null}
               tilesLoaded={telemetry?.tilesLoaded ?? false}
               grade={tod}
-              stream={active ? DATASET_META[active.datasetId].label : null}
+              streamId={active?.datasetId ?? null}
               stopIndex={index + 1}
               stopCount={order.length}
             />

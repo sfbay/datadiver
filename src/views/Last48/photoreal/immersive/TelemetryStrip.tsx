@@ -18,10 +18,24 @@
 // re-rendering the whole immersive page for a minute hand would be silly.
 import { useEffect, useState } from 'react'
 import { formatApTime } from '@/utils/format'
+import type { DatasetId } from '@/types/last48'
+import { DATASET_META } from '../../detail/eventCardModel'
 import type { Grade } from '../grade'
 
 /** The clock reads to the minute, so half a minute is a tight enough leash. */
 const CLOCK_MS = 30_000
+
+/** The strip's own case for the stream names. `DATASET_META.label` is set
+ *  for the map's mono chips, where everything is shouted in caps; this band
+ *  is a sentence of readings, and `911 DISPATCH` shouts across it. Spelled
+ *  the way the band reads them — and `Fire/EMS` keeps its caps because the
+ *  lowercase of an initialism is not a word. Falls back to the authored
+ *  label so a new stream can never render blank. */
+const STREAM_LABEL: Record<DatasetId, string> = {
+  '911-realtime': '911 dispatch',
+  'fire-ems-dispatch': 'Fire/EMS',
+  '311-cases': '311 case',
+}
 
 interface Props {
   /** The camera TARGET: the active stop, or the camera's own ground point
@@ -35,8 +49,8 @@ interface Props {
   tilesLoaded: boolean
   /** The grade the tiles are wearing. */
   grade: Grade
-  /** The active stop's stream label, and where it sits in the pass. */
-  stream: string | null
+  /** The active stop's stream, and where it sits in the pass. */
+  streamId: DatasetId | null
   stopIndex: number
   stopCount: number
 }
@@ -45,13 +59,13 @@ interface Props {
 function Cell({ label, value }: { label: string; value: string }) {
   return (
     <span className="whitespace-nowrap">
-      <span className="text-paper-500">{label}</span> {value}
+      <span className="text-paper-400">{label}</span> {value}
     </span>
   )
 }
 
 /** The separator between cells INSIDE a group. Groups themselves are spaced. */
-const Dot = () => <span className="text-paper-500" aria-hidden>·</span>
+const Dot = () => <span className="text-paper-400" aria-hidden>·</span>
 
 const GROUP = 'flex items-center gap-2 shrink-0'
 
@@ -77,7 +91,7 @@ function formatTilt(deg: number): string {
 }
 
 export default function TelemetryStrip({
-  lat, lng, headingDeg, tiltDeg, altitudeM, tilesLoaded, grade, stream, stopIndex, stopCount,
+  lat, lng, headingDeg, tiltDeg, altitudeM, tilesLoaded, grade, streamId, stopIndex, stopCount,
 }: Props) {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
@@ -86,12 +100,13 @@ export default function TelemetryStrip({
   }, [])
 
   const known = stopIndex >= 1 && stopCount >= 1
+  const stream = streamId ? STREAM_LABEL[streamId] ?? DATASET_META[streamId].label : null
 
   return (
     <div
       className="pointer-events-none absolute inset-x-0 top-0 z-20 h-8 flex items-center gap-6 px-4 overflow-hidden
         font-mono text-label tabular-nums text-paper-300
-        bg-espresso-950/70 backdrop-blur-md border-b border-paper-300/15"
+        bg-espresso-950/85 backdrop-blur-md border-b border-paper-300/15"
     >
       {/* Double rule: the plate's own bottom border plus this one, 3 px under
           it — the same divider the band below the map wears, inverted. */}
@@ -107,7 +122,7 @@ export default function TelemetryStrip({
             <Cell label="Longitude" value={formatLng(lng)} />
           </>
         ) : (
-          <span className="text-paper-500">Finding the ground…</span>
+          <span className="text-paper-400">Finding the ground…</span>
         )}
       </div>
 
@@ -122,7 +137,7 @@ export default function TelemetryStrip({
       <div className={`${GROUP} hidden xl:flex`}>
         <span>{formatApTime(now)} PT</span>
         <Dot />
-        <span className="text-paper-500">{grade[0].toUpperCase()}{grade.slice(1)}</span>
+        <span className="text-paper-400">{grade[0].toUpperCase()}{grade.slice(1)}</span>
       </div>
 
       <div className={`${GROUP} ml-auto gap-6`}>
@@ -130,7 +145,7 @@ export default function TelemetryStrip({
           {stream && <><span>{stream}</span><Dot /></>}
           <span>Stop {known ? stopIndex : '—'} of {known ? stopCount : '—'}</span>
         </span>
-        <span className="text-paper-500">{tilesLoaded ? 'Tiles settled' : 'Loading tiles…'}</span>
+        <span className="text-paper-400">{tilesLoaded ? 'Tiles settled' : 'Loading tiles…'}</span>
       </div>
     </div>
   )
