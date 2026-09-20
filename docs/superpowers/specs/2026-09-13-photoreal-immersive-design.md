@@ -217,3 +217,23 @@ picker; a second Viewer preload unless the flight-preload trick fails; Spec B
 - **Ticks.** The 16:9 ticks render only while the overlay is hidden.
 - **User input.** Pointer/wheel on the canvas cancels the running flight or
   drift and pauses play; the next `←`/`→` re-flies.
+
+## 11. Post-merge polish (walked 2026-09-20, all in PR #175)
+
+- Hero sweep range 200 m (`RANGE_M.immersive`; `?range=` dev knob 150–3000).
+- The hero's on-screen job moved to a screen-pinned HTML `Beacon` (espresso
+  keyline · pigment ring · paper keyline · paper core · slow swirl); the Cesium
+  ground disc + halo stay as the world anchor. Queue discs unchanged.
+- Cards: all four carry full info, top-aligned, the row scrolls when it clips;
+  the active face is latte `#dcc9a6` with ink text in both themes (§1's
+  "espresso glass" band register stays for the band itself); glow = stream pigment.
+- Chrome is an L: right rail (masthead "The Last 48 / Immersive", side-saddle
+  serif-italic buttons Play · Hold · Hide, View group Day/Dusk/Night · Beacon ·
+  Frame ticks, stop ledger + dwell rule, DataDiver return block) and the bottom
+  band with a status line "911 dispatch · Stop 7 of 24". No eyebrows, no "Live".
+- Telemetry strip across the top of the map: Latitude/Longitude (latte pills),
+  Heading, Tilt, Altitude, Light, tile status. No clock.
+- Map click jumps to the nearest stop within 150 m. Collision detection is off;
+  `useCameraFloor` lifts the camera to 25 m over the tiles and caps pitch at −8°.
+- Round B (presets, the here card, time to next stop) is its own spec:
+  `2026-09-20-immersive-round-b-design.md`.
