@@ -31,11 +31,10 @@ export function detourFromHotspot(h: Hotspot): DetourTarget {
   return { key: `hot:${h.neighborhood}`, lng: h.lng, lat: h.lat, headingDeg: HOTSPOT_HEADING_DEG, pitchDeg: HOTSPOT_PITCH_DEG, rangeM: HOTSPOT_RANGE_M }
 }
 
-/** Four decimals ≈ 11 m: a hotspot centroid moves a few metres per poll and
+/** Within 1e-4° (≈11 m): a hotspot centroid moves a few metres per poll and
  *  the director must not re-fly an 18 s leg for that. */
-const r4 = (v: number) => Math.round(v * 1e4) / 1e4
 export function sameDetour(a: DetourTarget | null, b: DetourTarget | null): boolean {
   if (a == null || b == null) return a === b
-  return a.key === b.key && r4(a.lng) === r4(b.lng) && r4(a.lat) === r4(b.lat)
+  return a.key === b.key && Math.abs(a.lng - b.lng) < 1e-4 && Math.abs(a.lat - b.lat) < 1e-4
     && a.headingDeg === b.headingDeg && a.pitchDeg === b.pitchDeg && a.rangeM === b.rangeM
 }

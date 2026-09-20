@@ -25,4 +25,9 @@ describe('detour builders (Round B §2)', () => {
     expect(sameDetour(a, null)).toBe(false)
     expect(sameDetour(null, null)).toBe(true)
   })
+  it('sameDetour compares a raw difference, not a rounded bucket — two points 1 m apart straddling a 1e-4 boundary still compare equal', () => {
+    const d1 = detourFromHotspot({ ...HOT, lng: -122.41004999 })
+    const d2 = detourFromHotspot({ ...HOT, lng: -122.41005001 })
+    expect(sameDetour(d1, d2)).toBe(true)
+  })
 })
