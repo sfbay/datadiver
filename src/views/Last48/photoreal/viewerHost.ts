@@ -40,6 +40,27 @@ export function createViewer(host: HTMLDivElement, o: ViewerOptions): Cesium.Vie
   v.scene.fog.enabled = true
   v.scene.fog.density = 0.00025
   v.scene.postProcessStages.fxaa.enabled = true
+  // ── The ctrl-drag tilt JUMP (Jesse, 2026-09-20: "my pitch adjusts, then
+  // jumps to a much more upright pitch") ───────────────────────────────────
+  // Read out of cesium 1.145's ScreenSpaceCameraController. `tilt3D` ends
+  // with `if (controller.enableCollisionDetection) adjustHeightForTerrain(…)`
+  // and then, if that MOVED the camera, converts the move into a ROTATION
+  // about the tilt centre (angleBetween the pre- and post-adjust positions,
+  // applied to direction/up/right). So a collision nudge does not just lift
+  // the camera — it re-pitches it, in one frame, mid-drag. That is the jump.
+  // What triggers the nudge here: adjustHeightForTerrain compares the
+  // camera's height against `scene.globeHeight`, and `Scene.getHeight` skips
+  // the globe branch when `globe.show` is false — so with the globe hidden
+  // the collision floor is sampled off the GOOGLE TILES, i.e. whatever
+  // rooftop happens to be under the camera. Tilting down over a tall
+  // building drops the camera under that roof, the floor fires, and the
+  // pitch snaps upright. Turning collision detection off removes the call
+  // from both `tilt3D` and the controller's per-frame `update`.
+  // minimumZoomDistance then no longer hard-clamps (handleZoom's clamp block
+  // is gated on the same flag), but it still damps the zoom rate as the
+  // camera nears the surface, which is the soft floor we want here.
+  v.scene.screenSpaceCameraController.enableCollisionDetection = false
+  v.scene.screenSpaceCameraController.minimumZoomDistance = 60
   v.clock.shouldAnimate = false
   v.camera.setView({
     destination: Cesium.Cartesian3.fromDegrees(CITY.lng, CITY.lat, CITY.height),

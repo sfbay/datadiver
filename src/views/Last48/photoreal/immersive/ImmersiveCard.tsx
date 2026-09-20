@@ -2,16 +2,17 @@
 //
 // The card face in the immersive lower third — Spec A2 §2. Same FIELD LOGIC
 // as PhotorealBubble and Last48EventCard (detail/eventCardModel.ts) so the
-// three never drift; this skin sits in the band (no pin, no stem) and
-// follows the theme.
+// three never drift; this skin sits in the band (no pin, no stem). A PEEK
+// follows the theme; the ACTIVE face does not — see below.
 //
-// role='active' is a FULL INVERT (design critique, 2026-09-13 — "the active
-// card has no primacy"): the face flips register against the band, so the
-// band reads espresso-on-cream in light mode and cream-on-espresso in dark.
-// Because the face inverts, EVERY text colour inside it is re-specified —
-// inheriting the band's register would put paper-500 labels on an espresso
-// face. role='peek' keeps the band's own register, dimmed and slightly
-// shrunk, as a click target that jumps the carousel.
+// role='active' is a LATTE face — "coffee with cream". It replaced a literal
+// theme invert (2026-09-13 → 2026-09-20): the invert gave the active card its
+// primacy but flipped with the theme, so the one card the page is ABOUT had
+// no fixed identity. The latte is theme-independent, which means it reads the
+// same way in both schemes and every text colour inside it is authored
+// against that one ground, not inherited from the band. role='peek' keeps the
+// band's own register, dimmed and slightly shrunk, as a click target that
+// jumps the carousel.
 import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import type { NormalizedEvent } from '@/types/last48'
@@ -29,14 +30,24 @@ interface Props {
   glow?: boolean
 }
 
-/** The cool pigments (911 indigo, and plum wherever it turns up) disappear
- *  into the inverted face's espresso ground. Swap them for terracotta so the
- *  corner glow still reads as light leaking in; the DOT and the stream label
- *  keep the stream's true pigment, which is where identity actually lives. */
-export function visibleGlow(color: string): string {
-  const c = color.toLowerCase()
-  return c === '#616a96' || c === '#8b6282' ? '#b85a33' : color
-}
+// ── The latte ─────────────────────────────────────────────────────────────
+// coffee with cream — Jesse 2026-09-20; deliberately theme-independent.
+// Three tones on one ground, authored together. Measured against LATTE_BG:
+// text-ink (#4b3827) 6.84:1, LATTE_INK_2 4.27:1, LATTE_LABEL 3.32:1.
+/** The active face's ground. */
+const LATTE_BG = '#dcc9a6'
+/** Secondary: the age unit, the date line, the state chip, the stream label. */
+const LATTE_INK_2 = '#6b5640'
+/** Mono caps — the row labels. */
+const LATTE_LABEL = '#7d6748'
+
+// Whether the STREAM PIGMENT could carry the stream label as text on the
+// latte was checked per stream, by hand, against #dcc9a6: indigo #616a96 →
+// 3.23:1, terracotta #b85a33 → 2.85:1, moss #7a9954 → 1.99:1. None of the
+// three clears 4.5:1, so on the active face the label takes LATTE_INK_2 and
+// identity stays with the pigment DOT beside it — and with the corner glow,
+// which is decoration and carries no contrast duty. Peeks keep the pigment:
+// they sit on the band's own register, where it reads.
 
 export default function ImmersiveCard({ event, role, onClick, glow }: Props) {
   const meta = DATASET_META[event.datasetId]
@@ -52,31 +63,37 @@ export default function ImmersiveCard({ event, role, onClick, glow }: Props) {
   ]
   const peek = role === 'peek'
 
-  // Three tone tiers, each authored for BOTH faces: primary (the figure, the
-  // headline, the row values), secondary (the age unit), label (mono caps).
-  const primary = peek
-    ? 'text-ink dark:text-paper-100'
-    : 'text-paper-50 dark:text-ink'
-  const secondary = peek
-    ? 'text-paper-500 dark:text-paper-400'
-    : 'text-paper-200 dark:text-paper-700'
-  const labelTone = peek
-    ? 'text-paper-500 dark:text-paper-400'
-    : 'text-paper-400 dark:text-paper-600'
+  // Three tone tiers. A PEEK rides the band's register, so its tones are
+  // theme classes. The LATTE face never changes ground, so its tones are the
+  // three authored hexes, applied inline — `text-ink` is the one that happens
+  // to be a token as well (it is defined once in @theme, with no dark
+  // override, so it means #4b3827 in both schemes).
+  const primary = peek ? 'text-ink dark:text-paper-100' : 'text-ink'
+  const secondary = peek ? 'text-paper-500 dark:text-paper-400' : ''
+  const labelTone = peek ? 'text-paper-500 dark:text-paper-400' : ''
+  const secondaryStyle: CSSProperties | undefined = peek ? undefined : { color: LATTE_INK_2 }
+  const labelStyle: CSSProperties | undefined = peek ? undefined : { color: LATTE_LABEL }
 
-  const shell = 'text-left w-[min(340px,100%)] rounded-2xl px-4 pt-3 pb-3 origin-bottom transition-[opacity,transform] duration-500'
+  // `origin-top`, because the row is top-aligned (LowerThird's `items-start`,
+  // 2026-09-20): the active card's lift and the peeks' shrink both have to
+  // leave the TOP edge where it was, or the four tiles stop reading as a row.
+  const shell = 'text-left w-[min(340px,100%)] rounded-2xl px-4 pt-3 pb-3 origin-top transition-[opacity,transform] duration-500'
   const face = peek
     ? `${shell} ${primary} bg-paper-50/90 dark:bg-espresso-950/85 ring-1 ring-paper-300/40 dark:ring-paper-100/15
        shadow-2xl shadow-black/30 opacity-45 hover:opacity-90 scale-[0.94] cursor-pointer`
-    // The invert: espresso face on the cream band, cream face on the dark one.
-    : `${shell} ${primary} bg-espresso-950 dark:bg-paper-50 -translate-y-3 scale-[1.06] ${glow ? 'glow-host' : ''}`
+    // The latte — one ground in both schemes; see the constants above.
+    : `${shell} ${primary} -translate-y-3 scale-[1.06] ${glow ? 'glow-host' : ''}`
 
   // One box-shadow property carries BOTH the depth (offset + soft blur, the
   // craft floor's rule) and the solid 3px pigment tab down the left edge —
-  // the 30%-alpha ring it replaced was invisible at a glance.
+  // the 30%-alpha ring it replaced was invisible at a glance. The corner glow
+  // is now the stream pigment EXACTLY: the old terracotta substitution paid
+  // for the cool pigments disappearing into an espresso ground, and the latte
+  // has no such ground.
   const faceStyle = !peek
     ? ({
-        ['--glow' as string]: visibleGlow(meta.color),
+        background: LATTE_BG,
+        ['--glow' as string]: meta.color,
         boxShadow: `inset 3px 0 0 ${meta.color}, 0 30px 60px -15px rgb(0 0 0 / 0.55)`,
       } as CSSProperties)
     : undefined
@@ -89,21 +106,19 @@ export default function ImmersiveCard({ event, role, onClick, glow }: Props) {
       <div className={!peek && glow ? 'relative z-[1]' : undefined}>
       <div className="flex items-baseline gap-2">
         <span className={`font-display italic text-[40px] leading-none tabular-nums ${primary}`}>{magnitude}</span>
-        <span className={`font-display italic text-[15px] ${secondary}`}>{unit}</span>
+        <span className={`font-display italic text-[15px] ${secondary}`} style={secondaryStyle}>{unit}</span>
       </div>
-      <p className={`font-mono text-label mt-1 tabular-nums ${labelTone}`}>{formatApDate(event.receivedAt)} · {formatApTime(event.receivedAt)} PT</p>
+      <p className={`font-mono text-label mt-1 tabular-nums ${secondary}`} style={secondaryStyle}>{formatApDate(event.receivedAt)} · {formatApTime(event.receivedAt)} PT</p>
       <div className="mt-2 flex items-center gap-2">
         <span className="w-2 h-2 rounded-full" style={{ background: meta.color, boxShadow: `0 0 10px ${meta.color}` }} aria-hidden />
-        {/* The DOT carries the pigment; the LABEL does not. On the inverted
-            face the cool pigments fall under 4:1 against espresso-950 at nano
-            size, so the words take a neutral tone and identity stays with the
-            dot beside them. Peeks keep the pigment — they sit on the band's
-            own register, where it reads. */}
+        {/* The DOT carries the pigment; on the latte face the LABEL does not
+            — none of the three stream pigments clears 4.5:1 on #dcc9a6 (the
+            measurements are in the header comment). Peeks keep the pigment. */}
         <span
-          className={`font-mono text-nano tracking-[0.18em] uppercase ${peek ? '' : 'text-paper-300 dark:text-paper-600'}`}
-          style={peek ? { color: meta.color } : undefined}
+          className="font-mono text-nano tracking-[0.18em] uppercase"
+          style={peek ? { color: meta.color } : secondaryStyle}
         >{meta.label}</span>
-        {event.state && <span className={`font-mono text-nano tracking-wider uppercase ${labelTone}`}>{event.state === 'open' ? 'open' : `closed · ${event.disposition ?? '—'}`}</span>}
+        {event.state && <span className={`font-mono text-nano tracking-wider uppercase ${secondary}`} style={secondaryStyle}>{event.state === 'open' ? 'open' : `closed · ${event.disposition ?? '—'}`}</span>}
       </div>
       <h3 className={`font-display italic text-[22px] leading-tight mt-1 mb-2 ${primary}`}>{event.headline ? formatHeadline(event.headline) : 'Event'}</h3>
       {!peek && media?.kind === 'image' && (
@@ -113,14 +128,16 @@ export default function ImmersiveCard({ event, role, onClick, glow }: Props) {
         <ul className="flex flex-col gap-1">
           {rows.map(([label, value], i) => (
             <li key={label} className="bubble-row flex justify-between gap-4 text-[12px]" style={{ animationDelay: `${0.6 + i * 0.9}s` }}>
-              <span className={`font-mono text-nano uppercase tracking-[0.14em] pt-0.5 ${labelTone}`}>{label}</span>
+              <span className={`font-mono text-nano uppercase tracking-[0.14em] pt-0.5 ${labelTone}`} style={labelStyle}>{label}</span>
               <span className={`text-right leading-tight ${primary}`}>{value}</span>
             </li>
           ))}
         </ul>
       )}
+      {/* Terracotta, not ochre: ochre was picked to carry a link across an
+          inverting face, and on the latte it goes to butter. */}
       {explore && (
-        <Link to={explore.to} className="bubble-row mt-3 block font-mono text-label tracking-wider text-ochre-400 hover:text-ochre-300 dark:text-ochre-600 dark:hover:text-ochre-700" style={{ animationDelay: `${0.6 + rows.length * 0.9}s` }}>
+        <Link to={explore.to} className="bubble-row mt-3 block font-mono text-label tracking-wider text-terracotta-700 hover:text-terracotta-600" style={{ animationDelay: `${0.6 + rows.length * 0.9}s` }}>
           {explore.label} →
         </Link>
       )}

@@ -23,6 +23,14 @@ import RightRail, { HOLD_MS } from './RightRail'
 import FrameTicks from './FrameTicks'
 import ImmersiveScene from './ImmersiveScene'
 
+/** How close a ground click has to land to count as "that stop". */
+const NEAREST_M = 150
+/** Metres per degree of latitude, and the cosine that turns a degree of
+ *  longitude into the same unit at SF's latitude (cos 37.77° ≈ 0.79 — the
+ *  same factor chainTour's distance uses). */
+const DEG_LAT_M = 111_320
+const LNG_FACTOR = 0.79
+
 /** Value equality over the fields anything downstream reads (the director's
  *  target, the hero/disc discs, the card). A poll that changes none of these
  *  must not produce a new object. */
@@ -130,6 +138,27 @@ export default function Last48Immersive() {
   }, [order, index, byId])
 
   const jump = useCallback((id: string) => { setParam('event', id) }, [setParam])
+  // A click on the ground snaps to the nearest stop IN THE PASS — the reader
+  // steers the tour by pointing at the city instead of stepping through it.
+  // Round A's minimal click: no new card, no new stop, and a click further
+  // than NEAREST_M from anything on the pass does nothing at all rather than
+  // teleporting to a stop across town (Round B adds the "here" card).
+  const clickNearest = useCallback((lng: number, lat: number) => {
+    let bestId: string | null = null
+    let bestD = Number.POSITIVE_INFINITY
+    for (const id of order) {
+      const e = byId.get(id)
+      if (!e || e.longitude == null || e.latitude == null) continue
+      // Equirectangular, the same 0.79 longitude factor chainTour uses — at
+      // this latitude a degree of longitude is 0.79 of a degree of latitude.
+      const dx = (e.longitude - lng) * LNG_FACTOR, dy = e.latitude - lat
+      const d = dx * dx + dy * dy
+      if (d < bestD) { bestD = d; bestId = id }
+    }
+    if (!bestId) return
+    if (Math.sqrt(bestD) * DEG_LAT_M > NEAREST_M) return
+    jump(bestId)
+  }, [order, byId, jump])
   const step = useCallback((delta: 1 | -1) => {
     const i = stepIndex(order, index, delta)
     if (i >= 0) setParam('event', order[i])
@@ -237,6 +266,7 @@ export default function Last48Immersive() {
             tuneOn={tuneOn}
             onArrived={handleArrived}
             onPick={jump}
+            onMapClick={clickNearest}
             onUserInput={() => { if (playing) setParam('play', null) }}
             onRest={rest}
           />

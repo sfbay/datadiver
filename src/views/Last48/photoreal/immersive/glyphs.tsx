@@ -1,13 +1,17 @@
 // src/views/Last48/photoreal/immersive/glyphs.tsx
 //
-// The rail's icon set — five authored 24 px glyphs in ONE stroke weight
-// (1.75, round caps/joins, `currentColor`, never a fill). The rail used to
-// spend Unicode characters (▶ ❚❚ ▭ ✕) as icons; the design critique of
-// 2026-09-13 called the rail "a dead slab of word buttons", and a glyph
-// system drawn at one weight is what turns the four controls into tiles a
-// viewer reads at a glance. Drawn here rather than pulled from a library
-// because five shapes do not earn a dependency — but they DO have to look
-// like one family, which is what the shared <G> wrapper enforces.
+// The rail's icon set — four authored glyphs in ONE stroke weight (1.75,
+// round caps/joins, `currentColor`, never a fill), drawn on a 24 px viewBox
+// and rendered at whatever `size` the caller asks for (the rail asks for
+// 32). The rail used to spend Unicode characters (▶ ❚❚ ▭ ✕) as icons; the
+// design critique of 2026-09-13 called the rail "a dead slab of word
+// buttons", and a glyph system drawn at one weight is what turns the
+// controls into tiles a viewer reads at a glance. Drawn here rather than
+// pulled from a library because four shapes do not earn a dependency — but
+// they DO have to look like one family, which is what the shared <G>
+// wrapper enforces. (The fifth, LeaveGlyph, went with the plain "leave"
+// tile on 2026-09-20: the way out is now the DataDiver badge + wordmark,
+// which names where the door goes instead of drawing a door.)
 
 import type { ReactNode } from 'react'
 
@@ -63,17 +67,6 @@ export function OverlayGlyph(props: GlyphProps) {
     <G {...props}>
       <rect x="3.5" y="5.5" width="17" height="13" rx="1.5" />
       <path d="M3.5 14.5h17" />
-    </G>
-  )
-}
-
-/** An arrow leaving an open bracket — back out to the classic view. */
-export function LeaveGlyph(props: GlyphProps) {
-  return (
-    <G {...props}>
-      <path d="M13 5.5H6.5a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1H13" />
-      <path d="M11 12h7.5" />
-      <path d="M16 9.5 18.5 12 16 14.5" />
     </G>
   )
 }

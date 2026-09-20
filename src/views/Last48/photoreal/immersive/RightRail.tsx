@@ -8,10 +8,16 @@
 // and the rail gained the one reading it was missing: where you are in the
 // pass (STOP n / N) and how far through the dwell the camera is.
 //
+// Sized for a 16:9 screen across a room (Jesse, 2026-09-20): 13.5rem wide,
+// 5.5rem tiles, 32 px glyphs, 13 px captions. Reading order top→bottom is
+// PLAY · HOLD · HIDE, then air, then the stop ledger, then RETURN — the two
+// things you do constantly at the top under your hand, the reading in the
+// middle, and the one-way door at the far end where you will not hit it.
+//
 // Mounted/unmounted by the page alongside the band (the `O` overlay toggle);
 // this component never hides itself. HOLD_MS lives here because the hold
 // button does.
-import { PlayGlyph, PauseGlyph, HoldGlyph, OverlayGlyph, LeaveGlyph, HOLD_RING_R, HOLD_RING_LEN } from './glyphs'
+import { PlayGlyph, PauseGlyph, HoldGlyph, OverlayGlyph, HOLD_RING_R, HOLD_RING_LEN } from './glyphs'
 
 interface Props {
   playing: boolean
@@ -35,12 +41,17 @@ export const HOLD_MS = 10_000
 /** The house neutral for "no stream yet". */
 const FALLBACK = '#d4a435'
 
-const TILE = `h-[4.5rem] w-full rounded-lg flex flex-col items-center justify-center gap-1 relative overflow-hidden glow-host
+const TILE = `h-[5.5rem] w-full rounded-lg flex flex-col items-center justify-center gap-1 relative overflow-hidden glow-host
   ring-1 transition-colors bg-paper-50/70 dark:bg-espresso-800/70
   ring-paper-400/40 dark:ring-paper-300/20 hover:ring-paper-500/60
   text-paper-700 dark:text-paper-300`
 const TILE_ON = 'bg-ochre-500/18 text-ink dark:text-paper-100'
-const CAPTION = 'font-mono text-label uppercase tracking-wider'
+/** 13 px, not a micro token: this rail is read from across a room, and the
+ *  caption is the tile's NAME, not a footnote on it. */
+const CAPTION = 'font-mono text-[13px] uppercase tracking-[0.18em]'
+/** One size for every glyph in the rail — the family only holds together if
+ *  they are all drawn at the same scale. */
+const GLYPH = 32
 
 export default function RightRail({
   playing, holdLeftMs, stopIndex, stopCount, stream, dwellProgress,
@@ -59,13 +70,13 @@ export default function RightRail({
     <nav
       aria-label="Immersive controls"
       data-export-ignore
-      className="relative flex flex-col items-stretch gap-2 w-[11.5rem] px-3 py-4 noise-bg
+      className="relative flex flex-col items-stretch gap-2 w-[13.5rem] px-3 py-4 noise-bg
         bg-paper-100/95 dark:bg-espresso-900/90 backdrop-blur-xl
         border-l border-paper-400/60 dark:border-paper-300/25"
     >
       {/* Rule-leading ledge at body size — the Sept-2 house rule: a micro
           slate label gets swallowed, so the section head is full ink. */}
-      <div className="font-mono text-label tracking-[0.2em] uppercase text-paper-700 dark:text-paper-400 mb-1">── IMMERSIVE</div>
+      <div className="font-mono text-[13px] tracking-[0.2em] uppercase text-paper-700 dark:text-paper-400 mb-1">── IMMERSIVE</div>
 
       <button
         type="button" onClick={onPlayToggle} aria-pressed={playing}
@@ -73,7 +84,7 @@ export default function RightRail({
       >
         {playing && <div className="glow-corner is-sm" style={{ ['--glow' as string]: '#d4a435' }} />}
         <span className="relative z-[1] flex flex-col items-center gap-1">
-          {playing ? <PauseGlyph /> : <PlayGlyph />}
+          {playing ? <PauseGlyph size={GLYPH} /> : <PlayGlyph size={GLYPH} />}
           <span className={CAPTION}>{playing ? 'pause' : 'play'}</span>
         </span>
       </button>
@@ -84,10 +95,12 @@ export default function RightRail({
       >
         {holding && <div className="glow-corner is-sm" style={{ ['--glow' as string]: '#d4a435' }} />}
         <span className="relative z-[1] flex flex-col items-center gap-1">
-          <span className="relative h-6 w-6">
-            <HoldGlyph />
+          {/* The countdown arc is a SECOND svg over the glyph at the same
+              geometry, so the box and both svgs share GLYPH. */}
+          <span className="relative" style={{ width: GLYPH, height: GLYPH }}>
+            <HoldGlyph size={GLYPH} />
             {holding && (
-              <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden className="absolute inset-0">
+              <svg width={GLYPH} height={GLYPH} viewBox="0 0 24 24" aria-hidden className="absolute inset-0">
                 <circle
                   cx="12" cy="12" r={HOLD_RING_R} fill="none" stroke="currentColor" strokeWidth={1.75}
                   strokeLinecap="round" strokeDasharray={HOLD_RING_LEN} strokeDashoffset={ringOff}
@@ -102,13 +115,18 @@ export default function RightRail({
 
       <button type="button" onClick={onOverlayToggle} className={TILE} title="Hide the lower third (O)">
         <span className="relative z-[1] flex flex-col items-center gap-1">
-          <OverlayGlyph />
+          <OverlayGlyph size={GLYPH} />
           <span className={CAPTION}>hide</span>
         </span>
       </button>
 
+      {/* Reserved for Round B's camera/stream presets. Empty on purpose: it
+          is the air that separates the controls above from the reading
+          below, and it keeps the ledger off the bottom of a tall screen. */}
+      <div className="flex-1" aria-hidden />
+
       {/* ── Stop ledger: where you are, and how far the camera has to run. */}
-      <div className="mt-3 pt-3 border-t border-paper-400/40 dark:border-paper-300/15">
+      <div className="pt-3 border-t border-paper-400/40 dark:border-paper-300/15">
         <p className="font-mono text-label tabular-nums uppercase tracking-wider text-paper-700 dark:text-paper-300">
           STOP {known ? stopIndex : '—'} / {known ? stopCount : '—'}
         </p>
@@ -125,23 +143,32 @@ export default function RightRail({
               <span className="font-mono text-nano uppercase tracking-[0.18em] truncate" style={{ color: stream.color }}>{stream.label}</span>
             </span>
           ) : <span />}
-          {!playing && <span className={`${CAPTION} shrink-0 text-paper-600 dark:text-paper-500`}>explore</span>}
+          {/* Ledger register, not tile register — CAPTION is 13 px and would
+              shout down the stream label it sits beside. */}
+          {!playing && <span className="font-mono text-label uppercase tracking-wider shrink-0 text-paper-600 dark:text-paper-500">explore</span>}
         </div>
-        <p className="mt-2 font-mono text-nano leading-relaxed text-paper-500">← → · space · O · H · esc</p>
+        <p className="mt-2 font-mono text-label leading-relaxed text-paper-600 dark:text-paper-500">← → · space · O · H · esc</p>
       </div>
 
-      {/* Leaving is the one control that should not invite a click: quieter,
-          below a double rule, no fill until hover. */}
-      <div className="relative mt-auto pt-3 border-t border-paper-400/60 dark:border-paper-300/25">
+      {/* ── RETURN: the way back, quoting the app shell's brand row ────────
+          An abstract "leave" arrow said the door existed but not where it
+          went (Jesse, 2026-09-20). The badge and the wordmark are the same
+          two marks the shell wears at the top of every other page, so the
+          destination is named rather than described — and putting the site's
+          own signature at the far end of the rail, below a double rule, is
+          what makes it read as an exit instead of a fifth control. */}
+      <div className="relative mt-3 pt-3 border-t border-paper-400/60 dark:border-paper-300/25">
         <div className="absolute inset-x-0 top-[3px] h-px bg-paper-400/40 dark:bg-paper-300/15" aria-hidden />
         <button
           type="button" onClick={onExit} title="Back to The Last 48 (Escape)"
-          className="h-[4.5rem] w-full rounded-lg flex flex-col items-center justify-center gap-1 transition-colors
-            text-paper-600 dark:text-paper-500
-            hover:bg-paper-50/70 hover:text-ink dark:hover:bg-espresso-800/70 dark:hover:text-paper-100"
+          className="w-full py-3 px-2 rounded-lg flex items-center gap-3 text-left transition-colors
+            hover:bg-paper-200/60 dark:hover:bg-espresso-800/60"
         >
-          <LeaveGlyph />
-          <span className={CAPTION}>leave</span>
+          <img src="/dana-badge-2.png" alt="" className="w-9 h-9 shrink-0 rounded-full object-cover ring-1 ring-paper-100/15" />
+          <span className="flex min-w-0 flex-col gap-1">
+            <span className="font-display italic text-lg text-ink dark:text-paper-100 leading-none">DataDiver</span>
+            <span className="font-mono text-label uppercase tracking-[0.2em] text-paper-600 dark:text-paper-500">RETURN ↩</span>
+          </span>
         </button>
       </div>
     </nav>

@@ -31,8 +31,11 @@ const SLOT = 'w-[min(300px,24%)] shrink-0'
 const PEEK_SLOT = `${SLOT} hidden desk:block`
 /** The two step controls flank the slot row — 40 px round targets either side
  *  of the four tiles, where a viewer's hand already is (design critique,
- *  2026-09-13; they used to hide in the eyebrow row as nano word links). */
-const STEP_BTN = `h-10 w-10 shrink-0 self-end rounded-full flex items-center justify-center
+ *  2026-09-13; they used to hide in the eyebrow row as nano word links).
+ *  `self-center`, not `self-end`: once the cards hang from the top edge the
+ *  row's bottom is wherever the tallest card happens to end, and an arrow
+ *  parked there sits beside nothing. Centred, the two flank the stack. */
+const STEP_BTN = `h-10 w-10 shrink-0 self-center rounded-full flex items-center justify-center
   font-mono text-[15px] leading-none text-paper-700 dark:text-paper-300 transition-colors
   hover:bg-paper-200/60 hover:text-ink dark:hover:bg-espresso-800/60 dark:hover:text-paper-100`
 
@@ -55,7 +58,10 @@ export default function LowerThird({ prev, active, ahead, onJump, onStep }: Prop
     >
       {/* Double rule: the wrapper's own top border plus this one, 3px under it. */}
       <div className="absolute inset-x-0 top-[3px] h-px bg-paper-400/40 dark:bg-paper-300/15" aria-hidden />
-      <div className="glow-corner is-lg" />
+      {/* `glow-static`: the band is a SURFACE, not a control — the stock
+          hover lift lit the whole thing up when the pointer crossed it
+          (Jesse, 2026-09-20). Rule in photoreal.css. */}
+      <div className="glow-corner is-lg glow-static" />
 
       <div className="relative z-[1] flex h-full flex-col">
         {/* Rule-leading eyebrow */}
@@ -66,11 +72,14 @@ export default function LowerThird({ prev, active, ahead, onJump, onStep }: Prop
         </div>
 
         {/* Four slots, flanked by the step controls: ‹ · prev · ACTIVE ·
-            ahead[0] · ahead[1] · ›. `items-end` so the lifted active card
-            grows UPWARD instead of pushing the row — and `pt-3` is the room
-            that rise needs, or the active card's top edge lands in the
-            eyebrow above it. */}
-        <div className="flex items-end gap-4 px-[clamp(16px,3vw,64px)] pt-3 pb-4 min-h-0">
+            ahead[0] · ahead[1] · ›. `items-start` (2026-09-20): the four
+            cards are different heights, and hanging them from a shared TOP
+            edge is what makes them read as one row — bottom-aligned, the
+            age figures (the first thing the eye lands on) sat at four
+            different heights. Every card carries `origin-top` so the active
+            lift and the peek shrink both leave that edge alone, and `pt-3`
+            is the room the lift needs or its top lands in the eyebrow. */}
+        <div className="flex items-start gap-4 px-[clamp(16px,3vw,64px)] pt-3 pb-4 min-h-0">
           <button type="button" onClick={() => onStep(-1)} aria-label="Previous stop" title="Previous stop (←)" className={STEP_BTN}>‹</button>
           <div className={PEEK_SLOT}>
             {prev && <ImmersiveCard key={prev.id} event={prev} role="peek" onClick={() => onJump(prev.id)} />}

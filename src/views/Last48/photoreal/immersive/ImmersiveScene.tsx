@@ -1,13 +1,14 @@
 // src/views/Last48/photoreal/immersive/ImmersiveScene.tsx
 //
 // The Cesium side of /live/immersive (Spec A2 §3–§5). Owns the viewer, the
-// Google tileset, the dusk grade, the hero + the two queue discs, the dream
-// director, the render-on-demand "breath" and the tune panel. Draws NOTHING
-// else: no marker field, no bubble, no stem — the card lives in the band.
+// Google tileset, the dusk grade, the hero + the two queue discs, the screen
+// -pinned <Beacon> over the hero, the ground-click handler, the dream
+// director, the render-on-demand "breath" and the tune panel. Draws no
+// marker field, no bubble and no stem — the card lives in the band.
 // Same lifecycle rules as Last48Photoreal: viewer.destroy() deferred one
 // microtask (children clean up parent-first), isDestroyed() on every touch.
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
-import type * as Cesium from 'cesium'
+import * as Cesium from 'cesium'
 import '../photoreal.css'
 import type { NormalizedEvent } from '@/types/last48'
 import type { PaceValues } from '../../ambient/pace'
@@ -15,6 +16,8 @@ import { createViewer, loadGoogleTileset, applyGrade, applyQuality } from '../vi
 import { quality, resetQuality, QUALITY_IMMERSIVE } from '../quality'
 import { PhotorealMarkers } from '../PhotorealMarkers'
 import PhotorealTunePanel from '../PhotorealTunePanel'
+import { DATASET_META } from '../../detail/eventCardModel'
+import Beacon from './Beacon'
 import { useDreamDirector } from './useDreamDirector'
 import type { PhotorealTarget } from '../useCesiumDirector'
 
@@ -23,6 +26,10 @@ export const IMMERSIVE_MSAA = 4
 /** The hero breathes in colour only; in render-on-demand mode someone has to
  *  ask for the frames. 50 ms = the spec's "at most 20×/s". */
 const BREATH_MS = 50
+/** A press that travels further than this is a DRAG, not a click. Cesium's
+ *  own LEFT_CLICK tolerance is generous enough that a slow orbit ends in a
+ *  click — which would have re-aimed the tour under the reader's hand. */
+const DRAG_PX = 6
 
 interface Props {
   active: NormalizedEvent | null
@@ -35,6 +42,9 @@ interface Props {
   tuneOn: boolean
   onArrived: () => void
   onPick: (id: string) => void
+  /** A click on the GROUND (no marker under the pointer): the page snaps to
+   *  the nearest stop. Round A's minimal click; Round B adds the "here" card. */
+  onMapClick: (lng: number, lat: number) => void
   /** Pointer/wheel on the canvas: the page pauses play; the director yields. */
   onUserInput: () => void
   /** Google quota/auth refusal — the page leaves to /live (the resting note). */
@@ -113,6 +123,53 @@ export default function ImmersiveScene(props: Props) {
     return () => { markers.onPick = undefined }
   }, [markers])
 
+  // ── Click the GROUND → the nearest stop ───────────────────────────────
+  // A second LEFT_CLICK handler beside PhotorealMarkers' own: that one owns
+  // the entity hits (it reads `eventId` off the picked primitive), this one
+  // owns the misses. Both are attached to the same canvas and both see every
+  // click, so the miss test here is exactly the hit test there, inverted.
+  useEffect(() => {
+    if (!viewer || viewer.isDestroyed()) return
+    const scene = viewer.scene
+    const canvas = scene.canvas
+    // Cesium reports a drag that ends where it started as a click, and an
+    // orbit often does. Measure the travel ourselves.
+    let downAt: { x: number; y: number } | null = null
+    let dragged = false
+    const onDown = (e: PointerEvent) => { downAt = { x: e.clientX, y: e.clientY }; dragged = false }
+    const onMove = (e: PointerEvent) => {
+      if (!downAt || dragged) return
+      if (Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > DRAG_PX) dragged = true
+    }
+    const onUp = () => { downAt = null }
+    canvas.addEventListener('pointerdown', onDown)
+    canvas.addEventListener('pointermove', onMove)
+    canvas.addEventListener('pointerup', onUp)
+
+    const handler = new Cesium.ScreenSpaceEventHandler(canvas)
+    handler.setInputAction((m: { position: Cesium.Cartesian2 }) => {
+      if (dragged) return
+      // An entity under the pointer belongs to the marker layer.
+      if (scene.pick(m.position)?.id) return
+      // The globe is hidden but its ellipsoid still picks; pickPosition reads
+      // the depth buffer (the tiles themselves) and throws on hardware with
+      // no depth texture. Same ladder as PhotorealMarkers.probeFocus.
+      let hit = viewer.camera.pickEllipsoid(m.position, scene.globe.ellipsoid)
+      if (!hit) { try { hit = scene.pickPosition(m.position) } catch { return } }
+      if (!hit) return
+      const c = Cesium.Cartographic.fromCartesian(hit)
+      if (!c) return
+      cb.current.onMapClick(Cesium.Math.toDegrees(c.longitude), Cesium.Math.toDegrees(c.latitude))
+    }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+
+    return () => {
+      canvas.removeEventListener('pointerdown', onDown)
+      canvas.removeEventListener('pointermove', onMove)
+      canvas.removeEventListener('pointerup', onUp)
+      handler.destroy()
+    }
+  }, [viewer])
+
   // ── Breath: request frames for the colour animation, tab visible only ──
   useEffect(() => {
     if (!viewer || !props.active) return
@@ -137,6 +194,15 @@ export default function ImmersiveScene(props: Props) {
           active={props.active} next={props.next}
           pace={props.pace} hold={props.hold} reducedMotion={props.reducedMotion}
           onArrived={props.onArrived} onUserInput={props.onUserInput}
+        />
+      )}
+      {/* The beacon rides the host div (a sibling of the tune panel), not the
+          Cesium scene — it is screen space by design. The ground disc stays:
+          the two split the job, anchoring below and visibility above. */}
+      {viewer && props.active && (
+        <Beacon
+          viewer={viewer} tileset={tileset} event={props.active}
+          color={DATASET_META[props.active.datasetId].color}
         />
       )}
       {props.tuneOn && viewer && (

@@ -8,3 +8,38 @@
 [data-photoreal-host] .cesium-credit-expand-link,
 [data-photoreal-host] .cesium-credit-textContainer { font: 10px "Space Mono", ui-monospace, monospace; color: #f5ecd9; }
 [data-photoreal-host] .cesium-widget-credits { background: rgba(30, 20, 13, 0.55); border-radius: 6px; padding: 2px 6px; }
+
+/* ── The hero BEACON (immersive/Beacon.tsx) ────────────────────────────────
+   The Cesium ground disc anchors the stop in the world but disappears over
+   a bright rooftop (Jesse, 2026-09-20). The beacon is a screen-pinned HTML
+   mark that carries the VISIBILITY job: a ring, a solid core, and one arc
+   swirling round them. The pin itself only moves on Cesium frames (camera
+   motion, tile arrival) — these two animations are pure CSS, so they keep
+   running in render-on-demand mode without asking for a single frame. */
+@keyframes beaconSwirl { to { transform: rotate(360deg); } }
+@keyframes beaconBreath { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
+.beacon-swirl { animation: beaconSwirl 6s linear infinite; }
+.beacon-ring { animation: beaconBreath 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .beacon-swirl { animation: none; }
+  .beacon-ring { animation: none; opacity: 1; }
+}
+
+/* ── A glow that does NOT answer the pointer ───────────────────────────────
+   `.glow-host:hover > .glow-corner` brightens and drifts the glow — right
+   for a card you can click, wrong for the lower third, which is a SURFACE:
+   moving the mouse anywhere across the band lit the whole thing up (Jesse,
+   2026-09-20). `.glow-static` pins the corner at its resting values.
+   The two rules mirror the RESTING defaults in index.css (0.65 on espresso,
+   0.4 on cream) rather than a single mid value, so hovering the band is a
+   true no-op instead of a smaller brighten. `blur(40px)` is `.is-lg`'s own
+   resting blur. */
+.glow-host:hover > .glow-corner.glow-static {
+  opacity: var(--glow-opacity, 0.65);
+  transform: none;
+  filter: blur(40px);
+}
+:root:not([data-theme="dark"]) .glow-host:hover > .glow-corner.glow-static,
+html:not(.dark) .glow-host:hover > .glow-corner.glow-static {
+  opacity: var(--glow-opacity, 0.4);
+}
