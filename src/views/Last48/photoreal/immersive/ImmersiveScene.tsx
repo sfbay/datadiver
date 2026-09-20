@@ -3,7 +3,8 @@
 // The Cesium side of /live/immersive (Spec A2 §3–§5). Owns the viewer, the
 // Google tileset, the dusk grade, the hero + the two queue discs, the screen
 // -pinned <Beacon> over the hero, the ground-click handler, the dream
-// director, the render-on-demand "breath" and the tune panel. Draws no
+// director, the reader's camera floor, the render-on-demand "breath" and the
+// tune panel. Draws no
 // marker field, no bubble and no stem — the card lives in the band.
 // Same lifecycle rules as Last48Photoreal: viewer.destroy() deferred one
 // microtask (children clean up parent-first), isDestroyed() on every touch.
@@ -19,6 +20,7 @@ import PhotorealTunePanel from '../PhotorealTunePanel'
 import { DATASET_META } from '../../detail/eventCardModel'
 import Beacon from './Beacon'
 import { useDreamDirector } from './useDreamDirector'
+import { useCameraFloor } from './useCameraFloor'
 import type { PhotorealTarget } from '../useCesiumDirector'
 
 /** Spec A2 §3: MSAA on. 4 is Cesium's default; stated, not assumed. */
@@ -169,6 +171,12 @@ export default function ImmersiveScene(props: Props) {
       handler.destroy()
     }
   }, [viewer])
+
+  // ── The reader's camera floor + pitch clamp ───────────────────────────
+  // Collision detection is off in viewerHost (it re-pitched the camera
+  // mid-drag); this is what keeps a hand-flown camera above the tiles and
+  // out of the horizon. Stands down during director flights.
+  useCameraFloor({ viewer, tileset })
 
   // ── Breath: request frames for the colour animation, tab visible only ──
   useEffect(() => {

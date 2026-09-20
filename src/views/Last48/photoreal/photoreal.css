@@ -12,10 +12,13 @@
 /* ── The hero BEACON (immersive/Beacon.tsx) ────────────────────────────────
    The Cesium ground disc anchors the stop in the world but disappears over
    a bright rooftop (Jesse, 2026-09-20). The beacon is a screen-pinned HTML
-   mark that carries the VISIBILITY job: a ring, a solid core, and one arc
-   swirling round them. The pin itself only moves on Cesium frames (camera
-   motion, tile arrival) — these two animations are pure CSS, so they keep
-   running in render-on-demand mode without asking for a single frame. */
+   mark that carries the VISIBILITY job: a CASED ring stack (espresso keyline
+   · pigment · paper keyline), a paper core in a pigment collar, and one arc
+   swirling between the keylines. Only the PIGMENT ring breathes — the two
+   keylines hold a steady edge, which is the whole point of a case. The pin
+   itself only moves on Cesium frames (camera motion, tile arrival) — these
+   two animations are pure CSS, so they keep running in render-on-demand mode
+   without asking for a single frame. */
 @keyframes beaconSwirl { to { transform: rotate(360deg); } }
 @keyframes beaconBreath { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
 .beacon-swirl { animation: beaconSwirl 6s linear infinite; }
