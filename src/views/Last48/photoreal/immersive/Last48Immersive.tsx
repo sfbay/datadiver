@@ -21,6 +21,7 @@ import { gradeForTheme, type Grade } from '../grade'
 import { chainTour } from '../tourChain'
 import { carouselIndex, stepIndex, peekIds, queueIds } from './carousel'
 import { useAutoAdvance } from './useAutoAdvance'
+import { formatNextIn } from './nextIn'
 import LowerThird from './LowerThird'
 import RightRail, { HOLD_MS } from './RightRail'
 import FrameTicks from './FrameTicks'
@@ -174,15 +175,8 @@ export default function Last48Immersive() {
 
   // ── Arrival, play, hold, overlay ──────────────────────────────────────
   const [arrived, setArrived] = useState(false)
-  // When the camera reached THIS stop — the zero of the dwell rule the rail
-  // draws. 0 means "not arrived"; reset with `arrived` on every stop change.
-  const arrivedAtRef = useRef(0)
-  const [dwellProgress, setDwellProgress] = useState(-1)
-  useEffect(() => { arrivedAtRef.current = 0; setArrived(false); setDwellProgress(-1) }, [activeId])
-  const handleArrived = useCallback(() => {
-    if (arrivedAtRef.current === 0) arrivedAtRef.current = Date.now()
-    setArrived(true)
-  }, [])
+  useEffect(() => { setArrived(false) }, [activeId])
+  const handleArrived = useCallback(() => setArrived(true), [])
   const [holdLeftMs, setHoldLeftMs] = useState(0)
   const holdUntilRef = useRef(0)
   const startHold = useCallback(() => {
@@ -222,18 +216,24 @@ export default function Last48Immersive() {
   const rangeM = Number.isFinite(rangeParam) && rangeParam >= 150 && rangeParam <= 3000 ? rangeParam : undefined
   const pace = PACE_PRESETS.dream
 
-  useAutoAdvance({ playing, arrived, hold, dwellMs: pace.dwellMs, stopKey: activeId, onAdvance: () => step(1) })
+  const { remainingMs } = useAutoAdvance({ playing, arrived, hold, dwellMs: pace.dwellMs, stopKey: activeId, onAdvance: () => step(1) })
 
-  // The dwell rule in the rail. One 250 ms ticker, armed only while the clock
-  // it draws is actually running — a hold freezes the bar where it stood
-  // (no ticker), which is exactly what a hold does to the auto-advance.
+  // ONE clock, three readers (Round B §4): the band's "next in", the active
+  // card's stripe and the rail's rule all come from remainingMs(). Sampled
+  // four times a second while playing; a hold freezes the number inside the
+  // hook, so all three freeze together. Null (flight / settle gate) reads as
+  // "next in —" and no stripe.
+  const [nextInMs, setNextInMs] = useState<number | null>(null)
   useEffect(() => {
-    if (!playing || !arrived || hold) return
-    const tick = () => setDwellProgress(Math.min(1, (Date.now() - arrivedAtRef.current) / pace.dwellMs))
+    if (!playing) { setNextInMs(null); return }
+    const tick = () => setNextInMs(remainingMs())
     tick()
     const id = setInterval(tick, 250)
     return () => clearInterval(id)
-  }, [playing, arrived, hold, pace.dwellMs])
+  }, [playing, arrived, hold, remainingMs])
+  const dwellProgress = nextInMs == null ? -1 : Math.max(0, Math.min(1, 1 - nextInMs / pace.dwellMs))
+  const nextIn = playing ? formatNextIn(nextInMs) : null
+  const stripe = playing && nextInMs != null ? dwellProgress : null
 
   const leave = useCallback(() => {
     navigate(activeId ? `/live?event=${encodeURIComponent(activeId)}` : '/live')
@@ -320,6 +320,8 @@ export default function Last48Immersive() {
             onStep={step}
             stopIndex={index + 1}
             stopCount={order.length}
+            nextIn={nextIn}
+            progress={stripe}
           />
         )}
       </div>
