@@ -15,10 +15,10 @@
 // big serif ital, it's a signature look"); mono is left to do what mono is
 // for here — the key hints, the eyebrows and the measured values.
 //
-// Reading order top→bottom: masthead · PLAY · HOLD · HIDE · VIEW · air ·
-// the stop ledger · RETURN. The two things you do constantly sit at the top
-// under your hand, the settings under them, the reading in the middle, and
-// the one-way door at the far end where you will not hit it.
+// Reading order top→bottom: masthead · PLAY · HOLD · HIDE · VIEW · PRESETS ·
+// air · the stop ledger · RETURN. The two things you do constantly sit at the
+// top under your hand, the settings under them, the reading in the middle,
+// and the one-way door at the far end where you will not hit it.
 //
 // Mounted/unmounted by the page alongside the band (the `O` overlay toggle);
 // this component never hides itself. HOLD_MS lives here because the hold
@@ -43,6 +43,8 @@ interface Props {
   tod: Grade
   beaconOn: boolean
   ticksOn: boolean
+  /** Round B: the preset groups, rendered between the View group and the air. */
+  presets?: ReactNode
   onPlayToggle: () => void
   onHold: () => void
   onOverlayToggle: () => void
@@ -129,7 +131,7 @@ const ONOFF = [
 ]
 
 export default function RightRail({
-  playing, holdLeftMs, stopIndex, stopCount, stream, dwellProgress, tod, beaconOn, ticksOn,
+  playing, holdLeftMs, stopIndex, stopCount, stream, dwellProgress, tod, beaconOn, ticksOn, presets,
   onPlayToggle, onHold, onOverlayToggle, onTod, onBeaconToggle, onTicksToggle, onExit,
 }: Props) {
   const holding = holdLeftMs > 0
@@ -235,6 +237,8 @@ export default function RightRail({
           />
         </ViewRow>
       </div>
+
+      {presets}
 
       {/* The air that separates what you set from what you read, and what
           keeps the ledger off the bottom of a tall screen. */}

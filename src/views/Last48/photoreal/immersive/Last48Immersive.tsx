@@ -6,7 +6,8 @@
 // route of the `live` family, so the manifest's sources cover it), the URL
 // contract (?event= is the active stop, ?play=1 auto-advance, ?tune=1 the
 // dev panel, ?tod= the grade — day|dusk|night, dusk by default and written
-// by the rail's Light control), the carousel state, keys, hold, the two
+// by the rail's Light control, ?place=<id> / ?hot=<neighborhood> a detour —
+// the camera goes, the card stays, play pauses), the carousel state, keys, hold, the two
 // view switches (beacon, frame ticks) and the overlay. Chrome is off
 // (AppShell reads routeChrome); mobile / no key / resting never reach this
 // file (ImmersiveGate).
@@ -14,6 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAppStore } from '@/stores/appStore'
 import { useLast48Window } from '@/hooks/useLast48Window'
+import { useAnomalyBaseline } from '@/hooks/useAnomalyBaseline'
 import { LAST48_DATASETS, type NormalizedEvent } from '@/types/last48'
 import { PACE_PRESETS } from '../../ambient/pace'
 import { DATASET_META } from '../../detail/eventCardModel'
@@ -22,11 +24,15 @@ import { chainTour } from '../tourChain'
 import { carouselIndex, stepIndex, peekIds, queueIds } from './carousel'
 import { useAutoAdvance } from './useAutoAdvance'
 import { formatNextIn } from './nextIn'
+import { PLACES } from './places'
+import { selectHotspots } from './hotspots'
+import { detourFromPlace, detourFromHotspot, sameDetour, type DetourTarget } from './detour'
 import LowerThird from './LowerThird'
 import RightRail, { HOLD_MS } from './RightRail'
 import FrameTicks from './FrameTicks'
 import TelemetryStrip from './TelemetryStrip'
 import ImmersiveScene, { type Telemetry } from './ImmersiveScene'
+import Presets from './Presets'
 
 /** How close a ground click has to land to count as "that stop". */
 const NEAREST_M = 150
@@ -76,14 +82,20 @@ export default function Last48Immersive() {
   // page is always dusk unless told otherwise (gradeForTheme(true, null) is
   // dusk, so `?tod=dusk` and no param are the same scene).
   const tod: Grade = gradeForTheme(true, todOverride)
-  const setParam = useCallback((key: string, value: string | null) => {
+  /** Write several params in one history entry; a no-op when nothing changes. */
+  const setParams = useCallback((patch: Record<string, string | null>) => {
     setSearchParams((prev) => {
-      if ((prev.get(key) ?? null) === value) return prev
+      let changed = false
       const np = new URLSearchParams(prev)
-      if (value) np.set(key, value); else np.delete(key)
-      return np
+      for (const [key, value] of Object.entries(patch)) {
+        if ((prev.get(key) ?? null) === value) continue
+        changed = true
+        if (value) np.set(key, value); else np.delete(key)
+      }
+      return changed ? np : prev
     }, { replace: true })
   }, [setSearchParams])
+  const setParam = useCallback((key: string, value: string | null) => setParams({ [key]: value }), [setParams])
 
   // Identity is STABILISED by VALUE: useLast48Window re-creates every event
   // object on each poll (911 every 2 min), so an unchanged active stop used to
@@ -146,7 +158,38 @@ export default function Last48Immersive() {
     return out
   }, [order, index, byId])
 
-  const jump = useCallback((id: string) => { setParam('event', id) }, [setParam])
+  // ── Presets (Round B §2) ──────────────────────────────────────────────
+  // The same anomaly engine /live and the Pulse read (baseline cached 4 h,
+  // current counts server-side, single-flighted across consumers).
+  const { anomalies, isLoading: anomaliesLoading } = useAnomalyBaseline({ datasets: LAST48_DATASETS, freshness: window48.freshness })
+  const hotspots = useMemo(() => selectHotspots(anomalies, window48.freshness, events), [anomalies, window48.freshness, events])
+  const placeId = searchParams.get('place')
+  const hotNh = searchParams.get('hot')
+  // A detour is stabilised by VALUE like the events: a hotspot's centroid
+  // shifts a few metres per poll and must not restart an 18 s flight.
+  const detourRef = useRef<DetourTarget | null>(null)
+  const detour = useMemo(() => {
+    let fresh: DetourTarget | null = null
+    if (placeId) { const p = PLACES.find((x) => x.id === placeId); fresh = p ? detourFromPlace(p) : null }
+    else if (hotNh) { const h = hotspots.find((x) => x.neighborhood === hotNh); fresh = h ? detourFromHotspot(h) : null }
+    const out = sameDetour(detourRef.current, fresh) ? detourRef.current : fresh
+    detourRef.current = out
+    return out
+  }, [placeId, hotNh, hotspots])
+  // Keep the URL truthful: an unknown ?place= goes at once; a ?hot= whose
+  // neighborhood has left the list goes once the engine has actually read.
+  useEffect(() => {
+    if (placeId && !PLACES.some((x) => x.id === placeId)) setParam('place', null)
+  }, [placeId, setParam])
+  useEffect(() => {
+    if (hotNh && !anomaliesLoading && !hotspots.some((x) => x.neighborhood === hotNh)) setParam('hot', null)
+  }, [hotNh, anomaliesLoading, hotspots, setParam])
+  // A preset is user input: play pauses (Round B §2). ← → and a card click
+  // resume the chain from the active card (they clear place/hot above).
+  const goPlace = useCallback((id: string) => setParams({ place: id, hot: null, play: null }), [setParams])
+  const goHot = useCallback((nh: string) => setParams({ hot: nh, place: null, play: null }), [setParams])
+
+  const jump = useCallback((id: string) => { setParams({ event: id, place: null, hot: null }) }, [setParams])
   // A click on the ground snaps to the nearest stop IN THE PASS — the reader
   // steers the tour by pointing at the city instead of stepping through it.
   // Round A's minimal click: no new card, no new stop, and a click further
@@ -170,12 +213,12 @@ export default function Last48Immersive() {
   }, [order, byId, jump])
   const step = useCallback((delta: 1 | -1) => {
     const i = stepIndex(order, index, delta)
-    if (i >= 0) setParam('event', order[i])
-  }, [order, index, setParam])
+    if (i >= 0) setParams({ event: order[i], place: null, hot: null })
+  }, [order, index, setParams])
 
   // ── Arrival, play, hold, overlay ──────────────────────────────────────
   const [arrived, setArrived] = useState(false)
-  useEffect(() => { setArrived(false) }, [activeId])
+  useEffect(() => { setArrived(false) }, [activeId, detour?.key])
   const handleArrived = useCallback(() => setArrived(true), [])
   const [holdLeftMs, setHoldLeftMs] = useState(0)
   const holdUntilRef = useRef(0)
@@ -282,7 +325,7 @@ export default function Last48Immersive() {
             hold={hold}
             reducedMotion={reducedMotion}
             rangeM={rangeM}
-            detour={null /* Round B: Task 6 wires the presets rail's selection here */}
+            detour={detour}
             todOverride={todOverride}
             tuneOn={tuneOn}
             beaconOn={beaconOn}
@@ -337,6 +380,16 @@ export default function Last48Immersive() {
           tod={tod}
           beaconOn={beaconOn}
           ticksOn={ticksOn}
+          presets={(
+            <Presets
+              places={PLACES}
+              hotspots={hotspots}
+              hotspotsLoading={anomaliesLoading}
+              activeKey={detour?.key ?? null}
+              onPlace={goPlace}
+              onHot={goHot}
+            />
+          )}
           onPlayToggle={() => setParam('play', playing ? null : '1')}
           onHold={startHold}
           onOverlayToggle={() => setOverlayOn(false)}
