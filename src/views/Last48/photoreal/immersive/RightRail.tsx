@@ -3,21 +3,30 @@
 // The vertical arm of the L (Jesse, 2026-09-13): controls down the RIGHT,
 // content along the BOTTOM. The first version lifted the old lower third's
 // word buttons verbatim; the design critique of the same day called it "a
-// dead slab of word buttons", so the four controls are now TILES — a drawn
-// glyph over a mono caption, each one a target you can hit without reading —
-// and the rail gained the one reading it was missing: where you are in the
-// pass (STOP n / N) and how far through the dwell the camera is.
+// dead slab of word buttons", so the controls became TILES — a drawn glyph
+// over a mono caption.
 //
-// Sized for a 16:9 screen across a room (Jesse, 2026-09-20): 13.5rem wide,
-// 5.5rem tiles, 32 px glyphs, 13 px captions. Reading order top→bottom is
-// PLAY · HOLD · HIDE, then air, then the stop ledger, then RETURN — the two
-// things you do constantly at the top under your hand, the reading in the
-// middle, and the one-way door at the far end where you will not hit it.
+// Round C (Jesse, 2026-09-20) turns the tiles on their side. The rail is "a
+// key entry point… a key visual anchor for this entire immersive", so it now
+// opens with the MASTHEAD — the full branding, The Last 48 Immersive, in the
+// house display face — and the controls SIDE-SADDLE: glyph left, name right,
+// key hint at the far edge, half the height they were. The names are set in
+// big Fraunces italic rather than mono caps ("drop the mono in the buttons…
+// big serif ital, it's a signature look"); mono is left to do what mono is
+// for here — the key hints, the eyebrows and the measured values.
+//
+// Reading order top→bottom: masthead · PLAY · HOLD · HIDE · VIEW · air ·
+// the stop ledger · RETURN. The two things you do constantly sit at the top
+// under your hand, the settings under them, the reading in the middle, and
+// the one-way door at the far end where you will not hit it.
 //
 // Mounted/unmounted by the page alongside the band (the `O` overlay toggle);
 // this component never hides itself. HOLD_MS lives here because the hold
-// button does.
+// button does. Telemetry lives in the strip across the top of the map: this
+// rail holds what you DO, that band holds what the camera IS doing.
+import type { ReactNode } from 'react'
 import { PlayGlyph, PauseGlyph, HoldGlyph, OverlayGlyph, HOLD_RING_R, HOLD_RING_LEN } from './glyphs'
+import type { Grade } from '../grade'
 
 interface Props {
   playing: boolean
@@ -30,9 +39,16 @@ interface Props {
   stream: { label: string; color: string } | null
   /** 0..1 across the dwell; -1 when the camera has not arrived yet. */
   dwellProgress: number
+  /** The grade the tiles are wearing — `?tod=`, dusk by default. */
+  tod: Grade
+  beaconOn: boolean
+  ticksOn: boolean
   onPlayToggle: () => void
   onHold: () => void
   onOverlayToggle: () => void
+  onTod: (v: Grade) => void
+  onBeaconToggle: (v: boolean) => void
+  onTicksToggle: (v: boolean) => void
   onExit: () => void
 }
 
@@ -41,21 +57,80 @@ export const HOLD_MS = 10_000
 /** The house neutral for "no stream yet". */
 const FALLBACK = '#d4a435'
 
-const TILE = `h-[5.5rem] w-full rounded-lg flex flex-col items-center justify-center gap-1 relative overflow-hidden glow-host
+/** A control ROW: the glyph side-saddles its name. 3.5rem is half the old
+ *  tile and still a target you can hit without looking. */
+const ROW = `h-[3.5rem] w-full rounded-lg flex items-center gap-3 px-4 relative overflow-hidden glow-host
   ring-1 transition-colors bg-paper-50/70 dark:bg-espresso-800/70
   ring-paper-400/40 dark:ring-paper-300/20 hover:ring-paper-500/60
   text-paper-700 dark:text-paper-300`
-const TILE_ON = 'bg-ochre-500/18 text-ink dark:text-paper-100'
-/** 13 px, not a micro token: this rail is read from across a room, and the
- *  caption is the tile's NAME, not a footnote on it. */
-const CAPTION = 'font-mono text-[13px] uppercase tracking-[0.18em]'
+const ROW_ON = 'bg-ochre-500/18 text-ink dark:text-paper-100'
+/** The signature: the control's NAME in the display face, big enough to read
+ *  from across a room. */
+const NAME = 'relative z-[1] font-display italic text-[22px] leading-none text-ink dark:text-paper-100'
+/** The key that does the same thing, parked at the far edge. paper-600 in
+ *  light mode rather than the 500 the dark side wears: 9 px of #a8926a on
+ *  cream does not clear the contrast floor. */
+const KEY_HINT = 'relative z-[1] ml-auto font-mono text-nano text-paper-600 dark:text-paper-500'
+/** Rule-leading eyebrow — the masthead's and the view group's, one style. */
+const EYEBROW = 'font-mono text-label tracking-[0.25em] uppercase text-paper-600 dark:text-paper-500'
 /** One size for every glyph in the rail — the family only holds together if
  *  they are all drawn at the same scale. */
-const GLYPH = 32
+const GLYPH = 28
+
+/** A settings row: name left, control right, at two thirds a button's height. */
+function ViewRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="h-[2.75rem] flex items-center justify-between gap-2">
+      <span className="font-display italic text-lg leading-none text-paper-800 dark:text-paper-200">{label}</span>
+      {children}
+    </div>
+  )
+}
+
+/** The one segmented-control idiom the view group uses — two options or
+ *  three, same geometry. Mono because every value in it is a setting, not a
+ *  name; the active cell is the rail's ochre, the same "this one is live"
+ *  tone the play and hold rows wear. */
+function Seg<T extends string>({ value, options, onChange, label }: {
+  value: T
+  options: ReadonlyArray<{ value: T; label: string }>
+  onChange: (v: T) => void
+  label: string
+}) {
+  return (
+    <div role="group" aria-label={label} className="flex items-center rounded-md ring-1 ring-paper-400/40 dark:ring-paper-300/20 overflow-hidden">
+      {options.map((o) => {
+        const on = o.value === value
+        return (
+          <button
+            key={o.value}
+            type="button"
+            aria-pressed={on}
+            onClick={() => onChange(o.value)}
+            className={`px-[5px] py-1 font-mono text-label uppercase tracking-wider transition-colors
+              ${on ? 'bg-ochre-500/18 text-ink dark:text-paper-100' : 'text-paper-600 dark:text-paper-500 hover:text-ink dark:hover:text-paper-200'}`}
+          >
+            {o.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+const TOD_OPTIONS = [
+  { value: 'day' as const, label: 'Day' },
+  { value: 'dusk' as const, label: 'Dusk' },
+  { value: 'night' as const, label: 'Night' },
+]
+const ONOFF = [
+  { value: 'on' as const, label: 'On' },
+  { value: 'off' as const, label: 'Off' },
+]
 
 export default function RightRail({
-  playing, holdLeftMs, stopIndex, stopCount, stream, dwellProgress,
-  onPlayToggle, onHold, onOverlayToggle, onExit,
+  playing, holdLeftMs, stopIndex, stopCount, stream, dwellProgress, tod, beaconOn, ticksOn,
+  onPlayToggle, onHold, onOverlayToggle, onTod, onBeaconToggle, onTicksToggle, onExit,
 }: Props) {
   const holding = holdLeftMs > 0
   const ringOff = HOLD_RING_LEN * (1 - holdLeftMs / HOLD_MS)
@@ -70,65 +145,102 @@ export default function RightRail({
     <nav
       aria-label="Immersive controls"
       data-export-ignore
-      className="relative flex flex-col items-stretch gap-2 w-[13.5rem] px-3 py-4 noise-bg
+      className="relative flex flex-col items-stretch gap-2 w-[13.5rem] px-3 py-4 noise-bg overflow-y-auto
         bg-paper-100/95 dark:bg-espresso-900/90 backdrop-blur-xl
         border-l border-paper-400/60 dark:border-paper-300/25"
     >
-      {/* Rule-leading ledge at body size — the Sept-2 house rule: a micro
-          slate label gets swallowed, so the section head is full ink. */}
-      <div className="font-mono text-[13px] tracking-[0.2em] uppercase text-paper-700 dark:text-paper-400 mb-1">── IMMERSIVE</div>
+      {/* ── Masthead: the page's own name, and the page's only h1. The route
+          runs with the app shell off, so nothing else on screen says where
+          the reader is. */}
+      <div className="px-1 pb-3 mb-1 border-b border-paper-400/50 dark:border-paper-300/20">
+        <div className={EYEBROW}>── Live</div>
+        <h1
+          className="font-display italic leading-[0.95] text-ink dark:text-paper-100"
+          style={{ fontSize: 'clamp(26px, 2.2vw, 34px)' }}
+        >
+          The Last 48
+        </h1>
+        <div className="font-display italic text-xl text-paper-700 dark:text-paper-400 leading-tight">Immersive</div>
+      </div>
 
       <button
         type="button" onClick={onPlayToggle} aria-pressed={playing}
-        className={`${TILE} ${playing ? TILE_ON : ''}`} title="Auto-advance (Space)"
+        className={`${ROW} ${playing ? ROW_ON : ''}`} title="Auto-advance (Space)"
       >
         {playing && <div className="glow-corner is-sm" style={{ ['--glow' as string]: '#d4a435' }} />}
-        <span className="relative z-[1] flex flex-col items-center gap-1">
+        <span className="relative z-[1] shrink-0">
           {playing ? <PauseGlyph size={GLYPH} /> : <PlayGlyph size={GLYPH} />}
-          <span className={CAPTION}>{playing ? 'pause' : 'play'}</span>
         </span>
+        <span className={NAME}>{playing ? 'Pause' : 'Play'}</span>
+        <span className={KEY_HINT}>space</span>
       </button>
 
       <button
         type="button" onClick={onHold} aria-pressed={holding}
-        className={`${TILE} ${holding ? TILE_ON : ''}`} title="Hold 10 s (H)"
+        className={`${ROW} ${holding ? ROW_ON : ''}`} title="Hold 10 s (H)"
       >
         {holding && <div className="glow-corner is-sm" style={{ ['--glow' as string]: '#d4a435' }} />}
-        <span className="relative z-[1] flex flex-col items-center gap-1">
-          {/* The countdown arc is a SECOND svg over the glyph at the same
-              geometry, so the box and both svgs share GLYPH. */}
-          <span className="relative" style={{ width: GLYPH, height: GLYPH }}>
-            <HoldGlyph size={GLYPH} />
-            {holding && (
-              <svg width={GLYPH} height={GLYPH} viewBox="0 0 24 24" aria-hidden className="absolute inset-0">
-                <circle
-                  cx="12" cy="12" r={HOLD_RING_R} fill="none" stroke="currentColor" strokeWidth={1.75}
-                  strokeLinecap="round" strokeDasharray={HOLD_RING_LEN} strokeDashoffset={ringOff}
-                  transform="rotate(-90 12 12)"
-                />
-              </svg>
-            )}
+        {/* The countdown arc is a SECOND svg over the glyph at the same
+            geometry, so the box and both svgs share GLYPH. */}
+        <span className="relative z-[1] shrink-0" style={{ width: GLYPH, height: GLYPH }}>
+          <HoldGlyph size={GLYPH} />
+          {holding && (
+            <svg width={GLYPH} height={GLYPH} viewBox="0 0 24 24" aria-hidden className="absolute inset-0">
+              <circle
+                cx="12" cy="12" r={HOLD_RING_R} fill="none" stroke="currentColor" strokeWidth={1.75}
+                strokeLinecap="round" strokeDasharray={HOLD_RING_LEN} strokeDashoffset={ringOff}
+                transform="rotate(-90 12 12)"
+              />
+            </svg>
+          )}
+        </span>
+        <span className={NAME}>Hold</span>
+        {/* The countdown is a measured value, so it stays mono beside the
+            serif name rather than joining it. */}
+        {holding && (
+          <span className="relative z-[1] font-mono text-nano tabular-nums text-paper-700 dark:text-paper-300">
+            · {Math.ceil(holdLeftMs / 1000)} s
           </span>
-          <span className={CAPTION}>{holding ? `hold · ${Math.ceil(holdLeftMs / 1000)}s` : 'hold'}</span>
-        </span>
+        )}
+        <span className={KEY_HINT}>H</span>
       </button>
 
-      <button type="button" onClick={onOverlayToggle} className={TILE} title="Hide the lower third (O)">
-        <span className="relative z-[1] flex flex-col items-center gap-1">
-          <OverlayGlyph size={GLYPH} />
-          <span className={CAPTION}>hide</span>
-        </span>
+      <button type="button" onClick={onOverlayToggle} className={ROW} title="Hide the panels (O)">
+        <span className="relative z-[1] shrink-0"><OverlayGlyph size={GLYPH} /></span>
+        <span className={NAME}>Hide</span>
+        <span className={KEY_HINT}>O</span>
       </button>
 
-      {/* Reserved for Round B's camera/stream presets. Empty on purpose: it
-          is the air that separates the controls above from the reading
-          below, and it keeps the ledger off the bottom of a tall screen. */}
+      {/* ── VIEW: what the scene wears. Not playback — these three stay put
+          while the pass runs, which is why they are a group of their own at
+          settings scale rather than three more buttons. */}
+      <div className="mt-3 pt-3 border-t border-paper-400/40 dark:border-paper-300/15">
+        <div className={EYEBROW}>── View</div>
+        <ViewRow label="Light">
+          <Seg value={tod} options={TOD_OPTIONS} onChange={onTod} label="Time of day" />
+        </ViewRow>
+        <ViewRow label="Beacon">
+          <Seg
+            value={beaconOn ? 'on' : 'off'} options={ONOFF}
+            onChange={(v) => onBeaconToggle(v === 'on')} label="Beacon over the stop"
+          />
+        </ViewRow>
+        <ViewRow label="Frame ticks">
+          <Seg
+            value={ticksOn ? 'on' : 'off'} options={ONOFF}
+            onChange={(v) => onTicksToggle(v === 'on')} label="Frame ticks"
+          />
+        </ViewRow>
+      </div>
+
+      {/* The air that separates what you set from what you read, and what
+          keeps the ledger off the bottom of a tall screen. */}
       <div className="flex-1" aria-hidden />
 
       {/* ── Stop ledger: where you are, and how far the camera has to run. */}
       <div className="pt-3 border-t border-paper-400/40 dark:border-paper-300/15">
-        <p className="font-mono text-label tabular-nums uppercase tracking-wider text-paper-700 dark:text-paper-300">
-          STOP {known ? stopIndex : '—'} / {known ? stopCount : '—'}
+        <p className="font-display italic text-lg leading-none text-ink dark:text-paper-100">
+          Stop <span className="tabular-nums">{known ? stopIndex : '—'}</span> of <span className="tabular-nums">{known ? stopCount : '—'}</span>
         </p>
         <div className="mt-2 h-1 rounded-full bg-paper-400/30 dark:bg-paper-300/15 overflow-hidden">
           <div
@@ -143,8 +255,6 @@ export default function RightRail({
               <span className="font-mono text-nano uppercase tracking-[0.18em] truncate" style={{ color: stream.color }}>{stream.label}</span>
             </span>
           ) : <span />}
-          {/* Ledger register, not tile register — CAPTION is 13 px and would
-              shout down the stream label it sits beside. */}
           {!playing && <span className="font-mono text-label uppercase tracking-wider shrink-0 text-paper-600 dark:text-paper-500">explore</span>}
         </div>
         <p className="mt-2 font-mono text-label leading-relaxed text-paper-600 dark:text-paper-500">← → · space · O · H · esc</p>

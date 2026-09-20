@@ -2,21 +2,22 @@
 //
 // The rail's icon set — four authored glyphs in ONE stroke weight (1.75,
 // round caps/joins, `currentColor`, never a fill), drawn on a 24 px viewBox
-// and rendered at whatever `size` the caller asks for (the rail asks for
-// 32). The rail used to spend Unicode characters (▶ ❚❚ ▭ ✕) as icons; the
-// design critique of 2026-09-13 called the rail "a dead slab of word
-// buttons", and a glyph system drawn at one weight is what turns the
-// controls into tiles a viewer reads at a glance. Drawn here rather than
-// pulled from a library because four shapes do not earn a dependency — but
-// they DO have to look like one family, which is what the shared <G>
-// wrapper enforces. (The fifth, LeaveGlyph, went with the plain "leave"
+// and rendered at whatever `size` the caller asks for (the rail asks for 28
+// since Round C turned its tiles into side-saddle rows — the glyph now sits
+// beside its name instead of over it, so it reads at a smaller size). The
+// rail used to spend Unicode characters (▶ ❚❚ ▭ ✕) as icons; the design
+// critique of 2026-09-13 called the rail "a dead slab of word buttons", and
+// a glyph system drawn at one weight is what turns the controls into marks
+// a viewer reads at a glance. Drawn here rather than pulled from a library
+// because four shapes do not earn a dependency — but they DO have to look
+// like one family, which is what the shared <G> wrapper enforces. (The fifth, LeaveGlyph, went with the plain "leave"
 // tile on 2026-09-20: the way out is now the DataDiver badge + wordmark,
 // which names where the door goes instead of drawing a door.)
 
 import type { ReactNode } from 'react'
 
 interface GlyphProps {
-  /** Square edge in px. 24 is the rail tile's size. */
+  /** Square edge in px. 28 is the rail row's size. */
   size?: number
   className?: string
 }
@@ -61,7 +62,7 @@ export function HoldGlyph(props: GlyphProps) {
   )
 }
 
-/** A frame with a band along its bottom edge — the lower third itself. */
+/** A frame with a band along its bottom edge — the panels themselves. */
 export function OverlayGlyph(props: GlyphProps) {
   return (
     <G {...props}>

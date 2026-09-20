@@ -3,8 +3,8 @@
 // The Cesium side of /live/immersive (Spec A2 §3–§5). Owns the viewer, the
 // Google tileset, the dusk grade, the hero + the two queue discs, the screen
 // -pinned <Beacon> over the hero, the ground-click handler, the dream
-// director, the reader's camera floor, the render-on-demand "breath" and the
-// tune panel. Draws no
+// director, the reader's camera floor, the render-on-demand "breath", the
+// camera TELEMETRY the top strip reads, and the tune panel. Draws no
 // marker field, no bubble and no stem — the card lives in the band.
 // Same lifecycle rules as Last48Photoreal: viewer.destroy() deferred one
 // microtask (children clean up parent-first), isDestroyed() on every touch.
@@ -28,10 +28,28 @@ export const IMMERSIVE_MSAA = 4
 /** The hero breathes in colour only; in render-on-demand mode someone has to
  *  ask for the frames. 50 ms = the spec's "at most 20×/s". */
 const BREATH_MS = 50
+/** How often the camera is SAMPLED for the telemetry strip. Four times a
+ *  second is fast enough to read as live and slow enough to stay off the
+ *  frame budget — the alternative, a postRender listener, would re-render
+ *  the page at the frame rate. */
+const TELEMETRY_MS = 250
+
 /** A press that travels further than this is a DRAG, not a click. Cesium's
  *  own LEFT_CLICK tolerance is generous enough that a slow orbit ends in a
  *  click — which would have re-aimed the tour under the reader's hand. */
 const DRAG_PX = 6
+
+/** One sample of what the camera is doing. `groundLat`/`groundLng` are the
+ *  point directly under the camera — the strip's fallback for "where are we"
+ *  before the first stop lands. */
+export interface Telemetry {
+  headingDeg: number
+  tiltDeg: number
+  altitudeM: number
+  tilesLoaded: boolean
+  groundLat: number
+  groundLng: number
+}
 
 interface Props {
   active: NormalizedEvent | null
@@ -44,6 +62,11 @@ interface Props {
   rangeM?: number
   todOverride: string | null
   tuneOn: boolean
+  /** The screen-pinned mark over the active stop (rail: View · Beacon). */
+  beaconOn: boolean
+  /** Sample only while the strip that reads it is on screen. */
+  telemetryOn: boolean
+  onTelemetry: (t: Telemetry) => void
   onArrived: () => void
   onPick: (id: string) => void
   /** A click on the GROUND (no marker under the pointer): the page snaps to
@@ -180,6 +203,41 @@ export default function ImmersiveScene(props: Props) {
   // out of the horizon. Stands down during director flights.
   useCameraFloor({ viewer, tileset })
 
+  // ── Telemetry for the top strip ───────────────────────────────────────
+  // Polled, not per-frame, and only emitted when a displayed figure actually
+  // changes: every emit is a page render, and the page renders the band and
+  // the rail. A parked camera therefore costs nothing at all.
+  useEffect(() => {
+    if (!viewer || !props.telemetryOn) return
+    let last = ''
+    const sample = () => {
+      if (viewer.isDestroyed()) return
+      const scene = viewer.scene
+      const cam = scene.camera
+      const c = cam.positionCartographic
+      if (!c) return
+      const headingDeg = ((Math.round(Cesium.Math.toDegrees(cam.heading)) % 360) + 360) % 360
+      const tiltDeg = Math.round(-Cesium.Math.toDegrees(cam.pitch))
+      // Height above the TILES, not above the ellipsoid: over downtown the
+      // two differ by the height of the building under you, and the second
+      // number is the one a reader can feel. No tile loaded yet ⇒ no
+      // correction, which is the same fallback the camera floor makes.
+      let surface: number | undefined
+      try { surface = tileset?.getHeight(c, scene) } catch { surface = undefined }
+      const altitudeM = Math.round(c.height - (surface ?? 0))
+      const tilesLoaded = tileset ? tileset.tilesLoaded : false
+      const groundLat = Cesium.Math.toDegrees(c.latitude)
+      const groundLng = Cesium.Math.toDegrees(c.longitude)
+      const key = `${headingDeg}|${tiltDeg}|${altitudeM}|${tilesLoaded}|${groundLat.toFixed(4)}|${groundLng.toFixed(4)}`
+      if (key === last) return
+      last = key
+      cb.current.onTelemetry({ headingDeg, tiltDeg, altitudeM, tilesLoaded, groundLat, groundLng })
+    }
+    sample()
+    const id = setInterval(sample, TELEMETRY_MS)
+    return () => clearInterval(id)
+  }, [viewer, tileset, props.telemetryOn])
+
   // ── Breath: request frames for the colour animation, tab visible only ──
   useEffect(() => {
     if (!viewer || !props.active) return
@@ -209,7 +267,7 @@ export default function ImmersiveScene(props: Props) {
       {/* The beacon rides the host div (a sibling of the tune panel), not the
           Cesium scene — it is screen space by design. The ground disc stays:
           the two split the job, anchoring below and visibility above. */}
-      {viewer && props.active && (
+      {viewer && props.active && props.beaconOn && (
         <Beacon
           viewer={viewer} tileset={tileset} event={props.active}
           color={DATASET_META[props.active.datasetId].color}

@@ -5,9 +5,11 @@
 // same 48h window hook as /live, same cite purposes — the route is a detail
 // route of the `live` family, so the manifest's sources cover it), the URL
 // contract (?event= is the active stop, ?play=1 auto-advance, ?tune=1 the
-// dev panel, ?tod= the grade override), the carousel state, keys, hold and
-// the overlay. Chrome is off (AppShell reads routeChrome); mobile / no key /
-// resting never reach this file (ImmersiveGate).
+// dev panel, ?tod= the grade — day|dusk|night, dusk by default and written
+// by the rail's Light control), the carousel state, keys, hold, the two
+// view switches (beacon, frame ticks) and the overlay. Chrome is off
+// (AppShell reads routeChrome); mobile / no key / resting never reach this
+// file (ImmersiveGate).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAppStore } from '@/stores/appStore'
@@ -15,13 +17,15 @@ import { useLast48Window } from '@/hooks/useLast48Window'
 import { LAST48_DATASETS, type NormalizedEvent } from '@/types/last48'
 import { PACE_PRESETS } from '../../ambient/pace'
 import { DATASET_META } from '../../detail/eventCardModel'
+import { gradeForTheme, type Grade } from '../grade'
 import { chainTour } from '../tourChain'
 import { carouselIndex, stepIndex, peekIds, queueIds } from './carousel'
 import { useAutoAdvance } from './useAutoAdvance'
 import LowerThird from './LowerThird'
 import RightRail, { HOLD_MS } from './RightRail'
 import FrameTicks from './FrameTicks'
-import ImmersiveScene from './ImmersiveScene'
+import TelemetryStrip from './TelemetryStrip'
+import ImmersiveScene, { type Telemetry } from './ImmersiveScene'
 
 /** How close a ground click has to land to count as "that stop". */
 const NEAREST_M = 150
@@ -67,6 +71,10 @@ export default function Last48Immersive() {
   const playing = searchParams.get('play') === '1'
   const tuneOn = searchParams.get('tune') === '1'
   const todOverride = searchParams.get('tod')
+  // The rail's Light control needs a VALUE, not an override: the immersive
+  // page is always dusk unless told otherwise (gradeForTheme(true, null) is
+  // dusk, so `?tod=dusk` and no param are the same scene).
+  const tod: Grade = gradeForTheme(true, todOverride)
   const setParam = useCallback((key: string, value: string | null) => {
     setSearchParams((prev) => {
       if ((prev.get(key) ?? null) === value) return prev
@@ -190,6 +198,14 @@ export default function Last48Immersive() {
     return () => clearInterval(id)
   }, [hold])
   const [overlayOn, setOverlayOn] = useState(true)
+  // The two view switches. The beacon is on because the stop is the point of
+  // the page; the frame ticks are off because they belong to the b-roll plate
+  // — hiding the panels still shows them, and this switch only pins them on
+  // while the panels are up.
+  const [beaconOn, setBeaconOn] = useState(true)
+  const [ticksOn, setTicksOn] = useState(false)
+  const [telemetry, setTelemetry] = useState<Telemetry | null>(null)
+  const handleTelemetry = useCallback((t: Telemetry) => setTelemetry(t), [])
   // The "O · overlay" reminder is a HINT, not chrome: it says its piece for
   // 3 s each time the band goes away, then leaves the frame clean (which is
   // the whole point of hiding the band). Every later `O` re-shows it.
@@ -268,16 +284,33 @@ export default function Last48Immersive() {
             rangeM={rangeM}
             todOverride={todOverride}
             tuneOn={tuneOn}
+            beaconOn={beaconOn}
+            telemetryOn={overlayOn}
+            onTelemetry={handleTelemetry}
             onArrived={handleArrived}
             onPick={jump}
             onMapClick={clickNearest}
             onUserInput={() => { if (playing) setParam('play', null) }}
             onRest={rest}
           />
-          {!overlayOn && <FrameTicks hostRef={hostRef} />}
+          {(ticksOn || !overlayOn) && <FrameTicks hostRef={hostRef} />}
+          {overlayOn && (
+            <TelemetryStrip
+              lat={active?.latitude ?? telemetry?.groundLat ?? null}
+              lng={active?.longitude ?? telemetry?.groundLng ?? null}
+              headingDeg={telemetry?.headingDeg ?? null}
+              tiltDeg={telemetry?.tiltDeg ?? null}
+              altitudeM={telemetry?.altitudeM ?? null}
+              tilesLoaded={telemetry?.tilesLoaded ?? false}
+              grade={tod}
+              stream={active ? DATASET_META[active.datasetId].label : null}
+              stopIndex={index + 1}
+              stopCount={order.length}
+            />
+          )}
           {!overlayOn && (
             <p className={`pointer-events-none absolute left-1/2 top-3 z-10 -translate-x-1/2 rounded-full bg-espresso-900/70 px-3 py-1 font-mono text-nano uppercase tracking-widest text-paper-300/80 transition-opacity duration-700 ${hintOn ? 'opacity-100' : 'opacity-0'}`}>
-              O · overlay
+              O · show panels
             </p>
           )}
         </div>
@@ -299,9 +332,15 @@ export default function Last48Immersive() {
           stopCount={order.length}
           stream={active ? DATASET_META[active.datasetId] : null}
           dwellProgress={dwellProgress}
+          tod={tod}
+          beaconOn={beaconOn}
+          ticksOn={ticksOn}
           onPlayToggle={() => setParam('play', playing ? null : '1')}
           onHold={startHold}
           onOverlayToggle={() => setOverlayOn(false)}
+          onTod={(v) => setParam('tod', v)}
+          onBeaconToggle={setBeaconOn}
+          onTicksToggle={setTicksOn}
           onExit={leave}
         />
       )}
