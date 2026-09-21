@@ -63,14 +63,14 @@ const FALLBACK = '#d4a435'
  *  rail is a flex column that scrolls: once the presets made it taller than
  *  the screen, flex squashed these rows to 3 px (walk, 2026-09-21). 3.5rem is half the old
  *  tile and still a target you can hit without looking. */
-const ROW = `h-[3.5rem] shrink-0 w-full rounded-lg flex items-center gap-3 px-4 relative overflow-hidden glow-host
+const ROW = `h-[3rem] shrink-0 w-full rounded-lg flex items-center gap-3 px-4 relative overflow-hidden glow-host
   ring-1 transition-colors bg-paper-50/70 dark:bg-espresso-800/70
   ring-paper-400/40 dark:ring-paper-300/20 hover:ring-paper-500/60
   text-paper-700 dark:text-paper-300`
 const ROW_ON = 'bg-ochre-500/18 text-ink dark:text-paper-100'
 /** The signature: the control's NAME in the display face, big enough to read
  *  from across a room. */
-const NAME = 'relative z-[1] font-display italic text-[1.7vw] leading-none text-ink dark:text-paper-100'
+const NAME = 'relative z-[1] font-display italic text-[min(1.4vw,1.35rem)] leading-none text-ink dark:text-paper-100'
 /** The key that does the same thing, parked at the far edge. paper-600 in
  *  light mode rather than the 500 the dark side wears: 9 px of #a8926a on
  *  cream does not clear the contrast floor. */
@@ -79,7 +79,7 @@ const KEY_HINT = 'relative z-[1] ml-auto font-mono text-nano text-paper-600 dark
 const EYEBROW = 'font-mono text-label tracking-[0.25em] uppercase text-paper-600 dark:text-paper-500'
 /** One size for every glyph in the rail — the family only holds together if
  *  they are all drawn at the same scale. */
-const GLYPH = 28
+const GLYPH = 24
 
 /** A settings row: name left, control right, at two thirds a button's height. */
 function ViewRow({ label, children }: { label: string; children: ReactNode }) {
