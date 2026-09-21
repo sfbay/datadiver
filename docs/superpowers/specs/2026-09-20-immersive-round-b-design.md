@@ -113,3 +113,31 @@ Pulse phrase layer, never raw z-scores. Preset captions are ≤ 40 characters.
 
 Thumbnail imagery for presets (needs a licensing decision), Oakland, a preset editor,
 saving presets per user, any Google Places call.
+
+## 8. As built (2026-09-20)
+
+Plan: `docs/superpowers/plans/2026-09-20-immersive-round-b.md`. Rulings made while
+planning, all recorded there: (1) a second open-ground click MOVES the here card rather
+than closing it; (2) Mapbox Geocoding v6 reverse has no `poi` type, so the corner row is
+`types=address,street` rendered as "near 445 Minna Street"; (3) hotspot camera heading
+20 / pitch −35 / range 700, and a hotspot with no located events is skipped; (4) the
+rail's dwell rule now reads the same `remainingMs()` as the stripe and the figure, which
+also fixes the rule jumping after a hold; (5) a stale `?place=` clears at once, a stale
+`?hot=` clears only once the anomaly engine has loaded with no error and no stream
+missing its current counts — a failed engine or a missing stream renders a named
+`hotspotsNote` reason instead, never a false "Nothing unusual". Drift from the plan
+during implementation, corrected here rather than in the plan doc: caption length is
+`PLACE_CAPTION_MAX = 26` (not the drafted 40), cut to fit the 13.5rem rail, with the
+preset name at `text-[min(1.2vw,1.05rem)]`; a second click on the pressed preset tile
+calls `onClear` directly, and `useAutoAdvance`'s `stopKey`
+(`${activeId}|${detour?.key ?? ''}`) gives a full dwell on entering OR leaving a detour;
+`sameDetour` compares a raw coordinate difference (< 1e-4°), not a rounded bucket; the
+neighborhood boundary GeoJSON now loads lazily on the first ground click
+(`useBoundariesAsset` accepts `null` and stays idle until then), and the ground click
+resolves against Cesium's depth buffer (`scene.pickPosition`) first, the ellipsoid as
+fallback; the Escape ladder is restore hidden panels → close the here card → leave, and
+the probe beacon ignores the rail's Beacon toggle on purpose. Files: `nextIn.ts`,
+`streamWords.ts`, `places.ts`, `hotspots.ts`, `detour.ts`, `Presets.tsx`,
+`pointInNeighborhood.ts`, `here.ts`, `useHereCard.ts`, plus `useAutoAdvance`,
+`useDreamDirector`, `ImmersiveScene`, `Beacon`, `TelemetryStrip`, `LowerThird`,
+`ImmersiveCard`, `RightRail`, `Last48Immersive`.
