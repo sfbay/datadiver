@@ -43,7 +43,7 @@ interface Props {
 /** Places have no data tier — one house colour, the rail's ochre. */
 const PLACE_COLOR = '#d4a435'
 
-const HEADING = 'text-[1vw] leading-none text-paper-800 dark:text-paper-200'
+const HEADING = 'text-[min(1vw,0.9rem)] leading-none text-paper-800 dark:text-paper-200'
 const TILE = `h-[3.5rem] w-full rounded-lg flex items-center gap-3 px-2 text-left transition-colors
   hover:ring-1 hover:ring-paper-500/60 hover:bg-paper-200/40 dark:hover:bg-espresso-800/60`
 const TILE_ON = 'bg-ochre-500/18 ring-1 ring-paper-400/40 dark:ring-paper-300/20'
@@ -53,7 +53,7 @@ const NOTE = 'px-2 py-2 text-label leading-snug text-paper-600 dark:text-paper-5
 
 function Tile({ color, name, caption, on, onClick }: { color: string; name: string; caption: string; on: boolean; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} aria-pressed={on} className={`${TILE} ${on ? TILE_ON : ''}`} title={`Fly to ${name}`}>
+    <button type="button" onClick={onClick} aria-pressed={on} className={`${TILE} ${on ? TILE_ON : ''}`} title={on ? 'Back to the stop' : `Fly to ${name}`}>
       <span aria-hidden className="w-10 h-10 shrink-0 rounded-md" style={{ background: color, opacity: 0.85 }} />
       <span className="flex min-w-0 flex-col gap-1">
         <span className={NAME}>{name}</span>

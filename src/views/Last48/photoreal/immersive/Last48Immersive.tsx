@@ -179,13 +179,22 @@ export default function Last48Immersive() {
   }, [anomaliesError, missingCurrent])
   const placeId = searchParams.get('place')
   const hotNh = searchParams.get('hot')
-  // A detour is stabilised by VALUE like the events: a hotspot's centroid
-  // shifts a few metres per poll and must not restart an 18 s flight.
+  // A detour resolves ONCE per key and never drifts with the poll: once
+  // `detourRef` holds a detour for the wanted key, later polls (a hotspot's
+  // centroid shifting a few metres, or the same place looked up again) must
+  // return the SAME object — not just a value-equal one. Rebuilding a
+  // value-equal-but-new object on every poll still gave the director's leg
+  // effect a new `detour` reference, restarting its 18 s flight under the
+  // reader while `arrived` (keyed on `detour?.key`) stayed true.
   const detourRef = useRef<DetourTarget | null>(null)
   const detour = useMemo(() => {
+    const wantedKey = placeId ? `place:${placeId}` : hotNh ? `hot:${hotNh}` : null
+    if (detourRef.current?.key === wantedKey) return detourRef.current
     let fresh: DetourTarget | null = null
     if (placeId) { const p = PLACES.find((x) => x.id === placeId); fresh = p ? detourFromPlace(p) : null }
     else if (hotNh) { const h = hotspots.find((x) => x.neighborhood === hotNh); fresh = h ? detourFromHotspot(h) : null }
+    // First resolution of this key: sameDetour still guards against a
+    // spurious identity change if this memo re-runs before the ref catches up.
     const out = sameDetour(detourRef.current, fresh) ? detourRef.current : fresh
     detourRef.current = out
     return out
@@ -199,7 +208,15 @@ export default function Last48Immersive() {
     // A missed neighborhood is only "gone" once the engine has actually read
     // AND read cleanly — a baseline error or a missing current count means
     // "unknown", not "not there", and must not evict a deep-linked ?hot=.
-    if (hotNh && !anomaliesLoading && !anomaliesError && missingCurrent.length === 0 && !hotspots.some((x) => x.neighborhood === hotNh)) {
+    // An ENGAGED detour (the ref already resolved this key) is never evicted
+    // either — the reader is parked there, and the neighborhood merely
+    // dropping out of the top-4 poll must not pull the camera away; only a
+    // ?hot= that never resolved in the first place gets cleaned up.
+    if (
+      hotNh && !anomaliesLoading && !anomaliesError && missingCurrent.length === 0 &&
+      detourRef.current?.key !== `hot:${hotNh}` &&
+      !hotspots.some((x) => x.neighborhood === hotNh)
+    ) {
       setParam('hot', null)
     }
   }, [hotNh, anomaliesLoading, anomaliesError, missingCurrent, hotspots, setParam])
@@ -237,7 +254,7 @@ export default function Last48Immersive() {
   }, [order, byId, jump])
   const step = useCallback((delta: 1 | -1) => {
     const i = stepIndex(order, index, delta)
-    if (i >= 0) setParams({ event: order[i], place: null, hot: null })
+    if (i >= 0) { setHerePoint(null); setParams({ event: order[i], place: null, hot: null }) }
   }, [order, index, setParams])
 
   // ── Arrival, play, hold, overlay ──────────────────────────────────────

@@ -1,3 +1,4 @@
+// src/views/Last48/photoreal/immersive/nextIn.ts
 //
 // The time-to-next-stop FIGURE (Round B §4). One string, mono in the band's
 // status line. Whole seconds, rounded UP: a reader watching "next in 1 s"

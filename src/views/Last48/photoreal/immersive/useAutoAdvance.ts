@@ -1,3 +1,4 @@
+// src/views/Last48/photoreal/immersive/useAutoAdvance.ts
 //
 // The immersive PLAY clock (Spec A2 §1: auto-advance is opt-in; explore is
 // the default). Counts the dwell from ARRIVAL — the page flips `arrived`

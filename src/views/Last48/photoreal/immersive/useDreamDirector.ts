@@ -39,6 +39,14 @@ interface PreloadScene {
 /** A running drift: enough to stop it mid-way and resume from that heading. */
 interface Drift { from: number; to: number; t0: number; ms: number; center: Center }
 
+/** A type predicate rather than a bare `'key' in d` check — TS's structural
+ *  narrowing on `{lng,lat} | DetourTarget` widens the true branch to an
+ *  intersection instead of `DetourTarget` (the two types share too much
+ *  shape for control-flow analysis alone), so an explicit guard is needed. */
+function isDetourDest(d: Exclude<PhotorealTarget, null> | DetourTarget): d is DetourTarget {
+  return 'headingDeg' in d
+}
+
 export function useDreamDirector(opts: {
   viewer: Cesium.Viewer
   tileset: Cesium.Cesium3DTileset
@@ -64,6 +72,11 @@ export function useDreamDirector(opts: {
 }): { cancel: () => void } {
   const { viewer, tileset, target, hold } = opts
   const detour = opts.detour ?? null
+  // The leg's destination: a detour when there is one, else the stop. This is
+  // the identity the leg effect keys on — NOT `target`/`detour` separately —
+  // so a `?event=` write-back that changes `target` while a detour is engaged
+  // cannot re-run the effect and re-fly a flight already in progress.
+  const dest: PhotorealTarget | DetourTarget | null = detour ?? target
   const headingRef = useRef(35)
   const cbRef = useRef(opts)
   // eslint-disable-next-line react-hooks/refs
@@ -143,16 +156,20 @@ export function useDreamDirector(opts: {
     },
   })
 
-  // One leg per destination: the detour when there is one, else the target.
+  // One leg per DESTINATION IDENTITY (`dest`, hoisted above): a detour when
+  // there is one, else the stop. Deliberately NOT `[target, detour, ...]` —
+  // that let a `?event=` write-back (which changes `target` but not the
+  // engaged `detour`) restart this effect and re-fly a flight already in
+  // progress on top of the reader.
   useEffect(() => {
     const a = api.current
-    const dest = detour
-      ? { lng: detour.lng, lat: detour.lat, headingDeg: detour.headingDeg, pitchDeg: detour.pitchDeg, rangeM: detour.rangeM }
-      : target
-        ? { lng: target.lng, lat: target.lat, headingDeg: headingRef.current,
+    const legDest = dest == null
+      ? null
+      : isDetourDest(dest)
+        ? { lng: dest.lng, lat: dest.lat, headingDeg: dest.headingDeg, pitchDeg: dest.pitchDeg, rangeM: dest.rangeM }
+        : { lng: dest.lng, lat: dest.lat, headingDeg: headingRef.current,
             pitchDeg: Math.min(ORBIT_PITCH_DEG, -cbRef.current.pace.pitchMin), rangeM: cbRef.current.rangeM ?? RANGE_M.immersive }
-        : null
-    if (!dest) {
+    if (!legDest) {
       a.stopDrift()
       arrivedRef.current = false
       centerRef.current = null
@@ -165,11 +182,11 @@ export function useDreamDirector(opts: {
     cancelledRef.current = false
     a.stopDrift()
     // A detour brings its own heading; a stop continues from the last one.
-    headingRef.current = dest.headingDeg
-    legRef.current = { pitchDeg: dest.pitchDeg, rangeM: dest.rangeM }
-    const center: Center = { lng: dest.lng, lat: dest.lat, height: TARGET_HEIGHT_M }
+    headingRef.current = legDest.headingDeg
+    legRef.current = { pitchDeg: legDest.pitchDeg, rangeM: legDest.rangeM }
+    const center: Center = { lng: legDest.lng, lat: legDest.lat, height: TARGET_HEIGHT_M }
     centerRef.current = center
-    const arrival = orbitPose(center, dest.headingDeg, dest.pitchDeg, dest.rangeM)
+    const arrival = orbitPose(center, legDest.headingDeg, legDest.pitchDeg, legDest.rangeM)
     const { pace, reducedMotion } = cbRef.current
     tileset.maximumScreenSpaceError = SSE_FLIGHT
     viewer.camera.flyTo({
@@ -199,7 +216,7 @@ export function useDreamDirector(opts: {
       a.stopDrift()
       if (a.alive()) viewer.camera.cancelFlight()
     }
-  }, [target, detour, viewer, tileset])
+  }, [dest, viewer, tileset])
 
   // Hold / release. Release resumes the drift only once the stop has arrived
   // (a hold pressed mid-flight lets the flight finish; the settle gate then

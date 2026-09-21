@@ -106,7 +106,7 @@ export default function TelemetryStrip({
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0 pointer-events-auto">
           <span className="flex flex-wrap items-center gap-x-2 gap-y-1" role="status" aria-live="polite">
             {here.neighborhood && <span className={PILL} style={PILL_STYLE}>{here.neighborhood}</span>}
-            {here.corner && (<><Dot /><span>{here.corner}</span></>)}
+            {here.corner && (<>{here.neighborhood && <Dot />}<span>{here.corner}</span></>)}
             {(here.neighborhood || here.corner) && <Dot />}
             <span>{here.nearby}</span>
             {here.acs && (<><Dot /><span>{here.acs}</span></>)}
