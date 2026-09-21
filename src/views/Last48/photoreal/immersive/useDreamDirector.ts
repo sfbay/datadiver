@@ -26,7 +26,16 @@ import { quality } from '../quality'
 import { SSE_FLIGHT, SETTLE_CAP_MS, type PhotorealTarget } from '../useCesiumDirector'
 import type { DetourTarget } from './detour'
 
+/** Metres ABOVE THE TILE SURFACE the camera aims at. Round B walk
+ *  (2026-09-20, Jesse: "strange that this one ended up kind of high in the
+ *  frame"): this used to be height above the ELLIPSOID, so on the Sunset's
+ *  60 m slope — let alone Twin Peaks — the look point was underground and the
+ *  real stop rode up the frame. The surface is sampled from the tileset. */
 const TARGET_HEIGHT_M = 30
+/** A settle-time re-probe that differs from the arrival aim by more than
+ *  this re-aims the camera with a short correction glide before the drift. */
+const REAIM_M = 10
+const REAIM_S = 1.5
 const toC3 = (v: [number, number, number]) => new Cesium.Cartesian3(v[0], v[1], v[2])
 type Center = { lng: number; lat: number; height: number }
 
@@ -111,7 +120,7 @@ export function useDreamDirector(opts: {
       const cam = s.preloadFlightCamera
       if (!cam) return
       // The next stop is a STOP, not a detour — always the house hero pose.
-      const p = orbitPose({ lng: nxt.lng, lat: nxt.lat, height: TARGET_HEIGHT_M }, headingDeg, Math.min(ORBIT_PITCH_DEG, -cbRef.current.pace.pitchMin), (cbRef.current.rangeM ?? RANGE_M.immersive))
+      const p = orbitPose({ lng: nxt.lng, lat: nxt.lat, height: TARGET_HEIGHT_M + surfaceM(nxt.lng, nxt.lat) }, headingDeg, Math.min(ORBIT_PITCH_DEG, -cbRef.current.pace.pitchMin), (cbRef.current.rangeM ?? RANGE_M.immersive))
       cam.setView({ destination: toC3(p.position), orientation: { direction: toC3(p.direction), up: toC3(p.up) } })
       // Camera.frustum is a union in the d.ts; every member has computeCullingVolume.
       s.preloadFlightCullingVolume = (cam.frustum as Cesium.PerspectiveFrustum)
@@ -155,6 +164,14 @@ export function useDreamDirector(opts: {
       if (!viewer.isDestroyed()) viewer.camera.cancelFlight()
     },
   })
+
+  /** Google surface height under a point, or 0 while no tile there has
+   *  loaded yet (the settle gate re-probes once they have). getHeight is the
+   *  one tileset call that can throw; keep the leg alive. */
+  const surfaceM = (lng: number, lat: number): number => {
+    if (viewer.isDestroyed()) return 0
+    try { return tileset.getHeight(Cesium.Cartographic.fromDegrees(lng, lat), viewer.scene) ?? 0 } catch { return 0 }
+  }
 
   /** The heading a STOP leg arrives with: the bearing from where the camera
    *  is now to the stop, so the flight reads as forward motion (Jesse's walk,
@@ -200,7 +217,7 @@ export function useDreamDirector(opts: {
     // travelled (travelHeading), so the leg reads as flying forward.
     headingRef.current = legDest.headingDeg
     legRef.current = { pitchDeg: legDest.pitchDeg, rangeM: legDest.rangeM }
-    const center: Center = { lng: legDest.lng, lat: legDest.lat, height: TARGET_HEIGHT_M }
+    const center: Center = { lng: legDest.lng, lat: legDest.lat, height: TARGET_HEIGHT_M + surfaceM(legDest.lng, legDest.lat) }
     centerRef.current = center
     const arrival = orbitPose(center, legDest.headingDeg, legDest.pitchDeg, legDest.rangeM)
     const { pace, reducedMotion } = cbRef.current
@@ -219,6 +236,29 @@ export function useDreamDirector(opts: {
           if (tileset.tilesLoaded || Date.now() - t0 > SETTLE_CAP_MS) {
             clearInterval(settle)
             if (cancelledRef.current) return
+            // Tiles are in now: re-measure the ground under the stop. The
+            // arrival aim used whatever was resident at take-off (often 0 for
+            // a fresh area); a big miss gets a short glide to the true frame
+            // before the drift starts from it.
+            const trueH = TARGET_HEIGHT_M + surfaceM(center.lng, center.lat)
+            if (Math.abs(trueH - center.height) > REAIM_M && !cbRef.current.reducedMotion) {
+              center.height = trueH
+              const fix = orbitPose(center, headingRef.current, legDest.pitchDeg, legDest.rangeM)
+              viewer.camera.flyTo({
+                destination: toC3(fix.position),
+                orientation: { direction: toC3(fix.direction), up: toC3(fix.up) },
+                duration: REAIM_S,
+                easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
+                complete: () => {
+                  if (disposed || cancelledRef.current || !a.alive()) return
+                  arrivedRef.current = true
+                  cbRef.current.onArrived()
+                  if (!cbRef.current.hold) a.startDrift(center)
+                },
+              })
+              return
+            }
+            center.height = trueH
             arrivedRef.current = true
             cbRef.current.onArrived()
             if (!cbRef.current.hold) a.startDrift(center)
