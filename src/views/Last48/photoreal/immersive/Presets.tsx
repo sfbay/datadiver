@@ -44,11 +44,11 @@ interface Props {
 const PLACE_COLOR = '#d4a435'
 
 const HEADING = 'text-[min(1vw,0.9rem)] leading-none text-paper-800 dark:text-paper-200'
-const TILE = `h-[3.5rem] w-full rounded-lg flex items-center gap-3 px-2 text-left transition-colors
+const TILE = `min-h-[3.5rem] py-2 w-full rounded-lg flex items-center gap-3 px-2 text-left transition-colors
   hover:ring-1 hover:ring-paper-500/60 hover:bg-paper-200/40 dark:hover:bg-espresso-800/60`
 const TILE_ON = 'bg-ochre-500/18 ring-1 ring-paper-400/40 dark:ring-paper-300/20'
-const NAME = 'font-display italic text-[min(1.2vw,1.05rem)] leading-none text-ink dark:text-paper-100 truncate'
-const CAPTION = 'text-label leading-none text-paper-600 dark:text-paper-400 truncate'
+const NAME = 'font-display italic text-[min(1.2vw,1.05rem)] leading-tight text-ink dark:text-paper-100'
+const CAPTION = 'text-label leading-tight text-paper-600 dark:text-paper-400'
 const NOTE = 'px-2 py-2 text-label leading-snug text-paper-600 dark:text-paper-500'
 
 function Tile({ color, name, caption, on, onClick }: { color: string; name: string; caption: string; on: boolean; onClick: () => void }) {

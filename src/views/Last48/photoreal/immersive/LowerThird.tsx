@@ -77,16 +77,19 @@ export default function LowerThird({ prev, active, ahead, onJump, onStep, stopIn
       <div className="relative z-[1] flex h-full flex-col">
         {/* Status line: the active stream and where this card sits in the
             pass. Replaces the old "── NOW" eyebrow. */}
-        <div className="flex items-center gap-3 px-[clamp(16px,3vw,64px)] pt-4 pb-2 font-mono text-label tabular-nums text-paper-700 dark:text-paper-400">
+        {/* In the display italic (Jesse's walk of Round B, 2026-09-20: "let's try
+            this in the big italics"); the countdown stays mono because a
+            figure that changes every second has to hold its width. */}
+        <div className="flex items-baseline gap-3 px-[clamp(16px,3vw,64px)] pt-3 pb-2 font-display italic text-[min(1.2vw,1.05rem)] leading-none text-paper-700 dark:text-paper-400">
           {meta && active && (
             <span className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full" style={{ background: meta.color, boxShadow: `0 0 8px ${meta.color}` }} aria-hidden />
+              <span className="w-2 h-2 rounded-full self-center" style={{ background: meta.color, boxShadow: `0 0 8px ${meta.color}` }} aria-hidden />
               <span style={{ color: meta.color }}>{STREAM_WORD[active.datasetId] ?? meta.label}</span>
             </span>
           )}
           {meta && <span aria-hidden>·</span>}
           <span>Stop {known ? stopIndex : '—'} of {known ? stopCount : '—'}</span>
-          {nextIn && (<><span aria-hidden>·</span><span className="tabular-nums">{nextIn}</span></>)}
+          {nextIn && (<><span aria-hidden>·</span><span className="font-mono not-italic text-label tabular-nums">{nextIn}</span></>)}
         </div>
 
         {/* Four slots, flanked by the step controls: ‹ · prev · ACTIVE ·

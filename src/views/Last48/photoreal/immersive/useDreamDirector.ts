@@ -21,7 +21,7 @@
 import { useEffect, useRef } from 'react'
 import * as Cesium from 'cesium'
 import type { PaceValues } from '../../ambient/pace'
-import { orbitPose, RANGE_M, ORBIT_PITCH_DEG } from '../cameraPose'
+import { orbitPose, bearingDeg, RANGE_M, ORBIT_PITCH_DEG } from '../cameraPose'
 import { quality } from '../quality'
 import { SSE_FLIGHT, SETTLE_CAP_MS, type PhotorealTarget } from '../useCesiumDirector'
 import type { DetourTarget } from './detour'
@@ -156,6 +156,21 @@ export function useDreamDirector(opts: {
     },
   })
 
+  /** The heading a STOP leg arrives with: the bearing from where the camera
+   *  is now to the stop, so the flight reads as forward motion (Jesse's walk,
+   *  2026-09-20: keeping the old heading flew a stop behind us backward).
+   *  Cesium's flyTo slerps the orientation across the whole leg, so the turn
+   *  is spread over the 18 s. Falls back to the last heading when the camera
+   *  has no position yet, or is already over the stop (a degenerate bearing). */
+  const travelHeading = (lng: number, lat: number): number => {
+    if (viewer.isDestroyed()) return headingRef.current
+    const c = viewer.camera.positionCartographic
+    if (!c) return headingRef.current
+    const fromLng = Cesium.Math.toDegrees(c.longitude), fromLat = Cesium.Math.toDegrees(c.latitude)
+    if (Math.abs(fromLng - lng) < 1e-4 && Math.abs(fromLat - lat) < 1e-4) return headingRef.current
+    return bearingDeg(fromLng, fromLat, lng, lat)
+  }
+
   // One leg per DESTINATION IDENTITY (`dest`, hoisted above): a detour when
   // there is one, else the stop. Deliberately NOT `[target, detour, ...]` —
   // that let a `?event=` write-back (which changes `target` but not the
@@ -167,7 +182,7 @@ export function useDreamDirector(opts: {
       ? null
       : isDetourDest(dest)
         ? { lng: dest.lng, lat: dest.lat, headingDeg: dest.headingDeg, pitchDeg: dest.pitchDeg, rangeM: dest.rangeM }
-        : { lng: dest.lng, lat: dest.lat, headingDeg: headingRef.current,
+        : { lng: dest.lng, lat: dest.lat, headingDeg: travelHeading(dest.lng, dest.lat),
             pitchDeg: Math.min(ORBIT_PITCH_DEG, -cbRef.current.pace.pitchMin), rangeM: cbRef.current.rangeM ?? RANGE_M.immersive }
     if (!legDest) {
       a.stopDrift()
@@ -181,7 +196,8 @@ export function useDreamDirector(opts: {
     arrivedRef.current = false
     cancelledRef.current = false
     a.stopDrift()
-    // A detour brings its own heading; a stop continues from the last one.
+    // A detour brings its own heading; a stop ARRIVES facing the way it
+    // travelled (travelHeading), so the leg reads as flying forward.
     headingRef.current = legDest.headingDeg
     legRef.current = { pitchDeg: legDest.pitchDeg, rangeM: legDest.rangeM }
     const center: Center = { lng: legDest.lng, lat: legDest.lat, height: TARGET_HEIGHT_M }

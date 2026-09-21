@@ -93,7 +93,9 @@ export const PACE_PRESETS: Record<PaceId, PacePreset> = {
     // design critique of 2026-09-13; the flight is still ONE linear leg, so
     // the next-stop tile preload is unchanged.
     // breathMs 0: the carousel IS the pass and the queue never empties.
-    orbitDegPerS: 0.28,
+    // 0.42 (Jesse's walk of Round B, 2026-09-20: "a bit faster" once the
+    // tiles settle) — ≈32° across the 75 s dwell.
+    orbitDegPerS: 0.42,
     dwellMs: 75000,
     breathMs: 0,
     tweenMs: 18000,
