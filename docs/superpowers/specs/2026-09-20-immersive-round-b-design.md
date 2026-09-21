@@ -125,7 +125,7 @@ rail's dwell rule now reads the same `remainingMs()` as the stripe and the figur
 also fixes the rule jumping after a hold; (5) a stale `?place=` clears at once, a stale
 `?hot=` clears only once the anomaly engine has loaded with no error and no stream
 missing its current counts — a failed engine or a missing stream renders a named
-`hotspotsNote` reason instead, never a false "Nothing unusual". Drift from the plan
+`hotspotsNote` reason instead, never a false "Nothing unusual"; an ENGAGED `?hot=` is never evicted — the final review froze a detour per key (the page's memo returns the cached object while the key is unchanged) and keyed the director's leg on `dest = detour ?? target`, so a centroid shift, a rank swap or an aged-out active stop cannot re-fly or evict the camera under a parked reader. Drift from the plan
 during implementation, corrected here rather than in the plan doc: caption length is
 `PLACE_CAPTION_MAX = 26` (not the drafted 40), cut to fit the 13.5rem rail, with the
 preset name at `text-[min(1.2vw,1.05rem)]`; a second click on the pressed preset tile
