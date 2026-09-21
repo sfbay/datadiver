@@ -96,16 +96,24 @@ export default function TelemetryStrip({
       {here ? (
         // The here reading: neighborhood as the leading pill (it is the
         // answer to "where is this"), then the corner, the counts, the ACS
-        // line — each omitted when unknown, never printed as a dash.
-        <div className={`${GROUP} pointer-events-auto flex-wrap gap-y-1`} role="status" aria-live="polite">
-          {here.neighborhood && <span className={PILL} style={PILL_STYLE}>{here.neighborhood}</span>}
-          {here.corner && (<><Dot /><span>{here.corner}</span></>)}
-          <Dot />
-          <span>{here.nearby}</span>
-          {here.acs && (<><Dot /><span>{here.acs}</span></>)}
+        // line — each omitted when unknown, never printed as a dash. Its own
+        // class string (no `shrink-0` — GROUP's is what stopped the wrap
+        // from ever engaging) so a long reading wraps to a second line
+        // inside the plate instead of spilling off it. The live region wraps
+        // ONLY the reading text — the ✕ sits outside it as a sibling, so
+        // closing (or the corner landing) never re-announces a button the
+        // reader is already focused on.
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0 pointer-events-auto">
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1" role="status" aria-live="polite">
+            {here.neighborhood && <span className={PILL} style={PILL_STYLE}>{here.neighborhood}</span>}
+            {here.corner && (<><Dot /><span>{here.corner}</span></>)}
+            {(here.neighborhood || here.corner) && <Dot />}
+            <span>{here.nearby}</span>
+            {here.acs && (<><Dot /><span>{here.acs}</span></>)}
+          </span>
           <button
             type="button" onClick={onCloseHere} aria-label="Close" title="Close (Escape)"
-            className="ml-1 h-5 w-5 rounded-full text-paper-400 hover:text-paper-100 hover:bg-paper-300/15 leading-none"
+            className="ml-1 h-6 w-6 rounded-full text-paper-400 hover:text-paper-100 hover:bg-paper-300/15 leading-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-paper-300"
           >×</button>
         </div>
       ) : (

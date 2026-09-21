@@ -185,11 +185,17 @@ export default function ImmersiveScene(props: Props) {
       if (dragged) return
       // An entity under the pointer belongs to the marker layer.
       if (scene.pick(m.position)?.id) return
-      // The globe is hidden but its ellipsoid still picks; pickPosition reads
-      // the depth buffer (the tiles themselves) and throws on hardware with
-      // no depth texture. Same ladder as PhotorealMarkers.probeFocus.
-      let hit = viewer.camera.pickEllipsoid(m.position, scene.globe.ellipsoid)
-      if (!hit) { try { hit = scene.pickPosition(m.position) } catch { return } }
+      // The depth buffer (the tile surface itself) goes FIRST now: Round B §3
+      // prints a street and a neighborhood from this point, and pickEllipsoid
+      // alone puts it at SEA LEVEL — at a grazing pitch the ellipsoid-vs-
+      // rooftop gap projects to well over 300 m of horizontal error, enough
+      // to print the wrong street. pickPosition throws on hardware with no
+      // depth texture, so the ellipsoid pick (the globe is hidden but still
+      // picks) is the fallback there — same ladder as
+      // PhotorealMarkers.probeFocus, just reordered for this handler.
+      let hit: Cesium.Cartesian3 | undefined
+      try { hit = scene.pickPosition(m.position) } catch { hit = undefined }
+      if (!hit) hit = viewer.camera.pickEllipsoid(m.position, scene.globe.ellipsoid)
       if (!hit) return
       const c = Cesium.Cartographic.fromCartesian(hit)
       if (!c) return
@@ -282,6 +288,9 @@ export default function ImmersiveScene(props: Props) {
           color={DATASET_META[props.active.datasetId].color}
         />
       )}
+      {/* Deliberately ignores props.beaconOn (the rail's Beacon toggle): that
+          switch is about the HERO mark following the tour, while the probe
+          answers one explicit click and should mark it regardless. */}
       {viewer && props.probe && (
         <Beacon viewer={viewer} tileset={tileset} lng={props.probe.lng} lat={props.probe.lat} color="#f5ecd9" variant="probe" />
       )}

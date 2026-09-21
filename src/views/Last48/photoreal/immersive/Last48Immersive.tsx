@@ -334,7 +334,11 @@ export default function Last48Immersive() {
         case ' ': e.preventDefault(); setParam('play', playing ? null : '1'); break
         case 'o': case 'O': setOverlayOn((v) => !v); break
         case 'h': case 'H': startHold(); break
-        case 'Escape': if (herePoint) closeHere(); else if (!overlayOn) setOverlayOn(true); else leave(); break
+        // Panels hidden first: the strip (and its ✕) is unmounted under
+        // `!overlayOn`, and `herePoint` survives `O`, so pressing Escape
+        // there should bring the panels back rather than silently close a
+        // reading the reader can't currently see.
+        case 'Escape': if (!overlayOn) setOverlayOn(true); else if (herePoint) closeHere(); else leave(); break
       }
     }
     window.addEventListener('keydown', onKey)

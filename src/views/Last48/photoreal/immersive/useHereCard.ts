@@ -1,14 +1,18 @@
 // src/views/Last48/photoreal/immersive/useHereCard.ts
 //
-// Assembles the "here" reading for a clicked point (Round B §3). Three of
-// the four rows are synchronous from data already in memory; the fourth —
-// the nearest corner — is ONE Mapbox reverse-geocode per click, aborted if
-// the point changes first, and simply omitted on any failure (no token, no
-// network, a 4xx). Nothing here is cached: a reader who clicks the same
-// spot twice has asked twice, and one request a click is the budget.
+// Assembles the "here" reading for a clicked point (Round B §3). Two of the
+// four rows (counts, ACS) are synchronous from data already in memory; the
+// neighborhood row waits on the ~1 MB boundary polygons, LAZILY fetched on
+// the first non-null point (never at mount — see the boundaries hook call
+// below); the corner is ONE Mapbox reverse-geocode per click, aborted if the
+// point changes first, and simply omitted on any failure (no token, no
+// network, a 4xx). Nothing here is cached beyond that shared boundary asset:
+// a reader who clicks the same spot twice has asked twice, and one geocode
+// request a click is the budget.
 import { useEffect, useMemo, useState } from 'react'
 import type { NormalizedEvent } from '@/types/last48'
-import { useNeighborhoodBoundaries } from '@/hooks/useNeighborhoodBoundaries'
+import { useBoundariesAsset } from '@/hooks/useNeighborhoodBoundaries'
+import { getCity } from '@/cities/registry'
 import { useCensusData } from '@/hooks/useCensusData'
 import { pointInNeighborhood } from './pointInNeighborhood'
 import { nearbyCounts, formatNearby, acsLine, cornerFromGeocode } from './here'
@@ -28,7 +32,12 @@ export interface HereReading {
 const GEOCODE = 'https://api.mapbox.com/search/geocode/v6/reverse'
 
 export function useHereCard(point: HerePoint | null, events: readonly NormalizedEvent[]): HereReading | null {
-  const { boundaries } = useNeighborhoodBoundaries()
+  // The immersive page is SF-only (no Oakland /live route), and lazy on
+  // purpose: the reader may never click, so the ~1 MB neighborhood polygon
+  // file must not compete with Google tile streaming at mount. It loads on
+  // the first non-null point and is cached thereafter (useBoundariesAsset's
+  // module cache) — the neighborhood row is simply null until it lands.
+  const { boundaries } = useBoundariesAsset(point ? getCity('sf').areas.geojsonPath : null)
   const { neighborhoods } = useCensusData()
   const [corner, setCorner] = useState<string | null>(null)
 

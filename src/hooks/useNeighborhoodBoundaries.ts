@@ -50,16 +50,25 @@ export function useCensusCoarseBoundaries(cityId?: CityId): BoundariesResult {
 }
 
 /** One asset, one cache entry. Both public hooks are thin URL resolvers over
- *  this — keyed by URL rather than by city so the identity is the file. */
-function useBoundariesAsset(url: string): BoundariesResult {
+ *  this — keyed by URL rather than by city so the identity is the file.
+ *  `url: null` means "don't fetch yet" (Round B §3's here card: the reader
+ *  may never click, so the ~1 MB polygon file must not load at mount) — it
+ *  stays idle with `boundaries: null`, `isLoading: false`, no request, and
+ *  the SAME cache once a real URL does arrive, so a later click is instant
+ *  if some other view already warmed it this session. Exported so a caller
+ *  that wants to trigger the fetch on its own condition (rather than route)
+ *  can call it directly instead of going through one of the two city hooks
+ *  below. */
+export function useBoundariesAsset(url: string | null): BoundariesResult {
   const [boundaries, setBoundaries] = useState<GeoJSON.FeatureCollection | null>(
-    cachedByUrl.get(url) ?? null,
+    url ? cachedByUrl.get(url) ?? null : null,
   )
-  const [isLoading, setIsLoading] = useState(!cachedByUrl.has(url))
+  const [isLoading, setIsLoading] = useState(url ? !cachedByUrl.has(url) : false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     setError(null)
+    if (!url) { setBoundaries(null); setIsLoading(false); return }
     const cached = cachedByUrl.get(url)
     if (cached) { setBoundaries(cached); setIsLoading(false); return }
     let cancelled = false
