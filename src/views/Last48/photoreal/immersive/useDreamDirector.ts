@@ -44,6 +44,14 @@ const REAIM_S = 1.5
  *  camera below it, and the floor snapped it back up). */
 const FIRST_LEG_RANGE_X = 3
 const FIRST_LEG_DESCENT_S = 4
+/** The high first arrival looks DOWN more steeply than the hero pitch — from
+ *  600 m out, the hero's −30° stares at the horizon. */
+const FIRST_LEG_PITCH_DEG = -45
+/** Cesium's flyTo climbs an arc between stops; above this height (m above
+ *  the ellipsoid) it tips the camera toward the ground for the rest of the
+ *  climb instead of holding the arrival pitch (Jesse, 2026-09-21: "looking
+ *  into the sky a bit more than we should on flights"). */
+const PITCH_ADJUST_HEIGHT_M = 350
 const toC3 = (v: [number, number, number]) => new Cesium.Cartesian3(v[0], v[1], v[2])
 type Center = { lng: number; lat: number; height: number }
 
@@ -233,7 +241,7 @@ export function useDreamDirector(opts: {
     firstLegRef.current = false
     const center: Center = { lng: legDest.lng, lat: legDest.lat, height: TARGET_HEIGHT_M + surfaceM(legDest.lng, legDest.lat) }
     centerRef.current = center
-    const arrival = orbitPose(center, legDest.headingDeg, legDest.pitchDeg, highLeg ? legDest.rangeM * FIRST_LEG_RANGE_X : legDest.rangeM)
+    const arrival = orbitPose(center, legDest.headingDeg, highLeg ? FIRST_LEG_PITCH_DEG : legDest.pitchDeg, highLeg ? legDest.rangeM * FIRST_LEG_RANGE_X : legDest.rangeM)
     const { pace, reducedMotion } = cbRef.current
     tileset.maximumScreenSpaceError = SSE_FLIGHT
     viewer.camera.flyTo({
@@ -241,6 +249,7 @@ export function useDreamDirector(opts: {
       orientation: { direction: toC3(arrival.direction), up: toC3(arrival.up) },
       duration: reducedMotion ? 0 : pace.tweenMs / 1000,
       easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
+      pitchAdjustHeight: PITCH_ADJUST_HEIGHT_M,
       complete: () => {
         if (disposed || cancelledRef.current || !a.alive()) return
         tileset.maximumScreenSpaceError = quality.sseOrbit
@@ -268,6 +277,7 @@ export function useDreamDirector(opts: {
                 orientation: { direction: toC3(fix.direction), up: toC3(fix.up) },
                 duration: highLeg ? FIRST_LEG_DESCENT_S : REAIM_S,
                 easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
+                pitchAdjustHeight: PITCH_ADJUST_HEIGHT_M,
                 complete: () => {
                   if (disposed || cancelledRef.current || !a.alive()) return
                   arrivedRef.current = true

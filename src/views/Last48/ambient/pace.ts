@@ -94,8 +94,9 @@ export const PACE_PRESETS: Record<PaceId, PacePreset> = {
     // the next-stop tile preload is unchanged.
     // breathMs 0: the carousel IS the pass and the queue never empties.
     // 0.42 (Jesse's walk of Round B, 2026-09-20: "a bit faster" once the
-    // tiles settle) — ≈32° across the 75 s dwell.
-    orbitDegPerS: 0.42,
+    // tiles settle), then 0.63 the next night ("by another factor") — ≈47°
+    // across the 75 s dwell.
+    orbitDegPerS: 0.63,
     dwellMs: 75000,
     breathMs: 0,
     tweenMs: 18000,
