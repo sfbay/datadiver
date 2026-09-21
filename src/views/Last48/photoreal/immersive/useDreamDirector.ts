@@ -36,6 +36,14 @@ const TARGET_HEIGHT_M = 30
  *  this re-aims the camera with a short correction glide before the drift. */
 const REAIM_M = 10
 const REAIM_S = 1.5
+/** The FIRST leg of a session starts from Cesium's default camera, far away
+ *  with no tiles under the stop. It arrives this many times further out than
+ *  the hero range and then DESCENDS to the hero frame once the ground is
+ *  known (Jesse, 2026-09-21: "went high, looked at the east bay, crashed
+ *  under the ground" — aiming the first leg at an unknown surface put the
+ *  camera below it, and the floor snapped it back up). */
+const FIRST_LEG_RANGE_X = 3
+const FIRST_LEG_DESCENT_S = 4
 const toC3 = (v: [number, number, number]) => new Cesium.Cartesian3(v[0], v[1], v[2])
 type Center = { lng: number; lat: number; height: number }
 
@@ -105,6 +113,8 @@ export function useDreamDirector(opts: {
    *  then the drift on top of the reader's own camera. Cleared when a new
    *  target starts a new leg. */
   const cancelledRef = useRef(false)
+  /** True until the first leg has flown — see FIRST_LEG_RANGE_X. */
+  const firstLegRef = useRef(true)
 
   // Stable helpers in a ref so the effects below never re-run for them.
   const api = useRef({
@@ -199,7 +209,9 @@ export function useDreamDirector(opts: {
       ? null
       : isDetourDest(dest)
         ? { lng: dest.lng, lat: dest.lat, headingDeg: dest.headingDeg, pitchDeg: dest.pitchDeg, rangeM: dest.rangeM }
-        : { lng: dest.lng, lat: dest.lat, headingDeg: travelHeading(dest.lng, dest.lat),
+        // The first leg keeps the house heading: a bearing from Cesium's
+        // default camera (out over the Bay) would face the East Bay.
+        : { lng: dest.lng, lat: dest.lat, headingDeg: firstLegRef.current ? headingRef.current : travelHeading(dest.lng, dest.lat),
             pitchDeg: Math.min(ORBIT_PITCH_DEG, -cbRef.current.pace.pitchMin), rangeM: cbRef.current.rangeM ?? RANGE_M.immersive }
     if (!legDest) {
       a.stopDrift()
@@ -217,9 +229,11 @@ export function useDreamDirector(opts: {
     // travelled (travelHeading), so the leg reads as flying forward.
     headingRef.current = legDest.headingDeg
     legRef.current = { pitchDeg: legDest.pitchDeg, rangeM: legDest.rangeM }
+    const highLeg = firstLegRef.current
+    firstLegRef.current = false
     const center: Center = { lng: legDest.lng, lat: legDest.lat, height: TARGET_HEIGHT_M + surfaceM(legDest.lng, legDest.lat) }
     centerRef.current = center
-    const arrival = orbitPose(center, legDest.headingDeg, legDest.pitchDeg, legDest.rangeM)
+    const arrival = orbitPose(center, legDest.headingDeg, legDest.pitchDeg, highLeg ? legDest.rangeM * FIRST_LEG_RANGE_X : legDest.rangeM)
     const { pace, reducedMotion } = cbRef.current
     tileset.maximumScreenSpaceError = SSE_FLIGHT
     viewer.camera.flyTo({
@@ -233,7 +247,12 @@ export function useDreamDirector(opts: {
         const t0 = Date.now()
         settle = setInterval(() => {
           if (disposed || cancelledRef.current || !a.alive()) { clearInterval(settle); return }
-          if (tileset.tilesLoaded || Date.now() - t0 > SETTLE_CAP_MS) {
+          // Settle on tiles loaded, OR as soon as the tileset can answer a
+          // height under the stop (coarse tiles are enough to get the
+          // camera above the ground), OR the cap.
+          let heightKnown = false
+          try { heightKnown = tileset.getHeight(Cesium.Cartographic.fromDegrees(center.lng, center.lat), viewer.scene) != null } catch { heightKnown = false }
+          if (tileset.tilesLoaded || heightKnown || Date.now() - t0 > SETTLE_CAP_MS) {
             clearInterval(settle)
             if (cancelledRef.current) return
             // Tiles are in now: re-measure the ground under the stop. The
@@ -241,13 +260,13 @@ export function useDreamDirector(opts: {
             // a fresh area); a big miss gets a short glide to the true frame
             // before the drift starts from it.
             const trueH = TARGET_HEIGHT_M + surfaceM(center.lng, center.lat)
-            if (Math.abs(trueH - center.height) > REAIM_M && !cbRef.current.reducedMotion) {
+            if ((highLeg || Math.abs(trueH - center.height) > REAIM_M) && !cbRef.current.reducedMotion) {
               center.height = trueH
               const fix = orbitPose(center, headingRef.current, legDest.pitchDeg, legDest.rangeM)
               viewer.camera.flyTo({
                 destination: toC3(fix.position),
                 orientation: { direction: toC3(fix.direction), up: toC3(fix.up) },
-                duration: REAIM_S,
+                duration: highLeg ? FIRST_LEG_DESCENT_S : REAIM_S,
                 easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
                 complete: () => {
                   if (disposed || cancelledRef.current || !a.alive()) return
