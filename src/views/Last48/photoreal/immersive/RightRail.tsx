@@ -15,10 +15,10 @@
 // big serif ital, it's a signature look"); mono is left to do what mono is
 // for here — the key hints, the eyebrows and the measured values.
 //
-// Reading order top→bottom: masthead · PLAY · HOLD · HIDE · VIEW · air ·
-// the stop ledger · RETURN. The two things you do constantly sit at the top
-// under your hand, the settings under them, the reading in the middle, and
-// the one-way door at the far end where you will not hit it.
+// Reading order top→bottom: masthead · PLAY · HOLD · HIDE · VIEW · PRESETS ·
+// air · the stop ledger · RETURN. The two things you do constantly sit at the
+// top under your hand, the settings under them, the reading in the middle,
+// and the one-way door at the far end where you will not hit it.
 //
 // Mounted/unmounted by the page alongside the band (the `O` overlay toggle);
 // this component never hides itself. HOLD_MS lives here because the hold
@@ -43,6 +43,8 @@ interface Props {
   tod: Grade
   beaconOn: boolean
   ticksOn: boolean
+  /** Round B: the preset groups, rendered between the View group and the air. */
+  presets?: ReactNode
   onPlayToggle: () => void
   onHold: () => void
   onOverlayToggle: () => void
@@ -57,16 +59,18 @@ export const HOLD_MS = 10_000
 /** The house neutral for "no stream yet". */
 const FALLBACK = '#d4a435'
 
-/** A control ROW: the glyph side-saddles its name. 3.5rem is half the old
+/** A control ROW: the glyph side-saddles its name. `shrink-0` because the
+ *  rail is a flex column that scrolls: once the presets made it taller than
+ *  the screen, flex squashed these rows to 3 px (walk, 2026-09-21). 3.5rem is half the old
  *  tile and still a target you can hit without looking. */
-const ROW = `h-[3.5rem] w-full rounded-lg flex items-center gap-3 px-4 relative overflow-hidden glow-host
+const ROW = `h-[3.5rem] shrink-0 w-full rounded-lg flex items-center gap-3 px-4 relative overflow-hidden glow-host
   ring-1 transition-colors bg-paper-50/70 dark:bg-espresso-800/70
   ring-paper-400/40 dark:ring-paper-300/20 hover:ring-paper-500/60
   text-paper-700 dark:text-paper-300`
 const ROW_ON = 'bg-ochre-500/18 text-ink dark:text-paper-100'
 /** The signature: the control's NAME in the display face, big enough to read
  *  from across a room. */
-const NAME = 'relative z-[1] font-display italic text-[1.7vw] leading-none text-ink dark:text-paper-100'
+const NAME = 'relative z-[1] font-display italic text-[min(1.4vw,1.35rem)] leading-none text-ink dark:text-paper-100'
 /** The key that does the same thing, parked at the far edge. paper-600 in
  *  light mode rather than the 500 the dark side wears: 9 px of #a8926a on
  *  cream does not clear the contrast floor. */
@@ -80,7 +84,7 @@ const GLYPH = 28
 /** A settings row: name left, control right, at two thirds a button's height. */
 function ViewRow({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="h-[2.75rem] flex items-center justify-between gap-2">
+    <div className="h-[2.75rem] shrink-0 flex items-center justify-between gap-2">
       <span className="text-[1vw] leading-none text-paper-800 dark:text-paper-200">{label}</span>
       {children}
     </div>
@@ -129,7 +133,7 @@ const ONOFF = [
 ]
 
 export default function RightRail({
-  playing, holdLeftMs, stopIndex, stopCount, stream, dwellProgress, tod, beaconOn, ticksOn,
+  playing, holdLeftMs, stopIndex, stopCount, stream, dwellProgress, tod, beaconOn, ticksOn, presets,
   onPlayToggle, onHold, onOverlayToggle, onTod, onBeaconToggle, onTicksToggle, onExit,
 }: Props) {
   const holding = holdLeftMs > 0
@@ -155,7 +159,7 @@ export default function RightRail({
       {/* No eyebrow and no "Live" anywhere near the tiles (Jesse, 2026-09-20:
           the word would read as a claim about the imagery). Two lines, one
           size, two colours — and only empty space under them, no rule. */}
-      <div className="px-1 pb-4 mb-1">
+      <div className="shrink-0 px-1 pb-4 mb-1">
         <h1
           className="font-display italic leading-[1.05] text-ink dark:text-paper-100"
           style={{ fontSize: '1.7vw' }}
@@ -218,7 +222,7 @@ export default function RightRail({
           settings scale rather than three more buttons. */}
       {/* View settings — no eyebrow, no rule (Jesse, 2026-09-20): the rows
           read as a group on their own. */}
-      <div className="mt-4">
+      <div className="mt-4 shrink-0">
         <ViewRow label="Light">
           <Seg value={tod} options={TOD_OPTIONS} onChange={onTod} label="Time of day" />
         </ViewRow>
@@ -236,12 +240,14 @@ export default function RightRail({
         </ViewRow>
       </div>
 
+      {presets}
+
       {/* The air that separates what you set from what you read, and what
           keeps the ledger off the bottom of a tall screen. */}
       <div className="flex-1" aria-hidden />
 
       {/* ── Stop ledger: where you are, and how far the camera has to run. */}
-      <div className="pt-3 border-t border-paper-400/40 dark:border-paper-300/15">
+      <div className="shrink-0 pt-3 border-t border-paper-400/40 dark:border-paper-300/15">
         <p className="text-[15px] leading-none text-ink dark:text-paper-100">
           Stop <span className="tabular-nums">{known ? stopIndex : '—'}</span> of <span className="tabular-nums">{known ? stopCount : '—'}</span>
         </p>
@@ -270,7 +276,7 @@ export default function RightRail({
           destination is named rather than described — and putting the site's
           own signature at the far end of the rail, below a double rule, is
           what makes it read as an exit instead of a fifth control. */}
-      <div className="relative mt-3 pt-3 border-t border-paper-400/60 dark:border-paper-300/25">
+      <div className="relative shrink-0 mt-3 pt-3 border-t border-paper-400/60 dark:border-paper-300/25">
         <div className="absolute inset-x-0 top-[3px] h-px bg-paper-400/40 dark:bg-paper-300/15" aria-hidden />
         <button
           type="button" onClick={onExit} title="Back to The Last 48 (Escape)"

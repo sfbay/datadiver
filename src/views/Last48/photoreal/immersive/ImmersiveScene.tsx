@@ -22,6 +22,8 @@ import Beacon from './Beacon'
 import { useDreamDirector } from './useDreamDirector'
 import { useCameraFloor } from './useCameraFloor'
 import type { PhotorealTarget } from '../useCesiumDirector'
+import { sameDetour, type DetourTarget } from './detour'
+import type { HerePoint } from './useHereCard'
 
 /** Spec A2 §3: MSAA on. 4 is Cesium's default; stated, not assumed. */
 export const IMMERSIVE_MSAA = 4
@@ -60,6 +62,9 @@ interface Props {
   reducedMotion: boolean
   /** ?range= dev knob; undefined = RANGE_M.immersive. */
   rangeM?: number
+  /** Round B: a preset destination. Replaces the active stop as the camera's
+   *  target while set. */
+  detour: DetourTarget | null
   todOverride: string | null
   tuneOn: boolean
   /** The screen-pinned mark over the active stop (rail: View · Beacon). */
@@ -77,6 +82,8 @@ interface Props {
   /** Google quota/auth refusal — the page leaves to /live (the resting note). */
   onRest: () => void
   hostRef: RefObject<HTMLDivElement | null>
+  /** Round B §3: the here card's point — a small paper ring marks it. */
+  probe: HerePoint | null
 }
 
 const toTarget = (e: NormalizedEvent | null): PhotorealTarget =>
@@ -178,11 +185,17 @@ export default function ImmersiveScene(props: Props) {
       if (dragged) return
       // An entity under the pointer belongs to the marker layer.
       if (scene.pick(m.position)?.id) return
-      // The globe is hidden but its ellipsoid still picks; pickPosition reads
-      // the depth buffer (the tiles themselves) and throws on hardware with
-      // no depth texture. Same ladder as PhotorealMarkers.probeFocus.
-      let hit = viewer.camera.pickEllipsoid(m.position, scene.globe.ellipsoid)
-      if (!hit) { try { hit = scene.pickPosition(m.position) } catch { return } }
+      // The depth buffer (the tile surface itself) goes FIRST now: Round B §3
+      // prints a street and a neighborhood from this point, and pickEllipsoid
+      // alone puts it at SEA LEVEL — at a grazing pitch the ellipsoid-vs-
+      // rooftop gap projects to well over 300 m of horizontal error, enough
+      // to print the wrong street. pickPosition throws on hardware with no
+      // depth texture, so the ellipsoid pick (the globe is hidden but still
+      // picks) is the fallback there — same ladder as
+      // PhotorealMarkers.probeFocus, just reordered for this handler.
+      let hit: Cesium.Cartesian3 | undefined
+      try { hit = scene.pickPosition(m.position) } catch { hit = undefined }
+      if (!hit) hit = viewer.camera.pickEllipsoid(m.position, scene.globe.ellipsoid)
       if (!hit) return
       const c = Cesium.Cartographic.fromCartesian(hit)
       if (!c) return
@@ -261,17 +274,25 @@ export default function ImmersiveScene(props: Props) {
           viewer={viewer} tileset={tileset}
           active={props.active} next={props.next}
           pace={props.pace} hold={props.hold} reducedMotion={props.reducedMotion} rangeM={props.rangeM}
+          detour={props.detour}
           onArrived={props.onArrived} onUserInput={props.onUserInput}
         />
       )}
       {/* The beacon rides the host div (a sibling of the tune panel), not the
           Cesium scene — it is screen space by design. The ground disc stays:
           the two split the job, anchoring below and visibility above. */}
-      {viewer && props.active && props.beaconOn && (
+      {viewer && props.active && props.active.longitude != null && props.active.latitude != null && props.beaconOn && (
         <Beacon
-          viewer={viewer} tileset={tileset} event={props.active}
+          viewer={viewer} tileset={tileset}
+          lng={props.active.longitude} lat={props.active.latitude}
           color={DATASET_META[props.active.datasetId].color}
         />
+      )}
+      {/* Deliberately ignores props.beaconOn (the rail's Beacon toggle): that
+          switch is about the HERO mark following the tour, while the probe
+          answers one explicit click and should mark it regardless. */}
+      {viewer && props.probe && (
+        <Beacon viewer={viewer} tileset={tileset} lng={props.probe.lng} lat={props.probe.lat} color="#f5ecd9" variant="probe" />
       )}
       {props.tuneOn && viewer && (
         <PhotorealTunePanel viewer={viewer} tileset={tileset} tileLoads={tileLoads} onApply={applyQuality} side="left" />
@@ -294,6 +315,7 @@ function Director(p: {
   hold: boolean
   reducedMotion: boolean
   rangeM?: number
+  detour: DetourTarget | null
   onArrived: () => void
   onUserInput: () => void
 }) {
@@ -311,10 +333,19 @@ function Director(p: {
   const target = useMemo(() => toTarget(p.active), [aId, aLng, aLat])
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const next = useMemo(() => toTarget(p.next), [nId, nLng, nLat])
+  // Same belt-and-braces as `target`/`next`: memoise the detour BY VALUE so a
+  // parent render carrying an equal-but-fresh DetourTarget never re-flies.
+  const detourRef = useRef<DetourTarget | null>(null)
+  const detour = useMemo(() => {
+    const cur = sameDetour(detourRef.current, p.detour) ? detourRef.current : p.detour
+    detourRef.current = cur
+    return cur
+  }, [p.detour])
   const { cancel } = useDreamDirector({
     viewer: p.viewer, tileset: p.tileset,
     target, next,
     pace: p.pace, hold: p.hold, reducedMotion: p.reducedMotion, rangeM: p.rangeM,
+    detour,
     onArrived: () => cb.current.onArrived(),
   })
   const cancelRef = useRef(cancel)

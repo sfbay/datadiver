@@ -1,7 +1,9 @@
 // src/views/Last48/photoreal/immersive/useDreamDirector.ts
 //
-// The immersive camera (Spec A2 §3). Unlike useCesiumDirector there is no
-// per-frame orbit. A stop is:
+// The immersive camera (Spec A2 §3). Round B: an optional `detour` (a Place
+// or a Hotspot) replaces the target as the leg's destination with its own
+// heading/pitch/range; the preload still aims at `next`. Unlike
+// useCesiumDirector there is no per-frame orbit. A stop is:
 //   1. ONE flight (pace.tweenMs, eased) to the arrival pose;
 //   2. the settle gate (tiles loaded, or SETTLE_CAP_MS) → onArrived;
 //   3. ONE slow LINEAR flight across the whole dwell — a few degrees of
@@ -19,11 +21,21 @@
 import { useEffect, useRef } from 'react'
 import * as Cesium from 'cesium'
 import type { PaceValues } from '../../ambient/pace'
-import { orbitPose, RANGE_M, ORBIT_PITCH_DEG } from '../cameraPose'
+import { orbitPose, bearingDeg, RANGE_M, ORBIT_PITCH_DEG } from '../cameraPose'
 import { quality } from '../quality'
 import { SSE_FLIGHT, SETTLE_CAP_MS, type PhotorealTarget } from '../useCesiumDirector'
+import type { DetourTarget } from './detour'
 
+/** Metres ABOVE THE TILE SURFACE the camera aims at. Round B walk
+ *  (2026-09-20, Jesse: "strange that this one ended up kind of high in the
+ *  frame"): this used to be height above the ELLIPSOID, so on the Sunset's
+ *  60 m slope — let alone Twin Peaks — the look point was underground and the
+ *  real stop rode up the frame. The surface is sampled from the tileset. */
 const TARGET_HEIGHT_M = 30
+/** A settle-time re-probe that differs from the arrival aim by more than
+ *  this re-aims the camera with a short correction glide before the drift. */
+const REAIM_M = 10
+const REAIM_S = 1.5
 const toC3 = (v: [number, number, number]) => new Cesium.Cartesian3(v[0], v[1], v[2])
 type Center = { lng: number; lat: number; height: number }
 
@@ -35,6 +47,14 @@ interface PreloadScene {
 
 /** A running drift: enough to stop it mid-way and resume from that heading. */
 interface Drift { from: number; to: number; t0: number; ms: number; center: Center }
+
+/** A type predicate rather than a bare `'key' in d` check — TS's structural
+ *  narrowing on `{lng,lat} | DetourTarget` widens the true branch to an
+ *  intersection instead of `DetourTarget` (the two types share too much
+ *  shape for control-flow analysis alone), so an explicit guard is needed. */
+function isDetourDest(d: Exclude<PhotorealTarget, null> | DetourTarget): d is DetourTarget {
+  return 'headingDeg' in d
+}
 
 export function useDreamDirector(opts: {
   viewer: Cesium.Viewer
@@ -53,8 +73,19 @@ export function useDreamDirector(opts: {
   /** Camera distance from the stop, metres. Default RANGE_M.immersive; the
    *  page passes ?range= as a dev knob (Jesse 2026-09-20: closer). */
   rangeM?: number
+  /** Round B: a detour (a Place or a Hotspot). When set it REPLACES the
+   *  target as the camera's destination — same flight, same settle gate,
+   *  same drift — but with its own heading/pitch/range. The preload still
+   *  aims at `next` (the chain resumes from the active card). */
+  detour?: DetourTarget | null
 }): { cancel: () => void } {
   const { viewer, tileset, target, hold } = opts
+  const detour = opts.detour ?? null
+  // The leg's destination: a detour when there is one, else the stop. This is
+  // the identity the leg effect keys on — NOT `target`/`detour` separately —
+  // so a `?event=` write-back that changes `target` while a detour is engaged
+  // cannot re-run the effect and re-fly a flight already in progress.
+  const dest: PhotorealTarget | DetourTarget | null = detour ?? target
   const headingRef = useRef(35)
   const cbRef = useRef(opts)
   // eslint-disable-next-line react-hooks/refs
@@ -62,6 +93,10 @@ export function useDreamDirector(opts: {
   const driftRef = useRef<Drift | null>(null)
   const arrivedRef = useRef(false)
   const centerRef = useRef<Center | null>(null)
+  /** The pitch/range of the CURRENT leg — a detour's own, or the house
+   *  hero pose. startDrift and the hold-release read it so a detour drifts
+   *  at its own distance rather than snapping back to 200 m. */
+  const legRef = useRef<{ pitchDeg: number; rangeM: number } | null>(null)
   /** Set by cancel() (user camera input). cancelFlight() fires a running
    *  flight's `cancel` callback, not `complete` — the one path where
    *  `complete` fires synchronously (in the same tick cancel() could run)
@@ -74,7 +109,8 @@ export function useDreamDirector(opts: {
   // Stable helpers in a ref so the effects below never re-run for them.
   const api = useRef({
     alive: () => !viewer.isDestroyed(),
-    pitch: () => Math.min(ORBIT_PITCH_DEG, -cbRef.current.pace.pitchMin),
+    pitch: () => legRef.current?.pitchDeg ?? Math.min(ORBIT_PITCH_DEG, -cbRef.current.pace.pitchMin),
+    range: () => legRef.current?.rangeM ?? cbRef.current.rangeM ?? RANGE_M.immersive,
     /** `headingDeg` is where the camera will actually BE for this dwell —
      *  callers must pass the drift's end heading, not its start. */
     preloadNext(headingDeg: number) {
@@ -83,7 +119,8 @@ export function useDreamDirector(opts: {
       const s = viewer.scene as unknown as PreloadScene
       const cam = s.preloadFlightCamera
       if (!cam) return
-      const p = orbitPose({ lng: nxt.lng, lat: nxt.lat, height: TARGET_HEIGHT_M }, headingDeg, this.pitch(), (cbRef.current.rangeM ?? RANGE_M.immersive))
+      // The next stop is a STOP, not a detour — always the house hero pose.
+      const p = orbitPose({ lng: nxt.lng, lat: nxt.lat, height: TARGET_HEIGHT_M + surfaceM(nxt.lng, nxt.lat) }, headingDeg, Math.min(ORBIT_PITCH_DEG, -cbRef.current.pace.pitchMin), (cbRef.current.rangeM ?? RANGE_M.immersive))
       cam.setView({ destination: toC3(p.position), orientation: { direction: toC3(p.direction), up: toC3(p.up) } })
       // Camera.frustum is a union in the d.ts; every member has computeCullingVolume.
       s.preloadFlightCullingVolume = (cam.frustum as Cesium.PerspectiveFrustum)
@@ -95,7 +132,7 @@ export function useDreamDirector(opts: {
       if (reducedMotion) return
       const from = headingRef.current
       const to = from + pace.orbitDegPerS * (pace.dwellMs / 1000)
-      const end = orbitPose(center, to, this.pitch(), (cbRef.current.rangeM ?? RANGE_M.immersive))
+      const end = orbitPose(center, to, this.pitch(), this.range())
       const me: Drift = { from, to, t0: performance.now(), ms: pace.dwellMs, center }
       driftRef.current = me
       viewer.camera.flyTo({
@@ -128,15 +165,47 @@ export function useDreamDirector(opts: {
     },
   })
 
-  // One leg per target.
+  /** Google surface height under a point, or 0 while no tile there has
+   *  loaded yet (the settle gate re-probes once they have). getHeight is the
+   *  one tileset call that can throw; keep the leg alive. */
+  const surfaceM = (lng: number, lat: number): number => {
+    if (viewer.isDestroyed()) return 0
+    try { return tileset.getHeight(Cesium.Cartographic.fromDegrees(lng, lat), viewer.scene) ?? 0 } catch { return 0 }
+  }
+
+  /** The heading a STOP leg arrives with: the bearing from where the camera
+   *  is now to the stop, so the flight reads as forward motion (Jesse's walk,
+   *  2026-09-20: keeping the old heading flew a stop behind us backward).
+   *  Cesium's flyTo slerps the orientation across the whole leg, so the turn
+   *  is spread over the 18 s. Falls back to the last heading when the camera
+   *  has no position yet, or is already over the stop (a degenerate bearing). */
+  const travelHeading = (lng: number, lat: number): number => {
+    if (viewer.isDestroyed()) return headingRef.current
+    const c = viewer.camera.positionCartographic
+    if (!c) return headingRef.current
+    const fromLng = Cesium.Math.toDegrees(c.longitude), fromLat = Cesium.Math.toDegrees(c.latitude)
+    if (Math.abs(fromLng - lng) < 1e-4 && Math.abs(fromLat - lat) < 1e-4) return headingRef.current
+    return bearingDeg(fromLng, fromLat, lng, lat)
+  }
+
+  // One leg per DESTINATION IDENTITY (`dest`, hoisted above): a detour when
+  // there is one, else the stop. Deliberately NOT `[target, detour, ...]` —
+  // that let a `?event=` write-back (which changes `target` but not the
+  // engaged `detour`) restart this effect and re-fly a flight already in
+  // progress on top of the reader.
   useEffect(() => {
     const a = api.current
-    if (!target) {
-      // Nothing selected: don't leave a stale center/drift/arrival state
-      // that a later hold-release could resume around.
+    const legDest = dest == null
+      ? null
+      : isDetourDest(dest)
+        ? { lng: dest.lng, lat: dest.lat, headingDeg: dest.headingDeg, pitchDeg: dest.pitchDeg, rangeM: dest.rangeM }
+        : { lng: dest.lng, lat: dest.lat, headingDeg: travelHeading(dest.lng, dest.lat),
+            pitchDeg: Math.min(ORBIT_PITCH_DEG, -cbRef.current.pace.pitchMin), rangeM: cbRef.current.rangeM ?? RANGE_M.immersive }
+    if (!legDest) {
       a.stopDrift()
       arrivedRef.current = false
       centerRef.current = null
+      legRef.current = null
       return
     }
     let disposed = false
@@ -144,9 +213,13 @@ export function useDreamDirector(opts: {
     arrivedRef.current = false
     cancelledRef.current = false
     a.stopDrift()
-    const center: Center = { lng: target.lng, lat: target.lat, height: TARGET_HEIGHT_M }
+    // A detour brings its own heading; a stop ARRIVES facing the way it
+    // travelled (travelHeading), so the leg reads as flying forward.
+    headingRef.current = legDest.headingDeg
+    legRef.current = { pitchDeg: legDest.pitchDeg, rangeM: legDest.rangeM }
+    const center: Center = { lng: legDest.lng, lat: legDest.lat, height: TARGET_HEIGHT_M + surfaceM(legDest.lng, legDest.lat) }
     centerRef.current = center
-    const arrival = orbitPose(center, headingRef.current, a.pitch(), (cbRef.current.rangeM ?? RANGE_M.immersive))
+    const arrival = orbitPose(center, legDest.headingDeg, legDest.pitchDeg, legDest.rangeM)
     const { pace, reducedMotion } = cbRef.current
     tileset.maximumScreenSpaceError = SSE_FLIGHT
     viewer.camera.flyTo({
@@ -163,6 +236,29 @@ export function useDreamDirector(opts: {
           if (tileset.tilesLoaded || Date.now() - t0 > SETTLE_CAP_MS) {
             clearInterval(settle)
             if (cancelledRef.current) return
+            // Tiles are in now: re-measure the ground under the stop. The
+            // arrival aim used whatever was resident at take-off (often 0 for
+            // a fresh area); a big miss gets a short glide to the true frame
+            // before the drift starts from it.
+            const trueH = TARGET_HEIGHT_M + surfaceM(center.lng, center.lat)
+            if (Math.abs(trueH - center.height) > REAIM_M && !cbRef.current.reducedMotion) {
+              center.height = trueH
+              const fix = orbitPose(center, headingRef.current, legDest.pitchDeg, legDest.rangeM)
+              viewer.camera.flyTo({
+                destination: toC3(fix.position),
+                orientation: { direction: toC3(fix.direction), up: toC3(fix.up) },
+                duration: REAIM_S,
+                easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
+                complete: () => {
+                  if (disposed || cancelledRef.current || !a.alive()) return
+                  arrivedRef.current = true
+                  cbRef.current.onArrived()
+                  if (!cbRef.current.hold) a.startDrift(center)
+                },
+              })
+              return
+            }
+            center.height = trueH
             arrivedRef.current = true
             cbRef.current.onArrived()
             if (!cbRef.current.hold) a.startDrift(center)
@@ -176,7 +272,7 @@ export function useDreamDirector(opts: {
       a.stopDrift()
       if (a.alive()) viewer.camera.cancelFlight()
     }
-  }, [target, viewer, tileset])
+  }, [dest, viewer, tileset])
 
   // Hold / release. Release resumes the drift only once the stop has arrived
   // (a hold pressed mid-flight lets the flight finish; the settle gate then

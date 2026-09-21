@@ -6,7 +6,8 @@
 // route of the `live` family, so the manifest's sources cover it), the URL
 // contract (?event= is the active stop, ?play=1 auto-advance, ?tune=1 the
 // dev panel, ?tod= the grade — day|dusk|night, dusk by default and written
-// by the rail's Light control), the carousel state, keys, hold, the two
+// by the rail's Light control, ?place=<id> / ?hot=<neighborhood> a detour —
+// the camera goes, the card stays, play pauses), the carousel state, keys, hold, the two
 // view switches (beacon, frame ticks) and the overlay. Chrome is off
 // (AppShell reads routeChrome); mobile / no key / resting never reach this
 // file (ImmersiveGate).
@@ -14,6 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAppStore } from '@/stores/appStore'
 import { useLast48Window } from '@/hooks/useLast48Window'
+import { useAnomalyBaseline } from '@/hooks/useAnomalyBaseline'
 import { LAST48_DATASETS, type NormalizedEvent } from '@/types/last48'
 import { PACE_PRESETS } from '../../ambient/pace'
 import { DATASET_META } from '../../detail/eventCardModel'
@@ -21,11 +23,18 @@ import { gradeForTheme, type Grade } from '../grade'
 import { chainTour } from '../tourChain'
 import { carouselIndex, stepIndex, peekIds, queueIds } from './carousel'
 import { useAutoAdvance } from './useAutoAdvance'
+import { formatNextIn } from './nextIn'
+import { PLACES } from './places'
+import { selectHotspots } from './hotspots'
+import { detourFromPlace, detourFromHotspot, sameDetour, type DetourTarget } from './detour'
+import { STREAM_WORD } from './streamWords'
 import LowerThird from './LowerThird'
 import RightRail, { HOLD_MS } from './RightRail'
 import FrameTicks from './FrameTicks'
 import TelemetryStrip from './TelemetryStrip'
 import ImmersiveScene, { type Telemetry } from './ImmersiveScene'
+import Presets from './Presets'
+import { useHereCard, type HerePoint } from './useHereCard'
 
 /** How close a ground click has to land to count as "that stop". */
 const NEAREST_M = 150
@@ -75,14 +84,20 @@ export default function Last48Immersive() {
   // page is always dusk unless told otherwise (gradeForTheme(true, null) is
   // dusk, so `?tod=dusk` and no param are the same scene).
   const tod: Grade = gradeForTheme(true, todOverride)
-  const setParam = useCallback((key: string, value: string | null) => {
+  /** Write several params in one history entry; a no-op when nothing changes. */
+  const setParams = useCallback((patch: Record<string, string | null>) => {
     setSearchParams((prev) => {
-      if ((prev.get(key) ?? null) === value) return prev
+      let changed = false
       const np = new URLSearchParams(prev)
-      if (value) np.set(key, value); else np.delete(key)
-      return np
+      for (const [key, value] of Object.entries(patch)) {
+        if ((prev.get(key) ?? null) === value) continue
+        changed = true
+        if (value) np.set(key, value); else np.delete(key)
+      }
+      return changed ? np : prev
     }, { replace: true })
   }, [setSearchParams])
+  const setParam = useCallback((key: string, value: string | null) => setParams({ [key]: value }), [setParams])
 
   // Identity is STABILISED by VALUE: useLast48Window re-creates every event
   // object on each poll (911 every 2 min), so an unchanged active stop used to
@@ -145,13 +160,84 @@ export default function Last48Immersive() {
     return out
   }, [order, index, byId])
 
-  const jump = useCallback((id: string) => { setParam('event', id) }, [setParam])
-  // A click on the ground snaps to the nearest stop IN THE PASS — the reader
-  // steers the tour by pointing at the city instead of stepping through it.
-  // Round A's minimal click: no new card, no new stop, and a click further
-  // than NEAREST_M from anything on the pass does nothing at all rather than
-  // teleporting to a stop across town (Round B adds the "here" card).
-  const clickNearest = useCallback((lng: number, lat: number) => {
+  // ── Presets (Round B §2) ──────────────────────────────────────────────
+  // The same anomaly engine /live and the Pulse read (baseline cached 4 h,
+  // current counts server-side, single-flighted across consumers).
+  const { anomalies, isLoading: anomaliesLoading, error: anomaliesError, missingCurrent } = useAnomalyBaseline({ datasets: LAST48_DATASETS, freshness: window48.freshness })
+  const hotspots = useMemo(() => selectHotspots(anomalies, window48.freshness, events), [anomalies, window48.freshness, events])
+  // Transparency rule (useAnomalyBaseline's own docblock): a suppressed or
+  // failed reading must be SAID, never rendered as a silent "nothing here".
+  // A baseline fetch error takes priority — it means every hotspot is
+  // unknown, not just the streams that failed their current count.
+  const hotspotsNote = useMemo(() => {
+    if (anomaliesError) return 'Hotspots unavailable — the 12-week baseline didn’t load'
+    if (missingCurrent.length > 0) {
+      const names = missingCurrent.map((id) => STREAM_WORD[id]).join(' and ')
+      return `Without ${names}: current counts didn’t load`
+    }
+    return null
+  }, [anomaliesError, missingCurrent])
+  const placeId = searchParams.get('place')
+  const hotNh = searchParams.get('hot')
+  // A detour resolves ONCE per key and never drifts with the poll: once
+  // `detourRef` holds a detour for the wanted key, later polls (a hotspot's
+  // centroid shifting a few metres, or the same place looked up again) must
+  // return the SAME object — not just a value-equal one. Rebuilding a
+  // value-equal-but-new object on every poll still gave the director's leg
+  // effect a new `detour` reference, restarting its 18 s flight under the
+  // reader while `arrived` (keyed on `detour?.key`) stayed true.
+  const detourRef = useRef<DetourTarget | null>(null)
+  const detour = useMemo(() => {
+    const wantedKey = placeId ? `place:${placeId}` : hotNh ? `hot:${hotNh}` : null
+    if (detourRef.current?.key === wantedKey) return detourRef.current
+    let fresh: DetourTarget | null = null
+    if (placeId) { const p = PLACES.find((x) => x.id === placeId); fresh = p ? detourFromPlace(p) : null }
+    else if (hotNh) { const h = hotspots.find((x) => x.neighborhood === hotNh); fresh = h ? detourFromHotspot(h) : null }
+    // First resolution of this key: sameDetour still guards against a
+    // spurious identity change if this memo re-runs before the ref catches up.
+    const out = sameDetour(detourRef.current, fresh) ? detourRef.current : fresh
+    detourRef.current = out
+    return out
+  }, [placeId, hotNh, hotspots])
+  // Keep the URL truthful: an unknown ?place= goes at once; a ?hot= whose
+  // neighborhood has left the list goes once the engine has actually read.
+  useEffect(() => {
+    if (placeId && !PLACES.some((x) => x.id === placeId)) setParam('place', null)
+  }, [placeId, setParam])
+  useEffect(() => {
+    // A missed neighborhood is only "gone" once the engine has actually read
+    // AND read cleanly — a baseline error or a missing current count means
+    // "unknown", not "not there", and must not evict a deep-linked ?hot=.
+    // An ENGAGED detour (the ref already resolved this key) is never evicted
+    // either — the reader is parked there, and the neighborhood merely
+    // dropping out of the top-4 poll must not pull the camera away; only a
+    // ?hot= that never resolved in the first place gets cleaned up.
+    if (
+      hotNh && !anomaliesLoading && !anomaliesError && missingCurrent.length === 0 &&
+      detourRef.current?.key !== `hot:${hotNh}` &&
+      !hotspots.some((x) => x.neighborhood === hotNh)
+    ) {
+      setParam('hot', null)
+    }
+  }, [hotNh, anomaliesLoading, anomaliesError, missingCurrent, hotspots, setParam])
+  // A preset is user input: play pauses (Round B §2). ← → and a card click
+  // resume the chain from the active card (they clear place/hot above).
+  const goPlace = useCallback((id: string) => setParams({ place: id, hot: null, play: null }), [setParams])
+  const goHot = useCallback((nh: string) => setParams({ hot: nh, place: null, play: null }), [setParams])
+  // Clicking the ACTIVE tile clears the detour (Presets' toggle) — the
+  // camera returns to the active stop and play stays paused.
+  const clearDetour = useCallback(() => setParams({ place: null, hot: null }), [setParams])
+
+  // ── The "here" card (Round B §3) ──────────────────────────────────────
+  const [herePoint, setHerePoint] = useState<HerePoint | null>(null)
+  const here = useHereCard(herePoint, events)
+  const closeHere = useCallback(() => setHerePoint(null), [])
+
+  const jump = useCallback((id: string) => { setHerePoint(null); setParams({ event: id, place: null, hot: null }) }, [setParams])
+  // A click on the ground: within NEAREST_M of a stop in the pass it snaps
+  // there (Round A); further away it opens the "here" reading for that point
+  // (Round B §3). A jump closes any open reading.
+  const clickGround = useCallback((lng: number, lat: number) => {
     let bestId: string | null = null
     let bestD = Number.POSITIVE_INFINITY
     for (const id of order) {
@@ -163,26 +249,18 @@ export default function Last48Immersive() {
       const d = dx * dx + dy * dy
       if (d < bestD) { bestD = d; bestId = id }
     }
-    if (!bestId) return
-    if (Math.sqrt(bestD) * DEG_LAT_M > NEAREST_M) return
-    jump(bestId)
+    if (bestId && Math.sqrt(bestD) * DEG_LAT_M <= NEAREST_M) { setHerePoint(null); jump(bestId); return }
+    setHerePoint({ lng, lat })
   }, [order, byId, jump])
   const step = useCallback((delta: 1 | -1) => {
     const i = stepIndex(order, index, delta)
-    if (i >= 0) setParam('event', order[i])
-  }, [order, index, setParam])
+    if (i >= 0) { setHerePoint(null); setParams({ event: order[i], place: null, hot: null }) }
+  }, [order, index, setParams])
 
   // ── Arrival, play, hold, overlay ──────────────────────────────────────
   const [arrived, setArrived] = useState(false)
-  // When the camera reached THIS stop — the zero of the dwell rule the rail
-  // draws. 0 means "not arrived"; reset with `arrived` on every stop change.
-  const arrivedAtRef = useRef(0)
-  const [dwellProgress, setDwellProgress] = useState(-1)
-  useEffect(() => { arrivedAtRef.current = 0; setArrived(false); setDwellProgress(-1) }, [activeId])
-  const handleArrived = useCallback(() => {
-    if (arrivedAtRef.current === 0) arrivedAtRef.current = Date.now()
-    setArrived(true)
-  }, [])
+  useEffect(() => { setArrived(false) }, [activeId, detour?.key])
+  const handleArrived = useCallback(() => setArrived(true), [])
   const [holdLeftMs, setHoldLeftMs] = useState(0)
   const holdUntilRef = useRef(0)
   const startHold = useCallback(() => {
@@ -222,18 +300,32 @@ export default function Last48Immersive() {
   const rangeM = Number.isFinite(rangeParam) && rangeParam >= 150 && rangeParam <= 3000 ? rangeParam : undefined
   const pace = PACE_PRESETS.dream
 
-  useAutoAdvance({ playing, arrived, hold, dwellMs: pace.dwellMs, stopKey: activeId, onAdvance: () => step(1) })
+  // A detour changes what the camera is looking at without changing the
+  // active stop, so the dwell clock must reset too — otherwise pressing
+  // Space mid-detour spends whatever was left on the PREVIOUS stop's clock
+  // and pulls the reader off the place a few seconds later.
+  const { remainingMs } = useAutoAdvance({
+    playing, arrived, hold, dwellMs: pace.dwellMs,
+    stopKey: activeId ? `${activeId}|${detour?.key ?? ''}` : null,
+    onAdvance: () => step(1),
+  })
 
-  // The dwell rule in the rail. One 250 ms ticker, armed only while the clock
-  // it draws is actually running — a hold freezes the bar where it stood
-  // (no ticker), which is exactly what a hold does to the auto-advance.
+  // ONE clock, three readers (Round B §4): the band's "next in", the active
+  // card's stripe and the rail's rule all come from remainingMs(). Sampled
+  // four times a second while playing; a hold freezes the number inside the
+  // hook, so all three freeze together. Null (flight / settle gate) reads as
+  // "next in —" and no stripe.
+  const [nextInMs, setNextInMs] = useState<number | null>(null)
   useEffect(() => {
-    if (!playing || !arrived || hold) return
-    const tick = () => setDwellProgress(Math.min(1, (Date.now() - arrivedAtRef.current) / pace.dwellMs))
+    if (!playing) { setNextInMs(null); return }
+    const tick = () => setNextInMs(remainingMs())
     tick()
     const id = setInterval(tick, 250)
     return () => clearInterval(id)
-  }, [playing, arrived, hold, pace.dwellMs])
+  }, [playing, arrived, hold, remainingMs])
+  const dwellProgress = nextInMs == null ? -1 : Math.max(0, Math.min(1, 1 - nextInMs / pace.dwellMs))
+  const nextIn = playing ? formatNextIn(nextInMs) : null
+  const stripe = playing && nextInMs != null ? dwellProgress : null
 
   const leave = useCallback(() => {
     navigate(activeId ? `/live?event=${encodeURIComponent(activeId)}` : '/live')
@@ -259,12 +351,16 @@ export default function Last48Immersive() {
         case ' ': e.preventDefault(); setParam('play', playing ? null : '1'); break
         case 'o': case 'O': setOverlayOn((v) => !v); break
         case 'h': case 'H': startHold(); break
-        case 'Escape': if (!overlayOn) setOverlayOn(true); else leave(); break
+        // Panels hidden first: the strip (and its ✕) is unmounted under
+        // `!overlayOn`, and `herePoint` survives `O`, so pressing Escape
+        // there should bring the panels back rather than silently close a
+        // reading the reader can't currently see.
+        case 'Escape': if (!overlayOn) setOverlayOn(true); else if (herePoint) closeHere(); else leave(); break
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [step, playing, overlayOn, setParam, startHold, leave])
+  }, [step, playing, overlayOn, setParam, startHold, leave, herePoint, closeHere])
 
   // The chrome is an L: controls down the RIGHT, content along the BOTTOM
   // (Jesse, 2026-09-13). Both arms mount and unmount together with the
@@ -282,6 +378,7 @@ export default function Last48Immersive() {
             hold={hold}
             reducedMotion={reducedMotion}
             rangeM={rangeM}
+            detour={detour}
             todOverride={todOverride}
             tuneOn={tuneOn}
             beaconOn={beaconOn}
@@ -289,9 +386,10 @@ export default function Last48Immersive() {
             onTelemetry={handleTelemetry}
             onArrived={handleArrived}
             onPick={jump}
-            onMapClick={clickNearest}
+            onMapClick={clickGround}
             onUserInput={() => { if (playing) setParam('play', null) }}
             onRest={rest}
+            probe={herePoint}
           />
           {(ticksOn || !overlayOn) && <FrameTicks hostRef={hostRef} />}
           {overlayOn && (
@@ -303,6 +401,8 @@ export default function Last48Immersive() {
               altitudeM={telemetry?.altitudeM ?? null}
               tilesLoaded={telemetry?.tilesLoaded ?? false}
               grade={tod}
+              here={here}
+              onCloseHere={closeHere}
             />
           )}
           {!overlayOn && (
@@ -320,6 +420,8 @@ export default function Last48Immersive() {
             onStep={step}
             stopIndex={index + 1}
             stopCount={order.length}
+            nextIn={nextIn}
+            progress={stripe}
           />
         )}
       </div>
@@ -334,6 +436,18 @@ export default function Last48Immersive() {
           tod={tod}
           beaconOn={beaconOn}
           ticksOn={ticksOn}
+          presets={(
+            <Presets
+              places={PLACES}
+              hotspots={hotspots}
+              hotspotsLoading={anomaliesLoading}
+              hotspotsNote={hotspotsNote}
+              activeKey={detour?.key ?? null}
+              onPlace={goPlace}
+              onHot={goHot}
+              onClear={clearDetour}
+            />
+          )}
           onPlayToggle={() => setParam('play', playing ? null : '1')}
           onHold={startHold}
           onOverlayToggle={() => setOverlayOn(false)}

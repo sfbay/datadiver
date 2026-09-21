@@ -38,6 +38,9 @@ interface Props {
   /** The ACTIVE tile only: corner glow + the pigment tab. Purely a skin —
    *  nothing about the fields changes. */
   glow?: boolean
+  /** ACTIVE only: 0..1 fills a 3 px stripe along the top edge across the
+   *  dwell (Round B §4). null/undefined = no stripe (explore, flight). */
+  progress?: number | null
 }
 
 // ── The latte ─────────────────────────────────────────────────────────────
@@ -65,7 +68,7 @@ const LATTE_LABEL = '#5f4c38'
 // which is decoration and carries no contrast duty. Peeks keep the pigment:
 // they sit on the band's own register, where it reads.
 
-export default function ImmersiveCard({ event, role, onClick, glow }: Props) {
+export default function ImmersiveCard({ event, role, onClick, glow, progress }: Props) {
   const meta = DATASET_META[event.datasetId]
   const { magnitude, unit } = formatAge(event.receivedAt)
   const loc = locationLine(event)
@@ -101,7 +104,7 @@ export default function ImmersiveCard({ event, role, onClick, glow }: Props) {
     ? `${shell} ${primary} bg-paper-50/90 dark:bg-espresso-950/85 ring-1 ring-paper-300/40 dark:ring-paper-100/15
        shadow-2xl shadow-black/30 opacity-70 hover:opacity-100 scale-[0.94] cursor-pointer`
     // The latte — one ground in both schemes; see the constants above.
-    : `${shell} ${primary} -translate-y-3 scale-[1.06] ${glow ? 'glow-host' : ''}`
+    : `${shell} ${primary} relative overflow-hidden -translate-y-3 scale-[1.06] ${glow ? 'glow-host' : ''}`
 
   // One box-shadow property carries BOTH the depth (offset + soft blur, the
   // craft floor's rule) and the solid 3px pigment tab down the left edge —
@@ -122,6 +125,19 @@ export default function ImmersiveCard({ event, role, onClick, glow }: Props) {
       {/* The glow sits UNDER the content: `.glow-host` isolates, `.glow-corner`
           is z-index 0, so everything readable rides one layer above it. */}
       {!peek && glow && <div className="glow-corner" />}
+      {/* THE STRIPE (Round B §4): the stream pigment running out along the
+          top edge across the dwell — the same colour as the tab down the
+          left edge, so it reads as that tab's ink being spent. Width moves
+          in 250 ms steps (the page's ticker) and the linear transition
+          smooths them into one continuous fill. Hidden entirely unless the
+          page is PLAYING and the stop has arrived. */}
+      {!peek && progress != null && (
+        <div
+          aria-hidden
+          className="absolute left-0 top-0 h-[3px] transition-[width] duration-[250ms] ease-linear"
+          style={{ width: `${Math.max(0, Math.min(1, progress)) * 100}%`, background: meta.color }}
+        />
+      )}
       <div className={!peek && glow ? 'relative z-[1]' : undefined}>
       <div className="flex items-baseline gap-2">
         <span className={`font-display italic text-[40px] leading-none tabular-nums ${primary}`}>{magnitude}</span>

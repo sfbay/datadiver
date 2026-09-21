@@ -71,3 +71,15 @@ export function orbitPose(
   const up = unit(cross(right, direction))
   return { position, direction, up }
 }
+
+/** Initial compass bearing from one geodetic point to another, degrees
+ *  clockwise from north in [0, 360). The heading the camera should ARRIVE
+ *  with so a leg reads as flying forward (Round B walk, 2026-09-20: a stop
+ *  behind the camera used to be flown backward — position moved, heading
+ *  did not). Great-circle formula; at city scale it is the rhumb line too. */
+export function bearingDeg(fromLng: number, fromLat: number, toLng: number, toLat: number): number {
+  const f1 = fromLat * D2R, f2 = toLat * D2R, dl = (toLng - fromLng) * D2R
+  const y = Math.sin(dl) * Math.cos(f2)
+  const x = Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dl)
+  return ((Math.atan2(y, x) / D2R) + 360) % 360
+}

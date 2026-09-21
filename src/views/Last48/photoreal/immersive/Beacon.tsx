@@ -20,30 +20,30 @@
 // render-on-demand without costing a single requested frame.
 import { useEffect, useRef } from 'react'
 import * as Cesium from 'cesium'
-import type { NormalizedEvent } from '@/types/last48'
 
 /** Height-sample cadence: eager until the tiles resolve, then slow enough to
  *  follow tile refinement without a CPU ray pick every frame. */
 const PROBE_MS = 500
 const REPROBE_MS = 2000
 
-/** The beacon's box. Every ring below is centred in it, and every inset is
- *  derived from the ring's own diameter — one formula, no hand-kept offsets.
+/** The beacon's geometry, per variant. Every ring is centred in its SIZE box
+ *  and every inset is derived from the ring's own diameter — one formula, no
+ *  hand-kept offsets.
  *
  *  Jesse's walk of 2026-09-20 found the single pigment ring "beautiful and
  *  active… still not enough pop and contrast" and asked for "a case or
- *  keyline or black/white outer rings". So the mark is now CASED: an espresso
- *  keyline outside the pigment and a paper keyline inside it. The case is
- *  what buys the contrast — a pigment ring alone has to beat whatever the
- *  photograph happens to put behind it, while a dark/light sandwich carries
- *  its own edge over a sunlit roof AND over a shadowed street. */
-const SIZE = 56
-const PIGMENT = 52
-const SWIRL = 44
-const INNER = 44
-const CORE = 10
-/** Centre a ring of diameter `d` in the SIZE box. */
-const ring = (d: number) => (SIZE - d) / 2
+ *  keyline or black/white outer rings". So the hero mark is CASED: an
+ *  espresso keyline outside the pigment and a paper keyline inside it. The
+ *  case is what buys the contrast — a pigment ring alone has to beat
+ *  whatever the photograph happens to put behind it, while a dark/light
+ *  sandwich carries its own edge over a sunlit roof AND over a shadowed
+ *  street. The probe variant (Round B §3, a clicked point rather than the
+ *  active stop) is smaller and stiller — no swirl, no breath — "this is what
+ *  the here card is about", not a second hero. */
+const GEOM = {
+  hero:  { SIZE: 56, PIGMENT: 52, SWIRL: 44, INNER: 44, CORE: 10, ringPx: 3 },
+  probe: { SIZE: 36, PIGMENT: 32, SWIRL: 0,  INNER: 26, CORE: 6,  ringPx: 2 },
+} as const
 /** The two keyline tones, straight off the palette: espresso-900 and
  *  paper-50. Authored here rather than as tokens because this mark sits over
  *  photography, not over either theme's ground — it must not follow the
@@ -56,18 +56,24 @@ const CORE_FILL = '#f5ecd9'
 interface Props {
   viewer: Cesium.Viewer
   tileset: Cesium.Cesium3DTileset | null
-  /** The active stop, or null before the first event lands. */
-  event: NormalizedEvent | null
-  /** The stream pigment — DATASET_META[datasetId].color. */
+  lng: number
+  lat: number
+  /** The stream pigment — DATASET_META[datasetId].color — or, for a probe,
+   *  the paper tone. */
   color: string
+  /** `hero` (default): the cased pigment ring with swirl and breath over the
+   *  active stop. `probe` (Round B §3): a smaller, stiller paper ring over a
+   *  clicked point — "this is what the here card is about". */
+  variant?: 'hero' | 'probe'
 }
 
-export default function Beacon({ viewer, tileset, event, color }: Props) {
+export default function Beacon({ viewer, tileset, lng, lat, color, variant: variantProp }: Props) {
   const ref = useRef<HTMLDivElement>(null)
+  const variant = variantProp ?? 'hero'
+  const g = GEOM[variant]
+  const ring = (d: number) => (g.SIZE - d) / 2
 
   useEffect(() => {
-    if (!event || event.longitude == null || event.latitude == null) return
-    const lng = event.longitude, lat = event.latitude
     const carto = Cesium.Cartographic.fromDegrees(lng, lat)
     // Until a tile covering the stop has loaded the sampler returns undefined
     // and the un-clamped ellipsoid point stands in — the same fallback the
@@ -96,7 +102,7 @@ export default function Beacon({ viewer, tileset, event, color }: Props) {
         return
       }
       el.style.visibility = 'visible'
-      el.style.transform = `translate(${p.x - SIZE / 2}px, ${p.y - SIZE / 2}px)`
+      el.style.transform = `translate(${p.x - g.SIZE / 2}px, ${p.y - g.SIZE / 2}px)`
     }
 
     viewer.scene.postRender.addEventListener(tick)
@@ -104,50 +110,54 @@ export default function Beacon({ viewer, tileset, event, color }: Props) {
     // and viewer.scene is undefined after it. isDestroyed() is the one call
     // that stays safe post-destroy.
     return () => { if (!viewer.isDestroyed()) viewer.scene.postRender.removeEventListener(tick) }
-  }, [viewer, tileset, event])
-
-  if (!event || event.longitude == null || event.latitude == null) return null
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewer, tileset, lng, lat])
 
   return (
     <div
       ref={ref}
       aria-hidden
       className="pointer-events-none absolute left-0 top-0 z-20"
-      style={{ width: SIZE, height: SIZE, visibility: 'hidden' }}
+      style={{ width: g.SIZE, height: g.SIZE, visibility: 'hidden', opacity: variant === 'probe' ? 0.85 : undefined }}
     >
       {/* OUTER KEYLINE — the dark half of the case. */}
       <div
         className="absolute"
-        style={{ inset: ring(SIZE), borderRadius: '9999px', border: `1.5px solid ${CASE_DARK}` }}
+        style={{ inset: ring(g.SIZE), borderRadius: '9999px', border: `1.5px solid ${CASE_DARK}` }}
       />
-      {/* PIGMENT RING — the identity, breathing slowly. Its bloom is the only
-          light the mark throws; the keylines hold the edge, so the bloom is
-          free to be generous. */}
+      {/* PIGMENT RING — the identity. The hero breathes slowly (its bloom is
+          the only light the mark throws, and the keylines hold the edge so
+          the bloom is free to be generous); the probe stays still, with half
+          the bloom — a marker, not a second hero. */}
       <div
-        className="beacon-ring absolute"
+        className={variant === 'hero' ? 'beacon-ring absolute' : 'absolute'}
         style={{
-          inset: ring(PIGMENT), borderRadius: '9999px',
-          border: `3px solid ${color}`, boxShadow: `0 0 14px 3px ${color}`,
+          inset: ring(g.PIGMENT), borderRadius: '9999px',
+          border: `${g.ringPx}px solid ${color}`,
+          boxShadow: variant === 'hero' ? `0 0 14px 3px ${color}` : `0 0 8px 2px ${color}`,
         }}
       />
       {/* The arc, BETWEEN the two keylines. Placed by `inset`, never by a
           transform — the swirl keyframe owns `transform` and would otherwise
           erase its own centring. The conic sweep is masked to an annulus so
-          it reads as one arc travelling round the ring, not a filled pie. */}
-      <div
-        className="beacon-swirl absolute"
-        style={{
-          inset: ring(SWIRL), borderRadius: '9999px',
-          background: `conic-gradient(from 0deg, transparent 0 70%, ${color}ee 85%, transparent 100%)`,
-          WebkitMaskImage: 'radial-gradient(closest-side, transparent 0 66%, #000 68%, #000 100%)',
-          maskImage: 'radial-gradient(closest-side, transparent 0 66%, #000 68%, #000 100%)',
-        }}
-      />
+          it reads as one arc travelling round the ring, not a filled pie.
+          Probe has no swirl (g.SWIRL === 0) — it does not spin. */}
+      {g.SWIRL > 0 && (
+        <div
+          className="beacon-swirl absolute"
+          style={{
+            inset: ring(g.SWIRL), borderRadius: '9999px',
+            background: `conic-gradient(from 0deg, transparent 0 70%, ${color}ee 85%, transparent 100%)`,
+            WebkitMaskImage: 'radial-gradient(closest-side, transparent 0 66%, #000 68%, #000 100%)',
+            maskImage: 'radial-gradient(closest-side, transparent 0 66%, #000 68%, #000 100%)',
+          }}
+        />
+      )}
       {/* INNER KEYLINE — the light half of the case, drawn over the arc so the
           arc reads as travelling BEHIND it. */}
       <div
         className="absolute"
-        style={{ inset: ring(INNER), borderRadius: '9999px', border: `1.5px solid ${CASE_LIGHT}` }}
+        style={{ inset: ring(g.INNER), borderRadius: '9999px', border: `1.5px solid ${CASE_LIGHT}` }}
       />
       {/* The core: the actual point. Paper, not pigment — against the cased
           ring a light centre is the higher-contrast reading, and the pigment
@@ -156,7 +166,7 @@ export default function Beacon({ viewer, tileset, event, color }: Props) {
       <div
         className="absolute"
         style={{
-          inset: ring(CORE), borderRadius: '9999px', background: CORE_FILL,
+          inset: ring(g.CORE), borderRadius: '9999px', background: CORE_FILL,
           boxShadow: `0 0 0 2px ${color}, 0 0 10px 2px ${color}`,
         }}
       />

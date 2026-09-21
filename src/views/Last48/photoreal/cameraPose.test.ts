@@ -46,3 +46,18 @@ describe('orbitPose at (0°,0°)', () => {
     expect(ORBIT_PITCH_DEG).toBe(-30)
   })
 })
+
+import { bearingDeg } from './cameraPose'
+
+describe('bearingDeg', () => {
+  it('due north / east / south / west', () => {
+    expect(bearingDeg(-122.42, 37.76, -122.42, 37.77)).toBeCloseTo(0, 3)
+    expect(bearingDeg(-122.42, 37.76, -122.41, 37.76)).toBeCloseTo(90, 0)
+    expect(bearingDeg(-122.42, 37.76, -122.42, 37.75)).toBeCloseTo(180, 3)
+    expect(bearingDeg(-122.42, 37.76, -122.43, 37.76)).toBeCloseTo(270, 0)
+  })
+  it('always in [0, 360)', () => {
+    const b = bearingDeg(-122.42, 37.76, -122.43, 37.75)
+    expect(b).toBeGreaterThanOrEqual(0); expect(b).toBeLessThan(360)
+  })
+})

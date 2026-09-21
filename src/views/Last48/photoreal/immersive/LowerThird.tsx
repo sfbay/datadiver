@@ -14,6 +14,7 @@
 // parent UNMOUNTS it for the `O` overlay toggle — it never hides itself.
 import type { NormalizedEvent } from '@/types/last48'
 import { DATASET_META } from '../../detail/eventCardModel'
+import { STREAM_WORD } from './streamWords'
 import ImmersiveCard from './ImmersiveCard'
 
 interface Props {
@@ -28,14 +29,10 @@ interface Props {
    *  connects directly with that set of information"). */
   stopIndex: number
   stopCount: number
-}
-
-/** Reader-facing stream names for the status line (the map chips shout in
- *  caps; this is a sentence). */
-const STREAM_LABEL: Record<string, string> = {
-  '911-realtime': '911 dispatch',
-  'fire-ems-dispatch': 'Fire/EMS',
-  '311-cases': '311 case',
+  /** `next in 48 s` while playing (Round B §4); null in explore mode. */
+  nextIn: string | null
+  /** 0..1 across the dwell for the active card's stripe; null = no stripe. */
+  progress: number | null
 }
 
 /** Every slot is the same width whether or not it holds a card, so the
@@ -56,7 +53,7 @@ const STEP_BTN = `h-10 w-10 shrink-0 self-center rounded-full flex items-center 
  *  neutral for "nothing selected yet". */
 const FALLBACK_GLOW = '#d4a435'
 
-export default function LowerThird({ prev, active, ahead, onJump, onStep, stopIndex, stopCount }: Props) {
+export default function LowerThird({ prev, active, ahead, onJump, onStep, stopIndex, stopCount, nextIn, progress }: Props) {
   const known = stopIndex >= 1 && stopCount >= 1
   const meta = active ? DATASET_META[active.datasetId] : null
   const glow = meta?.color ?? FALLBACK_GLOW
@@ -80,15 +77,19 @@ export default function LowerThird({ prev, active, ahead, onJump, onStep, stopIn
       <div className="relative z-[1] flex h-full flex-col">
         {/* Status line: the active stream and where this card sits in the
             pass. Replaces the old "── NOW" eyebrow. */}
-        <div className="flex items-center gap-3 px-[clamp(16px,3vw,64px)] pt-4 pb-2 font-mono text-label tabular-nums text-paper-700 dark:text-paper-400">
+        {/* In the display italic (Jesse's walk of Round B, 2026-09-20: "let's try
+            this in the big italics"); the countdown stays mono because a
+            figure that changes every second has to hold its width. */}
+        <div className="flex items-baseline gap-3 px-[clamp(16px,3vw,64px)] pt-3 pb-2 font-display italic text-[min(1.2vw,1.05rem)] leading-none text-paper-700 dark:text-paper-400">
           {meta && active && (
             <span className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full" style={{ background: meta.color, boxShadow: `0 0 8px ${meta.color}` }} aria-hidden />
-              <span style={{ color: meta.color }}>{STREAM_LABEL[active.datasetId] ?? meta.label}</span>
+              <span className="w-2 h-2 rounded-full self-center" style={{ background: meta.color, boxShadow: `0 0 8px ${meta.color}` }} aria-hidden />
+              <span style={{ color: meta.color }}>{STREAM_WORD[active.datasetId] ?? meta.label}</span>
             </span>
           )}
           {meta && <span aria-hidden>·</span>}
           <span>Stop {known ? stopIndex : '—'} of {known ? stopCount : '—'}</span>
+          {nextIn && (<><span aria-hidden>·</span><span className="font-mono not-italic text-label tabular-nums">{nextIn}</span></>)}
         </div>
 
         {/* Four slots, flanked by the step controls: ‹ · prev · ACTIVE ·
@@ -106,7 +107,7 @@ export default function LowerThird({ prev, active, ahead, onJump, onStep, stopIn
           </div>
           <div className={SLOT}>
             {active
-              ? <ImmersiveCard key={active.id} event={active} role="active" glow />
+              ? <ImmersiveCard key={active.id} event={active} role="active" glow progress={progress} />
               : <p className="font-display italic text-paper-500">Waiting for the first events…</p>}
           </div>
           {[0, 1].map((i) => {
