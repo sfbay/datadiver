@@ -30,7 +30,7 @@ describe('formatAge', () => {
 describe('formatApDate', () => {
   it('is AP style on the SF calendar', () => {
     // 2026-09-09T22:30:00-07:00 — a Wednesday in SF, already Thursday in UTC
-    expect(formatApDate(Date.parse('2026-09-10T05:30:00Z'))).toBe('Wed. Sept. 9, 2026')
+    expect(formatApDate(Date.parse('2026-09-10T05:30:00Z'))).toBe('Wed. Sept. 9')
   })
 })
 

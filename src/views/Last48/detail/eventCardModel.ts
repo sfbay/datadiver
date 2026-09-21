@@ -68,8 +68,10 @@ export function formatApDate(ms: number): string {
   const monthLong = d.toLocaleDateString('en-US', { month: 'long', timeZone: SF_TZ }) // "September"
   const month = AP_MONTH[monthLong] ?? monthLong
   const day = d.toLocaleDateString('en-US', { day: 'numeric', timeZone: SF_TZ })
-  const year = d.toLocaleDateString('en-US', { year: 'numeric', timeZone: SF_TZ })
-  return `${weekday}. ${month} ${day}, ${year}`
+  // No year (Jesse, 2026-09-21): a card in a 48-hour window does not need
+  // to say which year it is, and dropping it keeps the date line to one
+  // line beside the time on the immersive card.
+  return `${weekday}. ${month} ${day}`
 }
 
 /** Just the AP-style weekday abbreviation, e.g. "Mon." — disambiguates the day
