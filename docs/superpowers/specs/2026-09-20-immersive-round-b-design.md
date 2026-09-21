@@ -141,3 +141,7 @@ the probe beacon ignores the rail's Beacon toggle on purpose. Files: `nextIn.ts`
 `pointInNeighborhood.ts`, `here.ts`, `useHereCard.ts`, plus `useAutoAdvance`,
 `useDreamDirector`, `ImmersiveScene`, `Beacon`, `TelemetryStrip`, `LowerThird`,
 `ImmersiveCard`, `RightRail`, `Last48Immersive`.
+
+### 8.1 Post-merge camera rulings (2026-09-21, hotfixes on main)
+
+Jesse's prod walk after #176: (1) the hero aims 30 m above the TILE SURFACE (`tileset.getHeight`), never the ellipsoid — a hill stop rode high in the frame; the settle gate fires as soon as a height is readable and glides any > 10 m miss into the true frame. (2) The FIRST leg of a session keeps the house heading, arrives 3× the range out at −45° and descends 4 s once the ground is known — the default camera sits far over the Bay with no tiles under the stop, and aiming it at an unknown surface crashed it under a hill. (3) A leg is TURN-THEN-FLY: a 3 s pivot on the spot toward the destination's bearing, then the flight with heading held, arc capped at 700 m ("look where you're flying"); Cesium's `pitchAdjustHeight` was tried and removed — it dived on the climb and swivelled back on arrival, "flight-sim crash vibes". (4) Hero drift 0.63°/s (≈47° per dwell). (5) Card date line carries no year. Hotspot detours still arrive with the fixed heading 20 — a candidate for the next round.
