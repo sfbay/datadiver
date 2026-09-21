@@ -44,7 +44,7 @@ interface Props {
 const PLACE_COLOR = '#d4a435'
 
 const HEADING = 'text-[min(1vw,0.9rem)] leading-none text-paper-800 dark:text-paper-200'
-const TILE = `min-h-[3.5rem] py-2 w-full rounded-lg flex items-center gap-3 px-2 text-left transition-colors
+const TILE = `min-h-[3.5rem] shrink-0 py-2 w-full rounded-lg flex items-center gap-3 px-2 text-left transition-colors
   hover:ring-1 hover:ring-paper-500/60 hover:bg-paper-200/40 dark:hover:bg-espresso-800/60`
 const TILE_ON = 'bg-ochre-500/18 ring-1 ring-paper-400/40 dark:ring-paper-300/20'
 const NAME = 'font-display italic text-[min(1.2vw,1.05rem)] leading-tight text-ink dark:text-paper-100'
@@ -68,7 +68,7 @@ export default function Presets({ places, hotspots, hotspotsLoading, hotspotsNot
   const shown = more ? places : places.slice(0, PLACES_SHOWN)
 
   return (
-    <div className="mt-4 flex flex-col gap-3">
+    <div className="mt-4 shrink-0 flex flex-col gap-3">
       <section aria-label="Places">
         <p className={`${HEADING} px-2 pb-2`}>Places</p>
         <div className="flex flex-col gap-1">
