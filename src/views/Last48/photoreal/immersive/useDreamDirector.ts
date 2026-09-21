@@ -47,11 +47,19 @@ const FIRST_LEG_DESCENT_S = 4
 /** The high first arrival looks DOWN more steeply than the hero pitch — from
  *  600 m out, the hero's −30° stares at the horizon. */
 const FIRST_LEG_PITCH_DEG = -45
-/** Cesium's flyTo climbs an arc between stops; above this height (m above
- *  the ellipsoid) it tips the camera toward the ground for the rest of the
- *  climb instead of holding the arrival pitch (Jesse, 2026-09-21: "looking
- *  into the sky a bit more than we should on flights"). */
-const PITCH_ADJUST_HEIGHT_M = 350
+/** "Look where you're flying" (Jesse, 2026-09-21). A leg is TWO flights:
+ *  a short turn ON THE SPOT toward the destination's bearing, then the
+ *  flight itself with that heading held, so the camera faces its own travel
+ *  from the first metre instead of slewing round over 18 s. Skipped when the
+ *  camera already faces within TURN_MIN_DEG of the bearing. Cesium's
+ *  `pitchAdjustHeight` was tried first and tipped the camera straight down
+ *  on the climb, then swivelled back up on arrival — deleted. */
+const TURN_S = 3
+const TURN_MIN_DEG = 15
+/** Cap on the arc Cesium's flyTo climbs between stops (m above the
+ *  ellipsoid) — high enough to clear the hills, low enough that a −30°
+ *  camera keeps looking at the city, not the horizon. */
+const MAX_ARC_M = 700
 const toC3 = (v: [number, number, number]) => new Cesium.Cartesian3(v[0], v[1], v[2])
 type Center = { lng: number; lat: number; height: number }
 
@@ -244,12 +252,18 @@ export function useDreamDirector(opts: {
     const arrival = orbitPose(center, legDest.headingDeg, highLeg ? FIRST_LEG_PITCH_DEG : legDest.pitchDeg, highLeg ? legDest.rangeM * FIRST_LEG_RANGE_X : legDest.rangeM)
     const { pace, reducedMotion } = cbRef.current
     tileset.maximumScreenSpaceError = SSE_FLIGHT
-    viewer.camera.flyTo({
+    // The heading the FLIGHT holds: the bearing to the destination (a detour
+    // arrives with its own authored heading, but still flies facing travel —
+    // the slerp to the authored heading happens over the last flight).
+    const flightHeading = highLeg ? legDest.headingDeg : travelHeading(legDest.lng, legDest.lat)
+    const flyMain = () => {
+      if (disposed || cancelledRef.current || !a.alive()) return
+      viewer.camera.flyTo({
       destination: toC3(arrival.position),
       orientation: { direction: toC3(arrival.direction), up: toC3(arrival.up) },
-      duration: reducedMotion ? 0 : pace.tweenMs / 1000,
+      duration: reducedMotion ? 0 : Math.max(0, pace.tweenMs / 1000 - (turned ? TURN_S : 0)),
       easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
-      pitchAdjustHeight: PITCH_ADJUST_HEIGHT_M,
+      maximumHeight: MAX_ARC_M,
       complete: () => {
         if (disposed || cancelledRef.current || !a.alive()) return
         tileset.maximumScreenSpaceError = quality.sseOrbit
@@ -277,7 +291,6 @@ export function useDreamDirector(opts: {
                 orientation: { direction: toC3(fix.direction), up: toC3(fix.up) },
                 duration: highLeg ? FIRST_LEG_DESCENT_S : REAIM_S,
                 easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
-                pitchAdjustHeight: PITCH_ADJUST_HEIGHT_M,
                 complete: () => {
                   if (disposed || cancelledRef.current || !a.alive()) return
                   arrivedRef.current = true
@@ -295,6 +308,24 @@ export function useDreamDirector(opts: {
         }, 150)
       },
     })
+    }
+    // Turn first, then fly — unless already facing the way, or it's the
+    // first (far, high) leg, or reduced motion wants instant legs.
+    const cam = viewer.camera
+    const curHeading = ((Cesium.Math.toDegrees(cam.heading) % 360) + 360) % 360
+    const dh = Math.abs(((flightHeading - curHeading + 540) % 360) - 180)
+    const turned = !highLeg && !reducedMotion && dh > TURN_MIN_DEG
+    if (turned) {
+      cam.flyTo({
+        destination: Cesium.Cartesian3.clone(cam.positionWC),
+        orientation: { heading: Cesium.Math.toRadians(flightHeading), pitch: Math.min(cam.pitch, Cesium.Math.toRadians(-20)), roll: 0 },
+        duration: TURN_S,
+        easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
+        complete: flyMain,
+      })
+    } else {
+      flyMain()
+    }
     return () => {
       disposed = true
       if (settle) clearInterval(settle)
