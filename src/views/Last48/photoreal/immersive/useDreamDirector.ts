@@ -2,7 +2,8 @@
 //
 // The immersive camera (Spec A2 §3). Round B: an optional `detour` (a Place
 // or a Hotspot) replaces the target as the leg's destination with its own
-// heading/pitch/range; the preload still aims at `next`. Unlike
+// pitch/range (and, for a Place, its own heading — a Hotspot arrives facing
+// travel like a stop); the preload still aims at `next`. Unlike
 // useCesiumDirector there is no per-frame orbit. A stop is:
 //   1. ONE flight (pace.tweenMs, eased) to the arrival pose;
 //   2. the settle gate (tiles loaded, or SETTLE_CAP_MS) → onArrived;
@@ -24,7 +25,7 @@ import type { PaceValues } from '../../ambient/pace'
 import { orbitPose, bearingDeg, RANGE_M, ORBIT_PITCH_DEG } from '../cameraPose'
 import { quality } from '../quality'
 import { SSE_FLIGHT, SETTLE_CAP_MS, type PhotorealTarget } from '../useCesiumDirector'
-import type { DetourTarget } from './detour'
+import { arrivalHeadingDeg, type DetourTarget } from './detour'
 
 /** Metres ABOVE THE TILE SURFACE the camera aims at. Round B walk
  *  (2026-09-20, Jesse: "strange that this one ended up kind of high in the
@@ -75,7 +76,9 @@ interface Drift { from: number; to: number; t0: number; ms: number; center: Cent
 /** A type predicate rather than a bare `'key' in d` check — TS's structural
  *  narrowing on `{lng,lat} | DetourTarget` widens the true branch to an
  *  intersection instead of `DetourTarget` (the two types share too much
- *  shape for control-flow analysis alone), so an explicit guard is needed. */
+ *  shape for control-flow analysis alone), so an explicit guard is needed.
+ *  The `headingDeg` KEY is always present on a DetourTarget (its value may be
+ *  null — a Hotspot), and never on a stop, so `in` still tells them apart. */
 function isDetourDest(d: Exclude<PhotorealTarget, null> | DetourTarget): d is DetourTarget {
   return 'headingDeg' in d
 }
@@ -99,8 +102,9 @@ export function useDreamDirector(opts: {
   rangeM?: number
   /** Round B: a detour (a Place or a Hotspot). When set it REPLACES the
    *  target as the camera's destination — same flight, same settle gate,
-   *  same drift — but with its own heading/pitch/range. The preload still
-   *  aims at `next` (the chain resumes from the active card). */
+   *  same drift — but with its own pitch/range, and its own heading when it
+   *  has one (a Place; a Hotspot's is null → arrive facing travel). The
+   *  preload still aims at `next` (the chain resumes from the active card). */
   detour?: DetourTarget | null
 }): { cancel: () => void } {
   const { viewer, tileset, target, hold } = opts
@@ -199,12 +203,13 @@ export function useDreamDirector(opts: {
     try { return tileset.getHeight(Cesium.Cartographic.fromDegrees(lng, lat), viewer.scene) ?? 0 } catch { return 0 }
   }
 
-  /** The heading a STOP leg arrives with: the bearing from where the camera
-   *  is now to the stop, so the flight reads as forward motion (Jesse's walk,
-   *  2026-09-20: keeping the old heading flew a stop behind us backward).
-   *  Cesium's flyTo slerps the orientation across the whole leg, so the turn
-   *  is spread over the 18 s. Falls back to the last heading when the camera
-   *  has no position yet, or is already over the stop (a degenerate bearing). */
+  /** The bearing from where the camera is now to a destination — the heading
+   *  every leg's flight holds, and the one a stop or a Hotspot arrives with,
+   *  so the flight reads as forward motion (Jesse's walk, 2026-09-20: keeping
+   *  the old heading flew a stop behind us backward). The turn to it is the
+   *  3 s pivot before the flight (TURN_S). Falls back to the last heading
+   *  when the camera has no position yet, or is already over the destination
+   *  (a degenerate bearing). */
   const travelHeading = (lng: number, lat: number): number => {
     if (viewer.isDestroyed()) return headingRef.current
     const c = viewer.camera.positionCartographic
@@ -221,14 +226,21 @@ export function useDreamDirector(opts: {
   // progress on top of the reader.
   useEffect(() => {
     const a = api.current
-    const legDest = dest == null
-      ? null
-      : isDetourDest(dest)
-        ? { lng: dest.lng, lat: dest.lat, headingDeg: dest.headingDeg, pitchDeg: dest.pitchDeg, rangeM: dest.rangeM }
-        // The first leg keeps the house heading: a bearing from Cesium's
-        // default camera (out over the Bay) would face the East Bay.
-        : { lng: dest.lng, lat: dest.lat, headingDeg: firstLegRef.current ? headingRef.current : travelHeading(dest.lng, dest.lat),
-            pitchDeg: Math.min(ORBIT_PITCH_DEG, -cbRef.current.pace.pitchMin), rangeM: cbRef.current.rangeM ?? RANGE_M.immersive }
+    const detourDest = dest != null && isDetourDest(dest) ? dest : null
+    const legDest = dest == null ? null : {
+      lng: dest.lng, lat: dest.lat,
+      // One rule for every leg (detour.ts arrivalHeadingDeg): a Place's
+      // authored heading wins; a stop or a Hotspot arrives facing the way it
+      // flew; the first leg of a session keeps the house heading (a bearing
+      // from Cesium's default camera, out over the Bay, faces the East Bay).
+      headingDeg: arrivalHeadingDeg(detourDest ? detourDest.headingDeg : null, {
+        firstLeg: firstLegRef.current,
+        houseDeg: headingRef.current,
+        travelDeg: () => travelHeading(dest.lng, dest.lat),
+      }),
+      pitchDeg: detourDest ? detourDest.pitchDeg : Math.min(ORBIT_PITCH_DEG, -cbRef.current.pace.pitchMin),
+      rangeM: detourDest ? detourDest.rangeM : cbRef.current.rangeM ?? RANGE_M.immersive,
+    }
     if (!legDest) {
       a.stopDrift()
       arrivedRef.current = false
@@ -241,8 +253,8 @@ export function useDreamDirector(opts: {
     arrivedRef.current = false
     cancelledRef.current = false
     a.stopDrift()
-    // A detour brings its own heading; a stop ARRIVES facing the way it
-    // travelled (travelHeading), so the leg reads as flying forward.
+    // A Place brings its own heading; a stop or a Hotspot ARRIVES facing the
+    // way it travelled (travelHeading), so the leg reads as flying forward.
     headingRef.current = legDest.headingDeg
     legRef.current = { pitchDeg: legDest.pitchDeg, rangeM: legDest.rangeM }
     const highLeg = firstLegRef.current
@@ -252,9 +264,10 @@ export function useDreamDirector(opts: {
     const arrival = orbitPose(center, legDest.headingDeg, highLeg ? FIRST_LEG_PITCH_DEG : legDest.pitchDeg, highLeg ? legDest.rangeM * FIRST_LEG_RANGE_X : legDest.rangeM)
     const { pace, reducedMotion } = cbRef.current
     tileset.maximumScreenSpaceError = SSE_FLIGHT
-    // The heading the FLIGHT holds: the bearing to the destination (a detour
-    // arrives with its own authored heading, but still flies facing travel —
-    // the slerp to the authored heading happens over the last flight).
+    // The heading the FLIGHT holds: the bearing to the destination. A stop or
+    // a Hotspot arrives at this same bearing, so the heading is held end to
+    // end; a Place still flies facing travel and slerps to its authored
+    // heading over the main flight (its postcard view is the point).
     const flightHeading = highLeg ? legDest.headingDeg : travelHeading(legDest.lng, legDest.lat)
     const flyMain = () => {
       if (disposed || cancelledRef.current || !a.alive()) return
