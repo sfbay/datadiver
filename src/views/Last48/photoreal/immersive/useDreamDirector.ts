@@ -5,7 +5,9 @@
 // pitch/range (and, for a Place, its own heading — a Hotspot arrives facing
 // travel like a stop); the preload still aims at `next`. Unlike
 // useCesiumDirector there is no per-frame orbit. A stop is:
-//   1. ONE flight (pace.tweenMs, eased) to the arrival pose;
+//   1. a 3 s turn on the spot toward the travel bearing (TURN_S; skipped
+//      within TURN_MIN_DEG, on the first leg and under reduced motion), then
+//      ONE flight (pace.tweenMs less the turn, eased) to the arrival pose;
 //   2. the settle gate (tiles loaded, or SETTLE_CAP_MS) → onArrived;
 //   3. ONE slow LINEAR flight across the whole dwell — a few degrees of
 //      heading. To the eye it is a barely-moving camera; to Cesium it is a
@@ -205,11 +207,13 @@ export function useDreamDirector(opts: {
 
   /** The bearing from where the camera is now to a destination — the heading
    *  every leg's flight holds, and the one a stop or a Hotspot arrives with,
-   *  so the flight reads as forward motion (Jesse's walk, 2026-09-20: keeping
-   *  the old heading flew a stop behind us backward). The turn to it is the
-   *  3 s pivot before the flight (TURN_S). Falls back to the last heading
-   *  when the camera has no position yet, or is already over the destination
-   *  (a degenerate bearing). */
+   *  so the camera always faces the destination (Jesse's walk, 2026-09-20:
+   *  keeping the old heading flew a stop behind us backward). It reads as
+   *  forward flight beyond the arrival's ground offset and as a pull-back
+   *  inside it (arrivalHeadingDeg in detour.ts has the numbers). The turn to
+   *  it is the 3 s pivot before the flight (TURN_S). Falls back to the last
+   *  heading when the camera has no position yet, or is already over the
+   *  destination (a degenerate bearing). */
   const travelHeading = (lng: number, lat: number): number => {
     if (viewer.isDestroyed()) return headingRef.current
     const c = viewer.camera.positionCartographic

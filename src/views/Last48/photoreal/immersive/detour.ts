@@ -40,11 +40,15 @@ export function detourFromHotspot(h: Hotspot): DetourTarget {
 
 /** The heading a leg ARRIVES with — the one rule for stops and detours:
  *  an authored heading (a Place) wins; otherwise (a stop, a Hotspot) the leg
- *  arrives facing the bearing it flew, so the flight reads as forward motion
- *  with the heading held; except the FIRST leg of a session, which keeps the
- *  house heading — a bearing from Cesium's default camera, out over the Bay,
- *  would face the East Bay. `travelDeg` is a thunk because it reads the live
- *  camera, and the first leg must not. */
+ *  arrives facing the bearing it flew, so the heading is held end to end;
+ *  except the FIRST leg of a session, which keeps the house heading — a
+ *  bearing from Cesium's default camera, out over the Bay, would face the
+ *  East Bay. Held heading reads as forward flight only when the destination
+ *  is farther than the arrival pose's own ground offset (range·cos pitch:
+ *  ≈573 m for a Hotspot's 700 m at −35°, ≈173 m for a stop); nearer than
+ *  that the same leg is a straight pull-back that faces the destination.
+ *  `travelDeg` is a thunk because it reads the live camera, and the first
+ *  leg must not. */
 export function arrivalHeadingDeg(
   authored: number | null,
   o: { firstLeg: boolean; houseDeg: number; travelDeg: () => number },
