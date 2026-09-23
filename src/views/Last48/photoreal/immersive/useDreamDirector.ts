@@ -7,9 +7,11 @@
 // useCesiumDirector there is no per-frame orbit. A stop is:
 //   1. a 3 s turn on the spot toward the travel bearing (TURN_S; skipped
 //      within TURN_MIN_DEG, on the first leg and under reduced motion), then
-//      ONE flight (pace.tweenMs less the turn, eased) to the arrival pose;
+//      ONE flight (pace.tweenMs less the turn, eased) to the arrival pose,
+//      aimed at the TRUE ground sampled during the turn (PRESAMPLE_CAP_MS);
 //   2. the settle gate (tiles loaded, or SETTLE_CAP_MS) → onArrived;
-//   3. ONE slow LINEAR flight across the whole dwell — a few degrees of
+//   3. ONE slow flight across the whole dwell (constant speed, ramped up
+//      from and back down to rest at its ends — rampedLinear) — a few degrees of
 //      heading. To the eye it is a barely-moving camera; to Cesium it is a
 //      flight, and a flight is the ONLY time the tileset runs its
 //      PRELOAD_FLIGHT pass (Camera.canPreloadFlight, 1.145). That pass reads
@@ -24,7 +26,7 @@
 import { useEffect, useRef } from 'react'
 import * as Cesium from 'cesium'
 import type { PaceValues } from '../../ambient/pace'
-import { orbitPose, bearingDeg, RANGE_M, ORBIT_PITCH_DEG } from '../cameraPose'
+import { orbitPose, bearingDeg, rampedLinear, RANGE_M, ORBIT_PITCH_DEG } from '../cameraPose'
 import { quality } from '../quality'
 import { SSE_FLIGHT, SETTLE_CAP_MS, type PhotorealTarget } from '../useCesiumDirector'
 import { arrivalHeadingDeg, type DetourTarget } from './detour'
@@ -39,6 +41,20 @@ const TARGET_HEIGHT_M = 30
  *  this re-aims the camera with a short correction glide before the drift. */
 const REAIM_M = 10
 const REAIM_S = 1.5
+/** ONE motion per arrival (Jesse, 2026-09-23: the camera "comes in for a
+ *  landing, slows down, then speeds up again"). That second motion was the
+ *  REAIM glide: the take-off aim read `tileset.getHeight` at a place whose
+ *  tiles were not resident (often 0 m on a detour), so nearly every new-area
+ *  arrival missed by > REAIM_M and flew a second eased move after landing.
+ *  Now each leg asks Cesium for the TRUE ground height at take-off
+ *  (`sampleHeightMostDetailed`, which loads the tiles it needs) and holds
+ *  the main flight for it — at most this long from the leg's start, which
+ *  the 3 s turn usually covers. A leg that got the true height skips the
+ *  re-aim; one that timed out keeps it as the fallback. */
+const PRESAMPLE_CAP_MS = 2500
+/** The drift's speed ramps up from rest (and back down to rest) over this
+ *  long at each end of the dwell (rampedLinear) — no jolt into or out of it. */
+const DRIFT_RAMP_S = 4
 /** The FIRST leg of a session starts from Cesium's default camera, far away
  *  with no tiles under the stop. It arrives this many times further out than
  *  the hero range and then DESCENDS to the hero frame once the ground is
@@ -73,7 +89,7 @@ interface PreloadScene {
 }
 
 /** A running drift: enough to stop it mid-way and resume from that heading. */
-interface Drift { from: number; to: number; t0: number; ms: number; center: Center }
+interface Drift { from: number; to: number; t0: number; ms: number; center: Center; ease: (t: number) => number }
 
 /** A type predicate rather than a bare `'key' in d` check — TS's structural
  *  narrowing on `{lng,lat} | DetourTarget` widens the true branch to an
@@ -165,13 +181,17 @@ export function useDreamDirector(opts: {
       const from = headingRef.current
       const to = from + pace.orbitDegPerS * (pace.dwellMs / 1000)
       const end = orbitPose(center, to, this.pitch(), this.range())
-      const me: Drift = { from, to, t0: performance.now(), ms: pace.dwellMs, center }
+      // Speed ramps up from rest and back down (rampedLinear), so the dwell
+      // neither jolts into motion after the arrival nor stops dead when the
+      // next leg starts. Still ONE flight, so the preload pass is unchanged.
+      const ease = rampedLinear(DRIFT_RAMP_S * 1000 / pace.dwellMs)
+      const me: Drift = { from, to, t0: performance.now(), ms: pace.dwellMs, center, ease }
       driftRef.current = me
       viewer.camera.flyTo({
         destination: toC3(end.position),
         orientation: { direction: toC3(end.direction), up: toC3(end.up) },
         duration: pace.dwellMs / 1000,
-        easingFunction: Cesium.EasingFunction.LINEAR_NONE,
+        easingFunction: ease,
         // cancelFlight() (stopDrift/cancel) fires this flight's `cancel`
         // callback, not `complete` — `complete` only fires on a genuine
         // full-duration finish. Guard by identity anyway: a stale `me`
@@ -191,7 +211,7 @@ export function useDreamDirector(opts: {
       const d = driftRef.current
       if (!d) return
       const f = Math.min(1, (performance.now() - d.t0) / d.ms)
-      headingRef.current = (d.from + (d.to - d.from) * f) % 360
+      headingRef.current = (d.from + (d.to - d.from) * d.ease(f)) % 360
       driftRef.current = null
       if (!viewer.isDestroyed()) viewer.camera.cancelFlight()
     },
@@ -203,6 +223,18 @@ export function useDreamDirector(opts: {
   const surfaceM = (lng: number, lat: number): number => {
     if (viewer.isDestroyed()) return 0
     try { return tileset.getHeight(Cesium.Cartographic.fromDegrees(lng, lat), viewer.scene) ?? 0 } catch { return 0 }
+  }
+
+  /** The TRUE ground height at a point: Cesium loads the most detailed tiles
+   *  there and samples them. The markers are entities standing ON the stop
+   *  (a 311 column would read as the ground), so every entity is excluded.
+   *  null when unsupported, nothing was hit, or the call fails. */
+  const sampleGround = async (lng: number, lat: number): Promise<number | null> => {
+    if (viewer.isDestroyed() || !viewer.scene.sampleHeightSupported) return null
+    try {
+      const [c] = await viewer.scene.sampleHeightMostDetailed([Cesium.Cartographic.fromDegrees(lng, lat)], viewer.entities.values)
+      return c && Number.isFinite(c.height) ? c.height : null
+    } catch { return null }
   }
 
   /** The bearing from where the camera is now to a destination — the heading
@@ -254,6 +286,7 @@ export function useDreamDirector(opts: {
     }
     let disposed = false
     let settle: ReturnType<typeof setInterval> | undefined
+    let presampleCap: ReturnType<typeof setTimeout> | undefined
     arrivedRef.current = false
     cancelledRef.current = false
     a.stopDrift()
@@ -265,9 +298,19 @@ export function useDreamDirector(opts: {
     firstLegRef.current = false
     const center: Center = { lng: legDest.lng, lat: legDest.lat, height: TARGET_HEIGHT_M + surfaceM(legDest.lng, legDest.lat) }
     centerRef.current = center
-    const arrival = orbitPose(center, legDest.headingDeg, highLeg ? FIRST_LEG_PITCH_DEG : legDest.pitchDeg, highLeg ? legDest.rangeM * FIRST_LEG_RANGE_X : legDest.rangeM)
     const { pace, reducedMotion } = cbRef.current
     tileset.maximumScreenSpaceError = SSE_FLIGHT
+    // The true ground under the destination (PRESAMPLE_CAP_MS). Not on the
+    // first leg — it arrives high and descends once the ground is known, by
+    // design — and not under reduced motion (instant legs, nothing to hide).
+    let trueGround: number | null = null
+    const groundReady: Promise<void> = highLeg || reducedMotion ? Promise.resolve() : Promise.race([
+      sampleGround(legDest.lng, legDest.lat).then((g) => { trueGround = g }),
+      new Promise<void>((res) => { presampleCap = setTimeout(res, PRESAMPLE_CAP_MS) }),
+    ])
+    /** Set when the main flight aimed at the sampled ground: its arrival IS
+     *  the true frame, so the settle gate must not fly a second move. */
+    let aimedTrue = false
     // The heading the FLIGHT holds: the bearing to the destination. A stop or
     // a Hotspot arrives at this same bearing, so the heading is held end to
     // end; a Place still flies facing travel and slerps to its authored
@@ -275,6 +318,8 @@ export function useDreamDirector(opts: {
     const flightHeading = highLeg ? legDest.headingDeg : travelHeading(legDest.lng, legDest.lat)
     const flyMain = () => {
       if (disposed || cancelledRef.current || !a.alive()) return
+      if (trueGround != null) { center.height = TARGET_HEIGHT_M + trueGround; aimedTrue = true }
+      const arrival = orbitPose(center, legDest.headingDeg, highLeg ? FIRST_LEG_PITCH_DEG : legDest.pitchDeg, highLeg ? legDest.rangeM * FIRST_LEG_RANGE_X : legDest.rangeM)
       viewer.camera.flyTo({
       destination: toC3(arrival.position),
       orientation: { direction: toC3(arrival.direction), up: toC3(arrival.up) },
@@ -295,10 +340,20 @@ export function useDreamDirector(opts: {
           if (tileset.tilesLoaded || heightKnown || Date.now() - t0 > SETTLE_CAP_MS) {
             clearInterval(settle)
             if (cancelledRef.current) return
-            // Tiles are in now: re-measure the ground under the stop. The
-            // arrival aim used whatever was resident at take-off (often 0 for
-            // a fresh area); a big miss gets a short glide to the true frame
-            // before the drift starts from it.
+            // Arrived at the sampled true ground: this IS the frame. Never
+            // re-aim from getHeight here — at a coarser tile level it can
+            // disagree with the most-detailed sample by more than REAIM_M,
+            // and that re-aim was the second motion this change removes.
+            if (aimedTrue && !highLeg) {
+              arrivedRef.current = true
+              cbRef.current.onArrived()
+              if (!cbRef.current.hold) a.startDrift(center)
+              return
+            }
+            // Fallback (sample timed out or failed): re-measure the ground
+            // under the stop. The arrival aim used whatever was resident at
+            // take-off (often 0 for a fresh area); a big miss gets a short
+            // glide to the true frame before the drift starts from it.
             const trueH = TARGET_HEIGHT_M + surfaceM(center.lng, center.lat)
             if ((highLeg || Math.abs(trueH - center.height) > REAIM_M) && !cbRef.current.reducedMotion) {
               center.height = trueH
@@ -338,14 +393,16 @@ export function useDreamDirector(opts: {
         orientation: { heading: Cesium.Math.toRadians(flightHeading), pitch: Math.min(cam.pitch, Cesium.Math.toRadians(-20)), roll: 0 },
         duration: TURN_S,
         easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
-        complete: flyMain,
+        // The ground sample runs during the turn; take off once it is in.
+        complete: () => { void groundReady.then(flyMain) },
       })
     } else {
-      flyMain()
+      void groundReady.then(flyMain)
     }
     return () => {
       disposed = true
       if (settle) clearInterval(settle)
+      if (presampleCap) clearTimeout(presampleCap)
       a.stopDrift()
       if (a.alive()) viewer.camera.cancelFlight()
     }

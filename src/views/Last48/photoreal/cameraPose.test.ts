@@ -1,5 +1,28 @@
 import { describe, it, expect } from 'vitest'
-import { geodeticToEcef, orbitPose, ORBIT_RANGE_M, ORBIT_PITCH_DEG, RANGE_M } from './cameraPose'
+import { geodeticToEcef, orbitPose, rampedLinear, ORBIT_RANGE_M, ORBIT_PITCH_DEG, RANGE_M } from './cameraPose'
+
+describe('rampedLinear (the drift easing: no jolt at either end)', () => {
+  const f = rampedLinear(0.1)
+  const speed = (t: number, h = 1e-4) => (f(t + h) - f(t - h)) / (2 * h)
+  it('runs 0 → 1 and never goes backward', () => {
+    expect(f(0)).toBe(0)
+    expect(f(1)).toBeCloseTo(1, 12)
+    for (let t = 0; t < 1; t += 0.01) expect(f(t + 0.01)).toBeGreaterThanOrEqual(f(t))
+  })
+  it('starts and ends at rest, with a constant speed in between', () => {
+    expect(speed(1e-3)).toBeLessThan(0.02)
+    expect(speed(1 - 1e-3)).toBeLessThan(0.02)
+    expect(speed(0.3)).toBeCloseTo(speed(0.7), 6)
+  })
+  it('speed is continuous at the ramp joins (no step)', () => {
+    expect(speed(0.1 - 1e-3)).toBeCloseTo(speed(0.1 + 1e-3), 1)
+    expect(speed(0.9 - 1e-3)).toBeCloseTo(speed(0.9 + 1e-3), 1)
+  })
+  it('ramp 0 is plain linear; ramp is clamped to 0.5', () => {
+    expect(rampedLinear(0)(0.37)).toBe(0.37)
+    expect(rampedLinear(0.9)(0.5)).toBeCloseTo(rampedLinear(0.5)(0.5), 12)
+  })
+})
 
 const A = 6378137 // WGS84 semi-major axis
 const close = (a: number[], b: number[], eps = 1e-3) => a.forEach((v, i) => expect(Math.abs(v - b[i])).toBeLessThan(eps))

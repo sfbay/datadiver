@@ -72,6 +72,25 @@ export function orbitPose(
   return { position, direction, up }
 }
 
+/** A flight easing (time fraction → progress fraction) whose SPEED is a
+ *  trapezoid: it ramps up from rest over the first `ramp` of the time, holds
+ *  a constant speed, and ramps back to rest over the last `ramp`. The
+ *  immersive drift uses it so a dwell neither starts nor ends with a jolt
+ *  (Jesse, 2026-09-23: "one single gentle motion ... at all times"); a bare
+ *  LINEAR drift jumped from standstill to full speed on its first frame.
+ *  `ramp` is clamped to [0, 0.5]; 0 is plain linear. f(0)=0, f(1)=1. */
+export function rampedLinear(ramp: number): (t: number) => number {
+  const r = Math.min(0.5, Math.max(0, ramp))
+  if (r === 0) return (t) => t
+  const k = 1 - r
+  return (t) => {
+    const x = Math.min(1, Math.max(0, t))
+    if (x < r) return (x * x) / (2 * r) / k
+    if (x > 1 - r) return (k - ((1 - x) * (1 - x)) / (2 * r)) / k
+    return (x - r / 2) / k
+  }
+}
+
 /** Initial compass bearing from one geodetic point to another, degrees
  *  clockwise from north in [0, 360). The heading the camera should ARRIVE
  *  with so a leg reads as flying forward (Round B walk, 2026-09-20: a stop
