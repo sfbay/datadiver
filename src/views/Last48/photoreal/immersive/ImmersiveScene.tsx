@@ -72,7 +72,7 @@ interface Props {
   /** Sample only while the strip that reads it is on screen. */
   telemetryOn: boolean
   onTelemetry: (t: Telemetry) => void
-  onArrived: () => void
+  onArrived: (dwellMs: number) => void
   onPick: (id: string) => void
   /** A click on the GROUND (no marker under the pointer): the page snaps to
    *  the nearest stop. Round A's minimal click; Round B adds the "here" card. */
@@ -316,7 +316,7 @@ function Director(p: {
   reducedMotion: boolean
   rangeM?: number
   detour: DetourTarget | null
-  onArrived: () => void
+  onArrived: (dwellMs: number) => void
   onUserInput: () => void
 }) {
   const cb = useRef(p)
@@ -346,7 +346,7 @@ function Director(p: {
     target, next,
     pace: p.pace, hold: p.hold, reducedMotion: p.reducedMotion, rangeM: p.rangeM,
     detour,
-    onArrived: () => cb.current.onArrived(),
+    onArrived: (ms) => cb.current.onArrived(ms),
   })
   const cancelRef = useRef(cancel)
   // eslint-disable-next-line react-hooks/refs

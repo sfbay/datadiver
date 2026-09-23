@@ -1,5 +1,106 @@
 import { describe, it, expect } from 'vitest'
-import { geodeticToEcef, orbitPose, ORBIT_RANGE_M, ORBIT_PITCH_DEG, RANGE_M } from './cameraPose'
+import { geodeticToEcef, orbitPose, rampedLinear, sliceEase, orbitSweepDeg, glideHeight, ORBIT_RANGE_M, ORBIT_PITCH_DEG, RANGE_M } from './cameraPose'
+
+describe('orbitSweepDeg (the orbit ends facing the next stop)', () => {
+  it('always ends on the target heading', () => {
+    for (let from = 0; from < 360; from += 17) for (let to = 0; to < 360; to += 23) {
+      const end = (((from + orbitSweepDeg(from, to)) % 360) + 360) % 360
+      expect(Math.abs(end - to) % 360).toBeLessThan(1e-9)
+    }
+  })
+  it('turns between a half and a full circle', () => {
+    for (let from = 0; from < 360; from += 13) for (let to = 0; to < 360; to += 7) {
+      const s = Math.abs(orbitSweepDeg(from, to))
+      expect(s).toBeGreaterThanOrEqual(180)
+      expect(s).toBeLessThanOrEqual(360)
+    }
+  })
+  it('straight ahead is a full circle; directly behind is a half', () => {
+    expect(Math.abs(orbitSweepDeg(40, 40))).toBe(360)
+    expect(Math.abs(orbitSweepDeg(40, 220))).toBe(180)
+  })
+  it('no next stop: one full clockwise circle', () => {
+    expect(orbitSweepDeg(40, null)).toBe(360)
+  })
+})
+
+describe('glideHeight (arrive down the line of sight)', () => {
+  const base = { hs: 130, he: 150, cruise: 600, d: 2000, climbTan: Math.tan(20 * Math.PI / 180), glideTan: Math.tan(30 * Math.PI / 180) }
+  it('meets both ends exactly', () => {
+    expect(glideHeight({ ...base, x: 0 })).toBeCloseTo(130, 9)
+    expect(glideHeight({ ...base, x: 2000 })).toBeCloseTo(150, 9)
+  })
+  it('never exceeds the cruise ceiling or the climb, and is continuous', () => {
+    let prev = glideHeight({ ...base, x: 0 })
+    for (let x = 1; x <= 2000; x += 1) {
+      const h = glideHeight({ ...base, x })
+      expect(h).toBeLessThanOrEqual(600 + 1e-9)
+      expect(Math.abs(h - prev)).toBeLessThan(1)
+      prev = h
+    }
+  })
+  it('the last stretch lies on the arrival line of sight', () => {
+    const r = 150
+    expect(glideHeight({ ...base, x: 2000 - r })).toBeCloseTo(150 + r * base.glideTan, 6)
+  })
+  it('a start above the cruise ceiling descends from where it is (no jump)', () => {
+    expect(glideHeight({ ...base, hs: 5000, x: 0 })).toBeCloseTo(5000, 9)
+    expect(glideHeight({ ...base, hs: 5000, x: 2000 })).toBeCloseTo(150, 9)
+    let prev = 5000
+    for (let x = 1; x <= 2000; x += 1) {
+      const h = glideHeight({ ...base, hs: 5000, x })
+      expect(h).toBeLessThanOrEqual(prev + 1e-9) // only ever comes down
+      expect(prev - h).toBeLessThan(5) // ≤ ~4 m per metre: steep, never a jump
+      prev = h
+    }
+  })
+})
+
+describe('sliceEase (the orbit flown as a chain of short flights)', () => {
+  const ease = rampedLinear(4 / 75)
+  const n = 30
+  it('each slice runs 0 → 1', () => {
+    for (let i = 0; i < n; i++) {
+      const s = sliceEase(ease, i / n, (i + 1) / n)
+      expect(s(0)).toBeCloseTo(0, 12)
+      expect(s(1)).toBeCloseTo(1, 12)
+    }
+  })
+  it('chained slices reproduce the whole ease at every sampled time', () => {
+    for (let t = 0; t <= 1; t += 0.0137) {
+      const i = Math.min(n - 1, Math.floor(t * n))
+      const a = i / n, b = (i + 1) / n
+      const chained = ease(a) + (ease(b) - ease(a)) * sliceEase(ease, a, b)((t - a) / (b - a))
+      expect(chained).toBeCloseTo(ease(t), 10)
+    }
+  })
+  it('a slice where the ease does not move is linear', () => {
+    expect(sliceEase(() => 0.5, 0.2, 0.4)(0.3)).toBe(0.3)
+  })
+})
+
+describe('rampedLinear (the drift easing: no jolt at either end)', () => {
+  const f = rampedLinear(0.1)
+  const speed = (t: number, h = 1e-4) => (f(t + h) - f(t - h)) / (2 * h)
+  it('runs 0 → 1 and never goes backward', () => {
+    expect(f(0)).toBe(0)
+    expect(f(1)).toBeCloseTo(1, 12)
+    for (let t = 0; t < 1; t += 0.01) expect(f(t + 0.01)).toBeGreaterThanOrEqual(f(t))
+  })
+  it('starts and ends at rest, with a constant speed in between', () => {
+    expect(speed(1e-3)).toBeLessThan(0.02)
+    expect(speed(1 - 1e-3)).toBeLessThan(0.02)
+    expect(speed(0.3)).toBeCloseTo(speed(0.7), 6)
+  })
+  it('speed is continuous at the ramp joins (no step)', () => {
+    expect(speed(0.1 - 1e-3)).toBeCloseTo(speed(0.1 + 1e-3), 1)
+    expect(speed(0.9 - 1e-3)).toBeCloseTo(speed(0.9 + 1e-3), 1)
+  })
+  it('ramp 0 is plain linear; ramp is clamped to 0.5', () => {
+    expect(rampedLinear(0)(0.37)).toBe(0.37)
+    expect(rampedLinear(0.9)(0.5)).toBeCloseTo(rampedLinear(0.5)(0.5), 12)
+  })
+})
 
 const A = 6378137 // WGS84 semi-major axis
 const close = (a: number[], b: number[], eps = 1e-3) => a.forEach((v, i) => expect(Math.abs(v - b[i])).toBeLessThan(eps))

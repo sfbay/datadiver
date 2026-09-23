@@ -72,6 +72,90 @@ export function orbitPose(
   return { position, direction, up }
 }
 
+/** A flight easing (time fraction → progress fraction) whose SPEED is a
+ *  trapezoid: it ramps up from rest over the first `ramp` of the time, holds
+ *  a constant speed, and ramps back to rest over the last `ramp`. The
+ *  immersive drift uses it so a dwell neither starts nor ends with a jolt
+ *  (Jesse, 2026-09-23: "one single gentle motion ... at all times"); a bare
+ *  LINEAR drift jumped from standstill to full speed on its first frame.
+ *  `ramp` is clamped to [0, 0.5]; 0 is plain linear. f(0)=0, f(1)=1. */
+export function rampedLinear(ramp: number): (t: number) => number {
+  const r = Math.min(0.5, Math.max(0, ramp))
+  if (r === 0) return (t) => t
+  const k = 1 - r
+  return (t) => {
+    const x = Math.min(1, Math.max(0, t))
+    if (x < r) return (x * x) / (2 * r) / k
+    if (x > 1 - r) return (k - ((1 - x) * (1 - x)) / (2 * r)) / k
+    return (x - r / 2) / k
+  }
+}
+
+/** The easing for ONE segment of a motion split into a chain of flights:
+ *  the slice [a, b] of `ease`, renormalised to run 0 → 1. Chained segments
+ *  reproduce `ease` exactly, speed included, across every join — how the
+ *  immersive orbit stays one continuous motion while flown as short legs.
+ *  A slice where `ease` does not move falls back to linear. */
+export function sliceEase(ease: (t: number) => number, a: number, b: number): (t: number) => number {
+  const fa = ease(a), fb = ease(b)
+  if (fb === fa) return (t) => t
+  return (t) => (ease(a + t * (b - a)) - fa) / (fb - fa)
+}
+
+/** The dwell's orbit, signed degrees (+ = clockwise heading increase), from
+ *  the camera's heading to the heading that faces the NEXT stop (Jesse,
+ *  2026-09-23: "the rotation in the direction of our takeoff ... a full
+ *  rotation to time each stop"). Between a half and a full turn, always:
+ *  a next stop straight ahead costs a whole circle, one directly behind a
+ *  half; the direction is whichever reaches the facing inside that band.
+ *  Facing the next stop at the end means the camera sits on the line from
+ *  the next stop through this one, so the take-off needs no turn. With no
+ *  next stop (null) it is one full clockwise circle. At a constant speed the
+ *  sweep IS the dwell's length. */
+export function orbitSweepDeg(fromDeg: number, toDeg: number | null): number {
+  if (toDeg == null) return 360
+  const theta = (((toDeg - fromDeg) % 360) + 360) % 360
+  return theta >= 180 ? theta : -(360 - theta)
+}
+
+/** The height (m, above the ellipsoid) of the camera at horizontal distance
+ *  `x` along a leg of horizontal length `d` (Jesse, 2026-09-23: arrivals
+ *  "tilting down and dropping all at the end of flight"). Three limits, the
+ *  lowest wins, joined by a smooth minimum:
+ *   - the CLIMB out of the start at `climbTan` (rise per metre);
+ *   - the CRUISE ceiling `cruise`;
+ *   - the GLIDE into the end along the arrival's own line of sight
+ *     (`glideTan` = tan of the arrival pitch), so the last stretch slides
+ *     straight down the gaze — closer without tilting — and meets `he`
+ *     exactly at x = d.
+ *  The smoothing width shrinks to zero at both ends so the endpoints are
+ *  exact: h(0) = hs, h(d) = he. */
+export function glideHeight(p: { hs: number; he: number; cruise: number; d: number; x: number; climbTan: number; glideTan: number }): number {
+  const x = Math.min(p.d, Math.max(0, p.x))
+  const r = p.d - x
+  const climb = p.hs + x * p.climbTan
+  const glide = p.he + r * p.glideTan
+  const k = Math.min(80, x * 0.5, r * 0.5)
+  const smin = (a: number, b: number) => {
+    if (k <= 0) return Math.min(a, b)
+    const h = Math.max(k - Math.abs(a - b), 0) / k
+    return Math.min(a, b) - (h * h * k) / 4
+  }
+  // The ceiling never sits below either end: an end above it is still reached
+  // exactly, and a start above it is not clipped down to it.
+  const low = smin(smin(climb, Math.max(p.cruise, p.hs, p.he)), glide)
+  // A start ABOVE the glide line (the first leg, from Cesium's far default
+  // camera) comes DOWN from where it is — at least 45°, steeper only when the
+  // drop would not fit in 60% of the leg — until it meets the glide line.
+  // Without this floor it would jump straight onto the line. On an ordinary
+  // leg the floor sits far below and changes nothing.
+  const dropTan = Math.max(1, (p.hs - p.he) / (0.6 * Math.max(p.d, 1)))
+  const floor = p.hs - x * dropTan
+  if (k <= 0) return Math.max(low, floor)
+  const h = Math.max(k - Math.abs(low - floor), 0) / k
+  return Math.max(low, floor) + (h * h * k) / 4
+}
+
 /** Initial compass bearing from one geodetic point to another, degrees
  *  clockwise from north in [0, 360). The heading the camera should ARRIVE
  *  with so a leg reads as flying forward (Round B walk, 2026-09-20: a stop

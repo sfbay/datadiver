@@ -96,7 +96,14 @@ export const PACE_PRESETS: Record<PaceId, PacePreset> = {
     // 0.42 (Jesse's walk of Round B, 2026-09-20: "a bit faster" once the
     // tiles settle), then 0.63 the next night ("by another factor") — ≈47°
     // across the 75 s dwell.
-    orbitDegPerS: 0.63,
+    // Since 2026-09-23 the orbit TIMES the stop (Jesse: "a full rotation to
+    // time each stop"): each dwell sweeps between a half and a full circle so
+    // it ends facing the next stop (orbitSweepDeg), at this constant speed.
+    // 3.6 (the old ~75 s average dwell) was past Jesse's "dreamstate"
+    // threshold the same day; 2.0 → 90–180 s a stop. `?orbit=` on the page
+    // overrides it for tuning. dwellMs is now only the fallback when there is
+    // no orbit (reduced motion).
+    orbitDegPerS: 2.0,
     dwellMs: 75000,
     breathMs: 0,
     tweenMs: 18000,
