@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "mailbox": "docs/collab/mailbox.md",
+  "human": "Jesse",
+  "agents": {
+    "fable": {
+      "name": "Fable",
+      "lane": "code, tests, builds, commits and PRs in this repo"
+    },
+    "astra": {
+      "name": "Astra",
+      "lane": "operator work on the Mac and the web: browser, Google Photos, Vercel and Google consoles, anything needing Jesse's logins"
+    }
+  },
+  "policy": {
+    "mailboxCommit": "pr",
+    "branch": "main",
+    "remote": "origin",
+    "notes": "Everything except the mailbox goes through a branch and a PR the human merges."
+  }
+}
