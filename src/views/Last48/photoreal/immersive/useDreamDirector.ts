@@ -29,7 +29,7 @@
 import { useEffect, useRef } from 'react'
 import * as Cesium from 'cesium'
 import type { PaceValues } from '../../ambient/pace'
-import { orbitPose, bearingDeg, rampedLinear, sliceEase, RANGE_M, ORBIT_PITCH_DEG, type CameraPose } from '../cameraPose'
+import { orbitPose, bearingDeg, rampedLinear, sliceEase, orbitSweepDeg, glideHeight, RANGE_M, ORBIT_PITCH_DEG, type CameraPose } from '../cameraPose'
 import { quality } from '../quality'
 import { SSE_FLIGHT, SETTLE_CAP_MS, type PhotorealTarget } from '../useCesiumDirector'
 import { arrivalHeadingDeg, type DetourTarget } from './detour'
@@ -73,6 +73,14 @@ const DRIFT_SEG_MS = 2500
  *  stop slid down past the bottom edge mid-flight and the camera tipped back
  *  down onto it in the last ~4 s — the "double dip". */
 const AIM_BLEND_UNTIL = 0.35
+/** The main flight's own height profile (glideHeight): climb out at this
+ *  angle, cruise no higher than MAX_ARC_M (and no more than this share of the
+ *  leg's length above the higher end), then glide in down the arrival's line
+ *  of sight (Jesse, 2026-09-23: arrivals were "tilting down and dropping all
+ *  at the end of flight" — Cesium's own parabola fell steepest right at the
+ *  end). */
+const CLIMB_DEG = 20
+const CRUISE_OVER_FRAC = 0.25
 /** The FIRST leg of a session starts from Cesium's default camera, far away
  *  with no tiles under the stop. It arrives this many times further out than
  *  the hero range and then DESCENDS to the hero frame once the ground is
@@ -131,8 +139,10 @@ export function useDreamDirector(opts: {
   hold: boolean
   /** prefers-reduced-motion: instant legs, no drift. */
   reducedMotion: boolean
-  /** Flight done + tiles settled (or the cap). The page starts the dwell on it. */
-  onArrived: () => void
+  /** Flight done + tiles settled (or the cap). The page starts the dwell on
+   *  it, for `dwellMs` — the orbit's own length (orbitSweepDeg at
+   *  pace.orbitDegPerS), so the stop ends when the camera faces the next. */
+  onArrived: (dwellMs: number) => void
   /** Camera distance from the stop, metres. Default RANGE_M.immersive; the
    *  page passes ?range= as a dev knob (Jesse 2026-09-20: closer). */
   rangeM?: number
@@ -171,6 +181,11 @@ export function useDreamDirector(opts: {
   const cancelledRef = useRef(false)
   /** True until the first leg has flown — see FIRST_LEG_RANGE_X. */
   const firstLegRef = useRef(true)
+  /** This stop's orbit: the heading it ends on (facing the next stop) and
+   *  the time still to fly. Set on arrival; a hold banks the remainder and a
+   *  release flies it, so the camera still ends facing the next stop exactly
+   *  when the page's clock (paused for the same hold) runs out. */
+  const planRef = useRef<{ to: number; ms: number } | null>(null)
 
   // Stable helpers in a ref so the effects below never re-run for them.
   const api = useRef({
@@ -192,34 +207,56 @@ export function useDreamDirector(opts: {
       s.preloadFlightCullingVolume = (cam.frustum as Cesium.PerspectiveFrustum)
         .computeCullingVolume(cam.positionWC, cam.directionWC, cam.upWC)
     },
+    /** The stop has arrived: plan its orbit, tell the page how long the
+     *  dwell is, and start orbiting unless a hold is on. */
+    arrive(center: Center) {
+      const { pace, reducedMotion, next } = cbRef.current
+      let ms = pace.dwellMs
+      if (!reducedMotion) {
+        const from = headingRef.current
+        // The heading that faces the next stop from this one. The camera then
+        // sits on the line from the next stop through this one, so the next
+        // leg's travel bearing IS this heading — take-off needs no turn.
+        const faceNext = next && (Math.abs(next.lng - center.lng) > 1e-5 || Math.abs(next.lat - center.lat) > 1e-5)
+          ? bearingDeg(center.lng, center.lat, next.lng, next.lat) : null
+        const sweep = orbitSweepDeg(from, faceNext)
+        ms = (Math.abs(sweep) / pace.orbitDegPerS) * 1000
+        planRef.current = { to: from + sweep, ms }
+      }
+      arrivedRef.current = true
+      cbRef.current.onArrived(ms)
+      if (!cbRef.current.hold) this.startDrift(center)
+    },
+    /** Fly what is left of this stop's orbit (planRef) from where the camera
+     *  is now — the whole orbit on arrival, the remainder after a hold. */
     startDrift(center: Center) {
       if (viewer.isDestroyed()) return
-      const { pace, reducedMotion } = cbRef.current
-      if (reducedMotion) return
+      const plan = planRef.current
+      if (cbRef.current.reducedMotion || !plan || plan.ms < 50) return
       const from = headingRef.current
-      const to = from + pace.orbitDegPerS * (pace.dwellMs / 1000)
+      const { to, ms } = plan
       // Speed ramps up from rest and back down (rampedLinear), so the dwell
       // neither jolts into motion after the arrival nor stops dead when the
-      // next leg starts. Still ONE flight, so the preload pass is unchanged.
-      const ease = rampedLinear(DRIFT_RAMP_S * 1000 / pace.dwellMs)
-      const me: Drift = { from, to, t0: performance.now(), ms: pace.dwellMs, center, ease }
+      // next leg starts.
+      const ease = rampedLinear(DRIFT_RAMP_S * 1000 / ms)
+      const me: Drift = { from, to, t0: performance.now(), ms, center, ease }
       driftRef.current = me
       // A true ORBIT as a chain of short flights (DRIFT_SEG_MS). Segment i
       // covers the time slice [a, b] of the whole dwell; its easing is the
       // matching slice of the dwell's ONE speed profile (rampedLinear), so
       // speed is continuous across the joins and the ramps still sit at the
       // two ends of the dwell.
-      const n = Math.max(1, Math.round(pace.dwellMs / DRIFT_SEG_MS))
+      const n = Math.max(1, Math.round(ms / DRIFT_SEG_MS))
       const pitch = this.pitch(), range = this.range()
       const flySeg = (i: number) => {
         if (driftRef.current !== me || viewer.isDestroyed()) return
-        if (i >= n) { headingRef.current = to % 360; driftRef.current = null; return }
+        if (i >= n) { headingRef.current = to % 360; driftRef.current = null; planRef.current = { to, ms: 0 }; return }
         const a = i / n, b = (i + 1) / n
         const end = orbitPose(center, from + (to - from) * ease(b), pitch, range)
         viewer.camera.flyTo({
           destination: toC3(end.position),
           orientation: { direction: toC3(end.direction), up: toC3(end.up) },
-          duration: pace.dwellMs / n / 1000,
+          duration: ms / n / 1000,
           easingFunction: sliceEase(ease, a, b),
           // cancelFlight() (stopDrift/cancel) fires `cancel`, never
           // `complete`; `complete` chains the next segment. Guard by
@@ -241,6 +278,8 @@ export function useDreamDirector(opts: {
       const f = Math.min(1, (performance.now() - d.t0) / d.ms)
       headingRef.current = (d.from + (d.to - d.from) * d.ease(f)) % 360
       driftRef.current = null
+      // Bank the rest of the orbit: a release flies it (planRef).
+      if (planRef.current) planRef.current = { to: d.to, ms: d.ms * (1 - f) }
       if (!viewer.isDestroyed()) viewer.camera.cancelFlight()
     },
   })
@@ -277,9 +316,20 @@ export function useDreamDirector(opts: {
    *  (measured 2026-09-23) as the gap grew with closeness. At arrival the
    *  held direction IS the arrival direction, so the hand-off is seamless.
    *  Position is never touched. Returns the detach function. */
-  const holdAim = (center: Center, arrival: CameraPose, flightMs: number): (() => void) => {
+  const holdAim = (center: Center, arrival: CameraPose, arrivalPitchDeg: number, flightMs: number): (() => void) => {
     if (viewer.isDestroyed()) return () => {}
     const cam = viewer.camera
+    // The glide profile (glideHeight): measured once from where the flight
+    // starts to where it ends. Horizontal progress is read off the camera's
+    // own lon/lat each frame, so the profile follows Cesium's path exactly.
+    const startC = Cesium.Cartographic.clone(cam.positionCartographic)
+    const endC = Cesium.Cartographic.fromCartesian(toC3(arrival.position))
+    const d = new Cesium.EllipsoidGeodesic(startC, endC).surfaceDistance
+    const hs = startC.height, he = endC.height
+    const profile = { hs, he, d, cruise: Math.min(MAX_ARC_M, Math.max(hs, he) + CRUISE_OVER_FRAC * d),
+      climbTan: Math.tan(Cesium.Math.toRadians(CLIMB_DEG)), glideTan: Math.tan(Cesium.Math.toRadians(Math.abs(arrivalPitchDeg))) }
+    const geo = new Cesium.EllipsoidGeodesic()
+    const camC = new Cesium.Cartographic()
     const ground = Cesium.Cartesian3.fromDegrees(center.lng, center.lat, center.height - TARGET_HEIGHT_M)
     const toGroundAtArrival = Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(ground, toC3(arrival.position), new Cesium.Cartesian3()), new Cesium.Cartesian3())
     const delta = Cesium.Cartesian3.angleBetween(toC3(arrival.direction), toGroundAtArrival)
@@ -290,6 +340,14 @@ export function useDreamDirector(opts: {
     const tmp = new Cesium.Cartesian3()
     const remove = viewer.scene.preUpdate.addEventListener(() => {
       if (viewer.isDestroyed()) return
+      // Height first (the aim below reads the corrected position): keep the
+      // tween's lon/lat, replace its parabola with the glide profile.
+      Cesium.Cartographic.fromCartesian(cam.positionWC, Cesium.Ellipsoid.WGS84, camC)
+      if (camC && d > 1) {
+        geo.setEndPoints(startC, camC)
+        const h = glideHeight({ ...profile, x: geo.surfaceDistance })
+        Cesium.Cartesian3.fromRadians(camC.longitude, camC.latitude, h, Cesium.Ellipsoid.WGS84, cam.position)
+      }
       const s = Math.min(1, (performance.now() - t0) / flightMs)
       const x = Math.min(1, s / AIM_BLEND_UNTIL)
       const w = x * x * (3 - 2 * x) // smoothstep: no kink at either end of the blend
@@ -366,6 +424,7 @@ export function useDreamDirector(opts: {
     arrivedRef.current = false
     cancelledRef.current = false
     a.stopDrift()
+    planRef.current = null
     // A Place brings its own heading; a stop or a Hotspot ARRIVES facing the
     // way it travelled (travelHeading), so the leg reads as flying forward.
     headingRef.current = legDest.headingDeg
@@ -415,6 +474,19 @@ export function useDreamDirector(opts: {
         if (disposed || cancelledRef.current || !a.alive()) return
         tileset.maximumScreenSpaceError = quality.sseOrbit
         const t0 = Date.now()
+        /** The orbit (the hero) starts only once the tiles have SETTLED, or
+         *  at the cap (Jesse, 2026-09-23: "I thought we don't start hero
+         *  until tiles settle?"). At 3.6°/s a sweep over half-loaded tiles
+         *  shows blur spinning. The camera holds still in the arrival frame
+         *  meanwhile; the page's stop clock starts with the orbit. */
+        const arriveSettled = () => {
+          const go = () => { if (!disposed && !cancelledRef.current && a.alive()) a.arrive(center) }
+          if (tileset.tilesLoaded) { go(); return }
+          settle = setInterval(() => {
+            if (disposed || cancelledRef.current || !a.alive()) { clearInterval(settle); return }
+            if (tileset.tilesLoaded || Date.now() - t0 > SETTLE_CAP_MS) { clearInterval(settle); go() }
+          }, 150)
+        }
         settle = setInterval(() => {
           if (disposed || cancelledRef.current || !a.alive()) { clearInterval(settle); return }
           // Settle on tiles loaded, OR as soon as the tileset can answer a
@@ -429,12 +501,7 @@ export function useDreamDirector(opts: {
             // re-aim from getHeight here — at a coarser tile level it can
             // disagree with the most-detailed sample by more than REAIM_M,
             // and that re-aim was the second motion this change removes.
-            if (aimedTrue) {
-              arrivedRef.current = true
-              cbRef.current.onArrived()
-              if (!cbRef.current.hold) a.startDrift(center)
-              return
-            }
+            if (aimedTrue) { arriveSettled(); return }
             // Fallback (sample timed out or failed): re-measure the ground
             // under the stop. The arrival aim used whatever was resident at
             // take-off (often 0 for a fresh area); a big miss gets a short
@@ -450,22 +517,18 @@ export function useDreamDirector(opts: {
                 easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
                 complete: () => {
                   if (disposed || cancelledRef.current || !a.alive()) return
-                  arrivedRef.current = true
-                  cbRef.current.onArrived()
-                  if (!cbRef.current.hold) a.startDrift(center)
+                  arriveSettled()
                 },
               })
               return
             }
             center.height = trueH
-            arrivedRef.current = true
-            cbRef.current.onArrived()
-            if (!cbRef.current.hold) a.startDrift(center)
+            arriveSettled()
           }
         }, 150)
       },
     })
-      if (durationS > 0) stopAim = holdAim(center, arrival, durationS * 1000)
+      if (durationS > 0) stopAim = holdAim(center, arrival, high ? FIRST_LEG_PITCH_DEG : legDest.pitchDeg, durationS * 1000)
     }
     // Turn first, then fly — unless already facing the way, or it's the
     // first (far, high) leg, or reduced motion wants instant legs.

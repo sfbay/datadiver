@@ -147,6 +147,14 @@ export default function TelemetryStrip({
       </div>
 
       <div className={`${GROUP} ml-auto`}>
+        {/* A small spinner while tiles stream (Jesse, 2026-09-23) — the words
+            alone were easy to miss, and the orbit now waits on this state. */}
+        {!tilesLoaded && (
+          <span
+            aria-hidden
+            className="w-2.5 h-2.5 shrink-0 rounded-full border-[1.5px] border-paper-400/30 border-t-paper-300 motion-safe:animate-spin"
+          />
+        )}
         <span className="text-paper-400">{tilesLoaded ? 'Tiles settled' : 'Loading tiles…'}</span>
       </div>
     </div>

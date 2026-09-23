@@ -260,7 +260,10 @@ export default function Last48Immersive() {
   // ── Arrival, play, hold, overlay ──────────────────────────────────────
   const [arrived, setArrived] = useState(false)
   useEffect(() => { setArrived(false) }, [activeId, detour?.key])
-  const handleArrived = useCallback(() => setArrived(true), [])
+  // The dwell's length is the orbit's (useDreamDirector → orbitSweepDeg at
+  // the pace speed): the stop ends as the camera comes to face the next one.
+  const [dwellMs, setDwellMs] = useState<number | null>(null)
+  const handleArrived = useCallback((ms: number) => { setDwellMs(ms); setArrived(true) }, [])
   const [holdLeftMs, setHoldLeftMs] = useState(0)
   const holdUntilRef = useRef(0)
   const startHold = useCallback(() => {
@@ -298,14 +301,21 @@ export default function Last48Immersive() {
   // ?range= — dev knob for the hero sweep's camera distance (metres).
   const rangeParam = Number(searchParams.get('range'))
   const rangeM = Number.isFinite(rangeParam) && rangeParam >= 150 && rangeParam <= 3000 ? rangeParam : undefined
-  const pace = PACE_PRESETS.dream
+  // ?orbit= — dev knob for the orbit speed (°/s). The orbit times the stop,
+  // so this also sets the dwell: 180–360° at this speed.
+  const orbitParam = Number(searchParams.get('orbit'))
+  const pace = useMemo(() => (
+    Number.isFinite(orbitParam) && orbitParam >= 0.3 && orbitParam <= 8
+      ? { ...PACE_PRESETS.dream, orbitDegPerS: orbitParam }
+      : PACE_PRESETS.dream
+  ), [orbitParam])
 
   // A detour changes what the camera is looking at without changing the
   // active stop, so the dwell clock must reset too — otherwise pressing
   // Space mid-detour spends whatever was left on the PREVIOUS stop's clock
   // and pulls the reader off the place a few seconds later.
   const { remainingMs } = useAutoAdvance({
-    playing, arrived, hold, dwellMs: pace.dwellMs,
+    playing, arrived, hold, dwellMs: dwellMs ?? pace.dwellMs,
     stopKey: activeId ? `${activeId}|${detour?.key ?? ''}` : null,
     onAdvance: () => step(1),
   })
@@ -323,7 +333,7 @@ export default function Last48Immersive() {
     const id = setInterval(tick, 250)
     return () => clearInterval(id)
   }, [playing, arrived, hold, remainingMs])
-  const dwellProgress = nextInMs == null ? -1 : Math.max(0, Math.min(1, 1 - nextInMs / pace.dwellMs))
+  const dwellProgress = nextInMs == null ? -1 : Math.max(0, Math.min(1, 1 - nextInMs / (dwellMs ?? pace.dwellMs)))
   const nextIn = playing ? formatNextIn(nextInMs) : null
   const stripe = playing && nextInMs != null ? dwellProgress : null
 
