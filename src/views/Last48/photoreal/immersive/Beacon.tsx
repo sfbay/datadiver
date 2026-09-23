@@ -97,7 +97,11 @@ export default function Beacon({ viewer, tileset, lng, lat, color, variant: vari
         }
       }
       const p = viewer.scene.cartesianToCanvasCoordinates(anchor)
-      if (!p) { // behind the camera / off-canvas — never leave a stale pin
+      // Behind the camera (no projection) OR projected outside the canvas:
+      // cartesianToCanvasCoordinates happily returns a point below the map,
+      // and the pin then sat on the lower third's cards (Jesse, 2026-09-23).
+      const cv = viewer.scene.canvas
+      if (!p || p.x < 0 || p.y < 0 || p.x > cv.clientWidth || p.y > cv.clientHeight) {
         el.style.visibility = 'hidden'
         return
       }

@@ -100,10 +100,10 @@ export const PACE_PRESETS: Record<PaceId, PacePreset> = {
     // time each stop"): each dwell sweeps between a half and a full circle so
     // it ends facing the next stop (orbitSweepDeg), at this constant speed.
     // 3.6 (the old ~75 s average dwell) was past Jesse's "dreamstate"
-    // threshold the same day; 2.0 → 90–180 s a stop. `?orbit=` on the page
-    // overrides it for tuning. dwellMs is now only the fallback when there is
-    // no orbit (reduced motion).
-    orbitDegPerS: 2.0,
+    // threshold the same day; Jesse settled on 1.3 with the `?orbit=` knob
+    // (≈140–275 s a stop). `?orbit=` still overrides it for tuning. dwellMs
+    // is now only the fallback when there is no orbit (reduced motion).
+    orbitDegPerS: 1.3,
     dwellMs: 75000,
     breathMs: 0,
     tweenMs: 18000,

@@ -383,12 +383,14 @@ export default function Last48Immersive() {
         // `!overlayOn`, and `herePoint` survives `O`, so pressing Escape
         // there should bring the panels back rather than silently close a
         // reading the reader can't currently see.
-        case 'Escape': if (!overlayOn) setOverlayOn(true); else if (herePoint) closeHere(); else leave(); break
+        // Then a detour (a Place, neighborhood, Hotspot or address) goes back
+        // to the stop before Escape ever leaves the page.
+        case 'Escape': if (!overlayOn) setOverlayOn(true); else if (herePoint) closeHere(); else if (detour) clearDetour(); else leave(); break
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [step, playing, overlayOn, setParam, startHold, leave, herePoint, closeHere])
+  }, [step, playing, overlayOn, setParam, startHold, leave, herePoint, closeHere, detour, clearDetour])
 
   // The chrome is an L: controls down the RIGHT, content along the BOTTOM
   // (Jesse, 2026-09-13). Both arms mount and unmount together with the
@@ -451,6 +453,8 @@ export default function Last48Immersive() {
             nextIn={nextIn}
             progress={stripe}
             playing={playing}
+            detourLabel={detour?.label ?? null}
+            onBackToStop={clearDetour}
           />
         )}
       </div>

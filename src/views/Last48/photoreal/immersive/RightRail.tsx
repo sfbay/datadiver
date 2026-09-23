@@ -55,7 +55,7 @@ export const HOLD_MS = 10_000
 /** A control CELL — one of three in a row: glyph over name, key in the
  *  corner. `shrink-0` because the rail is a flex column that scrolls (a
  *  squashed row went to 3 px once, walk 2026-09-21). */
-const CELL = `relative h-[4.25rem] flex-1 min-w-0 rounded-lg flex flex-col items-center justify-center gap-1 overflow-hidden glow-host
+const CELL = `relative h-[4.75rem] flex-1 min-w-0 rounded-lg flex flex-col items-center justify-center gap-1 overflow-hidden glow-host
   ring-1 transition-colors bg-paper-50/70 dark:bg-espresso-800/70
   ring-paper-400/40 dark:ring-paper-300/20 hover:ring-paper-500/60
   text-paper-700 dark:text-paper-300`
@@ -63,9 +63,10 @@ const CELL_ON = 'bg-ochre-500/18 text-ink dark:text-paper-100'
 /** The signature: the control's NAME in the display face ("drop the mono in
  *  the buttons… big serif ital, it's a signature look"). */
 const NAME = 'relative z-[1] font-display italic text-[min(1.1vw,1.05rem)] leading-none text-ink dark:text-paper-100'
-/** The key that does the same thing, tucked in the cell's corner. paper-600
- *  in light mode: 9 px of #a8926a on cream does not clear the contrast floor. */
-const KEY_HINT = 'absolute top-1 right-1.5 z-[1] font-mono text-nano leading-none text-paper-600 dark:text-paper-500'
+/** The key that does the same thing, centred under the name (Jesse,
+ *  2026-09-23). paper-600 in light mode: 9 px of #a8926a on cream does not
+ *  clear the contrast floor. */
+const KEY_HINT = 'relative z-[1] font-mono text-nano leading-none text-paper-600 dark:text-paper-500'
 /** One size for every glyph in the rail. */
 const GLYPH = 22
 

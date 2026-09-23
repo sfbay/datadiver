@@ -286,7 +286,10 @@ export default function ImmersiveScene(props: Props) {
       {/* The beacon rides the host div (a sibling of the tune panel), not the
           Cesium scene — it is screen space by design. The ground disc stays:
           the two split the job, anchoring below and visibility above. */}
-      {viewer && props.active && props.active.longitude != null && props.active.latitude != null && props.beaconOn && (
+      {/* Not during a detour: the camera is at a Place / neighborhood /
+          address, not the stop, and a pin on a stop you are not looking at
+          read as "the current event is here" (Jesse, 2026-09-23). */}
+      {viewer && props.active && props.active.longitude != null && props.active.latitude != null && props.beaconOn && !props.detour && (
         <Beacon
           viewer={viewer} tileset={tileset}
           lng={props.active.longitude} lat={props.active.latitude}

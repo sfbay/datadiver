@@ -36,6 +36,11 @@ interface Props {
   /** Auto-advance on. Off, the header says EXPLORE and the rule sits full
    *  and faint ("this stop is yours for as long as you want"). */
   playing: boolean
+  /** The detour the camera is at (a Place, neighborhood, Hotspot or address),
+   *  or null. Shown as "At …" with the way back (Jesse, 2026-09-23: "how do I
+   *  release a preselected view?"). */
+  detourLabel: string | null
+  onBackToStop: () => void
 }
 
 /** Every slot is the same width whether or not it holds a card, so the
@@ -56,7 +61,7 @@ const STEP_BTN = `h-10 w-10 shrink-0 self-center rounded-full flex items-center 
  *  neutral for "nothing selected yet". */
 const FALLBACK_GLOW = '#d4a435'
 
-export default function LowerThird({ prev, active, ahead, onJump, onStep, stopIndex, stopCount, nextIn, progress, playing }: Props) {
+export default function LowerThird({ prev, active, ahead, onJump, onStep, stopIndex, stopCount, nextIn, progress, playing, detourLabel, onBackToStop }: Props) {
   const known = stopIndex >= 1 && stopCount >= 1
   const meta = active ? DATASET_META[active.datasetId] : null
   const glow = meta?.color ?? FALLBACK_GLOW
@@ -97,6 +102,22 @@ export default function LowerThird({ prev, active, ahead, onJump, onStep, stopIn
           {meta && <span aria-hidden>·</span>}
           <span>Stop {known ? stopIndex : '—'} of {known ? stopCount : '—'}</span>
           {nextIn && (<><span aria-hidden>·</span><span className="font-mono not-italic text-label tabular-nums">{nextIn}</span></>)}
+          {detourLabel && (
+            <>
+              <span aria-hidden>·</span>
+              <span className="text-ink dark:text-paper-100">At {detourLabel}</span>
+              {/* The way back — the same as clicking the pressed row again,
+                  ← →, a card, or Escape. */}
+              <button
+                type="button" onClick={onBackToStop} title="Back to the stop (Escape)"
+                className="font-mono not-italic text-label uppercase tracking-wider px-2 py-1 -my-1 rounded-md
+                  ring-1 ring-paper-400/40 dark:ring-paper-300/20 text-paper-700 dark:text-paper-300
+                  hover:text-ink dark:hover:text-paper-100 hover:ring-paper-500/60"
+              >
+                Back to the stop ✕
+              </button>
+            </>
+          )}
           <span className="ml-auto flex items-baseline gap-4 font-mono not-italic text-label">
             {!playing && <span className="uppercase tracking-wider text-paper-600 dark:text-paper-500">explore</span>}
             <span className="text-paper-600 dark:text-paper-500" aria-label="Keys: arrows step, space plays, O hides, H holds, Escape leaves">← → · space · O · H · esc</span>
