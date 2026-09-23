@@ -343,3 +343,7 @@ All three self-hosted via Fontsource (npm), imported in `src/main.tsx`; Vite fin
 - **Space Mono** — mono labels, data values, eyebrows, timestamps, coordinates. Has real italics. Class: `.font-mono`.
 
 Tracking is tight (`-0.02em` to `-0.04em`) on display, heavy (`+0.25em` uppercase) on micro labels.
+
+# Agent collaboration
+
+Agent mailbox: `docs/collab/mailbox.md` (rules: the `collab` skill; config `.collab.json`). Read new entries with `node ~/dev/arbiter/tools/collab.mjs read --me <you>` before working and before handing off.
