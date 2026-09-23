@@ -1,5 +1,28 @@
 import { describe, it, expect } from 'vitest'
-import { geodeticToEcef, orbitPose, rampedLinear, ORBIT_RANGE_M, ORBIT_PITCH_DEG, RANGE_M } from './cameraPose'
+import { geodeticToEcef, orbitPose, rampedLinear, sliceEase, ORBIT_RANGE_M, ORBIT_PITCH_DEG, RANGE_M } from './cameraPose'
+
+describe('sliceEase (the orbit flown as a chain of short flights)', () => {
+  const ease = rampedLinear(4 / 75)
+  const n = 30
+  it('each slice runs 0 → 1', () => {
+    for (let i = 0; i < n; i++) {
+      const s = sliceEase(ease, i / n, (i + 1) / n)
+      expect(s(0)).toBeCloseTo(0, 12)
+      expect(s(1)).toBeCloseTo(1, 12)
+    }
+  })
+  it('chained slices reproduce the whole ease at every sampled time', () => {
+    for (let t = 0; t <= 1; t += 0.0137) {
+      const i = Math.min(n - 1, Math.floor(t * n))
+      const a = i / n, b = (i + 1) / n
+      const chained = ease(a) + (ease(b) - ease(a)) * sliceEase(ease, a, b)((t - a) / (b - a))
+      expect(chained).toBeCloseTo(ease(t), 10)
+    }
+  })
+  it('a slice where the ease does not move is linear', () => {
+    expect(sliceEase(() => 0.5, 0.2, 0.4)(0.3)).toBe(0.3)
+  })
+})
 
 describe('rampedLinear (the drift easing: no jolt at either end)', () => {
   const f = rampedLinear(0.1)

@@ -91,6 +91,17 @@ export function rampedLinear(ramp: number): (t: number) => number {
   }
 }
 
+/** The easing for ONE segment of a motion split into a chain of flights:
+ *  the slice [a, b] of `ease`, renormalised to run 0 → 1. Chained segments
+ *  reproduce `ease` exactly, speed included, across every join — how the
+ *  immersive orbit stays one continuous motion while flown as short legs.
+ *  A slice where `ease` does not move falls back to linear. */
+export function sliceEase(ease: (t: number) => number, a: number, b: number): (t: number) => number {
+  const fa = ease(a), fb = ease(b)
+  if (fb === fa) return (t) => t
+  return (t) => (ease(a + t * (b - a)) - fa) / (fb - fa)
+}
+
 /** Initial compass bearing from one geodetic point to another, degrees
  *  clockwise from north in [0, 360). The heading the camera should ARRIVE
  *  with so a leg reads as flying forward (Round B walk, 2026-09-20: a stop
