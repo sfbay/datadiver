@@ -1,6 +1,7 @@
 // src/views/Last48/photoreal/immersive/detour.test.ts
 import { describe, it, expect } from 'vitest'
-import { detourFromPlace, detourFromHotspot, sameDetour, arrivalHeadingDeg, HOTSPOT_PITCH_DEG } from './detour'
+import { detourFromPlace, detourFromHotspot, detourFromNeighborhood, detourFromAddress, sameDetour, arrivalHeadingDeg, HOTSPOT_PITCH_DEG, ADDRESS_PITCH_DEG, ADDRESS_RANGE_M } from './detour'
+import { NEIGHBORHOODS } from './neighborhoods'
 import { PLACES } from './places'
 import { HOTSPOT_RANGE_M, type Hotspot } from './hotspots'
 
@@ -10,11 +11,19 @@ describe('detour builders (Round B §2)', () => {
   it('a Place detour carries its authored camera under a place: key', () => {
     const p = PLACES[0]
     const d = detourFromPlace(p)
-    expect(d).toEqual({ key: `place:${p.id}`, lng: p.lng, lat: p.lat, headingDeg: p.headingDeg, pitchDeg: p.pitchDeg, rangeM: p.rangeM })
+    expect(d).toEqual({ key: `place:${p.id}`, label: p.name, lng: p.lng, lat: p.lat, headingDeg: p.headingDeg, pitchDeg: p.pitchDeg, rangeM: p.rangeM })
   })
   it('a Hotspot detour flies to the event centroid at 700 m under a hot: key, with NO authored heading', () => {
     const d = detourFromHotspot(HOT)
-    expect(d).toEqual({ key: 'hot:Mission', lng: -122.41, lat: 37.75, headingDeg: null, pitchDeg: HOTSPOT_PITCH_DEG, rangeM: HOTSPOT_RANGE_M })
+    expect(d).toEqual({ key: 'hot:Mission', label: 'Mission', lng: -122.41, lat: 37.75, headingDeg: null, pitchDeg: HOTSPOT_PITCH_DEG, rangeM: HOTSPOT_RANGE_M })
+  })
+  it('a neighborhood detour carries the flat map\'s authored camera under an nbhd: key', () => {
+    const n = NEIGHBORHOODS[0]
+    expect(detourFromNeighborhood(n)).toEqual({ key: `nbhd:${n.name}`, label: n.name, lng: n.lng, lat: n.lat, headingDeg: n.headingDeg, pitchDeg: n.pitchDeg, rangeM: n.rangeM })
+  })
+  it('an address detour arrives facing travel under an addr: key', () => {
+    const d = detourFromAddress({ id: 'm1', label: 'Valencia Street', sublabel: '', lng: -122.4215, lat: 37.7599 })
+    expect(d).toEqual({ key: 'addr:m1', label: 'Valencia Street', lng: -122.4215, lat: 37.7599, headingDeg: null, pitchDeg: ADDRESS_PITCH_DEG, rangeM: ADDRESS_RANGE_M })
   })
   it('sameDetour ignores centroid drift under ~11 m so a poll does not re-fly', () => {
     const a = detourFromHotspot(HOT)

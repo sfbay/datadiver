@@ -36,14 +36,14 @@ describe('dream pace (immersive only)', () => {
   it('has the Spec A2 §3 values, is photorealOnly and hidden from the AUTO pill', () => {
     expect(PACE_PRESETS.dream).toMatchObject({
       id: 'dream', label: 'Dream', hint: 'immersive',
-      orbitDegPerS: 2.0, dwellMs: 75000, breathMs: 0, tweenMs: 18000, pitchMin: 30,
+      orbitDegPerS: 1.3, dwellMs: 75000, breathMs: 0, tweenMs: 18000, pitchMin: 30,
       photorealOnly: true, hidden: true,
     })
     expect(parsePaceId('dream')).toBeNull()
   })
-  it('the orbit times the stop: a half to a full circle is 90–180 s (2026-09-23)', () => {
+  it('the orbit times the stop: a half to a full circle is ~138–277 s at 1.3°/s (2026-09-23)', () => {
     const d = PACE_PRESETS.dream
-    expect(180 / d.orbitDegPerS).toBeCloseTo(90, 5)
-    expect(360 / d.orbitDegPerS).toBeCloseTo(180, 5)
+    expect(180 / d.orbitDegPerS).toBeCloseTo(138.46, 1)
+    expect(360 / d.orbitDegPerS).toBeCloseTo(276.92, 1)
   })
 })

@@ -33,6 +33,14 @@ interface Props {
   nextIn: string | null
   /** 0..1 across the dwell for the active card's stripe; null = no stripe. */
   progress: number | null
+  /** Auto-advance on. Off, the header says EXPLORE and the rule sits full
+   *  and faint ("this stop is yours for as long as you want"). */
+  playing: boolean
+  /** The detour the camera is at (a Place, neighborhood, Hotspot or address),
+   *  or null. Shown as "At …" with the way back (Jesse, 2026-09-23: "how do I
+   *  release a preselected view?"). */
+  detourLabel: string | null
+  onBackToStop: () => void
 }
 
 /** Every slot is the same width whether or not it holds a card, so the
@@ -53,7 +61,7 @@ const STEP_BTN = `h-10 w-10 shrink-0 self-center rounded-full flex items-center 
  *  neutral for "nothing selected yet". */
 const FALLBACK_GLOW = '#d4a435'
 
-export default function LowerThird({ prev, active, ahead, onJump, onStep, stopIndex, stopCount, nextIn, progress }: Props) {
+export default function LowerThird({ prev, active, ahead, onJump, onStep, stopIndex, stopCount, nextIn, progress, playing, detourLabel, onBackToStop }: Props) {
   const known = stopIndex >= 1 && stopCount >= 1
   const meta = active ? DATASET_META[active.datasetId] : null
   const glow = meta?.color ?? FALLBACK_GLOW
@@ -80,6 +88,10 @@ export default function LowerThird({ prev, active, ahead, onJump, onStep, stopIn
         {/* In the display italic (Jesse's walk of Round B, 2026-09-20: "let's try
             this in the big italics"); the countdown stays mono because a
             figure that changes every second has to hold its width. */}
+        {/* Sept. 23 2026 (Jesse): the rail's stop ledger moved HERE — the
+            stream, Stop N of M, the time to the next stop, EXPLORE when play
+            is off, the key hints at the far edge, and the dwell's rule
+            running under the whole header. */}
         <div className="flex items-baseline gap-3 px-[clamp(16px,3vw,64px)] pt-3 pb-2 font-display italic text-[min(1.2vw,1.05rem)] leading-none text-paper-700 dark:text-paper-400">
           {meta && active && (
             <span className="flex items-center gap-2">
@@ -90,6 +102,35 @@ export default function LowerThird({ prev, active, ahead, onJump, onStep, stopIn
           {meta && <span aria-hidden>·</span>}
           <span>Stop {known ? stopIndex : '—'} of {known ? stopCount : '—'}</span>
           {nextIn && (<><span aria-hidden>·</span><span className="font-mono not-italic text-label tabular-nums">{nextIn}</span></>)}
+          {detourLabel && (
+            <>
+              <span aria-hidden>·</span>
+              <span className="text-ink dark:text-paper-100">At {detourLabel}</span>
+              {/* The way back — the same as clicking the pressed row again,
+                  ← →, a card, or Escape. */}
+              <button
+                type="button" onClick={onBackToStop} title="Reset view — back to the stop (Escape)"
+                className="font-mono not-italic text-label uppercase tracking-wider px-2 py-1 -my-1 rounded-md
+                  ring-1 ring-paper-400/40 dark:ring-paper-300/20 text-paper-700 dark:text-paper-300
+                  hover:text-ink dark:hover:text-paper-100 hover:ring-paper-500/60"
+              >
+                Reset view ✕
+              </button>
+            </>
+          )}
+          <span className="ml-auto flex items-baseline gap-4 font-mono not-italic text-label">
+            {!playing && <span className="uppercase tracking-wider text-paper-600 dark:text-paper-500">explore</span>}
+            <span className="text-paper-600 dark:text-paper-500" aria-label="Keys: arrows step, space plays, O hides, H holds, Escape leaves">← → · space · O · H · esc</span>
+          </span>
+        </div>
+        {/* The dwell's rule: fills across the stop while playing; parked, it
+            sits full and faint. The same clock as "next in" and the card's
+            stripe (Round B §4). */}
+        <div className="mx-[clamp(16px,3vw,64px)] h-[2px] rounded-full bg-paper-400/25 dark:bg-paper-300/10 overflow-hidden" aria-hidden>
+          <div
+            className="h-full rounded-full transition-[width] duration-700 ease-linear"
+            style={{ width: `${playing ? Math.max(0, Math.min(1, progress ?? 0)) * 100 : 100}%`, background: glow, opacity: playing ? 0.9 : 0.3 }}
+          />
         </div>
 
         {/* Four slots, flanked by the step controls: ‹ · prev · ACTIVE ·

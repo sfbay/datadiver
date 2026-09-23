@@ -6,7 +6,8 @@
 // route of the `live` family, so the manifest's sources cover it), the URL
 // contract (?event= is the active stop, ?play=1 auto-advance, ?tune=1 the
 // dev panel, ?tod= the grade — day|dusk|night, dusk by default and written
-// by the rail's Light control, ?place=<id> / ?hot=<neighborhood> a detour —
+// by the rail's Light control, ?place=<id> / ?nbhd=<neighborhood> /
+// ?hot=<neighborhood> a detour (an address detour is page state only) —
 // the camera goes, the card stays, play pauses), the carousel state, keys, hold, the two
 // view switches (beacon, frame ticks) and the overlay. Chrome is off
 // (AppShell reads routeChrome); mobile / no key / resting never reach this
@@ -26,14 +27,16 @@ import { useAutoAdvance } from './useAutoAdvance'
 import { formatNextIn } from './nextIn'
 import { PLACES } from './places'
 import { selectHotspots } from './hotspots'
-import { detourFromPlace, detourFromHotspot, sameDetour, type DetourTarget } from './detour'
+import { detourFromPlace, detourFromHotspot, detourFromNeighborhood, detourFromAddress, sameDetour, type DetourTarget } from './detour'
 import { STREAM_WORD } from './streamWords'
 import LowerThird from './LowerThird'
 import RightRail, { HOLD_MS } from './RightRail'
 import FrameTicks from './FrameTicks'
 import TelemetryStrip from './TelemetryStrip'
 import ImmersiveScene, { type Telemetry } from './ImmersiveScene'
-import Presets from './Presets'
+import Navigator from './Navigator'
+import { NEIGHBORHOODS, neighborhoodCounts } from './neighborhoods'
+import type { AddressHit } from './addressSearch'
 import { useHereCard, type HerePoint } from './useHereCard'
 
 /** How close a ground click has to land to count as "that stop". */
@@ -179,6 +182,14 @@ export default function Last48Immersive() {
   }, [anomaliesError, missingCurrent])
   const placeId = searchParams.get('place')
   const hotNh = searchParams.get('hot')
+  const nbhdName = searchParams.get('nbhd')
+  // An ADDRESS detour lives here, never in the URL: a Mapbox temporary
+  // geocode must not be stored, and a shared link would store it (Mapbox
+  // Product Terms §2.7.2 — addressSearch.ts).
+  const [addrDetour, setAddrDetour] = useState<DetourTarget | null>(null)
+  // Events per neighborhood in the loaded window — the navigator's captions
+  // and its "busiest" order.
+  const nbhdCounts = useMemo(() => neighborhoodCounts(events, window48.truncatedByDataset), [events, window48.truncatedByDataset])
   // A detour resolves ONCE per key and never drifts with the poll: once
   // `detourRef` holds a detour for the wanted key, later polls (a hotspot's
   // centroid shifting a few metres, or the same place looked up again) must
@@ -187,23 +198,28 @@ export default function Last48Immersive() {
   // effect a new `detour` reference, restarting its 18 s flight under the
   // reader while `arrived` (keyed on `detour?.key`) stayed true.
   const detourRef = useRef<DetourTarget | null>(null)
-  const detour = useMemo(() => {
-    const wantedKey = placeId ? `place:${placeId}` : hotNh ? `hot:${hotNh}` : null
+  const urlDetour = useMemo(() => {
+    const wantedKey = placeId ? `place:${placeId}` : nbhdName ? `nbhd:${nbhdName}` : hotNh ? `hot:${hotNh}` : null
     if (detourRef.current?.key === wantedKey) return detourRef.current
     let fresh: DetourTarget | null = null
     if (placeId) { const p = PLACES.find((x) => x.id === placeId); fresh = p ? detourFromPlace(p) : null }
+    else if (nbhdName) { const n = NEIGHBORHOODS.find((x) => x.name === nbhdName); fresh = n ? detourFromNeighborhood(n) : null }
     else if (hotNh) { const h = hotspots.find((x) => x.neighborhood === hotNh); fresh = h ? detourFromHotspot(h) : null }
     // First resolution of this key: sameDetour still guards against a
     // spurious identity change if this memo re-runs before the ref catches up.
     const out = sameDetour(detourRef.current, fresh) ? detourRef.current : fresh
     detourRef.current = out
     return out
-  }, [placeId, hotNh, hotspots])
+  }, [placeId, nbhdName, hotNh, hotspots])
+  const detour = addrDetour ?? urlDetour
   // Keep the URL truthful: an unknown ?place= goes at once; a ?hot= whose
   // neighborhood has left the list goes once the engine has actually read.
   useEffect(() => {
     if (placeId && !PLACES.some((x) => x.id === placeId)) setParam('place', null)
   }, [placeId, setParam])
+  useEffect(() => {
+    if (nbhdName && !NEIGHBORHOODS.some((x) => x.name === nbhdName)) setParam('nbhd', null)
+  }, [nbhdName, setParam])
   useEffect(() => {
     // A missed neighborhood is only "gone" once the engine has actually read
     // AND read cleanly — a baseline error or a missing current count means
@@ -222,18 +238,20 @@ export default function Last48Immersive() {
   }, [hotNh, anomaliesLoading, anomaliesError, missingCurrent, hotspots, setParam])
   // A preset is user input: play pauses (Round B §2). ← → and a card click
   // resume the chain from the active card (they clear place/hot above).
-  const goPlace = useCallback((id: string) => setParams({ place: id, hot: null, play: null }), [setParams])
-  const goHot = useCallback((nh: string) => setParams({ hot: nh, place: null, play: null }), [setParams])
-  // Clicking the ACTIVE tile clears the detour (Presets' toggle) — the
+  const goPlace = useCallback((id: string) => { setAddrDetour(null); setParams({ place: id, hot: null, nbhd: null, play: null }) }, [setParams])
+  const goHot = useCallback((nh: string) => { setAddrDetour(null); setParams({ hot: nh, place: null, nbhd: null, play: null }) }, [setParams])
+  const goNeighborhood = useCallback((name: string) => { setAddrDetour(null); setParams({ nbhd: name, place: null, hot: null, play: null }) }, [setParams])
+  const goAddress = useCallback((hit: AddressHit) => { setAddrDetour(detourFromAddress(hit)); setParams({ place: null, hot: null, nbhd: null, play: null }) }, [setParams])
+  // Clicking the ACTIVE row clears the detour (the navigator's toggle) — the
   // camera returns to the active stop and play stays paused.
-  const clearDetour = useCallback(() => setParams({ place: null, hot: null }), [setParams])
+  const clearDetour = useCallback(() => { setAddrDetour(null); setParams({ place: null, hot: null, nbhd: null }) }, [setParams])
 
   // ── The "here" card (Round B §3) ──────────────────────────────────────
   const [herePoint, setHerePoint] = useState<HerePoint | null>(null)
   const here = useHereCard(herePoint, events)
   const closeHere = useCallback(() => setHerePoint(null), [])
 
-  const jump = useCallback((id: string) => { setHerePoint(null); setParams({ event: id, place: null, hot: null }) }, [setParams])
+  const jump = useCallback((id: string) => { setHerePoint(null); setAddrDetour(null); setParams({ event: id, place: null, hot: null, nbhd: null }) }, [setParams])
   // A click on the ground: within NEAREST_M of a stop in the pass it snaps
   // there (Round A); further away it opens the "here" reading for that point
   // (Round B §3). A jump closes any open reading.
@@ -254,7 +272,7 @@ export default function Last48Immersive() {
   }, [order, byId, jump])
   const step = useCallback((delta: 1 | -1) => {
     const i = stepIndex(order, index, delta)
-    if (i >= 0) { setHerePoint(null); setParams({ event: order[i], place: null, hot: null }) }
+    if (i >= 0) { setHerePoint(null); setAddrDetour(null); setParams({ event: order[i], place: null, hot: null, nbhd: null }) }
   }, [order, index, setParams])
 
   // ── Arrival, play, hold, overlay ──────────────────────────────────────
@@ -365,12 +383,14 @@ export default function Last48Immersive() {
         // `!overlayOn`, and `herePoint` survives `O`, so pressing Escape
         // there should bring the panels back rather than silently close a
         // reading the reader can't currently see.
-        case 'Escape': if (!overlayOn) setOverlayOn(true); else if (herePoint) closeHere(); else leave(); break
+        // Then a detour (a Place, neighborhood, Hotspot or address) goes back
+        // to the stop before Escape ever leaves the page.
+        case 'Escape': if (!overlayOn) setOverlayOn(true); else if (herePoint) closeHere(); else if (detour) clearDetour(); else leave(); break
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [step, playing, overlayOn, setParam, startHold, leave, herePoint, closeHere])
+  }, [step, playing, overlayOn, setParam, startHold, leave, herePoint, closeHere, detour, clearDetour])
 
   // The chrome is an L: controls down the RIGHT, content along the BOTTOM
   // (Jesse, 2026-09-13). Both arms mount and unmount together with the
@@ -432,6 +452,9 @@ export default function Last48Immersive() {
             stopCount={order.length}
             nextIn={nextIn}
             progress={stripe}
+            playing={playing}
+            detourLabel={detour?.label ?? null}
+            onBackToStop={clearDetour}
           />
         )}
       </div>
@@ -439,22 +462,22 @@ export default function Last48Immersive() {
         <RightRail
           playing={playing}
           holdLeftMs={holdLeftMs}
-          stopIndex={index + 1}
-          stopCount={order.length}
-          stream={active ? DATASET_META[active.datasetId] : null}
-          dwellProgress={dwellProgress}
           tod={tod}
           beaconOn={beaconOn}
           ticksOn={ticksOn}
-          presets={(
-            <Presets
+          navigator={(
+            <Navigator
               places={PLACES}
               hotspots={hotspots}
               hotspotsLoading={anomaliesLoading}
               hotspotsNote={hotspotsNote}
+              nbhdCounts={nbhdCounts.counts}
+              countsAreFloors={nbhdCounts.floor}
               activeKey={detour?.key ?? null}
               onPlace={goPlace}
+              onNeighborhood={goNeighborhood}
               onHot={goHot}
+              onAddress={goAddress}
               onClear={clearDetour}
             />
           )}

@@ -28,6 +28,7 @@
 // Every pose comes from the pure cameraPose.ts, as before.
 import { useEffect, useRef } from 'react'
 import * as Cesium from 'cesium'
+import { tileGroundM, plausibleGround } from '../groundHeight'
 import type { PaceValues } from '../../ambient/pace'
 import { orbitPose, bearingDeg, rampedLinear, sliceEase, orbitSweepDeg, glideHeight, RANGE_M, ORBIT_PITCH_DEG, type CameraPose } from '../cameraPose'
 import { quality } from '../quality'
@@ -289,7 +290,7 @@ export function useDreamDirector(opts: {
    *  one tileset call that can throw; keep the leg alive. */
   const surfaceM = (lng: number, lat: number): number => {
     if (viewer.isDestroyed()) return 0
-    try { return tileset.getHeight(Cesium.Cartographic.fromDegrees(lng, lat), viewer.scene) ?? 0 } catch { return 0 }
+    return tileGroundM(tileset, Cesium.Cartographic.fromDegrees(lng, lat), viewer.scene) ?? 0
   }
 
   /** The TRUE ground height at a point: Cesium loads the most detailed tiles
@@ -300,7 +301,7 @@ export function useDreamDirector(opts: {
     if (viewer.isDestroyed() || !viewer.scene.sampleHeightSupported) return null
     try {
       const [c] = await viewer.scene.sampleHeightMostDetailed([Cesium.Cartographic.fromDegrees(lng, lat)], viewer.entities.values)
-      return c && Number.isFinite(c.height) ? c.height : null
+      return plausibleGround(c?.height) ?? null
     } catch { return null }
   }
 
@@ -493,7 +494,7 @@ export function useDreamDirector(opts: {
           // height under the stop (coarse tiles are enough to get the
           // camera above the ground), OR the cap.
           let heightKnown = false
-          try { heightKnown = tileset.getHeight(Cesium.Cartographic.fromDegrees(center.lng, center.lat), viewer.scene) != null } catch { heightKnown = false }
+          heightKnown = tileGroundM(tileset, Cesium.Cartographic.fromDegrees(center.lng, center.lat), viewer.scene) != null
           if (tileset.tilesLoaded || heightKnown || Date.now() - t0 > SETTLE_CAP_MS) {
             clearInterval(settle)
             if (cancelledRef.current) return

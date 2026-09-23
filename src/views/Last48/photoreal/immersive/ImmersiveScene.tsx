@@ -10,6 +10,7 @@
 // microtask (children clean up parent-first), isDestroyed() on every touch.
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import * as Cesium from 'cesium'
+import { tileGroundM } from '../groundHeight'
 import '../photoreal.css'
 import type { NormalizedEvent } from '@/types/last48'
 import type { PaceValues } from '../../ambient/pace'
@@ -235,8 +236,13 @@ export default function ImmersiveScene(props: Props) {
       // two differ by the height of the building under you, and the second
       // number is the one a reader can feel. No tile loaded yet ⇒ no
       // correction, which is the same fallback the camera floor makes.
-      let surface: number | undefined
-      try { surface = tileset?.getHeight(c, scene) } catch { surface = undefined }
+      // Guarded (groundHeight.ts: an unloaded tile read −25,289 m and put
+      // "Altitude 25,453 m" on the strip). Mid-flight, coarse tiles can also
+      // report a surface ABOVE the camera ("Altitude −928 m" over SoMa); a
+      // camera cannot be under the tile it looks down at, so that too is no
+      // reading.
+      let surface = tileGroundM(tileset, c, scene)
+      if (surface != null && surface >= c.height) surface = undefined
       const altitudeM = Math.round(c.height - (surface ?? 0))
       const tilesLoaded = tileset ? tileset.tilesLoaded : false
       const groundLat = Cesium.Math.toDegrees(c.latitude)
@@ -281,7 +287,10 @@ export default function ImmersiveScene(props: Props) {
       {/* The beacon rides the host div (a sibling of the tune panel), not the
           Cesium scene — it is screen space by design. The ground disc stays:
           the two split the job, anchoring below and visibility above. */}
-      {viewer && props.active && props.active.longitude != null && props.active.latitude != null && props.beaconOn && (
+      {/* Not during a detour: the camera is at a Place / neighborhood /
+          address, not the stop, and a pin on a stop you are not looking at
+          read as "the current event is here" (Jesse, 2026-09-23). */}
+      {viewer && props.active && props.active.longitude != null && props.active.latitude != null && props.beaconOn && !props.detour && (
         <Beacon
           viewer={viewer} tileset={tileset}
           lng={props.active.longitude} lat={props.active.latitude}
