@@ -109,12 +109,12 @@ export default function LowerThird({ prev, active, ahead, onJump, onStep, stopIn
               {/* The way back — the same as clicking the pressed row again,
                   ← →, a card, or Escape. */}
               <button
-                type="button" onClick={onBackToStop} title="Back to the stop (Escape)"
+                type="button" onClick={onBackToStop} title="Reset view — back to the stop (Escape)"
                 className="font-mono not-italic text-label uppercase tracking-wider px-2 py-1 -my-1 rounded-md
                   ring-1 ring-paper-400/40 dark:ring-paper-300/20 text-paper-700 dark:text-paper-300
                   hover:text-ink dark:hover:text-paper-100 hover:ring-paper-500/60"
               >
-                Back to the stop ✕
+                Reset view ✕
               </button>
             </>
           )}

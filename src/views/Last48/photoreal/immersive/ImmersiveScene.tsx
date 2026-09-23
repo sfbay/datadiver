@@ -10,6 +10,7 @@
 // microtask (children clean up parent-first), isDestroyed() on every touch.
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import * as Cesium from 'cesium'
+import { tileGroundM } from '../groundHeight'
 import '../photoreal.css'
 import type { NormalizedEvent } from '@/types/last48'
 import type { PaceValues } from '../../ambient/pace'
@@ -235,12 +236,12 @@ export default function ImmersiveScene(props: Props) {
       // two differ by the height of the building under you, and the second
       // number is the one a reader can feel. No tile loaded yet ⇒ no
       // correction, which is the same fallback the camera floor makes.
-      let surface: number | undefined
-      try { surface = tileset?.getHeight(c, scene) } catch { surface = undefined }
-      // Mid-flight, coarse tiles can report a "surface" ABOVE the camera
-      // (measured 2026-09-23: "Altitude −928 m" over SoMa). A camera cannot
-      // be under the tile it is looking down at, so such a reading is
-      // treated like no reading at all.
+      // Guarded (groundHeight.ts: an unloaded tile read −25,289 m and put
+      // "Altitude 25,453 m" on the strip). Mid-flight, coarse tiles can also
+      // report a surface ABOVE the camera ("Altitude −928 m" over SoMa); a
+      // camera cannot be under the tile it looks down at, so that too is no
+      // reading.
+      let surface = tileGroundM(tileset, c, scene)
       if (surface != null && surface >= c.height) surface = undefined
       const altitudeM = Math.round(c.height - (surface ?? 0))
       const tilesLoaded = tileset ? tileset.tilesLoaded : false

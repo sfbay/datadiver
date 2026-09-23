@@ -20,6 +20,7 @@
 // render-on-demand without costing a single requested frame.
 import { useEffect, useRef } from 'react'
 import * as Cesium from 'cesium'
+import { tileGroundM } from '../groundHeight'
 
 /** Height-sample cadence: eager until the tiles resolve, then slow enough to
  *  follow tile refinement without a CPU ray pick every frame. */
@@ -88,9 +89,9 @@ export default function Beacon({ viewer, tileset, lng, lat, color, variant: vari
       const now = performance.now()
       if (tileset && now - probedAt > (clamped ? REPROBE_MS : PROBE_MS)) {
         probedAt = now
-        let h: number | undefined
-        // Picking is the one path Cesium can throw on; keep the frame alive.
-        try { h = tileset.getHeight(carto, viewer.scene) } catch { h = undefined }
+        // Guarded (groundHeight.ts): an unloaded tile once answered
+        // −25,289 m here and hid the pin for seconds of every flight.
+        const h = tileGroundM(tileset, carto, viewer.scene)
         if (h != null) {
           anchor = Cesium.Cartesian3.fromDegrees(lng, lat, h)
           clamped = true

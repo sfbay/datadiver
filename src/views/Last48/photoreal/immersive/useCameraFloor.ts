@@ -30,6 +30,7 @@
 // already makes for the preload fields.
 import { useEffect } from 'react'
 import * as Cesium from 'cesium'
+import { tileGroundM } from '../groundHeight'
 
 /** Metres of clearance kept above whatever the tiles say is under us. 25 m is
  *  a little over a Victorian's ridge line: low enough that a reader can still
@@ -78,7 +79,8 @@ export function useCameraFloor(opts: {
         if (now - sampledAt > SAMPLE_MS) {
           sampledAt = now
           // Picking is the one path Cesium can throw on; keep the frame alive.
-          try { surface = tileset.getHeight(c, scene) } catch { surface = undefined }
+          // Guarded (groundHeight.ts): a nonsense reading must never lift the camera.
+          surface = tileGroundM(tileset, c, scene)
         }
         // undefined = no tile loaded under us yet. No reading, no clamp.
         if (surface != null && c.height < surface + FLOOR_M) {

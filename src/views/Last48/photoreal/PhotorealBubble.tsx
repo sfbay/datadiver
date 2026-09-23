@@ -19,6 +19,7 @@
 //     from the screen edge, the stem leans and it still reads as tethered.
 import { useEffect, useRef, useState } from 'react'
 import * as Cesium from 'cesium'
+import { tileGroundM } from './groundHeight'
 import { Link } from 'react-router-dom'
 import type { NormalizedEvent } from '@/types/last48'
 import { formatApTime, formatHeadline } from '@/utils/format'
@@ -91,7 +92,7 @@ export default function PhotorealBubble({ viewer, tileset, event, onClose }: Pro
         // Returns undefined until a tile covering the point has loaded, and
         // throws nothing in practice — but the picking path is the one place
         // Cesium can, so keep the frame alive either way.
-        try { h = tileset.getHeight(carto, viewer.scene) } catch { h = undefined }
+        h = tileGroundM(tileset, carto, viewer.scene)
         if (h != null) {
           anchor = Cesium.Cartesian3.fromDegrees(lng, lat, h + HERO_COLUMN_M)
           clamped = true
