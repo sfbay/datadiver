@@ -3,8 +3,10 @@
 // The rail's middle (Round B §2) — the empty air Round A reserved. Two
 // stacked groups: PLACES (authored, places.ts) and HOTSPOTS (computed,
 // hotspots.ts). A tile is a 3.5rem row like the controls above it: a 40 px
-// colour block on the left (a thumbnail slot — imagery is out of scope
-// until the licensing call), the NAME in the display italic (the third
+// square on the left — a Place's PHOTO when it has one (Jesse's own
+// photographs, places.ts `thumb`; a Mapbox or Google capture is barred by
+// their terms), else a colour block (Hotspots always; a Place with no
+// photo yet) — then the NAME in the display italic (the third
 // class of serif-italic clickable, after the rail buttons and the DataDiver
 // return — Jesse: "the Name of Location preset headings") and a one-line
 // plain caption. Group headings and captions stay plain: the serif is for
@@ -51,10 +53,15 @@ const NAME = 'font-display italic text-[min(1.2vw,1.05rem)] leading-tight text-i
 const CAPTION = 'text-label leading-tight text-paper-600 dark:text-paper-400'
 const NOTE = 'px-2 py-2 text-label leading-snug text-paper-600 dark:text-paper-500'
 
-function Tile({ color, name, caption, on, onClick }: { color: string; name: string; caption: string; on: boolean; onClick: () => void }) {
+function Tile({ color, thumb, name, caption, on, onClick }: { color: string; thumb?: string; name: string; caption: string; on: boolean; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick} aria-pressed={on} className={`${TILE} ${on ? TILE_ON : ''}`} title={on ? 'Back to the stop' : `Fly to ${name}`}>
-      <span aria-hidden className="w-10 h-10 shrink-0 rounded-md" style={{ background: color, opacity: 0.85 }} />
+      {thumb
+        // Decorative: the name beside it is the label. width/height hold the
+        // slot before the file arrives; the class sizes it (rem, so it grows
+        // with Large Type — the file is 160 px, sharp to 3× at 40 px).
+        ? <img src={thumb} alt="" width={40} height={40} loading="lazy" decoding="async" className="w-10 h-10 shrink-0 rounded-md object-cover" />
+        : <span aria-hidden className="w-10 h-10 shrink-0 rounded-md" style={{ background: color, opacity: 0.85 }} />}
       <span className="flex min-w-0 flex-col gap-1">
         <span className={NAME}>{name}</span>
         <span className={CAPTION}>{caption}</span>
@@ -75,7 +82,7 @@ export default function Presets({ places, hotspots, hotspotsLoading, hotspotsNot
           {shown.map((p) => {
             const on = activeKey === `place:${p.id}`
             return (
-              <Tile key={p.id} color={PLACE_COLOR} name={p.name} caption={p.caption}
+              <Tile key={p.id} color={PLACE_COLOR} thumb={p.thumb} name={p.name} caption={p.caption}
                 on={on} onClick={() => (on ? onClear() : onPlace(p.id))} />
             )
           })}
