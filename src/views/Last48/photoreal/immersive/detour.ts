@@ -9,9 +9,12 @@
 // URL and the rail's active tile agree on.
 import type { Place } from './places'
 import { HOTSPOT_RANGE_M, type Hotspot } from './hotspots'
+import type { NeighborhoodStop } from './neighborhoods'
+import type { AddressHit } from './addressSearch'
 
 export interface DetourTarget {
-  /** `place:<id>` or `hot:<neighborhood>`. */
+  /** `place:<id>`, `hot:<neighborhood>`, `nbhd:<neighborhood>` or
+   *  `addr:<mapbox id>` (an address lives in page state, never the URL). */
   key: string
   lng: number
   lat: number
@@ -26,6 +29,21 @@ export const HOTSPOT_PITCH_DEG = -35
 
 export function detourFromPlace(p: Place): DetourTarget {
   return { key: `place:${p.id}`, lng: p.lng, lat: p.lat, headingDeg: p.headingDeg, pitchDeg: p.pitchDeg, rangeM: p.rangeM }
+}
+
+/** A neighborhood from the navigator: its authored flat-map camera, carried
+ *  over (neighborhoods.ts) — so, like a Place, it has a heading of its own. */
+export function detourFromNeighborhood(n: NeighborhoodStop): DetourTarget {
+  return { key: `nbhd:${n.name}`, lng: n.lng, lat: n.lat, headingDeg: n.headingDeg, pitchDeg: n.pitchDeg, rangeM: n.rangeM }
+}
+
+export const ADDRESS_PITCH_DEG = -30
+export const ADDRESS_RANGE_M = 260
+
+/** An address from the navigator's search: nothing authored about it, so it
+ *  arrives facing travel like a stop, a little wider than the hero frame. */
+export function detourFromAddress(a: AddressHit): DetourTarget {
+  return { key: `addr:${a.id}`, lng: a.lng, lat: a.lat, headingDeg: null, pitchDeg: ADDRESS_PITCH_DEG, rangeM: ADDRESS_RANGE_M }
 }
 
 /** A hotspot is a neighborhood the DATA picked, so there is no composed view

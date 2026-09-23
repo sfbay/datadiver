@@ -237,6 +237,11 @@ export default function ImmersiveScene(props: Props) {
       // correction, which is the same fallback the camera floor makes.
       let surface: number | undefined
       try { surface = tileset?.getHeight(c, scene) } catch { surface = undefined }
+      // Mid-flight, coarse tiles can report a "surface" ABOVE the camera
+      // (measured 2026-09-23: "Altitude −928 m" over SoMa). A camera cannot
+      // be under the tile it is looking down at, so such a reading is
+      // treated like no reading at all.
+      if (surface != null && surface >= c.height) surface = undefined
       const altitudeM = Math.round(c.height - (surface ?? 0))
       const tilesLoaded = tileset ? tileset.tilesLoaded : false
       const groundLat = Cesium.Math.toDegrees(c.latitude)
