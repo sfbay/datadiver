@@ -44,6 +44,9 @@ original to the project:
   terms by default.
 - **Fonts, Mapbox, and other bundled dependencies** are governed by their
   own licenses.
+- **Photographs.** The place thumbnails in `public/immersive/places/` are
+  crops of Jesse Garnier's own photographs: © Jesse Garnier, all rights
+  reserved, not licensed under CC BY 4.0.
 
 ## How to attribute
 
