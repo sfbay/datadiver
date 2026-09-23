@@ -102,9 +102,11 @@ function Line({ color, name, caption, on, onClick }: { color: string; name: stri
   )
 }
 
+/** "823 events in last 48" — the page's own name for the window (Jesse,
+ *  2026-09-23). */
 function countCaption(n: number, floor: boolean): string {
-  if (n === 0) return floor ? 'None loaded in 48 h' : 'No events in 48 h'
-  return `${n.toLocaleString('en-US')}${floor ? '+' : ''} ${n === 1 && !floor ? 'event' : 'events'} in 48 h`
+  if (n === 0) return floor ? 'None loaded in last 48' : 'No events in last 48'
+  return `${n.toLocaleString('en-US')}${floor ? '+' : ''} ${n === 1 && !floor ? 'event' : 'events'} in last 48`
 }
 
 export default function Navigator({
