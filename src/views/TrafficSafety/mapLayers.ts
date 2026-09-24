@@ -1,6 +1,22 @@
 import type mapboxgl from 'mapbox-gl'
 
-/** Crash heatmap + circle points + DUI overlay */
+/** Crash heatmap + ranked crash points.
+ *
+ *  The points are a VISUAL RANK, worst on top (Jesse, Sept. 23 2026:
+ *  "fatalities should (sadly) anchor and be distinguishable and higher rank
+ *  visually at a glance than all others" · "fatal -> dui -> injury"). Four
+ *  layers PARTITION the crashes — each crash is drawn once, at its highest
+ *  rank — so each rank gets its own size, zoom floor and draw order:
+ *   1. FATAL: every zoom, the biggest mark — a brick core with a paper
+ *      keyline and a soft halo, drawn LAST. The old brick-700 dot was
+ *      near-invisible on the espresso basemap and only appeared from zoom 13,
+ *      so a fatal-only filter at city zoom showed an empty map.
+ *   2. DUI (not fatal): every zoom, filled plum, smaller than fatal.
+ *   3. SEVERE injury (not DUI): from zoom 11, smaller again, brick-500.
+ *   4. Everything else: from zoom 13, smallest, the ochre ramp. */
+const NOT_DUI = ['!=', ['get', 'isDui'], 1]
+export const CRASH_POINT_LAYER_IDS = ['crash-fatal-core', 'crash-dui-points', 'crash-severe-points', 'crash-points'] as const
+
 export const CRASH_HEATMAP_LAYERS: mapboxgl.AnyLayer[] = [
   {
     id: 'crash-heat',
@@ -29,32 +45,70 @@ export const CRASH_HEATMAP_LAYERS: mapboxgl.AnyLayer[] = [
     type: 'circle',
     source: 'crash-heatmap-data',
     minzoom: 13,
+    filter: ['all', NOT_DUI, ['!', ['in', ['get', 'severity'], ['literal', ['Fatal', 'Injury (Severe)']]]]],
     paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 4, 16, 10],
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 3, 16, 8],
       'circle-color': [
         'match', ['get', 'severity'],
-        'Fatal', '#6f2b20',
-        'Injury (Severe)', '#963e30',
         'Injury (Other Visible)', '#d4a435',
         'Injury (Complaint of Pain)', '#e8c06b',
         '#7a5f42',
       ],
-      'circle-opacity': 0.8,
+      'circle-opacity': 0.7,
       'circle-stroke-width': 1,
-      'circle-stroke-color': 'rgba(255,255,255,0.2)',
+      'circle-stroke-color': 'rgba(255,255,255,0.15)',
+    },
+  } as mapboxgl.AnyLayer,
+  {
+    id: 'crash-severe-points',
+    type: 'circle',
+    source: 'crash-heatmap-data',
+    minzoom: 11,
+    filter: ['all', NOT_DUI, ['==', ['get', 'severity'], 'Injury (Severe)']],
+    paint: {
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 2.5, 13, 4.5, 16, 10],
+      'circle-color': '#b85545',
+      'circle-opacity': 0.9,
+      'circle-stroke-width': 1,
+      'circle-stroke-color': 'rgba(245,236,217,0.45)',
     },
   } as mapboxgl.AnyLayer,
   {
     id: 'crash-dui-points',
     type: 'circle',
     source: 'crash-heatmap-data',
-    filter: ['==', ['get', 'isDui'], 1],
+    filter: ['all', ['==', ['get', 'isDui'], 1], ['!=', ['get', 'severity'], 'Fatal']],
     paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4, 13, 6, 16, 12],
-      'circle-color': '#8b6282',
-      'circle-opacity': 0.85,
-      'circle-stroke-width': 1.5,
-      'circle-stroke-color': 'rgba(168, 85, 247, 0.4)',
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 3.5, 13, 5.5, 16, 10],
+      'circle-color': '#b08aa8',
+      'circle-opacity': 0.95,
+      'circle-stroke-width': 1,
+      'circle-stroke-color': 'rgba(245,236,217,0.6)',
+    },
+  } as mapboxgl.AnyLayer,
+  {
+    id: 'crash-fatal-halo',
+    type: 'circle',
+    source: 'crash-heatmap-data',
+    filter: ['==', ['get', 'severity'], 'Fatal'],
+    paint: {
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 11, 13, 16, 16, 26],
+      'circle-color': '#b85545',
+      'circle-opacity': 0.3,
+      'circle-blur': 0.6,
+    },
+  } as mapboxgl.AnyLayer,
+  {
+    id: 'crash-fatal-core',
+    type: 'circle',
+    source: 'crash-heatmap-data',
+    filter: ['==', ['get', 'severity'], 'Fatal'],
+    paint: {
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 5, 13, 7, 16, 12],
+      'circle-color': '#b85545',
+      'circle-opacity': 1,
+      'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 10, 1.5, 16, 2.5],
+      'circle-stroke-color': '#f5ecd9',
     },
   } as mapboxgl.AnyLayer,
 ]

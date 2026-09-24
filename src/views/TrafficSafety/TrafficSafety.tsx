@@ -48,7 +48,7 @@ import { useProgressScope } from '@/hooks/useLoadingProgress'
 import InfoTip from '@/components/ui/InfoTip'
 import ScannerFeedChips from '@/components/ui/ScannerFeedChips'
 import { useTrafficSafetyData } from './useTrafficSafetyData'
-import { CRASH_HEATMAP_LAYERS, ANOMALY_LAYERS, SPEED_CAM_LAYERS, RED_LIGHT_LAYERS, PCI_LAYERS, HIN_LAYERS } from './mapLayers'
+import { CRASH_HEATMAP_LAYERS, CRASH_POINT_LAYER_IDS, ANOMALY_LAYERS, SPEED_CAM_LAYERS, RED_LIGHT_LAYERS, PCI_LAYERS, HIN_LAYERS } from './mapLayers'
 import {
   parseSeverities, serializeSeverities, severityClause, toggleExactly, sameSet, pedBikeModes,
   parseRankMetric, rankNeighborhoods, metricValue, RANK_METRICS, DUI_CLAUSE, PED_BIKE_SQL,
@@ -549,7 +549,7 @@ export default function TrafficSafety() {
   useMapLayer(mapInstance, 'hin-data', activeOverlays.has('hin') ? hinGeojson : null, HIN_LAYERS)
 
   // Tooltips
-  useMapTooltip(mapInstance, 'crash-points', (props) => {
+  const crashTooltip = useCallback((props: Record<string, unknown>) => {
     const crashDate = props.collisionAt
       // DataSF datetimes are floating SF-local; bare new Date() reads them
       // in the viewer's host TZ (wrong for any non-Pacific reader).
@@ -572,11 +572,14 @@ export default function TrafficSafety() {
       <div style="color:#94a3b8">Injured: ${props.injured || 0} · Killed: ${props.killed || 0}</div>
       ${Number(props.isDui) === 1 ? '<div style="margin-top:6px;color:#8b6282;font-weight:600">⚠ DUI-Involved</div>' : ''}
     `
-  })
+  }, [])
+  // One tooltip per rank layer — the four partition the crashes (no feature
+  // is in two), so a hover never doubles up.
+  useMapTooltip(mapInstance, CRASH_POINT_LAYER_IDS[0], crashTooltip)
+  useMapTooltip(mapInstance, CRASH_POINT_LAYER_IDS[1], crashTooltip)
+  useMapTooltip(mapInstance, CRASH_POINT_LAYER_IDS[2], crashTooltip)
+  useMapTooltip(mapInstance, CRASH_POINT_LAYER_IDS[3], crashTooltip)
 
-  // Note: crash-dui-points tooltip removed — DUI crashes are already handled by
-  // the crash-points tooltip (which shows "⚠ DUI-Involved" when isDui=1).
-  // Having both tooltips caused a doubled-up overlay on DUI crash points.
 
   useMapTooltip(mapInstance, 'neighborhood-fill', (props) => {
     const zScore = Number(props.zScore).toFixed(1)
@@ -660,7 +663,7 @@ export default function TrafficSafety() {
       mapInstance.flyTo({ center: [coords[0], coords[1]], zoom: 17, duration: 800, offset: eventFlyToOffset(mapInstance, 288) })
     }
 
-    const layers = ['crash-points', 'crash-dui-points']
+    const layers = [...CRASH_POINT_LAYER_IDS]
     const tryAttach = () => {
       try {
         let attached = 0
@@ -682,6 +685,27 @@ export default function TrafficSafety() {
 
     return () => { layers.forEach((l) => { try { mapInstance.off('click', l, handleClick) } catch { /* */ } }) }
   }, [mapInstance, setSelectedCrash])
+
+  // The fatal dot's keyline follows the theme: paper on the espresso basemap,
+  // espresso on the cream one — the rank must read at a glance on both.
+  // Re-applied on style.load (a theme swap reloads the style and the layer).
+  const isDarkMode = useAppStore((s) => s.isDarkMode)
+  useEffect(() => {
+    if (!mapInstance) return
+    const apply = () => {
+      try {
+        const want = isDarkMode ? '#f5ecd9' : '#1e140d'
+        // Only on change: an unconditional set on every 'idle' would repaint
+        // and fire 'idle' again.
+        if (mapInstance.getLayer('crash-fatal-core') && mapInstance.getPaintProperty('crash-fatal-core', 'circle-stroke-color') !== want) {
+          mapInstance.setPaintProperty('crash-fatal-core', 'circle-stroke-color', want)
+        }
+      } catch { /* style mid-swap; the next idle re-applies */ }
+    }
+    apply()
+    mapInstance.on('idle', apply)
+    return () => { try { mapInstance.off('idle', apply) } catch { /* */ } }
+  }, [mapInstance, isDarkMode])
 
   const handleMapReady = useCallback((map: mapboxgl.Map) => { setMapInstance(map) }, [])
 
