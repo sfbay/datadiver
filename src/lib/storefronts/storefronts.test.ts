@@ -1,5 +1,5 @@
 /**
- * Standing pins over the COMMITTED Behind the Storefront snapshot
+ * Standing pins over the COMMITTED Restaurants snapshot
  * (`public/data/restaurants/storefronts.json`, written by
  * `scripts/build-storefronts.ts`). Reads the file from disk — never the
  * network. If a pin fails, the snapshot was regenerated against moved data:

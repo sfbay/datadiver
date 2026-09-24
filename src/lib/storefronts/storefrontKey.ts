@@ -1,4 +1,4 @@
-// ZERO-IMPORT LEAF — the ONE address normalizer for Behind the Storefront.
+// ZERO-IMPORT LEAF — the ONE address normalizer for the Restaurants view.
 // The generator (scripts/build-storefronts.ts) and the browser both import
 // it, so a storefront key computed at build time is the same string the
 // lookup box computes from what a reader types. Never fork a second copy.

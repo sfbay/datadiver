@@ -1,6 +1,6 @@
 // src/views/Restaurants/Restaurants.tsx
 //
-// Behind the Storefront — SF restaurant inspections told as turnover and
+// Restaurants — SF restaurant inspections told as turnover and
 // ownership (spec docs/superpowers/specs/2026-09-24-restaurant-inspections-design.md,
 // with Jesse's §11 rulings superseding everything above them).
 //
@@ -399,10 +399,10 @@ export default function Restaurants() {
           <div className="flex flex-wrap items-center gap-4 min-w-0">
             <div className="min-w-0">
               <h1 className="font-display text-2xl italic text-ink dark:text-white leading-none">
-                Behind the Storefront
+                Restaurants
               </h1>
               <p className="hidden sm:block text-label italic text-slate-500 dark:text-slate-400 mt-1">
-                Same door, new sign.
+                Food service and safety
               </p>
             </div>
             {data.edge && (

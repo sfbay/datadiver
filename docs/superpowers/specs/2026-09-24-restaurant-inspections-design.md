@@ -1,6 +1,8 @@
 # Behind the Storefront — SF restaurant inspections, told as turnover and ownership
 
-**Date:** 2026-09-24 · **Route:** `/restaurants` · **ViewId:** `restaurants` · **Status:** APPROVED 2026-09-24 with Jesse's rulings in **§11, which SUPERSEDES every conflicting line above** (esp. D6, D9, D10, §4.4, §4.5, §7.2, §7.4, gates G3/G7).
+**Date:** 2026-09-24 · **Route:** `/restaurants` · **ViewId:** `restaurants` · **Naming (Jesse, 2026-09-24, after build):** the view is titled **Restaurants**, subtitle **Food service and safety** — the working name "Behind the Storefront" / "Same door, new sign." below is retired.
+
+**Status:** APPROVED 2026-09-24 with Jesse's rulings in **§11, which SUPERSEDES every conflicting line above** (esp. D6, D9, D10, §4.4, §4.5, §7.2, §7.4, gates G3/G7).
 
 **Citation key.** Every figure cites where it was measured: **A** = live probe of `tvy3-wexg`; **B** = historical eras probe; **C** = codebase plumbing map; **D** = editorial research; **E** = churn probe; **F** = shared-ownership probe; **H** = the precision-first ("honesty") design's re-derivation; **J1–J3** = judge verdicts; **S** = re-measured while writing this spec (2026-09-24, `data.sf.gov`). All probe scratch lives in `…/scratchpad/{all.json,hist/,churn/,own/,prec/}`.
 

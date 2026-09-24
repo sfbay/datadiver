@@ -283,7 +283,7 @@ export const SF_DATASETS_RAW: Record<string, RawDatasetConfig> = {
     defaultSort: 'buyout_agreement_date DESC',
   },
 
-  // ── Restaurant inspections (Behind the Storefront) ─────────
+  // ── Restaurant inspections (Restaurants view) ─────────
   // Three extracts, three grading systems, never reconciled (spec §6). Only
   // the 2024+ set is read live; the two historical ones are read at build
   // time by scripts/build-storefronts.ts (the Oakland "registered, not yet

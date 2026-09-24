@@ -154,12 +154,12 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     citable: ['map-sample', 'stat-totals', 'ranking', 'freshness'],
   },
   {
-    // Behind the Storefront (spec 2026-09-24-restaurant-inspections-design).
+    // Restaurants (spec 2026-09-24-restaurant-inspections-design).
     // After Housing: the other address-level story.
     viewId: 'restaurants',
     navLabel: 'Restaurants',
     navShortLabel: 'FOOD', // covers bars and markets too
-    navDescription: 'Inspections, closures & turnover',
+    navDescription: 'Food service and safety',
     accentColor: '#2e5856', // teal-700 — unclaimed; moss/ochre/brick would read as a placard verdict
     homeCard: { title: 'Restaurants', subtitle: 'SF Public Health · Inspections & Turnover', order: 15 },
     // DATELESS and deliberately NO eraSource: an annual strip would draw the

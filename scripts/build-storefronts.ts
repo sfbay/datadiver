@@ -1,7 +1,7 @@
 /**
  * build-storefronts.ts
  *
- * Generator for Behind the Storefront's committed snapshot
+ * Generator for the Restaurants view's committed snapshot
  * (`public/data/restaurants/storefronts.json`) — everything the Restaurants
  * view shows that joins inspection ERAS or the business REGISTRY: turnover
  * chains, owners of record, 2020+ closure episodes for the map and lists, the

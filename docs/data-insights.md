@@ -566,7 +566,7 @@ July 2026): 1998 all-time peak 2,917 (dot-com wave) → 2009 post-crash trough 1
 
 ## Restaurant inspections (`tvy3-wexg` live · `5tti-66ds` + `pyih-qa8i` + registry `g8m3-pdis` at build time)
 
-The view is **Behind the Storefront** (`/restaurants`). Design and Jesse's
+The view is **Restaurants** (`/restaurants`, subtitle "Food service and safety"). Design and Jesse's
 transparency rulings: `docs/superpowers/specs/2026-09-24-restaurant-inspections-design.md`
 (§11 supersedes everything above it). Every figure below was measured on
 `data.sf.gov` on Sept. 24, 2026 unless it says otherwise; the snapshot figures
