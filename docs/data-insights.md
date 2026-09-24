@@ -154,6 +154,16 @@ While per-sector opening counts are contaminated by NAICS lag, the **total openi
 
 **Mitigation in UI:** the Home `VisionZeroCounter` card derives BOTH YoY windows from `MAX(collision_datetime)` (matched windows, or the comparison lies) and carries the caveat line naming both lags.
 
+### The modes say "Bicycle", never "Bike" — and deaths are people, not crashes
+
+**Finding (Sept. 23 2026, PR #182 — a served error, logged at `/about#correction-2026-09-23-traffic-safety-cards`):** `dph_col_grp_description` holds ten values, and every bike mode spells the word out: `Vehicle-Bicycle`, `Bicycle Only`, `Bicycle-Pedestrian`, `Bicycle-Parked Car`, `Bicycle-Unknown/Not Stated`, `Vehicle-Bicycle-Pedestrian` (plus `Vehicle-Pedestrian`, `Pedestrian Only or Pedestrian-Parked Car`, `Vehicle(s) Only Involved`, `Unknown/Not Stated`). The Ped/Bike % card had tested `includes('Bike')` since launch — it matched nothing, so the card counted pedestrian crashes alone: **20.7% shown vs 37.0% true** (Jan. 1 2025 → Sept. 23 2026; 991 vs 1,774 of 4,793 crashes). Same class as the `'Severe Injury'` trap above: a plausible string that matches nothing fails silently. The one spelling now lives in `src/views/TrafficSafety/crashFilters.ts` (`isPedBikeMode` / `PED_BIKE_SQL`), pinned against the probed value list.
+
+**Units:** `collision_severity` is the crash's worst outcome; `number_killed` counts people. 2024–2025: **64 fatal crashes, 68 people killed**. The Fatalities card shows people and names the crash count beside it.
+
+**The sample trap, measured:** the card totals used to be summed from the 5,000-row map sample (newest first, crashes without coordinates dropped). 2025 alone: 24 deaths vs 25 in the data. 2024–2025: **55 deaths / 6,078 injuries vs 68 / 7,301**. Every card figure is now one server aggregate.
+
+**Ped/bike share of deaths:** of the 68 people killed in 2024–2025, 45 died in pedestrian or bicycle crashes.
+
 ---
 
 ## Elections
