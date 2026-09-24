@@ -43,7 +43,7 @@ const GLOSSARY: Record<string, string> = {
 
   // Traffic safety
   'injuries': 'Total people injured across all reported traffic collisions, including drivers, passengers, pedestrians, and cyclists.',
-  'fatalities': 'Total people killed in traffic collisions. Part of SF\'s Vision Zero goal to eliminate traffic deaths.',
+  'fatalities': 'People killed in traffic collisions. One crash can kill more than one person, so the card also gives the number of fatal crashes. Deaths are often added to the data weeks late, so recent months may rise. Part of SF\'s Vision Zero goal to eliminate traffic deaths.',
   'ped-bike-pct': 'Percentage of crashes involving a pedestrian or cyclist. These are the most vulnerable road users and a focus of Vision Zero.',
 
   // Trend indicators

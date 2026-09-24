@@ -43,6 +43,17 @@ export interface Correction {
 /** Newest first. Append at the top; never edit or remove an existing entry. */
 export const CORRECTIONS: readonly Correction[] = [
   {
+    id: '2026-09-23-traffic-safety-cards',
+    date: '2026-09-23',
+    dateLabel: 'Sept. 23, 2026',
+    views: 'Traffic Safety — the Fatalities, Injuries and Ped/Bike % cards',
+    window: 'live since launch',
+    change:
+      'The Fatalities and Injuries cards now count every crash in the selected range, and the Ped/Bike % card now counts bicycle crashes as well as pedestrian crashes.',
+    before:
+      'The Ped/Bike % card counted pedestrian crashes only: its test looked for the word "Bike", which the city’s data never uses (it says "Bicycle"). From Jan. 1, 2025 to Sept. 23, 2026 it read 20.7%; the true share is 37.0%. The Fatalities and Injuries cards added up only the crashes loaded for the map, which stop at 5,000 and leave out crashes with no location. For 2025 alone the card read 24 deaths where the data holds 25; on longer ranges the gap grew — for 2024 and 2025 together the card read 55 deaths and 6,078 injuries, where the city’s data holds 68 and 7,301.',
+  },
+  {
     id: '2026-09-05-demographics-crime-axis',
     date: '2026-09-05',
     dateLabel: 'Sept. 5, 2026',

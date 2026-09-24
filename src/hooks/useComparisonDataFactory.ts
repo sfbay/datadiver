@@ -16,6 +16,7 @@ import { diffMinutes, diffHours, groupByDay } from '@/utils/time'
 import { addDays, rangeLengthDays } from '@/utils/comparisonMode'
 import { isOakCaseOpen } from '@/views/Cases311/dialect311'
 import type { OakCitationRecord } from '@/views/ParkingCitations/citationsDialect'
+import { isPedBikeMode } from '@/views/TrafficSafety/crashFilters'
 
 // ── Shared utility ────────────────────────────────────────────────
 
@@ -530,7 +531,7 @@ export const useCrashComparisonData = createComparisonDataHook<
         fatalities += parseInt(r.number_killed, 10) || 0
         injuries += parseInt(r.number_injured, 10) || 0
         const mode = r.dph_col_grp_description || ''
-        if (mode.includes('Ped') || mode.includes('Bike')) pedBike++
+        if (isPedBikeMode(mode)) pedBike++
       }
       return {
         total: records.length,

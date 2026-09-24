@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react'
 import InfoTip from '@/components/ui/InfoTip'
 import SparkBars from '@/components/charts/SparkBars'
 import PositionScale from '@/components/charts/PositionScale'
@@ -54,9 +54,17 @@ interface StatCardProps {
     range: [number, number]
     reference?: number
   }
+  /** Makes the whole card a control (Traffic Safety, Sept. 2026: click a
+   *  number to see the crashes behind it). Clicks on a button INSIDE the card
+   *  (the info tip, the subtitle action) stay with that button. */
+  onActivate?: () => void
+  /** The card's filter is applied: a ring in the card's own pigment. */
+  active?: boolean
+  /** Tooltip for the card-as-control, e.g. "Show fatal crashes only". */
+  activateHint?: string
 }
 
-export default function StatCard({ label, value, color, subtitle, delay = 0, trend, yoyDelta, zScore, info, sparkData, positionScale, badge, subtitleAction, subtitleActionLabel, secondary, wrapSubtitle, valueFit }: StatCardProps) {
+export default function StatCard({ label, value, color, subtitle, delay = 0, trend, yoyDelta, zScore, info, sparkData, positionScale, badge, subtitleAction, subtitleActionLabel, secondary, wrapSubtitle, valueFit, onActivate, active, activateHint }: StatCardProps) {
   const [visible, setVisible] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -86,8 +94,27 @@ export default function StatCard({ label, value, color, subtitle, delay = 0, tre
       {/* Card visual — glow-host clips the corner blur to its rounded bounds.
           Sibling-positioned tooltip below escapes this clip. */}
       <div
-        className="glass-card glow-host rounded-xl px-4 py-3"
+        className={`glass-card glow-host rounded-xl px-4 py-3 ${onActivate
+          // OUTLINE, not ring: .glass-card's kraft edge is a box-shadow, and a
+          // Tailwind ring is a box-shadow too — the card's own rule won and
+          // the applied state was invisible.
+          ? 'cursor-pointer outline-offset-0 hover:outline hover:outline-1 hover:outline-[var(--glow)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--glow)]'
+          : ''} ${active ? 'outline outline-2 outline-[var(--glow)]' : ''}`}
         style={{ '--glow': color } as CSSProperties}
+        {...(onActivate ? {
+          role: 'button',
+          tabIndex: 0,
+          'aria-pressed': !!active,
+          title: activateHint,
+          onClick: (e: MouseEvent) => {
+            if ((e.target as HTMLElement).closest('button')) return
+            onActivate()
+          },
+          onKeyDown: (e: KeyboardEvent) => {
+            if (e.target !== e.currentTarget) return
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onActivate() }
+          },
+        } : {})}
       >
         <div className="glow-corner" />
         <p className="relative text-label font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 whitespace-nowrap flex items-center">

@@ -12,9 +12,14 @@ interface SeverityBreakdownProps {
   data: SeverityDatum[]
   width?: number
   height?: number
+  /** Severities the view is filtered to; the rest dim. Empty = none. */
+  selected?: ReadonlySet<string>
+  /** Makes each row a control (a second way into the Traffic Safety
+   *  severity filter, beside the stat cards). */
+  onSelect?: (severity: string) => void
 }
 
-export default function SeverityBreakdown({ data, width = 260, height = 120 }: SeverityBreakdownProps) {
+export default function SeverityBreakdown({ data, width = 260, height = 120, selected, onSelect }: SeverityBreakdownProps) {
   const svgRef = useRef<SVGSVGElement>(null)
   const isDarkMode = useAppStore((s) => s.isDarkMode)
 
@@ -51,7 +56,7 @@ export default function SeverityBreakdown({ data, width = 260, height = 120 }: S
       .attr('height', barHeight)
       .attr('rx', 2)
       .attr('fill', (d) => CRASH_SEVERITY_COLORS[d.severity] || '#64748b')
-      .attr('opacity', 0.8)
+      .attr('opacity', (d) => (!selected || selected.size === 0 || selected.has(d.severity) ? 0.8 : 0.25))
       .transition()
       .duration(500)
       .delay((_, i) => i * 40)
@@ -69,7 +74,8 @@ export default function SeverityBreakdown({ data, width = 260, height = 120 }: S
       .attr('y', (d) => (y(d.severity) ?? 0) + barHeight / 2)
       .attr('dy', '0.35em')
       .attr('text-anchor', 'end')
-      .attr('fill', labelColor)
+      .attr('fill', (d) => (selected?.has(d.severity) ? valueColor : labelColor))
+      .attr('font-weight', (d) => (selected?.has(d.severity) ? 700 : 400))
       .style('font-size', '0.5625rem')
       .attr('font-family', '"JetBrains Mono", monospace')
       .text((d) => d.severity.length > 14 ? d.severity.slice(0, 13) + '\u2026' : d.severity)
@@ -88,7 +94,32 @@ export default function SeverityBreakdown({ data, width = 260, height = 120 }: S
       .attr('font-family', '"JetBrains Mono", monospace')
       .text((d) => d.count.toLocaleString())
 
-  }, [data, width, height, isDarkMode])
+    if (onSelect) {
+      // One transparent hit row per severity, label to value — bigger than
+      // the bar, so a 1-crash Fatal bar is as easy to press as the longest.
+      g.selectAll('.hit')
+        .data(data)
+        .join('rect')
+        .attr('class', 'hit')
+        .attr('x', -margin.left)
+        .attr('y', (d) => (y(d.severity) ?? 0) - 1)
+        .attr('width', width)
+        .attr('height', barHeight + 2)
+        .attr('fill', 'transparent')
+        .style('cursor', 'pointer')
+        .attr('tabindex', 0)
+        .attr('role', 'button')
+        .attr('aria-pressed', (d) => String(!!selected?.has(d.severity)))
+        .attr('aria-label', (d) => `${d.severity}: ${d.count.toLocaleString()} crashes`)
+        .on('click', (_, d) => onSelect(d.severity))
+        .on('keydown', (e: KeyboardEvent, d) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(d.severity) }
+        })
+        .append('title')
+        .text((d) => selected?.has(d.severity) ? `${d.severity} — click to clear` : `Show ${d.severity} crashes only`)
+    }
+
+  }, [data, width, height, isDarkMode, selected, onSelect])
 
   return <svg ref={svgRef} className="w-full" />
 }
