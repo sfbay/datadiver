@@ -10,9 +10,9 @@ import { NON_SOCRATA, NON_SOCRATA_IDS, nonSocrataFor } from './nonSocrata'
 const cvrSourcesText = readFileSync('scripts/fetch-cvr-sources.mjs', 'utf8')
 
 describe('NON_SOCRATA', () => {
-  it('has the eleven authored ids', () => {
+  it('has the twelve authored ids', () => {
     expect([...NON_SOCRATA_IDS].sort()).toEqual([
-      'acs-2023-5yr', 'google-3d-tiles', 'mapbox-basemap', 'oak-beats', 'oak-neighborhoods',
+      'acs-2023-5yr', 'dd-storefront-histories', 'google-3d-tiles', 'mapbox-basemap', 'oak-beats', 'oak-neighborhoods',
       'sf-analysis-neighborhoods', 'sf-cvr-20241105', 'sf-elections-results',
       'sf-precincts-2012', 'sf-precincts-2022', 'sf-tract-assignment',
     ])
@@ -60,6 +60,18 @@ describe('NON_SOCRATA', () => {
   })
   it('the CVR upstream URL matches the fetch script byte-for-byte', () => {
     expect(cvrSourcesText).toContain(NON_SOCRATA['sf-cvr-20241105'].upstreamUrl)
+  })
+  it('the derived storefront file is DataDiver-authored CC BY 4.0 over PDDL inputs, built by its generator', () => {
+    const r = NON_SOCRATA['dd-storefront-histories']
+    expect(r.kind).toBe('derived')
+    expect(r.cities).toEqual(['sf'])
+    expect(r.derivedLicense).toBe('CC BY 4.0')
+    expect(r.license).not.toBe('not stated')
+    expect(r.generator).toBe('scripts/build-storefronts.ts')
+    expect(r.servedPath).toBe('/data/restaurants/storefronts.json')
+    // The retired host must never reach a provenance URL (portalHost.test
+    // scans src/ too; this names the row that would be likeliest to slip).
+    expect(r.upstreamUrl).not.toMatch(/data\.sfgov\.org/)
   })
   it('the ACS vintage is the one real vintage DataDiver serves', () => {
     expect(NON_SOCRATA['acs-2023-5yr'].vintage).toBe('ACS 2019–2023 5-year estimates')

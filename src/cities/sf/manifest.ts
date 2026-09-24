@@ -154,6 +154,27 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     citable: ['map-sample', 'stat-totals', 'ranking', 'freshness'],
   },
   {
+    // Behind the Storefront (spec 2026-09-24-restaurant-inspections-design).
+    // After Housing: the other address-level story.
+    viewId: 'restaurants',
+    navLabel: 'Restaurants',
+    navShortLabel: 'FOOD', // covers bars and markets too
+    navDescription: 'Inspections, closures & turnover',
+    accentColor: '#2e5856', // teal-700 — unclaimed; moss/ochre/brick would read as a placard verdict
+    homeCard: { title: 'Restaurants', subtitle: 'SF Public Health · Inspections & Turnover', order: 15 },
+    // DATELESS and deliberately NO eraSource: an annual strip would draw the
+    // July 2025 feed thinning and the two unpublished gaps (Oct. 2019–Mar.
+    // 2020, Aug.–Dec. 2023) as falls. The view owns ?window=since|before.
+    dateless: true,
+    omniDatasetKeys: ['restaurantInspections'],
+    // Live reads hit the 2024+ set only. The 2016 and 2020 extracts (and the
+    // business registry) are read at BUILD time by scripts/build-storefronts.ts
+    // into the derived file below — never fetched by the view.
+    sources: ['restaurantInspections'],
+    staticSources: ['dd-storefront-histories', 'sf-analysis-neighborhoods'],
+    citable: ['stat-totals', 'ranking', 'map-sample', 'freshness'],
+  },
+  {
     viewId: 'elections',
     navLabel: 'Elections',
     navShortLabel: 'EL',

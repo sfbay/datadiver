@@ -53,6 +53,24 @@ describe('pillFace', () => {
   })
 })
 
+describe("the 'derived' static kind (DataDiver-built files)", () => {
+  const sfRestaurants = CITIES.sf.manifest.find((e) => e.viewId === 'restaurants')!
+  it('Restaurants leads with the DPH inspections set: map-sample makes it dataset-led', () => {
+    const s = summarizeSources('sf', sfRestaurants)
+    expect(s[0].kind).toBe('dataset')
+    expect(s[0].key).toBe('restaurantInspections')
+    expect(pillFace(s)).toBe('DPH · DataSF · via DataDiver')
+    // The derived file still follows, ahead of the neighborhood frame.
+    expect(s.filter((x) => x.kind === 'static').map((x) => x.id)).toEqual(['dd-storefront-histories', 'sf-analysis-neighborhoods'])
+  })
+  it('is SUBSTANTIVE, not a frame: with no map/window-sample signal a derived lead static leads the list', () => {
+    // Contrast with the boundary-led synthetic above, which must stay
+    // dataset-led: a derived file's rows ARE the story, a boundary never is.
+    const synth: typeof sfRestaurants = { ...sfRestaurants, citable: ['stat-totals', 'freshness'] }
+    expect(summarizeSources('sf', synth)[0].id).toBe('dd-storefront-histories')
+  })
+})
+
 describe('summarizeSources dataset-group ordering', () => {
   it('promotes BOTH era keys (modern then historical) ahead of a same-view cross-reference dataset', () => {
     // sfCrime's declared `sources` is Task 5's scan order (alphabetical:
