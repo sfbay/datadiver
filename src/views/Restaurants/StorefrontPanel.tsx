@@ -17,7 +17,9 @@
 //      ranked: nothing here sorts, filters or counts by inspector).
 //   6. Same owner elsewhere — visible company owners' other storefronts.
 //   7. Mailing address — the shared-address FACT when every owner there is a
-//      company; otherwise, for a non-company owner, the withheld line.
+//      company; the withheld line when a shared address listing this door
+//      was withheld (snapshot.withheldSharedStorefronts), or when nothing is
+//      published and the current owner is not a company.
 //   8. Also at this mailing address — curated group CLAIMS only (may be none).
 //   9. Data notes — the precision behind every simplified label, plus the
 //      city's own inspection lookup.
@@ -51,12 +53,12 @@ import {
   sameMailingNote,
   scoreBadge,
   SEEN_ONCE,
+  SHARED_WITHHELD_NOTE,
   sharedMailingSentence,
 } from './restaurantPhrase'
 import { familyLabel, parseViolationItems } from './violationFamilies'
 import {
   businessOwnerHref,
-  currentOwner,
   dedupeLane,
   displayBusinessName,
   DPH_LOOKUP_URL,
@@ -65,6 +67,7 @@ import {
   INSPECTIONS_URL,
   latestReading,
   mailingLine,
+  mailingWithheldHere,
   namesLedeInput,
   operatorSpan,
   ownerChips,
@@ -445,8 +448,7 @@ export default function StorefrontPanel({
   const owners = useMemo(() => ownersHere(snapshot, key), [snapshot, key])
   const shared = useMemo(() => sharedAddressesHere(snapshot, key), [snapshot, key])
   const groups = useMemo(() => groupsHere(snapshot, key), [snapshot, key])
-  const owner = currentOwner(storefront)
-  const withheld = shared.length === 0 && !!owner && owner.kind !== 'company'
+  const withheld = mailingWithheldHere(snapshot, storefront)
 
   return (
     <DetailPanelShell
@@ -454,6 +456,7 @@ export default function StorefrontPanel({
       onClose={onClose}
       isLoading={false}
       widthClass="w-[28rem]"
+      mobileCompact
       glowColor={TEAL}
       spinnerClass="border-teal-500"
       buildShareUrl={() => window.location.href}
@@ -574,7 +577,7 @@ export default function StorefrontPanel({
           )}
           {withheld && (
             <>
-              <SectionHead>Mailing address</SectionHead>
+              {shared.length === 0 && <SectionHead>Mailing address</SectionHead>}
               <p className="text-micro font-mono text-slate-500 dark:text-slate-400">{MAILING_WITHHELD_LABEL}</p>
             </>
           )}
@@ -615,6 +618,15 @@ export default function StorefrontPanel({
               </a>
               .
             </Note>
+            {withheld === 'shared' && (
+              <Note>
+                {SHARED_WITHHELD_NOTE}{' '}
+                <a href={REGISTRY_URL} target="_blank" rel="noopener noreferrer" className={LINK}>
+                  Open the business registry
+                </a>
+                .
+              </Note>
+            )}
             {(shared.length > 0 || groups.length > 0) && (
               <Note>{sameMailingNote(groups.length > 0 ? groups.map(evidenceKinds).join('; ') : undefined)}</Note>
             )}

@@ -32,6 +32,7 @@ import type {
   VisibleOwner,
 } from '@/lib/storefronts/types'
 import { closureEpisodes, type ClosureEpisode } from './closureEpisodes'
+import { currentOperator } from './mapLayers'
 import { normalizePlacard, PLACARD_RANK, PLACARD_WORD, type Placard } from './placard'
 import { nowLine, monthYearShort } from './restaurantPhrase'
 import {
@@ -381,10 +382,10 @@ export function namesLedeInput(sf: Storefront): {
 
 // ── ownership + mailing address, from the snapshot ─────────────────────────
 
-/** The owner of record for the most recent operator, when resolved. */
+/** The owner of record for the current (most recently seen) operator, when
+ *  resolved — currentOperator(), never the last-STARTED operator. */
 export function currentOwner(sf: Storefront): StorefrontOwner | null {
-  const last = sf.operators[sf.operators.length - 1]
-  return last?.owner ?? null
+  return currentOperator(sf)?.owner ?? null
 }
 
 /** Company owners registered at this storefront AND 3+ others' (the visible
@@ -397,6 +398,23 @@ export function ownersHere(snap: Pick<StorefrontSnapshot, 'owners'>, key: string
  *  that list this storefront. */
 export function sharedAddressesHere(snap: Pick<StorefrontSnapshot, 'sharedAddresses'>, key: string): SharedMailingAddress[] {
   return snap.sharedAddresses.filter((a) => a.storefronts.includes(key))
+}
+
+/**
+ * Does the panel say "Mailing address withheld" here, and why? 'shared' when a
+ * shared address listing this door was withheld (a non-company is registered
+ * there — the generator publishes the door keys only); 'person' when nothing
+ * is published and the current owner is not a company (their own street and
+ * ZIP are never stored); null when nothing was withheld.
+ */
+export function mailingWithheldHere(
+  snap: Pick<StorefrontSnapshot, 'sharedAddresses' | 'withheldSharedStorefronts'>,
+  sf: Storefront,
+): 'shared' | 'person' | null {
+  if ((snap.withheldSharedStorefronts ?? []).includes(sf.key)) return 'shared'
+  const owner = currentOwner(sf)
+  if (sharedAddressesHere(snap, sf.key).length === 0 && owner && owner.kind !== 'company') return 'person'
+  return null
 }
 
 /** Curated "same restaurant group" claims that include this storefront. */
@@ -430,8 +448,8 @@ export function mailingLine(a: Pick<SharedMailingAddress, 'address' | 'city' | '
 export function storefrontLabel(index: ReadonlyMap<string, Storefront>, key: string): { address: string; name: string | null; known: boolean } {
   const sf = index.get(key)
   if (!sf) return { address: toTitleCase(key), name: null, known: false }
-  const last = sf.operators[sf.operators.length - 1]
-  return { address: sf.address, name: last ? displayBusinessName(last.name) : null, known: true }
+  const now = currentOperator(sf)
+  return { address: sf.address, name: now ? displayBusinessName(now.name) : null, known: true }
 }
 
 /** Inputs for restaurantPhrase.ownerReturnedLede (voice sample 2), or null

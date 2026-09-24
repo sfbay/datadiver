@@ -77,7 +77,8 @@ function corpus(): string[] {
   return out.filter(Boolean)
 }
 
-const BANNED_WORDS = ['cursed', 'shell', 'secretly', 'dirty', 'failed', 'reopened', 'sigma', 'yoy', 'baseline']
+// 'live': no SF dataset is real-time (CLAUDE.md bans it from source strings).
+const BANNED_WORDS = ['cursed', 'shell', 'secretly', 'dirty', 'failed', 'reopened', 'sigma', 'yoy', 'baseline', 'live']
 const BANNED_PHRASES = ['hidden owner', 'still closed', 'closed for good', 'σ', 'z-score', 'z score', 'zscore', 'year-over-year', 'year over year']
 /** Real DPH inspector names from the extract — never in reader text. */
 const INSPECTOR_NAMES = ['Patrick Wood']
@@ -174,6 +175,13 @@ describe('restaurantPhrase — windows, ledes, owners', () => {
       'Most closures are short. Of the 341 closures since January 2024 that ended in a passing inspection, 190 were cleared within a day.',
     )
     expect(P.closuresLede({ cleared: 341, clearedWithinADay: 100, since: '2024-01-02' }).startsWith('Of the 341')).toBe(true)
+  })
+
+  it('the turnover lede counts business NAMES, never "businesses" or owners (§7.1)', () => {
+    const lede = P.turnoverLede(124, '2026-09-24', 2026)
+    expect(lede).toMatch(/at least three different business names have hung over the door since 2016/)
+    expect(lede).not.toMatch(/businesses have operated/)
+    expect(lede).not.toMatch(/\bowners?\b/)
   })
 
   it('an owner mailing city is JUST the city (Jesse, 2026-09-24)', () => {

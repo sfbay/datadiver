@@ -11,6 +11,7 @@ import {
   groupsHere,
   latestReading,
   mailingLine,
+  mailingWithheldHere,
   namesLedeInput,
   operatorSpan,
   ownerChips,
@@ -293,6 +294,27 @@ describe('ownership + mailing address from the snapshot', () => {
   it('the current owner is the latest operator’s owner of record', () => {
     expect(currentOwner(at('1195 STOCKTON ST'))).toMatchObject({ name: 'Chen Xiu L', kind: 'individual', mailCity: 'Daly City' })
     expect(currentOwner(at('2077 HAYES ST'))?.name).toBe('Red Smart LLC')
+  })
+
+  it('the current owner is the most recently SEEN operator’s, not the last to start', () => {
+    // 1800 Folsom: El Alambre #2 started later (2022) but was last seen in
+    // 2023; Foods Co was still inspected in 2026 and holds the permit.
+    expect(currentOwner(at('1800 FOLSOM ST'))?.name).toBe('Bay Area Warehouse Stores Inc.')
+    const idx = new Map(snap.storefronts.map((s) => [s.key, s] as const))
+    expect(storefrontLabel(idx, '1800 FOLSOM ST').name).toBe('Foods Co #357')
+    expect(storefrontLabel(idx, '595 MARKET ST').name).toBe('Uno Dos Taco')
+  })
+
+  it('names a withheld shared address where a reader looks — never silent (§11)', () => {
+    // 1343 Powell St: owner Eatifydash, LLC is a company, but its shared
+    // mailing address is withheld (a non-company is registered there).
+    expect(currentOwner(at('1343 POWELL ST'))?.kind).toBe('company')
+    expect(sharedAddressesHere(snap, '1343 POWELL ST')).toEqual([])
+    expect(mailingWithheldHere(snap, at('1343 POWELL ST'))).toBe('shared')
+    // An individual owner with nothing published: their own street/ZIP are withheld.
+    expect(mailingWithheldHere(snap, at('1195 STOCKTON ST'))).toBe('person')
+    // A company whose shared address IS published: nothing withheld.
+    expect(mailingWithheldHere(snap, at('517 HAYES ST'))).toBeNull()
   })
 
   it('labels a storefront another list points at, even when the snapshot lacks it', () => {

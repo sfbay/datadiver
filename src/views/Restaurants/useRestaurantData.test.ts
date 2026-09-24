@@ -7,12 +7,30 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import {
   toFigures, toRates, toMapReadings, closuresInWindow, closedPermitsQuery, permitReadingsQuery,
-  mapPermitsWithPassQuery, MIN_RATED,
+  mapPermitsWithPassQuery, MIN_RATED, neighborhoodCardFigures,
 } from './useRestaurantData'
 import { feedWindow } from './inspectionFeed'
 
 const T = '2026-09-24'
 const D = 'T00:00:00.000'
+
+describe('neighborhood card figures — a failed read is never zeros', () => {
+  const rates = toRates([{ analysis_neighborhood: 'Mission', closed: '37', yellow: '40', inspected: '822' }])
+  it('reads the neighborhood’s Q2 row, zeros only when the window truly has no row', () => {
+    expect(neighborhoodCardFigures('Mission', rates, { ready: true, error: null })).toEqual({ closed: 37, yellow: 40, inspected: 822 })
+    expect(neighborhoodCardFigures('Seacliff', rates, { ready: true, error: null })).toEqual({ closed: 0, yellow: 0, inspected: 0 })
+  })
+  it('null — never zeros — while loading, with no selection, or when Q2 FAILED', () => {
+    expect(neighborhoodCardFigures('Mission', rates, { ready: false, error: null })).toBeNull()
+    expect(neighborhoodCardFigures(null, rates, { ready: true, error: null })).toBeNull()
+    expect(neighborhoodCardFigures('Mission', [], { ready: true, error: 'Request failed (500)' })).toBeNull()
+  })
+  it('the hook ignores a failed query’s rows (useDataset keeps the previous window’s data on error)', () => {
+    const src = readFileSync(fileURLToPath(new URL('./useRestaurantData.ts', import.meta.url)), 'utf8')
+    expect(src).toMatch(/q\.error \? NO_ROWS : q\.data/)
+    for (const q of ['permitsQ', 'nonPassQ', 'ratesQ', 'closedQ', 'readingsQ']) expect(src).toContain(`rowsOf(${q})`)
+  })
+})
 
 describe('figures + rates', () => {
   it('parses Q1 (Socrata sends strings)', () => {

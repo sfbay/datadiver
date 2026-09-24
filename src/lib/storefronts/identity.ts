@@ -16,7 +16,7 @@
 //     registration whose location_start/end contains the operator's dates.
 
 import { daysBetween, sequenceRatio } from './nameChain'
-import { isLandlordRow, registryDay, type RegistryRow } from './registryRows'
+import { FOOD_LICENSE_RE, isLandlordRow, registryDay, type RegistryRow } from './registryRows'
 
 /** Numeric ids below this are never joined across eras by number (B trap 4). */
 export const ID_JOIN_FLOOR = 60_000
@@ -88,8 +88,43 @@ export interface RegistryPick {
   row: RegistryRow
   /** max(similarity to dba_name, similarity to ownership_name) */
   similarity: number
+  /** Similarity of the operator's name to the row's OWNER name alone. */
+  ownerSimilarity: number
   /** How many of the operator's inspection dates fall inside the registration window. */
   coverage: number
+  /** A finance-coded (NAICS 52) registration whose owner name is unlike the
+   *  operator's — an ATM filed under the host's trade name (demoted). */
+  incidental: boolean
+}
+
+/**
+ * Kiosk and ATM operators that register under the HOST store's trade name:
+ * Cardtronics files its ATM at Tommy's Joynt as "Tommy's Joynt" (NAICS 52),
+ * so the name join scored it 1.0 against the restaurant — and, being the
+ * later registration, it won the tie and was named the owner of Tommy's
+ * Joynt, eight Walgreens, Foods Co and Nordstrom (review, 2026-09-24). Such a
+ * row never owns the business it sits in, so it is dropped outright, like a
+ * landlord row. Authored, each a checkable company:
+ *   CARDTRONICS  ATM operator — 176 registrations, 118 coded NAICS 52
+ *   REDBOX       DVD kiosks (Redbox Automated Retail) — 23
+ *   ECOATM       phone-recycling kiosks — 14
+ *   COINSTAR     coin-counting kiosks — 2
+ *   COINME       bitcoin kiosks (Coinstar partner) — 1
+ * (counts: registrations in the 2026-09-24 g8m3-pdis pull)
+ */
+const KIOSK_OPERATOR = /\b(CARDTRONICS|REDBOX AUTOMATED RETAIL|ECOATM|COINSTAR|COINME)\b/
+
+export function isKioskOperatorRow(row: Pick<RegistryRow, 'ownership_name'>): boolean {
+  return KIOSK_OPERATOR.test((row.ownership_name ?? '').toUpperCase())
+}
+
+/** NAICS 52 (finance and insurance) — Cardtronics' own code. Deliberately
+ *  narrow: a broader "non-food" demotion was tried at review and demoted real
+ *  owners (a gym's, a theater's, a hotel's registration of its own café). */
+const FINANCE_NAICS = /^52/
+
+function isFinanceCoded(row: RegistryRow): boolean {
+  return FINANCE_NAICS.test((row.self_reported_naics_code ?? '').trim()) && !FOOD_LICENSE_RE.test(row.lic ?? '')
 }
 
 /** Does the registration window contain this 'YYYY-MM-DD' day? An open
@@ -105,11 +140,15 @@ export function registrationCovers(row: RegistryRow, day: string): boolean {
  *
  * `candidates` are the registry rows whose storefront key equals this door's
  * (the caller joins by ADDRESS; never pre-filter by NAICS — predecessors are
- * untagged, E T11). Landlord rows are dropped; the rest must reach name
- * similarity ≥ 0.6 against the operator's name (trade name or owner name).
- * Among those, the registration whose window covers the most of the
- * operator's inspection dates wins; ties → higher similarity → later start →
- * uniqueid, so the pick is deterministic.
+ * untagged, E T11). Landlord rows and kiosk/ATM operators are dropped; the
+ * rest must reach name similarity ≥ 0.6 against the operator's name (trade
+ * name or owner name). Among those, the registration whose window covers the
+ * most of the operator's inspection dates wins; ties → not incidental (a
+ * finance-coded row whose OWNER name is unlike the operator's — an unlisted
+ * ATM operator) → higher similarity → later start → uniqueid, so the pick is
+ * deterministic. Owner-name similarity is deliberately NOT a tie-break: tried
+ * at review, it moved 70+ picks the wrong way (Milagros de Mexico →
+ * "Milagros Medical, Inc.", a market → an auto-care company).
  *
  * null when nothing qualifies — including when no qualifying registration's
  * window covers even ONE of the operator's dates. A same-named registration
@@ -123,14 +162,13 @@ export function pickRegistryRow(
 ): RegistryPick | null {
   let best: RegistryPick | null = null
   for (const row of candidates) {
-    if (isLandlordRow(row)) continue
-    const similarity = Math.max(
-      nameSimilarity(operator.name, row.dba_name),
-      nameSimilarity(operator.name, row.ownership_name),
-    )
+    if (isLandlordRow(row) || isKioskOperatorRow(row)) continue
+    const ownerSimilarity = nameSimilarity(operator.name, row.ownership_name)
+    const similarity = Math.max(nameSimilarity(operator.name, row.dba_name), ownerSimilarity)
     if (similarity < REGISTRY_NAME_FLOOR) continue
     const coverage = operator.dateList.filter((d) => registrationCovers(row, d)).length
-    const pick: RegistryPick = { row, similarity, coverage }
+    const incidental = isFinanceCoded(row) && ownerSimilarity < REGISTRY_NAME_FLOOR
+    const pick: RegistryPick = { row, similarity, ownerSimilarity, coverage, incidental }
     if (!best || comparePicks(pick, best) < 0) best = pick
   }
   return best && best.coverage > 0 ? best : null
@@ -138,6 +176,7 @@ export function pickRegistryRow(
 
 function comparePicks(a: RegistryPick, b: RegistryPick): number {
   if (a.coverage !== b.coverage) return b.coverage - a.coverage
+  if (a.incidental !== b.incidental) return a.incidental ? 1 : -1
   if (a.similarity !== b.similarity) return b.similarity - a.similarity
   const sa = registryDay(a.row.location_start_date) ?? ''
   const sb = registryDay(b.row.location_start_date) ?? ''

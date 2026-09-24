@@ -32,7 +32,7 @@ export const AXIS_START = '2016-10-01'
 export const ERA_SPANS: Readonly<Record<InspectionEra, { start: string; end: string | null; unit: string; name: string }>> = {
   2016: { start: '2016-10-01', end: '2019-11-01', unit: 'inspections', name: 'Scores' },
   2020: { start: '2020-03-01', end: '2023-08-04', unit: 'inspections', name: 'Placards' },
-  2024: { start: '2024-01-02', end: null, unit: 'records', name: 'Placards, live feed' },
+  2024: { start: '2024-01-02', end: null, unit: 'records', name: 'Placards, 2024 on' },
 }
 
 /** The two stretches no dataset covers. */

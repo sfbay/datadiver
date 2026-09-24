@@ -237,6 +237,10 @@ export interface StorefrontSnapshot {
   /** Shared-address clusters that survived F1–F5 but are withheld because at
    *  least one registration there is not a company (possibly a home). */
   withheldSharedCount: number
+  /** Published storefront keys that a withheld shared address lists — keys
+   *  only, never the address — so the storefront panel names the redaction
+   *  where a reader looks. */
+  withheldSharedStorefronts: string[]
   groups: SnapshotGroup[]
   publishing: PublishingCount[]
   /** Addresses left out of turnover as venues, multi-tenant or mostly

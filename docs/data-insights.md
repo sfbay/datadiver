@@ -728,6 +728,26 @@ At build the current operator matched a registration at **4,669 of 4,784
 permitted storefronts (97.6%)** — the owners note computes its percentage from
 this, not the spec's research-time 91% (a different denominator).
 
+**Kiosk and ATM operators register under the HOST's trade name.** Cardtronics
+(176 registrations, 118 coded NAICS 52) files each ATM under the store's own
+DBA — at 1101 Geary Blvd both "Apple Annie LLC" (2015-06-30, NAICS 722511) and
+"Cardtronics Usa, Inc." (2015-08-05, NAICS 52) are the open registrations for
+"Tommy's Joynt". Both score 1.0 on the name join and both cover every
+inspection, so the newest-start tie-break named Cardtronics the owner of 13
+operators (Tommy's Joynt, eight Walgreens, Foods Co, a 7-Eleven, Nordstrom's
+espresso bar, The Powerhouse). `identity.ts` now drops an authored kiosk list
+(Cardtronics, Redbox Automated Retail, ecoATM, Coinstar, Coinme — counts
+measured live Sept. 24, 2026) like landlord rows, and on a coverage tie
+demotes a finance-coded (NAICS 52) row whose owner name is unlike the
+business. Eleven of the 13 now resolve to the real owner (Walgreen Co, Bay
+Area Warehouse Stores, Apple Annie, Rnb Corporation); the 7-Eleven and the
+Nordstrom bar have no other qualifying registration and show none. The match
+count is unchanged (neither of those two is a current permit's operator). A
+broader "any non-food NAICS" demotion and an owner-name-similarity tie-break
+were both tried and rejected: each moved 70+ picks the wrong way (a gym's own
+registration lost to a person; Milagros de Mexico went to "Milagros Medical,
+Inc.").
+
 The registry is 367,367 rows (fetched by `$order=uniqueid` paging, then deduped
 on `uniqueid` — offset paging returns stray duplicates).
 
@@ -772,8 +792,10 @@ street of `0000 Undeliverable Mail` (5,862 rows, all sectors) or `9999
 Undeliverable St` (5), filed with `mail_city` "San Francisco" and ZIP 99999. Read
 naively it says the owner is local. These rows show **no city**
 (`mailCity: null`). Test the ADDRESS text, not the ZIP — one real Indianapolis
-PO box is filed with ZIP 99999. (47 of the 5,776 NAICS-722 rows; 101 of the
-7,185 open food registrations under the wider NAICS-or-license definition.)
+PO box is filed with ZIP 99999. (47 of the 5,776 open NAICS-722 rows; 101 of
+the 7,185 open food registrations under the wider NAICS-or-license
+definition; 5,868 rows across the whole registry, 4,739 of them open —
+re-measured Sept. 24, 2026. Never cite the 47 as "the registry's".)
 
 **Ended registrations mostly carry no mailing city**: only 38,110 of the
 registry's 240,355 ended rows have one, so a past owner in a storefront's
@@ -788,9 +810,9 @@ record:
 | Withheld / limited | Reason (privacy · accuracy · fairness) | Where it still is |
 |---|---|---|
 | A natural person's mailing street and ZIP — never stored in the committed JSON (no field exists for it) | **Privacy:** our display would pair a person's name with a likely home location and make it searchable | the registry record, data.sf.gov/d/g8m3-pdis |
-| A company mailing address where any co-registered owner is a person (94 of 261 shared-address clusters) | **Privacy:** possibly a home | same |
-| Search BY a natural person's name (the lookup indexes addresses, trade names and COMPANY owners only; `/business/owner/` links for companies only) | **Privacy:** never a tool that turns a person's name into their holdings + locations | the registry, searched there |
-| The claim "same restaurant group" | **Accuracy:** the algorithm is ~77% right; the FACT "these companies share a mailing address" is published automatically (167 addresses, after filters F1–F5 removed 1 undeliverable, 7 agent/mailbox, 5 venue addresses); the CLAIM needs a curated `restaurantGroups.ts` row with 2+ kinds of evidence (ships empty) | the review queue (gitignored — it holds people's addresses) |
+| A company mailing address where any owner registered there is not a company (98 of 261 shared-address clusters) — a person, or an organization with no company suffix (The Salvation Army), is treated as possibly a person. The test reads every spelling of the place (`mailingPlaceKey`: unit words dropped, word order sorted, `Steet` → `St`), so `7268 Murieta Dr Unit 1460` is withheld because a non-company registered `… Ste 1460`, and `212 Sutter St Fl 3` because of `… 3 Fl`. The storefronts such an address lists carry "Mailing address withheld" (door keys only, `withheldSharedStorefronts`, 198 doors) | **Privacy:** possibly a home | same |
+| Search BY a natural person's name (the lookup indexes addresses, trade names and COMPANY owners only, and skips a trade name that repeats its individual owner's name word for word — 1415 Stockton St trades as "YIBO CHEN"; `/business/owner/` links for companies only). A door with NO registry match can't be tested, so its trade name stays searchable even when it is a person's (1035 Geary Blvd, "Jayhoon Fedaiy") | **Privacy:** never a tool that turns a person's name into their holdings + locations | the registry, searched there |
+| The claim "same restaurant group" | **Accuracy:** the algorithm is ~77% right; the FACT "these companies share a mailing address" is published automatically (163 addresses, after filters F1–F5 removed 1 undeliverable, 7 agent/mailbox, 5 venue addresses); the CLAIM needs a curated `restaurantGroups.ts` row with 2+ kinds of evidence (ships empty) | the review queue (gitignored — it holds people's addresses) |
 | Inspector ranking, filter or search (names ARE shown per inspection) | **Accuracy:** closure rates track an inspector's territory, not the inspector | each inspection row |
 | Owner closure league tables | **Accuracy + fairness:** too few closures; size confounded with menu | per-storefront closures, with denominators |
 

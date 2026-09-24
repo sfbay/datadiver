@@ -177,7 +177,7 @@ describe('owners', () => {
 
   it('shared addresses list the FACT, most companies first', () => {
     const rows = R.sharedAddressRows(snapshot)
-    expect(rows.length).toBe(167)
+    expect(rows.length).toBe(163)
     for (let i = 1; i < rows.length; i++) expect(rows[i - 1].companies.length).toBeGreaterThanOrEqual(rows[i].companies.length)
   })
 
@@ -196,7 +196,7 @@ describe('owners', () => {
 // The rail's own reader text obeys the view's banned-word contract
 // (restaurantPhrase.test.ts, spec §5).
 describe('rail copy — banned words', () => {
-  const BANNED_WORDS = ['cursed', 'shell', 'secretly', 'dirty', 'failed', 'reopened', 'sigma', 'yoy', 'baseline', 'score', 'inspector']
+  const BANNED_WORDS = ['cursed', 'shell', 'secretly', 'dirty', 'failed', 'reopened', 'sigma', 'yoy', 'baseline', 'score', 'inspector', 'live']
   const BANNED_PHRASES = ['hidden owner', 'still closed', 'closed for good', 'σ', 'z-score', 'year-over-year', 'lives in', 'mailing city on']
   const copy = [
     ...Object.values(R.BUCKET_LABEL),

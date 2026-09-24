@@ -47,7 +47,7 @@ import {
   TURNOVER_LAYERS, CLOSURE_LAYERS, OWNER_LAYERS, SELECTED_LAYERS,
   RING_LAYER_IDS, PLACARD_POINT_LAYER_IDS, OWNER_LAYER_IDS,
   turnoverFeatures, closureFeatures, ownerFeatures, selectedFeature, themePaint,
-  TEAL_700, LEGEND, type ClosureMapPoint,
+  TEAL_700, LEGEND, storefrontPanelPx, type ClosureMapPoint,
 } from './mapLayers'
 import PublishingStrip from './PublishingStrip'
 import StorylineRail from './StorylineRail'
@@ -76,9 +76,16 @@ const OCHRE_500 = '#d4a435'
 const EMPTY_FC: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] }
 const NO_PERMITS: string[] = []
 const RAIL_INSIDE = ['[data-storyline-rail]']
-/** The storefront biography's width (px) — the fly-to offset keeps the door
- *  clear of it. */
-const PANEL_PX = 384
+/** The storefront biography's width right now (px) — the fly-to offset keeps
+ *  the door clear of it on EVERY viewport (the panel is a top-right card on
+ *  mobile too, narrowed by `mobileCompact`). */
+function panelPx(mobile: boolean): number {
+  let rootPx = 16
+  try {
+    rootPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+  } catch { /* no DOM — the default root size */ }
+  return storefrontPanelPx(rootPx, window.innerWidth, mobile)
+}
 
 const esc = (s: unknown): string =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string)
@@ -145,7 +152,7 @@ export default function Restaurants() {
   }, [placard, setParams])
 
   // ── data ──
-  const { data: snapshot, error: snapshotError, loading: snapshotLoading } = useStorefronts()
+  const { data: snapshot, error: snapshotError, loading: snapshotLoading, retry: retrySnapshot } = useStorefronts()
   const index = useMemo(() => (snapshot ? indexStorefronts(snapshot) : null), [snapshot])
   const selected = (at && index?.byKey.get(at)) || null
   const data = useRestaurantData({ window: windowId, placard, nh, atPermits: selected?.permits ?? NO_PERMITS })
@@ -350,7 +357,7 @@ export default function Restaurants() {
         center: [selected.lng, selected.lat],
         zoom: Math.max(mapInstance.getZoom(), 16),
         duration: 900,
-        offset: isMobile ? [0, 0] : eventFlyToOffset(mapInstance, PANEL_PX),
+        offset: eventFlyToOffset(mapInstance, panelPx(isMobile)),
       })
     } catch { /* map mid-construction; the next selection flies */ }
   }, [mapInstance, selected, isMobile])
@@ -378,6 +385,12 @@ export default function Restaurants() {
   const cardsReady = !!cityFig && (!nh || !!nhFig)
   const mapBusy = snapshotLoading || (lens === 'closures' && data.mapLoading)
   const loadError = data.error ?? snapshotError?.message ?? null
+  // Retry re-requests EVERYTHING that failed — the committed snapshot too
+  // (data.refetch alone re-runs only the live Socrata queries).
+  const retryAll = useCallback(() => {
+    if (snapshotError) retrySnapshot()
+    data.refetch()
+  }, [snapshotError, retrySnapshot, data])
 
   return (
     <div className="h-full flex flex-col">
@@ -457,7 +470,7 @@ export default function Restaurants() {
 
             {loadError && (
               <div className="absolute top-5 left-1/2 -translate-x-1/2 z-20 w-full max-w-md rounded-[14px] backdrop-blur-xl bg-white/60 dark:bg-slate-900/60">
-                <ErrorState message={loadError} onRetry={data.refetch} what="inspections" />
+                <ErrorState message={loadError} onRetry={retryAll} what={data.error ? 'inspections' : 'storefront histories'} />
               </div>
             )}
 
@@ -494,6 +507,10 @@ export default function Restaurants() {
             ratesLoading={data.ratesLoading}
             closuresList={data.closuresList}
             closuresLoading={data.closuresLoading}
+            snapshotError={snapshotError?.message ?? null}
+            ratesError={data.ratesError}
+            closuresError={data.closuresError}
+            onRetry={retryAll}
             windowId={windowId}
             selectedKey={selected?.key ?? null}
             onSelect={handleSelect}

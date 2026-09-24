@@ -3,7 +3,7 @@ import type { Storefront } from '@/lib/storefronts/types'
 import {
   inSf, displayAddress, displayName, ringRank, chainLine, turnoverFeatures, latestReadings, closureFeatures,
   ownerFeatures, selectedFeature, themePaint, TURNOVER_LAYERS, CLOSURE_LAYERS, OWNER_LAYERS,
-  RING_LAYER_IDS, PLACARD_POINT_LAYER_IDS, OWNER_LAYER_IDS, RING_MIN_ZOOM, type ClosureMapPoint,
+  RING_LAYER_IDS, PLACARD_POINT_LAYER_IDS, OWNER_LAYER_IDS, RING_MIN_ZOOM, currentOperator, storefrontPanelPx, type ClosureMapPoint,
 } from './mapLayers'
 
 const op = (name: string, strict = true) => ({
@@ -169,5 +169,47 @@ describe('selected + theme', () => {
     // every ring gets a theme value; only the rank-5 outer ring is keylined
     const rings = themePaint(false).filter((p) => p.layer.startsWith('ring-r'))
     expect(rings.filter((p) => p.value === '#1e140d').map((p) => p.layer)).toEqual(['ring-r5-5'])
+  })
+})
+
+describe('currentOperator — the ONE "who is here now" authority', () => {
+  it('is the operator seen LAST, not the one that started last', () => {
+    const s = sf('1800 FOLSOM ST', {
+      operators: [
+        { ...op('Foods Co #357'), firstDate: '2017-03-22', lastDate: '2026-02-03' },
+        { ...op('EL ALAMBRE #2'), firstDate: '2022-09-30', lastDate: '2023-06-29' },
+      ],
+      repeatCurrent: true,
+    })
+    expect(currentOperator(s)?.name).toBe('Foods Co #357')
+    expect(props(turnoverFeatures([s], {}))[0].now).toBe('Foods Co #357')
+    expect(props(ownerFeatures([s], new Set()))[0].now).toBe('Foods Co #357')
+    expect(currentOperator(sf('X', { operators: [] }))).toBeNull()
+  })
+
+  it('names the permit holder at the two committed doors where the rules disagreed on a repeat mark', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+    const snap = JSON.parse(readFileSync(join(process.cwd(), 'public/data/restaurants/storefronts.json'), 'utf8')) as { storefronts: Storefront[] }
+    const at = (key: string) => snap.storefronts.find((x) => x.key === key)!
+    // Both closures at 1800 Folsom sit on Foods Co's permit 61514.
+    expect(currentOperator(at('1800 FOLSOM ST'))?.name).toBe('Foods Co #357')
+    // 595 Market's closures are Uno Dos Taco's (permit 78070), not a 2019 one-sighting smoothie stand.
+    expect(currentOperator(at('595 MARKET ST'))?.name).toBe('UNO DOS TACO')
+    for (const key of ['1800 FOLSOM ST', '595 MARKET ST']) {
+      expect(at(key).repeatCurrent).toBe(true)
+      expect(props(turnoverFeatures([at(key)], {}))[0].now).toBe(displayName(currentOperator(at(key))!.name))
+    }
+  })
+})
+
+describe('storefrontPanelPx — the width the fly-to offset clears', () => {
+  it('is 28rem on desktop, widened by Large Type, capped by the viewport gutters', () => {
+    expect(storefrontPanelPx(16, 1440, false)).toBe(448)
+    expect(storefrontPanelPx(16 * 1.18, 1440, false)).toBeCloseTo(528.64)
+    expect(storefrontPanelPx(16, 420, false)).toBe(380)
+  })
+  it('is the mobileCompact 54vw on a phone — the door lands left of the card, not under it', () => {
+    expect(storefrontPanelPx(16, 390, true)).toBeCloseTo(210.6)
   })
 })

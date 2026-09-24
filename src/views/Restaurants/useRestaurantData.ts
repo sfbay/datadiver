@@ -34,6 +34,7 @@ import {
 import { latestReadings, displayAddress, displayName, inSf, type MapPermitRow, type NonPassRow, type ClosureMapPoint } from './mapLayers'
 
 const VIEW = 'restaurants' as const
+const NO_ROWS: never[] = []
 const SLOW = { timeoutMs: 20_000, retries: 1 } as const
 
 // ── public types ────────────────────────────────────────────────────────────
@@ -112,6 +113,13 @@ export interface RestaurantData {
   mapTruncated: boolean
   closuresList: ClosureListItem[]
   closuresLoading: boolean
+  /** Per-surface failures. A failed surface renders a named "did not load"
+   *  line — never zeros, never the absence copy ("No closures published…"),
+   *  and never the previous window's rows (useDataset keeps stale `data` on
+   *  error, so every failed query's rows are IGNORED here). */
+  cardsError: string | null
+  ratesError: string | null
+  closuresError: string | null
   lane: InspectionRow[] | null
   laneLoading: boolean
   /** Latest published inspection date ≤ today ('YYYY-MM-DD'), or null. */
@@ -228,6 +236,22 @@ export function closuresInWindow(
   return out.sort((a, b) => b.start.localeCompare(a.start) || a.name.localeCompare(b.name))
 }
 
+/**
+ * The selected neighborhood's card figures from its Q2 row. A neighborhood
+ * with no inspected place in the window has no row: zeros. A FAILED Q2 is not
+ * "no row" — it is no figures at all: null, never zeros (a failed read must
+ * never render as "0 places closed").
+ */
+export function neighborhoodCardFigures(
+  nh: string | null,
+  rates: readonly NeighborhoodRate[],
+  q: { ready: boolean; error: string | null },
+): CardFigures | null {
+  if (!nh || !q.ready || q.error) return null
+  const row = rates.find((r) => r.nhood !== '' && r.nhood === nh)
+  return row ? { closed: row.closed, yellow: row.yellow, inspected: row.inspected } : { closed: 0, yellow: 0, inspected: 0 }
+}
+
 /** Step 1 of the closures list — the window's closed FOOD permits (the same
  *  scope as the "Places closed" card, so the list and the card agree). */
 export function closedPermitsQuery(w: FeedWindow, sfToday: string) {
@@ -321,7 +345,7 @@ export function useRestaurantData(opts: RestaurantDataOptions): RestaurantData {
     'restaurantInspections', closedPermitsQuery(w, sfToday), [],
     { ...SLOW, enabled: closuresEnabled, cite: { viewId: VIEW, purpose: 'stat-totals', facet: 'Every closure' } },
   )
-  const closedPermits = useMemo(() => closedQ.data.map((r) => r.permit_number).sort(), [closedQ.data])
+  const closedPermits = useMemo(() => (closedQ.error ? [] : closedQ.data.map((r) => r.permit_number).sort()), [closedQ.error, closedQ.data])
   const readingsEnabled = closuresEnabled && !closedQ.isLoading && closedPermits.length > 0
   const readingsQ = useDataset<ReadingRow>(
     'restaurantInspections', permitReadingsQuery(closedPermits, sfToday), [],
@@ -344,19 +368,29 @@ export function useRestaurantData(opts: RestaurantDataOptions): RestaurantData {
     if (unknown.length) console.error('[restaurants] unclassified permit_type — add it to foodPermits.ts:', unknown)
   }, [laneQ.data])
 
+  // A failed query's rows are never read: useDataset keeps the LAST
+  // successful `data` on error, which after a window switch is the previous
+  // window's figures under the new window's label.
+  const rowsOf = <T,>(q: { data: T[]; error: string | null }): T[] => (q.error ? NO_ROWS : q.data) as T[]
+  const permitRows = rowsOf(permitsQ)
+  const nonPassRows = rowsOf(nonPassQ)
+  const rateRows = rowsOf(ratesQ)
   const mapReadings = useMemo(
-    () => toMapReadings(permitsQ.data, nonPassQ.data, opts.placard),
-    [permitsQ.data, nonPassQ.data, opts.placard],
+    () => toMapReadings(permitRows, nonPassRows, opts.placard),
+    [permitRows, nonPassRows, opts.placard],
   )
-  const neighborhoodRates = useMemo(() => toRates(ratesQ.data), [ratesQ.data])
-  const nhRow = opts.nh && !ratesQ.isLoading ? neighborhoodRates.find((r) => r.nhood !== '' && r.nhood === opts.nh) : undefined
-  // A neighborhood with no inspected place in the window has no Q2 row: zeros.
-  const nhFigures: CardFigures | null = !opts.nh || !ratesEnabled || ratesQ.isLoading
-    ? null
-    : nhRow ? { closed: nhRow.closed, yellow: nhRow.yellow, inspected: nhRow.inspected } : { closed: 0, yellow: 0, inspected: 0 }
+  const neighborhoodRates = useMemo(() => toRates(rateRows), [rateRows])
+  const ratesError = ratesEnabled ? ratesQ.error : null
+  const nhFigures = neighborhoodCardFigures(opts.nh, neighborhoodRates, {
+    ready: ratesEnabled && !ratesQ.isLoading,
+    error: ratesError,
+  })
+  const closuresError = closedQ.error ?? (readingsEnabled ? readingsQ.error : null)
+  const closedRows = rowsOf(closedQ)
+  const readingRows = rowsOf(readingsQ)
   const closuresList = useMemo(
-    () => (readingsEnabled ? closuresInWindow(closedQ.data, readingsQ.data, w, sfToday) : []),
-    [readingsEnabled, closedQ.data, readingsQ.data, w, sfToday],
+    () => (readingsEnabled && !closuresError ? closuresInWindow(closedRows, readingRows, w, sfToday) : []),
+    [readingsEnabled, closuresError, closedRows, readingRows, w, sfToday],
   )
 
   const queries = [edgeQ, cardsQ, permitsQ, nonPassQ, ratesQ, closedQ, readingsQ, laneQ]
@@ -365,15 +399,18 @@ export function useRestaurantData(opts: RestaurantDataOptions): RestaurantData {
   return {
     window: w,
     sfToday,
-    cards: { citywide: toFigures(cardsQ.data[0]), nhood: nhFigures },
-    cardsLoading: cardsQ.isLoading || (!!opts.nh && nhFigures === null),
+    cards: { citywide: cardsQ.error ? null : toFigures(cardsQ.data[0]), nhood: nhFigures },
+    cardsLoading: cardsQ.isLoading || (!!opts.nh && nhFigures === null && !ratesError),
     neighborhoodRates,
     ratesLoading: !ratesEnabled || ratesQ.isLoading,
     mapReadings,
     mapLoading: !mapEnabled || permitsQ.isLoading || nonPassQ.isLoading,
     mapTruncated: permitsQ.hitLimit,
     closuresList,
-    closuresLoading: !closuresEnabled || closedQ.isLoading || (closedPermits.length > 0 && (!readingsEnabled || readingsQ.isLoading)),
+    closuresLoading: !closuresError && (!closuresEnabled || closedQ.isLoading || (closedPermits.length > 0 && (!readingsEnabled || readingsQ.isLoading))),
+    cardsError: cardsQ.error,
+    ratesError,
+    closuresError,
     // A failed lane is null, never [] — [] would read as "no inspections".
     lane: laneEnabled && !laneQ.isLoading && !laneQ.error ? laneQ.data : null,
     laneLoading: laneEnabled && laneQ.isLoading,

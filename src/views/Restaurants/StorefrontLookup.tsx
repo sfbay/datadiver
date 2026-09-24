@@ -1,13 +1,14 @@
 import { useId, useMemo, useRef, useState, useEffect, type KeyboardEvent } from 'react'
 import type { Storefront, StorefrontSnapshot } from '@/lib/storefronts/types'
 import { storefrontKey } from '@/lib/storefronts/storefrontKey'
-import { displayName } from './storylineRows'
+import { currentOperator, displayName } from './storylineRows'
 
 /**
  * StorefrontLookup — the box at the head of the Storylines rail (spec §4.4).
  *
  * A client-side prefix/substring filter over the snapshot: every storefront
- * address, every business name seen at a door in any era, and COMPANY owner
+ * address, every business name seen at a door in any era (except a trade
+ * name that repeats the door's individual owner's own name), and COMPANY owner
  * names. Individual owners are NOT indexed (Jesse, 2026-09-24, §11): their
  * names are shown on the storefront biography, but no feature turns a
  * person's name into their holdings and locations. An owner whose kind is
@@ -73,6 +74,12 @@ export function normalizeLookup(s: string | null | undefined): string {
     .trim()
 }
 
+/** A name's words, normalized and SORTED — the registry files people
+ *  surname-first ('Chen Yibo') while a sign reads 'YIBO CHEN'. */
+function nameWords(s: string): string {
+  return normalizeLookup(s).split(' ').filter(Boolean).sort().join(' ')
+}
+
 /** Every searchable string, one entry per (text, storefront). */
 export function buildLookupIndex(snapshot: Pick<StorefrontSnapshot, 'storefronts'>): LookupEntry[] {
   const out: LookupEntry[] = []
@@ -84,9 +91,16 @@ export function buildLookupIndex(snapshot: Pick<StorefrontSnapshot, 'storefronts
       seen.add(`${kind}|${norm}`)
       out.push({ key: s.key, kind, text, norm })
     }
+    // A trade name that IS an individual owner's own name at this door (1415
+    // Stockton St: 'YIBO CHEN', owned by the individual Yibo Chen) is not
+    // indexed — typing the person's name would otherwise turn it into their
+    // location (§11). The door stays findable by its address.
+    const people = new Set(
+      s.operators.filter((o) => o.owner?.kind === 'individual').map((o) => nameWords(o.owner!.name)),
+    )
     add('address', s.address)
     for (const o of s.operators) {
-      add('business', o.name)
+      if (!people.has(nameWords(o.name))) add('business', o.name)
       // Company owners only — never a natural person's name (§11).
       if (o.owner && o.owner.kind === 'company') add('owner', o.owner.name)
     }
@@ -151,16 +165,19 @@ const NO_MATCHES_COPY = 'No storefront matches. Try an address, a business name 
 
 /** Current tenant's name for a result row's first line. */
 function tenantName(s: Storefront): string | null {
-  if (!s.operators.length) return null
-  return displayName(s.operators.reduce((m, o) => (o.lastDate > m.lastDate ? o : m)).name)
+  const now = currentOperator(s)
+  return now ? displayName(now.name) : null
 }
 
 export default function StorefrontLookup({
   snapshot,
   onSelect,
+  failed = false,
 }: {
   snapshot: StorefrontSnapshot | null
   onSelect: (key: string) => void
+  /** The snapshot failed to load — say so instead of "Loading storefronts…". */
+  failed?: boolean
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null)
   const [query, setQuery] = useState('')
@@ -248,7 +265,7 @@ export default function StorefrontLookup({
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           onKeyDown={onKeyDown}
-          placeholder={snapshot ? 'An address, a business, a company…' : 'Loading storefronts…'}
+          placeholder={snapshot ? 'An address, a business, a company…' : failed ? 'Storefront histories did not load' : 'Loading storefronts…'}
           // Fraunces italic; leading-[1.3] is load-bearing — an input clips
           // italic descenders at its box edge.
           className="flex-1 min-w-0 bg-transparent outline-none font-display italic text-base leading-[1.3] text-ink dark:text-paper-100 placeholder:text-paper-500 dark:placeholder:text-paper-600"

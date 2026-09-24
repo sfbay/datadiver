@@ -174,11 +174,14 @@ export function scoreBadge(score: number | null | undefined): string {
 
 // ── ledes ──────────────────────────────────────────────────────────────────
 
-/** Turnover tab lede: the pinned count and the snapshot date. */
+/** Turnover tab lede: the pinned count and the snapshot date. It names what
+ *  was counted — business NAMES on the sign — because the count includes
+ *  storefronts where one registered owner kept the door through every name
+ *  (§7.1: a new name proves the sign changed, not the owner). */
 export function turnoverLede(storefronts: number, asOf: string, nowYear: number): string {
   return (
     `At ${apCount(storefronts)} San Francisco ${plural(storefronts, 'storefront', 'storefronts')}, ` +
-    `at least three different businesses have operated since 2016, going by the names on city ` +
+    `at least three different business names have hung over the door since 2016, going by city ` +
     `inspection records. Counted through ${apDate(asOf, nowYear)}.`
   )
 }
@@ -352,6 +355,15 @@ export const MAILING_WITHHELD_NOTE =
   'address or ZIP code, which may be a home; DataDiver does not store them. A company’s mailing address is ' +
   'shown only when every owner registered at that address is a company. All of these fields appear on the ' +
   'business registry record at data.sf.gov.'
+
+/** Behind the panel's "Mailing address withheld" line when the owner here is
+ *  a company whose SHARED address was withheld — the reason at the place a
+ *  reader looks (§11: a redaction is never silent). */
+export const SHARED_WITHHELD_NOTE =
+  'This storefront’s owner shares a mailing address with other food businesses, but at least one owner ' +
+  'registered at that address is not a company — possibly a person, whose address may be a home — so ' +
+  'DataDiver withholds the address and the list of businesses there. The registry record at data.sf.gov ' +
+  'still shows it.'
 
 /** Same-mailing-address note; `evidence` names the sources checked, for
  *  curated groups ("the group’s own website"). */

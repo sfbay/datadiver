@@ -92,4 +92,24 @@ describe('no search BY a natural person’s name (§11)', () => {
     // The guard ran over real names, not an empty set.
     expect(checked).toBeGreaterThan(100)
   })
+
+  // 1415 Stockton St trades as 'YIBO CHEN' and is registered to the
+  // individual Yibo Chen: the trade name IS the person's name, so typing it
+  // must not return the door (§11). The door is still found by its address.
+  it('a trade name that repeats its individual owner’s name is not indexed', () => {
+    expect(find('Yibo Chen')).toEqual([])
+    expect(find('Chen Yibo')).toEqual([])
+    expect(find('1415 Stockton St')[0]?.key).toBe('1415 STOCKTON ST')
+    const s = snapshot.storefronts.find((x) => x.key === '1415 STOCKTON ST')!
+    expect(s.operators.some((o) => o.owner?.kind === 'individual' && o.owner.name === 'Yibo Chen')).toBe(true)
+  })
+
+  it('no indexed trade name equals (word for word) an individual owner’s name at its own door', () => {
+    const words = (t: string) => normalizeLookup(t).split(' ').sort().join(' ')
+    const byDoor = new Map(snapshot.storefronts.map((s) => [
+      s.key,
+      new Set(s.operators.filter((o) => o.owner?.kind === 'individual').map((o) => words(o.owner!.name))),
+    ]))
+    for (const e of index.filter((x) => x.kind === 'business')) expect(byDoor.get(e.key)!.has(words(e.text)), `${e.key}: ${e.text}`).toBe(false)
+  })
 })

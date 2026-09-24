@@ -267,6 +267,51 @@ export function mailingKey(row: { mailing_address_1?: string | null; mail_zipcod
   return `${a} | ${(row.mail_zipcode ?? '').slice(0, 5)}`
 }
 
+/** Street-suffix spellings (and typos seen in the registry) folded to one
+ *  form for mailingPlaceKey. */
+const PLACE_SUFFIX: readonly [RegExp, string][] = [
+  [/^(STREET|STR|STRT|STEET|STRET|STREEET|STRRET)$/, 'ST'],
+  [/^(AVENUE|AV|AVN|AVENU|AVNUE)$/, 'AVE'],
+  [/^(BOULEVARD|BOULV|BLV)$/, 'BLVD'],
+  [/^(DRIVE|DRV)$/, 'DR'],
+  [/^ROAD$/, 'RD'],
+  [/^PLACE$/, 'PL'],
+  [/^COURT$/, 'CT'],
+  [/^LANE$/, 'LN'],
+  [/^(TERRACE|TERR)$/, 'TER'],
+  [/^(HIGHWAY|HWY)$/, 'HWY'],
+  [/^PLAZA$/, 'PLZ'],
+  [/^WAY$/, 'WAY'],
+]
+/** Unit designators — dropped entirely by mailingPlaceKey. */
+const UNIT_WORD = /^(APT|APARTMENT|UNIT|STE|SUITE|FL|FLR|FLOOR|RM|ROOM|NO|NUM|NUMBER|BLDG|BUILDING)$/
+
+/**
+ * A LOOSER mailing key for the §11 WITHHOLD test only — never for grouping.
+ * mailingKey keeps unit words and word order, so one place spelled two ways
+ * ('7268 Murieta Dr Unit 1460' / '7268 Murieta Dr Ste 1460', '212 Sutter St
+ * Fl 3' / '212 Sutter St 3 Fl') splits in two, and a non-company registered
+ * under the other spelling was never seen by the every-owner-is-a-company
+ * check. Here unit words (UNIT, STE, FL, APT, #…) are dropped, ordinals lose
+ * their suffix ('3RD' → '3'), street suffixes and their typos fold, and the
+ * remaining words are SORTED. Over-merging is the safe direction: it can only
+ * withhold more.
+ */
+export function mailingPlaceKey(mailingKeyOrRow: string | { mailing_address_1?: string | null; mail_zipcode?: string | null } | null): string | null {
+  const exact = typeof mailingKeyOrRow === 'string' || mailingKeyOrRow === null ? mailingKeyOrRow : mailingKey(mailingKeyOrRow)
+  if (!exact) return null
+  const [street, zip = ''] = exact.split(' | ')
+  const words = street
+    .replace(/[^A-Z0-9 ]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter((w) => !UNIT_WORD.test(w))
+    .map((w) => w.replace(/^(\d+)(ST|ND|RD|TH)$/, '$1'))
+    .map((w) => PLACE_SUFFIX.find(([re]) => re.test(w))?.[1] ?? w)
+  if (!words.length) return null
+  return `${[...new Set(words)].sort().join(' ')} | ${zip}`
+}
+
 /** F3 — authored registered-agent / CPA / mailbox-store mailing keys. */
 export const AGENT_MAILING_KEYS: ReadonlySet<string> = new Set([
   '2261 MARKET ST | 94114',
@@ -287,7 +332,8 @@ export interface MailingCluster {
   brands: string[]
   storefronts: string[]
   foodBuilding: boolean
-  /** Every open registration at the address is a company → publishable. */
+  /** Every open registration at the address — under any spelling of it
+   *  (mailingPlaceKey) — is a company → publishable. */
   allCompanies: boolean
 }
 
@@ -328,6 +374,14 @@ export function sharedMailingAddresses(
     if (!k) continue
     ;(tenants.get(k) ?? tenants.set(k, new Set()).get(k)!).add(ownerGroupKey(r.ownership_name))
   }
+  // The withhold test reads the LOOSE place key: a non-company registered at
+  // the same place under another spelling of the unit still withholds.
+  const nonCompanyPlaces = new Set<string>()
+  for (const r of open) {
+    if (isUndeliverableMailing(r.mailing_address_1) || isCompany(r.ownership_name)) continue
+    const pk = mailingPlaceKey(r)
+    if (pk) nonCompanyPlaces.add(pk)
+  }
   const removed = { undeliverable: 0, agentShare: 0, agentList: 0, venue: 0 }
   const queue: MailingCluster[] = []
   for (const [key, everyRow] of all) {
@@ -361,7 +415,7 @@ export function sharedMailingAddresses(
       brands: [...new Set(foodHere.map((r) => displayBrand(r.dba_name)).filter(Boolean))].sort(),
       storefronts: [...new Set(foodHere.map(keyOf).filter(Boolean))].sort(),
       foodBuilding: (tenants.get(streetKey)?.size ?? 0) >= 3,
-      allCompanies: everyRow.every((r) => isCompany(r.ownership_name)),
+      allCompanies: everyRow.every((r) => isCompany(r.ownership_name)) && !nonCompanyPlaces.has(mailingPlaceKey(key) ?? ''),
     })
   }
   queue.sort((a, b) => b.foodOwners.length - a.foodOwners.length || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))

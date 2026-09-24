@@ -34,7 +34,7 @@ import type {
 } from '@/lib/storefronts/types'
 import { ownerGroupKey } from '@/lib/storefronts/ownerGroups'
 import { repeatBarCount, type ClosureEpisode } from './closureEpisodes'
-import { displayName } from './mapLayers'
+import { currentOperator, displayName } from './mapLayers'
 
 // ── names ──────────────────────────────────────────────────────────────────
 
@@ -129,10 +129,8 @@ export function operatorAt(s: Storefront, date: string): StorefrontOperator | nu
   return ops[0]
 }
 
-/** The current tenant: the most recently seen operator. */
-export function currentOperator(s: Storefront): StorefrontOperator | null {
-  return s.operators.length ? s.operators.reduce((m, o) => (o.lastDate > m.lastDate ? o : m)) : null
-}
+/** The current tenant — re-exported from the mapLayers leaf, its one home. */
+export { currentOperator }
 
 export interface RepeatRow {
   storefront: Storefront
@@ -472,7 +470,7 @@ export const CLOSURE_LEDE_NOTE =
 
 /** Behind "Every closure, newest first". */
 export const CLOSURE_LIST_NOTE =
-  'Every closure that began in the chosen window, from the city’s live inspection feed. Food trucks, carts ' +
+  'Every closure that began in the chosen window, from the city’s current inspection records. Food trucks, carts ' +
   'and home kitchens are listed by name only and never located: their permit address can be a home.'
 
 /** Behind each owner's closure figure. */

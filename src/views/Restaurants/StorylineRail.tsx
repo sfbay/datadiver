@@ -116,6 +116,11 @@ export interface StorylineRailProps {
   /** True while the closure list is in flight — without it an empty list
    *  would read "No closures published in this window" during the load. */
   closuresLoading?: boolean
+  /** A failed surface names itself — never a skeleton forever, never the
+   *  absence copy ("No closures published in this window"). */
+  snapshotError?: string | null
+  ratesError?: string | null
+  closuresError?: string | null
   windowId: FeedWindowId
   selectedKey: string | null
   onSelect: (key: string) => void
@@ -126,6 +131,8 @@ export interface StorylineRailProps {
   /** The selected neighborhood (`?nh=`); a rates row toggles it. */
   nh?: string | null
   onNh?: (n: string | null) => void
+  /** Re-request whatever failed (snapshot and live queries). */
+  onRetry?: () => void
 }
 
 // ── shared bits ────────────────────────────────────────────────────────────
@@ -145,6 +152,20 @@ function SectionLabel({ children, right }: { children: ReactNode; right?: ReactN
       <h3 className="font-mono text-micro uppercase tracking-[0.18em] text-paper-700 dark:text-paper-300">{children}</h3>
       {right && <span className="ml-auto">{right}</span>}
     </div>
+  )
+}
+
+/** A named failure where a list would be — the failed-read ≠ absence rule. */
+function DidNotLoad({ what, retry }: { what: string; retry?: () => void }) {
+  return (
+    <p role="status" className="text-label text-paper-700 dark:text-paper-300 px-3">
+      {what} did not load.{' '}
+      {retry && (
+        <button type="button" onClick={retry} className="font-mono text-micro underline decoration-dotted underline-offset-2 hover:text-ink dark:hover:text-paper-100">
+          Try again
+        </button>
+      )}
+    </p>
   )
 }
 
@@ -205,11 +226,11 @@ function StorefrontLink({ s, onSelect, selected }: { s: Storefront; onSelect: (k
 // ── the rail ───────────────────────────────────────────────────────────────
 
 export default function StorylineRail(props: StorylineRailProps) {
-  const { lens, onLens, snapshot, onSelect } = props
+  const { lens, onLens, snapshot, onSelect, snapshotError, onRetry } = props
 
   return (
     <MapSidebar>
-      <StorefrontLookup snapshot={snapshot} onSelect={onSelect} />
+      <StorefrontLookup snapshot={snapshot} onSelect={onSelect} failed={!snapshot && !!snapshotError} />
 
       <div role="tablist" aria-label="Storylines" className="flex border-b border-paper-200/60 dark:border-white/[0.04] flex-shrink-0">
         {LENSES.map((l) => (
@@ -232,7 +253,7 @@ export default function StorylineRail(props: StorylineRailProps) {
 
       <div role="tabpanel" className="p-4 flex-1">
         {!snapshot && lens !== 'closures' ? (
-          <SkeletonSidebarRows count={8} />
+          snapshotError ? <DidNotLoad what="The storefront histories" retry={onRetry} /> : <SkeletonSidebarRows count={8} />
         ) : lens === 'turnover' && snapshot ? (
           <TurnoverTab {...props} snapshot={snapshot} />
         ) : lens === 'closures' ? (
@@ -323,7 +344,10 @@ function TurnoverTab({ snapshot, bucket: rawBucket, onBucket, selectedKey, onSel
 
 // ── Closures ───────────────────────────────────────────────────────────────
 
-function ClosuresTab({ snapshot, neighborhoodRates, ratesLoading, closuresList, closuresLoading, windowId, selectedKey, onSelect, nh, onNh }: StorylineRailProps) {
+function ClosuresTab({
+  snapshot, neighborhoodRates, ratesLoading, closuresList, closuresLoading, windowId, selectedKey, onSelect, nh, onNh,
+  snapshotError, ratesError, closuresError, onRetry,
+}: StorylineRailProps) {
   const sfToday = sfLocalCutoff(Date.now()).slice(0, 10)
   const nowYear = Number(sfToday.slice(0, 4))
   const win = feedWindow(windowId, sfToday)
@@ -351,14 +375,14 @@ function ClosuresTab({ snapshot, neighborhoodRates, ratesLoading, closuresList, 
           {closuresLede({ ...lede, since: '2024-01-01' })}
           {vermin && vermin.m > 0 ? ` ${verminSentence({ cited: vermin.n, closureInspections: vermin.m, since: '2024-01-01' })}` : ''}
         </Lede>
-      ) : (
+      ) : snapshotError ? null : (
         <SkeletonSidebarRows count={2} />
       )}
 
       {/* 1 · Closed more than once (snapshot, through asOf) */}
       <SectionLabel>Closed more than once since 2020</SectionLabel>
       {!repeat ? (
-        <SkeletonSidebarRows count={4} />
+        snapshotError ? <DidNotLoad what="The storefront histories" retry={onRetry} /> : <SkeletonSidebarRows count={4} />
       ) : (
         <div className="space-y-0.5">
           <Folded
@@ -400,7 +424,9 @@ function ClosuresTab({ snapshot, neighborhoodRates, ratesLoading, closuresList, 
         Every closure, newest first
       </SectionLabel>
       <p className={`${SUB} mb-1.5`}>{windowLabel(win)}</p>
-      {!list ? (
+      {closuresError ? (
+        <DidNotLoad what="This window’s closures" retry={onRetry} />
+      ) : !list ? (
         <SkeletonSidebarRows count={5} />
       ) : list.length === 0 ? (
         <p className="text-label text-paper-700 dark:text-paper-300 px-3">No closures published in this window.</p>
@@ -467,7 +493,9 @@ function ClosuresTab({ snapshot, neighborhoodRates, ratesLoading, closuresList, 
           </button>
         ))}
       </div>
-      {!rawRates ? (
+      {ratesError ? (
+        <DidNotLoad what="The neighborhood figures" retry={onRetry} />
+      ) : !rawRates ? (
         <SkeletonSidebarRows count={8} />
       ) : rates.length === 0 ? (
         <p className="text-label text-paper-700 dark:text-paper-300 px-3">No neighborhood figures for this window.</p>

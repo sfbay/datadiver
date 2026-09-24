@@ -28,7 +28,7 @@
 // venue-list doors, and points outside the SF bbox (43 rows, A §5).
 
 import type mapboxgl from 'mapbox-gl'
-import type { Storefront } from '@/lib/storefronts/types'
+import type { Storefront, StorefrontOperator } from '@/lib/storefronts/types'
 import type { Placard } from './placard'
 
 // ── pigments ───────────────────────────────────────────────────────────────
@@ -85,6 +85,29 @@ export function displayName(raw: string | null | undefined): string {
   return s.toLowerCase().replace(/(^|[\s\-/&(.])([a-z])/g, (_, sep: string, ch: string) => sep + ch.toUpperCase())
 }
 
+/**
+ * The current tenant: the most recently SEEN operator (latest lastDate). The
+ * ONE authority for "who is here now" — every map tooltip, the rail, the
+ * biography's owner and the storefront labels read it. Never the last entry
+ * of `operators`: that array is ordered by firstDate, so it names the operator
+ * that STARTED last — at 1800 Folsom St that was El Alambre #2 (last seen
+ * June 2023) while Foods Co, the holder of the permit both closures sit on,
+ * was still being inspected in 2026.
+ */
+export function currentOperator(s: Pick<Storefront, 'operators'>): StorefrontOperator | null {
+  return s.operators.length ? s.operators.reduce((m, o) => (o.lastDate > m.lastDate ? o : m)) : null
+}
+
+/** The storefront biography's REAL width in px, for the fly-to offset:
+ *  `w-[28rem]` (so Large Type widens it), capped by DetailPanelShell's
+ *  `mobileCompact` max-width — 54vw on mobile, the viewport less its 2.5rem
+ *  gutters on desktop. Pure so the offset math is testable without a DOM. */
+export const STOREFRONT_PANEL_REM = 28
+export function storefrontPanelPx(rootFontPx: number, viewportPx: number, mobile: boolean): number {
+  const width = STOREFRONT_PANEL_REM * rootFontPx
+  return Math.min(width, mobile ? viewportPx * 0.54 : viewportPx - 2.5 * rootFontPx)
+}
+
 // ── turnover: tree rings ────────────────────────────────────────────────────
 
 /** Visual rank on the turnover lens: strict operators, clamped to 1…5
@@ -123,7 +146,7 @@ export function turnoverFeatures(storefronts: readonly Storefront[], opts: { buc
         chainStrict: sf.chainStrict,
         chainAll: sf.chainAll,
         chain: chainLine(sf),
-        now: displayName(sf.operators[sf.operators.length - 1]?.name ?? ''),
+        now: displayName(currentOperator(sf)?.name ?? ''),
         repeat: sf.repeatCurrent ? 1 : 0,
       },
     })
@@ -307,7 +330,7 @@ export function closureFeatures(p: {
         rank: 1,
         key: sf.key,
         permit: live?.permit ?? '',
-        name: live?.name ?? displayName(sf.operators[sf.operators.length - 1]?.name ?? ''),
+        name: live?.name ?? displayName(currentOperator(sf)?.name ?? ''),
         address: sf.address,
         latest: live?.latest ?? '',
         lastDate: live?.lastDate ?? '',
@@ -418,7 +441,7 @@ export function ownerFeatures(storefronts: readonly Storefront[], selected: Read
       properties: {
         key: sf.key,
         address: sf.address,
-        now: displayName(sf.operators[sf.operators.length - 1]?.name ?? ''),
+        now: displayName(currentOperator(sf)?.name ?? ''),
         hit: selected.has(sf.key) ? 1 : 0,
       },
     })

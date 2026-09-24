@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   AGENT_MAILING_KEYS,
+  mailingPlaceKey,
   brandKey,
   contractOperatorOf,
   CONTRACT_OPERATORS,
@@ -243,3 +244,39 @@ describe('sharedMailingAddresses — the FACT, after F1–F5', () => {
     expect(JSON.stringify(result.published)).not.toMatch(/Person Example|Home Ave/)
   })
 })
+
+// Two real registry spellings that split one place under mailingKey
+// (g8m3-pdis, 2026-09-24): the published address and a non-company's
+// registration at the SAME place, spelled another way.
+describe('mailingPlaceKey — the withhold test sees every spelling of a place', () => {
+  const row = (mailing_address_1: string, mail_zipcode: string) => ({ mailing_address_1, mail_zipcode })
+
+  it('folds unit words, their order and ordinal suffixes', () => {
+    expect(mailingPlaceKey(row('7268 Murieta Dr Unit 1460', '95683'))).toBe(mailingPlaceKey(row('7268 Murieta Dr Ste 1460', '95683')))
+    expect(mailingPlaceKey(row('212 Sutter St Fl 3', '94108'))).toBe(mailingPlaceKey(row('212 Sutter St 3 Fl', '94108')))
+    expect(mailingPlaceKey(row('212 Sutter St 3rd Floor', '94108'))).toBe(mailingPlaceKey(row('212 Sutter St Fl 3', '94108')))
+    expect(mailingPlaceKey(row('100 Main Steet # 4', '94105'))).toBe(mailingPlaceKey(row('100 Main Street Apt 4', '94105')))
+    // the ZIP still separates places
+    expect(mailingPlaceKey(row('212 Sutter St Fl 3', '94108'))).not.toBe(mailingPlaceKey(row('212 Sutter St Fl 3', '94109')))
+    expect(mailingPlaceKey('212 SUTTER ST FL 3 | 94108')).toBe(mailingPlaceKey(row('212 Sutter St 3 Fl', '94108')))
+    expect(mailingPlaceKey(row('', '94108'))).toBeNull()
+  })
+
+  it('withholds a company-only cluster when a non-company is registered at the same place under another spelling', () => {
+    const food = (o: string, i: number, addr: string, zip: string) =>
+      reg({ ownership_name: o, dba_name: `Place ${o}`, full_business_address: `${i + 1} Polk St`, mailing_address_1: addr, mail_zipcode: zip })
+    const rows = [
+      food('Murieta One LLC', 0, '7268 Murieta Dr Unit 1460', '95683'),
+      food('Murieta Two LLC', 1, '7268 Murieta Dr Unit 1460', '95683'),
+      reg({ ownership_name: 'Adventure Investments San Francisco', dba_name: 'Hotel', full_business_address: '9 Polk St', mailing_address_1: '7268 Murieta Dr Ste 1460', mail_zipcode: '95683', self_reported_naics_code: '721110' }),
+      food('Sutter One LLC', 2, '212 Sutter St Fl 3', '94108'),
+      food('Sutter Two LLC', 3, '212 Sutter St Fl 3', '94108'),
+      reg({ ownership_name: 'Aranda Residence', dba_name: 'Office', full_business_address: '8 Polk St', mailing_address_1: '212 Sutter St 3 Fl', mail_zipcode: '94108', self_reported_naics_code: '531110' }),
+    ]
+    const r = sharedMailingAddresses(rows)
+    expect(r.published).toEqual([])
+    expect(r.withheldCount).toBe(2)
+    expect(r.queue.every((c) => !c.allCompanies)).toBe(true)
+  })
+})
+

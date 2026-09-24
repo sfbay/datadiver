@@ -76,7 +76,7 @@ import {
   type Sighting,
   type TurnoverExclusion,
 } from '../src/lib/storefronts/nameChain'
-import { franchiseBrands, ownerGroupKey, sharedMailingAddresses, validateCuratedGroup, visibleOwners, mailingKey } from '../src/lib/storefronts/ownerGroups'
+import { franchiseBrands, ownerGroupKey, sharedMailingAddresses, validateCuratedGroup, visibleOwners, mailingPlaceKey } from '../src/lib/storefronts/ownerGroups'
 import { isCompany, isUndeliverableMailing, mailCityLabel, ownerOf } from '../src/lib/storefronts/ownerLabel'
 import { dedupeByUniqueId, isFoodRegistryRow, isOpenRow, registryDay, type RegistryRow } from '../src/lib/storefronts/registryRows'
 import { applySuffixFill, buildSuffixFill, storefrontKey } from '../src/lib/storefronts/storefrontKey'
@@ -806,16 +806,27 @@ async function main(): Promise<void> {
   const shared = sharedMailingAddresses(registry, { keyOf: regKeyOf })
 
   // §11 strictly: EVERY owner registered at the address — closed registrations
-  // too — must be a company, or the address is withheld as possibly a home.
+  // too, and under ANY spelling of the unit (mailingPlaceKey: 'Unit 1460' ≡
+  // 'Ste 1460', 'Fl 3' ≡ '3 Fl') — must be a company, or the address is
+  // withheld as possibly a home.
   const nonCompanyMailing = new Set<string>()
   for (const r of registry) {
     if (isUndeliverableMailing(r.mailing_address_1)) continue
-    const mk = mailingKey(r)
-    if (mk && !isCompany(r.ownership_name)) nonCompanyMailing.add(mk)
+    const pk = mailingPlaceKey(r)
+    if (pk && !isCompany(r.ownership_name)) nonCompanyMailing.add(pk)
   }
-  const sharedAddresses: SharedMailingAddress[] = shared.published.filter((a) => !nonCompanyMailing.has(a.key))
+  const sharedAddresses: SharedMailingAddress[] = shared.published.filter((a) => !nonCompanyMailing.has(mailingPlaceKey(a.key) ?? ''))
   const withheldByClosed = shared.published.length - sharedAddresses.length
   const withheldSharedCount = shared.withheldCount + withheldByClosed
+  // The published doors a withheld address touches — KEYS ONLY, never the
+  // address — so the storefront panel can say "Mailing address withheld"
+  // where a reader looks instead of going silent (spec §11: a redaction is
+  // never silent).
+  const publishedKeys = new Set(sharedAddresses.map((a) => a.key))
+  const doorKeys = new Set(storefronts.map((s) => s.key))
+  const withheldSharedStorefronts = [
+    ...new Set(shared.queue.filter((c) => !publishedKeys.has(c.key)).flatMap((c) => c.storefronts).filter((k) => doorKeys.has(k))),
+  ].sort()
 
   // ── G3 ────────────────────────────────────────────────────────────────────
   console.log('\nG3 privacy')
@@ -829,10 +840,12 @@ async function main(): Promise<void> {
   // Published company addresses: every registration at them is a company.
   const byMailing = new Map<string, RegistryRow[]>()
   for (const r of registry) {
-    const mk = mailingKey(r)
-    if (mk) (byMailing.get(mk) ?? byMailing.set(mk, []).get(mk)!).push(r)
+    const pk = mailingPlaceKey(r)
+    if (pk) (byMailing.get(pk) ?? byMailing.set(pk, []).get(pk)!).push(r)
   }
-  const g3addr = sharedAddresses.filter((a) => (byMailing.get(a.key) ?? []).some((r) => !isCompany(r.ownership_name)))
+  const g3addr = sharedAddresses.filter((a) =>
+    (byMailing.get(mailingPlaceKey(a.key) ?? '') ?? []).some((r) => !isUndeliverableMailing(r.mailing_address_1) && !isCompany(r.ownership_name)),
+  )
   gate('G3', g3addr.length === 0, `published mailing addresses with a non-company registration: ${g3addr.length}`)
 
   const groups: SnapshotGroup[] = []
@@ -917,6 +930,7 @@ async function main(): Promise<void> {
     franchises,
     sharedAddresses,
     withheldSharedCount,
+    withheldSharedStorefronts,
     groups,
     publishing,
     excludedAddresses: excluded.venue + excluded['multi-tenant'] + excluded['non-storefront-permits'],
@@ -990,7 +1004,7 @@ export function normStreet(s: string | null | undefined): string {
 export function scanForPersonAddresses(artifact: unknown, personStreets: ReadonlySet<string>): string[] {
   const hits: string[] = []
   const ID_PATH = /\.(facility|permit)$|\.permits\[\d+\]$/
-  const LOCATION_PATH = /^storefronts\[\d+\]\.(key|address)$|\.storefronts\[\d+\]$|^sharedAddresses\[\d+\]\.(key|address)$/
+  const LOCATION_PATH = /^storefronts\[\d+\]\.(key|address)$|\.storefronts\[\d+\]$|^withheldSharedStorefronts\[\d+\]$|^sharedAddresses\[\d+\]\.(key|address)$/
   const walk = (v: unknown, path: string): void => {
     if (typeof v === 'string') {
       if (/^\d{5}(-\d{4})?$/.test(v.trim()) && !ID_PATH.test(path) && !/^sharedAddresses\[\d+\]\.zip$/.test(path)) hits.push(`${path}=${v}`)

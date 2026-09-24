@@ -111,6 +111,15 @@ describe('snapshot — exact pins at asOf', () => {
     expect(artifact.stats.registryMatch).toEqual({ matched: 4_669, total: 4_784 })
   })
 
+  it('an ATM/kiosk operator is never an owner of record (review, 2026-09-24)', () => {
+    // Cardtronics files its ATMs under the host store's trade name; it was
+    // named owner of 13 operators, Tommy's Joynt and eight Walgreens among them.
+    const kiosk = S.flatMap((s) => s.operators).filter((o) => /cardtronics|redbox|ecoatm|coinstar|coinme/i.test(o.owner?.name ?? ''))
+    expect(kiosk).toEqual([])
+    expect(at('1101 GEARY BLVD').operators.find((o) => o.name === "Tommy's Joynt")?.owner?.name).toBe('Apple Annie LLC')
+    expect(at('825 MARKET ST').operators.find((o) => /walgreens/i.test(o.name))?.owner?.name).toBe('Walgreen Co')
+  })
+
   it('owners, franchises and the shared-mailing-address fact', () => {
     expect(artifact.owners).toHaveLength(152)
     expect(artifact.owners.filter((o) => o.contract)).toHaveLength(9)
@@ -122,12 +131,25 @@ describe('snapshot — exact pins at asOf', () => {
     expect(artifact.franchises.slice(0, 3).map((f) => [f.brand, f.locations, f.owners.length])).toEqual([
       ['Subway', 19, 12], ['Super Duper', 7, 7], ["Mcdonald's", 8, 6],
     ])
-    expect(artifact.sharedAddresses).toHaveLength(167)
-    expect(artifact.withheldSharedCount).toBe(94)
+    // 167 → 163 (review, 2026-09-24): the withhold test now reads every
+    // spelling of a place (mailingPlaceKey), which withheld 7268 Murieta Dr
+    // Unit 1460 ('Ste 1460' holds a non-company), 212 Sutter St Fl 3 ('3 Fl'),
+    // 2020 Union Steet and 1098 Foster City Blvd Unit 106-844.
+    expect(artifact.sharedAddresses).toHaveLength(163)
+    expect(artifact.withheldSharedCount).toBe(98)
+    for (const k of ['7268 MURIETA DR UNIT 1460 | 95683', '212 SUTTER ST FL 3 | 94108']) {
+      expect(artifact.sharedAddresses.some((a) => a.key === k), k).toBe(false)
+    }
+    // The doors those withheld addresses list — keys only — so the panel says so.
+    expect(artifact.withheldSharedStorefronts).toHaveLength(198)
+    expect(artifact.withheldSharedStorefronts).toEqual([...artifact.withheldSharedStorefronts].sort())
+    const doors = new Set(S.map((s) => s.key))
+    for (const k of artifact.withheldSharedStorefronts) expect(doors.has(k), k).toBe(true)
+    expect(artifact.withheldSharedStorefronts).toContain('1343 POWELL ST')
     expect(artifact.stats.sharedAddressClusters).toEqual({
       survivors: 261,
-      published: 167,
-      withheld: 94,
+      published: 163,
+      withheld: 98,
       withheldByClosedRegistration: 0,
       removed: { undeliverable: 1, agentShare: 7, agentList: 0, venue: 5 },
     })
@@ -291,6 +313,7 @@ const STREET_OK = new Set([
   'sharedAddresses[].brands[]',
   'sharedAddresses[].storefronts[]',
   'groups[].storefronts[]',
+  'withheldSharedStorefronts[]',
 ])
 
 describe('snapshot — privacy (§11, gate G3)', () => {

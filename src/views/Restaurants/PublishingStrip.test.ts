@@ -25,6 +25,12 @@ describe('axisPct', () => {
   })
 })
 
+describe('era names', () => {
+  it('never call a feed "live" — every SF dataset publishes behind (this one ~1 day)', () => {
+    for (const e of Object.values(ERA_SPANS)) expect(/\blive\b/i.test(e.name), e.name).toBe(false)
+  })
+})
+
 describe('stripBars', () => {
   const bars = stripBars(snapshot.publishing, END)
 

@@ -147,6 +147,33 @@ describe('registry join', () => {
   })
 })
 
+// 1101 Geary Blvd, live g8m3-pdis 2026-09-24: the restaurant's owner and an
+// ATM operator both register the trade name "Tommy's Joynt", both still open.
+describe('the host store’s trade name on someone else’s registration', () => {
+  const TOMMYS: Sighting[] = [
+    { name: "TOMMY'S JOYNT", date: '2017-03-06', era: 2016 },
+    { name: "TOMMY'S JOYNT", date: '2022-05-10', era: 2020 },
+    { name: "TOMMY'S JOYNT", date: '2025-02-11', era: 2024 },
+  ]
+  const dates = TOMMYS.map((s) => s.date)
+  const apple = reg('Apple Annie LLC', "Tommy's Joynt", '2015-06-30', null, { self_reported_naics_code: '722511' })
+  const atm = reg('Cardtronics Usa, Inc.', "Tommy's Joynt", '2015-08-05', null, { self_reported_naics_code: '52' })
+
+  it('never names an ATM/kiosk operator the owner — even as the only candidate', () => {
+    expect(pickRegistryRow([apple, atm], { name: "TOMMY'S JOYNT", dateList: dates })?.row.ownership_name).toBe('Apple Annie LLC')
+    expect(pickRegistryRow([atm], { name: "TOMMY'S JOYNT", dateList: dates })).toBeNull()
+  })
+
+  it('demotes a finance-coded row whose owner name is unlike the business, on a coverage tie', () => {
+    const side = reg('Acme Payments Inc', "Tommy's Joynt", '2016-01-01', null, { self_reported_naics_code: '522320' })
+    expect(pickRegistryRow([apple, side], { name: "TOMMY'S JOYNT", dateList: dates.slice(1) })?.row.ownership_name).toBe('Apple Annie LLC')
+    // …and the business's own registration wins even when its code is non-food (a pharmacy).
+    const walgreen = reg('Walgreen Co', 'Walgreens #1327', '2010-01-01', null, { self_reported_naics_code: '446110' })
+    const sideAtWalgreens = reg('Acme Payments Inc', 'Walgreens', '2016-01-01', null, { self_reported_naics_code: '522320' })
+    expect(pickRegistryRow([walgreen, sideAtWalgreens], { name: 'WALGREENS', dateList: ['2025-01-01'] })?.row.ownership_name).toBe('Walgreen Co')
+  })
+})
+
 describe('owner-resolution buckets, end to end (spec §3.7 rule 8)', () => {
   it('2077 Hayes St → owner-returned: Red Smart LLC left in 2019 and came back as The Hungry Spot', () => {
     const door = resolveDoor(HAYES_SIGHTINGS, HAYES_REGISTRY)

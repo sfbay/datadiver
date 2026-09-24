@@ -5,12 +5,13 @@
 // ~0.9 MB gzipped, so it must never ride the entry bundle (a static import
 // would). One module-level promise: every consumer on the page shares one
 // request, and a remount after navigating away re-reads the cache instantly.
-// A failed request clears the promise so the next mount retries.
+// A failed request clears the promise, so a remount — or the hook's retry(),
+// wired to the page's Retry button — fetches anew.
 //
 // Everything that joins eras or the business registry lives in this file
 // (spec D4); the view's live queries never re-derive it.
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { Storefront, StorefrontSnapshot } from '@/lib/storefronts/types'
 
 export const STOREFRONTS_URL = '/data/restaurants/storefronts.json'
@@ -39,21 +40,38 @@ export function loadStorefronts(): Promise<StorefrontSnapshot> {
   return inflight
 }
 
-export function useStorefronts(): { data: StorefrontSnapshot | null; error: Error | null; loading: boolean } {
+export function useStorefronts(): {
+  data: StorefrontSnapshot | null
+  error: Error | null
+  loading: boolean
+  /** Clear the error and request the snapshot again (the page's Retry). */
+  retry: () => void
+} {
   const [data, setData] = useState<StorefrontSnapshot | null>(cached)
   const [error, setError] = useState<Error | null>(null)
+  // Bumped by retry() — re-runs the effect, which re-calls loadStorefronts
+  // (a failed request already cleared `inflight`, so this fetches anew).
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
-    if (cached) return
+    if (cached) {
+      setData(cached)
+      return
+    }
     let alive = true
     loadStorefronts().then(
       (snap) => { if (alive) setData(snap) },
       (err: unknown) => { if (alive) setError(err instanceof Error ? err : new Error(String(err))) },
     )
     return () => { alive = false }
+  }, [attempt])
+
+  const retry = useCallback(() => {
+    setError(null)
+    setAttempt((n) => n + 1)
   }, [])
 
-  return { data, error, loading: data === null && error === null }
+  return { data, error, loading: data === null && error === null, retry }
 }
 
 export interface StorefrontIndex {
