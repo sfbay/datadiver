@@ -172,7 +172,7 @@ describe('restaurantPhrase — windows, ledes, owners', () => {
 
   it('says "Most closures are short" only when the figures make it true', () => {
     expect(P.closuresLede({ cleared: 341, clearedWithinADay: 190, since: '2024-01-02' })).toBe(
-      'Most closures are short. Of the 341 closures since January 2024 that ended in a passing inspection, 190 were cleared within a day.',
+      'Most closures are short. Of the 341 closures at storefronts on this map since January 2024 that ended in a passing inspection, 190 were cleared within a day.',
     )
     expect(P.closuresLede({ cleared: 341, clearedWithinADay: 100, since: '2024-01-02' }).startsWith('Of the 341')).toBe(true)
   })

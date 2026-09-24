@@ -68,6 +68,7 @@ describe('ownerGroupKey / contract operators', () => {
       avatar: ['Avatar Foods International Inc'],
       'events-management': ['Events Management Inc'],
       'service-systems': ['Service Systems Associates Inc'],
+      'off-the-grid': ['Off The Grid Services LLC'],
     }
     for (const c of CONTRACT_OPERATORS) {
       expect(REAL[c.id], c.id).toBeDefined()

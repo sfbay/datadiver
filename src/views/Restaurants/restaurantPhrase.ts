@@ -238,7 +238,7 @@ export function sameOwnerLede(p: { address: string; sinceYear: number; names: nu
 export function closuresLede(p: { cleared: number; clearedWithinADay: number; since: string }): string {
   const most = p.cleared > 0 && p.clearedWithinADay * 2 >= p.cleared ? 'Most closures are short. ' : ''
   return (
-    `${most}Of the ${apCount(p.cleared)} ${plural(p.cleared, 'closure', 'closures')} since ${monthYearLong(p.since)} ` +
+    `${most}Of the ${apCount(p.cleared)} ${plural(p.cleared, 'closure', 'closures')} at storefronts on this map since ${monthYearLong(p.since)} ` +
     `that ended in a passing inspection, ${apCount(p.clearedWithinADay)} ${plural(p.clearedWithinADay, 'was', 'were')} cleared within a day.`
   )
 }

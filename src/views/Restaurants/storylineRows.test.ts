@@ -130,7 +130,7 @@ describe('owners', () => {
 
   it('contract operators fold out of the ranking; the ranking is by size, never by closures', () => {
     expect(ranked.length + contract.length).toBe(snapshot.owners.length)
-    expect(contract.length).toBe(9)
+    expect(contract.length).toBe(10)
     for (const o of ranked) expect(o.contract).toBeNull()
     for (let i = 1; i < ranked.length; i++) expect(ranked[i - 1].storefronts.length).toBeGreaterThanOrEqual(ranked[i].storefronts.length)
     expect(ranked[0].name).toBe('Starbucks Corporation')

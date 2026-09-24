@@ -71,6 +71,9 @@ export const CONTRACT_OPERATORS: readonly { id: string; label: string; pattern: 
   { id: 'avatar', label: 'Avatar Foods', pattern: /^AVATAR FOODS\b/ },
   { id: 'events-management', label: 'Events Management', pattern: /^EVENTS MANAGEMENT$/ },
   { id: 'service-systems', label: 'Service Systems Associates', pattern: /^SERVICE SYSTEMS ASSOCIATES$/ },
+  // Not a caterer: it runs food-truck MARKETS, so its "storefronts" are event
+  // sites (Levi's Plaza, Clint Eastwood's) — folded for the same reason.
+  { id: 'off-the-grid', label: 'Off the Grid', pattern: /^OFF GRID\b/ },
 ]
 
 /** The CONTRACT_OPERATORS id an owner name belongs to, or null. */

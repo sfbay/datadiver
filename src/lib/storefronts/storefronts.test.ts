@@ -122,7 +122,7 @@ describe('snapshot — exact pins at asOf', () => {
 
   it('owners, franchises and the shared-mailing-address fact', () => {
     expect(artifact.owners).toHaveLength(152)
-    expect(artifact.owners.filter((o) => o.contract)).toHaveLength(9)
+    expect(artifact.owners.filter((o) => o.contract)).toHaveLength(10)
     expect(artifact.franchises).toHaveLength(33)
     // One trade name per brand: the old word-prefix fold invented these from
     // unrelated businesses sharing a first word (or a dropped leading number).

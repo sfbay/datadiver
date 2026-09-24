@@ -650,7 +650,7 @@ function OwnersTab({ snapshot, owner, onOwner, selectedKey, onSelect }: Storylin
       {contract.length > 0 && (
         <details className="mt-2">
           <summary className="cursor-pointer px-3 py-1.5 font-mono text-micro text-paper-600 dark:text-paper-400 hover:text-ink dark:hover:text-paper-200">
-            Contract food-service companies · {contract.length}
+            Contract food-service and event-market companies · {contract.length}
           </summary>
           <div className="space-y-0.5 mt-1">{contract.map((o) => ownerRow(o, CONTRACT_LABEL.get(o.contract ?? '') ?? o.name))}</div>
         </details>
