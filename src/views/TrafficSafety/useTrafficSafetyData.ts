@@ -3,6 +3,7 @@ import type { TrafficCrashRecord, CrashModeAggRow, NeighborhoodAggRowCrashes, Sp
 import { formatDelta, formatNumber } from '@/utils/time'
 import { coordsFromFields, extractCoordinates } from '@/utils/geo'
 import type { CardDef } from '@/components/ui/CardTray'
+import { SEVERITY_ORDER, isDuiCode, isPedBikeMode } from './crashFilters'
 
 type MapMode = 'heatmap' | 'anomaly'
 type Overlay = 'speed' | 'redlight' | 'pci' | 'hin'
@@ -28,7 +29,36 @@ interface UseTrafficSafetyDataParams {
   cityWideYoY: { pct: number } | null
   comparisonSuppressed: boolean
   comparisonActive: boolean
+  /** Server totals over the FULL filtered window — never the map sample
+   *  (Sept. 23 2026: the sample is capped at 5,000 rows and drops crashes
+   *  with no coordinates; on 2024–2025 it read 55 deaths where the city's
+   *  count is 68). Null until the query lands. */
+  totals: CrashTotals | null
+  /** Server GROUP BY collision_severity, scoped by every filter EXCEPT
+   *  severity — the chart is the chooser, so it keeps every level visible. */
+  severityRows: { collision_severity: string; count: string }[]
+  /** Card filters: which is applied, and what a click does. */
+  filters: {
+    fatalOnly: boolean
+    severeOnly: boolean
+    duiOnly: boolean
+    pedBikeOnly: boolean
+    onFatal: () => void
+    onSevere: () => void
+    onDui: () => void
+    onPedBike: () => void
+  }
 }
+
+export interface CrashTotals {
+  crashes: number
+  killed: number
+  injured: number
+  fatalCrashes: number
+  pedBikeCrashes: number
+}
+
+const plural = (n: number, one: string, many: string) => `${formatNumber(n)} ${n === 1 ? one : many}`
 
 export function useTrafficSafetyData(params: UseTrafficSafetyDataParams) {
   const {
@@ -52,6 +82,9 @@ export function useTrafficSafetyData(params: UseTrafficSafetyDataParams) {
     cityWideYoY,
     comparisonSuppressed,
     comparisonActive,
+    totals,
+    severityRows,
+    filters,
   } = params
 
   // --- Computed data ---
@@ -66,7 +99,7 @@ export function useTrafficSafetyData(params: UseTrafficSafetyDataParams) {
           severity: record.collision_severity || 'Unknown',
           collisionType: record.type_of_collision || 'Unknown',
           mode: record.dph_col_grp_description || 'Unknown',
-          isDui: record.vz_pcf_group === '23152(a-g)' || record.vz_pcf_group === '23153(a-g)',
+          isDui: isDuiCode(record.vz_pcf_group),
           killed: parseInt(record.number_killed, 10) || 0,
           injured: parseInt(record.number_injured, 10) || 0,
           primaryRd: record.primary_rd || '',
@@ -80,13 +113,14 @@ export function useTrafficSafetyData(params: UseTrafficSafetyDataParams) {
   }, [rawData])
 
   const stats = useMemo(() => {
-    if (crashData.length === 0) return { totalCrashes: 0, fatalities: 0, injuries: 0, pedBikePct: 0, peakHour: 0 }
-    const fatalities = crashData.reduce((s, c) => s + c.killed, 0)
-    const injuries = crashData.reduce((s, c) => s + c.injured, 0)
-    const pedBike = crashData.filter((c) => c.mode.includes('Ped') || c.mode.includes('Bike')).length
-    const pedBikePct = (pedBike / crashData.length) * 100
-    return { totalCrashes: crashData.length, fatalities, injuries, pedBikePct, peakHour }
-  }, [crashData, peakHour])
+    if (!totals) return null
+    const pedBikePct = totals.crashes > 0 ? (totals.pedBikeCrashes / totals.crashes) * 100 : 0
+    return { ...totals, pedBikePct, peakHour }
+  }, [totals, peakHour])
+  const dash = '—'
+  // An applied card's subtitle is its own off switch: the card's click
+  // handler toggles, so "Clear" clears THIS card's filter and nothing else.
+  const clearAction = (off: () => void) => ({ subtitle: 'Filter on', subtitleAction: off, subtitleActionLabel: '· Clear ✕' })
 
   // Card tray definitions
   const cardDefs = useMemo((): CardDef[] => [
@@ -94,7 +128,7 @@ export function useTrafficSafetyData(params: UseTrafficSafetyDataParams) {
       id: 'total',
       label: 'Total Crashes',
       shortLabel: 'Total',
-      value: formatNumber(totalCount ?? stats.totalCrashes),
+      value: totalCount != null ? formatNumber(totalCount) : stats ? formatNumber(stats.crashes) : dash,
       color: '#963e30',
       delay: 0,
       info: 'total-crashes',
@@ -107,25 +141,37 @@ export function useTrafficSafetyData(params: UseTrafficSafetyDataParams) {
       id: 'fatalities',
       label: 'Fatalities',
       shortLabel: 'Fatal',
-      value: String(stats.fatalities),
+      value: stats ? formatNumber(stats.killed) : dash,
       color: '#6f2b20',
       delay: 80,
       info: 'fatalities',
       defaultExpanded: true,
+      // The value counts PEOPLE; the filter selects CRASHES — name both.
+      ...(filters.fatalOnly
+        ? clearAction(filters.onFatal)
+        : { subtitle: stats ? `in ${plural(stats.fatalCrashes, 'fatal crash', 'fatal crashes')}` : undefined }),
+      onActivate: filters.onFatal,
+      active: filters.fatalOnly,
+      activateHint: filters.fatalOnly ? 'Show all crashes' : 'Show fatal crashes only',
     },
     {
       id: 'injuries',
       label: 'Injuries',
       shortLabel: 'Injuries',
-      value: formatNumber(stats.injuries),
+      value: stats ? formatNumber(stats.injured) : dash,
       color: '#d4a435',
       delay: 160,
       info: 'injuries',
       defaultExpanded: true,
-      subtitle: comparisonDeltas
-        ? `${formatDelta(comparisonDeltas.injuries)} ${compLabel}`
-        : (comparisonSuppressed && comparisonActive ? 'Compare needs a narrower date range' : undefined),
-      trend: comparisonDeltas ? (comparisonDeltas.injuries > 0 ? 'up' : comparisonDeltas.injuries < 0 ? 'down' : 'neutral') : undefined,
+      ...(filters.severeOnly ? clearAction(filters.onSevere) : {
+        subtitle: comparisonDeltas
+          ? `${formatDelta(comparisonDeltas.injuries)} ${compLabel}`
+          : (comparisonSuppressed && comparisonActive ? 'Compare needs a narrower date range' : undefined),
+        trend: comparisonDeltas ? (comparisonDeltas.injuries > 0 ? 'up' : comparisonDeltas.injuries < 0 ? 'down' : 'neutral') : undefined,
+      }),
+      onActivate: filters.onSevere,
+      active: filters.severeOnly,
+      activateHint: filters.severeOnly ? 'Show all crashes' : 'Show severe-injury crashes only',
     },
     {
       id: 'dui',
@@ -136,22 +182,31 @@ export function useTrafficSafetyData(params: UseTrafficSafetyDataParams) {
       delay: 240,
       info: 'dui-crashes',
       defaultExpanded: true,
-      subtitle: duiKilled + duiInjured > 0
-        ? `${duiKilled > 0 ? `${duiKilled} killed` : ''}${duiKilled > 0 && duiInjured > 0 ? ' · ' : ''}${duiInjured > 0 ? `${duiInjured} injured` : ''}`
-        : undefined,
+      ...(filters.duiOnly ? clearAction(filters.onDui) : {
+        subtitle: duiKilled + duiInjured > 0
+          ? `${duiKilled > 0 ? `${duiKilled} killed` : ''}${duiKilled > 0 && duiInjured > 0 ? ' · ' : ''}${duiInjured > 0 ? `${duiInjured} injured` : ''}`
+          : undefined,
+      }),
       yoyDelta: duiYoY,
+      onActivate: filters.onDui,
+      active: filters.duiOnly,
+      activateHint: filters.duiOnly ? 'Show all crashes' : 'Show DUI crashes only',
     },
     {
       id: 'ped-bike',
       label: 'Ped/Bike %',
       shortLabel: 'Ped/Bike',
-      value: `${stats.pedBikePct.toFixed(1)}%`,
+      value: stats ? `${stats.pedBikePct.toFixed(1)}%` : dash,
       color: '#3f7573',
       delay: 320,
       info: 'ped-bike-pct',
       defaultExpanded: false,
+      ...(filters.pedBikeOnly ? clearAction(filters.onPedBike) : {}),
+      onActivate: filters.onPedBike,
+      active: filters.pedBikeOnly,
+      activateHint: filters.pedBikeOnly ? 'Show all crashes' : 'Show pedestrian and bicycle crashes only',
     },
-  ], [stats, totalCount, comparisonDeltas, compLabel, cityWideYoY, duiCount, duiKilled, duiInjured, duiYoY, comparisonSuppressed, comparisonActive])
+  ], [stats, totalCount, comparisonDeltas, compLabel, cityWideYoY, duiCount, duiKilled, duiInjured, duiYoY, comparisonSuppressed, comparisonActive, filters])
 
   // Sidebar data
   const modeEntries = useMemo(
@@ -164,20 +219,17 @@ export function useTrafficSafetyData(params: UseTrafficSafetyDataParams) {
 
   const severityData = useMemo(() => {
     const map = new Map<string, number>()
-    for (const c of crashData) {
-      map.set(c.severity, (map.get(c.severity) || 0) + 1)
-    }
-    const order = ['Fatal', 'Injury (Severe)', 'Injury (Other Visible)', 'Injury (Complaint of Pain)']
-    return order
+    for (const r of severityRows) map.set(r.collision_severity, parseInt(r.count, 10) || 0)
+    return SEVERITY_ORDER
       .filter((s) => map.has(s))
-      .map((s) => ({ severity: s, count: map.get(s)! }))
-  }, [crashData])
+      .map((s) => ({ severity: s as string, count: map.get(s)! }))
+  }, [severityRows])
 
   const modeBars = useMemo(() => {
     return modeEntries.slice(0, 8).map((m) => ({
       label: m.mode,
       value: m.count,
-      color: m.mode.includes('Ped') ? '#963e30' : m.mode.includes('Bike') ? '#d4a435' : '#64748b',
+      color: /Pedestrian/.test(m.mode) ? '#963e30' : isPedBikeMode(m.mode) ? '#d4a435' : '#64748b',
     }))
   }, [modeEntries])
 

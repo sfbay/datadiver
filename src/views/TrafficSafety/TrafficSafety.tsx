@@ -49,6 +49,11 @@ import InfoTip from '@/components/ui/InfoTip'
 import ScannerFeedChips from '@/components/ui/ScannerFeedChips'
 import { useTrafficSafetyData } from './useTrafficSafetyData'
 import { CRASH_HEATMAP_LAYERS, ANOMALY_LAYERS, SPEED_CAM_LAYERS, RED_LIGHT_LAYERS, PCI_LAYERS, HIN_LAYERS } from './mapLayers'
+import {
+  parseSeverities, serializeSeverities, severityClause, toggleExactly, sameSet, pedBikeModes,
+  parseRankMetric, rankNeighborhoods, metricValue, RANK_METRICS, DUI_CLAUSE, PED_BIKE_SQL,
+  SEVERITY_LABEL, FATAL_LAG_NOTE, type RankMetric, type Severity,
+} from './crashFilters'
 
 type MapMode = 'heatmap' | 'anomaly'
 type SidebarTab = 'modes' | 'neighborhoods'
@@ -56,7 +61,9 @@ type Overlay = 'speed' | 'redlight' | 'pci' | 'hin'
 
 const SELECT_FIELDS = 'unique_id,collision_datetime,collision_severity,type_of_collision,dph_col_grp_description,vz_pcf_group,number_killed,number_injured,primary_rd,secondary_rd,analysis_neighborhood,supervisor_district,police_district,tb_latitude,tb_longitude,point,ped_action,weather_1,road_surface,road_cond_1,lighting,mviw'
 
-const DUI_CODES = "'23152(a-g)','23153(a-g)'"
+const FATAL_ONLY = new Set<Severity>(['Fatal'])
+const SEVERE_ONLY = new Set<Severity>(['Injury (Severe)'])
+const RANK_LABEL: Record<RankMetric, string> = { crashes: 'Crashes', killed: 'Killed', injured: 'Injured' }
 
 export default function TrafficSafety() {
   const { dateRange, timeOfDayFilter, comparisonMode, selectedCrash, setSelectedCrash } = useAppStore()
@@ -91,6 +98,10 @@ export default function TrafficSafety() {
     return new Set(param.split(',').map(decodeURIComponent))
   }, [searchParams])
   const selectedNeighborhood = searchParams.get('neighborhood') || null
+  // Card filters (Sept. 2026) — URL-held so a shared link keeps them.
+  const severities = useMemo(() => parseSeverities(searchParams.get('severity')), [searchParams])
+  const duiOnly = searchParams.get('dui') === '1'
+  const rankMetric = parseRankMetric(searchParams.get('rank'))
 
   const setMapMode = useCallback((mode: MapMode) => {
     setSearchParams((prev) => {
@@ -119,6 +130,34 @@ export default function TrafficSafety() {
     }, { replace: true })
   }, [setSearchParams])
 
+  const setSeverities = useCallback((set: ReadonlySet<string>) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      const v = serializeSeverities(set)
+      if (v) next.set('severity', v)
+      else next.delete('severity')
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
+
+  const setDuiOnly = useCallback((on: boolean) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (on) next.set('dui', '1')
+      else next.delete('dui')
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
+
+  const setRankMetric = useCallback((m: RankMetric) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (m === 'crashes') next.delete('rank')
+      else next.set('rank', m)
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
+
   const toggleOverlay = useCallback((overlay: Overlay) => {
     setActiveOverlays((prev) => {
       const next = new Set(prev)
@@ -135,11 +174,22 @@ export default function TrafficSafety() {
     return `dph_col_grp_description IN (${escaped.join(',')})`
   }, [selectedModes])
 
-  const whereClause = useMemo(() => {
+  // Every filter except severity — the severity chart's scope, so it keeps
+  // all four levels visible while one is selected (it is the chooser).
+  const cardFilterClause = useMemo(() => {
+    const parts: string[] = []
+    if (modeClause) parts.push(modeClause)
+    if (duiOnly) parts.push(DUI_CLAUSE)
+    return parts.join(' AND ')
+  }, [modeClause, duiOnly])
+  const sevClause = useMemo(() => severityClause(severities), [severities])
+  const filterClause = [cardFilterClause, sevClause].filter(Boolean).join(' AND ')
+
+  const whereNoSeverity = useMemo(() => {
     const conditions: string[] = []
     conditions.push(`collision_datetime >= '${dateRange.start}T00:00:00'`)
     conditions.push(`collision_datetime <= '${dateRange.end}T23:59:59'`)
-    if (modeClause) conditions.push(modeClause)
+    if (cardFilterClause) conditions.push(cardFilterClause)
     if (selectedNeighborhood) {
       conditions.push(`analysis_neighborhood = '${selectedNeighborhood.replace(/'/g, "''")}'`)
     }
@@ -152,7 +202,8 @@ export default function TrafficSafety() {
       }
     }
     return conditions.join(' AND ')
-  }, [dateRange, modeClause, selectedNeighborhood, timeOfDayFilter])
+  }, [dateRange, cardFilterClause, selectedNeighborhood, timeOfDayFilter])
+  const whereClause = sevClause ? `${whereNoSeverity} AND ${sevClause}` : whereNoSeverity
 
   const dateOnlyClause = useMemo(() => {
     const conditions: string[] = []
@@ -181,7 +232,7 @@ export default function TrafficSafety() {
       { selectExpr: 'SUM(number_killed)', alias: 'total_killed', label: 'Killed', format: (v) => String(Math.round(v)) },
     ],
   }), [])
-  const trendExtraWhere = modeClause || undefined
+  const trendExtraWhere = filterClause || undefined
   const trend = useTrendBaseline(trendConfig, dateRange, trendExtraWhere)
 
   // --- Primary data: crashes ---
@@ -192,17 +243,35 @@ export default function TrafficSafety() {
     { cite: { viewId: 'traffic-safety', purpose: 'map-sample' } }
   )
 
-  const { data: countRows } = useDataset<{ count: string }>(
+  // Every card figure comes from this one server aggregate over the FULL
+  // filtered window — never from the 5,000-row map sample (see crashFilters).
+  const { data: countRows } = useDataset<{ count: string; killed: string; injured: string; fatal_crashes: string; ped_bike: string }>(
     'trafficCrashes',
-    { $select: 'count(*) as count', $where: whereClause },
+    {
+      $select: `count(*) as count, SUM(number_killed) as killed, SUM(number_injured) as injured, sum(case(collision_severity = 'Fatal', 1, true, 0)) as fatal_crashes, sum(case(${PED_BIKE_SQL}, 1, true, 0)) as ped_bike`,
+      $where: whereClause,
+    },
     [whereClause],
     { cite: { viewId: 'traffic-safety', purpose: 'stat-totals', facet: 'Crashes' } }
   )
   const totalCount = countRows[0] ? parseInt(countRows[0].count, 10) : null
+  const totals = useMemo(() => {
+    const r = countRows[0]
+    if (!r) return null
+    const n = (v: string | undefined) => parseInt(v ?? '', 10) || 0
+    return { crashes: n(r.count), killed: n(r.killed), injured: n(r.injured), fatalCrashes: n(r.fatal_crashes), pedBikeCrashes: n(r.ped_bike) }
+  }, [countRows])
+
+  const { data: severityRows } = useDataset<{ collision_severity: string; count: string }>(
+    'trafficCrashes',
+    { $select: 'collision_severity, count(*) as count', $group: 'collision_severity', $where: whereNoSeverity, $limit: 10 },
+    [whereNoSeverity],
+    { cite: { viewId: 'traffic-safety', purpose: 'stat-totals', facet: 'Severity' } }
+  )
 
   // DUI crash count (server-side)
   const duiWhere = useMemo(() => {
-    return `${whereClause} AND vz_pcf_group IN (${DUI_CODES})`
+    return `${whereClause} AND ${DUI_CLAUSE}`
   }, [whereClause])
 
   const { data: duiCountRows } = useDataset<{ count: string; killed: string; injured: string }>(
@@ -225,7 +294,7 @@ export default function TrafficSafety() {
     start.setFullYear(start.getFullYear() - 1)
     end.setFullYear(end.getFullYear() - 1)
     const fmt = (d: Date) => d.toISOString().split('T')[0]
-    return `collision_datetime >= '${fmt(start)}T00:00:00' AND collision_datetime <= '${fmt(end)}T23:59:59' AND vz_pcf_group IN (${DUI_CODES})`
+    return `collision_datetime >= '${fmt(start)}T00:00:00' AND collision_datetime <= '${fmt(end)}T23:59:59' AND ${DUI_CLAUSE}`
   }, [dateRange])
 
   const { data: duiPriorRows } = useDataset<{ count: string }>(
@@ -312,10 +381,10 @@ export default function TrafficSafety() {
   // Hourly pattern
   const extraWhere = useMemo(() => {
     const parts: string[] = []
-    if (modeClause) parts.push(modeClause)
+    if (filterClause) parts.push(filterClause)
     if (selectedNeighborhood) parts.push(`analysis_neighborhood = '${selectedNeighborhood.replace(/'/g, "''")}'`)
     return parts.length > 0 ? parts.join(' AND ') : undefined
-  }, [modeClause, selectedNeighborhood])
+  }, [filterClause, selectedNeighborhood])
 
   const hourlyPattern = useCrashHourlyPattern(dateRange, extraWhere)
   const compStart = useMemo(() => resolveComparisonStart(comparisonMode, dateRange), [comparisonMode, dateRange])
@@ -351,6 +420,29 @@ export default function TrafficSafety() {
     }
     return avg as any
   }, [censusNeighborhoods])
+
+  // --- Card filters: a click on a number shows the crashes behind it ---
+  const pedBikeTarget = useMemo(
+    () => pedBikeModes(modeRows.map((r) => r.dph_col_grp_description).filter(Boolean)),
+    [modeRows],
+  )
+  const pedBikeOnly = pedBikeTarget.size > 0 && sameSet(selectedModes, pedBikeTarget)
+  const filters = useMemo(() => ({
+    fatalOnly: sameSet(severities, FATAL_ONLY),
+    severeOnly: sameSet(severities, SEVERE_ONLY),
+    duiOnly,
+    pedBikeOnly,
+    onFatal: () => setSeverities(toggleExactly(severities, FATAL_ONLY)),
+    onSevere: () => setSeverities(toggleExactly(severities, SEVERE_ONLY)),
+    onDui: () => setDuiOnly(!duiOnly),
+    onPedBike: () => setSelectedModes(toggleExactly(selectedModes, pedBikeTarget)),
+  }), [severities, duiOnly, pedBikeOnly, pedBikeTarget, selectedModes, setSeverities, setDuiOnly, setSelectedModes])
+  const toggleSeverity = useCallback((sev: string) => {
+    const next = new Set<string>(severities)
+    if (next.has(sev)) next.delete(sev)
+    else next.add(sev)
+    setSeverities(next)
+  }, [severities, setSeverities])
 
   // --- Computed data (extracted to hook) ---
   const {
@@ -388,6 +480,9 @@ export default function TrafficSafety() {
     cityWideYoY: trend.cityWideYoY,
     comparisonSuppressed: comparison.suppressed,
     comparisonActive: comparisonMode !== null,
+    totals,
+    severityRows,
+    filters,
   })
 
   // Disclose the freshness clamp on the card carrying cityWideYoY ('total') —
@@ -411,7 +506,7 @@ export default function TrafficSafety() {
         shortLabel: 'Severity',
         color: '#b85545',
         defaultExpanded: true,
-        render: () => <SeverityBreakdown data={severityData} width={320} height={110} />,
+        render: () => <SeverityBreakdown data={severityData} width={320} height={110} selected={severities} onSelect={toggleSeverity} />,
       })
     }
     if (modeBars.length > 0) {
@@ -443,7 +538,7 @@ export default function TrafficSafety() {
       })
     }
     return tiles
-  }, [severityData, modeBars, comparisonMode, comparison.currentTrend, comparison.comparisonTrend, comparison.isLoading])
+  }, [severityData, severities, toggleSeverity, modeBars, comparisonMode, comparison.currentTrend, comparison.comparisonTrend, comparison.isLoading])
 
   // Bind all layers (using extracted layer configs from mapLayers.ts)
   useMapLayer(mapInstance, 'crash-heatmap-data', heatmapGeojson, CRASH_HEATMAP_LAYERS)
@@ -602,6 +697,21 @@ export default function TrafficSafety() {
 
   useProgressScope()
 
+  // Header chips: every filter a card or a severity bar can set, each with
+  // its own off switch, so a filter never hides behind a minimized card.
+  const activeFilters: { key: string; label: string; clear: () => void }[] = []
+  if (severities.size > 0) {
+    activeFilters.push({
+      key: 'severity',
+      label: `${[...severities].map((s) => SEVERITY_LABEL[s]).join(' + ')} crashes`,
+      clear: () => setSeverities(new Set()),
+    })
+  }
+  if (duiOnly) activeFilters.push({ key: 'dui', label: 'DUI crashes', clear: () => setDuiOnly(false) })
+  if (pedBikeOnly) activeFilters.push({ key: 'pedbike', label: 'Pedestrian & bicycle crashes', clear: () => setSelectedModes(new Set()) })
+
+  const rankedNeighborhoods = useMemo(() => rankNeighborhoods(neighborhoodEntries, rankMetric), [neighborhoodEntries, rankMetric])
+
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
@@ -629,6 +739,28 @@ export default function TrafficSafety() {
                   <span className="text-micro font-mono text-ochre-500/80 bg-ochre-500/10 px-2 py-1 rounded-full">
                     of {formatNumber(totalCount)} total
                   </span>
+                )}
+              </div>
+            )}
+            {activeFilters.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                {activeFilters.map((f) => (
+                  <span
+                    key={f.key}
+                    className="inline-flex items-center gap-1 text-micro font-mono text-ink dark:text-paper-200 bg-brick-500/15 ring-1 ring-brick-500/30 pl-2 pr-0.5 py-0.5 rounded-full"
+                  >
+                    {f.label}
+                    <button
+                      type="button"
+                      onClick={f.clear}
+                      aria-label={`Clear filter: ${f.label}`}
+                      title="Clear filter"
+                      className="w-4 h-4 rounded-full leading-none hover:bg-brick-500/20 transition-colors"
+                    >×</button>
+                  </span>
+                ))}
+                {severities.has('Fatal') && (
+                  <span className="text-micro italic text-slate-500 dark:text-slate-400">{FATAL_LAG_NOTE}</span>
                 )}
               </div>
             )}
@@ -855,11 +987,35 @@ export default function TrafficSafety() {
                   </div>
                 )}
 
+                {/* RANK BY — the Housing idiom: the row bar re-encodes to the
+                    active metric; the scope (every filter) is unchanged. */}
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-nano font-mono uppercase tracking-[0.2em] text-slate-400/60 dark:text-slate-600">Rank by</span>
+                  <div role="radiogroup" aria-label="Rank neighborhoods by" className="flex items-center gap-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-lg p-0.5">
+                    {RANK_METRICS.map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        role="radio"
+                        aria-checked={rankMetric === m}
+                        onClick={() => setRankMetric(m)}
+                        className={`px-2 py-1 rounded-md text-micro font-mono transition-all duration-200 ${
+                          rankMetric === m
+                            ? 'bg-white dark:bg-white/[0.08] text-ink dark:text-white shadow-sm'
+                            : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+                        }`}
+                      >
+                        {RANK_LABEL[m]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {isLoading && <SkeletonSidebarRows count={8} />}
                 <div className="space-y-0.5 stagger-in">
-                  {neighborhoodEntries.slice(0, 30).map((ns) => {
-                    const maxCount = neighborhoodEntries[0]?.crashCount || 1
-                    const barWidth = (ns.crashCount / maxCount) * 100
+                  {rankedNeighborhoods.slice(0, 30).map((ns) => {
+                    const maxCount = metricValue(rankedNeighborhoods[0] ?? ns, rankMetric) || 1
+                    const barWidth = (metricValue(ns, rankMetric) / maxCount) * 100
                     const isActive = selectedNeighborhood === ns.neighborhood
                     const zScore = neighborhoodAnomalies.get(ns.neighborhood)
                     const nhTrend = trend.neighborhoodMap.get(ns.neighborhood)
@@ -875,7 +1031,7 @@ export default function TrafficSafety() {
                       >
                         <div
                           className="absolute inset-y-0 left-0 rounded-lg opacity-[0.06] bar-grow"
-                          style={{ width: `${barWidth}%`, backgroundColor: '#963e30' }}
+                          style={{ width: `${barWidth}%`, backgroundColor: rankMetric === 'injured' ? '#d4a435' : rankMetric === 'killed' ? '#6f2b20' : '#963e30' }}
                         />
                         <div className="relative flex items-center justify-between">
                           <div className="min-w-0 flex-1">

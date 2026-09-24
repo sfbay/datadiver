@@ -51,6 +51,12 @@ export interface CardDef {
   wrapSubtitle?: boolean
   /** Step a long text value down by length and clamp it (see StatCard.valueFit). */
   valueFit?: boolean
+  /** The card is a filter control (see StatCard.onActivate). */
+  onActivate?: () => void
+  /** Its filter is applied. */
+  active?: boolean
+  /** Tooltip naming what a click does. */
+  activateHint?: string
 }
 
 type CardState = 'expanded' | 'minimized' | 'hidden'
@@ -185,7 +191,8 @@ export default function CardTray({ viewId, cards, className = '', hideComparison
                   bg-slate-900/70 backdrop-blur-sm border border-white/[0.06]
                   hover:bg-slate-800/80 hover:border-white/[0.12]
                   transition-all duration-150 cursor-pointer group/pill"
-                title={`${card.label}: ${card.value} — click to expand`}
+                style={card.active ? { boxShadow: `0 0 0 1.5px ${card.color}` } : undefined}
+                title={`${card.label}: ${card.value}${card.active ? ' (filter on)' : ''} — click to expand`}
               >
                 {trendArrow && (
                   <span className="text-nano font-mono font-bold" style={{ color: trendColor ?? undefined }}>
@@ -314,6 +321,9 @@ export default function CardTray({ viewId, cards, className = '', hideComparison
                 secondary={card.secondary}
                 wrapSubtitle={card.wrapSubtitle}
                 valueFit={card.valueFit}
+                onActivate={card.onActivate}
+                active={card.active}
+                activateHint={card.activateHint}
               />
               {/* Minimize button — top-left on hover */}
               <button
