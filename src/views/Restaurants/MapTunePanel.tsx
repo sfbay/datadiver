@@ -10,7 +10,7 @@
 
 import { useEffect, useState } from 'react'
 import type mapboxgl from 'mapbox-gl'
-import { DEFAULT_MAP_TUNE, serializeMapTune, type MapTune } from './mapLayers'
+import { DEFAULT_MAP_TUNE, effectiveFloors, serializeMapTune, type MapTune } from './mapLayers'
 
 interface Props {
   map: mapboxgl.Map | null
@@ -21,21 +21,28 @@ interface Props {
 interface SliderSpec {
   key: keyof MapTune
   label: string
+  /** What the slider moves, per lens — shown under the label. */
+  hint?: string
+  /** The effective-floor key, when a rank rule can override the slider. */
+  floor?: 'f1' | 'f2' | 'f3'
   min: number
   max: number
   step: number
 }
 
+// Zoom floors: the zoom where a group FIRST appears (below it, hidden).
+// The map opens near 12; 11 ≈ whole city, 13 ≈ a neighborhood, 15 ≈ blocks.
 const SLIDERS: SliderSpec[] = [
   { key: 'ringScale', label: 'RING SIZE ×', min: 0.5, max: 3.5, step: 0.1 },
   { key: 'dotScale', label: 'DOT SIZE ×', min: 0.5, max: 3.5, step: 0.1 },
-  { key: 'floor3', label: '3 NAMES · CLOSED FROM ZOOM', min: 0, max: 14.5, step: 0.5 },
-  { key: 'floor2', label: '2 NAMES · YELLOW FROM ZOOM', min: 0, max: 14.5, step: 0.5 },
-  { key: 'floor1', label: '1 NAME · PASS FROM ZOOM', min: 0, max: 14.5, step: 0.5 },
+  { key: 'floor3', label: 'MOST IMPORTANT · APPEAR AT ZOOM', hint: 'turnover: 3+ names · closures: closed now', floor: 'f3', min: 0, max: 14.5, step: 0.5 },
+  { key: 'floor2', label: 'MIDDLE · APPEAR AT ZOOM', hint: 'turnover: 2 names · closures: yellow', floor: 'f2', min: 0, max: 14.5, step: 0.5 },
+  { key: 'floor1', label: 'PLAINEST · APPEAR AT ZOOM', hint: 'turnover: 1 name · closures: green', floor: 'f1', min: 0, max: 14.5, step: 0.5 },
 ]
 
 export default function MapTunePanel({ map, values, onChange }: Props) {
   const [copied, setCopied] = useState(false)
+  const used = effectiveFloors(values)
   const [zoom, setZoom] = useState<number | null>(null)
 
   useEffect(() => {
@@ -80,8 +87,14 @@ export default function MapTunePanel({ map, values, onChange }: Props) {
         <label key={s.key} className="block mb-1.5">
           <span className="flex justify-between gap-2">
             <span className="tracking-wider">{s.label}</span>
-            <span className="text-paper-200 tabular-nums">{values[s.key]}</span>
+            <span className="text-paper-200 tabular-nums">
+              {values[s.key]}
+              {s.floor && used[s.floor] !== values[s.key] && (
+                <span className="text-ochre-500" title="A plainer group can never appear before a more important one"> → {used[s.floor]}</span>
+              )}
+            </span>
           </span>
+          {s.hint && <span className="block text-nano text-paper-600">{s.hint}</span>}
           <input
             type="range"
             min={s.min}
@@ -93,6 +106,10 @@ export default function MapTunePanel({ map, values, onChange }: Props) {
           />
         </label>
       ))}
+      <div className="mt-1 text-nano text-paper-600 leading-snug">
+        Zoom: 11 whole city · 12 opening view · 13 neighborhood · 15 blocks. Below its number a group hides.
+        An ochre → shows the zoom actually used: a plainer group never appears before a more important one.
+      </div>
       <div className="mt-1 text-nano text-paper-600 leading-snug">
         dev only (?tune=1) · copy → DEFAULT_MAP_TUNE
       </div>
