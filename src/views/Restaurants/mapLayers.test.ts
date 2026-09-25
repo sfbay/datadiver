@@ -75,7 +75,7 @@ describe('turnover rings', () => {
     expect(ids.filter((id) => id.startsWith('ring-r2-'))).toEqual(['ring-r2-2']) // one thin ring
     // rank 5 is drawn after every other rank (only the center dot rides on top)
     expect(ids.indexOf('ring-r5-5')).toBeGreaterThan(Math.max(...ids.filter((id) => /^ring-r[1-4]/.test(id)).map((id) => ids.indexOf(id))))
-    expect(RING_MIN_ZOOM).toEqual({ 5: 0, 4: 0, 3: 0, 2: 12.5, 1: 12.5 })
+    expect(RING_MIN_ZOOM).toEqual({ 5: 0, 4: 0, 3: 8.5, 2: 11.5, 1: 12.5 })
   })
 })
 
@@ -143,7 +143,7 @@ describe('closures lens', () => {
     expect(core.minzoom).toBeUndefined()
     expect(core.filter).toEqual(['==', ['get', 'rank'], 1])
     const zooms = Object.fromEntries(CLOSURE_LAYERS.map((l) => [l.id, (l as { minzoom?: number }).minzoom]))
-    expect([zooms['placard-closure'], zooms['placard-conditional'], zooms['placard-pass']]).toEqual([0, 12.5, 12.5])
+    expect([zooms['placard-closure'], zooms['placard-conditional'], zooms['placard-pass']]).toEqual([8.5, 11.5, 12.5])
   })
 })
 

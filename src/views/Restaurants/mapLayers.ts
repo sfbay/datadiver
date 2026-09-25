@@ -10,9 +10,9 @@
 // drawn LAST. Tooltips and clicks register on every rank (`*_LAYER_IDS`).
 //
 //   Turnover (default, snapshot): concentric hollow teal rings, one per
-//     strict operator — the tree ring. 5+, 4 and 3 at every zoom (largest
-//     drawn last, 5 keylined) → 2 (one thin ring) and 1 (a paper-500 dot,
-//     the city's texture and the denominator) from zoom 12.5.
+//     strict operator — the tree ring. 5+ and 4 at every zoom, 3 from 8.5
+//     (largest drawn last, 5 keylined) → 2 (one thin ring) from 11.5 → 1
+//     (a paper-500 dot, the city's texture and the denominator) from 12.5.
 //     A lower rank never appears before a higher one (effectiveFloors).
 //     (Floors and sizes live in MAP_TUNE — Jesse, Sept. 24 2026: the first
 //     cut hid too much and drew the story rings too small to read.)
@@ -20,7 +20,7 @@
 //     (D5 — a storefront never inherits an earlier tenant's closure).
 //   Closures (live latest reading + the snapshot's repeat flag): repeat bar
 //     brick-600 every zoom, keyline + halo, drawn last → latest reading
-//     Closure brick-400 every zoom → Conditional ochre-500 and Pass
+//     Closure brick-400 from 8.5 → Conditional ochre-500 from 11.5 → Pass
 //     moss-500 from 12.5. A place closed once and since cleared reads Pass —
 //     it never stays red, and one closure is never on the every-zoom layer.
 //   Owners: indigo-400 halos on the selected owner's storefronts, every
@@ -174,11 +174,12 @@ export interface MapTune {
   floor3: number
 }
 
-/** Shipped look (Sept. 24 2026): the 125 story doors (3+ names) and closed
- *  places at every zoom; the city's texture — 946 two-name doors, 4,229
- *  one-name doors, green and yellow placards — from the first zoom-in step
- *  past the opening city view (~12.1), where 946 thin rings buried the story. */
-export const DEFAULT_MAP_TUNE: Readonly<MapTune> = { ringScale: 1.8, dotScale: 1.5, floor1: 12.5, floor2: 12.5, floor3: 0 }
+/** Shipped look — Jesse's tune, Sept. 24 2026 (`?maptune=1.5,2,12.5,11.5,8.5`):
+ *  the 3+-name story doors and closed places from zoom 8.5 (every practical
+ *  zoom), two-name doors and yellow placards from 11.5 (just under the
+ *  opening ~12.1 view), one-name doors and green placards from 12.5 (the
+ *  first zoom-in step). */
+export const DEFAULT_MAP_TUNE: Readonly<MapTune> = { ringScale: 1.5, dotScale: 2, floor1: 12.5, floor2: 11.5, floor3: 8.5 }
 
 /** The floors a map actually uses. Ranks PARTITION the storefronts, so a
  *  lower rank showing before a higher one would hide the higher one's doors
