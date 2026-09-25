@@ -299,6 +299,52 @@ export function sharedMailingSentence(companies: number): string {
 export const MAILING_WITHHELD_LABEL = 'Mailing address withheld'
 
 // ── labels ─────────────────────────────────────────────────────────────────
+//
+// Mono captions and figures for the rail's marks (Sept. 2026: number first,
+// mark second, words last). A caption is ≤ 4 words; a figure uses digits, not
+// AP spelling — these are labels, never prose. The sentences they replaced
+// (ledes, outcomes, the owner closures line) now feed InfoTips and aria
+// labels, so no fact left the page.
+
+/** The Turnover chip's caption. */
+export const TURNOVER_CAPTION = 'storefronts, 3+ names'
+/** The Closures chip's caption — its numeral is the CLEARED count. */
+export const CLOSURES_CAPTION = 'closures cleared since 2024'
+/** The vermin chip's caption. */
+export const VERMIN_CAPTION = 'closure visits cited vermin'
+
+/** An episode's length as a figure beside its bar:
+ *    "≤17 d" (cleared) · "same day" · "no later record" (unresolved). */
+export function durationFigure(ep: Pick<ClosureEpisode, 'sameDay' | 'clearedOn' | 'days'>): string {
+  if (ep.sameDay) return 'same day'
+  if (ep.clearedOn === null || ep.days === null) return 'no later record'
+  return `≤${ep.days} d`
+}
+
+/** "3 closures" — the count beside a repeat row's strip. */
+export function closuresFigure(n: number): string {
+  return `${n.toLocaleString('en-US')} ${plural(n, 'closure', 'closures')}`
+}
+
+/** "12 owners" — beside a franchise row's dots. */
+export function ownersFigure(n: number): string {
+  return `${n.toLocaleString('en-US')} ${plural(n, 'owner', 'owners')}`
+}
+
+/** "7 companies" — the shared-address badge. */
+export function companiesFigure(n: number): string {
+  return `${n.toLocaleString('en-US')} ${plural(n, 'company', 'companies')}`
+}
+
+/** "of 254" — the denominator after a neighborhood's share. */
+export function ofInspected(n: number): string {
+  return `of ${n.toLocaleString('en-US')}`
+}
+
+/** The histogram's aria sentence: "Same day 120, one day 43, …". */
+export function durationBinsLabel(bins: readonly { label: string; count: number }[]): string {
+  return bins.map((b, i) => `${i === 0 ? cap(b.label) : b.label} ${b.count.toLocaleString('en-US')}`).join(', ')
+}
 
 export const TOO_FEW_TO_RATE = 'too few inspected to rate'
 export const TURNOVER_LEGEND = 'Rings count names on inspection records, not owners.'

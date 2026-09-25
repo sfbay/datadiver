@@ -5,9 +5,9 @@
 // map), hollow = the rest, accent = the highlight (e.g. a closure). Text
 // carries only the overflow ("+15") when the row is capped; the counts
 // belong in the caller's mono line or an aria-label. Spec math is pure in
-// dotRow.ts. Colours are the caller's pigment — the component has none.
+// dotRowSpec.ts. Colours are the caller's pigment — the component has none.
 
-import { dotRowSpec, type Dot } from './dotRow'
+import { dotRowSpec, type Dot } from './dotRowSpec'
 
 interface DotRowProps {
   total: number

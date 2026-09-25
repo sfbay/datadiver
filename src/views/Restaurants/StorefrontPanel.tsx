@@ -26,34 +26,38 @@
 //
 // Long lists fold behind show-all turn-downs (the funder-card pattern), never
 // paging. No `truncate` anywhere: exported text must survive the capture.
+//
+// The Last 48 rule (Jesse, 2026-09-25): NUMBER first, MARK second, WORDS
+// last. The ribbon already draws the biography, so the panel does not repeat
+// it in sentences — the operators lede sits behind the eyebrow's InfoTip,
+// a closure is a date · DurationBar · mono reading, counts are pills. Every
+// mark that replaced a sentence carries that sentence as its title and
+// aria-label, so nothing said before is unsaid now.
 
 import { useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { DurationBar } from '@/components/charts/SpanBar'
+import { durationWidth } from '@/components/charts/spanLayout'
 import DetailPanelShell from '@/components/ui/DetailPanelShell'
+import InfoTip from '@/components/ui/InfoTip'
 import type { Storefront, StorefrontSnapshot } from '@/lib/storefronts/types'
 import { apDate } from '@/utils/apDate'
+import { daysBetween } from './closureEpisodes'
+import { BRICK_600 } from './mapLayers'
 import PlacardRibbon from './PlacardRibbon'
 import { normalizePlacard, PLACARD_COLOR, PLACARD_LABEL } from './placard'
 import {
   apCount,
-  apCountStart,
-  BREAK_NOTICE,
   closureStory,
-  DURATION_NOTE,
   episodeFeedNote,
-  INSPECTOR_NOTE,
-  MAILING_CITY_NOTE,
   MAILING_WITHHELD_LABEL,
-  MAILING_WITHHELD_NOTE,
   mailingCityLabel,
   namesLede,
   OWNER_RETURNED_CHIP,
   ownerReturnedLede,
   SAME_OWNER_CHIP,
-  sameMailingNote,
   scoreBadge,
   SEEN_ONCE,
-  SHARED_WITHHELD_NOTE,
   sharedMailingSentence,
 } from './restaurantPhrase'
 import { familyLabel, parseViolationItems } from './violationFamilies'
@@ -62,7 +66,8 @@ import {
   dedupeLane,
   displayBusinessName,
   DPH_LOOKUP_URL,
-  evidenceKinds,
+  episodeEndLabel,
+  episodeTickDates,
   groupsHere,
   INSPECTIONS_URL,
   latestReading,
@@ -77,9 +82,10 @@ import {
   panelEpisodes,
   REGISTRY_URL,
   sharedAddressesHere,
-  statusLine,
+  statusParts,
   storefrontLabel,
   violationsRecorded,
+  violationsRecordedLabel,
   type InspectionRow,
   type PanelEpisode,
 } from './storefrontBiography'
@@ -159,6 +165,58 @@ function Muted({ children, className = '' }: { children: ReactNode; className?: 
   return <span className={`text-slate-500 dark:text-slate-400 ${className}`}>{children}</span>
 }
 
+/** A mono nano count pill: NUMBER first, the sentence it replaces on the
+ *  title + aria-label ("Three violations recorded", "These four companies…").
+ *  `muted` for a zero. */
+function CountBadge({ value, label, muted = false }: { value: string | number; label: string; muted?: boolean }) {
+  return (
+    <span
+      role="img"
+      aria-label={label}
+      title={label}
+      className={`inline-flex items-center justify-center min-w-[1.25rem] px-1 py-px rounded-full text-nano font-mono tabular-nums leading-4 ${
+        muted
+          ? 'bg-slate-100/70 dark:bg-white/[0.04] text-slate-400 dark:text-slate-500'
+          : 'bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300'
+      }`}
+    >
+      {value}
+    </span>
+  )
+}
+
+/** The closure mark: a DurationBar on a 0…30-day scale with one tick per
+ *  inspection that found the place closed, drawn as a sibling row over the
+ *  bar (SpanBar is not extended). The full closureStory sentence is the
+ *  mark's aria-label. */
+const EPISODE_BAR_W = 96
+const EPISODE_BAR_H = 6
+const EPISODE_CAP = 30
+
+function EpisodeMark({ ep, asOf, label }: { ep: PanelEpisode['episode']; asOf: string; label: string }) {
+  const days = ep.sameDay ? 0 : ep.days
+  const ticks = episodeTickDates(ep, asOf)
+    .map((d) => daysBetween(ep.start, d))
+    .filter((d) => d > 0 && d <= EPISODE_CAP) // the first closure is the bar's own left edge
+    .map((d) => durationWidth(d, EPISODE_CAP, EPISODE_BAR_W).width)
+  return (
+    <span className="relative inline-block shrink-0" style={{ width: EPISODE_BAR_W, height: EPISODE_BAR_H }}>
+      <DurationBar days={days} cap={EPISODE_CAP} width={EPISODE_BAR_W} height={EPISODE_BAR_H} color={BRICK_600} label={label} />
+      {ticks.length > 0 && (
+        <span aria-hidden className="absolute inset-0 pointer-events-none">
+          {ticks.map((x, i) => (
+            <span
+              key={i}
+              className="absolute top-[-2px] w-px bg-white dark:bg-slate-900"
+              style={{ left: x - 0.5, height: EPISODE_BAR_H + 4, boxShadow: `0 0 0 0.5px ${BRICK_600}` }}
+            />
+          ))}
+        </span>
+      )}
+    </span>
+  )
+}
+
 function Shimmer({ className }: { className: string }) {
   return <div className={`rounded-md bg-slate-200/60 dark:bg-white/[0.06] skeleton ${className}`} />
 }
@@ -202,18 +260,20 @@ function RowText({ codes }: { codes: string }) {
 
 // ── sections ───────────────────────────────────────────────────────────────
 
+/** The operators lede (voice samples 1–2) — the ribbon above already draws
+ *  it, so it lives behind the section eyebrow's InfoTip, one click away. */
+export function operatorsLede(storefront: Storefront): string | null {
+  const ret = ownerReturnedInput(storefront)
+  if (ret) return ownerReturnedLede(ret)
+  const names = namesLedeInput(storefront)
+  return names ? namesLede(names) : null
+}
+
 function Operators({ storefront }: { storefront: Storefront }) {
   const chips = useMemo(() => ownerChips(storefront.operators), [storefront])
-  const lede = useMemo(() => {
-    const ret = ownerReturnedInput(storefront)
-    if (ret) return ownerReturnedLede(ret)
-    const names = namesLedeInput(storefront)
-    return names ? namesLede(names) : null
-  }, [storefront])
 
   return (
     <>
-      {lede && <p className="text-micro font-serif text-slate-700 dark:text-slate-200 leading-snug mb-2">{lede}</p>}
       <Folded
           ordered
           className="space-y-2"
@@ -228,15 +288,12 @@ function Operators({ storefront }: { storefront: Storefront }) {
             const chip = chips[i]
             return (
               <li key={`${op.name}|${op.firstDate}`} className="text-micro leading-snug">
-                <div className="flex flex-wrap items-baseline gap-x-1.5">
-                  <span
-                    className={`font-display italic text-sm ${op.strict ? 'text-ink dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}
-                  >
-                    {displayBusinessName(op.name)}
-                  </span>
-                  <Muted className="font-mono text-nano tabular-nums">{operatorSpan(op)}</Muted>
-                  {op.seenOnce && <Muted className="font-mono text-nano italic">{SEEN_ONCE}</Muted>}
-                </div>
+                <p className={`font-serif text-xs font-medium leading-tight ${op.strict ? 'text-ink dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>
+                  {displayBusinessName(op.name)}
+                </p>
+                <p className="font-mono text-nano italic tabular-nums text-slate-500 dark:text-slate-400 mt-0.5">
+                  {op.seenOnce ? `${operatorSpan(op)} · ${SEEN_ONCE}` : operatorSpan(op)}
+                </p>
                 <div className="pl-3 mt-0.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
                   {owner ? (
                     <>
@@ -267,17 +324,26 @@ function Operators({ storefront }: { storefront: Storefront }) {
   )
 }
 
-function EpisodeRow({ ep, nowYear }: { ep: PanelEpisode; nowYear: number }) {
+function EpisodeRow({ ep, nowYear, asOf }: { ep: PanelEpisode; nowYear: number; asOf: string }) {
   const note = episodeFeedNote(ep.episode)
+  const story = closureStory(ep.episode, nowYear)
   return (
-    <li className="text-micro leading-snug">
+    <li className="text-micro leading-snug" title={story}>
       <div className="flex flex-wrap items-baseline gap-x-1.5">
         {ep.name && <span className="font-display italic text-slate-700 dark:text-slate-200">{ep.name}</span>}
         <Muted className="font-mono text-nano">
           {ep.era === 2020 ? `2020–23 records · facility ${ep.permit}` : `permit ${ep.permit}`}
         </Muted>
       </div>
-      <p className="font-serif text-slate-700 dark:text-slate-200 mt-0.5">{closureStory(ep.episode, nowYear)}</p>
+      {/* The episode row: start date · duration mark with visit ticks · end reading. */}
+      <div className="mt-1 flex items-center gap-2">
+        <span className="font-mono text-micro tabular-nums text-slate-700 dark:text-slate-200 shrink-0">{apDate(ep.episode.start, nowYear)}</span>
+        <EpisodeMark ep={ep.episode} asOf={asOf} label={story} />
+        <span className="font-mono text-nano tabular-nums text-slate-500 dark:text-slate-400">{episodeEndLabel(ep.episode, nowYear)}</span>
+        {ep.episode.closureVisits > 1 && (
+          <Muted className="font-mono text-nano tabular-nums">· {ep.episode.closureVisits} visits</Muted>
+        )}
+      </div>
       {note && <p className="text-nano font-mono text-slate-500 dark:text-slate-400 mt-0.5">{note}</p>}
       {ep.familyIds.length > 0 && (
         <p className="mt-1 flex flex-wrap gap-1">
@@ -316,9 +382,9 @@ function InspectionList({ rows, nowYear }: { rows: readonly InspectionRow[]; now
                 {names.size > 1 && r.dba && <span className="font-display italic text-slate-700 dark:text-slate-200">{displayBusinessName(r.dba)}</span>}
                 {r.inspection_type && <Muted>· {r.inspection_type}</Muted>}
               </div>
-              <div className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 text-slate-500 dark:text-slate-400">
-                {n !== null && <span>{n === 0 ? 'No violations recorded' : `${apCountStart(n)} ${n === 1 ? 'violation' : 'violations'} recorded`}</span>}
-                {r.inspector && <span>· inspected by {r.inspector}</span>}
+              <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-slate-500 dark:text-slate-400">
+                {n !== null && <CountBadge value={n} label={violationsRecordedLabel(n)} muted={n === 0} />}
+                {r.inspector && <span>inspected by {r.inspector}</span>}
               </div>
               {r.violation_codes && <RowText codes={r.violation_codes} />}
             </li>
@@ -398,10 +464,6 @@ function StorefrontLinks({
   )
 }
 
-function Note({ children }: { children: ReactNode }) {
-  return <p className="text-micro font-serif text-slate-600 dark:text-slate-300 leading-snug mt-1.5">{children}</p>
-}
-
 // ── the panel ──────────────────────────────────────────────────────────────
 
 export interface StorefrontPanelProps {
@@ -417,6 +479,8 @@ export interface StorefrontPanelProps {
   /** Extra selectors treated as inside the panel for outside-click dismiss
    *  (e.g. the storylines rail, which re-targets `?at=`). */
   insideSelectors?: string[]
+  /** Opens the header's data-notes popover at the storefront section. */
+  onOpenNotes?: () => void
 }
 
 export default function StorefrontPanel({
@@ -428,6 +492,7 @@ export default function StorefrontPanel({
   onFlyTo,
   snapshot,
   insideSelectors,
+  onOpenNotes,
 }: StorefrontPanelProps) {
   const nowYear = Number(asOf.slice(0, 4))
   const key = storefront.key
@@ -438,9 +503,10 @@ export default function StorefrontPanel({
 
   const index = useMemo(() => new Map(snapshot.storefronts.map((s) => [s.key, s] as const)), [snapshot])
   const status = useMemo(
-    () => statusLine(latestReading(storefront, laneLoading ? null : effectiveLane), nowYear),
+    () => statusParts(latestReading(storefront, laneLoading ? null : effectiveLane), nowYear),
     [storefront, effectiveLane, laneLoading, nowYear],
   )
+  const lede = useMemo(() => operatorsLede(storefront), [storefront])
   const closures = useMemo(
     () => panelEpisodes(storefront, laneLoading ? null : effectiveLane),
     [storefront, effectiveLane, laneLoading],
@@ -472,7 +538,13 @@ export default function StorefrontPanel({
           {laneLoading && hasPermits ? (
             <Shimmer className="h-3 w-4/5 mt-2" />
           ) : status ? (
-            <p className="text-micro font-serif text-slate-700 dark:text-slate-200 mt-1.5 leading-snug">{status}</p>
+            <p
+              className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-micro font-mono text-slate-600 dark:text-slate-300 leading-snug"
+              title={status.sentence}
+            >
+              <span>{status.lead}</span>
+              {status.placard && <PlacardChip status={status.placard} />}
+            </p>
           ) : null}
         </header>
 
@@ -482,7 +554,10 @@ export default function StorefrontPanel({
           <PlacardRibbon storefront={storefront} lane={effectiveLane} asOf={asOf} />
 
           {/* 3 · Who has run this storefront */}
-          <SectionHead>Who has run this storefront</SectionHead>
+          <SectionHead>
+            Who has run this storefront
+            {lede && <InfoTip term="who has run this storefront" text={lede} />}
+          </SectionHead>
           <Operators storefront={storefront} />
 
           {/* 4 · Closures, 2020 on */}
@@ -506,7 +581,7 @@ export default function StorefrontPanel({
                 items={closures.episodes}
                 limit={4}
                 noun="closures"
-                render={(ep) => <EpisodeRow key={`${ep.permit}|${ep.episode.start}`} ep={ep} nowYear={nowYear} />}
+                render={(ep) => <EpisodeRow key={`${ep.permit}|${ep.episode.start}`} ep={ep} nowYear={nowYear} asOf={asOf} />}
               />
           )}
 
@@ -535,9 +610,12 @@ export default function StorefrontPanel({
                 const href = businessOwnerHref(o)
                 const city = mailingCityLabel(o.mailCity)
                 const others = o.storefronts.filter((k) => k !== key).length
+                const sentence =
+                  `Registered to the same company at ${apCount(others)} other ${others === 1 ? 'storefront' : 'storefronts'}` +
+                  `${o.contract ? ', as a contract food-service company' : ''}.`
                 return (
                   <div key={o.name} className="mb-2">
-                    <p className="text-micro leading-snug">
+                    <p className="text-micro leading-snug flex flex-wrap items-baseline gap-x-1.5">
                       {href ? (
                         <Link to={href} className={`font-serif text-slate-700 dark:text-slate-200 ${LINK}`}>
                           {o.name}
@@ -545,11 +623,11 @@ export default function StorefrontPanel({
                       ) : (
                         <span className="font-serif text-slate-700 dark:text-slate-200">{o.name}</span>
                       )}
-                      {city && <Muted> · {city}</Muted>}
-                    </p>
-                    <p className="text-micro font-serif text-slate-600 dark:text-slate-300">
-                      Registered to the same company at {apCount(others)} other {others === 1 ? 'storefront' : 'storefronts'}
-                      {o.contract ? ', as a contract food-service company' : ''}.
+                      {city && <Muted>· {city}</Muted>}
+                      <span role="img" aria-label={sentence} title={sentence} className="font-mono text-nano tabular-nums text-teal-700 dark:text-teal-400">
+                        +{others} {others === 1 ? 'storefront' : 'storefronts'}
+                      </span>
+                      {o.contract && <Muted className="font-mono text-nano">· contract food service</Muted>}
                     </p>
                     <StorefrontLinks keys={o.storefronts} index={index} onFlyTo={onFlyTo} exclude={key} />
                   </div>
@@ -565,8 +643,10 @@ export default function StorefrontPanel({
               {shared.map((a) => (
                 <div key={a.key} className="mb-2">
                   <p className="text-micro font-mono text-slate-700 dark:text-slate-200">{mailingLine(a)}</p>
-                  <p className="text-micro font-serif text-slate-700 dark:text-slate-200 mt-0.5">{sharedMailingSentence(a.companies.length)}</p>
-                  <p className="text-micro font-serif text-slate-600 dark:text-slate-300 mt-0.5">{a.companies.join(' · ')}</p>
+                  <p className="text-micro font-serif text-slate-600 dark:text-slate-300 mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                    <CountBadge value={`${a.companies.length} companies`} label={sharedMailingSentence(a.companies.length)} />
+                    <span>{a.companies.join(' · ')}</span>
+                  </p>
                   {a.foodBuilding && (
                     <p className="text-nano font-mono text-slate-500 dark:text-slate-400 mt-0.5">This address is itself a building with food businesses in it.</p>
                   )}
@@ -578,7 +658,17 @@ export default function StorefrontPanel({
           {withheld && (
             <>
               {shared.length === 0 && <SectionHead>Mailing address</SectionHead>}
-              <p className="text-micro font-mono text-slate-500 dark:text-slate-400">{MAILING_WITHHELD_LABEL}</p>
+              {/* Never a silent redaction: the reason is one click away and
+                  the city's own record is linked right here. */}
+              <p className="text-micro font-mono text-slate-500 dark:text-slate-400">
+                {MAILING_WITHHELD_LABEL}
+                {' · '}
+                {onOpenNotes
+                  ? <button type="button" onClick={onOpenNotes} className={`${LINK} hover:text-teal-600 dark:hover:text-teal-400`}>why</button>
+                  : <Link to="/about#source-sf-dd-storefront-histories" className={LINK}>why</Link>}
+                {' · '}
+                <a href={REGISTRY_URL} target="_blank" rel="noopener noreferrer" className={LINK}>city record ↗</a>
+              </p>
             </>
           )}
 
@@ -605,41 +695,24 @@ export default function StorefrontPanel({
             </>
           )}
 
-          {/* 9 · Data notes + the city's own lookup. */}
-          <details className="mt-5">
-            <summary className="text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 cursor-pointer select-none hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
-              Data notes
-            </summary>
-            <Note>{MAILING_CITY_NOTE}</Note>
-            <Note>
-              {MAILING_WITHHELD_NOTE}{' '}
-              <a href={REGISTRY_URL} target="_blank" rel="noopener noreferrer" className={LINK}>
-                Open the business registry
-              </a>
-              .
-            </Note>
-            {withheld === 'shared' && (
-              <Note>
-                {SHARED_WITHHELD_NOTE}{' '}
-                <a href={REGISTRY_URL} target="_blank" rel="noopener noreferrer" className={LINK}>
-                  Open the business registry
-                </a>
-                .
-              </Note>
-            )}
-            {(shared.length > 0 || groups.length > 0) && (
-              <Note>{sameMailingNote(groups.length > 0 ? groups.map(evidenceKinds).join('; ') : undefined)}</Note>
-            )}
-            <Note>{DURATION_NOTE}</Note>
-            <Note>{INSPECTOR_NOTE}</Note>
-            <Note>{BREAK_NOTICE}</Note>
-            <Note>
-              Names come from inspection records in three city datasets, each published in its own vocabulary: scores
-              for 2016–19, placards since 2020. The city published nothing from late November 2019 to early March 2020
-              or from early August through December 2023, so a business that opened and closed inside those gaps is missing.
-              Owners are the city Treasurer’s registrations, matched to this address by name and dates.
-            </Note>
-          </details>
+          {/* 9 · Data notes live once, in the header popover (dataNotes.ts);
+              a withheld address still says so on its own row above. */}
+          {onOpenNotes ? (
+            <button
+              type="button"
+              onClick={onOpenNotes}
+              className="mt-5 text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+            >
+              Data notes ›
+            </button>
+          ) : (
+            <Link
+              to="/about#source-sf-dd-storefront-histories"
+              className="mt-5 inline-block text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+            >
+              Data notes ›
+            </Link>
+          )}
 
           <p className="mt-4 text-micro font-mono">
             <a href={DPH_LOOKUP_URL} target="_blank" rel="noopener noreferrer" className={`text-teal-700 dark:text-teal-400 ${LINK}`}>

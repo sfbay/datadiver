@@ -1,53 +1,60 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useId, useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import MapSidebar from '@/components/layout/MapSidebar'
 import PositionScale from '@/components/charts/PositionScale'
+import DotRow from '@/components/charts/DotRow'
+import PartWhole from '@/components/charts/PartWhole'
+import { DurationBar, EpisodeStrip } from '@/components/charts/SpanBar'
 import { SkeletonSidebarRows } from '@/components/ui/Skeleton'
 import type { Storefront, StorefrontSnapshot, TurnoverBucket, VisibleOwner } from '@/lib/storefronts/types'
 import { CONTRACT_OPERATORS } from '@/lib/storefronts/ownerGroups'
 import { apDate } from '@/utils/apDate'
 import { sfLocalCutoff } from '@/utils/sfTime'
+import NotesLink from './NotesLink'
+import type { NoteSectionId } from './dataNotes'
 import StorefrontLookup from './StorefrontLookup'
+import RailStat from './RailStat'
+import RingGlyph from './RingGlyph'
+import { BRICK_400, BRICK_600, INDIGO_400, PAPER_500 } from './mapLayers'
+import { REPEAT_BAR_FROM } from './closureEpisodes'
 import { feedWindow, type FeedWindowId } from './inspectionFeed'
 import {
-  BREAK_NOTICE,
-  CARD_NOTE,
-  DURATION_NOTE,
-  MAILING_CITY_NOTE,
+  CLOSURES_CAPTION,
+  FEED_NOTE,
   MAILING_WITHHELD_LABEL,
-  MAILING_WITHHELD_NOTE,
-  NEIGHBORHOOD_RATES_NOTE,
   SEEN_ONCE,
   THIN_FEED_BADGE,
   TOO_FEW_TO_RATE,
+  TURNOVER_CAPTION,
+  VERMIN_CAPTION,
   apCount,
   apCountStart,
+  closuresFigure,
   closuresLede,
+  companiesFigure,
+  durationBinsLabel,
+  durationFigure,
   episodeFeedNote,
   episodeOutcome,
   mailingCityLabel,
-  ownersNote,
+  ofInspected,
+  ownersFigure,
   repeatSummary,
-  sameMailingNote,
   sharedMailingSentence,
   turnoverLede,
-  turnoverNote,
   verminSentence,
   windowLabel,
 } from './restaurantPhrase'
 import {
   BUCKET_LABEL,
-  BUCKET_NOTE,
   BUCKET_ORDER,
-  CHAIN_NOTE,
-  CLOSURE_LEDE_NOTE,
-  CLOSURE_LIST_NOTE,
-  FRANCHISE_NOTE,
-  OWNER_CLOSURES_NOTE,
-  REPEAT_NOTE,
+  BUCKET_SHORT,
+  DURATION_BIN_LABEL,
+  DURATION_BIN_ORDER,
   bucketCounts,
   chainOperators,
   citywideRate,
+  closureDurationBins,
   closureLedeFigures,
   closureListRows,
   currentOperator,
@@ -67,7 +74,7 @@ import {
   sortRates,
   storefrontIndex,
   turnoverRows,
-  groupEvidencePhrase,
+  type DurationBin,
   type LiveClosureItem,
   type RateBy,
 } from './storylineRows'
@@ -78,20 +85,27 @@ import {
  * Restaurants.tsx); the lookup box heads the rail. MapSidebar supplies the
  * desktop collapse and the mobile bottom sheet.
  *
- *   Turnover — the lede, bucket chips (`?bucket=`), storefronts ranked by
- *     strict chain, the chain inline with one-timers in muted italics.
- *   Closures — "Closed more than once since 2020" (snapshot, through asOf)
- *     first, then "Every closure, newest first" (live, window-scoped) with
- *     each closure's outcome, then neighborhood rates (places closed ÷ places
- *     inspected, denominator on every row, PositionScale vs citywide).
- *   Owners — company owners at 3+ storefronts (contract operators folded),
- *     "One sign, many owners", the shared-mailing-address FACT, and curated
- *     "same restaurant group" CLAIMS (section hidden while none are curated).
+ *   Turnover — a RailStat (count · bucket bar · caption) with the bucket
+ *     legend as the `?bucket=` filter, then storefronts ranked by strict
+ *     chain: the map's RingGlyph at the left edge, the chain inline with
+ *     one-timers in muted italics.
+ *   Closures — two RailStats (cleared closures · length histogram; vermin ·
+ *     part-whole), then "Closed more than once since 2020" (snapshot, an
+ *     EpisodeStrip per row), "Every closure, newest first" (live, a
+ *     DurationBar + figure per row), then neighborhood rates (places closed ÷
+ *     places inspected, "of N" on every row, PositionScale vs citywide).
+ *   Owners — company owners at 3+ storefronts (contract operators folded; a
+ *     DotRow says checked / closures), "One sign, many owners" (dots per
+ *     location), the shared-mailing-address FACT, and curated "same
+ *     restaurant group" CLAIMS (section hidden while none are curated).
  *
- * Chrome stays clean; every simplified label's precision sits in the tab's
- * DATA NOTES turn-down (Jesse, 2026-09-24). Every list row is Tier 3 — no
- * glow. Owner names render as the registry publishes them, persons included;
- * a mailing city renders as the plain city name, no label.
+ * Readouts follow the Last 48 rule (Sept. 2026): NUMBER first, MARK second,
+ * WORDS last. Every sentence a mark replaced rides that mark's `label` (and
+ * the chip's InfoTip), so screen readers lose nothing. Chrome stays clean;
+ * every simplified label's precision sits in the tab's DATA NOTES turn-down
+ * (Jesse, 2026-09-24). Every list row is Tier 3 — no glow. Owner names render
+ * as the registry publishes them, persons included; a mailing city renders as
+ * the plain city name, no label.
  */
 
 export type RestaurantLens = 'turnover' | 'closures' | 'owners'
@@ -103,6 +117,8 @@ const LENSES: readonly { id: RestaurantLens; label: string }[] = [
 ]
 
 export interface StorylineRailProps {
+  /** Opens the header's data-notes popover at a section (the notes live once, in dataNotes.ts). */
+  onOpenNotes?: (section: NoteSectionId) => void
   lens: RestaurantLens
   onLens: (l: RestaurantLens) => void
   snapshot: StorefrontSnapshot | null
@@ -169,28 +185,8 @@ function DidNotLoad({ what, retry }: { what: string; retry?: () => void }) {
   )
 }
 
-function Lede({ children }: { children: ReactNode }) {
-  return <p className="text-sm leading-relaxed text-ink dark:text-paper-200 mb-3">{children}</p>
-}
-
-/** The precision behind the tab's labels — body serif, collapsed by default. */
-function DataNotes({ notes }: { notes: readonly (string | null | undefined | false)[] }) {
-  const list = notes.filter((n): n is string => typeof n === 'string' && n.length > 0)
-  return (
-    <details className="mt-6 pt-3 border-t border-paper-200/70 dark:border-white/[0.06] group">
-      <summary className="cursor-pointer list-none font-mono text-micro uppercase tracking-[0.18em] text-paper-600 dark:text-paper-400 hover:text-ink dark:hover:text-paper-200">
-        <span className="inline-block transition-transform group-open:rotate-90 mr-1">›</span>Data notes
-      </summary>
-      <div className="mt-2 space-y-2">
-        {list.map((n) => (
-          <p key={n} className="text-label leading-relaxed text-paper-700 dark:text-paper-300">
-            {n}
-          </p>
-        ))}
-      </div>
-    </details>
-  )
-}
+/** The mono figure that rides beside a mark ("3 closures", "≤17 d", "of 254"). */
+const FIGURE = 'font-mono text-nano tabular-nums whitespace-nowrap text-paper-600 dark:text-paper-400'
 
 /** A long list folds behind a show-all turn-down — never paged. */
 function Folded<T>({ items, first, render, noun }: { items: readonly T[]; first: number; render: (t: T) => ReactNode; noun: string }) {
@@ -268,29 +264,76 @@ export default function StorylineRail(props: StorylineRailProps) {
 
 // ── Turnover ───────────────────────────────────────────────────────────────
 
-function TurnoverTab({ snapshot, bucket: rawBucket, onBucket, selectedKey, onSelect }: StorylineRailProps & { snapshot: StorefrontSnapshot }) {
+/** One teal ramp for the three matched buckets (darkest = most owners) and
+ *  paper for "not matched" — the registry has no record there, which is the
+ *  site's paper/hatch register, not a fourth pigment. Bar and legend share
+ *  these classes so they can't drift. */
+const BUCKET_SWATCH: Readonly<Record<TurnoverBucket, string>> = {
+  'three-owners': 'bg-teal-700 dark:bg-teal-400',
+  'same-owner': 'bg-teal-700/65 dark:bg-teal-400/65',
+  'owner-returned': 'bg-teal-700/40 dark:bg-teal-400/40',
+  'owners-unknown': 'bg-paper-500/50',
+}
+
+/** The stacked bar in the Turnover chip: each bucket's share of the total.
+ *  With a bucket selected the others fade so the bar reads as the filter. */
+function BucketBar({ counts, total, active }: { counts: Record<TurnoverBucket, number>; total: number; active: TurnoverBucket | null }) {
+  if (total <= 0) return null
+  const parts = BUCKET_ORDER.map((b) => `${BUCKET_LABEL[b]} ${counts[b]}`).join(', ')
+  return (
+    <span role="img" aria-label={parts} className="flex h-1.5 w-full gap-px overflow-hidden rounded-sm">
+      {BUCKET_ORDER.map((b) =>
+        counts[b] > 0 ? (
+          <span
+            key={b}
+            className={`block h-full transition-opacity duration-150 ${BUCKET_SWATCH[b]} ${active !== null && active !== b ? 'opacity-25' : ''}`}
+            style={{ flexGrow: counts[b], flexBasis: 0 }}
+          />
+        ) : null,
+      )}
+    </span>
+  )
+}
+
+function TurnoverTab({ snapshot, bucket: rawBucket, onBucket, selectedKey, onSelect, onOpenNotes }: StorylineRailProps & { snapshot: StorefrontSnapshot }) {
   const bucket = parseBucket(rawBucket)
   const nowYear = Number(snapshot.asOf.slice(0, 4))
   const counts = useMemo(() => bucketCounts(snapshot), [snapshot])
   const total = BUCKET_ORDER.reduce((n, b) => n + counts[b], 0)
   const rows = useMemo(() => turnoverRows(snapshot, bucket), [snapshot, bucket])
+  const lede = turnoverLede(total, snapshot.asOf, nowYear)
 
   return (
     <>
-      <Lede>{turnoverLede(total, snapshot.asOf, nowYear)}</Lede>
+      <RailStat
+        value={total}
+        caption={TURNOVER_CAPTION}
+        tip={lede}
+        label={lede}
+        mark={<BucketBar counts={counts} total={total} active={bucket} />}
+        className="mb-2"
+      />
 
-      <div className="flex flex-wrap gap-1.5 mb-3" role="group" aria-label="Owner pattern">
+      {/* The four buckets are still the `?bucket=` filter — now a legend
+          under the bar: swatch · short label · count. */}
+      <div className="flex flex-wrap gap-x-3 gap-y-1 mb-3 px-1" role="group" aria-label="Owner pattern">
         {BUCKET_ORDER.map((b: TurnoverBucket) => {
           const on = bucket === b
+          const dim = bucket !== null && !on
           return (
             <button
               key={b}
               type="button"
               aria-pressed={on}
+              aria-label={`${BUCKET_LABEL[b]} · ${counts[b]}`}
               onClick={() => onBucket(on ? null : b)}
-              className={`px-2 py-1 rounded-md text-micro font-mono transition-colors duration-150 ${on ? PILL_ON : PILL_OFF}`}
+              className={`inline-flex items-center gap-1.5 py-0.5 rounded-sm font-mono text-nano transition-opacity duration-150 hover:opacity-100 ${
+                dim ? 'opacity-45' : 'opacity-100'
+              } ${on ? 'text-ink dark:text-paper-100 underline decoration-dotted underline-offset-2' : 'text-paper-700 dark:text-paper-300'}`}
             >
-              {BUCKET_LABEL[b]} <span className="tabular-nums opacity-70">{counts[b]}</span>
+              <span aria-hidden className={`inline-block w-2 h-2 rounded-[2px] ${BUCKET_SWATCH[b]}`} />
+              <span>{BUCKET_SHORT[b]}</span>
+              <span className="tabular-nums opacity-70">{counts[b]}</span>
             </button>
           )
         })}
@@ -311,25 +354,32 @@ function TurnoverTab({ snapshot, bucket: rawBucket, onBucket, selectedKey, onSel
                 aria-current={selectedKey === s.key || undefined}
                 className={`${ROW} ${selectedKey === s.key ? SELECTED : HOVER}`}
               >
-                <span className="flex items-baseline justify-between gap-2">
-                  <span className="text-[0.8125rem] font-medium text-ink dark:text-paper-100 break-words">{s.address}</span>
-                  <span className="font-mono text-label tabular-nums text-teal-700 dark:text-teal-400 shrink-0" title="Operators counted">
-                    {s.chainStrict}
-                  </span>
-                </span>
-                {s.nhood && <span className={`block ${SUB}`}>{s.nhood}</span>}
-                <span className="block mt-1 text-label leading-snug text-paper-800 dark:text-paper-300">
-                  {chain.map((o, i) => (
-                    <span key={`${o.name}-${o.firstDate}`}>
-                      {i > 0 && <span className="text-paper-500 dark:text-paper-600"> → </span>}
-                      <span
-                        className={o.seenOnce ? 'italic text-paper-500 dark:text-paper-500' : ''}
-                        title={o.seenOnce ? SEEN_ONCE : undefined}
-                      >
-                        {displayName(o.name)}
-                      </span>
+                <span className="flex items-start gap-2">
+                  {/* The map's tree rings at the FlowRail dot position — a
+                      "5" in the list is the five-ring door on the map. */}
+                  <RingGlyph
+                    rings={s.chainStrict}
+                    repeat={s.repeatCurrent}
+                    className="mt-px"
+                    label={`${s.chainStrict} names counted${s.repeatCurrent ? '; the current permit was closed more than once' : ''}`}
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[0.8125rem] font-medium text-ink dark:text-paper-100 break-words">{s.address}</span>
+                    {s.nhood && <span className={`block ${SUB} italic`}>{s.nhood}</span>}
+                    <span className="block mt-1 text-label leading-snug text-paper-800 dark:text-paper-300">
+                      {chain.map((o, i) => (
+                        <span key={`${o.name}-${o.firstDate}`}>
+                          {i > 0 && <span className="text-paper-500 dark:text-paper-600"> → </span>}
+                          <span
+                            className={o.seenOnce ? 'italic text-paper-500 dark:text-paper-500' : ''}
+                            title={o.seenOnce ? SEEN_ONCE : undefined}
+                          >
+                            {displayName(o.name)}
+                          </span>
+                        </span>
+                      ))}
                     </span>
-                  ))}
+                  </span>
                 </span>
               </button>
             )
@@ -337,7 +387,7 @@ function TurnoverTab({ snapshot, bucket: rawBucket, onBucket, selectedKey, onSel
         />
       </div>
 
-      <DataNotes notes={[turnoverNote(snapshot.asOf, snapshot.excludedAddresses, nowYear), CHAIN_NOTE, BUCKET_NOTE]} />
+      <NotesLink section="turnover" onOpen={onOpenNotes} className="mt-6 px-3" />
     </>
   )
 }
@@ -346,7 +396,7 @@ function TurnoverTab({ snapshot, bucket: rawBucket, onBucket, selectedKey, onSel
 
 function ClosuresTab({
   snapshot, neighborhoodRates, ratesLoading, closuresList, closuresLoading, windowId, selectedKey, onSelect, nh, onNh,
-  snapshotError, ratesError, closuresError, onRetry,
+  snapshotError, ratesError, closuresError, onRetry, onOpenNotes,
 }: StorylineRailProps) {
   const sfToday = sfLocalCutoff(Date.now()).slice(0, 10)
   const nowYear = Number(sfToday.slice(0, 4))
@@ -355,6 +405,7 @@ function ClosuresTab({
 
   const repeat = useMemo(() => (snapshot ? repeatClosureRows(snapshot) : null), [snapshot])
   const lede = useMemo(() => (snapshot ? closureLedeFigures(snapshot) : null), [snapshot])
+  const bins = useMemo(() => (snapshot ? closureDurationBins(snapshot) : null), [snapshot])
   const vermin = snapshot?.stats?.vermin
   const byPermit = useMemo(() => (snapshot ? permitIndex(snapshot) : new Map<string, Storefront>()), [snapshot])
   const list = useMemo(
@@ -370,11 +421,32 @@ function ClosuresTab({
 
   return (
     <>
-      {lede ? (
-        <Lede>
-          {closuresLede({ ...lede, since: '2024-01-01' })}
-          {vermin && vermin.m > 0 ? ` ${verminSentence({ cited: vermin.n, closureInspections: vermin.m, since: '2024-01-01' })}` : ''}
-        </Lede>
+      {lede && bins ? (
+        <div className="grid grid-cols-2 gap-2 mb-2">
+          <RailStat
+            value={lede.cleared}
+            caption={CLOSURES_CAPTION}
+            tip={closuresLede({ ...lede, since: '2024-01-01' })}
+            mark={<DurationHistogram bins={bins} />}
+          />
+          {vermin && vermin.m > 0 && (
+            <RailStat
+              value={vermin.n}
+              caption={VERMIN_CAPTION}
+              tip={verminSentence({ cited: vermin.n, closureInspections: vermin.m, since: '2024-01-01' })}
+              mark={
+                <PartWhole
+                  part={vermin.n}
+                  whole={vermin.m}
+                  color={BRICK_600}
+                  width={72}
+                  className="text-paper-600 dark:text-paper-400"
+                  label={verminSentence({ cited: vermin.n, closureInspections: vermin.m, since: '2024-01-01' })}
+                />
+              }
+            />
+          )}
+        </div>
       ) : snapshotError ? null : (
         <SkeletonSidebarRows count={2} />
       )}
@@ -396,12 +468,26 @@ function ClosuresTab({
                 onClick={() => onSelect(r.storefront.key)}
                 className={`${ROW} ${selectedKey === r.storefront.key ? SELECTED : HOVER}`}
               >
-                <span className="block text-[0.8125rem] font-medium text-ink dark:text-paper-100 break-words">{r.name}</span>
-                <span className={`block ${SUB}`}>
+                <span className="flex items-baseline justify-between gap-2">
+                  <span className="text-[0.8125rem] font-medium text-ink dark:text-paper-100 break-words">{r.name}</span>
+                  <span className={`${FIGURE} shrink-0`}>{closuresFigure(r.episodes.length)}</span>
+                </span>
+                <span className={`block ${SUB} italic`}>
                   {[r.storefront.address, r.storefront.nhood].filter(Boolean).join(' · ')}
                   {r.era === 2020 ? ' · 2020–23 records' : ''}
                 </span>
-                <span className="block mt-0.5 text-label text-paper-800 dark:text-paper-300">{repeatSummary(r.episodes)}</span>
+                {/* Each closure as a span on the 2020→asOf axis; an open one
+                    (no later record) runs hatched to the axis end. */}
+                <span className="block mt-1.5">
+                  <EpisodeStrip
+                    spans={r.episodes.map((e) => ({ start: e.start, end: e.clearedOn }))}
+                    axis={[REPEAT_BAR_FROM, snapshot!.asOf]}
+                    width={160}
+                    color={BRICK_600}
+                    openColor={PAPER_500}
+                    label={repeatSummary(r.episodes)}
+                  />
+                </span>
               </button>
             )}
           />
@@ -437,20 +523,31 @@ function ClosuresTab({
             first={20}
             noun="closures"
             render={(c) => {
-              const note = episodeFeedNote(c.episode)
+              const ep = c.episode
               const body = (
                 <>
                   <span className="flex items-baseline justify-between gap-2">
                     <span className="text-[0.8125rem] font-medium text-ink dark:text-paper-100 break-words">{c.name}</span>
                     <span className="font-mono text-micro tabular-nums text-paper-600 dark:text-paper-400 shrink-0">
-                      {apDate(c.episode.start, nowYear)}
+                      {apDate(ep.start, nowYear)}
                     </span>
                   </span>
-                  <span className={`block ${SUB}`}>
+                  <span className={`block ${SUB} italic`}>
                     {c.storefront ? [c.storefront.address, c.storefront.nhood].filter(Boolean).join(' · ') : 'Not mapped'}
                   </span>
-                  <span className="block mt-0.5 text-label text-paper-800 dark:text-paper-300">{episodeOutcome(c.episode, nowYear)}</span>
-                  {note && <span className="block mt-0.5 text-micro italic text-paper-600 dark:text-paper-400">{note}</span>}
+                  {/* Length on a 0…30-day scale: same day = a hairline at 0,
+                      no later record = hatched full width (never "still
+                      closed"), longer than 30 days = the break mark. */}
+                  <span className="mt-1.5 flex items-center gap-2">
+                    <DurationBar
+                      days={ep.sameDay ? 0 : ep.days}
+                      cap={30}
+                      color={BRICK_400}
+                      openColor={PAPER_500}
+                      label={episodeOutcome(ep, nowYear)}
+                    />
+                    <span className={FIGURE}>{durationFigure(ep)}</span>
+                  </span>
                 </>
               )
               return c.storefront ? (
@@ -469,6 +566,11 @@ function ClosuresTab({
               )
             }}
           />
+          {/* ONE feed note for the list, not one per row: it applies to every
+              hatched bar that began after the July 2025 break. */}
+          {list.some((c) => episodeFeedNote(c.episode) !== null) && (
+            <p className="px-3 pt-1 text-micro italic text-paper-600 dark:text-paper-400">{FEED_NOTE}</p>
+          )}
         </div>
       )}
 
@@ -510,6 +612,11 @@ function ClosuresTab({
                 share={cityShare}
                 rateBy={rateBy}
               />
+              {/* The reference row carries the same mark as every other row —
+                  its dot sits ON the reference tick, which is the point. */}
+              <span className="block mt-1">
+                <PositionScale value={cityShare} range={range} reference={cityShare} width={120} height={10} color={rateBy === 'closed' ? '#963e30' : '#d4a435'} />
+              </span>
             </div>
           )}
           {rates.map((r) => {
@@ -552,24 +659,70 @@ function ClosuresTab({
         </div>
       )}
 
-      <DataNotes
-        notes={[CLOSURE_LEDE_NOTE, REPEAT_NOTE, DURATION_NOTE, CLOSURE_LIST_NOTE, NEIGHBORHOOD_RATES_NOTE, CARD_NOTE, BREAK_NOTICE]}
-      />
+      <NotesLink section="closures" onOpen={onOpenNotes} className="mt-6 px-3" />
     </>
   )
 }
 
+/** name · "6.7% of 254" — the share, then its denominator as a mono figure.
+ *  The sentence it replaced is the aria-label. */
 function RateLine({ name, count, inspected, share, rateBy }: { name: string; count: number; inspected: number; share: number; rateBy: RateBy }) {
+  const sentence = `${count.toLocaleString('en-US')} of ${inspected.toLocaleString('en-US')} places ${rateBy === 'closed' ? 'closed' : 'given a yellow placard'}`
   return (
-    <>
-      <span className="flex items-baseline justify-between gap-2">
-        <span className="text-label text-ink dark:text-paper-200 break-words">{name}</span>
-        <span className="font-mono text-label tabular-nums text-ink dark:text-paper-100 shrink-0">{pct(share)}</span>
+    <span className="flex items-baseline justify-between gap-2">
+      <span className="text-label text-ink dark:text-paper-200 break-words">{name}</span>
+      <span className="flex items-baseline gap-1.5 shrink-0" aria-label={`${pct(share)}: ${sentence}`}>
+        <span className="font-mono text-label tabular-nums text-ink dark:text-paper-100" aria-hidden>{pct(share)}</span>
+        <span className={FIGURE} aria-hidden>{ofInspected(inspected)}</span>
       </span>
-      <span className={`block ${SUB} tabular-nums`}>
-        {count.toLocaleString('en-US')} of {inspected.toLocaleString('en-US')} places {rateBy === 'closed' ? 'closed' : 'given a yellow placard'}
+    </span>
+  )
+}
+
+/** The Closures chip's mark: six bins of closure length, the "no later
+ *  record" bin hatched paper (the hatch idiom — no record, never "still
+ *  closed"). End labels only; the full count per bin is the aria sentence. */
+function DurationHistogram({ bins }: { bins: Record<DurationBin, number> }) {
+  const W = 120
+  const H = 22
+  const n = DURATION_BIN_ORDER.length
+  const slot = W / n
+  const barW = slot - 2
+  const max = Math.max(1, ...DURATION_BIN_ORDER.map((b) => bins[b]))
+  const rows = DURATION_BIN_ORDER.map((b) => ({ id: b, label: DURATION_BIN_LABEL[b], count: bins[b] }))
+  const hatch = `hatch-${useId().replace(/:/g, '')}`
+  return (
+    <span className="block">
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="block" role="img" aria-label={durationBinsLabel(rows)}>
+        <defs>
+          <pattern id={hatch} patternUnits="userSpaceOnUse" width={4} height={4} patternTransform="rotate(-45)">
+            <line x1={0} y1={0} x2={0} y2={4} stroke={PAPER_500} strokeWidth={1} opacity={0.7} />
+          </pattern>
+        </defs>
+        <rect x={0} y={H - 1} width={W} height={1} fill={BRICK_600} opacity={0.25} />
+        {rows.map((r, i) => {
+          const h = r.count > 0 ? Math.max(1, (r.count / max) * (H - 2)) : 0
+          const open = r.id === 'no-record'
+          return (
+            <rect
+              key={r.id}
+              x={i * slot + 1}
+              y={H - 1 - h}
+              width={barW}
+              height={h}
+              rx={1}
+              fill={open ? `url(#${hatch})` : BRICK_600}
+              stroke={open ? PAPER_500 : 'none'}
+              strokeWidth={open ? 0.5 : 0}
+            />
+          )
+        })}
+      </svg>
+      <span className="flex justify-between font-mono text-nano text-paper-500 dark:text-paper-500 leading-none mt-0.5" aria-hidden>
+        <span>{DURATION_BIN_LABEL['same-day']}</span>
+        <span>{DURATION_BIN_LABEL.longer} · no record</span>
       </span>
-    </>
+    </span>
   )
 }
 
@@ -577,12 +730,11 @@ function RateLine({ name, count, inspected, share, rateBy }: { name: string; cou
 
 const CONTRACT_LABEL = new Map(CONTRACT_OPERATORS.map((c) => [c.id, c.label]))
 
-function OwnersTab({ snapshot, owner, onOwner, selectedKey, onSelect }: StorylineRailProps & { snapshot: StorefrontSnapshot }) {
+function OwnersTab({ snapshot, owner, onOwner, selectedKey, onSelect, onOpenNotes }: StorylineRailProps & { snapshot: StorefrontSnapshot }) {
   const byKey = useMemo(() => storefrontIndex(snapshot), [snapshot])
   const { ranked, contract } = useMemo(() => ownerLists(snapshot), [snapshot])
   const franchises = useMemo(() => franchiseRows(snapshot), [snapshot])
   const shared = useMemo(() => sharedAddressRows(snapshot), [snapshot])
-  const matchPct = useMemo(() => registryMatchPct(snapshot), [snapshot])
   const [openBrand, setOpenBrand] = useState<string | null>(null)
   const [openAddress, setOpenAddress] = useState<string | null>(null)
 
@@ -605,7 +757,8 @@ function OwnersTab({ snapshot, owner, onOwner, selectedKey, onSelect }: Storylin
 
   const ownerRow = (o: VisibleOwner, label?: string) => {
     const active = owner === o.name
-    const closures = ownerClosuresPhrase(ownerClosureTally(o, byKey))
+    const tally = ownerClosureTally(o, byKey)
+    const closures = ownerClosuresPhrase(tally)
     const city = mailingCityLabel(o.mailCity)
     const brands = o.brands.slice(0, 3).join(', ') + (o.brands.length > 3 ? ` +${o.brands.length - 3}` : '')
     return (
@@ -621,8 +774,23 @@ function OwnersTab({ snapshot, owner, onOwner, selectedKey, onSelect }: Storylin
             <span className="font-mono text-label tabular-nums text-indigo-500 dark:text-indigo-300 shrink-0">{o.storefronts.length}</span>
           </span>
           {label && <span className={`block ${SUB}`}>{o.name}</span>}
-          {city && <span className={`block ${SUB}`}>{city}</span>}
-          {closures && <span className="block mt-0.5 text-label text-paper-800 dark:text-paper-300">{closures}</span>}
+          {city && <span className={`block ${SUB} italic`}>{city}</span>}
+          {/* One dot per storefront: solid = on the map (checked), hollow =
+              not, brick = a closure since 2020. The sentence is the label. */}
+          {closures && (
+            <span className="block mt-1">
+              <DotRow
+                total={tally.storefronts}
+                filled={tally.checked}
+                accent={Array.from({ length: Math.min(tally.closures, tally.checked) }, (_, i) => i)}
+                color={INDIGO_400}
+                accentColor={BRICK_600}
+                size={6}
+                label={closures}
+                className={FIGURE}
+              />
+            </span>
+          )}
           {brands && <span className="block mt-0.5 text-micro text-paper-600 dark:text-paper-400 break-words">{brands}</span>}
         </button>
         {active && (
@@ -674,8 +842,15 @@ function OwnersTab({ snapshot, owner, onOwner, selectedKey, onSelect }: Storylin
                   className={`${ROW} ${open ? SELECTED : HOVER}`}
                 >
                   <span className="block text-[0.8125rem] font-medium text-ink dark:text-paper-100 break-words">{f.brand}</span>
-                  <span className={`block ${SUB}`}>
-                    {apCount(f.locations)} {f.locations === 1 ? 'location' : 'locations'} · {apCount(f.owners.length)} registered owners
+                  <span className="mt-1 flex items-center gap-2">
+                    <DotRow
+                      total={f.locations}
+                      color={INDIGO_400}
+                      size={6}
+                      label={`${apCountStart(f.locations)} ${f.locations === 1 ? 'location' : 'locations'}, ${apCount(f.owners.length)} registered owners`}
+                      className={FIGURE}
+                    />
+                    <span className={FIGURE} aria-hidden>{ownersFigure(f.owners.length)}</span>
                   </span>
                 </button>
                 {open && (
@@ -724,10 +899,18 @@ function OwnersTab({ snapshot, owner, onOwner, selectedKey, onSelect }: Storylin
                   onClick={() => setOpenAddress(open ? null : a.key)}
                   className={`${ROW} ${open ? SELECTED : HOVER}`}
                 >
-                  <span className="block text-[0.8125rem] font-medium text-ink dark:text-paper-100 break-words">
-                    {[a.address, mailingCityLabel(a.city)].filter(Boolean).join(', ')}
+                  <span className="flex items-baseline justify-between gap-2">
+                    <span className="text-[0.8125rem] font-medium text-ink dark:text-paper-100 break-words">
+                      {[a.address, mailingCityLabel(a.city)].filter(Boolean).join(', ')}
+                    </span>
+                    {/* The FACT as a badge; the sentence stays the label. */}
+                    <span
+                      className="shrink-0 px-1.5 py-0.5 rounded-sm bg-indigo-500/10 dark:bg-indigo-400/15 font-mono text-nano tabular-nums text-indigo-600 dark:text-indigo-300"
+                      aria-label={sharedMailingSentence(a.companies.length)}
+                    >
+                      {companiesFigure(a.companies.length)}
+                    </span>
                   </span>
-                  <span className="block mt-0.5 text-label text-paper-800 dark:text-paper-300">{sharedMailingSentence(a.companies.length)}</span>
                   {a.brands.length > 0 && (
                     <span className="block mt-0.5 text-micro text-paper-600 dark:text-paper-400 break-words">
                       {a.brands.slice(0, 4).join(', ')}
@@ -786,16 +969,7 @@ function OwnersTab({ snapshot, owner, onOwner, selectedKey, onSelect }: Storylin
         </>
       )}
 
-      <DataNotes
-        notes={[
-          ownersNote(matchPct),
-          OWNER_CLOSURES_NOTE,
-          MAILING_CITY_NOTE,
-          FRANCHISE_NOTE,
-          sameMailingNote(groupEvidencePhrase(snapshot.groups)),
-          MAILING_WITHHELD_NOTE,
-        ]}
-      />
+      <NotesLink section="owners" onOpen={onOpenNotes} className="mt-6 px-3" />
     </>
   )
 }

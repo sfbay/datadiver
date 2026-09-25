@@ -37,11 +37,8 @@ import { useStorefronts, indexStorefronts } from './useStorefronts'
 import { useRestaurantData, type CardFigures, type NeighborhoodRate } from './useRestaurantData'
 import { parseFeedWindow, type FeedWindowId } from './inspectionFeed'
 import { parsePlacardFilter, PLACARD_WORD, type Placard } from './placard'
-import {
-  THIN_FEED_BADGE, BREAK_NOTICE, CARD_NOTE, DURATION_NOTE, NEIGHBORHOOD_RATES_NOTE, TURNOVER_LEGEND,
-  MAILING_CITY_NOTE, MAILING_WITHHELD_NOTE, INSPECTOR_NOTE, turnoverNote, ownersNote, sameMailingNote,
-  windowRange, apCount,
-} from './restaurantPhrase'
+import { THIN_FEED_BADGE, TURNOVER_LEGEND, windowRange, apCount } from './restaurantPhrase'
+import { buildDataNotes, type NoteSectionId } from './dataNotes'
 import {
   RING_SOURCE, PLACARD_SOURCE, OWNER_SOURCE, SELECTED_SOURCE,
   TURNOVER_LAYERS, CLOSURE_LAYERS, OWNER_LAYERS, SELECTED_LAYERS,
@@ -234,6 +231,9 @@ export default function Restaurants() {
   }, [cityFig, nhFig, nh, nhRate, windowId, placard, data.neighborhoodRates, data.window, togglePlacard, setParams])
 
   // ── map ──
+  const [notesSection, setNotesSection] = useState<NoteSectionId | null>(null)
+  const openNotes = useCallback((sec: NoteSectionId) => setNotesSection(sec), [])
+  const closeNotes = useCallback(() => setNotesSection(null), [])
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
   const handleMapReady = useCallback((map: mapboxgl.Map) => { setMapInstance(map) }, [])
 
@@ -468,7 +468,7 @@ export default function Restaurants() {
                 </button>
               ))}
             </div>
-            <DataNotes snapshot={snapshot} nowYear={nowYear} />
+            <DataNotes snapshot={snapshot} nowYear={nowYear} section={notesSection} onOpen={openNotes} onClose={closeNotes} />
             <ExportButton targetSelector="#restaurants-capture" filename="restaurants" />
           </div>
         </div>
@@ -508,6 +508,7 @@ export default function Restaurants() {
                 onFlyTo={handleSelect}
                 snapshot={snapshot}
                 insideSelectors={RAIL_INSIDE}
+                onOpenNotes={() => openNotes('storefront')}
               />
             )}
           </MapView>
@@ -519,6 +520,7 @@ export default function Restaurants() {
             rail click that opens a new storefront doesn't first close it. */}
         <div data-storyline-rail className="contents">
           <StorylineRail
+            onOpenNotes={openNotes}
             lens={lens}
             onLens={setLens}
             snapshot={snapshot}
@@ -604,38 +606,46 @@ function MapLegend({ lens, ownerLabel, ownerTotal, ownerMapped, truncated }: {
 }
 
 // ── data notes: the precision behind every simplified label (§11) ────────────
+//
+// The notes live ONCE, in dataNotes.ts, grouped by surface; every tab and
+// the biography panel link here instead of re-printing their subset. The
+// popover is controlled by the view so those links can open it at a section.
 
-function DataNotes({ snapshot, nowYear }: { snapshot: StorefrontSnapshot | null; nowYear: number }) {
-  const [open, setOpen] = useState(false)
+function DataNotes({ snapshot, nowYear, section, onOpen, onClose }: {
+  snapshot: StorefrontSnapshot | null
+  nowYear: number
+  /** The open section, or null when closed. */
+  section: NoteSectionId | null
+  onOpen: (section: NoteSectionId) => void
+  onClose: () => void
+}) {
+  const open = section !== null
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!open) return
-    const onDown = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    const onDown = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose() }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     document.addEventListener('mousedown', onDown)
     document.addEventListener('keydown', onKey)
     return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey) }
-  }, [open])
+  }, [open, onClose])
 
-  const match = snapshot?.stats?.registryMatch
-  const notes: { title: string; body: string }[] = [
-    { title: 'The cards', body: CARD_NOTE },
-    { title: 'The July 2025 feed change', body: BREAK_NOTICE },
-    { title: 'How long a closure lasted', body: DURATION_NOTE },
-    { title: 'Neighborhood rates', body: NEIGHBORHOOD_RATES_NOTE },
-    ...(snapshot ? [{ title: 'Turnover', body: turnoverNote(snapshot.asOf, snapshot.excludedAddresses, nowYear) }] : []),
-    ...(match && match.total > 0 ? [{ title: 'Owners', body: ownersNote((match.matched / match.total) * 100) }] : []),
-    { title: 'The city beside each owner', body: MAILING_CITY_NOTE },
-    { title: 'What is withheld', body: MAILING_WITHHELD_NOTE },
-    { title: 'Same mailing address', body: sameMailingNote() },
-    { title: 'Inspectors', body: INSPECTOR_NOTE },
-  ]
+  // Land on the section the caller asked for (the header button asks for
+  // the first). A rail link is far from the popover, so the scroll is the
+  // only cue that the click did something.
+  useEffect(() => {
+    if (!section) return
+    const el = ref.current?.querySelector<HTMLElement>(`[data-note-section="${section}"]`)
+    el?.scrollIntoView({ block: 'start' })
+  }, [section])
+
+  const sections = useMemo(() => buildDataNotes(snapshot, nowYear), [snapshot, nowYear])
 
   return (
     <div ref={ref} className="relative">
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => (open ? onClose() : onOpen('general'))}
         aria-expanded={open}
         className="px-2.5 py-1.5 rounded-md text-[12px] font-medium text-slate-500 dark:text-slate-400 hover:text-ink dark:hover:text-white bg-slate-100/80 dark:bg-white/[0.04] transition-colors"
       >
@@ -646,13 +656,28 @@ function DataNotes({ snapshot, nowYear }: { snapshot: StorefrontSnapshot | null;
           role="dialog"
           aria-label="Data notes"
           data-export-ignore
-          className="absolute right-0 top-full mt-2 z-50 w-[min(26rem,calc(100vw-2rem))] max-h-[70vh] overflow-y-auto rounded-xl bg-paper-50 dark:bg-espresso-900 ring-1 ring-slate-200/60 dark:ring-white/[0.06] shadow-xl p-4 space-y-3"
+          className="absolute right-0 top-full mt-2 z-50 w-[min(26rem,calc(100vw-2rem))] max-h-[70vh] overflow-y-auto rounded-xl bg-paper-50 dark:bg-espresso-900 ring-1 ring-slate-200/60 dark:ring-white/[0.06] shadow-xl p-4 space-y-5"
         >
-          {notes.map((n) => (
-            <div key={n.title}>
-              <p className="text-label font-mono uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400">{n.title}</p>
-              <p className="mt-1 text-[13px] leading-relaxed text-ink dark:text-paper-200">{n.body}</p>
-            </div>
+          {sections.map((sec) => (
+            <section key={sec.id} data-note-section={sec.id} className="space-y-3 scroll-mt-4">
+              <h3 className="font-mono text-micro uppercase tracking-[0.2em] text-teal-700 dark:text-teal-400 border-b border-slate-200/60 dark:border-white/[0.06] pb-1">
+                {sec.title}
+              </h3>
+              {sec.notes.map((n) => (
+                <div key={n.title}>
+                  <p className="text-label font-mono uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400">{n.title}</p>
+                  <p className="mt-1 text-[13px] leading-relaxed text-ink dark:text-paper-200">
+                    {n.body}
+                    {n.link && (
+                      <>
+                        {' '}
+                        <a href={n.link.href} target="_blank" rel="noopener noreferrer" className="underline decoration-teal-500/50 hover:decoration-teal-500">{n.link.text}</a>.
+                      </>
+                    )}
+                  </p>
+                </div>
+              ))}
+            </section>
           ))}
           <p className="text-[13px] leading-relaxed text-ink dark:text-paper-200">
             Sources and known limitations:{' '}

@@ -67,6 +67,28 @@ describe('closures (snapshot)', () => {
   it('the lede figures share one scope (2024+ episodes at storefronts in the file)', () => {
     expect(R.closureLedeFigures(snapshot)).toEqual({ cleared: 299, clearedWithinADay: 163 })
   })
+
+  it('the length bins reconcile with the chip’s numeral (one scope, one reading)', () => {
+    const bins = R.closureDurationBins(snapshot)
+    const lede = R.closureLedeFigures(snapshot)
+    const cleared = bins['same-day'] + bins['one-day'] + bins.week + bins.month + bins.longer
+    expect(cleared).toBe(lede.cleared)
+    expect(bins['same-day'] + bins['one-day']).toBe(lede.clearedWithinADay)
+    // Every 2024+ episode lands in exactly one bin.
+    const all = snapshot.storefronts.reduce((n, s) => n + s.episodes.filter((e) => e.era === 2024).length, 0)
+    expect(R.DURATION_BIN_ORDER.reduce((n, b) => n + bins[b], 0)).toBe(all)
+    expect(bins['no-record']).toBeGreaterThan(0)
+  })
+
+  it('bins one episode by the same-day / ≤1 / ≤7 / ≤30 / longer / no-record ladder', () => {
+    const e = (p: Partial<{ clearedOn: string | null; days: number | null; sameDay: boolean }>) => ({ clearedOn: '2024-02-01', days: 5, sameDay: false, ...p })
+    expect(R.durationBin(e({ sameDay: true, days: null }))).toBe('same-day')
+    expect(R.durationBin(e({ days: 1 }))).toBe('one-day')
+    expect(R.durationBin(e({ days: 7 }))).toBe('week')
+    expect(R.durationBin(e({ days: 8 }))).toBe('month')
+    expect(R.durationBin(e({ days: 31 }))).toBe('longer')
+    expect(R.durationBin(e({ clearedOn: null, days: null }))).toBe('no-record')
+  })
 })
 
 describe('closures (live list)', () => {
@@ -200,6 +222,8 @@ describe('rail copy — banned words', () => {
   const BANNED_PHRASES = ['hidden owner', 'still closed', 'closed for good', 'σ', 'z-score', 'year-over-year', 'lives in', 'mailing city on']
   const copy = [
     ...Object.values(R.BUCKET_LABEL),
+    ...Object.values(R.BUCKET_SHORT),
+    ...Object.values(R.DURATION_BIN_LABEL),
     R.BUCKET_NOTE,
     R.CHAIN_NOTE,
     R.REPEAT_NOTE,

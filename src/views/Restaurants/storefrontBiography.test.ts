@@ -8,6 +8,8 @@ import {
   dedupeLane,
   displayBusinessName,
   DPH_LOOKUP_URL,
+  episodeEndLabel,
+  episodeTickDates,
   groupsHere,
   latestReading,
   mailingLine,
@@ -22,8 +24,10 @@ import {
   REGISTRY_URL,
   sharedAddressesHere,
   statusLine,
+  statusParts,
   storefrontLabel,
   violationsRecorded,
+  violationsRecordedLabel,
   type InspectionRow,
 } from './storefrontBiography'
 
@@ -114,6 +118,14 @@ describe('names + dates', () => {
     expect(violationsRecorded({ violation_count: '0' })).toBe(0)
     expect(violationsRecorded({ violation_count: undefined })).toBeNull()
     expect(violationsRecorded({ violation_count: '' })).toBeNull()
+  })
+
+  it('labels the count badge with the sentence it replaced (AP numbers)', () => {
+    expect(violationsRecordedLabel(0)).toBe('No violations recorded')
+    expect(violationsRecordedLabel(1)).toBe('One violation recorded')
+    expect(violationsRecordedLabel(3)).toBe('Three violations recorded')
+    expect(violationsRecordedLabel(19)).toBe('Nineteen violations recorded')
+    expect(violationsRecordedLabel(21)).toBe('21 violations recorded')
   })
 })
 
@@ -217,6 +229,27 @@ describe('latest reading + status line', () => {
     expect(s16).not.toMatch(/^Now/)
   })
 
+  it('splits the line into a mono lead and a placard MARK, keeping the sentence', () => {
+    const r = latestReading(at('1031 OCEAN AVE'), ORCHIDS)!
+    expect(statusParts(r, 2026)).toEqual({
+      lead: 'Now: Orchids Cafe · latest inspection Jan. 8, 2025',
+      placard: 'pass',
+      sentence: 'Now: Orchids Cafe · latest inspection Jan. 8, 2025: green placard',
+    })
+    expect(statusParts(latestReading(at('570 GREEN ST'), []), 2026)).toEqual({
+      lead: 'Last inspected April 26, 2023, as Chubby Noodle',
+      placard: 'conditional',
+      sentence: 'Last inspected April 26, 2023, as Chubby Noodle: yellow placard',
+    })
+    // The score era has no placard: the whole line is the lead, no mark.
+    expect(statusParts({ era: 2016, date: '2019-07-11', name: "Pete's on Green", placard: null }, 2026)).toEqual({
+      lead: "Last inspected July 11, 2019, as Pete's on Green",
+      placard: null,
+      sentence: "Last inspected July 11, 2019, as Pete's on Green",
+    })
+    expect(statusParts(null, 2026)).toBeNull()
+  })
+
   it('a storefront with no 2024+ permit reads its older records even with no lane', () => {
     const noPermit = snap.storefronts.find((s) => s.permits.length === 0 && s.lanes.placards2020.length > 0)!
     expect(latestReading(noPermit, null)?.era).toBe(2020)
@@ -269,6 +302,49 @@ describe('closure episodes in the panel', () => {
     ])
     const keys = out.episodes.filter((e) => e.era === 2024).map((e) => e.permit)
     expect(keys).toEqual(['99999', '94600'])
+  })
+})
+
+describe('the episode row: visit ticks + the end reading', () => {
+  const base = { start: '2024-07-15', clearedOn: '2024-08-01', days: 17, closureVisits: 4, sameDay: false }
+
+  it('uses the published closure dates when the live lane recorded them all', () => {
+    const dates = ['2024-07-15', '2024-07-18', '2024-07-25', '2024-07-30']
+    expect(episodeTickDates({ ...base, closureDates: dates })).toEqual(dates)
+    // Order and duplicates are the caller's problem, not the mark's.
+    expect(episodeTickDates({ ...base, closureDates: [...dates].reverse().concat(dates[0]) })).toEqual(dates)
+  })
+
+  it('spreads a snapshot episode’s unknown visits evenly from the first closure to the cleared date', () => {
+    // The snapshot keeps only the first closure date — the other three are estimates.
+    expect(episodeTickDates({ ...base, closureDates: ['2024-07-15'] })).toEqual([
+      '2024-07-15',
+      '2024-07-21',
+      '2024-07-26',
+      '2024-08-01',
+    ])
+  })
+
+  it('an unresolved episode spreads to the axis end; a single visit is one tick', () => {
+    expect(episodeTickDates({ ...base, clearedOn: null, closureVisits: 3, closureDates: ['2024-07-15'] }, '2024-07-25')).toEqual([
+      '2024-07-15',
+      '2024-07-20',
+      '2024-07-25',
+    ])
+    expect(episodeTickDates({ ...base, clearedOn: null, closureVisits: 3, closureDates: ['2024-07-15'] })).toEqual(['2024-07-15'])
+    expect(episodeTickDates({ ...base, closureVisits: 1, closureDates: ['2024-07-15'] })).toEqual(['2024-07-15'])
+    expect(episodeTickDates({ ...base, closureVisits: 1, closureDates: [] })).toEqual(['2024-07-15'])
+    // Same day, several visits: nothing to spread across.
+    expect(episodeTickDates({ ...base, clearedOn: '2024-07-15', closureVisits: 2, closureDates: ['2024-07-15'] })).toEqual(['2024-07-15'])
+  })
+
+  it('reads the row’s end in mono: cleared date + ≤N d, same day, or no later record', () => {
+    expect(episodeEndLabel(base, 2026)).toBe('Aug. 1, 2024 · ≤17 d')
+    expect(episodeEndLabel({ ...base, days: 1 }, 2026)).toBe('Aug. 1, 2024 · ≤1 d')
+    expect(episodeEndLabel({ clearedOn: '2024-07-15', days: null, sameDay: true }, 2026)).toBe('same day')
+    expect(episodeEndLabel({ clearedOn: null, days: null, sameDay: false }, 2026)).toBe('no later record')
+    // Never "still closed" — the same rule the sentences follow.
+    expect(episodeEndLabel({ clearedOn: null, days: null, sameDay: false }, 2026)).not.toMatch(/still|reopen/)
   })
 })
 

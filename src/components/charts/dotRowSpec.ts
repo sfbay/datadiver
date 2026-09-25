@@ -1,4 +1,4 @@
-// src/components/charts/dotRow.ts
+// src/components/charts/dotRowSpec.ts
 //
 // Pure spec for DotRow: "N things, of which M are one way and K are marked".
 // ZERO-IMPORT leaf, node-tested. The three sentences it replaces on the

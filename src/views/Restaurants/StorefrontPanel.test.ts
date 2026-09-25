@@ -34,6 +34,10 @@ function render(storefront: Storefront, lane: InspectionRow[] | null, laneLoadin
   )
 }
 
+/** The markup a reader SEES: attributes (title / aria-label, where the
+ *  replaced sentences now live) stripped, tags removed. */
+const visible = (html: string): string => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')
+
 const STOCKTON_LANE: InspectionRow[] = [
   {
     inspection_date: '2025-05-06T00:00:00.000',
@@ -67,8 +71,18 @@ describe('StorefrontPanel (§11 rulings on the rendered markup)', () => {
     expect(html).toContain('https://data.sf.gov/d/g8m3-pdis')
   })
 
-  it('names the inspector on each inspection', () => {
+  it('names the inspector on each inspection, after a count badge that carries the old sentence', () => {
     expect(html).toContain('inspected by Abel Simon')
+    expect(html).toMatch(/aria-label="Two violations recorded" title="Two violations recorded"[^>]*>2</)
+    expect(visible(html)).not.toMatch(/violations recorded/)
+  })
+
+  it('draws the header placard as a chip, not a word inside a sentence', () => {
+    const header = html.slice(0, html.indexOf('data-export-ignore'))
+    expect(header).toContain('Now: Pacific Street Fish Market · latest inspection May 6, 2025')
+    expect(header).toContain('>Pass</span>')
+    expect(header).toContain(`background:${'#7a9954'}`)
+    expect(visible(header)).not.toMatch(/green placard/)
   })
 
   it('links the city’s own inspection lookup, never the retired portal host', () => {
@@ -90,15 +104,41 @@ describe('StorefrontPanel — company owners, closures, loading', () => {
     const html = render(at('2077 HAYES ST'), [])
     expect(html).toContain('href="/business/owner/Red%20Smart%20LLC"')
     expect(html).toContain('owner came back')
-    expect(html).toContain('came back in 2024 as The Hungry Spot')
+    // The lede is no longer prose under the eyebrow — the ribbon draws it;
+    // the sentence sits one click away behind the eyebrow's InfoTip.
+    expect(visible(html)).not.toContain('came back in 2024 as The Hungry Spot')
+    expect(html).toContain('aria-label="What does &quot;who has run this storefront&quot; mean?"')
   })
 
-  it('lists every closure with its outcome, single and same-day closures included', () => {
+  it('operator rows read like rail rows: name, then ONE italic mono meta line (570 Green St)', () => {
+    const html = render(at('570 GREEN ST'), [])
+    expect(visible(html)).not.toMatch(/Five names have hung over/)
+    expect(html).toMatch(/font-mono text-nano italic[^>]*>Aug\. 2024 · seen once</)
+    expect(html).toMatch(/font-mono text-nano italic[^>]*>Nov\. 2020 – April 2023</)
+  })
+
+  it('lists every closure as a row — date, duration mark, end reading — with the sentence on the mark', () => {
     const html = render(at('1031 OCEAN AVE'), null)
     expect(html).toContain('Closures since March 2020')
+    // The full closureStory sentence rides the row title and the mark's aria-label…
     expect(html).toContain('Cleared Oct. 10, 2024 — at most one day.')
     expect(html).toContain('Cleared the same day.')
+    expect(html).toMatch(/<svg[^>]*role="img" aria-label="Closed Oct\. 9, 2024\. Cleared Oct\. 10, 2024 — at most one day\."/)
+    // …and the visible row is a number, a mark and a short mono reading.
+    const body = visible(html)
+    expect(body).not.toMatch(/Cleared Oct\. 10, 2024 — at most one day/)
+    expect(body).toContain('Oct. 9, 2024')
+    expect(body).toContain('Oct. 10, 2024 · ≤1 d')
+    expect(body).toContain('same day')
     expect(html).not.toMatch(/still closed|reopened|closed for good/i)
+  })
+
+  it('same owner elsewhere: a "+N storefronts" figure beside the name, the sentence behind it', () => {
+    const html = render(at('100 W PORTAL AVE'), [])
+    expect(html).toContain('Starbucks Corporation')
+    expect(html).toMatch(/\+\d+ storefronts</)
+    expect(html).toMatch(/aria-label="Registered to the same company at [^"]+ other storefronts\."/)
+    expect(visible(html)).not.toMatch(/Registered to the same company/)
   })
 
   it('shows skeletons — not absence — while the live lane loads', () => {
@@ -115,7 +155,9 @@ describe('StorefrontPanel — company owners, closures, loading', () => {
   it('publishes a shared mailing address only as the company-only FACT', () => {
     const html = render(at('517 HAYES ST'), [])
     expect(html).toContain('460 Grove St, San Francisco 94102')
-    expect(html).toContain('companies list the same mailing address on their city registrations')
+    // The FACT is a count badge; its sentence rides the badge's title/aria-label.
+    expect(html).toMatch(/aria-label="These \w+ companies list the same mailing address on their city registrations\."[^>]*>\d+ companies</)
+    expect(visible(html)).not.toContain('list the same mailing address on their city registrations')
     expect(html).not.toMatch(/same (restaurant )?group|common owner(ship)? /i)
   })
 })

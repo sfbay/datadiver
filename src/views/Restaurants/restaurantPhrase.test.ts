@@ -73,6 +73,14 @@ function corpus(): string[] {
     P.sameMailingNote('the group’s own website'),
     P.sameMailingNote(),
     P.mailingCityLabel('Daly City') ?? '',
+    // The rail's mono figures and captions (Sept. 2026 marks).
+    ...eps.map((e) => P.durationFigure(e)),
+    P.closuresFigure(1),
+    P.closuresFigure(3),
+    P.ownersFigure(12),
+    P.companiesFigure(7),
+    P.ofInspected(254),
+    P.durationBinsLabel([{ label: 'same day', count: 120 }, { label: 'no later record', count: 4 }]),
   )
   return out.filter(Boolean)
 }
@@ -129,6 +137,21 @@ describe('restaurantPhrase — outcomes', () => {
     )
     expect(P.closureStory(sameDay, NOW)).toBe('Closed March 5, 2024. Cleared the same day.')
     expect(P.closureStory(open, NOW)).toBe('Closed Sept. 11, 2025. No later inspection published.')
+  })
+
+  it('writes the mono figures beside the rail’s marks (digits, ≤ 4 words)', () => {
+    expect(P.durationFigure(golden)).toBe('≤17 d')
+    expect(P.durationFigure(oneDay)).toBe('≤1 d')
+    expect(P.durationFigure(sameDay)).toBe('same day')
+    expect(P.durationFigure(open)).toBe('no later record')
+    expect(P.closuresFigure(1)).toBe('1 closure')
+    expect(P.closuresFigure(3)).toBe('3 closures')
+    expect(P.ownersFigure(1)).toBe('1 owner')
+    expect(P.ownersFigure(12)).toBe('12 owners')
+    expect(P.companiesFigure(7)).toBe('7 companies')
+    expect(P.ofInspected(1254)).toBe('of 1,254')
+    expect(P.durationBinsLabel([{ label: 'same day', count: 120 }, { label: 'no later record', count: 4 }])).toBe('Same day 120, no later record 4')
+    for (const c of [P.TURNOVER_CAPTION, P.CLOSURES_CAPTION, P.VERMIN_CAPTION]) expect(c.split(/\s+/).length).toBeLessThanOrEqual(4)
   })
 
   it('summarizes repeat closures with outcomes', () => {

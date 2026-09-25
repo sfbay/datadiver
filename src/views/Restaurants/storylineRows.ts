@@ -56,6 +56,15 @@ export const BUCKET_LABEL: Readonly<Record<TurnoverBucket, string>> = {
   'owners-unknown': 'Owners not matched',
 }
 
+/** Legend labels under the bucket bar (the chip row became a legend, Sept.
+ *  2026); BUCKET_LABEL is the long form the aria-label keeps. */
+export const BUCKET_SHORT: Readonly<Record<TurnoverBucket, string>> = {
+  'three-owners': '3+ owners',
+  'same-owner': 'Same owner',
+  'owner-returned': 'Owner returned',
+  'owners-unknown': 'Not matched',
+}
+
 /** The precision behind the four chips. */
 export const BUCKET_NOTE =
   'Owners come from the city business registry, matched to each business name by address, name and the dates ' +
@@ -191,6 +200,46 @@ export function closureLedeFigures(snapshot: StorefrontSnapshot): { cleared: num
     }
   }
   return { cleared, clearedWithinADay }
+}
+
+/** The Closures chip's histogram bins, in drawing order. The last bin is the
+ *  hatch idiom — no later record, never "still closed". */
+export const DURATION_BIN_ORDER = ['same-day', 'one-day', 'week', 'month', 'longer', 'no-record'] as const
+export type DurationBin = (typeof DURATION_BIN_ORDER)[number]
+
+export const DURATION_BIN_LABEL: Readonly<Record<DurationBin, string>> = {
+  'same-day': 'same day',
+  'one-day': '1 day',
+  week: '≤7 days',
+  month: '≤30 days',
+  longer: 'longer',
+  'no-record': 'no later record',
+}
+
+/** Which bin one episode falls in — the SAME reading as closureLedeFigures
+ *  (same day or `days` ≤ 1 is "within a day"), so the bins and the chip's
+ *  numeral can never disagree. */
+export function durationBin(e: Pick<SnapshotEpisode, 'clearedOn' | 'days' | 'sameDay'>): DurationBin {
+  if (e.sameDay) return 'same-day'
+  if (e.clearedOn === null || e.days === null) return 'no-record'
+  if (e.days <= 1) return 'one-day'
+  if (e.days <= 7) return 'week'
+  if (e.days <= 30) return 'month'
+  return 'longer'
+}
+
+/** Closure lengths, 2024+ episodes at the storefronts in the file — ONE scope
+ *  with closureLedeFigures: the cleared bins sum to its `cleared`, and
+ *  same-day + one-day equal its `clearedWithinADay`. */
+export function closureDurationBins(snapshot: StorefrontSnapshot): Record<DurationBin, number> {
+  const out: Record<DurationBin, number> = { 'same-day': 0, 'one-day': 0, week: 0, month: 0, longer: 0, 'no-record': 0 }
+  for (const s of snapshot.storefronts) {
+    for (const e of s.episodes) {
+      if (e.era !== 2024) continue
+      out[durationBin(e)]++
+    }
+  }
+  return out
 }
 
 // ── closures (live, window-scoped) ─────────────────────────────────────────

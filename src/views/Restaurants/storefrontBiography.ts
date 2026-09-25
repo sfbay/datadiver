@@ -31,10 +31,10 @@ import type {
   StorefrontSnapshot,
   VisibleOwner,
 } from '@/lib/storefronts/types'
-import { closureEpisodes, type ClosureEpisode } from './closureEpisodes'
+import { closureEpisodes, daysBetween, type ClosureEpisode } from './closureEpisodes'
 import { currentOperator } from './mapLayers'
 import { normalizePlacard, PLACARD_RANK, PLACARD_WORD, type Placard } from './placard'
-import { nowLine, monthYearShort } from './restaurantPhrase'
+import { apCountStart, nowLine, monthYearShort } from './restaurantPhrase'
 import {
   parseViolationItems,
   VIOLATION_FAMILIES,
@@ -165,6 +165,14 @@ export function violationsRecorded(r: Pick<InspectionRow, 'violation_count'>): n
     : n
 }
 
+/** The sentence behind an inspection row's count badge — "Three violations
+ *  recorded" / "No violations recorded" — carried as the badge's title and
+ *  aria-label, never printed beside it. */
+export function violationsRecordedLabel(n: number): string {
+  if (n === 0) return 'No violations recorded'
+  return `${apCountStart(n)} ${n === 1 ? 'violation' : 'violations'} recorded`
+}
+
 // ── the latest reading (header "Now:" line) ────────────────────────────────
 
 export interface LatestReading {
@@ -225,6 +233,19 @@ export function statusLine(r: LatestReading | null, nowYear: number): string | n
   // AP sets a year off with commas on both sides: "Aug. 3, 2023, as …".
   const who = r.name ? `${/\d{4}$/.test(when) ? ',' : ''} as ${r.name}` : ''
   return `Last inspected ${when}${who}${r.placard ? `: ${PLACARD_WORD[r.placard]}` : ''}`
+}
+
+/** The header's status line split for the panel: the mono lead ("Now: Golden
+ *  Flower · latest inspection June 13, 2025" / "Last inspected Aug. 3, 2023,
+ *  as Chubby Noodle") and the placard to draw as a chip beside it — the
+ *  reading as a MARK, not a word inside a sentence. `sentence` is the full
+ *  statusLine, for the line's title. */
+export function statusParts(r: LatestReading | null, nowYear: number): { lead: string; placard: Placard | null; sentence: string } | null {
+  const sentence = statusLine(r, nowYear)
+  if (!r || sentence === null) return null
+  const idx = sentence.lastIndexOf(': ')
+  const lead = r.placard && idx > 0 ? sentence.slice(0, idx) : sentence
+  return { lead, placard: r.placard, sentence }
 }
 
 // ── closure episodes, 2020 on ──────────────────────────────────────────────
@@ -320,6 +341,45 @@ function liveEpisode(ep: ClosureEpisode, rows: readonly InspectionRow[]): PanelE
     items,
     notices,
   }
+}
+
+/** 'YYYY-MM-DD' + n whole days, by UTC day arithmetic (never Date.parse of
+ *  a floating date-only string). */
+function addDays(iso: string, n: number): string {
+  const ms = Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)))
+  return new Date(ms + n * 86_400_000).toISOString().slice(0, 10)
+}
+
+/**
+ * The dates to tick on an episode's duration mark — one per inspection that
+ * found the place closed. The live lane records every closure date, so those
+ * are used as published; a snapshot episode keeps only the first, so the
+ * remaining `closureVisits − 1` ticks are spread evenly from the first
+ * closure to the cleared date (or to `until` — the axis end — when no later
+ * inspection was published). Ascending, distinct, never before `start`.
+ */
+export function episodeTickDates(
+  ep: Pick<ClosureEpisode, 'start' | 'clearedOn' | 'closureVisits' | 'closureDates'>,
+  until?: string,
+): string[] {
+  const known = [...new Set((ep.closureDates ?? []).filter((d) => d >= ep.start))].sort()
+  if (known.length >= ep.closureVisits) return known
+  const n = Math.max(1, ep.closureVisits)
+  const end = ep.clearedOn ?? until ?? ep.start
+  const span = Math.max(0, daysBetween(ep.start, end))
+  if (n === 1 || span === 0) return [ep.start]
+  const out: string[] = []
+  for (let i = 0; i < n; i++) out.push(addDays(ep.start, Math.round((i * span) / (n - 1))))
+  return [...new Set(out)]
+}
+
+/** The right-hand reading of an episode row, mono and short:
+ *    "Oct. 10, 2024 · ≤17 d" · "same day" · "no later record"
+ *  (the full sentence — closureStory — rides the row's title). */
+export function episodeEndLabel(ep: Pick<ClosureEpisode, 'clearedOn' | 'days' | 'sameDay'>, nowYear: number): string {
+  if (ep.sameDay) return 'same day'
+  if (ep.clearedOn === null || ep.days === null) return 'no later record'
+  return `${apDate(ep.clearedOn, nowYear)} · ≤${ep.days} d`
 }
 
 const signature = (eps: readonly { key: string; start: string; clearedOn: string | null }[]): string =>

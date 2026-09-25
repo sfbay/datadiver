@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { dotRowSpec } from './dotRow'
+import { dotRowSpec } from './dotRowSpec'
 
 describe('dotRowSpec', () => {
   it('fills the first M of N and leaves the rest hollow', () => {
