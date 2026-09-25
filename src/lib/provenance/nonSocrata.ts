@@ -7,6 +7,7 @@ export type NonSocrataId =
   | 'sf-analysis-neighborhoods' | 'sf-precincts-2012' | 'sf-precincts-2022'
   | 'sf-elections-results' | 'sf-cvr-20241105' | 'sf-tract-assignment'
   | 'acs-2023-5yr' | 'oak-beats' | 'oak-neighborhoods' | 'mapbox-basemap' | 'google-3d-tiles'
+  | 'dd-storefront-histories'
 
 export interface NonSocrataElection {
   dateCode: string
@@ -19,7 +20,10 @@ export interface NonSocrataElection {
 export interface NonSocrataSource {
   id: NonSocrataId
   cities: readonly CityId[]
-  kind: 'boundary' | 'results' | 'ballots' | 'census' | 'crosswalk' | 'basemap'
+  /** `derived` = a dataset DataDiver itself builds by joining several public
+   *  sources (the storefront histories). Substantive, not a frame — see
+   *  PRIMARY_STATIC_KINDS in sourceLine.ts. */
+  kind: 'boundary' | 'results' | 'ballots' | 'census' | 'crosswalk' | 'basemap' | 'derived'
   publisher: { short: string; full: string }
   title: string
   vintage: string
@@ -134,6 +138,22 @@ export const NON_SOCRATA: Record<NonSocrataId, NonSocrataSource> = {
     license: 'not stated', servedPath: '/data/geo/oakland-regions.geojson',
     generator: 'scripts/build-oakland-regions.py', derivedLicense: 'CC BY 4.0',
     socrataId: 'sb4q-6bkc', socrataHost: 'data.oaklandca.gov',
+  },
+  // DataDiver-AUTHORED: storefront turnover chains, closure episodes and
+  // company-owner groupings, joined from three DPH inspection extracts and the
+  // Treasurer's business registry by scripts/build-storefronts.ts (hand-run,
+  // gated G0–G7, asOf-stamped). Every input is PDDL on DataSF; the join,
+  // normalization and classification are ours, so the file carries CC BY 4.0
+  // (LICENSE-CONTENT.md). What it withholds and why lives in sourceNotes.ts.
+  'dd-storefront-histories': {
+    id: 'dd-storefront-histories', cities: ['sf'], kind: 'derived',
+    publisher: { short: 'DataDiver', full: 'DataDiver, from S.F. Department of Public Health inspections and the S.F. Treasurer & Tax Collector business registry' },
+    title: 'Storefront histories (turnover, closure episodes, registered owners)',
+    vintage: 'inspections Oct. 2016 onward; rebuilt by hand, dated in the file',
+    upstreamUrl: 'https://data.sf.gov/d/tvy3-wexg',
+    landingUrl: 'https://datadiver.jlabsf.org/about#source-sf-dd-storefront-histories',
+    license: PDDL, servedPath: '/data/restaurants/storefronts.json',
+    generator: 'scripts/build-storefronts.ts', derivedLicense: 'CC BY 4.0',
   },
   'mapbox-basemap': {
     id: 'mapbox-basemap', cities: ['sf', 'oakland'], kind: 'basemap',

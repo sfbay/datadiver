@@ -17,7 +17,8 @@ const ROOT = process.cwd()
 const VIEW_DIRS: Record<ViewId, string> = {
   home: 'src/views/Home', alerts: 'src/views/Alerts', live: 'src/views/Last48', pulse: 'src/views/Pulse',
   'emergency-response': 'src/views/EmergencyResponse', 'crime-incidents': 'src/views/CrimeIncidents',
-  'traffic-safety': 'src/views/TrafficSafety', housing: 'src/views/Housing', elections: 'src/views/Elections',
+  'traffic-safety': 'src/views/TrafficSafety', housing: 'src/views/Housing', restaurants: 'src/views/Restaurants',
+  elections: 'src/views/Elections',
   'city-budget': 'src/views/CityBudget', 'parking-revenue': 'src/views/ParkingRevenue',
   'dispatch-911': 'src/views/Dispatch911', '311-cases': 'src/views/Cases311',
   'parking-citations': 'src/views/ParkingCitations', 'business-activity': 'src/views/BusinessActivity',

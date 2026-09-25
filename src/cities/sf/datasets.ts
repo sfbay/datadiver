@@ -282,4 +282,62 @@ export const SF_DATASETS_RAW: Record<string, RawDatasetConfig> = {
     dateField: 'buyout_agreement_date',
     defaultSort: 'buyout_agreement_date DESC',
   },
+
+  // ── Restaurant inspections (Restaurants view) ─────────
+  // Three extracts, three grading systems, never reconciled (spec §6). Only
+  // the 2024+ set is read live; the two historical ones are read at build
+  // time by scripts/build-storefronts.ts (the Oakland "registered, not yet
+  // read by a view" precedent — About lists them either way).
+  //   The live set carries ONE junk row dated 2031-05-16 (Cisco Systems,
+  // permit 105295): every query clamps `inspection_date <= sfToday`, and
+  // useDataFreshness (an unclamped MAX) must NOT be pointed at this set —
+  // it returns 2031. The feed also thins on 2025-07-01 (~1,011 → ~297
+  // rows/month, inspection_type + census go null); src/views/Restaurants/
+  // inspectionFeed.ts owns that seam. Probed 2026-09-24 on data.sf.gov.
+  restaurantInspections: {
+    id: 'tvy3-wexg',
+    name: 'Health Inspections (2024+)',
+    description: 'Food-safety inspections with placard outcomes (Pass, Conditional Pass, Closure) since Jan. 2024',
+    publisher: { short: 'DPH', full: 'S.F. Department of Public Health' },
+    category: 'other',
+    hasGeo: true,
+    geoField: 'point', // columns.json: `point`; latitude/longitude are plain numbers too
+    defaultSort: 'inspection_date DESC',
+    dateField: 'inspection_date',
+    cacheTTL: 30 * 60_000, // 30 min — publishes daily, ~1 day behind
+  },
+
+  // Mar. 2020 → Aug. 3 2023. One row per VIOLATION (count distinct
+  // inspection_id); Conditional Pass is spelled four ways (CONDITIIONAL/CONDITIONA/
+  // CONDITONAL PASS). Geo column is `the_geom` (columns.json), not `location`.
+  restaurantInspections2020: {
+    id: '5tti-66ds',
+    name: 'Health Inspections (2020–2023)',
+    description: 'Food-safety inspections with placard outcomes, March 2020 to August 2023 — one row per violation',
+    publisher: { short: 'DPH', full: 'S.F. Department of Public Health' },
+    category: 'other',
+    hasGeo: true,
+    geoField: 'the_geom',
+    defaultSort: 'date DESC',
+    dateField: 'date',
+    cacheTTL: 24 * 60 * 60_000, // 24h — historical only, not updated
+  },
+
+  // Oct. 2016 → Oct. 2019 (one straggler in Nov.). One row per VIOLATION;
+  // numeric scores on routine inspections only (47.4% unscored by design).
+  // Geo column is `business_location`; its lat/lng columns are
+  // business_latitude/business_longitude (missing for 3,497 of 6,253
+  // businesses — the generator fills them from the 2024+ set by address).
+  restaurantInspections2016: {
+    id: 'pyih-qa8i',
+    name: 'Health Inspection Scores (2016–2019)',
+    description: 'Food-safety inspections with numeric scores, October 2016 to October 2019 — one row per violation',
+    publisher: { short: 'DPH', full: 'S.F. Department of Public Health' },
+    category: 'other',
+    hasGeo: true,
+    geoField: 'business_location',
+    defaultSort: 'inspection_date DESC',
+    dateField: 'inspection_date',
+    cacheTTL: 24 * 60 * 60_000, // 24h — historical only, not updated
+  },
 }

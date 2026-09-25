@@ -29,8 +29,13 @@ export interface SourceSummary {
 /** Static "kinds" that ARE the substantive content of a view rather than
  *  infrastructure that merely joins geometry onto a Socrata feed. A boundary
  *  layer, a crosswalk, or the basemap never justifies leading the source
- *  list on its own — a certified results file or a census release does. */
-const PRIMARY_STATIC_KINDS = new Set<NonSocrataSource['kind']>(['results', 'ballots', 'census'])
+ *  list on its own — a certified results file or a census release does.
+ *  `derived` (a dataset DataDiver builds by joining public sources — the
+ *  storefront histories) is SUBSTANTIVE too: its rows are the story the view
+ *  tells, not geometry joined onto a feed. Restaurants still leads with DPH
+ *  because it declares `map-sample`; a view whose only content were a derived
+ *  file would, correctly, lead with it. */
+const PRIMARY_STATIC_KINDS = new Set<NonSocrataSource['kind']>(['results', 'ballots', 'census', 'derived'])
 
 /** A view is DATASET-LED when it draws rows from a Socrata dataset AND
  *  (an explicit `citable` says so via map-sample/window-sample, OR — the
