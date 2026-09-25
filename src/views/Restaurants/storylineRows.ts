@@ -93,6 +93,31 @@ export function chainOperators(s: Storefront): StorefrontOperator[] {
 
 const lastSeen = (s: Storefront): string => s.operators.reduce((m, o) => (o.lastDate > m ? o.lastDate : m), '')
 
+/** A Turnover row, current business first (Jesse, Sept. 25 2026: "more
+ *  hierarchy toward the current establishment"). `current` = the operator
+ *  seen LAST (the map's currentOperator rule); `isNow` only when that
+ *  operator appears in the live 2024+ records — an older last sighting is
+ *  labelled "Last", never "Now", so the row never claims a place is open.
+ *  `earlier` = the rest of the chain, oldest first, for the turn-down. */
+export interface TurnoverRowModel {
+  current: StorefrontOperator | null
+  isNow: boolean
+  earlier: StorefrontOperator[]
+  /** Names counted (the strict chain) — the figure on the row's right. */
+  names: number
+}
+
+export function turnoverRowModel(s: Storefront): TurnoverRowModel {
+  const chain = chainOperators(s)
+  const current = chain.length ? chain.reduce((m, o) => (o.lastDate > m.lastDate ? o : m)) : null
+  return {
+    current,
+    isNow: current !== null && current.eras.includes(2024),
+    earlier: chain.filter((o) => o !== current),
+    names: s.chainStrict,
+  }
+}
+
 /** Storefronts meeting the turnover bar, optionally one bucket, ranked by
  *  strict chain length → all-sightings chain → most recently seen → address. */
 export function turnoverRows(snapshot: StorefrontSnapshot, bucket: TurnoverBucket | null): Storefront[] {

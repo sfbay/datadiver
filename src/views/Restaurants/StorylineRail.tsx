@@ -52,7 +52,7 @@ import {
   DURATION_BIN_LABEL,
   DURATION_BIN_ORDER,
   bucketCounts,
-  chainOperators,
+  turnoverRowModel,
   citywideRate,
   closureDurationBins,
   closureLedeFigures,
@@ -67,7 +67,6 @@ import {
   parseBucket,
   pct,
   permitIndex,
-  registryMatchPct,
   repeatClosureRows,
   shareRange,
   sharedAddressRows,
@@ -345,29 +344,57 @@ function TurnoverTab({ snapshot, bucket: rawBucket, onBucket, selectedKey, onSel
           first={40}
           noun="storefronts"
           render={(s) => {
-            const chain = chainOperators(s)
+            const m = turnoverRowModel(s)
+            const selected = selectedKey === s.key
             return (
-              <button
-                key={s.key}
-                type="button"
-                onClick={() => onSelect(s.key)}
-                aria-current={selectedKey === s.key || undefined}
-                className={`${ROW} ${selectedKey === s.key ? SELECTED : HOVER}`}
-              >
-                <span className="flex items-start gap-2">
-                  {/* The map's tree rings at the FlowRail dot position — a
-                      "5" in the list is the five-ring door on the map. */}
-                  <RingGlyph
-                    rings={s.chainStrict}
-                    repeat={s.repeatCurrent}
-                    className="mt-px"
-                    label={`${s.chainStrict} names counted${s.repeatCurrent ? '; the current permit was closed more than once' : ''}`}
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[0.8125rem] font-medium text-ink dark:text-paper-100 break-words">{s.address}</span>
-                    {s.nhood && <span className={`block ${SUB} italic`}>{s.nhood}</span>}
-                    <span className="block mt-1 text-label leading-snug text-paper-800 dark:text-paper-300">
-                      {chain.map((o, i) => (
+              // A div, not a button: the turn-down is its own control and a
+              // control inside a button is invalid markup.
+              <div key={s.key} className={`rounded-lg transition-colors duration-150 ${selected ? SELECTED : HOVER}`}>
+                <button
+                  type="button"
+                  onClick={() => onSelect(s.key)}
+                  aria-current={selected || undefined}
+                  className="w-full text-left py-2 px-3"
+                >
+                  <span className="flex items-start gap-2">
+                    {/* The map's tree rings at the FlowRail dot position — a
+                        "5" in the list is the five-ring door on the map. */}
+                    <RingGlyph
+                      rings={s.chainStrict}
+                      repeat={s.repeatCurrent}
+                      className="mt-px"
+                      label={`${s.chainStrict} names counted${s.repeatCurrent ? '; the current permit was closed more than once' : ''}`}
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-baseline justify-between gap-2">
+                        {/* The current business leads (Jesse, Sept. 25 2026).
+                            "Last" — never "Now" — when its latest sighting
+                            is older than the live records. */}
+                        <span className="text-[0.8125rem] font-medium text-ink dark:text-paper-100 break-words">
+                          {m.current ? (
+                            <>
+                              {!m.isNow && <span className={`${SUB} not-italic mr-1`}>Last:</span>}
+                              {displayName(m.current.name)}
+                            </>
+                          ) : s.address}
+                        </span>
+                        <span className={FIGURE}>{m.names} names</span>
+                      </span>
+                      <span className={`block ${SUB} italic`}>
+                        {s.address}{s.nhood ? ` · ${s.nhood}` : ''}
+                        {m.current && !m.isNow ? ` · last seen ${apDate(m.current.lastDate, nowYear)}` : ''}
+                      </span>
+                    </span>
+                  </span>
+                </button>
+                {m.earlier.length > 0 && (
+                  <details className="px-3 pb-2 -mt-1 group">
+                    <summary className={`${SUB} cursor-pointer list-none inline-flex items-center gap-1 ml-[1.625rem]`}>
+                      <span className="inline-block transition-transform group-open:rotate-90">›</span>
+                      {m.earlier.length} earlier {m.earlier.length === 1 ? 'name' : 'names'}
+                    </summary>
+                    <span className="block mt-1 ml-[1.625rem] text-label leading-snug text-paper-800 dark:text-paper-300">
+                      {m.earlier.map((o, i) => (
                         <span key={`${o.name}-${o.firstDate}`}>
                           {i > 0 && <span className="text-paper-500 dark:text-paper-600"> → </span>}
                           <span
@@ -378,10 +405,12 @@ function TurnoverTab({ snapshot, bucket: rawBucket, onBucket, selectedKey, onSel
                           </span>
                         </span>
                       ))}
+                      <span className="text-paper-500 dark:text-paper-600"> → </span>
+                      <span className="text-ink dark:text-paper-100">{displayName(m.current!.name)}</span>
                     </span>
-                  </span>
-                </span>
-              </button>
+                  </details>
+                )}
+              </div>
             )
           }}
         />

@@ -241,3 +241,30 @@ describe('rail copy — banned words', () => {
     })
   }
 })
+
+describe('turnoverRowModel — the current business leads', () => {
+  const op = (name: string, first: string, last: string, eras: (2016 | 2020 | 2024)[], seenOnce = false) => ({
+    name, firstDate: first, lastDate: last, dates: seenOnce ? 1 : 3, eras, seenOnce, strict: true, inChain: true, owner: null,
+  })
+  const base = {
+    key: '570 GREEN ST', address: '570 Green St', nhood: 'North Beach', lat: 37.8, lng: -122.4, permits: ['1'],
+    chainStrict: 3, chainAll: 3, turnoverBucket: null, lanes: { scores2016: [], placards2020: [] }, episodes: [], repeatCurrent: false,
+  }
+  it('picks the operator seen last as current and lists the rest oldest first', () => {
+    const s = { ...base, operators: [op('C', '2025-01-01', '2026-07-30', [2024]), op('A', '2017-07-31', '2019-07-11', [2016]), op('B', '2020-11-09', '2023-04-26', [2020])] }
+    const m = R.turnoverRowModel(s)
+    expect(m.current?.name).toBe('C')
+    expect(m.isNow).toBe(true)
+    expect(m.earlier.map((o: { name: string }) => o.name)).toEqual(['A', 'B'])
+    expect(m.names).toBe(3)
+  })
+  it('never says "now" for a business last seen before the live records', () => {
+    const s = { ...base, operators: [op('A', '2017-07-31', '2019-07-11', [2016]), op('B', '2020-11-09', '2023-04-26', [2020])] }
+    const m = R.turnoverRowModel(s)
+    expect(m.current?.name).toBe('B')
+    expect(m.isNow).toBe(false)
+  })
+  it('handles an empty chain', () => {
+    expect(R.turnoverRowModel({ ...base, operators: [] })).toEqual({ current: null, isNow: false, earlier: [], names: 3 })
+  })
+})
