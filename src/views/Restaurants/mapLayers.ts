@@ -10,15 +10,18 @@
 // drawn LAST. Tooltips and clicks register on every rank (`*_LAYER_IDS`).
 //
 //   Turnover (default, snapshot): concentric hollow teal rings, one per
-//     strict operator — the tree ring. 5+ every zoom, largest, keyline →
-//     4 every zoom → 3 from zoom 11 → 2 (one thin ring) from 14 → 1 a
-//     paper-500 pinprick from 15, the city's texture and the denominator.
+//     strict operator — the tree ring. 5+, 4 and 3 at every zoom (largest
+//     drawn last, 5 keylined) → 2 (one thin ring) and 1 (a paper-500 dot,
+//     the city's texture and the denominator) from zoom 12.5.
+//     A lower rank never appears before a higher one (effectiveFloors).
+//     (Floors and sizes live in MAP_TUNE — Jesse, Sept. 24 2026: the first
+//     cut hid too much and drew the story rings too small to read.)
 //     A brick center dot only when the CURRENT permit meets the repeat bar
 //     (D5 — a storefront never inherits an earlier tenant's closure).
 //   Closures (live latest reading + the snapshot's repeat flag): repeat bar
 //     brick-600 every zoom, keyline + halo, drawn last → latest reading
-//     Closure brick-400 from 12 → Conditional ochre-500 from 13 → Pass
-//     moss-500 from 14. A place closed once and since cleared reads Pass —
+//     Closure brick-400 every zoom → Conditional ochre-500 and Pass
+//     moss-500 from 12.5. A place closed once and since cleared reads Pass —
 //     it never stays red, and one closure is never on the every-zoom layer.
 //   Owners: indigo-400 halos on the selected owner's storefronts, every
 //     zoom; everything else stays pinpricks. NO connecting lines — a web
@@ -154,31 +157,84 @@ export function turnoverFeatures(storefronts: readonly Storefront[], opts: { buc
   return { type: 'FeatureCollection', features }
 }
 
+// ── the tune: every size and zoom floor on the map, in one place ───────────
+
+/** The knobs `?tune=1` exposes (MapTunePanel). Defaults are the shipped look;
+ *  `applyMapTune` re-paints a live map with any other set. */
+export interface MapTune {
+  /** Multiplies every turnover ring's radius (1 = the first cut). */
+  ringScale: number
+  /** Multiplies every small dot: one-business storefronts, placards, owners. */
+  dotScale: number
+  /** Zoom floor for one-business storefronts, Pass placards and owner dots. */
+  floor1: number
+  /** Zoom floor for two-business storefronts and yellow placards. */
+  floor2: number
+  /** Zoom floor for three-business storefronts and closed placards. */
+  floor3: number
+}
+
+/** Shipped look (Sept. 24 2026): the 125 story doors (3+ names) and closed
+ *  places at every zoom; the city's texture — 946 two-name doors, 4,229
+ *  one-name doors, green and yellow placards — from the first zoom-in step
+ *  past the opening city view (~12.1), where 946 thin rings buried the story. */
+export const DEFAULT_MAP_TUNE: Readonly<MapTune> = { ringScale: 1.8, dotScale: 1.5, floor1: 12.5, floor2: 12.5, floor3: 0 }
+
+/** The floors a map actually uses. Ranks PARTITION the storefronts, so a
+ *  lower rank showing before a higher one would hide the higher one's doors
+ *  while plainer doors draw (the #183 rule). Each floor is therefore at
+ *  least the floor of the rank above it: floor3 ≤ floor2 ≤ floor1, always. */
+export function effectiveFloors(t: MapTune): { f1: number; f2: number; f3: number } {
+  const f3 = t.floor3
+  const f2 = Math.max(t.floor2, f3)
+  return { f1: Math.max(t.floor1, f2), f2, f3 }
+}
+
+/** The URL knob for a shared tune: `?maptune=1.8,1.5,12,13,11`. */
+export function parseMapTune(raw: string | null): MapTune {
+  const n = (raw ?? '').split(',').map(Number)
+  const ok = n.length === 5 && n.every((v) => Number.isFinite(v))
+  if (!ok) return { ...DEFAULT_MAP_TUNE }
+  const z = (v: number) => Math.min(14.5, Math.max(0, v))
+  return { ringScale: Math.max(0.3, n[0]), dotScale: Math.max(0.3, n[1]), floor1: z(n[2]), floor2: z(n[3]), floor3: z(n[4]) }
+}
+export const serializeMapTune = (t: MapTune): string => [t.ringScale, t.dotScale, t.floor1, t.floor2, t.floor3].join(',')
+
 /** Ring i's radius (px) at a zoom — rings step outward by a fixed gap so a
- *  5-ring storefront reads as a tree section, not a blob. */
-const ringRadius = (i: number): mapboxgl.Expression =>
-  ['interpolate', ['linear'], ['zoom'], 10, 1.5 + i * 1.6, 13, 2 + i * 2.4, 16, 3 + i * 3.4]
+ *  5-ring storefront reads as a tree section, not a blob. The scale applies
+ *  in full at city zoom and by its square root at street zoom, so a 5-ring
+ *  door grows readable from afar without swallowing a block up close. */
+const ringRadius = (i: number, s: number): mapboxgl.Expression =>
+  ['interpolate', ['linear'], ['zoom'], 10, (1.5 + i * 1.6) * s, 13, (2 + i * 2.4) * s, 16, (3 + i * 3.4) * Math.sqrt(s)]
 
-/** Ring ranks' zoom floors (spec §4.3). */
-export const RING_MIN_ZOOM: Readonly<Record<1 | 2 | 3 | 4 | 5, number>> = { 5: 0, 4: 0, 3: 11, 2: 14, 1: 15 }
+/** A small dot's radius from its floor up; stops stay ascending for any floor ≤ 14.5. */
+const dotRadius = (floor: number, base: number, d: number): mapboxgl.Expression =>
+  ['interpolate', ['linear'], ['zoom'], floor, base * d, 15, base * 1.6 * d, 18, base * 2.5 * d]
 
-function ringLayer(rank: 2 | 3 | 4 | 5, i: number): mapboxgl.AnyLayer {
+/** Ring ranks' zoom floors (spec §4.3, retuned Sept. 24 2026). */
+export function ringMinZoom(t: MapTune): Readonly<Record<1 | 2 | 3 | 4 | 5, number>> {
+  const { f1, f2, f3 } = effectiveFloors(t)
+  return { 5: 0, 4: 0, 3: f3, 2: f2, 1: f1 }
+}
+export const RING_MIN_ZOOM = ringMinZoom(DEFAULT_MAP_TUNE)
+
+function ringLayer(rank: 2 | 3 | 4 | 5, i: number, t: MapTune): mapboxgl.AnyLayer {
   const outer = i === rank
   return {
     id: `ring-r${rank}-${i}`,
     type: 'circle',
     source: RING_SOURCE,
-    minzoom: RING_MIN_ZOOM[rank],
+    minzoom: ringMinZoom(t)[rank],
     filter: ['==', ['get', 'rank'], rank],
     paint: {
       // Rank 2 is ONE thin ring (spec §4.3), sized like ring 2.
-      'circle-radius': ringRadius(rank === 2 ? 2 : i),
+      'circle-radius': ringRadius(rank === 2 ? 2 : i, t.ringScale),
       'circle-color': TEAL_400,
       // Hollow — but a transparent fill still hit-tests, so the OUTER ring of
       // each rank carries the tooltip and the click for the whole storefront.
       'circle-opacity': 0,
       'circle-stroke-color': rank === 5 && outer ? KEYLINE_DARK : TEAL_400,
-      'circle-stroke-width': rank === 5 && outer ? 1.8 : rank === 2 ? 0.8 : 1.1,
+      'circle-stroke-width': rank === 5 && outer ? 2 : rank === 2 ? 1 : 1.4,
       'circle-stroke-opacity': rank === 2 ? 0.7 : 0.9,
     },
   } as mapboxgl.AnyLayer
@@ -192,35 +248,54 @@ export const RING_LAYER_IDS = ['ring-r5-5', 'ring-r4-4', 'ring-r3-3', 'ring-r2-2
  *  the TOP-LEVEL step input (Mapbox rejects zoom nested inside `case`). */
 const rankAtLeast = (n: number): mapboxgl.Expression => ['case', ['>=', ['get', 'rank'], n], 1, 0]
 
-export const TURNOVER_LAYERS: mapboxgl.AnyLayer[] = [
-  {
-    id: 'ring-r1-dot',
-    type: 'circle',
-    source: RING_SOURCE,
-    minzoom: RING_MIN_ZOOM[1],
-    filter: ['==', ['get', 'rank'], 1],
-    paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 15, 1.8, 18, 3.2],
-      'circle-color': PAPER_500,
-      'circle-opacity': 0.75,
-    },
-  } as mapboxgl.AnyLayer,
-  ringLayer(2, 2), // one thin ring, laid out as ring index 2 → id ring-r2-2
-  ...[1, 2, 3].map((i) => ringLayer(3, i)),
-  ...[1, 2, 3, 4].map((i) => ringLayer(4, i)),
-  ...[1, 2, 3, 4, 5].map((i) => ringLayer(5, i)),
-  {
-    id: 'ring-repeat-dot',
-    type: 'circle',
-    source: RING_SOURCE,
-    filter: ['==', ['get', 'repeat'], 1],
-    paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 1.6, 13, 2.2, 16, 3.4],
-      'circle-color': BRICK_600,
-      'circle-opacity': ['step', ['zoom'], rankAtLeast(4), 11, rankAtLeast(3), 14, rankAtLeast(2), 15, 1],
-    },
-  } as mapboxgl.AnyLayer,
-]
+/** The repeat dot shows only once its storefront's rings do. `step` needs
+ *  strictly ascending stops, so floors that tie or cross are collapsed. */
+function repeatDotOpacity(t: MapTune): mapboxgl.Expression {
+  const { f1, f2, f3 } = effectiveFloors(t)
+  const stops: [number, number][] = [[f3, 3], [f2, 2], [f1, 1]]
+  const expr: unknown[] = ['step', ['zoom'], rankAtLeast(4)]
+  let last = -1
+  let min = 4
+  for (const [z, r] of [...stops].sort((a, b) => a[0] - b[0])) {
+    min = Math.min(min, r)
+    if (z > last) { expr.push(z, rankAtLeast(min)); last = z } else expr[expr.length - 1] = rankAtLeast(min)
+  }
+  return expr as mapboxgl.Expression
+}
+
+export function buildTurnoverLayers(t: MapTune): mapboxgl.AnyLayer[] {
+  return [
+    {
+      id: 'ring-r1-dot',
+      type: 'circle',
+      source: RING_SOURCE,
+      minzoom: effectiveFloors(t).f1,
+      filter: ['==', ['get', 'rank'], 1],
+      paint: {
+        'circle-radius': dotRadius(effectiveFloors(t).f1, 1.3, t.dotScale),
+        'circle-color': PAPER_500,
+        'circle-opacity': 0.7,
+      },
+    } as mapboxgl.AnyLayer,
+    ringLayer(2, 2, t), // one thin ring, laid out as ring index 2 → id ring-r2-2
+    ...[1, 2, 3].map((i) => ringLayer(3, i, t)),
+    ...[1, 2, 3, 4].map((i) => ringLayer(4, i, t)),
+    ...[1, 2, 3, 4, 5].map((i) => ringLayer(5, i, t)),
+    {
+      id: 'ring-repeat-dot',
+      type: 'circle',
+      source: RING_SOURCE,
+      filter: ['==', ['get', 'repeat'], 1],
+      paint: {
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 1.6 * t.ringScale, 13, 2.2 * t.ringScale, 16, 3.4 * Math.sqrt(t.ringScale)],
+        'circle-color': BRICK_600,
+        'circle-opacity': repeatDotOpacity(t),
+      },
+    } as mapboxgl.AnyLayer,
+  ]
+}
+
+export const TURNOVER_LAYERS: mapboxgl.AnyLayer[] = buildTurnoverLayers(DEFAULT_MAP_TUNE)
 
 // ── closures: the latest published reading ──────────────────────────────────
 
@@ -359,15 +434,16 @@ export function closureFeatures(p: {
 
 export const PLACARD_POINT_LAYER_IDS = ['placard-repeat-core', 'placard-closure', 'placard-conditional', 'placard-pass'] as const
 
-export const CLOSURE_LAYERS: mapboxgl.AnyLayer[] = [
+export function buildClosureLayers(t: MapTune): mapboxgl.AnyLayer[] {
+  return [
   {
     id: 'placard-pass',
     type: 'circle',
     source: PLACARD_SOURCE,
-    minzoom: 14,
+    minzoom: effectiveFloors(t).f1,
     filter: ['==', ['get', 'rank'], 4],
     paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 14, 2.2, 17, 5],
+      'circle-radius': dotRadius(effectiveFloors(t).f1, 1.5, t.dotScale),
       'circle-color': MOSS_500,
       'circle-opacity': 0.75,
     },
@@ -376,10 +452,10 @@ export const CLOSURE_LAYERS: mapboxgl.AnyLayer[] = [
     id: 'placard-conditional',
     type: 'circle',
     source: PLACARD_SOURCE,
-    minzoom: 13,
+    minzoom: effectiveFloors(t).f2,
     filter: ['==', ['get', 'rank'], 3],
     paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 2.6, 17, 6],
+      'circle-radius': dotRadius(effectiveFloors(t).f2, 1.9, t.dotScale),
       'circle-color': OCHRE_500,
       'circle-opacity': 0.9,
       'circle-stroke-width': 0.8,
@@ -390,10 +466,10 @@ export const CLOSURE_LAYERS: mapboxgl.AnyLayer[] = [
     id: 'placard-closure',
     type: 'circle',
     source: PLACARD_SOURCE,
-    minzoom: 12,
+    minzoom: t.floor3,
     filter: ['==', ['get', 'rank'], 2],
     paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 3, 14, 4.5, 17, 8],
+      'circle-radius': dotRadius(t.floor3, 2.4, t.dotScale),
       'circle-color': BRICK_400,
       'circle-opacity': 0.95,
       'circle-stroke-width': 1,
@@ -425,7 +501,10 @@ export const CLOSURE_LAYERS: mapboxgl.AnyLayer[] = [
       'circle-stroke-color': KEYLINE_DARK,
     },
   } as mapboxgl.AnyLayer,
-]
+  ]
+}
+
+export const CLOSURE_LAYERS: mapboxgl.AnyLayer[] = buildClosureLayers(DEFAULT_MAP_TUNE)
 
 // ── owners: halos ───────────────────────────────────────────────────────────
 
@@ -451,15 +530,16 @@ export function ownerFeatures(storefronts: readonly Storefront[], selected: Read
 
 export const OWNER_LAYER_IDS = ['owner-core', 'owner-dot'] as const
 
-export const OWNER_LAYERS: mapboxgl.AnyLayer[] = [
+export function buildOwnerLayers(t: MapTune): mapboxgl.AnyLayer[] {
+  return [
   {
     id: 'owner-dot',
     type: 'circle',
     source: OWNER_SOURCE,
-    minzoom: 15,
+    minzoom: effectiveFloors(t).f1,
     filter: ['==', ['get', 'hit'], 0],
     paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 15, 1.8, 18, 3.2],
+      'circle-radius': dotRadius(effectiveFloors(t).f1, 1.3, t.dotScale),
       'circle-color': PAPER_500,
       'circle-opacity': 0.75,
     },
@@ -489,7 +569,22 @@ export const OWNER_LAYERS: mapboxgl.AnyLayer[] = [
       'circle-stroke-color': KEYLINE_DARK,
     },
   } as mapboxgl.AnyLayer,
-]
+  ]
+}
+
+export const OWNER_LAYERS: mapboxgl.AnyLayer[] = buildOwnerLayers(DEFAULT_MAP_TUNE)
+
+/** Re-paint a live map with a tune: zoom floors + radii (+ the repeat dot's
+ *  opacity step) of every tuned layer. Layers not yet added are skipped. */
+export function applyMapTune(map: mapboxgl.Map, t: MapTune): void {
+  for (const layer of [...buildTurnoverLayers(t), ...buildClosureLayers(t), ...buildOwnerLayers(t)]) {
+    if (!map.getLayer(layer.id)) continue
+    const l = layer as unknown as { id: string; minzoom?: number; paint: Record<string, mapboxgl.Expression> }
+    map.setLayerZoomRange(l.id, l.minzoom ?? 0, 24)
+    map.setPaintProperty(l.id, 'circle-radius', l.paint['circle-radius'])
+    if (l.id === 'ring-repeat-dot') map.setPaintProperty(l.id, 'circle-opacity', l.paint['circle-opacity'])
+  }
+}
 
 // ── the selected storefront ─────────────────────────────────────────────────
 

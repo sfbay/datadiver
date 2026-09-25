@@ -48,7 +48,9 @@ import {
   RING_LAYER_IDS, PLACARD_POINT_LAYER_IDS, OWNER_LAYER_IDS,
   turnoverFeatures, closureFeatures, ownerFeatures, selectedFeature, themePaint,
   TEAL_700, LEGEND, storefrontPanelPx, type ClosureMapPoint,
+  applyMapTune, parseMapTune, type MapTune,
 } from './mapLayers'
+import MapTunePanel from './MapTunePanel'
 import PublishingStrip from './PublishingStrip'
 import StorylineRail from './StorylineRail'
 import StorefrontPanel from './StorefrontPanel'
@@ -260,6 +262,22 @@ export default function Restaurants() {
   useMapLayer(mapInstance, PLACARD_SOURCE, placardGeo, CLOSURE_LAYERS)
   useMapLayer(mapInstance, OWNER_SOURCE, ownerGeo, OWNER_LAYERS)
   useMapLayer(mapInstance, SELECTED_SOURCE, selectedGeo, SELECTED_LAYERS)
+
+  // Dev tuning (?tune=1 panel, or a shared ?maptune=…): re-paint sizes and
+  // zoom floors live. Off by default — the shipped defaults are baked into
+  // the layer specs. Re-applied on idle because useMapLayer re-adds the
+  // static specs after a theme swap.
+  const tuneOn = searchParams.get('tune') === '1'
+  const mapTuneRaw = searchParams.get('maptune')
+  const [mapTune, setMapTune] = useState<MapTune>(() => parseMapTune(mapTuneRaw))
+  const tuning = tuneOn || mapTuneRaw !== null
+  useEffect(() => {
+    if (!mapInstance || !tuning) return
+    const apply = () => { try { applyMapTune(mapInstance, mapTune) } catch { /* style mid-swap; next idle */ } }
+    apply()
+    mapInstance.once('idle', apply)
+    return () => { try { mapInstance.off('idle', apply) } catch { /* */ } }
+  }, [mapInstance, mapTune, tuning, isDarkMode])
 
   // Theme-aware keylines and rings (paper on espresso, espresso on cream).
   useEffect(() => {
@@ -477,6 +495,7 @@ export default function Restaurants() {
             {!cardsReady && data.cardsLoading && <SkeletonStatCards count={3} />}
             {cardsReady && <CardTray viewId="restaurants" cards={cardDefs} hideComparison />}
 
+            {tuneOn && <MapTunePanel map={mapInstance} values={mapTune} onChange={setMapTune} />}
             <MapLegend lens={lens} ownerLabel={ownerSet?.label ?? null} ownerTotal={ownerSet?.keys.length ?? 0} ownerMapped={ownerMapped} truncated={data.mapTruncated} />
 
             {selected && snapshot && (

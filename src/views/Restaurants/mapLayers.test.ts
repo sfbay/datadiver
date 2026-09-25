@@ -3,7 +3,8 @@ import type { Storefront } from '@/lib/storefronts/types'
 import {
   inSf, displayAddress, displayName, ringRank, chainLine, turnoverFeatures, latestReadings, closureFeatures,
   ownerFeatures, selectedFeature, themePaint, TURNOVER_LAYERS, CLOSURE_LAYERS, OWNER_LAYERS,
-  RING_LAYER_IDS, PLACARD_POINT_LAYER_IDS, OWNER_LAYER_IDS, RING_MIN_ZOOM, currentOperator, storefrontPanelPx, type ClosureMapPoint,
+  RING_LAYER_IDS, PLACARD_POINT_LAYER_IDS, OWNER_LAYER_IDS, RING_MIN_ZOOM, currentOperator,
+  DEFAULT_MAP_TUNE, parseMapTune, effectiveFloors, serializeMapTune, buildTurnoverLayers, buildClosureLayers, buildOwnerLayers, storefrontPanelPx, type ClosureMapPoint,
 } from './mapLayers'
 
 const op = (name: string, strict = true) => ({
@@ -74,7 +75,7 @@ describe('turnover rings', () => {
     expect(ids.filter((id) => id.startsWith('ring-r2-'))).toEqual(['ring-r2-2']) // one thin ring
     // rank 5 is drawn after every other rank (only the center dot rides on top)
     expect(ids.indexOf('ring-r5-5')).toBeGreaterThan(Math.max(...ids.filter((id) => /^ring-r[1-4]/.test(id)).map((id) => ids.indexOf(id))))
-    expect(RING_MIN_ZOOM).toEqual({ 5: 0, 4: 0, 3: 11, 2: 14, 1: 15 })
+    expect(RING_MIN_ZOOM).toEqual({ 5: 0, 4: 0, 3: 0, 2: 12.5, 1: 12.5 })
   })
 })
 
@@ -142,7 +143,7 @@ describe('closures lens', () => {
     expect(core.minzoom).toBeUndefined()
     expect(core.filter).toEqual(['==', ['get', 'rank'], 1])
     const zooms = Object.fromEntries(CLOSURE_LAYERS.map((l) => [l.id, (l as { minzoom?: number }).minzoom]))
-    expect([zooms['placard-closure'], zooms['placard-conditional'], zooms['placard-pass']]).toEqual([12, 13, 14])
+    expect([zooms['placard-closure'], zooms['placard-conditional'], zooms['placard-pass']]).toEqual([0, 12.5, 12.5])
   })
 })
 
@@ -211,5 +212,60 @@ describe('storefrontPanelPx — the width the fly-to offset clears', () => {
   })
   it('is the mobileCompact 54vw on a phone — the door lands left of the card, not under it', () => {
     expect(storefrontPanelPx(16, 390, true)).toBeCloseTo(210.6)
+  })
+})
+
+describe('map tune (Jesse, Sept. 24 2026: dots hidden too long, rings too small)', () => {
+  type Paint = { id: string; minzoom?: number; paint: Record<string, unknown> }
+  const all = (t = DEFAULT_MAP_TUNE) =>
+    [...buildTurnoverLayers(t), ...buildClosureLayers(t), ...buildOwnerLayers(t)] as unknown as Paint[]
+  const stops = (e: unknown): number[] => {
+    const a = e as unknown[]
+    if (a[0] === 'interpolate') return a.slice(3).filter((_, i) => i % 2 === 0) as number[]
+    if (a[0] === 'step') return a.slice(3).filter((_, i) => i % 2 === 0) as number[]
+    return []
+  }
+  const ascending = (xs: number[]) => xs.every((x, i) => i === 0 || x > xs[i - 1])
+
+  it('round-trips ?maptune= and falls back to the defaults on junk', () => {
+    expect(parseMapTune(serializeMapTune(DEFAULT_MAP_TUNE))).toEqual(DEFAULT_MAP_TUNE)
+    expect(parseMapTune('nope')).toEqual(DEFAULT_MAP_TUNE)
+    expect(parseMapTune(null)).toEqual(DEFAULT_MAP_TUNE)
+    expect(parseMapTune('2,1,20,-3,11').floor1).toBe(14.5) // floors clamp: a stop past 15 would break the radius curve
+  })
+  it('every rank stays visible from city zoom: nothing waits past zoom 13 by default', () => {
+    for (const l of all()) expect(l.minzoom ?? 0).toBeLessThanOrEqual(13)
+  })
+  it('the rings are bigger than the first cut at city zoom', () => {
+    const r5 = all().find((l) => l.id === 'ring-r5-5') as Paint
+    const z12 = (r5.paint['circle-radius'] as number[])[4] // stop at zoom 10
+    expect(z12).toBeGreaterThan(1.5 + 5 * 1.6)
+  })
+  it('keeps every interpolate/step stop list ascending for any floor order', () => {
+    for (const t of [DEFAULT_MAP_TUNE, parseMapTune('1,1,11,11,11'), parseMapTune('1,1,9,13,14.5'), parseMapTune('3,3,0,0,0')]) {
+      for (const l of all(t)) {
+        for (const prop of ['circle-radius', 'circle-opacity']) {
+          const v = l.paint[prop]
+          if (Array.isArray(v)) expect(ascending(stops(v)), `${l.id} ${prop} ${JSON.stringify(v)}`).toBe(true)
+        }
+      }
+    }
+  })
+  it('a lower rank never shows before a higher one, whatever the sliders say', () => {
+    for (const raw of ['1,1,12,13,11', '1,1,9,13,14.5', '1,1,0,0,14', '1,1,14,10,12']) {
+      const t = parseMapTune(raw)
+      const { f1, f2, f3 } = effectiveFloors(t)
+      expect(f3 <= f2 && f2 <= f1, raw).toBe(true)
+      const z = Object.fromEntries(all(t).map((l) => [l.id, l.minzoom ?? 0]))
+      expect(z['ring-r3-3'] <= z['ring-r2-2'] && z['ring-r2-2'] <= z['ring-r1-dot'], raw).toBe(true)
+      expect(z['placard-closure'] <= z['placard-conditional'] && z['placard-conditional'] <= z['placard-pass'], raw).toBe(true)
+    }
+  })
+  it('never lets a lower rank outsize a higher one (the #183 visual-rank rule)', () => {
+    const at = (id: string) => ((all().find((l) => l.id === id) as Paint).paint['circle-radius'] as number[])
+    // compare radii at zoom 13 (second interpolate stop value for rings)
+    expect(at('ring-r5-5')[6]).toBeGreaterThan(at('ring-r4-4')[6])
+    expect(at('ring-r4-4')[6]).toBeGreaterThan(at('ring-r3-3')[6])
+    expect(at('ring-r3-3')[6]).toBeGreaterThan(at('ring-r2-2')[6])
   })
 })
