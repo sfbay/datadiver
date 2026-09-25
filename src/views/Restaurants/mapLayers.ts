@@ -40,11 +40,14 @@ import type { Placard } from './placard'
 export const TEAL_700 = '#2e5856'
 /** Ring pigment on the espresso basemap — teal-700 vanishes there. */
 const TEAL_400 = '#8bb5b2'
-const PAPER_500 = '#a8926a'
-const BRICK_600 = '#963e30'
-const BRICK_400 = '#d17566'
-const OCHRE_500 = '#d4a435'
-const MOSS_500 = '#7a9954'
+export const PAPER_500 = '#a8926a'
+export const BRICK_600 = '#963e30'
+export const BRICK_400 = '#d17566'
+export const OCHRE_500 = '#d4a435'
+export const MOSS_500 = '#7a9954'
+/** The ring pigment per theme — RingGlyph draws the map's rings at list size. */
+export const RING_COLOR_DARK = TEAL_400
+export const RING_COLOR_LIGHT = TEAL_700
 /** Owner-lens halo (spec D7: unclaimed). */
 export const INDIGO_400 = '#8a92b5'
 const KEYLINE_DARK = '#f5ecd9' // paper, on espresso
