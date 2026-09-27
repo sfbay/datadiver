@@ -37,7 +37,7 @@ describe('turnover', () => {
   it('the chain runs oldest first and keeps the one-timers (marked, not dropped)', () => {
     const s = snapshot.storefronts.find((x) => x.key === '2704 24TH ST')!
     const chain = R.chainOperators(s)
-    expect(chain.map((o) => R.displayName(o.name))).toEqual(['Almanac San Francisco', 'Seven Stills', 'Brewvino Sf', 'Ayahuazka Restaurant', 'Caprizza Ristorante'])
+    expect(chain.map((o) => R.displayName(o.name))).toEqual(['Almanac San Francisco', 'Seven Stills', 'Brewvino SF', 'Ayahuazka Restaurant', 'Caprizza Ristorante'])
     expect(chain.filter((o) => o.seenOnce).length).toBe(2)
   })
 })

@@ -83,12 +83,29 @@ export function displayAddress(raw: string | null | undefined): string {
   return s.split(' ').map((w) => (w === w.toUpperCase() ? titleWord(w) : w)).join(' ')
 }
 
+/** Words that stay ALL CAPS when an all-caps DBA is title-cased: initialisms
+ *  and entity suffixes as the city's own records print them. Measured against
+ *  the snapshot (Sept. 2026): SF alone appears in 96 all-caps names, and
+ *  'Next Door Sf' is the one Jesse caught. Whole words only — 'La', 'El',
+ *  'Mi', 'Co' and 'Cha-Am' are ordinary words here and are NOT listed. */
+const KEEP_CAPS = [
+  'SF', 'SFO', 'SFSU', 'UCSF', 'SOMA', 'USA', 'CA', 'NYC', 'NY', 'HK',
+  'LLC', 'LLP', 'LP', 'DBA',
+  'BBQ', 'CVS', 'KFC', 'IHOP', 'YMCA', 'ATM', 'DJ', 'TV', 'UPS',
+  'II', 'III', 'IV',
+]
+const KEEP_CAPS_RE = new RegExp(`(^|[^A-Za-z])(${KEEP_CAPS.join('|')})(?=[^A-Za-z]|$)`, 'gi')
+
 /** A DBA as DPH writes it (often ALL CAPS) → display case, leaving mixed-case
- *  names exactly as published. */
+ *  names exactly as published. Initialisms in KEEP_CAPS keep their caps
+ *  ('NEXT DOOR SF' → 'Next Door SF', not 'Next Door Sf'). */
 export function displayName(raw: string | null | undefined): string {
   const s = (raw ?? '').replace(/\s+/g, ' ').trim()
   if (!s || s !== s.toUpperCase()) return s
-  return s.toLowerCase().replace(/(^|[\s\-/&(.])([a-z])/g, (_, sep: string, ch: string) => sep + ch.toUpperCase())
+  return s
+    .toLowerCase()
+    .replace(/(^|[\s\-/&(.])([a-z])/g, (_, sep: string, ch: string) => sep + ch.toUpperCase())
+    .replace(KEEP_CAPS_RE, (_, sep: string, w: string) => sep + w.toUpperCase())
 }
 
 /**
