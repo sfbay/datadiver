@@ -30,6 +30,19 @@ describe('display helpers', () => {
     expect(displayName('CAPRIZZA RISTORANTE')).toBe('Caprizza Ristorante')
     expect(displayName('Brew Vino, LLC')).toBe('Brew Vino, LLC')
   })
+  it('keeps initialisms and entity suffixes in caps, whole words only', () => {
+    expect(displayName('NEXT DOOR SF')).toBe('Next Door SF')
+    expect(displayName('HEMLOCK TAVERN SF, LLC')).toBe('Hemlock Tavern SF, LLC')
+    expect(displayName('GOGI BBQ HOUSE LLC')).toBe('Gogi BBQ House LLC')
+    expect(displayName('CVS #10391')).toBe('CVS #10391')
+    expect(displayName('CAFE LA FIORE II')).toBe('Cafe La Fiore II')
+    expect(displayName('DIASPORA RESTAURANT GROUP DBA MESKI')).toBe('Diaspora Restaurant Group DBA Meski')
+    // ordinary words that merely look like initialisms stay title case
+    expect(displayName('LA FROMAGERIE')).toBe('La Fromagerie')
+    expect(displayName('CHA-AM RESTAURANT')).toBe('Cha-Am Restaurant')
+    expect(displayName('JAVA TRADING CO')).toBe('Java Trading Co')
+    expect(displayName('SFOOD MARKET')).toBe('Sfood Market') // SF inside a word is not SF
+  })
   it('keeps only SF-land coordinates', () => {
     expect(inSf(37.76, -122.42)).toBe(true)
     expect(inSf(0, 0)).toBe(false)
