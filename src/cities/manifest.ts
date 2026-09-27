@@ -15,7 +15,7 @@ import type { QueryPurpose } from '@/lib/provenance/purposes'
  *  order is each city's manifest array order. */
 export const VIEW_IDS = [
   'home', 'alerts', 'live', 'pulse', 'emergency-response', 'crime-incidents',
-  'traffic-safety', 'housing', 'elections', 'city-budget', 'parking-revenue',
+  'traffic-safety', 'housing', 'restaurants', 'elections', 'city-budget', 'parking-revenue',
   'dispatch-911', '311-cases', 'parking-citations', 'business-activity',
   'business', 'campaign-finance', 'demographics', 'neighborhood', 'about',
 ] as const

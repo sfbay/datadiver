@@ -564,6 +564,275 @@ July 2026): 1998 all-time peak 2,917 (dot-com wave) → 2009 post-crash trough 1
 (highest since 2019). Both `neighborhood` (evictions) and `analysis_neighborhood`
 (buyouts) speak the 41 Analysis Neighborhoods vocabulary — joinable by exact name.
 
+## Restaurant inspections (`tvy3-wexg` live · `5tti-66ds` + `pyih-qa8i` + registry `g8m3-pdis` at build time)
+
+The view is **Restaurants** (`/restaurants`, subtitle "Food service and safety"). Design and Jesse's
+transparency rulings: `docs/superpowers/specs/2026-09-24-restaurant-inspections-design.md`
+(§11 supersedes everything above it). Every figure below was measured on
+`data.sf.gov` on Sept. 24, 2026 unless it says otherwise; the snapshot figures
+are exact-pinned in `src/lib/storefronts/storefronts.test.ts`.
+
+### The live feed thinned on July 1, 2025 — a publishing change, not lag
+
+`tvy3-wexg` runs from Jan. 2, 2024, about one row per visit. On July 1, 2025 it
+drops from about 1,011 rows a month to about 297 (−71%); `inspection_type` and
+`census` go null on every row; permit types gain an `R` suffix (`H87R-`,
+`H23R-`, no space before the dash); addresses arrive padded with spaces. The
+publish lag is only about a day, so this is structural, not a delay. **We can't
+yet tell whether the city inspects less or publishes less** (the city's own
+lookup at myhealthdepartment.com 403s to scripts — a manual one-day comparison
+is the open check). So the view is `dateless`, has no `eraSource`, and its two
+live windows never cross the date: `before` = July 2024–June 2025 (full
+records), `since` = the last 12 whole months after the break, which is the
+default and carries a permanent "Thinner feed" badge. `FEED_BREAK` lives in
+`src/views/Restaurants/inspectionFeed.ts`, and a test fails if either window
+could straddle it. No compare, no YoY, no trend line across the break.
+
+### A row dated 2031 — and why `useDataFreshness` is not used here
+
+One row is dated **May 16, 2031** (Cisco Systems, permit 105295 — a data-entry
+error). Every live query carries `inspection_date <= '{sfToday}'`.
+`useDataFreshness` runs an unclamped `MAX(dateField)` with no `$where` option,
+so on this dataset it reports the data "fresh through 2031." The view's
+"Updated" chip reads a view-local clamped probe instead (`dataEdgeQuery`,
+2026-09-23 at build). Any future view on a dataset with a future-dated junk row
+has the same trap.
+
+### Permit types: a positive list, never a NOT-list
+
+108 distinct `permit_type` strings over 22,620 rows. `foodPermits.ts` classes
+every one: **storefront** 18,033 (restaurants, take-outs, markets, bars —
+counted and mapped), **offsite food** 3,416 (trucks, carts, caterers, cottage
+food, cafeterias, farmers markets — counted, **never mapped**: many carry a home
+address), **non-food** 1,171 (tobacco, massage, pets, laundry, vending, one
+swimming pool — never counted). An unknown new string is EXCLUDED, never
+silently counted; the generator's gate G0 fails on an unclassified string and a
+DEV console tripwire fires when a live row carries one. (The spec's 21,433 food
+rows became 21,449 at build: the table grew, and the single "H56 - SWIMMING
+POOLS" row is non-food.)
+
+### A closure is several rows — count episodes and places
+
+A closed place gets a Closure row at every reinspection until it passes (Golden
+Flower, permit 31974: four Closure rows, one closure). The unit is the
+**episode** (`closureEpisodes.ts`, the one rule):
+
+1. Dedupe on (permit, date, status) — never (permit, date, type): genuine
+   same-day second visits exist.
+2. Within one date, Closure sorts before Pass.
+3. An episode is a run of Closure dates ending at the next Pass or Conditional
+   Pass on the same permit.
+4. Length = next published pass − first closure, shown as **"at most N days"**
+   (inspections have no time of day). A closure and a pass on the same date is
+   **"closed and cleared the same day"** and is left out of every day figure.
+5. No later pass → **"No later inspection published"** — never "still closed"
+   or "closed for good". After the break this is often the thin feed, and the
+   note says so.
+6. Repeat bar = 2+ episodes on the same permit (2024+) or facility id
+   (2020–23); runs less than 30 days apart (cleared date → next start) merge
+   for the bar only.
+
+At build (2024+, food permits): **399 episodes at 356 permits; 341 cleared (66
+the same day); 58 with no later pass, 42 of them after the break; median 2 days,
+p75 5, p90 20, max 380; 39 permits with 2+ episodes, 4 with 3+; 30 meet the
+merged repeat bar.** 321 started before the break, 78 after. 2020–23: 444
+episodes at 394 facilities, 40 at the repeat bar. The research probes had
+disagreed (392 / 399 / 403) because each used a different rule; this rule
+reproduces 399. The spec's "median 1 day, p75 4, p90 14" counted same-day
+closures as zero days — rule 4 removes them, which is why the median is 2.
+Vermin were cited at 369 of the 456 closure inspections at food businesses
+(distinct permit + date) since January 2024 — a different scope from the 379 of
+468 across every permit type, and the two are never put in one sentence.
+
+**A storefront never inherits a closure.** The map colours a door by its
+CURRENT permit's latest published reading, and the every-zoom brick mark is
+the current permit's own repeat bar. Earlier tenants' closures live only in the
+storefront biography. Single closures are listed (Closures tab, "Every
+closure, newest first", each with its outcome) but never drawn on the loud
+layer; a cleared single closure is green on the map.
+
+### Three datasets, three grading systems, two blind spots
+
+| Era | Dataset | Unit | Shown as | Withheld |
+|---|---|---|---|---|
+| Oct. 2016 – Nov. 28, 2019 | `pyih-qa8i` | one row per violation (26,663 inspections) | score badges on routine inspections with SF's bands (Good 91–100 · Adequate 86–90 · Needs Improvement 71–85 · Poor ≤70) | closures (no such field); any score→placard conversion |
+| Mar. 9, 2020 – Aug. 3, 2023 | `5tti-66ds` | one row per violation (17,135 inspections) | placard chips; repeat-closure evidence | anything by inspection type (routine-only scope) |
+| Jan. 2, 2024 → today | `tvy3-wexg` | about one row per visit | live cards, map, placards, episodes | any comparison across July 1, 2025; `violation_count` as severity |
+
+- **Two unpublished stretches:** 2019-11-29 → 2020-03-09 and 2023-08-04 →
+  2024-01-02 (edges measured, not the spec's month labels). The 2016–19 set
+  holds 99 inspections in October 2019 and one straggler in November. April
+  and May 2020 hold 10 inspections between them (COVID).
+- **Inspections per year:** 2016–19 = 1,778 / 7,817 / 8,218 / 8,850; 2020–23
+  = 1,972 / 5,493 / 6,330 / 3,340; 2024+ rows = 11,059 / 8,602 / 2,958 (2026
+  to Sept. 23). The publishing strip draws each era in its own unit — a
+  disclosure, never a trend.
+- **47.4% of 2016–19 inspections carry no score by design** (only routine
+  inspections are scored). Bands at build: Good 7,809 · Adequate 3,168 ·
+  Needs Improvement 2,815 · Poor 239.
+- **Conditional Pass is spelled four ways** in 2020–23 (`CONDITIIONAL` ×11,
+  `CONDITIONA`, `CONDITONAL`); `placard.ts` normalizes.
+- **The geo columns differ by era, and the spec guessed two wrong:** `tvy3` =
+  `point` (+ numeric `latitude`/`longitude`); `5tti` = **`the_geom`** (not
+  `location`); `pyih` = **`business_location`**, with coordinates in
+  `business_latitude`/`business_longitude` (not `latitude`/`longitude` — the
+  spec's query would 400). 3,497 of 6,253 old-era businesses have no
+  coordinates; the generator places them by matching the address to the 2024+
+  set.
+- **Cross-era identity:** the 2016–19 `business_id` = the 2020–23
+  `inspection_id` minus its last 8 characters (99% agree). Into 2024+, join by
+  id ONLY when the id is ≥ 60,000 AND the address agrees — below 60k, 22 of 30
+  matches under 20k were false collisions (old facilities were renumbered:
+  Swan Oyster Depot 639 → 305). Otherwise, name + storefront key.
+
+### Turnover: every count is a floor, and names are not owners
+
+`storefrontKey.ts` is the one address normalizer (generator AND browser).
+`street_address_clean` is not clean — whitespace alone collapses 7,875 values to
+6,200 — and one door is spelled many ways across the eras. Traps found at
+integration and fixed in the normalizer: a house-number range written with a
+space or slash (`1196 1198 FOLSOM`, `522 522 COLUMBUS`, and `1 1 WARRIORS WAY`,
+which let Chase Center's Tony's Pizza slip past the venue list) keeps its first
+number; an ordinal split from its number (`3348 18 TH ST`) rejoins — but only the
+number's own ordinal, so `2300 16 ST` stays a numbered street.
+
+At build: 6,374 doors pass the storefront pattern; 481 are left out (30 venues,
+185 multi-tenant buildings, 266 where most permits are off-site food); **124
+meet the turnover bar** (strict chain ≥ 3 across ≥ 2 eras): 113 at 3, 9 at 4, 2
+at 5+. An operator counts toward the strict chain with 2+ inspection dates **or
+90+ days of registry tenure** (the ghost rule). That second clause matters: at
+2704 24th St, Seven Stills (registered May 2019–Mar. 2020) and Ayahuazka (open
+since Aug. 2023) each appear at a single inspection, so the strict chain is 5,
+not the "three operators" of the spec's voice sample, which counted inspections
+only.
+
+Names change without owners changing, so the registry sorts turnover into
+buckets: **three-owners** 101 · **same-owner** 13 (names changed, one registered
+owner throughout — 570 Green St) · **owner-returned** 2 (2077 Hayes St: the
+company behind Katani Pizza came back as The Hungry Spot; 1740 Church St) ·
+**owners-unknown** 8. A registration is used as an operator's owner only when its
+dates cover at least one of that operator's inspections — at 570 Green, Chubby
+Noodle (inspected 2020–23) matches only registrations that ended by 2019, so it
+gets no owner rather than a wrong one.
+
+### Joining the business registry — no shared id, by address and name
+
+Inspections and the Treasurer's registry share **no id number**; a numeric join
+"matched" 239 coincidences (Benihana's permit = Tiffany & Co.'s account). The
+join is storefront key + name similarity ≥ 0.6 (a port of Python's difflib ratio,
+pinned to Python's outputs) + the date-window pick above. **Never filter the
+registry by NAICS**: the food filter sees only survivors — predecessors at the
+top turnover addresses are untagged. Food registry rows = NAICS 722 **or** a DPH
+license code in `lic`; NAICS 722 alone misses about 1,700 open food businesses.
+At build the current operator matched a registration at **4,669 of 4,784
+permitted storefronts (97.6%)** — the owners note computes its percentage from
+this, not the spec's research-time 91% (a different denominator).
+
+**Kiosk and ATM operators register under the HOST's trade name.** Cardtronics
+(176 registrations, 118 coded NAICS 52) files each ATM under the store's own
+DBA — at 1101 Geary Blvd both "Apple Annie LLC" (2015-06-30, NAICS 722511) and
+"Cardtronics Usa, Inc." (2015-08-05, NAICS 52) are the open registrations for
+"Tommy's Joynt". Both score 1.0 on the name join and both cover every
+inspection, so the newest-start tie-break named Cardtronics the owner of 13
+operators (Tommy's Joynt, eight Walgreens, Foods Co, a 7-Eleven, Nordstrom's
+espresso bar, The Powerhouse). `identity.ts` now drops an authored kiosk list
+(Cardtronics, Redbox Automated Retail, ecoATM, Coinstar, Coinme — counts
+measured live Sept. 24, 2026) like landlord rows, and on a coverage tie
+demotes a finance-coded (NAICS 52) row whose owner name is unlike the
+business. Eleven of the 13 now resolve to the real owner (Walgreen Co, Bay
+Area Warehouse Stores, Apple Annie, Rnb Corporation); the 7-Eleven and the
+Nordstrom bar have no other qualifying registration and show none. The match
+count is unchanged (neither of those two is a current permit's operator). A
+broader "any non-food NAICS" demotion and an owner-name-similarity tie-break
+were both tried and rejected: each moved 70+ picks the wrong way (a gym's own
+registration lost to a person; Milagros de Mexico went to "Milagros Medical,
+Inc.").
+
+The registry is 367,367 rows (fetched by `$order=uniqueid` paging, then deduped
+on `uniqueid` — offset paging returns stray duplicates).
+
+### "One sign, many owners" — one trade name, matched exactly
+
+A franchise brand is ONE trade name registered by 3+ different owners, matched
+exactly after dropping store numbers (`#10219`, a bare 3+-digit number after the
+first word) and legal forms. The only fold is a franchise's own descriptor
+(`SUBWAY SANDWICHES` → `SUBWAY`, `SUPER DUPER BURGERS` → `SUPER DUPER`); a name
+made only of generic words (`CAFE`, `PHO`) is never a brand. The first build
+folded by word prefix and invented brands from unrelated businesses sharing a
+first word — "Dumpling 101" at 16 owners, "500 Club" at 13, "Golden Gate" at 11
+— and dropped leading numbers that are part of a name. Exact matching
+undercounts a franchise that spells itself two ways; that is the accepted cost,
+because a false brand is a false claim of common identity. At build: 33 brands
+(Subway 19 locations / 12 owners, Super Duper 7 / 7, McDonald's 8 / 6).
+
+### Owner size and closures — the finding and its confounder
+
+From the research probe (F §4, Sept. 24, 2026; not generator-pinned): places
+whose owner has a single location were closed at 185 of 3,773 routine
+inspections (4.9%); owners with 10 or more locations, at none of 203. **The
+confounder travels with the number every time:** most large-owner places are
+office cafeterias and coffee chains, which do simpler cooking, so this does not
+show that bigger owners run cleaner kitchens. There is no owner league table
+ranked by closures — 468 closure rows are too few, and the ranking would mostly
+measure menus.
+
+### The city beside an owner is a MAILING city — what it means
+
+Each owner shows only the plain city of its registered mailing address ("Daly
+City" — no label, no state on the chrome; the meaning lives in the data notes).
+That is where the Treasurer sends tax and license mail, **not where anyone lives
+and not where the business is run.** Large food-service companies register a
+head office: Aramark in Philadelphia (259 open food registrations), Compass and
+Levy in Charlotte (316), Sodexo in Cheektowaga, N.Y. (28), Starbucks in Seattle
+(32). Of 5,776 open NAICS-722 food registrations, 69% list San Francisco and 86%
+California. `mail_city` arrives title-cased ("San Francisco").
+
+**The undeliverable placeholder trap.** The registry marks bad mail with a
+street of `0000 Undeliverable Mail` (5,862 rows, all sectors) or `9999
+Undeliverable St` (5), filed with `mail_city` "San Francisco" and ZIP 99999. Read
+naively it says the owner is local. These rows show **no city**
+(`mailCity: null`). Test the ADDRESS text, not the ZIP — one real Indianapolis
+PO box is filed with ZIP 99999. (47 of the 5,776 open NAICS-722 rows; 101 of
+the 7,185 open food registrations under the wider NAICS-or-license
+definition; 5,868 rows across the whole registry, 4,739 of them open —
+re-measured Sept. 24, 2026. Never cite the 47 as "the registry's".)
+
+**Ended registrations mostly carry no mailing city**: only 38,110 of the
+registry's 240,355 ended rows have one, so a past owner in a storefront's
+history often shows none. That is absence in the source, not withholding.
+
+### What is withheld, and why (the transparency ledger)
+
+The default is everything the city publishes (§11). Each exception is argued
+field by field, disclosed in the view's data notes, and linked to the source
+record:
+
+| Withheld / limited | Reason (privacy · accuracy · fairness) | Where it still is |
+|---|---|---|
+| A natural person's mailing street and ZIP — never stored in the committed JSON (no field exists for it) | **Privacy:** our display would pair a person's name with a likely home location and make it searchable | the registry record, data.sf.gov/d/g8m3-pdis |
+| A company mailing address where any owner registered there is not a company (98 of 261 shared-address clusters) — a person, or an organization with no company suffix (The Salvation Army), is treated as possibly a person. The test reads every spelling of the place (`mailingPlaceKey`: unit words dropped, word order sorted, `Steet` → `St`), so `7268 Murieta Dr Unit 1460` is withheld because a non-company registered `… Ste 1460`, and `212 Sutter St Fl 3` because of `… 3 Fl`. The storefronts such an address lists carry "Mailing address withheld" (door keys only, `withheldSharedStorefronts`, 198 doors) | **Privacy:** possibly a home | same |
+| Search BY a natural person's name (the lookup indexes addresses, trade names and COMPANY owners only, and skips a trade name that repeats its individual owner's name word for word — 1415 Stockton St trades as "YIBO CHEN"; `/business/owner/` links for companies only). A door with NO registry match can't be tested, so its trade name stays searchable even when it is a person's (1035 Geary Blvd, "Jayhoon Fedaiy") | **Privacy:** never a tool that turns a person's name into their holdings + locations | the registry, searched there |
+| The claim "same restaurant group" | **Accuracy:** the algorithm is ~77% right; the FACT "these companies share a mailing address" is published automatically (163 addresses, after filters F1–F5 removed 1 undeliverable, 7 agent/mailbox, 5 venue addresses); the CLAIM needs a curated `restaurantGroups.ts` row with 2+ kinds of evidence (ships empty) | the review queue (gitignored — it holds people's addresses) |
+| Inspector ranking, filter or search (names ARE shown per inspection) | **Accuracy:** closure rates track an inspector's territory, not the inspector | each inspection row |
+| Owner closure league tables | **Accuracy + fairness:** too few closures; size confounded with menu | per-storefront closures, with denominators |
+
+Owner names themselves are shown for every owner, persons included, exactly as
+the registry publishes them.
+
+### What each record proves (the copy contract)
+
+| Record | Proves | Does NOT prove | We may say |
+|---|---|---|---|
+| One inspection row | This placard, this permit, this date | That the place is clean or dirty in general (one visit is noisy) | "Inspected Aug. 13, 2024: yellow placard." |
+| A Closure row | The permit was suspended that day | A *new* closure (a reinspection Closure means it had not yet passed) | "Closed July 15, 2024." |
+| A closure episode | How many times it was shut; the date it was cleared | Days actually closed | "Cleared Aug. 1 · at most 17 days" |
+| Episode with no later pass | Nothing about the outcome | Still closed / closed for good | "No later inspection published." |
+| New permit number at an address | DPH issued a permit | A new owner (could be a rebrand or an `R` reissue) | nothing on its own |
+| New business name | The sign changed | A new owner (9 of the top 25 are same-owner rebrands) | "New name" (+ "same owner" when the registry says so) |
+| Different registered owner (date-window pick) | The registration changed hands | Why; that the business failed | "Its third registered owner since 2016." |
+| Same company at many addresses | One entity is registered at each | Anything about closures | "Registered to the same company at 11 storefronts." |
+| Different companies, one mailing address | The registrations share an address | Common ownership | "These 7 companies list the same mailing address on their city registrations." |
+
 ## Police Incidents — a subcategory's identity is its PAIR with the category
 
 `wg3w-h783` publishes three levels: `incident_category` (49 values),

@@ -42,6 +42,7 @@ const Alerts = lazy(() => import('@/views/Alerts/AlertsView'))
 const About = lazy(() => import('@/views/About/About'))
 const Pulse = lazy(() => import('@/views/Pulse/Pulse'))
 const Housing = lazy(() => import('@/views/Housing/Housing'))
+const Restaurants = lazy(() => import('@/views/Restaurants/Restaurants'))
 // Lazy, not the plain import the task brief showed: ImmersiveGate's own
 // module carries a nested `lazy(() => import('./photoreal/immersive/…'))`
 // (Task 10's gate step), and Rollup inlines that call's chunk-preload
@@ -69,6 +70,7 @@ const VIEW_COMPONENTS: Record<ViewId, ComponentType> = {
   'crime-incidents': CrimeIncidents,
   'traffic-safety': TrafficSafety,
   housing: Housing,
+  restaurants: Restaurants,
   elections: Elections,
   'city-budget': CityBudget,
   'parking-revenue': ParkingRevenue,

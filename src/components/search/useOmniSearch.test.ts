@@ -45,7 +45,7 @@ describe('OmniSearch index (SF parity)', () => {
     }
   })
 
-  it('emits exactly the 15 dataset entries the retired DATASET_ROUTES produced, same paths', () => {
+  it('emits exactly the 15 dataset entries the retired DATASET_ROUTES produced (+ restaurant inspections), same paths', () => {
     const expected: Record<string, string> = {
       'dataset-fireEMSDispatch': '/emergency-response',
       'dataset-policeIncidents': '/crime-incidents',
@@ -62,10 +62,13 @@ describe('OmniSearch index (SF parity)', () => {
       'dataset-spendingRevenue': '/city-budget',
       'dataset-evictionNotices': '/housing',
       'dataset-buyoutAgreements': '/housing',
+      // Added with the Restaurants view (2026-09-24). Only the live 2024+ set
+      // routes; the two historical extracts are generator-only inputs.
+      'dataset-restaurantInspections': '/restaurants',
     }
     const datasets = index.filter((r) => r.category === 'dataset')
     expect(Object.fromEntries(datasets.map((d) => [d.id, d.path]))).toEqual(expected)
-    expect(datasets).toHaveLength(15)
+    expect(datasets).toHaveLength(16)
   })
 
   it('dataset results keep registry iteration order (result-ranking parity)', () => {

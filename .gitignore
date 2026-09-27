@@ -62,3 +62,8 @@ data/elections-src/
 public/cesium
 .impeccable/
 .collab-state/
+
+# Generator scratch: the restaurant-groups review queue holds people's names and
+# possibly home mailing addresses (gate G7), and --cache pages are raw registry
+# pulls. Never commit either — the repo is public.
+scripts/out/
