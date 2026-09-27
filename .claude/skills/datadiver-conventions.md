@@ -391,3 +391,30 @@ See also `[[sf-data-latency-baseline]]` and `[[tonal-age-ramp-pattern]]` for the
 **Before committing any new visualization**, verify that the chart's current-FY value matches the corresponding stat tile or text display. This is how the AIR Airport Commission timeline bug was caught in April 2026 — the tiles said `$863K` and the chart peaked at `$100K` because the hook only queried the tagged layer. Each piece was individually correct but together they told contradictory stories.
 
 **Internal consistency is the primary QA for a journalism dashboard.** If two visualizations of the same entity disagree, one is lying, and the reader who notices is doing your QA work for you. Make that check before pushing.
+
+## Readouts are marks, not sentences (Sept. 25 2026, Restaurants)
+
+Jesse's rule, from the Last 48: **number first, mark second, words last.**
+A figure that sits in a sentence beside a chart is a defect.
+
+- Tab/section openers: a stat chip — big italic numeral · one small mark ·
+  a caption of ≤4 words. The old lede sentence goes behind an `InfoTip`.
+  Reference: `src/views/Restaurants/RailStat.tsx`.
+- List rows follow `FlowRail`: pigment dot/glyph left · body-font name ·
+  ONE italic mono meta line · figure right. The unit of the story leads
+  (a storefront row leads with the CURRENT business; earlier names sit
+  behind a `<details>` turn-down — click, never hover).
+- Shared marks in `src/components/charts/` (pure layout math beside each,
+  node-tested): `DotRow` (N of M, accent indices), `PartWhole` (n of m bar),
+  `SpanBar.tsx` → `DurationBar` (days on a 0…cap scale) + `EpisodeStrip`
+  (spans on a date axis, visit ticks). An OPEN span is HATCHED, never solid
+  (the hatch idiom). Per-view glyphs that mirror a map mark live with the
+  view (`RingGlyph`).
+- Every mark that replaces a sentence carries that sentence as
+  `aria-label`; a test asserts the sentence is in the markup and NOT in the
+  visible text.
+- Data notes live ONCE per view (`dataNotes.ts` → the header popover,
+  grouped by surface); tabs and panels print one `Data notes ›` link that
+  opens it at their section. A withheld field still says `why` inline.
+- Case-insensitive filesystem trap: `DotRow.tsx` next to `dotRow.ts` is ONE
+  file to macOS (TS1149) — name the pure leaf differently (`dotRowSpec.ts`).

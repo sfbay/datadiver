@@ -449,3 +449,12 @@ Inspector names · private persons' names · mailing addresses · uncurated clus
 | Data notes | **Always carry the specifics** behind every simplified label (mailing-city meaning, withheld fields + why + where to find them, false-positive filters, the feed break, eras). Chrome stays clean; notes carry the precision (memory `labels → notes`). |
 
 **Gate changes:** G3 becomes: no natural-person mailing street or ZIP anywhere in the committed JSON; company mailing addresses only where every co-registered owner is a company; mail city present; undeliverable rows have `mailCity: null`. G7 unchanged (the review queue still holds person addresses → gitignored). Banned-words test unchanged.
+
+## 12. As built — deltas after §11 (merged 2026-09-27, PR #184, squash `163a8a1`)
+
+- **Name:** "Restaurants" / "Food service and safety" (Jesse, 9/24).
+- **Map tune (9/24):** every size and zoom floor lives in `MapTune` (`mapLayers.ts`), shipped as Jesse's own `?maptune=1.5,2,12.5,11.5,8.5`; `effectiveFloors()` keeps floor3 ≤ floor2 ≤ floor1 so a plainer rank never draws before a higher one; `?tune=1` opens `MapTunePanel`.
+- **Readouts as marks (Fable, 9/25):** §4.4/§4.5's ledes and sentence rows are replaced — `RailStat` chips (numeral · mark · ≤4-word caption, sentence behind an InfoTip), `RingGlyph` rows, `EpisodeStrip`/`DurationBar` for closures, `DotRow` for owners/franchises, `PartWhole` for vermin; the panel drops the operators paragraph and renders episodes as date · bar · date · `≤N d`. Openers: Turnover 45→16 words, Closures 46→19. Each mark carries its sentence as `aria-label`.
+- **Data notes (9/25):** one table, `dataNotes.ts`, in the header popover; tabs and the panel link to their section. Supersedes §7.3's per-surface placement; every note in §7.3 is still present, once.
+- **Turnover rows (9/25):** the current business leads; "Last:" + date when its latest sighting predates the live records; earlier names behind a turn-down (`turnoverRowModel`).
+- **Not done from §9 "before merge (Jesse, by hand)":** the myhealthdepartment.com day check and the top-25 turnover street-imagery walk. `restaurantGroups.ts` shipped empty.
