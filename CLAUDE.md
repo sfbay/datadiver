@@ -82,7 +82,7 @@ To avoid looking like another generic dashboard, the system also enforces:
 7. **Notched corners with accent tab** — see `<VizCard>`, the Home / Overview tile
 
 ## Stack
-- **Vite + React 18 + TypeScript + Tailwind v4**
+- **Vite 7 + React 19 + TypeScript 5.9 + Tailwind v4** (versions as of Sept. 2026; `package.json` is the truth)
 - **Mapbox GL JS v3** for maps (dark-v11 basemap, `preserveDrawingBuffer: true`)
 - **D3.js** for charts (histograms, heatgrids, trend charts)
 - **Zustand** for global state (`src/stores/appStore.ts`)

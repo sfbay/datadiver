@@ -465,6 +465,16 @@ have quoted (the per-stream counts) were the loaded counts, stated as such.
 
 911 and Fire/EMS coordinates are the nearest intersection — roughly half a block of true uncertainty — while 311 is address-level. Any marker finer than a corner is false precision for two of the three streams, so the photoreal mode draws intersection streams as a ~40 m ground disc and 311 as a column, and every card leads its location row with the precision word ("Nearest intersection · …" / "Address · …"). The probe: `$select=<geo>&$order=<date> DESC&$limit=2000`, count distinct rounded coordinates. The registry had carried `hasGeo: false` / "no coordinates" for `gnap-fj3t` since the view launched while the app drew its points the whole time — corrected the next day (Sept. 10).
 
+### One call's rows load on different days — and no feed records the death (probed Sept. 30, 2026)
+
+The worked example is the Feb. 27, 2026 crash at 4th and Channel that killed a 2-year-old in the crosswalk (received 20:25:54, Fire/EMS call `260583285`, seven units). Three things the record shows about the record:
+
+1. **Per-unit rows of ONE call land in different daily loads.** The chief, engine, rescue-captain and truck rows carry `data_as_of 2026-02-28` / `data_loaded_at 2026-03-01`; the three MEDIC rows carry `data_as_of 2026-03-01` / `data_loaded_at 2026-03-02` — rewritten a day later, which is when a unit's later timestamps (`transport_dttm`, `hospital_dttm`, `available_dttm`) can first appear. A reader who opens the call on the first day sees ambulances that never reached a hospital. That is the lag shape Jesse remembered from checking this call in March, and it is why a "still on scene" reading must never be inferred from a missing timestamp in the freshest day or two.
+2. **The dispatch feed never records an outcome.** Every unit's `call_final_disposition` is `Other`; `final_priority` is 3 on all seven. Nothing in `nuek-vuh3` says anyone died — the feed describes the response, not the result.
+3. **The fatal crash has NO row in the SFPD incident feed** (`wg3w-h783`: no `incident_number 260114760`, no Traffic Collision row at that intersection that night — the only 4th/Channel row is an unrelated battery at 00:36). Injury and fatal collisions reach the public only through the TransBASE/Vision Zero extract (`ubvf-ztfx` `unique_id 221316`, `case_id_pkey 260114760`: Fatal, Vehicle/Pedestrian, "Crossing in Crosswalk at Intersection", red-signal PCF 21453(a), driver making a left turn), and that row's `data_as_of` is 2026-09-03 with `data_updated_at 2026-09-25` — seven months after the crash. See the double-lag note under Traffic Crashes.
+
+Three datasets, three partial truths, one child. The probe: `nuek-vuh3?call_number=260583285`, `wg3w-h783?incident_number=260114760`, `ubvf-ztfx?unique_id=221316`. (The 2023 death of a 4-year-old was one block away at 4th and King — a different record; do not conflate the two.)
+
 ---
 
 ## Vendor Payments (`n9pm-xkyq`, compliance reporting)
