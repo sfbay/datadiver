@@ -440,7 +440,7 @@ stand. Every figure below was re-measured against the live portal on Sept. 30
    citywide, excluded from the map and from neighborhood figures, and
    disclosed (4.0%). Point-in-polygon rescues two rows, not 5,756.
 
-### 10.2 The equity finding depends on the denominator (Jesse's call)
+### 10.2 The equity finding depends on the denominator (Jesse ruled Sept. 30, 2026: show both)
 
 Re-measured with the park and federal-land areas removed (36 neighborhoods):
 
