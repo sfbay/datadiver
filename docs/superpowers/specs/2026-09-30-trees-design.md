@@ -357,3 +357,139 @@ Stale/unknown values are silent no-ops (validated against the loaded tables).
    note** in About once the view ships (it is a FINDING about the upstream, not
    a correction of ours per the corrections-log threshold)? My read: a
    data-insights + About-findings entry, not a corrections entry.
+
+## 10. Fable review (Sept. 30 2026) — SUPERSEDES the sections above where they conflict
+
+**Verdict: the shape is right; build it. But seven measured claims above are
+wrong or incomplete, and two of them would have published wrong figures.** The
+three-lens design, the committed-snapshot architecture, the "notice is not a
+removal" and "a report is not a tree" rules, and the no-risk-score stance all
+stand. Every figure below was re-measured against the live portal on Sept. 30
+2026; the probes are described so the plan can re-run them.
+
+### 10.1 Corrections to the facts (required before the plan)
+
+1. **`treeid` names a SITE, not a tree** (changes §2.2.3, §3.2, §3.5). Of the
+   4,831 noticed ids still in the inventory, **1,022 now hold a tree whose
+   `planteddate` is AFTER the notice**: the old tree went, a new one was
+   planted, the id stayed. So the "86% still listed" figure mostly measures
+   replanting and missing plant dates, not unexecuted permits. Rules: a notice
+   dated before the tree's planting date is shown as "a removal notice was
+   posted for an earlier tree at this site", never attached to the living
+   tree; with no planting date (3,328 sites) the card says only "a removal
+   notice was posted at this site on <date>". A `?tree=` link is a link to a
+   site. The `disappeared.json` diff (§3.5) catches vanished SITES only; a
+   same-site replacement shows up as a changed species or planting date, so
+   the diff must record those too.
+2. **The `TRE-` notice ids DO join** (replaces §2.2.4, gate G4). Strip the
+   prefix: 432 of the 477 distinct `TRE-` ids are inventory `treeid`s and the
+   address line matches on 453 of 503 rows. All-ids result: 5,571 distinct
+   notice ids → 4,831 listed, 740 absent. The old figures (5,111 / 4,413 / 698,
+   "506 cannot join") are retired.
+3. **The inventory holds non-trees** (changes §2.3, G0, every count). Despite
+   its description: **1,483 planting sites** (`Planting site (plant|cut|pave)`),
+   **635 stumps** (`Stump`, `Stump (use Grinder)`, `Stump (hand Remove)`) and
+   **65 shrubs**. The generator needs an authored row class (tree / stump /
+   empty site / shrub / unknown), the `foodPermits.ts` pattern: every published
+   string classed, an unclassed string fails the build. Headline counts are
+   TREES only. **The 635 stumps are the one direct record of former trees in
+   the inventory** and get their own mark on the map and in the Safety lens
+   ("a stump stands here"), which answers Jesse's "former trees" question today
+   rather than only going forward.
+4. **Species parsing** (replaces the "2,164" figure and the "Species not
+   recorded" rule in §2.3). Measured over 664 groups: 1,224 rows NULL; 523 rows
+   a valid Latin name with NO `::` at all (`Acer buergerianum`); 1,509 rows with
+   an empty common-name half, of which 940 are the placeholder `Tree(s) ::` and
+   the rest real species (`patanus racemosa ::`, 177); 101 rows with an empty
+   Latin half (`:: To Be Determine`, 81). A Latin-only row is a RECORDED species
+   and ranks under its Latin name. Only NULL, `Tree(s)` and `To Be Determine`
+   are "species not recorded". The notices dataset separates with ` : ` (one
+   colon), so the shared parser must take both.
+5. **Top-five share is 34,899 trees (24.2%), not 36,487 (25.3%)** (§2.3, G6).
+   The spec's query matched by prefix and swept in cultivars. Rankings use the
+   published string VERBATIM: no merging of cultivars or typo'd spellings by
+   similarity (the crime-subcategory rule: a merge is authored and evidenced,
+   or it does not happen). Say so in the data notes.
+6. **Large trunks are 8,797, not 18,334** (§3.4). All 9,537 rows with no
+   `mapdbh` are coded `dbhrange` 3, the LARGE class. Never read `dbhrange`;
+   derive the class from `mapdbh` and give unmeasured trees their own class.
+   Also: `mapdbh` is exactly 3 on 41,307 trees (29%), including 1,215 planted
+   before 2000, so it is the size AS LAST RECORDED (often planting size), with
+   no measurement date published. 635 rows exceed 60 inches. Consequences: the
+   label is "trunk size as recorded"; the Equity lens's "share of small trunks"
+   metric (§3.3) is DROPPED, since it would measure record-keeping.
+7. **Drop the "planted before 1990" layer** (§3.4). Only 2,781 trees carry a
+   pre-1990 date, and date coverage follows who planted the tree (Friends of
+   the Urban Forest 91%, Public Works 40%, private 20%), not how old it is.
+   `planteddate` is also a TEXT column (ISO strings; compare as text, no date
+   functions). Planting year stays on the tree card only.
+8. **311 fall reports: three fixes** (§2.3, §3.4, G3).
+   (a) "Every row has a point" was wrong: non-null is not valid. Of 13,508
+   reports since 2021, **2,161 (16%) sit at latitude 0, longitude 0** (phone
+   reports, 2021–2024; 1,551 of them in 2023) and carry no neighborhood. They
+   count citywide and are disclosed as unplaced; per-neighborhood figures name
+   the placed share. (b) **2,421 (18%) were closed by the city as duplicates**
+   (`status_notes` contains "Duplicate"). Exclude them, using the city's own
+   mark; do NOT invent our own clustering of nearby reports. (c) Years are
+   storm-shaped: 2021 1,347 · 2022 722 · **2023 5,505** · 2024 2,951 · 2025
+   1,858, with 664 reports on March 21 2023 alone. Show the years as a strip,
+   never one five-year total, and no year-over-year verdicts. The dataset has
+   its own `analysis_neighborhood` column, so no point-in-polygon step is needed.
+9. **Unmappable trees cannot be rescued** (G2). The 5,754 rows without
+   latitude have no `xcoord` either, only an address line. They are counted
+   citywide, excluded from the map and from neighborhood figures, and
+   disclosed (4.0%). Point-in-polygon rescues two rows, not 5,756.
+
+### 10.2 The equity finding depends on the denominator (Jesse's call)
+
+Re-measured with the park and federal-land areas removed (36 neighborhoods):
+
+| Street trees… | vs median income | vs poverty rate |
+|---|---|---|
+| per 1,000 residents | ρ +0.65 | ρ −0.58 |
+| per square kilometre of land | ρ +0.33 | ρ −0.17 |
+
+Per resident punishes density by construction: the Tenderloin ranks 34th of 36
+per resident and 15th per area; Bayview Hunters Point ranks 6th per resident
+and 33rd per area. One measure alone would let the page assert a finding the
+other measure does not support. Land area is computable today from the
+vendored boundary file, so no new source is needed. **Requirement: the Equity
+lens shows both measures side by side (`?rank=perK|perKm2`), and the lead
+sentence states only what holds under both.** Street miles stays banked.
+
+### 10.3 Answers to the review questions (§9)
+
+1. **Snapshot: yes.** The precedent exists: `kind: 'derived'` in `NON_SOCRATA`
+   (`dd-storefront-histories`), with `generator` and `servedPath`. Add
+   `dd-street-trees`. One change: the tree CARD fetches its row live by
+   `treeid` (one cheap query, always current, and it removes the need for the
+   `trees-addr.json` file); the snapshot supplies the map, the aggregates and
+   the precomputed joins. A site in the snapshot that the live fetch no longer
+   returns renders the "left the inventory" note.
+2. **Dots: measure first.** Task 1 of the plan is a throwaway spike: all points
+   as one GeoJSON source, circle layer with `minzoom` 13, on Jesse's laptop and
+   a phone. Pass line: snapshot parse plus source load under 1 s on the laptop,
+   no frame over 50 ms while panning at zoom 14. Only a failed spike justifies
+   vector tiles.
+3. **Denominator:** §10.2.
+4. **Window and radius:** 30 m and "reports nearby" stand; apply §10.1.8.
+5. **Provenance:** Restaurants is the model. `sources` lists only what the
+   browser fetches (`streetTrees` for the card and the freshness probe);
+   `streetTreeRemovals` and the 311 fall reports are generator-only and ride
+   `staticSources: ['dd-street-trees', 'sf-analysis-neighborhoods',
+   'acs-2023-5yr']`. `homeCard.order` is 16 (its own sequence, not nav order).
+6. **Privacy:** no objection. No person is named in any field.
+7. **Naming:** "Trees" in the nav, "Street trees" as the masthead. The
+   parks-not-counted line sits in the Equity lens, where it changes a reading.
+8. **Agreed:** a finding for data-insights and About, not a corrections entry.
+
+### 10.4 Banked leads (not this PR)
+
+- The archived list (`uzd4-f6yf`, 198,436 rows) holds **62,464 ids absent from
+  today's inventory**; 135,972 ids are shared, and in a 284-id sample 279 kept
+  the same species. It may be a backfill of former trees, but the city retired
+  it for "outstanding data issues", so removal cannot be told from cleanup
+  without more work.
+- Whether the notice rows' species describes the old tree or the site's current
+  state is unresolved (some notices read `Planting site (cut)`); do not print a
+  "former species" from the notices until it is.
