@@ -44,7 +44,7 @@ import {
 } from './treesUrl'
 import { msSinceSnapshotFetch, useTreesAggregates, useTreesSnapshot } from './useTrees'
 import {
-  TREES_SOURCE, TREE_LAYERS, TREE_POINT_LAYER_IDS, MOSS_500, lensPaint, siteFeatures,
+  TREES_SOURCE, TREE_LAYERS, TREE_POINT_LAYER_IDS, MOSS_500, DOT_MINZOOM, lensPaint, siteFeatures,
   SELECTED_KEYLINE_LAYER, SELECTED_LAYERS, SELECTED_SOURCE, selectedFeature, selectedKeyline,
   EMPTY_FC, EQUITY_SOURCE, equityFeatures, equityLayers,
 } from './mapLayers'
@@ -193,8 +193,9 @@ export default function Trees() {
   )
   useMapLayer(mapInstance, EQUITY_SOURCE, equityFc, equitySpecs, { belowLabels: true })
   const equityLegend = useMemo(
-    () => (agg ? { stops: choroplethStops(agg.neighborhoods, rank), by: rank } : null),
-    [agg, rank],
+    // The same call (and theme) as the fill, so the legend cannot drift.
+    () => (agg ? { stops: choroplethStops(agg.neighborhoods, rank, isDarkMode), by: rank } : null),
+    [agg, rank, isDarkMode],
   )
 
   // The flagged neighborhoods' hatch is the demographic underlay's image —
@@ -220,6 +221,18 @@ export default function Trees() {
   // the flight every time the lens changed). Selection never filters.
   useMapCameraPresets(mapInstance, { selectedNeighborhood: nh })
 
+  // The legend's dot rows describe nothing below the dot zoom. Read the zoom
+  // on `zoomend` only (never every zoom frame) and store the boolean: setting
+  // the same value again does not re-render.
+  const [dotsVisible, setDotsVisible] = useState(false)
+  useEffect(() => {
+    if (!mapInstance) return
+    const read = () => { try { setDotsVisible(mapInstance.getZoom() >= DOT_MINZOOM) } catch { /* map disposed */ } }
+    read()
+    mapInstance.on('zoomend', read)
+    return () => { try { mapInstance.off('zoomend', read) } catch { /* map disposed */ } }
+  }, [mapInstance])
+
   // Keyline follows the theme; the ring stays above the tree layers (a
   // theme swap re-adds sources in retry order). Both writes are guarded by
   // a compare — an unconditional set on idle would repaint forever.
@@ -229,7 +242,7 @@ export default function Trees() {
     const apply = () => {
       try {
         if (!mapInstance.getLayer(SELECTED_KEYLINE_LAYER)) return
-        if (mapInstance.getPaintProperty(SELECTED_KEYLINE_LAYER, 'circle-stroke-color') !== wanted) {
+        if (JSON.stringify(mapInstance.getPaintProperty(SELECTED_KEYLINE_LAYER, 'circle-stroke-color')) !== JSON.stringify(wanted)) {
           mapInstance.setPaintProperty(SELECTED_KEYLINE_LAYER, 'circle-stroke-color', wanted)
         }
         const order = (mapInstance.getStyle().layers ?? []).map((l) => l.id)
@@ -298,7 +311,12 @@ export default function Trees() {
           try {
             if (!mapInstance.getLayer(layer)) continue
             const p = prop as 'circle-opacity'
-            if (mapInstance.getPaintProperty(layer, p) !== value) mapInstance.setPaintProperty(layer, p, value as number)
+            // Compared as JSON, like the filters: an expression-valued paint
+            // property is a fresh array on every read, so `!==` would always
+            // differ and every idle would repaint — forever.
+            if (JSON.stringify(mapInstance.getPaintProperty(layer, p)) !== JSON.stringify(value)) {
+              mapInstance.setPaintProperty(layer, p, value as number)
+            }
           } catch { /* style mid-swap; the next idle re-applies */ }
         }
       }
@@ -424,7 +442,16 @@ export default function Trees() {
 
             {/* The legend sits under the mobile sheet's peek, so it is
                 desktop only; the dots' meaning is also in each tooltip. */}
-            {!isMobile && <TreesLegend lens={lens} speciesLabel={selectedLabel} dark={isDarkMode} equity={equityLegend} />}
+            {!isMobile && (
+              <TreesLegend
+                lens={lens}
+                speciesLabel={selectedLabel}
+                dark={isDarkMode}
+                equity={equityLegend}
+                dotsVisible={dotsVisible}
+                unmeasured={agg?.totals.unmeasuredTrunks ?? null}
+              />
+            )}
             {treeId !== null && (
               <TreeCard
                 key={treeId}

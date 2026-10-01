@@ -73,7 +73,8 @@ export default function EquityTab({ agg, rank, onRank, neighborhood, onSelect }:
     const el = Array.from(listRef.current.querySelectorAll<HTMLElement>('[data-nhood]'))
       .find((n) => n.dataset.nhood === neighborhood)
     try { el?.scrollIntoView({ block: 'nearest' }) } catch { /* no layout */ }
-  }, [neighborhood, isMobile])
+    // `rank` too: switching the measure moves the selected row.
+  }, [neighborhood, isMobile, rank])
 
   return (
     <div className="flex flex-col gap-4">

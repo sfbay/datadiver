@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import type { NeighborhoodAggregate } from '@/lib/trees/types'
 import { choroplethStops, rankNeighborhoods } from './equityView'
-import { MOSS_RAMP, stopColor, unflaggedCount, unflaggedMedian, unflaggedRange } from './equityView'
+import { MOSS_RAMP, MOSS_RAMP_DARK, stopColor, unflaggedCount, unflaggedMedian, unflaggedRange } from './equityView'
 
 const nb = (name: string, perK: number, perKm2: number, flag: NeighborhoodAggregate['flag'] = null): NeighborhoodAggregate =>
   ({ name, trees: 1, stumps: 0, largeTrunks: 0, population: 5000, areaKm2: 1, medianIncome: 1, povertyRate: 1, perK, perKm2, flag, falls: [] })
@@ -21,7 +21,7 @@ describe('rankNeighborhoods — the order flips with the measure', () => {
 
 describe('choroplethStops', () => {
   it('five ascending steps from unflagged values only', () => {
-    const stops = choroplethStops(rows, 'perK')
+    const stops = choroplethStops(rows, 'perK', false)
     expect(stops).toHaveLength(5)
     expect(stops[0][0]).toBe(54) // Presidio's 23 is flagged and ignored
     for (let i = 1; i < stops.length; i += 1) expect(stops[i][0]).toBeGreaterThanOrEqual(stops[i - 1][0])
@@ -61,25 +61,40 @@ describe('rankNeighborhoods — the other measure and the flagged tail', () => {
 })
 
 describe('choropleth colours', () => {
-  it('the stops walk the moss ramp, light to dark', () => {
-    expect(choroplethStops(rows, 'perK').map((s) => s[1])).toEqual([...MOSS_RAMP])
+  it('light theme: the stops walk pale → deep, fewest first', () => {
+    expect(choroplethStops(rows, 'perK', false).map((s) => s[1])).toEqual([...MOSS_RAMP])
     expect(MOSS_RAMP).toEqual(['#e6efd6', '#c9dba8', '#9bb37c', '#7a9954', '#4f6b33'])
+  })
+  it('dark theme: lightness reversed — fewest is the dim olive, most the brightest (R15)', () => {
+    expect(choroplethStops(rows, 'perK', true).map((s) => s[1])).toEqual([...MOSS_RAMP_DARK])
+    expect(MOSS_RAMP_DARK).toEqual(['#4f6b33', '#7a9954', '#9db87a', '#c9dba8', '#e6efd6'])
+    // the thresholds do not depend on the theme, only the colours
+    expect(choroplethStops(rows, 'perK', true).map((s) => s[0])).toEqual(choroplethStops(rows, 'perK', false).map((s) => s[0]))
+    // the most-trees neighborhood takes the brightest dark step; the fewest the dimmest
+    const dark = choroplethStops(rows, 'perK', true)
+    expect(stopColor(452, dark)).toBe('#e6efd6')
+    expect(stopColor(-1, dark)).toBe('#4f6b33') // below the first stop: the dimmest
+    // over 36 values each step is used once, fewest → most = dim → bright
+    const many = Array.from({ length: 36 }, (_, i) => nb(`N${String(i).padStart(2, '0')}`, i + 1, 100 - i))
+    const s36 = choroplethStops(many, 'perK', true)
+    expect([1, 8, 15, 22, 36].map((v) => stopColor(v, s36))).toEqual([...MOSS_RAMP_DARK])
   })
   it('quantile thresholds over 36 values sit at the 0/20/40/60/80% positions', () => {
     const many = Array.from({ length: 36 }, (_, i) => nb(`N${String(i).padStart(2, '0')}`, i + 1, 100 - i))
-    expect(choroplethStops(many, 'perK').map((s) => s[0])).toEqual([1, 8, 15, 22, 29])
+    expect(choroplethStops(many, 'perK', false).map((s) => s[0])).toEqual([1, 8, 15, 22, 29])
   })
   it('a value takes the colour of the highest stop at or below it', () => {
     const many = Array.from({ length: 36 }, (_, i) => nb(`N${String(i).padStart(2, '0')}`, i + 1, 100 - i))
-    const s36 = choroplethStops(many, 'perK')
+    const s36 = choroplethStops(many, 'perK', false)
     expect([1, 7, 8, 21, 22, 36].map((v) => MOSS_RAMP.indexOf(stopColor(v, s36) as typeof MOSS_RAMP[number]))).toEqual([0, 0, 1, 2, 3, 4])
-    const stops = choroplethStops(rows, 'perK')
+    const stops = choroplethStops(rows, 'perK', false)
     expect(stopColor(452, stops)).toBe(MOSS_RAMP[4])
     expect(stopColor(300, stops)).toBe(stopColor(243, stops))
     expect(stopColor(-1, stops)).toBe(MOSS_RAMP[0]) // below the first stop clamps to the lightest
   })
   it('no unflagged rows: no stops', () => {
-    expect(choroplethStops([nb('Presidio', 23, 14, 'park')], 'perK')).toEqual([])
+    expect(choroplethStops([nb('Presidio', 23, 14, 'park')], 'perK', false)).toEqual([])
+    expect(choroplethStops([nb('Presidio', 23, 14, 'park')], 'perK', true)).toEqual([])
   })
 })
 

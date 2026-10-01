@@ -4,7 +4,7 @@ import type mapboxgl from 'mapbox-gl'
 import type { NeighborhoodAggregate, TreesSnapshot } from '@/lib/trees/types'
 import {
   CHOROPLETH_LAYER_ID, EQUITY_HATCH_LAYER_ID, EQUITY_OUTLINE_LAYER_ID, EQUITY_SOURCE, choroplethFill, equityFeatures, equityLayers,
-  DOT_MINZOOM, EMPTY_FC, SELECTED_KEYLINE_LAYER, SELECTED_LAYERS, SELECTED_SOURCE, TREE_LAYERS, TREE_POINT_LAYER_IDS,
+  DOT_MINZOOM, EMPTY_FC, HEAT_COLOR_STOPS, HEAT_SWATCH_CSS, legendDots, SELECTED_KEYLINE_LAYER, SELECTED_LAYERS, SELECTED_SOURCE, TREE_LAYERS, TREE_POINT_LAYER_IDS,
   lensPaint, selectedFeature, selectedKeyline, siteFeatures, siteLngLat,
 } from './mapLayers'
 import type { Lens } from './treesUrl'
@@ -177,6 +177,59 @@ describe('dot radii scale with zoom and keep the trunk-class ratios', () => {
   })
 })
 
+describe('a stump ring is always larger than a small-trunk dot', () => {
+  // Linear interpolation over ['interpolate', ['linear'], ['zoom'], z0, v0, …],
+  // clamped at both ends — Mapbox's reading of the expression.
+  const at = (expr: unknown[], zoom: number, pick: (v: unknown) => number): number => {
+    const pts: [number, number][] = []
+    for (let i = 3; i < expr.length; i += 2) pts.push([expr[i] as number, pick(expr[i + 1])])
+    if (zoom <= pts[0][0]) return pts[0][1]
+    for (let i = 1; i < pts.length; i += 1) {
+      const [z0, v0] = pts[i - 1], [z1, v1] = pts[i]
+      if (zoom <= z1) return v0 + ((v1 - v0) * (zoom - z0)) / (z1 - z0)
+    }
+    return pts[pts.length - 1][1]
+  }
+  const paint = (id: string) => TREE_LAYERS.find((l) => l.id === id)!.paint as Record<string, unknown[]>
+  const dotExpr = paint('trees-dots')['circle-radius']
+  const stumpExpr = paint('trees-stumps')['circle-radius']
+  const small = (v: unknown) => (v as unknown[])[3] as number // ['match', ['get','cls'], 0, SMALL, …]
+  const plain = (v: unknown) => v as number
+  const stops = (e: unknown[]) => e.filter((_, i) => i >= 3 && (i - 3) % 2 === 0) as number[]
+
+  it('at every radius stop of either layer (and the safety lens\'s zoom 12)', () => {
+    const zooms = [...new Set([12, ...stops(dotExpr), ...stops(stumpExpr)])].sort((a, b) => a - b)
+    expect(zooms).toEqual([12, 13, 15, 17])
+    for (const z of zooms) {
+      expect(at(stumpExpr, z, plain), `zoom ${z}`).toBeGreaterThan(at(dotExpr, z, small))
+    }
+  })
+})
+
+describe('the legend follows what the map draws', () => {
+  it('explore below the dot zoom: no dot rows, a "zoom in" line instead', () => {
+    expect(legendDots('explore', false)).toEqual({ classes: [], unmeasured: false, zoomIn: true })
+  })
+  it('explore from the dot zoom up: every class plus the unmeasured row', () => {
+    expect(legendDots('explore', true)).toEqual({ classes: ['small', 'medium', 'large'], unmeasured: true, zoomIn: false })
+  })
+  it('safety draws large trunks at every zoom, so the zoom never matters', () => {
+    for (const v of [true, false]) expect(legendDots('safety', v)).toEqual({ classes: ['large'], unmeasured: false, zoomIn: false })
+  })
+  it('unmeasured trunks are drawn at the small size at every stop (what the legend row claims)', () => {
+    const r = (TREE_LAYERS.find((l) => l.id === 'trees-dots')!.paint as Record<string, unknown[]>)['circle-radius']
+    for (let i = 3; i < r.length; i += 2) {
+      const m = r[i + 1] as unknown[]
+      expect(m[8], `zoom ${String(r[i])}`).toBe(m[3])
+    }
+  })
+  it('the heat swatch and the heat layer read the same stops', () => {
+    const heat = TREE_LAYERS.find((l) => l.id === 'trees-heat')!.paint as Record<string, unknown[]>
+    expect(heat['heatmap-color'].slice(3)).toEqual(HEAT_COLOR_STOPS.flatMap(([d, c]) => [d, c]))
+    for (const [, c] of HEAT_COLOR_STOPS) expect(HEAT_SWATCH_CSS).toContain(c)
+  })
+})
+
 describe('the selected-site ring', () => {
   it('decodes a site point the way siteFeatures does, and none without one', () => {
     const [lon, lat] = siteLngLat(58094, 78896)!
@@ -225,7 +278,7 @@ describe('equity choropleth', () => {
   })
 
   it('the fill is a match on the neighborhood name, coloured from the stops; flagged and unknown names stay clear', () => {
-    const fill = choroplethFill(rows, 'perK') as unknown[]
+    const fill = choroplethFill(rows, 'perK', false) as unknown[]
     expect(fill[0]).toBe('match')
     expect(fill[1]).toEqual(['get', 'nhood'])
     const pairs = new Map<string, string>()
@@ -234,9 +287,28 @@ describe('equity choropleth', () => {
     expect(pairs.get('Seacliff')).toBe('#4f6b33')
     expect(fill[fill.length - 1]).toBe('rgba(0,0,0,0)')
     // re-ranking re-paints
-    expect(choroplethFill(rows, 'perKm2')).not.toEqual(fill)
+    expect(choroplethFill(rows, 'perKm2', false)).not.toEqual(fill)
     // nothing unflagged: a constant clear fill (an empty match is invalid)
-    expect(choroplethFill([nb('Presidio', 23, 14, 'park')], 'perK')).toBe('rgba(0,0,0,0)')
+    expect(choroplethFill([nb('Presidio', 23, 14, 'park')], 'perK', false)).toBe('rgba(0,0,0,0)')
+    expect(choroplethFill([nb('Presidio', 23, 14, 'park')], 'perK', true)).toBe('rgba(0,0,0,0)')
+  })
+
+  it('the fill follows the theme: most trees deep on cream, bright on espresso (R15) — the same stops the legend reads', () => {
+    const pairs = (dark: boolean) => {
+      const f = choroplethFill(rows, 'perK', dark) as unknown[]
+      const m = new Map<string, string>()
+      for (let i = 2; i < f.length - 1; i += 2) m.set(f[i] as string, f[i + 1] as string)
+      return m
+    }
+    expect(pairs(false).get('Seacliff')).toBe('#4f6b33')
+    expect(pairs(true).get('Seacliff')).toBe('#e6efd6')
+    // Tenderloin (fewest) is pale on cream, dim on espresso — never the brightest fill in the dark
+    expect(pairs(false).get('Tenderloin')).toBe('#c9dba8')
+    expect(pairs(true).get('Tenderloin')).toBe('#7a9954')
+    const layerFill = (dark: boolean) =>
+      (equityLayers({ rows, by: 'perK', dark, selected: null, hatchImage: 'h' })[0] as mapboxgl.FillLayerSpecification).paint?.['fill-color']
+    expect(layerFill(true)).toEqual(choroplethFill(rows, 'perK', true))
+    expect(layerFill(false)).toEqual(choroplethFill(rows, 'perK', false))
   })
 
   it('three layers on their own source: the ramp (unflagged), the hatch (flagged), the selected outline', () => {

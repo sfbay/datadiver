@@ -13,6 +13,7 @@ import { TRUNK_LABEL } from '@/lib/trees/trunk'
 import type { FallYear, TreesAggregates } from '@/lib/trees/types'
 import { apDate } from '@/utils/apDate'
 import { unflaggedCount } from './equityView'
+import { MIN_TREES_FOR_RATE } from './safetyView'
 import { PARKS_LINE, apCount } from './treesPhrase'
 
 export type NoteSectionId = 'general' | 'explore' | 'equity' | 'safety' | 'tree'
@@ -93,10 +94,12 @@ function fallReportsNote(a: TreesAggregates | null): string {
 function stormYearsNote(a: TreesAggregates | null, nowYear: number): string {
   const close = 'The years are shown side by side and never added into one figure.'
   if (!a || a.falls.years.length === 0) return `Some years hold far more fall reports than others. ${close}`
+  // Both figures below are the generator's COMBINED count — the sentence says so.
   const busiest = a.falls.years.reduce((m, y) => (reportsIn(y) > reportsIn(m) || (reportsIn(y) === reportsIn(m) && y.year < m.year) ? y : m))
   const day = a.falls.busiestDay
   const dayYear = Number(day.ymd.slice(0, 4))
-  let body = `Of the years shown, ${busiest.year} has the most fall reports, ${apCount(reportsIn(busiest))}`
+  let body = 'Counting fallen-tree and about-to-fall reports together, ' +
+    `${busiest.year} has the most of the years shown, ${apCount(reportsIn(busiest))}`
   body += dayYear === busiest.year
     ? `, including ${apCount(day.reports)} filed on ${apDate(day.ymd, nowYear)}`
     : `; the busiest single day was ${apDate(day.ymd, nowYear)}, with ${apCount(day.reports)}`
@@ -187,6 +190,12 @@ export function buildDataNotes(a: TreesAggregates | null, nowYear: number): Note
         },
         { title: 'Fall reports', body: fallReportsNote(a) },
         { title: 'Storm years', body: stormYearsNote(a, nowYear) },
+        {
+          title: 'Reports per 1,000 street trees',
+          body: 'The count is that year’s fallen-tree reports with a map point in the neighborhood, divided by the street trees ' +
+            'in the inventory today, not in that year. A report may concern a tree that is not in the inventory, such as a park ' +
+            `or private tree. The figure is not shown for a neighborhood with fewer than ${apCount(MIN_TREES_FOR_RATE)} street trees.`,
+        },
         {
           title: 'Removal notices',
           body: 'A removal notice is posted after the city issues a removal permit; it does not show that the tree was taken out. ' +

@@ -38,7 +38,8 @@
  *   G1  paged inventory row count within 0.5% of a live count(*) taken AFTER
  *       the paged read (a snapshot made mid-refresh is refused)
  *   G2  every non-null inventory analysis_neighborhood is one of the 41; each
- *       of the 41 has a boundary feature and a census row; every sp/nb index
+ *       of the 41 has a boundary feature and a census row WITH a finite
+ *       totalPopulation (censusPopulationGaps); every sp/nb index
  *       resolves; every NON-BLANK 311 analysis_neighborhood is one of the 41
  *       (blank is allowed and counted); every UNFLAGGED neighborhood has a
  *       finite, positive population, area and median income and a finite
@@ -180,11 +181,36 @@ export function nextDisappearedLog(
   }
   const run = diffSnapshots(prior, now)
   const base: DisappearedLog = priorLog ?? { trackingSince: prior.asOf, runs: [] }
+  const last = base.runs[base.runs.length - 1]
+  // A run that died between the log write and the snapshot write left a run
+  // for this same step (same `from`, same `to`) in the log while trees.json
+  // stayed at `from`. Re-running must not record the step twice: the new
+  // diff REPLACES that run, so the log matches the snapshot written now.
+  const repeat = last !== undefined && last.from === run.from && last.to === run.to
+  const runs = repeat ? [...base.runs.slice(0, -1), run] : [...base.runs, run]
   return {
-    log: { trackingSince: base.trackingSince, runs: [...base.runs, run] },
+    log: { trackingSince: base.trackingSince, runs },
     ok: true,
-    detail: `diffed ${prior.asOf} → ${now.asOf}: ${run.gone.length} sites gone, ${run.changed.length} species or planting-year changes`,
+    detail: `${repeat ? 're-diffed (replacing an unfinished run) ' : 'diffed '}${prior.asOf} → ${now.asOf}: ` +
+      `${run.gone.length} sites gone, ${run.changed.length} species or planting-year changes`,
   }
+}
+
+/**
+ * G2's census check: the names among `names` whose census row is missing or
+ * carries no finite `totalPopulation`. A missing population must fail the
+ * gate — read as 0 it would flag the neighborhood "small-population" in
+ * silence and drop it from the equity comparison.
+ */
+export function censusPopulationGaps(
+  census: readonly { name: string; totalPopulation?: number | null }[],
+  names: readonly string[],
+): string[] {
+  const byName = new Map(census.map((c) => [c.name, c]))
+  return names.filter((nm) => {
+    const v = byName.get(nm)?.totalPopulation
+    return !(typeof v === 'number' && Number.isFinite(v))
+  })
 }
 
 // ── main ────────────────────────────────────────────────────────────────────
@@ -282,6 +308,8 @@ async function main(): Promise<void> {
   const censusByName = new Map(census.map((c) => [c.name, c]))
   const missingFeature = SF_NEIGHBORHOODS.filter((nm) => !featureByName.has(nm))
   const missingCensus = SF_NEIGHBORHOODS.filter((nm) => !censusByName.has(nm))
+  // A row present but without a population is a gap too (never read as 0).
+  const missingPopulation = censusPopulationGaps(census, SF_NEIGHBORHOODS).filter((nm) => censusByName.has(nm))
   let badIndex = 0
   for (let i = 0; i < n; i += 1) {
     if (sp[i] < -1 || sp[i] >= speciesTable.length || (sp[i] === -1) !== (rawSpecies[i] === null)) badIndex += 1
@@ -289,10 +317,12 @@ async function main(): Promise<void> {
     if (!Number.isInteger(id[i]) || id[i] <= 0) badIndex += 1
   }
   const duplicateIds = n - new Set(id).size
-  gate('G2', unknownNb.size === 0 && missingFeature.length === 0 && missingCensus.length === 0 && badIndex === 0 && duplicateIds === 0,
+  gate('G2', unknownNb.size === 0 && missingFeature.length === 0 && missingCensus.length === 0 &&
+    missingPopulation.length === 0 && badIndex === 0 && duplicateIds === 0,
     `unknown neighborhood names ${unknownNb.size}${unknownNb.size ? ` (${[...unknownNb].map(([k, v]) => `${k}: ${v}`).join(', ')})` : ''} · ` +
     `missing boundary ${missingFeature.length}${missingFeature.length ? ` (${missingFeature.join(', ')})` : ''} · ` +
     `missing census ${missingCensus.length}${missingCensus.length ? ` (${missingCensus.join(', ')})` : ''} · ` +
+    `census rows with no population ${missingPopulation.length}${missingPopulation.length ? ` (${missingPopulation.join(', ')})` : ''} · ` +
     `unresolved indexes ${badIndex} · duplicate site ids ${duplicateIds}`)
 
   // ── Removal notices (G4) ──────────────────────────────────────────────────

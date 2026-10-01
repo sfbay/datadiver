@@ -32,8 +32,10 @@ export const UNKNOWN_SITE = 'No street tree site has this number.'
 export const UNDATED_NOTICE = 'A removal notice with no posted date is on record for this site.'
 export const CARD_ERROR = 'The city’s tree record did not load.'
 
+/** `of` counts published species NAMES (cultivars and spellings apart), so
+ *  the line says names, never a count of species. */
 export function speciesRankLine(rank: number, of: number): string {
-  return `No. ${rank} of ${apCount(of)} recorded species`
+  return `No. ${rank} of ${apCount(of)} species names`
 }
 
 export function topFiveLine(share: number): string {
@@ -45,11 +47,11 @@ export function topFiveLine(share: number): string {
 // InfoTips), and the species card's lines.
 
 export const CAPTION_STREET_TREES = 'Street trees'
-export const CAPTION_SPECIES = 'Recorded species'
+export const CAPTION_SPECIES = 'Species names'
 export const CAPTION_TOP_FIVE = 'Top five species'
 export const CAPTION_SHARE = 'Of street trees'
 export const TRUNK_HEADING = 'Trunk size as recorded'
-export const TOP_NEIGHBORHOODS_HEADING = 'Neighborhoods with the most'
+export const TOP_NEIGHBORHOODS_HEADING = 'Neighborhoods with the most of this species'
 export const SEARCH_PLACEHOLDER = 'Species, or an address like 1330 Bush'
 export const SEARCH_LABEL = 'Search species or a street address'
 export const ADDRESS_SEARCHING = 'Searching addresses…'
@@ -63,7 +65,8 @@ export function streetTreesTip(n: number): string {
 }
 
 export function speciesCountTip(n: number): string {
-  return `The inventory names ${apCount(n)} species, each spelled as the city publishes it.`
+  return `The inventory uses ${apCount(n)} different species names, each as the city publishes it. ` +
+    'Cultivars and spelling variants count as separate names.'
 }
 
 /** A ranking row's sentence, for its aria-label. */
@@ -93,15 +96,19 @@ export function neighborhoodCountLabel(name: string, n: number): string {
 }
 
 export function showAllLine(n: number): string {
-  return `Show all ${apCount(n)} species`
+  return `Show all ${apCount(n)} species names`
 }
 
+/** The eyebrow over a selected species pinned above a search it does not match. */
+export const PINNED_SELECTION = 'Current selection'
+
 export function noSpeciesMatchLine(query: string): string {
-  return `No recorded species matches “${query.trim()}”.`
+  return `No species name matches “${query.trim()}”.`
 }
 
 export function noAddressLine(query: string): string {
-  return `No street tree address starts with “${query.trim()}”.`
+  // The search reads every inventory site — stumps and empty sites too.
+  return `No inventory site address starts with “${query.trim()}”.`
 }
 
 
@@ -284,8 +291,12 @@ export const CITYWIDE_ONLY = 'citywide only'
 export const NEIGHBORHOOD_FALLS_HEAD = 'Fallen-tree reports by neighborhood'
 export const NEIGHBORHOOD_YEARS_LABEL = 'Year of fall reports'
 export const PER_1K_UNIT = 'per 1,000 street trees'
-/** The row's small rate label; the row's aria-label carries PER_1K_UNIT. */
+/** The row's small rate label; the list head prints PER_1K_UNIT in full. */
 export const PER_1K_SHORT = 'per 1,000'
+/** The list head over each row's two figures, top to bottom. */
+export const ROWS_COUNT_HEAD = 'Reports'
+/** Under the year pills: rows count only mapped reports (S3). */
+export const ROWS_MAPPED_ONLY = 'Rows count only reports with a map point, so a year’s rows add up to less than its bar above.'
 export const LARGE_TRUNKS_UNIT = 'trunks 21+ in.'
 export const STUMPS_UNIT = 'stumps'
 export const NO_FALL_YEARS = 'No full year has enough mapped reports to count by neighborhood.'
@@ -295,6 +306,10 @@ export const FORMER_HEAD = 'Former trees'
 export const DISAPPEARED_ERROR = 'The log of sites that left the inventory did not load.'
 /** The map legend's line under the Safety lens. */
 export const FALLS_NOT_DRAWN = 'Fall reports are not drawn: a report marks an address, not a tree.'
+/** The legend below the dot zoom, where the map shows density only. */
+export const ZOOM_IN_LINE = 'Zoom in to see each tree'
+export const HEAT_FEWER = 'Fewer'
+export const HEAT_MORE = 'More street trees'
 
 const plural = (n: number, one: string, many: string): string => `${apCount(n)} ${n === 1 ? one : many}`
 
@@ -302,6 +317,11 @@ const plural = (n: number, one: string, many: string): string => `${apCount(n)} 
 function listAnd(items: readonly string[]): string {
   if (items.length <= 1) return items.join('')
   return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`
+}
+
+/** The legend row for trees whose trunk was never measured. */
+export function unmeasuredLegendLine(n: number): string {
+  return `No trunk measurement (${apCount(n)}): drawn at the smallest size`
 }
 
 export function largeTrunksLine(n: number): string {
@@ -330,6 +350,16 @@ export function fallBarLabel(b: { year: number; fallen: number; aboutToFall: num
   return `${head}: ${counts}${where}`
 }
 
+/** The small captions under one bar of the year strip: "so far" for the
+ *  partial year, "citywide only" for an unplaceable one — BOTH when a year is
+ *  both (R1). */
+export function fallBarCaptions(b: { partial: boolean; placeable: boolean }): string[] {
+  const out: string[] = []
+  if (b.partial) out.push(SO_FAR)
+  if (!b.placeable) out.push(CITYWIDE_ONLY)
+  return out
+}
+
 /** The line under the neighborhood pills: which years they leave out and
  *  why, read from the data (R1). null when none is left out. A year that is
  *  both partial and unplaceable is named once, for the map point. */
@@ -346,7 +376,8 @@ export function yearsLeftOutLine(years: readonly FallYear[]): string | null {
 
 /** Citywide only — the busiest day is never split by neighborhood. */
 export function busiestDayLine(day: { ymd: string; reports: number }, nowYear: number): string {
-  return `The busiest single day was ${apDate(day.ymd, nowYear)}, with ${plural(day.reports, 'fall report', 'fall reports')} citywide.`
+  return `The busiest single day was ${apDate(day.ymd, nowYear)}, with ${plural(day.reports, 'fall report', 'fall reports')} citywide, ` +
+    'counting fallen-tree and about-to-fall reports together.'
 }
 
 export function rateWithheldTip(min: number): string {
@@ -376,9 +407,12 @@ export function noticeTypeLabel(type: string, n: number): string {
   return `${type}: ${plural(n, 'removal notice', 'removal notices')}`
 }
 
-export function noticesTotalLine(rows: number, sinceYear: number | null): string {
+/** Notices beside sites: a site can hold more than one notice, so the two
+ *  totals differ and the line says why. */
+export function noticesTotalLine(rows: number, sinceYear: number | null, sites: number): string {
   const head = `${plural(rows, 'removal notice', 'removal notices')} posted`
-  return sinceYear === null ? head : `${head} since ${sinceYear}`
+  const since = sinceYear === null ? head : `${head} since ${sinceYear}`
+  return `${since} at ${plural(sites, 'site', 'sites')}. A site can hold more than one notice.`
 }
 
 export function replantedAfterLine(n: number): string {

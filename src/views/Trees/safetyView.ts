@@ -55,10 +55,14 @@ export interface SafetyRow {
   per1kTrees: number | null
 }
 
-/** One row per neighborhood for `year` (a year from `neighborhoodYears`),
- *  by that year's fallen-tree reports, most first; ties by name. A
- *  neighborhood with no row for the year has 0 of each kind. */
-export function safetyRows(nbs: readonly NeighborhoodAggregate[], year: number): SafetyRow[] {
+/** One row per neighborhood for `year`, by that year's fallen-tree reports,
+ *  most first; ties by name. `year` must be one of `neighborhoodYears(years)`
+ *  — any other year (unplaceable, partial, or absent) returns NO rows, never
+ *  a list of zeros that would read as a quiet year. Within a readable year a
+ *  neighborhood with no row has 0 of each kind. Counts are reports WITH a map
+ *  point only, so a year's rows sum to less than its citywide bar. */
+export function safetyRows(nbs: readonly NeighborhoodAggregate[], year: number, years: readonly FallYear[]): SafetyRow[] {
+  if (!neighborhoodYears(years).includes(year)) return []
   return nbs
     .map((n) => {
       const cell = n.falls.find((f) => f[0] === year)

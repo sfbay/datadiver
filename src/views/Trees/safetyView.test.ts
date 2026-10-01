@@ -68,7 +68,8 @@ describe('latestFullYear — the third chip\'s year', () => {
 describe('safetyRows', () => {
   const nb = (name: string, trees: number, falls: [number, number, number][]): NeighborhoodAggregate =>
     ({ name, trees, stumps: 3, largeTrunks: 40, population: 1, areaKm2: 1, medianIncome: 1, povertyRate: 1, perK: 1, perKm2: 1, flag: null, falls })
-  const rows = safetyRows([nb('Mission', 9000, [[2025, 90, 10]]), nb('Lincoln Park', 11, [[2025, 5, 0]]), nb('Marina', 4000, [])], 2025)
+  const YEARS = [fy(2024, 1, 1), fy(2025, 1, 1)]
+  const rows = safetyRows([nb('Mission', 9000, [[2025, 90, 10]]), nb('Lincoln Park', 11, [[2025, 5, 0]]), nb('Marina', 4000, [])], 2025, YEARS)
   it('sorts by that year\'s fallen-tree reports', () => {
     expect(rows.map((r) => r.name)).toEqual(['Mission', 'Lincoln Park', 'Marina'])
   })
@@ -78,19 +79,26 @@ describe('safetyRows', () => {
     expect(rows[1].per1kTrees).toBeNull()
     expect(rows[2]).toMatchObject({ fallen: 0, per1kTrees: 0 })
   })
-  it('a neighborhood with no row for the year has 0 of each kind', () => {
+  it('within a readable year, a neighborhood with no row for it has 0 of each kind', () => {
     expect(rows[2]).toMatchObject({ fallen: 0, aboutToFall: 0 })
   })
   it('carries large trunks, stumps and the about-to-fall count apart', () => {
     expect(rows[0]).toMatchObject({ largeTrunks: 40, stumps: 3, fallen: 90, aboutToFall: 10 })
   })
   it('ties keep name order, so the list never reshuffles', () => {
-    const tied = safetyRows([nb('Twin Peaks', 900, [[2025, 4, 0]]), nb('Bernal Heights', 900, [[2025, 4, 0]])], 2025)
+    const tied = safetyRows([nb('Twin Peaks', 900, [[2025, 4, 0]]), nb('Bernal Heights', 900, [[2025, 4, 0]])], 2025, YEARS)
     expect(tied.map((r) => r.name)).toEqual(['Bernal Heights', 'Twin Peaks'])
   })
   it('reads only the asked year', () => {
-    const r = safetyRows([nb('Mission', 9000, [[2024, 7, 1], [2025, 90, 10]])], 2024)
+    const r = safetyRows([nb('Mission', 9000, [[2024, 7, 1], [2025, 90, 10]])], 2024, YEARS)
     expect(r[0]).toMatchObject({ fallen: 7, aboutToFall: 1 })
+  })
+  it('a year neighborhood counts cannot be read for returns NO rows, never a list of zeros', () => {
+    const nbs = [nb('Mission', 9000, [[2021, 5, 1], [2024, 7, 1], [2025, 90, 10], [2026, 3, 0]]), nb('Marina', 4000, [])]
+    // unplaceable (2022, 2023), partial (2026), and absent (2019) years
+    for (const y of [2019, 2022, 2023, 2026]) expect(safetyRows(nbs, y, REAL_SHAPE), String(y)).toEqual([])
+    // every year neighborhoodYears offers does return rows
+    for (const y of neighborhoodYears(REAL_SHAPE)) expect(safetyRows(nbs, y, REAL_SHAPE), String(y)).toHaveLength(2)
   })
 })
 
@@ -107,6 +115,16 @@ describe('safety lines', () => {
     )
     expect(phrase.yearsLeftOutLine([fy(2024, 1, 1), fy(2025, 1, 1)])).toBeNull()
   })
+  it('a bar takes "so far" when partial, "citywide only" when unplaceable — both when both (S4)', () => {
+    expect(phrase.fallBarCaptions({ partial: true, placeable: true })).toEqual(['so far'])
+    expect(phrase.fallBarCaptions({ partial: false, placeable: false })).toEqual(['citywide only'])
+    expect(phrase.fallBarCaptions({ partial: true, placeable: false })).toEqual(['so far', 'citywide only'])
+    expect(phrase.fallBarCaptions({ partial: false, placeable: true })).toEqual([])
+  })
+  it('the list head names the rate in full, and says rows count only mapped reports (S1, S3)', () => {
+    expect(phrase.PER_1K_UNIT).toBe('per 1,000 street trees')
+    expect(phrase.ROWS_MAPPED_ONLY).toBe('Rows count only reports with a map point, so a year’s rows add up to less than its bar above.')
+  })
   it('a partial year that also cannot be placed is named once, for the map point', () => {
     expect(phrase.yearsLeftOutLine([fy(2025, 1, 1), fy(2026, 1, 1, true, false)])).toBe(
       'Neighborhood counts leave out 2026, when fewer than 75% of reports carry a map point.',
@@ -122,7 +140,7 @@ describe('safety lines', () => {
   })
   it('the busiest day is a citywide figure', () => {
     expect(phrase.busiestDayLine({ ymd: '2023-03-21', reports: 467 }, 2026)).toBe(
-      'The busiest single day was March 21, 2023, with 467 fall reports citywide.',
+      'The busiest single day was March 21, 2023, with 467 fall reports citywide, counting fallen-tree and about-to-fall reports together.',
     )
   })
   it('the third chip names its year', () => {
@@ -135,7 +153,7 @@ describe('safety lines', () => {
     const [row] = safetyRows([{
       name: 'Mission', trees: 9000, stumps: 3, largeTrunks: 40, population: 1, areaKm2: 1, medianIncome: 1, povertyRate: 1,
       perK: 1, perKm2: 1, flag: null, falls: [[2025, 90, 10]],
-    }], 2025)
+    }], 2025, [fy(2025, 1, 1)])
     expect(phrase.safetyRowLabel(row, 2025)).toBe(
       'Mission: 90 fallen-tree reports in 2025, 10 per 1,000 street trees; 10 about-to-fall reports. ' +
         '40 street trees with a recorded trunk 21 inches or wider; 3 stumps.',
@@ -150,8 +168,10 @@ describe('safety lines', () => {
     expect(phrase.noticesListedLabel(4831, 5571)).toBe('4,831 of 5,571 sites with a removal notice are still in the inventory.')
     expect(phrase.noticeTypeLabel('Posted 24hr', 1354)).toBe('Posted 24hr: 1,354 removal notices')
     expect(phrase.noticeTypeLabel('Posted 24hr', 1)).toBe('Posted 24hr: 1 removal notice')
-    expect(phrase.noticesTotalLine(5713, 2017)).toBe('5,713 removal notices posted since 2017')
-    expect(phrase.noticesTotalLine(5713, null)).toBe('5,713 removal notices posted')
+    expect(phrase.noticesTotalLine(5713, 2017, 5571)).toBe(
+      '5,713 removal notices posted since 2017 at 5,571 sites. A site can hold more than one notice.')
+    expect(phrase.noticesTotalLine(5713, null, 5571)).toBe('5,713 removal notices posted at 5,571 sites. A site can hold more than one notice.')
+    expect(phrase.noticesTotalLine(1, null, 1)).toBe('1 removal notice posted at 1 site. A site can hold more than one notice.')
     expect(phrase.replantedAfterLine(1022)).toBe(
       'At 1,022 sites, the street tree listed now was planted after the site’s removal notice, so that notice belongs to an earlier tree.',
     )
@@ -161,25 +181,5 @@ describe('safety lines', () => {
   })
 })
 
-describe('no sentence this tab adds scores a tree', () => {
-  const SCORING = /dangerous|hazard|\brisk|at-risk/i
-  it('every Safety constant and generated sentence is free of scoring words', () => {
-    const bars = fallBars(REAL_SHAPE)
-    const row = { name: 'Mission', largeTrunks: 40, stumps: 3, fallen: 90, aboutToFall: 10, per1kTrees: 10 }
-    const out = [
-      phrase.CAPTION_LARGE_TRUNKS, phrase.CAPTION_STUMPS, phrase.FALLS_BY_YEAR_HEAD, phrase.FALLEN_KEY, phrase.ABOUT_KEY,
-      phrase.SO_FAR, phrase.CITYWIDE_ONLY, phrase.NEIGHBORHOOD_YEARS_LABEL, phrase.NEIGHBORHOOD_FALLS_HEAD, phrase.PER_1K_UNIT,
-      phrase.LARGE_TRUNKS_UNIT, phrase.STUMPS_UNIT, phrase.NOTICES_HEAD, phrase.NOTICES_LISTED_CAPTION, phrase.FORMER_HEAD,
-      phrase.FALLS_NOT_DRAWN, phrase.NO_FALL_YEARS, phrase.DISAPPEARED_ERROR, phrase.TRUNK_NOTE, phrase.STUMP_LEGEND,
-      phrase.largeTrunksLine(8633), phrase.largeTrunksLine(1), phrase.stumpsLine(635), phrase.stumpsLine(1),
-      phrase.fallChipCaption(2025), phrase.fallChipTip(2025, 1592, 752),
-      ...bars.map((b) => phrase.fallBarLabel(b)),
-      phrase.yearsLeftOutLine(REAL_SHAPE) ?? '',
-      phrase.busiestDayLine({ ymd: '2023-03-21', reports: 467 }, 2026),
-      phrase.safetyRowLabel(row, 2025), phrase.safetyRowLabel({ ...row, per1kTrees: null }, 2025), phrase.rateWithheldTip(200),
-      phrase.noticesListedLabel(4831, 5571), phrase.noticeTypeLabel('Posted 24hr', 1354),
-      phrase.noticesTotalLine(5713, 2017), phrase.replantedAfterLine(1022),
-    ]
-    for (const s of out) if (SCORING.test(s)) throw new Error(s)
-  })
-})
+// The scoring-word ban (dangerous / hazard / risk) runs over EVERY export of
+// treesPhrase.ts, through the same samples as the jargon ban: treesPhrase.test.ts.

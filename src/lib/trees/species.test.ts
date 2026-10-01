@@ -1,4 +1,6 @@
 // src/lib/trees/species.test.ts
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { classifyRow, parseSpecies, speciesLabel, unclassifiedNonTrees } from './species'
 
@@ -119,6 +121,17 @@ describe('unclassifiedNonTrees — the G0 tripwire', () => {
     expect(unclassifiedNonTrees([
       'Stump :: Stump', 'Planting site (cut) :: Planting Site (cut)', 'Shrub :: Shrub', 'Acer rubrum :: Red Maple',
     ])).toEqual([])
+  })
+  it('every word in the list is suspect in its plural too (pave/paves, empty/empties, vacant/vacants)', () => {
+    const plurals = [
+      'Paves :: Paves', 'Empties :: Empties', 'Vacants :: Vacants', 'Pavedtemps ::', 'Vacant ::', 'Empty ::',
+    ]
+    expect(unclassifiedNonTrees(plurals)).toEqual(plurals)
+  })
+  it('flags nothing among the species strings in the committed trees.json', () => {
+    const snap = JSON.parse(readFileSync(join(process.cwd(), 'public/data/trees/trees.json'), 'utf8')) as { species: string[] }
+    expect(snap.species.length).toBeGreaterThan(0)
+    expect(unclassifiedNonTrees(snap.species)).toEqual([])
   })
   it('flags a new non-tree word the list does not know', () => {
     expect(unclassifiedNonTrees(['Stump (new kind) :: Stump (new kind)', 'Vacant basin :: Vacant']))

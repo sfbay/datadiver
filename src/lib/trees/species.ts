@@ -72,8 +72,10 @@ export function classifyRow(raw: string | null | undefined): RowKind {
   return NON_TREE[h[h.length - 1]] ?? NON_TREE[h[0]] ?? 'tree'
 }
 
-/** Ruling R6: any of these as a word (plural allowed) makes a string suspect. */
-const NON_TREE_WORD = /\b(stumps?|sites?|shrubs?|vacant|empty|basins?|pave|paved|pavedtemp|potentials?|others?|unknowns?)\b/i
+/** Ruling R6: any of these as a word makes a string suspect — every word in
+ *  the list with its plural (empty → empties, vacant → vacants, pave → paves). */
+const NON_TREE_WORD =
+  /\b(stumps?|sites?|shrubs?|vacants?|empty|empties|basins?|paves?|paved|pavedtemps?|potentials?|others?|unknowns?)\b/i
 
 /**
  * Authored: strings that carry a suspect word but ARE trees (case-folded

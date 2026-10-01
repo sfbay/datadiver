@@ -57,22 +57,35 @@ export function rankNeighborhoods(rows: readonly NeighborhoodAggregate[], by: Eq
 
 // ── the choropleth ─────────────────────────────────────────────────────────
 
-/** Five moss steps, light (fewest street trees) to dark (most). */
+/** Five moss steps for the LIGHT theme, fewest street trees → most: pale to
+ *  deep, so on the cream basemap more trees read as more ink. */
 export const MOSS_RAMP = ['#e6efd6', '#c9dba8', '#9bb37c', '#7a9954', '#4f6b33'] as const
+/** The DARK theme's five steps, fewest → most: lightness REVERSED (ruling
+ *  R15). On the espresso basemap the pale end is the brightest fill, so the
+ *  light ramp made "fewest" the loudest neighborhood; here fewest is a dim
+ *  olive and most is bright. */
+export const MOSS_RAMP_DARK = ['#4f6b33', '#7a9954', '#9db87a', '#c9dba8', '#e6efd6'] as const
+
+/** The ramp for a theme, fewest → most. */
+export function mossRamp(dark: boolean): readonly string[] {
+  return dark ? MOSS_RAMP_DARK : MOSS_RAMP
+}
 
 /** Five quantile steps over the UNFLAGGED values: each stop is the value at
  *  the 0 / 20 / 40 / 60 / 80% position of the sorted list (nearest rank,
- *  lower), paired with its ramp colour. Non-decreasing; empty when nothing
- *  is unflagged. */
-export function choroplethStops(rows: readonly NeighborhoodAggregate[], by: EquityRank): [number, string][] {
+ *  lower), paired with the THEME's ramp colour (fewest first). The map's
+ *  fill and the legend both call this with the same theme, so they cannot
+ *  drift. Non-decreasing; empty when nothing is unflagged. */
+export function choroplethStops(rows: readonly NeighborhoodAggregate[], by: EquityRank, dark: boolean): [number, string][] {
   const values = rows.filter((r) => r.flag === null).map((r) => r[by]).sort((a, b) => a - b)
   const n = values.length
   if (n === 0) return []
-  return MOSS_RAMP.map((color, i): [number, string] => [values[Math.floor((i * n) / MOSS_RAMP.length)], color])
+  const ramp = mossRamp(dark)
+  return ramp.map((color, i): [number, string] => [values[Math.floor((i * n) / ramp.length)], color])
 }
 
 /** The colour of the highest stop at or below `value`; below the first stop
- *  clamps to the lightest step. */
+ *  clamps to the first (fewest) step. */
 export function stopColor(value: number, stops: readonly (readonly [number, string])[]): string {
   let color = stops[0]?.[1] ?? MOSS_RAMP[0]
   for (const [threshold, c] of stops) if (value >= threshold) color = c

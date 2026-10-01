@@ -91,6 +91,30 @@ const DOT_RADIUS_STOPS: readonly (readonly [number, readonly [number, number, nu
 export const LEGEND_DOT_RADII: readonly [number, number, number] = [
   DOT_RADIUS_STOPS[1][1][0], DOT_RADIUS_STOPS[1][1][1], DOT_RADIUS_STOPS[1][1][2],
 ]
+/** What the dot legend lists under a lens (the Equity lens has its own
+ *  legend). Explore below DOT_MINZOOM draws the heatmap only, so the dot
+ *  rows would describe nothing on screen: the legend says "zoom in" and
+ *  shows the heat swatch instead. Safety draws large trunks at every zoom.
+ *  `unmeasured` = the row saying unmeasured trunks draw at the smallest size
+ *  (only where every class is drawn). */
+export function legendDots(lens: Lens, dotsVisible: boolean):
+  { classes: ('small' | 'medium' | 'large')[]; unmeasured: boolean; zoomIn: boolean } {
+  if (lens === 'safety') return { classes: ['large'], unmeasured: false, zoomIn: false }
+  if (!dotsVisible) return { classes: [], unmeasured: false, zoomIn: true }
+  return { classes: ['small', 'medium', 'large'], unmeasured: true, zoomIn: false }
+}
+
+/** The heatmap's colour ramp by density — ONE table for the layer's
+ *  `heatmap-color` and the legend's swatch, so the two cannot drift. */
+export const HEAT_COLOR_STOPS: readonly (readonly [number, string])[] = [
+  [0, 'rgba(122,153,84,0)'],
+  [0.4, MOSS_500],
+  [1, '#c9dba8'],
+]
+/** The legend's heat swatch: the same stops as a CSS gradient. */
+export const HEAT_SWATCH_CSS =
+  `linear-gradient(90deg, ${HEAT_COLOR_STOPS.map(([d, c]) => `${c} ${Math.round(d * 100)}%`).join(', ')})`
+
 /** Stump ring radius by zoom — always larger than a small dot at that zoom. */
 const STUMP_RADIUS_STOPS: readonly (readonly [number, number])[] = [[13, 2.2], [15, 4], [17, 6.5]]
 /** Selected-species radius by zoom — no zoom floor, so it starts lower. */
@@ -131,10 +155,8 @@ export const TREE_LAYERS: TreeLayer[] = [
       'heatmap-radius': byZoom(HEAT_RADIUS_STOPS),
       'heatmap-color': [
         'interpolate', ['linear'], ['heatmap-density'],
-        0, 'rgba(122,153,84,0)',
-        0.4, MOSS_500,
-        1, '#c9dba8',
-      ],
+        ...HEAT_COLOR_STOPS.flatMap(([d, c]) => [d, c]),
+      ] as mapboxgl.ExpressionSpecification,
       'heatmap-opacity': HEAT_OPACITY,
     },
   },
@@ -297,7 +319,8 @@ export function lensPaint(lens: Lens, speciesIdx: number | null, dark: boolean):
 // go BELOW the basemap labels (`belowLabels`) — a dense fill on top muddies
 // every label — and so below the tree layers too.
 //
-//   trees-equity-fill      the moss ramp, unflagged neighborhoods only,
+//   trees-equity-fill      the moss ramp (per theme: pale → deep on cream,
+//                          dim → bright on espresso — R15), unflagged only,
 //                          coloured by a `match` on the name (re-ranking
 //                          re-paints: the paint is pushed, the data is not
 //                          rebuilt).
@@ -344,8 +367,10 @@ export function equityFeatures(
 /** `fill-color`: a `match` on the neighborhood name, each unflagged row
  *  coloured by its step on the quantile stops. Flagged and unknown names fall
  *  through to clear (the hatch layer draws the flagged ones). */
-export function choroplethFill(rows: readonly NeighborhoodAggregate[], by: EquityRank): mapboxgl.ExpressionSpecification | string {
-  const stops = choroplethStops(rows, by)
+export function choroplethFill(
+  rows: readonly NeighborhoodAggregate[], by: EquityRank, dark: boolean,
+): mapboxgl.ExpressionSpecification | string {
+  const stops = choroplethStops(rows, by, dark)
   const pairs = rows.filter((r) => r.flag === null).flatMap((r) => [r.name, stopColor(r[by], stops)])
   // An empty match is an invalid expression.
   if (pairs.length === 0) return CLEAR
@@ -366,7 +391,7 @@ export function equityLayers(o: {
       source: EQUITY_SOURCE,
       filter: ['!=', ['get', 'flagged'], true],
       paint: {
-        'fill-color': choroplethFill(o.rows, o.by),
+        'fill-color': choroplethFill(o.rows, o.by, o.dark),
         // The cream basemap washes a translucent fill toward pastel (CLAUDE.md, Maps).
         'fill-opacity': o.dark ? 0.5 : 0.8,
       },

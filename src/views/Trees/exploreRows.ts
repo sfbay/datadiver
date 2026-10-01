@@ -45,6 +45,34 @@ export function visibleSpecies(
   return pick ? [...head, pick] : head
 }
 
+/** The species list as drawn: the filtered rows cut by `visibleSpecies`,
+ *  and — when the search text filters the SELECTED species out — that row
+ *  pinned at the top (`pinned` names it), so the selection and its card never
+ *  vanish while the reader types. A selection the full list does not hold
+ *  pins nothing. */
+export function speciesListRows(
+  all: readonly SpeciesAggregate[], query: string, showAll: boolean, selected: string | null, limit: number,
+): { matches: SpeciesAggregate[]; rows: SpeciesAggregate[]; pinned: string | null } {
+  const matches = filterSpecies(all, query)
+  const rows = visibleSpecies(matches, showAll, selected, limit)
+  if (selected === null || matches.some((r) => r.name === selected)) return { matches, rows, pinned: null }
+  const pick = all.find((r) => r.name === selected)
+  return pick ? { matches, rows: [pick, ...rows], pinned: pick.name } : { matches, rows, pinned: null }
+}
+
+/** The address search's loading state. The rows on hand belong to `heldFor`
+ *  (the `$where` whose request last settled); anything else — still typing
+ *  toward a new prefix, a request in flight, or the one frame after the
+ *  debounced query lands before its request starts — is LOADING, so a
+ *  previous prefix's rows (or an empty list) never stand in for this one's.
+ *  `typed` / `debounced` are the clauses from addressPrefixWhere. */
+export function addressSearchLoading(o: {
+  typed: string | null; debounced: string | null; heldFor: string | null; fetching: boolean
+}): boolean {
+  if (o.typed === null) return false
+  return o.typed !== o.debounced || o.fetching || o.heldFor !== o.debounced
+}
+
 /** A share of street trees, one decimal. A share that rounds to zero but is
  *  not zero reads "<0.1%" — never "0.0%", which claims none. */
 export function sharePercent(count: number, total: number): string {

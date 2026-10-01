@@ -1,8 +1,11 @@
 // The disappeared log's pure diff (gate G5 + ruling R3), on small synthetic
 // snapshots. The committed disappeared.json is the honest first-run file
 // (no runs yet); this is where the second-run logic is proven.
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { diffSnapshots, nextDisappearedLog, type SnapshotIdentity } from '../build-trees'
+import { SF_NEIGHBORHOODS } from '../../src/utils/geo'
+import { censusPopulationGaps, diffSnapshots, nextDisappearedLog, type SnapshotIdentity } from '../build-trees'
 
 const prior: SnapshotIdentity = {
   asOf: '2026-09-01',
@@ -62,5 +65,45 @@ describe('nextDisappearedLog — gate G5', () => {
   })
   it('a prior snapshot with no log starts tracking at the prior asOf', () => {
     expect(nextDisappearedLog(prior, now, null).log!.trackingSince).toBe('2026-09-01')
+  })
+})
+
+describe('nextDisappearedLog — a crashed run is never recorded twice', () => {
+  it('a re-run of the same step (same from, same to) replaces the unfinished run instead of appending it', () => {
+    // The previous run wrote this step's run to the log, then died before
+    // writing trees.json: the log ends with prior.asOf → now.asOf already.
+    const stale = { from: '2026-09-01', to: '2026-10-01', gone: [11, 99], changed: [] }
+    const existing = { trackingSince: '2026-08-01', runs: [{ from: '2026-08-01', to: '2026-09-01', gone: [9], changed: [] }, stale] }
+    const out = nextDisappearedLog(prior, now, existing)
+    expect(out.ok).toBe(true)
+    expect(out.log!.runs).toHaveLength(2)
+    expect(out.log!.runs.filter((r) => r.from === '2026-09-01' && r.to === '2026-10-01')).toHaveLength(1)
+    expect(out.log!.runs[1]).toEqual(diffSnapshots(prior, now))
+    expect(out.log!.runs[0]).toEqual(existing.runs[0])
+    expect(existing.runs).toHaveLength(2) // input untouched
+  })
+  it('a run with a different `to` still appends', () => {
+    const existing = { trackingSince: '2026-08-01', runs: [{ from: '2026-08-01', to: '2026-09-01', gone: [9], changed: [] }] }
+    expect(nextDisappearedLog(prior, now, existing).log!.runs).toHaveLength(2)
+  })
+})
+
+describe('censusPopulationGaps — G2 fails on a census row with no population', () => {
+  const names = ['Mission', 'Presidio', 'Seacliff', 'Nowhere']
+  it('names a missing, null, NaN or absent population; a real 0 is a figure, not a gap', () => {
+    const census = [
+      { name: 'Mission', totalPopulation: 58_000 },
+      { name: 'Presidio', totalPopulation: null },
+      { name: 'Seacliff' },
+      { name: 'Treasure Island', totalPopulation: Number.NaN },
+    ]
+    expect(censusPopulationGaps(census, names)).toEqual(['Presidio', 'Seacliff', 'Nowhere'])
+    expect(censusPopulationGaps(census, ['Treasure Island'])).toEqual(['Treasure Island'])
+    expect(censusPopulationGaps([{ name: 'Mission', totalPopulation: 0 }], ['Mission'])).toEqual([])
+  })
+  it('the committed census file has a population for every one of the 41', () => {
+    const census = JSON.parse(readFileSync(join(process.cwd(), 'src/data/census-neighborhoods.json'), 'utf8')) as
+      { name: string; totalPopulation?: number | null }[]
+    expect(censusPopulationGaps(census, SF_NEIGHBORHOODS)).toEqual([])
   })
 })

@@ -22,11 +22,11 @@ import { parseSpecies, speciesLabel } from '@/lib/trees/species'
 import type { SpeciesAggregate, TreesAggregates } from '@/lib/trees/types'
 import {
   ADDRESS_ERROR, ADDRESS_SEARCHING, CAPTION_SHARE, CAPTION_SPECIES, NO_ADDRESS, CAPTION_STREET_TREES, CAPTION_TOP_FIVE, SEARCH_LABEL,
-  SEARCH_PLACEHOLDER, SHOW_FEWER, TOP_NEIGHBORHOODS_HEADING, TRUNK_HEADING, apCount, neighborhoodCountLabel,
+  PINNED_SELECTION, SEARCH_PLACEHOLDER, SHOW_FEWER, TOP_NEIGHBORHOODS_HEADING, TRUNK_HEADING, apCount, neighborhoodCountLabel,
   noAddressLine, noSpeciesMatchLine, shareLine, showAllLine, speciesCountTip, speciesPlantedLine, speciesRankLine,
   speciesRowLabel, streetTreesTip, topFiveLine, trunkMixLabel,
 } from './treesPhrase'
-import { barShare, filterSpecies, sharePercent, visibleSpecies } from './exploreRows'
+import { barShare, sharePercent, speciesListRows } from './exploreRows'
 import { MOSS_500 } from './mapLayers'
 import { useTreeAddressSearch } from './useTreeAddressSearch'
 
@@ -56,8 +56,11 @@ export default function ExploreTab({ agg, species, onSpecies, onTree, onNeighbor
   const t = agg.totals
   const top = agg.species[0]?.count ?? 0
 
-  const matches = useMemo(() => filterSpecies(agg.species, query), [agg.species, query])
-  const rows = useMemo(() => visibleSpecies(matches, showAll, species, FIRST_ROWS), [matches, showAll, species])
+  // A selection the search filters out stays drawn, pinned at the top.
+  const { matches, rows, pinned } = useMemo(
+    () => speciesListRows(agg.species, query, showAll, species, FIRST_ROWS),
+    [agg.species, query, showAll, species],
+  )
   const address = useTreeAddressSearch(query)
 
   // A species chosen elsewhere (the tree card's rank line) scrolls into view.
@@ -75,10 +78,16 @@ export default function ExploreTab({ agg, species, onSpecies, onTree, onNeighbor
     <div className="flex flex-col gap-4">
       {/* ── opener: three chips ── */}
       <div className={`grid gap-2 ${isCompressed ? 'grid-cols-1' : 'grid-cols-2'}`}>
-        <RailStat value={t.trees} caption={CAPTION_STREET_TREES} tip={streetTreesTip(t.trees)} />
-        <RailStat value={agg.species.length} caption={CAPTION_SPECIES} tip={speciesCountTip(agg.species.length)} />
+        {/* "142,014" overflows a half-width chip: the street-tree count takes
+            the full row, the other two share the next. */}
         <RailStat
           className={isCompressed ? '' : 'col-span-2'}
+          value={t.trees}
+          caption={CAPTION_STREET_TREES}
+          tip={streetTreesTip(t.trees)}
+        />
+        <RailStat value={agg.species.length} caption={CAPTION_SPECIES} tip={speciesCountTip(agg.species.length)} />
+        <RailStat
           value={`${t.topFiveShare}%`}
           caption={CAPTION_TOP_FIVE}
           tip={topFiveLine(t.topFiveShare)}
@@ -133,14 +142,18 @@ export default function ExploreTab({ agg, species, onSpecies, onTree, onNeighbor
       {/* ── end address search ── */}
 
       {/* ── species ranking ── */}
-      {matches.length === 0 ? (
-        address.active ? null : <p className="font-serif text-xs text-paper-700 dark:text-paper-300">{noSpeciesMatchLine(query)}</p>
-      ) : (
+      {matches.length === 0 && !address.active && (
+        <p className="font-serif text-xs text-paper-700 dark:text-paper-300">{noSpeciesMatchLine(query)}</p>
+      )}
+      {rows.length > 0 && (
         <ol ref={listRef} className="flex flex-col gap-0.5">
           {rows.map((s) => {
             const on = s.name === species
             return (
               <li key={s.name} data-species={s.name} className={on ? `${SELECTED} pb-3` : ''}>
+                {s.name === pinned && (
+                  <p className={`px-2 pt-1.5 ${MONO_HEAD}`}>{PINNED_SELECTION}</p>
+                )}
                 <button
                   type="button"
                   aria-expanded={on}

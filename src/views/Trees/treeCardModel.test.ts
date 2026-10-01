@@ -81,7 +81,7 @@ describe('buildCardModel', () => {
     expect(m.trunk).toBe('3 inches (10 inches or narrower)')
     expect(m.planted).toBe('Planted May 7')
     expect(m.plantedDate).toBe('May 7')
-    expect(m.rankLine).toBe('No. 2 of 544 recorded species')
+    expect(m.rankLine).toBe('No. 2 of 544 species names')
     expect(m.falls).toBe('2 fall reports within 30 meters since 2021.')
   })
   it('the city record is the row itself on the portal', () => {

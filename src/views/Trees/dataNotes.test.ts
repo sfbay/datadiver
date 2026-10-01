@@ -19,7 +19,7 @@ describe('data notes — one table, grouped by surface', () => {
     for (const t of [
       'Street trees only', 'Stumps and empty sites', 'Sites without a map point', 'Species names',
       'Two ways to count', 'Flagged neighborhoods', 'Trunk size', 'Fall reports', 'Storm years',
-      'Removal notices', 'One site, more than one tree', 'Former trees',
+      'Reports per 1,000 street trees', 'Removal notices', 'One site, more than one tree', 'Former trees',
     ]) expect(titles, t).toContain(t)
   })
   it('renders without the snapshot', () => {
@@ -134,7 +134,8 @@ describe('citywide-only years read correctly, in ascending order', () => {
   it('storm years: one citywide year, no dangling possessive', () => {
     const years = [yr(2022, 90, 10), { ...yr(2023, 60, 40), fallen: 500 }]
     const b = body(withFalls(years, { ymd: '2023-03-21', reports: 80 }), 'Storm years')
-    expect(b).toBe('Of the years shown, 2023 has the most fall reports, 500, including 80 filed on March 21, 2023. ' +
+    expect(b).toBe('Counting fallen-tree and about-to-fall reports together, 2023 has the most of the years shown, 500, ' +
+      'including 80 filed on March 21, 2023. ' +
       'These are citywide figures, since too few of the 2023 reports carry a map point to split by neighborhood. ' +
       'The years are shown side by side and never added into one figure.')
   })
@@ -144,6 +145,19 @@ describe('citywide-only years read correctly, in ascending order', () => {
     expect(b).toContain('too few of the 2022 and 2023 reports carry a map point')
     expect(b).toContain('the busiest single day was Jan. 5, 2022, with 90')
     expect(b).not.toMatch(/’s reports/)
+  })
+})
+
+describe('the rate note and the storm years say what their figures count', () => {
+  const note = (title: string) => buildDataNotes(A, 2026).flatMap((s) => s.notes).find((n) => n.title === title)!.body
+  it('reports per 1,000 street trees: mapped reports, today’s trees, outside trees, the 200 floor', () => {
+    const b = note('Reports per 1,000 street trees')
+    for (const part of ['with a map point in the neighborhood', 'in the inventory today, not in that year',
+      'not in the inventory, such as a park or private tree', 'fewer than 200 street trees']) expect(b).toContain(part)
+    expect(buildDataNotes(A, 2026).find((s) => s.id === 'safety')!.notes.map((n) => n.title)).toContain('Reports per 1,000 street trees')
+  })
+  it('storm years: the combined figure is named as both kinds together', () => {
+    expect(note('Storm years')).toMatch(/^Counting fallen-tree and about-to-fall reports together, /)
   })
 })
 

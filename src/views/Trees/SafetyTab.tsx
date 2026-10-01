@@ -15,9 +15,12 @@
 //      citywide and is never split by neighborhood.
 //   3. Fallen-tree reports by neighborhood for one year. The pills offer
 //      only placeable FULL years (neighborhoodYears); one line names the
-//      years left out and why, from the data. A row: name · fallen-tree
-//      reports · per 1,000 street trees (withheld under 200 trees) · large
-//      trunks · stumps. Selecting a row sets `?nh=`; it never filters.
+//      years left out and why, from the data, and a second line that rows
+//      count only reports with a map point (so they sum to less than the
+//      bar). A list head names the right column's units in full. A row: name
+//      · fallen-tree reports · per 1,000 street trees (withheld under 200
+//      trees) · large trunks · stumps. Selecting a row sets `?nh=`; it never
+//      filters.
 //   4. Removal notices: a PartWhole of sites still in the inventory, the
 //      types under their published names, and the replanted-after line.
 //   5. Former trees: the generator's left-the-inventory log, fetched only
@@ -34,12 +37,12 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import type { TreesAggregates } from '@/lib/trees/types'
 import {
-  ABOUT_KEY, CAPTION_LARGE_TRUNKS, CAPTION_STUMPS, CITYWIDE_ONLY, DISAPPEARED_ERROR, FALLEN_KEY, FALLS_BY_YEAR_HEAD,
+  ABOUT_KEY, CAPTION_LARGE_TRUNKS, CAPTION_STUMPS, DISAPPEARED_ERROR, FALLEN_KEY, FALLS_BY_YEAR_HEAD,
   FORMER_HEAD, LARGE_TRUNKS_UNIT, NEIGHBORHOOD_FALLS_HEAD, NEIGHBORHOOD_YEARS_LABEL, NOTICES_HEAD,
-  NOTICES_LISTED_CAPTION, NO_FALL_YEARS, PER_1K_SHORT, SO_FAR, STUMPS_UNIT, TRUNK_NOTE, apCount, busiestDayLine,
-  disappearedLine, equityFigure, fallBarLabel, fallChipCaption, fallChipTip, largeTrunksLine, noticeTypeLabel,
-  noticesListedLabel, noticesTotalLine, rateWithheldTip, replantedAfterLine, safetyRowLabel, stumpsLine,
-  yearsLeftOutLine,
+  NOTICES_LISTED_CAPTION, NO_FALL_YEARS, PER_1K_SHORT, PER_1K_UNIT, ROWS_COUNT_HEAD, ROWS_MAPPED_ONLY, STUMPS_UNIT,
+  TRUNK_NOTE, apCount, busiestDayLine, disappearedLine, equityFigure, fallBarCaptions, fallBarLabel, fallChipCaption,
+  fallChipTip, largeTrunksLine, noticeTypeLabel, noticesListedLabel, noticesTotalLine, rateWithheldTip,
+  replantedAfterLine, safetyRowLabel, stumpsLine, yearsLeftOutLine,
 } from './treesPhrase'
 import { MIN_TREES_FOR_RATE, fallBars, latestFullYear, neighborhoodYears, safetyRows } from './safetyView'
 import { barShare } from './exploreRows'
@@ -83,7 +86,7 @@ export default function SafetyTab({ agg, neighborhood, onSelect, nowYear }: Safe
   // Default = the latest placeable full year; a stale pick falls back to it.
   const [picked, setPicked] = useState<number | null>(null)
   const year = picked !== null && nbYears.includes(picked) ? picked : nbYears[nbYears.length - 1] ?? null
-  const rows = useMemo(() => (year === null ? [] : safetyRows(agg.neighborhoods, year)), [agg.neighborhoods, year])
+  const rows = useMemo(() => (year === null ? [] : safetyRows(agg.neighborhoods, year, years)), [agg.neighborhoods, year, years])
   const topFallen = rows[0]?.fallen ?? 0
 
   const notices = agg.notices
@@ -159,11 +162,11 @@ export default function SafetyTab({ agg, neighborhood, onSelect, nowYear }: Safe
                     ))}
                   </div>
                   <span className="mt-1 font-mono text-nano tabular-nums text-paper-700 dark:text-paper-300" aria-hidden>{b.year}</span>
-                  {(b.partial || !b.placeable) && (
-                    <span className="font-serif italic text-nano leading-tight text-center text-paper-600 dark:text-paper-400" aria-hidden>
-                      {b.placeable ? SO_FAR : CITYWIDE_ONLY}
+                  {fallBarCaptions(b).map((c) => (
+                    <span key={c} className="font-serif italic text-nano leading-tight text-center text-paper-600 dark:text-paper-400" aria-hidden>
+                      {c}
                     </span>
-                  )}
+                  ))}
                 </div>
               )
             })}
@@ -198,7 +201,15 @@ export default function SafetyTab({ agg, neighborhood, onSelect, nowYear }: Safe
               ))}
             </div>
             {leftOut && <p className="font-serif italic text-xs text-paper-700 dark:text-paper-300">{leftOut}</p>}
+            <p className="font-serif italic text-xs text-paper-700 dark:text-paper-300">{ROWS_MAPPED_ONLY}</p>
 
+            {/* The right column's units, in full (the rows print the short form). */}
+            <div className="flex justify-end px-2" aria-hidden>
+              <span className="text-right font-mono text-nano uppercase tracking-[0.15em] text-paper-600 dark:text-paper-400">
+                <span className="block">{ROWS_COUNT_HEAD}</span>
+                <span className="block">{PER_1K_UNIT}</span>
+              </span>
+            </div>
             <ol ref={listRef} className="flex flex-col gap-0.5">
               {rows.map((r) => {
                 const on = r.name === neighborhood
@@ -248,7 +259,7 @@ export default function SafetyTab({ agg, neighborhood, onSelect, nowYear }: Safe
       {/* ── removal notices: a notice, never a removal ── */}
       <section className="flex flex-col gap-2" aria-label={NOTICES_HEAD}>
         <p className={MONO_HEAD}>{NOTICES_HEAD}</p>
-        <p className="font-serif text-xs text-paper-800 dark:text-paper-200">{noticesTotalLine(notices.rows, firstNoticeYear)}</p>
+        <p className="font-serif text-xs text-paper-800 dark:text-paper-200">{noticesTotalLine(notices.rows, firstNoticeYear, notices.sites)}</p>
         <div className="flex flex-col gap-0.5">
           <PartWhole
             part={notices.listed}
