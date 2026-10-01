@@ -44,7 +44,7 @@ import {
 } from './treesUrl'
 import { msSinceSnapshotFetch, useTreesAggregates, useTreesSnapshot } from './useTrees'
 import {
-  TREES_SOURCE, TREE_LAYERS, TREE_POINT_LAYER_IDS, MOSS_500, DOT_MINZOOM, lensPaint, siteFeatures,
+  TREES_SOURCE, TREE_LAYERS, TREE_POINT_LAYER_IDS, MOSS_500, lensPaint, siteFeatures, zoomBand,
   SELECTED_KEYLINE_LAYER, SELECTED_LAYERS, SELECTED_SOURCE, selectedFeature, selectedKeyline,
   EMPTY_FC, EQUITY_SOURCE, equityFeatures, equityLayers,
 } from './mapLayers'
@@ -221,13 +221,13 @@ export default function Trees() {
   // the flight every time the lens changed). Selection never filters.
   useMapCameraPresets(mapInstance, { selectedNeighborhood: nh })
 
-  // The legend's dot rows describe nothing below the dot zoom. Read the zoom
-  // on `zoomend` only (never every zoom frame) and store the boolean: setting
-  // the same value again does not re-render.
-  const [dotsVisible, setDotsVisible] = useState(false)
+  // The legend lists only marks on screen (dots from the dot zoom, stumps
+  // from theirs). Read the zoom on `zoomend` only (never every zoom frame)
+  // and store its BAND: setting the same band again does not re-render.
+  const [band, setBand] = useState<0 | 1 | 2>(0)
   useEffect(() => {
     if (!mapInstance) return
-    const read = () => { try { setDotsVisible(mapInstance.getZoom() >= DOT_MINZOOM) } catch { /* map disposed */ } }
+    const read = () => { try { setBand(zoomBand(mapInstance.getZoom())) } catch { /* map disposed */ } }
     read()
     mapInstance.on('zoomend', read)
     return () => { try { mapInstance.off('zoomend', read) } catch { /* map disposed */ } }
@@ -448,7 +448,7 @@ export default function Trees() {
                 speciesLabel={selectedLabel}
                 dark={isDarkMode}
                 equity={equityLegend}
-                dotsVisible={dotsVisible}
+                zoomBand={band}
                 unmeasured={agg?.totals.unmeasuredTrunks ?? null}
               />
             )}

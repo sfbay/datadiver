@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import type { SpeciesAggregate } from '@/lib/trees/types'
 import {
-  addressPrefixWhere, addressSearchLoading, barShare, filterSpecies, sharePercent, speciesListRows, visibleSpecies,
+  addressPrefixWhere, addressSearchState, barShare, filterSpecies, sharePercent, speciesListRows, visibleSpecies,
 } from './exploreRows'
 
 const sp = (name: string, latin: string | null, common: string | null, count: number, rank: number): SpeciesAggregate =>
@@ -85,26 +85,34 @@ describe('speciesListRows — a selected species never vanishes under a search',
   })
 })
 
-describe('addressSearchLoading — rows count only for the query they were fetched for', () => {
+describe('addressSearchState — rows count only for the query they were stamped with', () => {
   const W1 = "upper(description) like '1330 BUSH%'"
   const W2 = "upper(description) like '1330 BUSH S%'"
-  it('no address query: never loading', () => {
-    expect(addressSearchLoading({ typed: null, debounced: null, heldFor: null, fetching: false })).toBe(false)
+  const read = (where: string, rows: string[], error: string | null = null) => ({ where, rows, error })
+  it('no address query: not loading, no rows', () => {
+    expect(addressSearchState(null, null, read(W1, ['a']))).toEqual({ loading: false, rows: [], error: null })
+  })
+  it('W1 → W2 → back to W1: a result stamped W1 settles at once (the cached repeat)', () => {
+    // W2 was requested but the reader backspaced; the cache answered W1 in a microtask.
+    expect(addressSearchState(W1, W1, read(W1, ['1330 Bush St']))).toEqual({ loading: false, rows: ['1330 Bush St'], error: null })
+  })
+  it('a result stamped for an OLD query while a new one is pending: loading, the old rows hidden', () => {
+    expect(addressSearchState(W2, W2, read(W1, ['1330 Bush St']))).toEqual({ loading: true, rows: [], error: null })
   })
   it('still typing toward a new prefix: loading', () => {
-    expect(addressSearchLoading({ typed: W2, debounced: W1, heldFor: W1, fetching: false })).toBe(true)
+    expect(addressSearchState(W2, W1, read(W1, ['x']))).toMatchObject({ loading: true, rows: [] })
   })
-  it('the frame the debounced query lands, before its request starts: loading (the old rows are W1’s)', () => {
-    expect(addressSearchLoading({ typed: W2, debounced: W2, heldFor: W1, fetching: false })).toBe(true)
+  it('first query, nothing settled yet: loading, never "no address"', () => {
+    expect(addressSearchState(W1, W1, null)).toEqual({ loading: true, rows: [], error: null })
   })
-  it('first query, nothing held yet: loading, never "no address"', () => {
-    expect(addressSearchLoading({ typed: W1, debounced: W1, heldFor: null, fetching: false })).toBe(true)
+  it('the typed text is an address but the debounce has not landed: loading', () => {
+    expect(addressSearchState(W1, null, null)).toMatchObject({ loading: true, rows: [] })
   })
-  it('in flight: loading', () => {
-    expect(addressSearchLoading({ typed: W2, debounced: W2, heldFor: W1, fetching: true })).toBe(true)
+  it('an error stamped for the current query: not loading, the error shown', () => {
+    expect(addressSearchState(W1, W1, read(W1, [], 'timeout'))).toEqual({ loading: false, rows: [], error: 'timeout' })
   })
-  it('settled for this very query: not loading', () => {
-    expect(addressSearchLoading({ typed: W2, debounced: W2, heldFor: W2, fetching: false })).toBe(false)
+  it('an empty result stamped for the current query: settled, no rows (the "no address" line)', () => {
+    expect(addressSearchState(W1, W1, read(W1, []))).toEqual({ loading: false, rows: [], error: null })
   })
 })
 

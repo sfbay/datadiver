@@ -29,7 +29,7 @@ export const TREES_SOURCE = 'trees-sites'
 /** Street-tree dots appear from this zoom; the heatmap covers below it.
  *  Measured gate (plan Task 7 Step 7): raise to 14 if panning drops frames. */
 export const DOT_MINZOOM = 13
-const STUMP_MINZOOM = 12
+export const STUMP_MINZOOM = 12
 
 // ── pigments ───────────────────────────────────────────────────────────────
 
@@ -91,17 +91,38 @@ const DOT_RADIUS_STOPS: readonly (readonly [number, readonly [number, number, nu
 export const LEGEND_DOT_RADII: readonly [number, number, number] = [
   DOT_RADIUS_STOPS[1][1][0], DOT_RADIUS_STOPS[1][1][1], DOT_RADIUS_STOPS[1][1][2],
 ]
-/** What the dot legend lists under a lens (the Equity lens has its own
- *  legend). Explore below DOT_MINZOOM draws the heatmap only, so the dot
- *  rows would describe nothing on screen: the legend says "zoom in" and
- *  shows the heat swatch instead. Safety draws large trunks at every zoom.
- *  `unmeasured` = the row saying unmeasured trunks draw at the smallest size
- *  (only where every class is drawn). */
-export function legendDots(lens: Lens, dotsVisible: boolean):
-  { classes: ('small' | 'medium' | 'large')[]; unmeasured: boolean; zoomIn: boolean } {
-  if (lens === 'safety') return { classes: ['large'], unmeasured: false, zoomIn: false }
-  if (!dotsVisible) return { classes: [], unmeasured: false, zoomIn: true }
-  return { classes: ['small', 'medium', 'large'], unmeasured: true, zoomIn: false }
+/** The map's zoom as the legend needs it: 0 below STUMP_MINZOOM, 1 from
+ *  stumps to DOT_MINZOOM, 2 from the dots up. A small integer, so the page
+ *  re-renders only when a band is crossed. */
+export function zoomBand(zoom: number): 0 | 1 | 2 {
+  return zoom >= DOT_MINZOOM ? 2 : zoom >= STUMP_MINZOOM ? 1 : 0
+}
+
+export interface LegendRows {
+  /** Trunk classes with a dot-size row. */
+  classes: ('small' | 'medium' | 'large')[]
+  /** The row saying unmeasured trunks draw at the smallest size. */
+  unmeasured: boolean
+  /** Heatmap only: the heat swatch and a "zoom in" line replace the dot rows. */
+  zoomIn: boolean
+  /** The stump ring row — only where stumps are drawn. */
+  stumps: boolean
+  /** The picked species' swatch — it is drawn at EVERY zoom. */
+  species: boolean
+}
+
+/** What the trees legend lists (the Equity lens has its own legend), so it
+ *  never describes a mark that is not on screen. Explore below DOT_MINZOOM
+ *  draws the heatmap only: no dot rows, the heat swatch and "zoom in"
+ *  instead — but a picked species is drawn at every zoom, so its swatch stays.
+ *  Stumps are drawn from STUMP_MINZOOM outside Safety, at every zoom inside
+ *  it. Safety draws large trunks at every zoom and no species layer. */
+export function legendDots(lens: Lens, band: 0 | 1 | 2, speciesPicked: boolean): LegendRows {
+  if (lens === 'safety') return { classes: ['large'], unmeasured: false, zoomIn: false, stumps: true, species: false }
+  const species = lens === 'explore' && speciesPicked
+  const stumps = band >= 1
+  if (band < 2) return { classes: [], unmeasured: false, zoomIn: true, stumps, species }
+  return { classes: ['small', 'medium', 'large'], unmeasured: true, zoomIn: false, stumps, species }
 }
 
 /** The heatmap's colour ramp by density — ONE table for the layer's

@@ -4,7 +4,7 @@ import type mapboxgl from 'mapbox-gl'
 import type { NeighborhoodAggregate, TreesSnapshot } from '@/lib/trees/types'
 import {
   CHOROPLETH_LAYER_ID, EQUITY_HATCH_LAYER_ID, EQUITY_OUTLINE_LAYER_ID, EQUITY_SOURCE, choroplethFill, equityFeatures, equityLayers,
-  DOT_MINZOOM, EMPTY_FC, HEAT_COLOR_STOPS, HEAT_SWATCH_CSS, legendDots, SELECTED_KEYLINE_LAYER, SELECTED_LAYERS, SELECTED_SOURCE, TREE_LAYERS, TREE_POINT_LAYER_IDS,
+  DOT_MINZOOM, EMPTY_FC, HEAT_COLOR_STOPS, HEAT_SWATCH_CSS, STUMP_MINZOOM, legendDots, zoomBand, SELECTED_KEYLINE_LAYER, SELECTED_LAYERS, SELECTED_SOURCE, TREE_LAYERS, TREE_POINT_LAYER_IDS,
   lensPaint, selectedFeature, selectedKeyline, siteFeatures, siteLngLat,
 } from './mapLayers'
 import type { Lens } from './treesUrl'
@@ -207,14 +207,29 @@ describe('a stump ring is always larger than a small-trunk dot', () => {
 })
 
 describe('the legend follows what the map draws', () => {
-  it('explore below the dot zoom: no dot rows, a "zoom in" line instead', () => {
-    expect(legendDots('explore', false)).toEqual({ classes: [], unmeasured: false, zoomIn: true })
+  it('zoom bands: below stumps, stumps only, dots', () => {
+    expect([11.9, 12, 12.9, 13, 16].map(zoomBand)).toEqual([0, 1, 1, 2, 2])
+    expect(STUMP_MINZOOM).toBe(12)
   })
-  it('explore from the dot zoom up: every class plus the unmeasured row', () => {
-    expect(legendDots('explore', true)).toEqual({ classes: ['small', 'medium', 'large'], unmeasured: true, zoomIn: false })
+  it('explore below the dot zoom: no dot rows, "zoom in"; stumps only from their zoom', () => {
+    expect(legendDots('explore', 0, false)).toEqual({ classes: [], unmeasured: false, zoomIn: true, stumps: false, species: false })
+    expect(legendDots('explore', 1, false)).toEqual({ classes: [], unmeasured: false, zoomIn: true, stumps: true, species: false })
   })
-  it('safety draws large trunks at every zoom, so the zoom never matters', () => {
-    for (const v of [true, false]) expect(legendDots('safety', v)).toEqual({ classes: ['large'], unmeasured: false, zoomIn: false })
+  it('a picked species is drawn at every zoom, so its swatch shows in every band', () => {
+    for (const band of [0, 1, 2] as const) expect(legendDots('explore', band, true).species, String(band)).toBe(true)
+  })
+  it('explore from the dot zoom up: every class, the unmeasured row, stumps', () => {
+    expect(legendDots('explore', 2, false)).toEqual({ classes: ['small', 'medium', 'large'], unmeasured: true, zoomIn: false, stumps: true, species: false })
+  })
+  it('safety draws large trunks and stumps at every zoom, and no species layer', () => {
+    for (const band of [0, 1, 2] as const) {
+      expect(legendDots('safety', band, true)).toEqual({ classes: ['large'], unmeasured: false, zoomIn: false, stumps: true, species: false })
+    }
+  })
+  it('the bands match the layers\' own zoom floors outside safety', () => {
+    const lp = lensPaint('explore', null, true)
+    expect(lp.zoom['trees-stumps'][0]).toBe(STUMP_MINZOOM)
+    expect(lp.zoom['trees-dots'][0]).toBe(DOT_MINZOOM)
   })
   it('unmeasured trunks are drawn at the small size at every stop (what the legend row claims)', () => {
     const r = (TREE_LAYERS.find((l) => l.id === 'trees-dots')!.paint as Record<string, unknown[]>)['circle-radius']

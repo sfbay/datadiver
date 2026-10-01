@@ -123,7 +123,7 @@ describe('safety lines', () => {
   })
   it('the list head names the rate in full, and says rows count only mapped reports (S1, S3)', () => {
     expect(phrase.PER_1K_UNIT).toBe('per 1,000 street trees')
-    expect(phrase.ROWS_MAPPED_ONLY).toBe('Rows count only reports with a map point, so a year’s rows add up to less than its bar above.')
+    expect(phrase.ROWS_MAPPED_ONLY).toBe('Rows count only reports with a map point, so a year’s rows can add up to less than its bar above.')
   })
   it('a partial year that also cannot be placed is named once, for the map point', () => {
     expect(phrase.yearsLeftOutLine([fy(2025, 1, 1), fy(2026, 1, 1, true, false)])).toBe(

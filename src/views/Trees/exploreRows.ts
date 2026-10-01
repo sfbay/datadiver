@@ -60,17 +60,22 @@ export function speciesListRows(
   return pick ? { matches, rows: [pick, ...rows], pinned: pick.name } : { matches, rows, pinned: null }
 }
 
-/** The address search's loading state. The rows on hand belong to `heldFor`
- *  (the `$where` whose request last settled); anything else — still typing
- *  toward a new prefix, a request in flight, or the one frame after the
- *  debounced query lands before its request starts — is LOADING, so a
- *  previous prefix's rows (or an empty list) never stand in for this one's.
- *  `typed` / `debounced` are the clauses from addressPrefixWhere. */
-export function addressSearchLoading(o: {
-  typed: string | null; debounced: string | null; heldFor: string | null; fetching: boolean
-}): boolean {
-  if (o.typed === null) return false
-  return o.typed !== o.debounced || o.fetching || o.heldFor !== o.debounced
+/** A settled address read, STAMPED with the `$where` it was requested for.
+ *  The stamp arrives with the rows, so a cached repeat settles correctly. */
+export interface StampedRead<T> { where: string; rows: T[]; error: string | null }
+
+/** The address search's state. `typed` / `debounced` are the clauses from
+ *  addressPrefixWhere; `settled` is the latest read, stamped. Rows (or an
+ *  error) count only when stamped for the current debounced query AND the
+ *  reader is not still typing toward another — anything else is LOADING, so
+ *  a previous prefix's rows (or an empty list) never stand in for this one's.
+ *  No address query: not loading, no rows. */
+export function addressSearchState<T>(
+  typed: string | null, debounced: string | null, settled: StampedRead<T> | null,
+): { loading: boolean; rows: T[]; error: string | null } {
+  if (typed === null || debounced === null) return { loading: typed !== null, rows: [], error: null }
+  if (typed !== debounced || settled === null || settled.where !== debounced) return { loading: true, rows: [], error: null }
+  return { loading: false, rows: settled.rows, error: settled.error }
 }
 
 /** A share of street trees, one decimal. A share that rounds to zero but is

@@ -165,7 +165,11 @@ export function diffSnapshots(prior: SnapshotIdentity, now: SnapshotIdentity): D
  * - prior with the SAME asOf → `log: null` (leave the file untouched);
  * - prior with a LATER asOf → gate failure;
  * - otherwise → the existing log (or a new one tracking from the prior's asOf)
- *   with one run appended. Never mutates its inputs.
+ *   with this run's diff added: APPENDED as a new run, or — when the log's
+ *   last run already has this same `from` and `to` (a run that died after
+ *   writing the log but before writing trees.json) — REPLACING that last run,
+ *   so the step is never recorded twice and the log matches the trees.json
+ *   written now. Never mutates its inputs.
  */
 export function nextDisappearedLog(
   prior: SnapshotIdentity | null,

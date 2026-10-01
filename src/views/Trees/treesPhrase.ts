@@ -296,7 +296,7 @@ export const PER_1K_SHORT = 'per 1,000'
 /** The list head over each row's two figures, top to bottom. */
 export const ROWS_COUNT_HEAD = 'Reports'
 /** Under the year pills: rows count only mapped reports (S3). */
-export const ROWS_MAPPED_ONLY = 'Rows count only reports with a map point, so a year’s rows add up to less than its bar above.'
+export const ROWS_MAPPED_ONLY = 'Rows count only reports with a map point, so a year’s rows can add up to less than its bar above.'
 export const LARGE_TRUNKS_UNIT = 'trunks 21+ in.'
 export const STUMPS_UNIT = 'stumps'
 export const NO_FALL_YEARS = 'No full year has enough mapped reports to count by neighborhood.'
@@ -308,6 +308,8 @@ export const DISAPPEARED_ERROR = 'The log of sites that left the inventory did n
 export const FALLS_NOT_DRAWN = 'Fall reports are not drawn: a report marks an address, not a tree.'
 /** The legend below the dot zoom, where the map shows density only. */
 export const ZOOM_IN_LINE = 'Zoom in to see each tree'
+/** The same, when a picked species is already drawn at every zoom. */
+export const ZOOM_IN_OTHERS = 'Zoom in to see the other trees'
 export const HEAT_FEWER = 'Fewer'
 export const HEAT_MORE = 'More street trees'
 

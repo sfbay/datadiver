@@ -5,15 +5,17 @@
 // ("1215 35th Ave | Tree 1"), at most 8 rows, debounced 250 ms, abortable
 // after 8 s. Nothing is fetched until the query starts with a house number
 // and a word (exploreRows.addressPrefixWhere). Rows show only for the query
-// they were fetched for (exploreRows.addressSearchLoading).
+// they are stamped with (exploreRows.addressSearchState).
 //
 // UNMEASURED: the query time is timed in the browser walk (plan Task 14). If
 // a typical prefix takes over 1.5 s, this hook and ExploreTab's address block
 // are removed together — nothing else depends on them.
 
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useDataset } from '@/hooks/useDataset'
-import { addressPrefixWhere, addressSearchLoading } from './exploreRows'
+import { useEffect, useState } from 'react'
+import { fetchDataset } from '@/api/client'
+import { useRouteView } from '@/cities/useActiveCity'
+import { completeQuery, registerQuery } from '@/hooks/useLoadingProgress'
+import { addressPrefixWhere, addressSearchState, type StampedRead } from './exploreRows'
 
 export interface AddressRow {
   treeid: string
@@ -33,6 +35,7 @@ const DEBOUNCE_MS = 250
 export const ADDRESS_LIMIT = 8
 
 export function useTreeAddressSearch(query: string): AddressSearch {
+  const cityId = useRouteView().cityId
   const [debounced, setDebounced] = useState(query)
   useEffect(() => {
     const t = setTimeout(() => setDebounced(query), DEBOUNCE_MS)
@@ -41,36 +44,29 @@ export function useTreeAddressSearch(query: string): AddressSearch {
 
   const where = addressPrefixWhere(debounced)
   const typedWhere = addressPrefixWhere(query)
-  const params = useMemo(
-    () => (where === null
-      ? {}
-      : { $select: 'treeid,description,species', $where: where, $order: 'description', $limit: ADDRESS_LIMIT }),
-    [where],
-  )
-  const q = useDataset<AddressRow>('streetTrees', params, [where], { enabled: where !== null, timeoutMs: 8_000 })
 
-  // Which `where` the held rows (or error) belong to. useDataset always
-  // flips `isLoading` on in an effect after the params change, so: a request
-  // seen loading for `where`, then settled, makes `where` the holder. Until
-  // then the rows on hand are an earlier query's, and the search is loading.
-  const [heldFor, setHeldFor] = useState<string | null>(null)
-  const sawLoadingFor = useRef<string | null>(null)
+  // One direct read per `where`, its result STAMPED with that `where` (the
+  // useTreeCard pattern). Never infer "settled" from having seen a loading
+  // frame: fetchDataset answers a repeated query from its cache in a
+  // microtask, React batches that with the request's start, and no render
+  // ever shows loading — the stamp arrives with the rows instead.
+  const [settled, setSettled] = useState<StampedRead<AddressRow> | null>(null)
   useEffect(() => {
-    if (where === null) {
-      sawLoadingFor.current = null
-      setHeldFor(null)
-      return
-    }
-    if (q.isLoading) sawLoadingFor.current = where
-    else if (sawLoadingFor.current === where) setHeldFor(where)
-  }, [where, q.isLoading])
+    if (where === null) return
+    let cancelled = false
+    const token = registerQuery()
+    fetchDataset<AddressRow>(
+      'streetTrees',
+      { $select: 'treeid,description,species', $where: where, $order: 'description', $limit: ADDRESS_LIMIT },
+      { timeoutMs: 8_000, cityId },
+    )
+      .then((rows) => { if (!cancelled) setSettled({ where, rows, error: null }) })
+      .catch((err: unknown) => {
+        if (!cancelled) setSettled({ where, rows: [], error: err instanceof Error ? err.message : 'Failed to fetch data' })
+      })
+      .finally(() => completeQuery(token))
+    return () => { cancelled = true }
+  }, [where, cityId])
 
-  const loading = addressSearchLoading({ typed: typedWhere, debounced: where, heldFor, fetching: q.isLoading })
-  const settled = where !== null && !loading
-  return {
-    active: typedWhere !== null,
-    rows: settled ? q.data : [],
-    loading,
-    error: settled ? q.error : null,
-  }
+  return { active: typedWhere !== null, ...addressSearchState(typedWhere, where, settled) }
 }

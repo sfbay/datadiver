@@ -6,8 +6,10 @@
 // smallest size, the stump ring, and — with a species picked under Explore —
 // that species' swatch. Below the dot zoom Explore draws only the heatmap,
 // so the dot rows give way to "Zoom in to see each tree" and the heat swatch
-// (mapLayers.legendDots decides; the page passes `dotsVisible`, set on
-// zoomend only). The Safety lens draws large trunks
+// (mapLayers.legendDots decides; the page passes the zoom BAND, set on
+// zoomend only). A picked species keeps its swatch at every zoom (it is
+// drawn at every zoom, so the line then says "the other trees"), and the
+// stump row shows only where stumps are drawn. The Safety lens draws large trunks
 // and stumps only, so it lists only those two, plus the line that fall
 // reports are not drawn (a report marks an address, never a tree). The
 // Equity lens shows the choropleth's five moss steps instead (the dots are
@@ -21,7 +23,7 @@ import {
 } from './mapLayers'
 import {
   CAPTION_STREET_TREES, EQUITY_LEGEND_HEAD, FALLS_NOT_DRAWN, FLAGGED_LEGEND, HEAT_FEWER, HEAT_MORE, STUMP_LEGEND,
-  TRUNK_HEADING, ZOOM_IN_LINE, equityFigure, unmeasuredLegendLine,
+  TRUNK_HEADING, ZOOM_IN_LINE, ZOOM_IN_OTHERS, equityFigure, unmeasuredLegendLine,
 } from './treesPhrase'
 
 const MEASURED: readonly TrunkClass[] = ['small', 'medium', 'large']
@@ -35,19 +37,19 @@ function Swatch({ children }: { children: ReactNode }) {
   )
 }
 
-export default function TreesLegend({ lens, speciesLabel, dark, equity, dotsVisible, unmeasured }: {
+export default function TreesLegend({ lens, speciesLabel, dark, equity, zoomBand, unmeasured }: {
   lens: Lens
   /** The picked species' display name, or null. */
   speciesLabel: string | null
   dark: boolean
   /** The choropleth's stops (equityView.choroplethStops) and its measure. */
   equity?: { stops: readonly (readonly [number, string])[]; by: EquityRank } | null
-  /** The map is at or above DOT_MINZOOM (the page tracks it on zoomend). */
-  dotsVisible: boolean
+  /** mapLayers.zoomBand of the map's zoom (the page tracks it on zoomend). */
+  zoomBand: 0 | 1 | 2
   /** totals.unmeasuredTrunks from the aggregates, or null before they load. */
   unmeasured: number | null
 }) {
-  const dots = legendDots(lens, dotsVisible)
+  const dots = legendDots(lens, zoomBand, speciesLabel !== null)
   const row = 'flex items-center gap-2'
   const text = 'font-serif text-label text-paper-800 dark:text-paper-200'
   if (lens === 'equity' && equity && equity.stops.length > 0) {
@@ -81,7 +83,7 @@ export default function TreesLegend({ lens, speciesLabel, dark, equity, dotsVisi
               <span>{HEAT_MORE}</span>
             </span>
           </div>
-          <p className="font-serif italic text-label text-paper-800 dark:text-paper-200">{ZOOM_IN_LINE}</p>
+          <p className="font-serif italic text-label text-paper-800 dark:text-paper-200">{dots.species ? ZOOM_IN_OTHERS : ZOOM_IN_LINE}</p>
         </>
       ) : (
         <>
@@ -100,14 +102,16 @@ export default function TreesLegend({ lens, speciesLabel, dark, equity, dotsVisi
           )}
         </>
       )}
-      <div className={row}>
-        <Swatch><circle cx={BOX / 2} cy={BOX / 2} r={4} fill="none" stroke={BRICK_600} strokeWidth={1.5} /></Swatch>
-        <span className={text}>{STUMP_LEGEND}</span>
-      </div>
+      {dots.stumps && (
+        <div className={row}>
+          <Swatch><circle cx={BOX / 2} cy={BOX / 2} r={4} fill="none" stroke={BRICK_600} strokeWidth={1.5} /></Swatch>
+          <span className={text}>{STUMP_LEGEND}</span>
+        </div>
+      )}
       {lens === 'safety' && (
         <p className="font-serif italic text-nano text-paper-700 dark:text-paper-300 break-words">{FALLS_NOT_DRAWN}</p>
       )}
-      {lens === 'explore' && speciesLabel && (
+      {dots.species && speciesLabel && (
         <div className={row}>
           <Swatch><circle cx={BOX / 2} cy={BOX / 2} r={4} fill={MOSS_400} stroke={selectedKeyline(dark)} strokeWidth={1} /></Swatch>
           <span className={`${text} break-words`}>{speciesLabel}</span>
