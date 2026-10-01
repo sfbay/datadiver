@@ -219,8 +219,9 @@ export function buildDataNotes(a: TreesAggregates | null, nowYear: number): Note
         },
         {
           title: 'Former trees',
-          body: 'A tree that is taken out leaves the inventory. Stumps and removal notices are the only city records of former trees; ' +
-            'DataDiver adds its own log of sites that leave the inventory from one saved copy to the next.',
+          body: 'A tree that is taken out leaves the inventory. Stumps, removal notices and DataDiver’s own log of sites that leave ' +
+            'the inventory from one saved copy to the next are the records this page uses for former trees. They are not complete: ' +
+            'some trees are taken out with no notice, and the city says trees taken out in an emergency may appear in neither its inventory nor its removal notices.',
         },
       ],
     },

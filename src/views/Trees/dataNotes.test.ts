@@ -91,6 +91,17 @@ describe('reader words', () => {
       }
     }
   })
+  it('the popover’s closing line and its link texts carry none either', () => {
+    for (const text of [NOTES_SOURCES.lead, ...NOTES_SOURCES.links.map((l) => l.text)]) if (BANNED.test(text)) throw new Error(text)
+  })
+})
+
+describe('former trees: the records are named, never called complete', () => {
+  const b = () => buildDataNotes(A, 2026).flatMap((s) => s.notes).find((n) => n.title === 'Former trees')!.body
+  it('names stumps, notices and the log, and the emergency gap; no "only"', () => {
+    for (const part of ['Stumps, removal notices', 'log of sites that leave', 'not complete', 'emergency']) expect(b()).toContain(part)
+    expect(b()).not.toMatch(/\bonly\b/)
+  })
 })
 
 // ── Synthetic aggregates: the fall notes' branches the real file may not hit ──

@@ -220,28 +220,51 @@ describe('trees snapshot — EXACT pins at asOf (re-pin + sourceNotes + data-ins
 // these figures fails HERE until the notes are rewritten in the same commit.
 describe('About source notes quote the committed file', () => {
   const fmt = (n: number) => n.toLocaleString('en-US')
+  const esc = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  /** The figure as a whole number: no digit, comma-digit or decimal touching
+   *  either side, so 63 can never pass inside 635 or 1,063. */
+  const has = (text: string, n: number | string) =>
+    new RegExp(`(?<![\\d,.])${esc(typeof n === 'number' ? fmt(n) : n)}(?![\\d]|[,.]\\d)`).test(text)
   const inv = SOURCE_NOTES['tkzw-k3nq'], notices = SOURCE_NOTES['qrwx-q4gg'], file = SOURCE_NOTES['dd-street-trees']
+  it('the matcher is word-bounded', () => {
+    expect(has('635 stumps', 63)).toBe(false)
+    expect(has('1,063 sites', 63)).toBe(false)
+    expect(has('63.5%', 63)).toBe(false)
+    expect(has('(63 rows)', 63)).toBe(true)
+    expect(has('ends at 63.', 63)).toBe(true)
+  })
   it('the inventory note', () => {
     const t = A.totals
     for (const n of [t.rows, t.trees, t.stumps, t.emptySites, t.shrubs, t.unmapped, t.speciesNotRecorded, t.plantedRecorded, t.unmeasuredTrunks]) {
-      expect(inv, String(n)).toContain(fmt(n))
+      expect(has(inv, n), String(n)).toBe(true)
     }
-    expect(inv).toContain(`${((100 * t.plantedRecorded) / t.trees).toFixed(1)}%`)
-    expect(inv).toContain(`${((100 * t.unmapped) / t.rows).toFixed(1)}%`)
+    expect(has(inv, `${((100 * t.plantedRecorded) / t.trees).toFixed(1)}%`)).toBe(true)
+    expect(has(inv, `${((100 * t.unmapped) / t.rows).toFixed(1)}%`)).toBe(true)
     for (const name of ['Golden Gate Park', 'Presidio']) {
-      expect(inv).toContain(`${fmt(A.neighborhoods.find((x) => x.name === name)!.trees)} in the ${name === 'Presidio' ? 'Presidio' : `${name} neighborhood`}`)
+      expect(inv).toMatch(new RegExp(`(?<![\\d,])${fmt(A.neighborhoods.find((x) => x.name === name)!.trees)} in the ${name === 'Presidio' ? 'Presidio' : `${name} neighborhood`}`))
     }
   })
   it('the notices note', () => {
-    for (const n of [A.notices.rows, A.notices.sites, A.notices.listed, A.notices.replantedAfter]) expect(notices, String(n)).toContain(fmt(n))
+    for (const n of [A.notices.rows, A.notices.sites, A.notices.listed, A.notices.replantedAfter]) expect(has(notices, n), String(n)).toBe(true)
   })
   it('the derived-file note', () => {
-    expect(file).toContain(fmt(A.falls.years.reduce((s, y) => s + y.duplicates, 0)))
+    expect(has(file, A.falls.years.reduce((s, y) => s + y.duplicates, 0))).toBe(true)
+    // The general rule for a report with no usable map point, with its total.
+    expect(file).toContain('A report with no usable map point counts citywide only')
+    expect(has(file, A.falls.years.reduce((s, y) => s + y.unplaced, 0))).toBe(true)
     for (const y of A.falls.years.filter((x) => !x.placeable)) expect(file).toContain(`${y.year} (${y.placedShare}%)`)
     for (const n of A.neighborhoods.filter((x) => x.flag !== null)) expect(file).toContain(n.name)
   })
   it('no banned reader word', () => {
     const BANNED = /\bremoved\b|\bage\b|\blive\b|σ|z-?score|ρ|spearman|correlat|baseline/i
     for (const note of [inv, notices, file]) expect(note).not.toMatch(BANNED)
+  })
+  it('says only what the records show: no "only records", no planting-size inference, the emergency gap named', () => {
+    for (const note of [inv, notices, file]) {
+      expect(note).not.toMatch(/only records?/i)
+      expect(note).not.toMatch(/at planting|planting size/i)
+    }
+    expect(inv).toContain('looks like a default value rather than a measurement')
+    expect(inv).toMatch(/emergency/)
   })
 })

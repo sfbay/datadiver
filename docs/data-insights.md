@@ -847,8 +847,9 @@ the registry publishes them.
 
 The view is **Trees** (`/trees`, masthead "Street trees"). Design:
 `docs/superpowers/specs/2026-09-30-trees-design.md` (§10 supersedes everything
-above it); the build rulings R1–R16 are in the plan
-`docs/superpowers/plans/2026-09-30-trees.md` and its SDD ledger. The page reads
+above it); the build rulings (P1, R1–R16) are in the plan
+`docs/superpowers/plans/2026-09-30-trees.md`, sections "Rulings after the first
+generator run" and "Rulings made during the build". The page reads
 a committed snapshot (`public/data/trees/{trees,aggregates,disappeared}.json`,
 written by `pnpm build:trees` → `scripts/build-trees.ts`, gates G0–G6) and
 exact-pinned in `src/lib/trees/trees.test.ts`; the only live reads are the
@@ -882,31 +883,38 @@ list in `src/lib/trees/species.ts` (`NON_TREE`, `NON_TREE_EXACT`), the
 `foodPermits.ts` pattern: the generator's gate **G0** fails on any string that
 contains a non-tree word (`NON_TREE_WORD`: stump, site, shrub, vacant, empty,
 basin, pave, potential, other, unknown) and is not classed or on the
-`TREE_DESPITE_WORD` allow-list. Leftover strings found at the first build (row
-counts from the Sept. 30 build's species column, Task 6 report):
+`TREE_DESPITE_WORD` allow-list. `classifyRow` first checks the whole
+case-folded string against `NON_TREE_EXACT`, then looks up the COMMON half
+(after `::`) in `NON_TREE`, then the Latin half. Every string that carries one
+of those words (probe: `$select=species,count(*)` `$group=species` with
+`$where=lower(species) like '%potential%' OR … '%pave%' OR '%basin%' OR
+'%other%' OR '%unknown%' OR '%site%' OR '%stump%' OR '%shrub%'` on `$T`):
 
-| String | Rows | Ruled |
+| String | Rows | Classed by |
 |---|---|---|
-| `Planting site (plant\|cut\|pave)`, `Stump`, `Stump (use Grinder)`, `Stump (hand Remove)`, shrub strings | — | site / stump / shrub (`NON_TREE`) |
-| `Potential Site :: Potential Site` | 140 | site (R5) |
-| `Paved Over :: Paved Over` | 125 | site (R5) |
-| `Basin(s) ::` | 20 | site (R5) |
-| `pave :: paved` · `Paved Temp ::` · `Pavedtemp ::` | 13 · 6 · 1 | site (R5) |
-| `Lophostemon confertusting Site` · `Zelkova serrata 'Musashino’l Site :: Potential Site` | 1 · 1 | site (R5; corrupt strings, matched whole) |
-| `Other :: Other` | 240 | **tree, species not recorded** (R4: 236 carry a trunk size at real addresses) |
-| `Palm (unknown Genus) :: Palm Spp` · `Phoenix spp :: Date palm (species unknown)` | 17 · 8 | tree, ranked under the published string (R9) |
+| `Planting site (plant) :: …` · `Planting site :: …` · `Planting site (cut) :: …` · `Planting site (pave) :: …` | 775 · 295 · 253 · 157 | site (`NON_TREE`) |
+| `Stump (use Grinder) :: …` · `Stump :: Stump` · `Stump (hand Remove) :: …` | 400 · 201 · 34 | stump (`NON_TREE`) |
+| `Shrub :: Shrub` · `Private shrub :: Private Shrub` | 62 · 3 | shrub (`NON_TREE`) |
+| `Potential Site :: Potential Site` | 140 | site (`NON_TREE`, R5) |
+| `Paved Over :: Paved Over` | 125 | site (`NON_TREE`, R5) |
+| `Basin(s) ::` | 20 | site (`NON_TREE` on the Latin half, R5) |
+| `pave :: paved` · `Paved Temp ::` · `Pavedtemp ::` | 13 · 6 · 1 | site (`NON_TREE`, R5) |
+| `Zelkova serrata 'Musashino’l Site :: Potential Site` · `Zelkova 'Village Green' (plant) :: Planting Site (plant)` · `Parrotia persica 'Vannessa'plant) :: Planting Site (plant)` · `Zelkova serrata ‘JFS-KW1’ :: Planting Site (plant)` | 1 each | site, through the COMMON half (`NON_TREE`) |
+| `Lophostemon confertusting Site` | 1 | site — the only string matched WHOLE (`NON_TREE_EXACT`, R5; it has no `::`) |
+| `Other :: Other` | 240 | **tree, species not recorded** (`TREE_DESPITE_WORD`, R4) |
+| `Palm (unknown Genus) :: Palm Spp` · `Phoenix spp :: Date palm (species unknown)` | 17 · 8 | tree, ranked under the published string (`TREE_DESPITE_WORD`, R9) |
 
-The 635 stumps are the one direct record of former trees in the inventory and
-get their own mark. Re-probe: `$select=species,count(*)` `$group=species` on
-`$T`, then run `unclassifiedNonTrees()` over the strings — or just
-`pnpm build:trees`, whose G0 line prints any unclassed string.
+Stumps sum to 635 and shrubs to 65, as in the file. The stumps get their own
+mark on the map. Re-probe: the query above, then run `unclassifiedNonTrees()`
+over the strings — or just `pnpm build:trees`, whose G0 line prints any
+unclassed string.
 
 ### `treeid` names a planting SITE, not a tree
 
 Of the **5,571** sites with a removal notice, **4,831** are still in the
 inventory, and at **1,022** of them the tree listed now was planted AFTER the
-notice (file): the old tree came down, a new one went in, the number stayed.
-So a notice dated before the listed tree's planting date belongs to an earlier
+notice (file): the record shows a tree with a planting date after the notice
+now listed at that site, under the same number. So a notice dated before the listed tree's planting date belongs to an earlier
 tree (`readNotice` → `'earlier-tree'`); with no planting date the card says
 only that a notice was posted at this site. A `?tree=` link is a link to a
 site. The disappeared log (`disappeared.json`) records vanished sites AND a
@@ -936,6 +944,15 @@ taken out. By year (file): 2017 539 · 2018 1,483 · 2019 956 · 2020 567 · 202
 Whether a notice row's `species` describes the old tree or the site's state is
 unresolved (some read `Planting site (cut)`), so no "former species" is
 printed from it.
+
+The reverse gap: a tree can be taken out with NO notice. The inventory's own
+description (probe: `https://data.sf.gov/api/views/tkzw-k3nq.json` →
+`description`) says "trees removed on an emergency basis (e.g. storm or life
+hazard) may not appear in this dataset or in the Street Trees Removal
+Notifications dataset", and that the notices cover only the formal permit
+process. So stumps, removal notices and DataDiver's log of sites that leave
+the inventory are the records the view uses for former trees — never a
+complete count of trees taken out.
 
 ### Species strings: four forms, and the notices use one colon
 
@@ -974,15 +991,15 @@ unmeasured tree a 21-inch-plus trunk. The trunk class derives from `mapdbh`
 only (`src/lib/trees/trunk.ts`), with unmeasured trees in their own class:
 **8,633 street trees at 21+ inches, 8,814 unmeasured** (file).
 
-### `mapdbh = 3` is a recording default, not a measurement
+### `mapdbh = 3` looks like a default value, not a measurement
 
 **41,307 rows (28.6% of all 144,504) record a trunk of exactly 3 inches,
 including 1,215 planted before 2000** (probe: `$where=mapdbh='3'`, then
-`mapdbh='3' AND planteddate < '2000-01-01'`; `mapdbh` is a TEXT column). A
-3-inch trunk on a tree planted decades ago is the planting size, never
-updated, and no measurement date is published. So the label is "trunk size as
-recorded", never "age", and the Equity lens has no small-trunk measure (it
-would measure record-keeping).
+`mapdbh='3' AND planteddate < '2000-01-01'`; `mapdbh` is a TEXT column). That
+many identical values, on trees planted before 2000 among others, looks like a
+default value rather than a measurement, and no measurement date is published.
+So the label is "trunk size as recorded", never "age", and the Equity lens has
+no small-trunk measure (it would measure record-keeping).
 
 ### Planting dates follow who planted the tree
 
@@ -1083,7 +1100,7 @@ Per resident punishes density by construction. **Tenderloin: 51.8 per 1,000
 residents, 34th of 36 (tied with Chinatown); 1,631.3 per km², 15th.
 Bayview Hunters Point: 238.2 per 1,000, 7th; 708.2 per km², 33rd** (ranks
 computed from `aggregates.json → neighborhoods`, competition ranking, unflagged
-only; the spec's "6th" was from an earlier probe). So the lens shows both
+only). So the lens shows both
 (`?rank=perK|perKm2`) and the lead sentence states only what holds under both,
 in the WEAKER measure's words (R10): today "Higher-income neighborhoods tend to
 have more street trees." Re-probe: recompute the ranks from the file; the
@@ -1091,14 +1108,16 @@ correlations are the generator's `equityCorrelations`.
 
 ### Lead: the archived list `uzd4-f6yf` (UNVERIFIED)
 
-The pre-migration "[ARCHIVED] Street Tree List" holds **198,436 rows** (probe:
-`$select=count(*)` on `https://data.sf.gov/resource/uzd4-f6yf.json`). The
-city's notice says it "contains more rows than expected due to historical tree
-removals and duplicate records that were not removed from the legacy feed".
-The spec's review found 62,464 ids absent from today's inventory (not
-re-measured). It may be a backfill of former trees, but the city retired it
-for data issues, so a tree that came down cannot yet be told from a cleanup
-row. Banked; nothing reads it.
+The "[ARCHIVED] Street Tree List" holds **198,436 rows** (probe:
+`$select=count(*)` on `https://data.sf.gov/resource/uzd4-f6yf.json`). Its
+notice says it was "archived due to system migration (December 2024)"; a
+separate "Known data issue" paragraph says it "contains more rows than
+expected due to historical tree removals and duplicate records that were not
+removed from the legacy feed" (probe: `https://data.sf.gov/api/views/uzd4-f6yf.json`
+→ `description`). The count of archived ids absent from today's inventory was
+not re-measured for this section. It may hold sites that later left the
+inventory, but by the city's own note some rows are duplicates, so a site that
+left cannot yet be told from a duplicate row. Banked; nothing reads it.
 
 ### The inventory was rebuilt in place on Sept. 9, 2026
 
