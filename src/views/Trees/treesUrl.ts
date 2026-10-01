@@ -8,6 +8,8 @@
 
 export type Lens = 'explore' | 'equity' | 'safety'
 export const LENSES: readonly Lens[] = ['explore', 'equity', 'safety']
+/** The header pills and the rail's tabs both read this — one name per lens. */
+export const LENS_LABEL: Readonly<Record<Lens, string>> = { explore: 'Explore', equity: 'Equity', safety: 'Safety' }
 
 export function parseLens(raw: string | null): Lens {
   return raw === 'equity' || raw === 'safety' ? raw : 'explore'

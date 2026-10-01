@@ -34,7 +34,7 @@ import { apDate } from '@/utils/apDate'
 import { TRUNK_CLASSES, TRUNK_LABEL } from '@/lib/trees/trunk'
 import { parseSpecies, speciesLabel } from '@/lib/trees/species'
 import { SUBHEAD, STUMP_LEGEND } from './treesPhrase'
-import { liveEdgeRelation, parseLens, parseTreeId, resolveSpecies, type Lens } from './treesUrl'
+import { LENSES, LENS_LABEL, liveEdgeRelation, parseLens, parseTreeId, resolveSpecies, type Lens } from './treesUrl'
 import { msSinceSnapshotFetch, useTreesAggregates, useTreesSnapshot } from './useTrees'
 import {
   TREES_SOURCE, TREE_LAYERS, TREE_POINT_LAYER_IDS, MOSS_500, lensPaint, siteFeatures,
@@ -42,12 +42,11 @@ import {
 } from './mapLayers'
 import TreeCard, { TREE_CARD_REM } from './TreeCard'
 import { snapshotSite } from './treeCardModel'
+import TreesRail from './TreesRail'
+import TreesLegend from './TreesLegend'
 
-const LENS_PILLS: readonly { id: Lens; label: string }[] = [
-  { id: 'explore', label: 'Explore' },
-  { id: 'equity', label: 'Equity' },
-  { id: 'safety', label: 'Safety' },
-]
+/** A lens's `?lens=` value: Explore is the default, so it deletes the key. */
+const lensValue = (l: Lens): string | null => (l === 'explore' ? null : l)
 
 const VIEW = 'trees' as const
 const SLOW = { timeoutMs: 20_000, retries: 1 } as const
@@ -92,20 +91,28 @@ export default function Trees() {
   // they are consumed — the rail — and written through setParam below.
   const lens = parseLens(searchParams.get('lens'))
   const treeId = parseTreeId(searchParams.get('tree'))
-  const species = resolveSpecies(searchParams.get('species'), snap?.species ?? NO_NAMES)
+  // A species resolves against the RANKED names once the aggregates file is
+  // in (the rail's rows), else against the snapshot's published strings.
+  const rankedNames = useMemo(() => agg?.species.map((s) => s.name) ?? NO_NAMES, [agg])
+  const species = resolveSpecies(searchParams.get('species'), rankedNames.length ? rankedNames : snap?.species ?? NO_NAMES)
   const speciesIdx = species !== null && snap ? snap.species.indexOf(species) : null
 
-  /** Write one view param; null or '' deletes its key. */
-  const setParam = useCallback((key: string, value: string | null) => {
+  /** Write view params in ONE navigation; null or '' deletes a key. */
+  const setParams = useCallback((values: Record<string, string | null>) => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev)
-      if (value === null || value === '') next.delete(key)
-      else next.set(key, value)
+      for (const [key, value] of Object.entries(values)) {
+        if (value === null || value === '') next.delete(key)
+        else next.set(key, value)
+      }
       return next
     }, { replace: true })
   }, [setSearchParams])
+  const setParam = useCallback((key: string, value: string | null) => setParams({ [key]: value }), [setParams])
 
-  const setLens = useCallback((l: Lens) => setParam('lens', l === 'explore' ? null : l), [setParam])
+  /** `?lens=` is the one source of truth: the header pills and the rail's
+   *  tabs both write it here. */
+  const setLens = useCallback((l: Lens) => setParam('lens', lensValue(l)), [setParam])
 
   // ── freshness probe: the inventory's own edge for the chip ──
   const edgeQ = useDataset<EdgeRow>(
@@ -195,7 +202,17 @@ export default function Trees() {
 
   const closeCard = useCallback(() => setParam('tree', null), [setParam])
   const pickNeighborhood = useCallback((name: string) => setParam('nh', name), [setParam])
-  const pickSpecies = useCallback((name: string) => setParam('species', name), [setParam])
+  // The card's species-rank line opens the species in Explore (ruling R14):
+  // `?species=` AND the Explore lens, in one write.
+  const pickSpecies = useCallback((name: string) => setParams({ species: name, lens: lensValue('explore') }), [setParams])
+  // The rail's ranking row toggles; null clears the pick.
+  const toggleSpecies = useCallback((name: string | null) => setParam('species', name), [setParam])
+  const pickTree = useCallback((id: number) => setParam('tree', String(id)), [setParam])
+  const selectedLabel = useMemo(() => {
+    if (species === null) return null
+    const row = agg?.species.find((s) => s.name === species)
+    return row ? (row.common ?? row.latin ?? row.name) : speciesLabel(parseSpecies(species))
+  }, [agg, species])
 
   // Lens filters + paint + zoom floors, re-applied on idle: useMapLayer
   // re-adds the static specs after a theme swap. Every write is guarded by a
@@ -305,20 +322,20 @@ export default function Trees() {
 
           <div className="flex flex-wrap items-center justify-end gap-2 flex-shrink-0">
             <div role="radiogroup" aria-label="Lens" className="flex items-center gap-1 bg-slate-100/80 dark:bg-white/[0.04] rounded-lg p-0.5">
-              {LENS_PILLS.map((l) => (
+              {LENSES.map((l) => (
                 <button
-                  key={l.id}
+                  key={l}
                   type="button"
                   role="radio"
-                  aria-checked={lens === l.id}
-                  onClick={() => setLens(l.id)}
+                  aria-checked={lens === l}
+                  onClick={() => setLens(l)}
                   className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all duration-200 ${
-                    lens === l.id
+                    lens === l
                       ? 'bg-ochre-500/15 text-ink dark:text-white'
                       : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
                   }`}
                 >
-                  {l.label}
+                  {LENS_LABEL[l]}
                 </button>
               ))}
             </div>
@@ -338,7 +355,9 @@ export default function Trees() {
               </div>
             )}
 
-            {/* Legend mount (later task). */}
+            {/* The legend sits under the mobile sheet's peek, so it is
+                desktop only; the dots' meaning is also in each tooltip. */}
+            {!isMobile && <TreesLegend lens={lens} speciesLabel={selectedLabel} dark={isDarkMode} />}
             {treeId !== null && (
               <TreeCard
                 key={treeId}
@@ -357,8 +376,17 @@ export default function Trees() {
           </MapView>
         </div>
 
-        {/* Rail mount (later task): MapSidebar with the three lens tabs, fed
-            by the aggregates file — never waits for the snapshot. */}
+        <TreesRail
+          lens={lens}
+          onLens={setLens}
+          agg={agg}
+          aggError={aggError?.message ?? null}
+          onRetry={retryAgg}
+          species={species}
+          onSpecies={toggleSpecies}
+          onTree={pickTree}
+          onNeighborhood={pickNeighborhood}
+        />
       </div>
     </div>
   )

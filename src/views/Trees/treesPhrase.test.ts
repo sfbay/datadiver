@@ -3,8 +3,10 @@ import { describe, expect, it } from 'vitest'
 import type { DisappearedLog } from '@/lib/trees/types'
 import * as phrase from './treesPhrase'
 import {
-  disappearedLine, equityFlagNote, equityLead, kindTitle, leftInventoryNote, nearbyFallsLine, noticeLine, plantedLine,
-  speciesRankLine, topFiveLine, trunkLine,
+  disappearedLine, equityFlagNote, equityLead, kindTitle, leftInventoryNote, nearbyFallsLine,
+  neighborhoodCountLabel, noAddressLine, noSpeciesMatchLine, noticeLine, plantedLine, shareLine, showAllLine,
+  speciesCountTip, speciesPlantedLine, speciesRankLine, speciesRowLabel, streetTreesTip, topFiveLine, trunkLine,
+  trunkMixLabel,
 } from './treesPhrase'
 
 const c = (pkI: number, pkP: number, kmI: number, kmP: number) =>
@@ -95,6 +97,18 @@ describe('card lines never claim more than the record', () => {
     expect(speciesRankLine(3, 544)).toBe('No. 3 of 544 recorded species')
     expect(topFiveLine(24.2)).toBe('The five most common species are 24.2% of street trees.')
   })
+  it('explore lines: street trees in every count, planting where recorded', () => {
+    expect(speciesPlantedLine([1998, 2024], 1007, 8943)).toBe('Planted 1998–2024 where recorded (1,007 of 8,943)')
+    expect(speciesPlantedLine([2026, 2026], 1, 1)).toBe('Planted 2026 where recorded (1 of 1)')
+    expect(speciesPlantedLine(null, 0, 12)).toBe('No planting dates recorded')
+    expect(speciesPlantedLine([2000, 2001], 0, 12)).toBe('No planting dates recorded')
+    expect(speciesRowLabel(1, 'Sycamore, London Plane', 8943)).toBe('No. 1, Sycamore, London Plane: 8,943 street trees')
+    expect(speciesRowLabel(532, 'zelk', 1)).toBe('No. 532, zelk: 1 street tree')
+    expect(shareLine('6.3%')).toBe('6.3% of street trees')
+    expect(trunkMixLabel('11 to 20 inches', 3514, 8943)).toBe('Trunk size as recorded, 11 to 20 inches: 3,514 of 8,943 street trees')
+    expect(noAddressLine(' 1330 Bush ')).toBe('No street tree address starts with “1330 Bush”.')
+    expect(showAllLine(639)).toBe('Show all 639 species')
+  })
   it('flag notes', () => {
     expect(equityFlagNote('park')).toBe('Mostly parkland. Park trees are not in this inventory.')
     expect(equityFlagNote('low-coverage')).toBe('The inventory lists almost no trees here.')
@@ -160,6 +174,14 @@ describe('jargon ban — statistics words and over-claims never reach a reader',
       // disappearedLine — no runs, one site, many sites
       disappearedLine(log([]), 2026), disappearedLine(log([1]), 2026), disappearedLine(log([1, 2, 3]), 2026),
       speciesRankLine(1, 639), topFiveLine(24.6),
+      // Explore tab — every exported function, every branch
+      streetTreesTip(142014), speciesCountTip(639),
+      speciesRowLabel(1, 'Sycamore, London Plane', 8943), speciesRowLabel(532, 'zelk', 1),
+      shareLine('6.3%'), shareLine('<0.1%'),
+      trunkMixLabel('10 inches or narrower', 4105, 8943),
+      speciesPlantedLine([1956, 2026], 1007, 8943), speciesPlantedLine([2026, 2026], 1, 1), speciesPlantedLine(null, 0, 12),
+      neighborhoodCountLabel('Pacific Heights', 935), neighborhoodCountLabel('Presidio', 1),
+      showAllLine(639), noSpeciesMatchLine(' zzz '), noAddressLine('1330 Bush'),
       // noticeLine — both readings × the three types + an unknown type
       ...(['earlier-tree', 'this-site'] as const).flatMap((r) =>
         ['Posted 24hr', 'Posted 15 Day', 'Posted 30 Day', 'Other'].map((t) => noticeLine(r, '2018-02-27', t, 2026))),

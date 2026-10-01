@@ -1,7 +1,7 @@
-// src/views/Restaurants/RailStat.tsx
+// src/components/charts/RailStat.tsx
 //
-// RailStat — the stat chip at the top of a Storylines tab, replacing the
-// lede paragraph. The Last 48 rule, number first, mark second, words last:
+// RailStat — the stat chip at the top of a rail tab (Restaurants'
+// Storylines, Trees' lenses), replacing the lede paragraph. The Last 48 rule, number first, mark second, words last:
 //
 //   ┌────────────────────────┐
 //   │ 124            (i)     │  big italic Fraunces numeral

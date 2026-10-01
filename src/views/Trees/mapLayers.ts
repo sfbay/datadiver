@@ -86,6 +86,10 @@ const DOT_RADIUS_STOPS: readonly (readonly [number, readonly [number, number, nu
   [15, [2.5, 3.5, 5, 2.5]],
   [17, [4, 5.5, 8, 4]],
 ]
+/** The legend's dot radii (px): the zoom-15 stop, [small, medium, large]. */
+export const LEGEND_DOT_RADII: readonly [number, number, number] = [
+  DOT_RADIUS_STOPS[1][1][0], DOT_RADIUS_STOPS[1][1][1], DOT_RADIUS_STOPS[1][1][2],
+]
 /** Stump ring radius by zoom — always larger than a small dot at that zoom. */
 const STUMP_RADIUS_STOPS: readonly (readonly [number, number])[] = [[13, 2.2], [15, 4], [17, 6.5]]
 /** Selected-species radius by zoom — no zoom floor, so it starts lower. */

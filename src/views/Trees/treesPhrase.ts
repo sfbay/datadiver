@@ -38,6 +38,71 @@ export function topFiveLine(share: number): string {
   return `The five most common species are ${share}% of street trees.`
 }
 
+// ── Explore tab ──────────────────────────────────────────────────────────────
+// Chip captions (≤ 4 words), the sentences behind the marks (aria-labels and
+// InfoTips), and the species card's lines.
+
+export const CAPTION_STREET_TREES = 'Street trees'
+export const CAPTION_SPECIES = 'Recorded species'
+export const CAPTION_TOP_FIVE = 'Top five species'
+export const CAPTION_SHARE = 'Of street trees'
+export const TRUNK_HEADING = 'Trunk size as recorded'
+export const TOP_NEIGHBORHOODS_HEADING = 'Neighborhoods with the most'
+export const SEARCH_PLACEHOLDER = 'Species, or an address like 1330 Bush'
+export const SEARCH_LABEL = 'Search species or a street address'
+export const ADDRESS_SEARCHING = 'Searching addresses…'
+export const ADDRESS_ERROR = 'The address search did not load.'
+export const NO_PLANTING_DATES = 'No planting dates recorded'
+export const SHOW_FEWER = 'Show fewer'
+export const RAIL_ERROR = 'The street-tree summaries did not load.'
+
+export function streetTreesTip(n: number): string {
+  return `The city’s inventory lists ${apCount(n)} street trees. ${PARKS_LINE}`
+}
+
+export function speciesCountTip(n: number): string {
+  return `The inventory names ${apCount(n)} species, each spelled as the city publishes it.`
+}
+
+/** A ranking row's sentence, for its aria-label. */
+export function speciesRowLabel(rank: number, label: string, count: number): string {
+  return `No. ${rank}, ${label}: ${apCount(count)} street tree${count === 1 ? '' : 's'}`
+}
+
+/** The species card's share figure, for its aria-label; `pct` from
+ *  exploreRows.sharePercent. */
+export function shareLine(pct: string): string {
+  return `${pct} of street trees`
+}
+
+export function trunkMixLabel(classLabel: string, n: number, of: number): string {
+  return `${TRUNK_HEADING}, ${classLabel}: ${apCount(n)} of ${apCount(of)} street trees`
+}
+
+/** "Planted 1998–2024 where recorded (1,007 of 8,943)". */
+export function speciesPlantedLine(years: [number, number] | null, recorded: number, count: number): string {
+  if (!years || recorded <= 0) return NO_PLANTING_DATES
+  const span = years[0] === years[1] ? `${years[0]}` : `${years[0]}–${years[1]}`
+  return `Planted ${span} where recorded (${apCount(recorded)} of ${apCount(count)})`
+}
+
+export function neighborhoodCountLabel(name: string, n: number): string {
+  return `${name}: ${apCount(n)} street tree${n === 1 ? '' : 's'} of this species`
+}
+
+export function showAllLine(n: number): string {
+  return `Show all ${apCount(n)} species`
+}
+
+export function noSpeciesMatchLine(query: string): string {
+  return `No recorded species matches “${query.trim()}”.`
+}
+
+export function noAddressLine(query: string): string {
+  return `No street tree address starts with “${query.trim()}”.`
+}
+
+
 // ── Equity lead ──────────────────────────────────────────────────────────────
 // Income pair only. A measure "holds" when its link is at least weak; its
 // direction is the sign. The sentence states only what both measures support.
