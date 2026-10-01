@@ -1,6 +1,6 @@
 // src/lib/trees/fallReports.test.ts
 import { describe, expect, it } from 'vitest'
-import { FALL_WHERE, buildGrid, countWithin, fallKind, isCityDuplicate, isPlaced } from './fallReports'
+import { FALL_WHERE, PLACEABLE_FLOOR, buildGrid, countWithin, fallKind, isCityDuplicate, isPlaced, placedShare } from './fallReports'
 
 describe('fallKind — 311 changed its spelling in June 2024', () => {
   it('folds both eras', () => {
@@ -44,6 +44,18 @@ describe('countWithin — 30 m, across grid cell edges', () => {
   })
   it('an empty neighbourhood counts zero', () => {
     expect(countWithin(grid, 37.70, -122.50)).toBe(0)
+  })
+})
+
+describe('placeable years — ruling R1', () => {
+  it('the floor is 75 percent', () => {
+    expect(PLACEABLE_FLOOR).toBe(75)
+  })
+  it('placedShare is a one-decimal percent of the non-duplicates', () => {
+    expect(placedShare(1000, 538)).toBe(46.2)
+    expect(placedShare(3, 1)).toBe(66.7)
+    expect(placedShare(4, 1)).toBe(75)
+    expect(placedShare(0, 0)).toBe(100)
   })
 })
 

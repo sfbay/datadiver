@@ -24,7 +24,19 @@ export function isPlaced(lat: string | number | null | undefined, lon: string | 
     a > 37.6 && a < 37.95 && o > -122.6 && o < -122.3
 }
 
-const CELL = 0.0005 // degrees: ~55 m north-south, ~44 m east-west at SF
+/**
+ * Plan ruling R1: a year is PLACEABLE when at least this percent of its
+ * non-duplicate reports carry a usable map point. Unplaceable years are shown
+ * citywide only — never split by neighborhood.
+ */
+export const PLACEABLE_FLOOR = 75
+
+/** Percent, one decimal, of a year's non-duplicate reports that are placed. A year with no reports is 100. */
+export function placedShare(nonDuplicate: number, unplaced: number): number {
+  return nonDuplicate ? Math.round(((nonDuplicate - unplaced) / nonDuplicate) * 1000) / 10 : 100
+}
+
+const CELL = 0.0005// degrees: ~55 m north-south, ~44 m east-west at SF
 export interface Grid { cells: Map<string, { lat: number; lon: number }[]> }
 const cellOf = (lat: number, lon: number) => `${Math.floor(lat / CELL)}|${Math.floor(lon / CELL)}`
 

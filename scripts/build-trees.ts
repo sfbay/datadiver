@@ -11,11 +11,12 @@
  *                                       both equity denominators, fall-report
  *                                       years, removal-notice arithmetic
  *   public/data/trees/disappeared.json  sites that left the inventory between
- *                                       two snapshots (and same-site species
- *                                       changes)
+ *                                       two snapshots (and same-site species or
+ *                                       planting-year changes — ruling R3)
  *
  * Spec: docs/superpowers/specs/2026-09-30-trees-design.md — §10 (Fable review)
- * SUPERSEDES §1–§9. Plan: docs/superpowers/plans/2026-09-30-trees.md, Task 6.
+ * SUPERSEDES §1–§9. Plan: docs/superpowers/plans/2026-09-30-trees.md, Task 6,
+ * as amended by "Rulings after the first generator run" (R1–R3).
  *
  * ONE RULEBOOK. Every rule is imported from the leaves the view also uses —
  * `src/lib/trees/*` (species parser + row classes, trunk class, notice site
@@ -38,7 +39,10 @@
  *       the paged read (a snapshot made mid-refresh is refused)
  *   G2  every non-null analysis_neighborhood is one of the 41; each of the 41
  *       has a boundary feature and a census row; every sp/nb index resolves
- *   G3  placed share of non-duplicate fall reports ≥ 75% in every FULL year
+ *   G3  the most recent FULL year's non-duplicate fall reports are placeable
+ *       (placed share ≥ PLACEABLE_FLOOR, 75%). Older unplaceable years are
+ *       recorded (placedShare / placeable on each FallYear) and shown citywide
+ *       only — ruling R1; they are not fatal
  *   G4  removal-notice rows whose id joins to nothing ≤ 1%
  *   G5  disappeared.json only diffs two snapshots whose asOf dates differ
  *   G6  gzip size of trees.json ≤ 2.5 MB
@@ -64,7 +68,9 @@ import { pathToFileURL } from 'node:url'
 
 import { sodaAll, sodaCount } from './lib/soda'
 import { equityCorrelations, equityRows, featureAreaKm2, type EquityInput } from '../src/lib/trees/equity'
-import { FALL_WHERE, FALL_WINDOW_START, buildGrid, countWithin, fallKind, isCityDuplicate, isPlaced } from '../src/lib/trees/fallReports'
+import {
+  FALL_WHERE, FALL_WINDOW_START, PLACEABLE_FLOOR, buildGrid, countWithin, fallKind, isCityDuplicate, isPlaced, placedShare,
+} from '../src/lib/trees/fallReports'
 import { noticeSiteId, readNotice } from '../src/lib/trees/siteNotices'
 import { classifyRow, parseSpecies, unclassifiedNonTrees, type RowKind } from '../src/lib/trees/species'
 import { TRUNK_CLASSES, trunkClass } from '../src/lib/trees/trunk'
@@ -93,8 +99,6 @@ const INVENTORY = 'tkzw-k3nq'
 const NOTICES = 'qrwx-q4gg'
 const CASES_311 = 'vw6y-z8j6'
 
-/** G3 floor: placed share of non-duplicate fall reports, every full year. */
-const G3_PLACED_FLOOR = 0.75
 /** G6 ceiling for the gzipped map file. */
 const G6_GZIP_MAX = 2.5e6
 
@@ -117,6 +121,67 @@ function gate(id: string, ok: boolean, detail: string): void {
 
 const ymd = (s: string | null | undefined): string => (s ?? '').slice(0, 10)
 const pct = (n: number, d: number): string => (d ? `${((n / d) * 100).toFixed(1)}%` : '—')
+
+// ── Disappeared log (pure; unit-tested in scripts/__tests__/build-trees.test.ts) ──
+
+/** The columns the diff reads. */
+export type SnapshotIdentity = Pick<TreesSnapshot, 'asOf' | 'id' | 'sp' | 'species' | 'yr'>
+
+/**
+ * Diff two snapshots by site id: `gone` = present in `prior`, absent in `now`;
+ * `changed` = same site, different species string OR planting year (ruling R3).
+ * A NULL species reads as '' on both sides, a missing planting year as 0.
+ */
+export function diffSnapshots(prior: SnapshotIdentity, now: SnapshotIdentity): DisappearedRun {
+  const nowBySite = new Map<number, { species: string; planted: number }>()
+  for (let i = 0; i < now.id.length; i += 1) {
+    nowBySite.set(now.id[i], { species: now.sp[i] === -1 ? '' : now.species[now.sp[i]], planted: now.yr[i] })
+  }
+  const gone: number[] = []
+  const changed: DisappearedRun['changed'] = []
+  for (let i = 0; i < prior.id.length; i += 1) {
+    const pid = prior.id[i]
+    const was = prior.sp[i] === -1 ? '' : prior.species[prior.sp[i]]
+    const plantedWas = prior.yr[i]
+    const cur = nowBySite.get(pid)
+    if (cur === undefined) gone.push(pid)
+    else if (cur.species !== was || cur.planted !== plantedWas) {
+      changed.push({ id: pid, was, now: cur.species, plantedWas, plantedNow: cur.planted })
+    }
+  }
+  gone.sort((a, b) => a - b)
+  changed.sort((a, b) => a.id - b.id)
+  return { from: prior.asOf, to: now.asOf, gone, changed }
+}
+
+/**
+ * G5. Decide what disappeared.json becomes on this run:
+ * - no prior snapshot → a fresh log, tracking from this run, no runs;
+ * - prior with the SAME asOf → `log: null` (leave the file untouched);
+ * - prior with a LATER asOf → gate failure;
+ * - otherwise → the existing log (or a new one tracking from the prior's asOf)
+ *   with one run appended. Never mutates its inputs.
+ */
+export function nextDisappearedLog(
+  prior: SnapshotIdentity | null,
+  now: SnapshotIdentity,
+  priorLog: DisappearedLog | null,
+): { log: DisappearedLog | null; ok: boolean; detail: string } {
+  if (!prior) return { log: { trackingSince: now.asOf, runs: [] }, ok: true, detail: `no prior snapshot; tracking begins ${now.asOf}` }
+  if (prior.asOf === now.asOf) {
+    return { log: null, ok: true, detail: `prior snapshot has the same asOf (${now.asOf}); disappeared.json left untouched` }
+  }
+  if (prior.asOf > now.asOf) {
+    return { log: null, ok: false, detail: `prior snapshot asOf ${prior.asOf} is AFTER this run's ${now.asOf}` }
+  }
+  const run = diffSnapshots(prior, now)
+  const base: DisappearedLog = priorLog ?? { trackingSince: prior.asOf, runs: [] }
+  return {
+    log: { trackingSince: base.trackingSince, runs: [...base.runs, run] },
+    ok: true,
+    detail: `diffed ${prior.asOf} → ${now.asOf}: ${run.gone.length} sites gone, ${run.changed.length} species or planting-year changes`,
+  }
+}
 
 // ── main ────────────────────────────────────────────────────────────────────
 
@@ -261,7 +326,7 @@ async function main(): Promise<void> {
   // ── Fall reports (G3) ─────────────────────────────────────────────────────
   const years: FallYear[] = []
   for (let yy = Number(FALL_WINDOW_START.slice(0, 4)); yy <= runYear; yy += 1) {
-    years.push({ year: yy, fallen: 0, aboutToFall: 0, duplicates: 0, unplaced: 0, partial: yy === runYear })
+    years.push({ year: yy, fallen: 0, aboutToFall: 0, duplicates: 0, unplaced: 0, placedShare: 0, placeable: false, partial: yy === runYear })
   }
   const yearRow = new Map(years.map((r) => [r.year, r]))
   const placedPoints: { lat: number; lon: number }[] = []
@@ -293,15 +358,17 @@ async function main(): Promise<void> {
   for (const [d, c] of reportsByDay) {
     if (c > busiestDay.reports || (c === busiestDay.reports && d < busiestDay.ymd)) busiestDay = { ymd: d, reports: c }
   }
-  const placedShares = years.filter((r) => !r.partial).map((r) => {
-    const nonDup = r.fallen + r.aboutToFall
-    return { year: r.year, share: nonDup ? (nonDup - r.unplaced) / nonDup : 1, placed: nonDup - r.unplaced, nonDup }
-  })
-  const worstPlaced = placedShares.reduce((w, s) => (s.share < w.share ? s : w), placedShares[0])
-  gate('G3', placedShares.every((s) => s.share >= G3_PLACED_FLOOR),
-    `placed share of non-duplicate fall reports per full year (floor ${G3_PLACED_FLOOR * 100}%): ` +
-    placedShares.map((s) => `${s.year} ${s.placed}/${s.nonDup} = ${pct(s.placed, s.nonDup)}`).join(' · ') +
-    (worstPlaced ? ` — worst ${worstPlaced.year}` : ''))
+  // Ruling R1: every year carries its placed share; only placeable years are
+  // split by neighborhood. G3 holds the most recent FULL year to the floor.
+  for (const r of years) {
+    r.placedShare = placedShare(r.fallen + r.aboutToFall, r.unplaced)
+    r.placeable = r.placedShare >= PLACEABLE_FLOOR
+  }
+  const lastFull = [...years].reverse().find((r) => !r.partial)
+  gate('G3', lastFull !== undefined && lastFull.placeable,
+    `most recent full year ${lastFull?.year ?? '—'} must be placeable (floor ${PLACEABLE_FLOOR}%); placed share per year: ` +
+    years.map((r) => `${r.year} ${r.fallen + r.aboutToFall - r.unplaced}/${r.fallen + r.aboutToFall} = ${r.placedShare}%` +
+      `${r.placeable ? '' : ' (citywide only)'}${r.partial ? ' (partial)' : ''}`).join(' · '))
 
   const grid = buildGrid(placedPoints)
   const fl: number[] = new Array(n)
@@ -401,7 +468,7 @@ async function main(): Promise<void> {
       perK: r.perK,
       perKm2: r.perKm2,
       flag: r.flag,
-      falls: years.map((yy) => {
+      falls: years.filter((yy) => yy.placeable).map((yy) => {
         const c = perYear?.get(yy.year) ?? [0, 0]
         return [yy.year, c[0], c[1]] as [number, number, number]
       }),
@@ -443,42 +510,11 @@ async function main(): Promise<void> {
   }
 
   // ── Disappeared (G5) ──────────────────────────────────────────────────────
-  let disappeared: DisappearedLog | null = null // null = leave the file untouched
-  let g5Detail = ''
-  let g5ok = true
-  if (existsSync(TREES_PATH)) {
-    const prior = JSON.parse(readFileSync(TREES_PATH, 'utf8')) as TreesSnapshot
-    if (prior.asOf === asOf) {
-      g5Detail = `prior snapshot has the same asOf (${asOf}); disappeared.json left untouched`
-    } else if (prior.asOf > asOf) {
-      g5ok = false
-      g5Detail = `prior snapshot asOf ${prior.asOf} is AFTER this run's ${asOf}`
-    } else {
-      const log: DisappearedLog = existsSync(DISAPPEARED_PATH)
-        ? JSON.parse(readFileSync(DISAPPEARED_PATH, 'utf8')) as DisappearedLog
-        : { trackingSince: prior.asOf, runs: [] }
-      const nowSpecies = new Map<number, string>()
-      for (let i = 0; i < n; i += 1) nowSpecies.set(id[i], sp[i] === -1 ? '' : speciesTable[sp[i]])
-      const gone: number[] = []
-      const changed: DisappearedRun['changed'] = []
-      for (let i = 0; i < prior.id.length; i += 1) {
-        const pid = prior.id[i]
-        const was = prior.sp[i] === -1 ? '' : prior.species[prior.sp[i]]
-        const now = nowSpecies.get(pid)
-        if (now === undefined) gone.push(pid)
-        else if (now !== was) changed.push({ id: pid, was, now })
-      }
-      gone.sort((a, b) => a - b)
-      changed.sort((a, b) => a.id - b.id)
-      log.runs.push({ from: prior.asOf, to: asOf, gone, changed })
-      disappeared = log
-      g5Detail = `diffed ${prior.asOf} → ${asOf}: ${gone.length} sites gone, ${changed.length} species changes`
-    }
-  } else {
-    disappeared = { trackingSince: asOf, runs: [] }
-    g5Detail = `no prior snapshot; tracking begins ${asOf}`
-  }
-  gate('G5', g5ok, g5Detail)
+  const prior = existsSync(TREES_PATH) ? JSON.parse(readFileSync(TREES_PATH, 'utf8')) as TreesSnapshot : null
+  const priorLog = existsSync(DISAPPEARED_PATH) ? JSON.parse(readFileSync(DISAPPEARED_PATH, 'utf8')) as DisappearedLog : null
+  const g5 = nextDisappearedLog(prior, snapshot, priorLog)
+  const disappeared = g5.log // null = leave the file untouched
+  gate('G5', g5.ok, g5.detail)
 
   // ── G6 ────────────────────────────────────────────────────────────────────
   const treesJson = JSON.stringify(snapshot)
@@ -493,8 +529,8 @@ async function main(): Promise<void> {
   console.log('totals', JSON.stringify(aggregates.totals, null, 1))
   console.log('notices', JSON.stringify(aggregates.notices, null, 1))
   console.log('equity', JSON.stringify(equity))
-  console.log('falls (year · fallen · about to fall · duplicates · unplaced · partial)')
-  for (const r of years) console.log(`  ${r.year}  ${r.fallen}  ${r.aboutToFall}  ${r.duplicates}  ${r.unplaced}${r.partial ? '  partial' : ''}`)
+  console.log('falls (year · fallen · about to fall · duplicates · unplaced · placedShare · placeable · partial)')
+  for (const r of years) console.log(`  ${r.year}  ${r.fallen}  ${r.aboutToFall}  ${r.duplicates}  ${r.unplaced}  ${r.placedShare}%  ${r.placeable ? 'placeable' : 'citywide only'}${r.partial ? '  partial' : ''}`)
   console.log(`  busiest day ${busiestDay.ymd}: ${busiestDay.reports}`)
   console.log('top 12 species')
   for (const s of species.slice(0, 12)) console.log(`  ${s.rank}. ${s.name} — ${s.count}`)

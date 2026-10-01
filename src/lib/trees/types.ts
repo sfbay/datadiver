@@ -45,7 +45,11 @@ export interface NeighborhoodAggregate {
   perK: number
   perKm2: number
   flag: EquityFlag
-  /** Placed, non-duplicate fall reports by year: [year, fallen, aboutToFall]. */
+  /**
+   * Placed, non-duplicate fall reports by year: [year, fallen, aboutToFall].
+   * PLACEABLE years only (ruling R1): a year whose placed share is under
+   * PLACEABLE_FLOOR has no row here and is shown citywide only.
+   */
   falls: [number, number, number][]
 }
 
@@ -55,6 +59,8 @@ export interface FallYear {
   aboutToFall: number          // non-duplicate
   duplicates: number           // closed by the city as duplicates (excluded above)
   unplaced: number             // of the non-duplicates, at 0,0 or outside SF
+  placedShare: number          // percent, 1 decimal, of the non-duplicates that are placed
+  placeable: boolean           // placedShare >= PLACEABLE_FLOOR (fallReports.ts); else citywide only
   partial: boolean             // the run's own year
 }
 
@@ -64,7 +70,7 @@ export interface TreesAggregates {
   totals: {
     rows: number; trees: number; stumps: number; emptySites: number; shrubs: number
     unmapped: number; speciesNotRecorded: number; distinctSpecies: number
-    topFive: number; topFiveShare: number   // share of trees with a recorded species, 1 decimal, percent
+    topFive: number; topFiveShare: number   // top five ÷ ALL street trees (kind 0), percent, 1 decimal
     largeTrunks: number; unmeasuredTrunks: number; plantedRecorded: number
   }
   species: SpeciesAggregate[]  // recorded species only, by count desc
@@ -82,6 +88,7 @@ export interface TreesAggregates {
 export interface DisappearedRun {
   from: string; to: string
   gone: number[]                                   // site ids present at `from`, absent at `to`
-  changed: { id: number; was: string; now: string }[]  // same site, different species string
+  /** Same site, different species string OR planting year (0 = not recorded). */
+  changed: { id: number; was: string; now: string; plantedWas: number; plantedNow: number }[]
 }
 export interface DisappearedLog { trackingSince: string; runs: DisappearedRun[] }
