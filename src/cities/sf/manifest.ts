@@ -175,6 +175,26 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     citable: ['stat-totals', 'ranking', 'map-sample', 'freshness'],
   },
   {
+    // Trees (spec 2026-09-30-trees-design, §10 supersedes).
+    viewId: 'trees',
+    navLabel: 'Trees',
+    navShortLabel: 'TREE',
+    navDescription: 'Street trees, species and shade',
+    accentColor: '#7a9954', // moss-500 — civic upkeep
+    homeCard: { title: 'Street Trees', subtitle: 'SF Public Works · Species, Equity & Falls', order: 16 },
+    // DATELESS, no eraSource: the inventory is a snapshot of what stands now.
+    dateless: true,
+    omniDatasetKeys: ['streetTrees'],
+    // Today the browser reads only the inventory's freshness probe; every
+    // figure on the page comes from the derived file below, built at BUILD
+    // time by scripts/build-trees.ts (inventory, removal notices and 311 fall
+    // reports). streetTreeRemovals joins `sources` when the tree card starts
+    // reading one site's notices live.
+    sources: ['streetTrees'],
+    staticSources: ['dd-street-trees', 'sf-analysis-neighborhoods', 'acs-2023-5yr'],
+    citable: ['freshness'],
+  },
+  {
     viewId: 'elections',
     navLabel: 'Elections',
     navShortLabel: 'EL',

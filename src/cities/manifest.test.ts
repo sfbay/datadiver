@@ -4,14 +4,14 @@ import { sfCity } from './sf'
 import { CITIES } from './registry'
 
 describe('view vocabulary', () => {
-  it('VIEW_IDS are unique and exactly the canonical 21', () => {
+  it('VIEW_IDS are unique and exactly the canonical 22', () => {
     expect(new Set(VIEW_IDS).size).toBe(VIEW_IDS.length)
     expect([...VIEW_IDS].sort()).toEqual([
       '311-cases', 'about', 'alerts', 'business', 'business-activity',
       'campaign-finance', 'city-budget', 'crime-incidents', 'demographics',
       'dispatch-911', 'elections', 'emergency-response', 'home', 'housing',
       'live', 'neighborhood', 'parking-citations', 'parking-revenue',
-      'pulse', 'restaurants', 'traffic-safety',
+      'pulse', 'restaurants', 'traffic-safety', 'trees',
     ])
   })
 })
@@ -25,12 +25,12 @@ describe('SF manifest completeness', () => {
     expect(ids.slice(0, 4)).toEqual(['home', 'alerts', 'live', 'pulse'])
     expect(ids.slice(-2)).toEqual(['neighborhood', 'about'])
   })
-  it('homeCard.order values are unique and cover 1..15', () => {
+  it('homeCard.order values are unique and cover 1..16', () => {
     const orders = sfCity.manifest
       .filter((e) => e.homeCard)
       .map((e) => e.homeCard!.order)
       .sort((a, b) => a - b)
-    expect(orders).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])
+    expect(orders).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
   })
   it('live is dateless, era-free, and carries the nav pulse dot', () => {
     const live = sfCity.manifest.find((e) => e.viewId === 'live')!
@@ -53,6 +53,13 @@ describe('SF manifest completeness', () => {
     // build-time inputs to the derived file, never view fetches.
     expect(r.sources).toEqual(['restaurantInspections'])
     expect(r.staticSources).toContain('dd-storefront-histories')
+  })
+  it('trees sits right after restaurants, dateless and era-free', () => {
+    const ids = sfCity.manifest.map((e) => e.viewId)
+    expect(ids[ids.indexOf('restaurants') + 1]).toBe('trees')
+    const t = sfCity.manifest.find((e) => e.viewId === 'trees')!
+    expect(t.dateless).toBe(true)
+    expect(t.eraSource).toBeUndefined()
   })
   it('SF redirects the legacy live-feeds path', () => {
     expect(sfCity.redirects).toContainEqual({ from: 'live-feeds', to: 'live' })

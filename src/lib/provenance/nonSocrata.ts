@@ -7,7 +7,7 @@ export type NonSocrataId =
   | 'sf-analysis-neighborhoods' | 'sf-precincts-2012' | 'sf-precincts-2022'
   | 'sf-elections-results' | 'sf-cvr-20241105' | 'sf-tract-assignment'
   | 'acs-2023-5yr' | 'oak-beats' | 'oak-neighborhoods' | 'mapbox-basemap' | 'google-3d-tiles'
-  | 'dd-storefront-histories'
+  | 'dd-storefront-histories' | 'dd-street-trees'
 
 export interface NonSocrataElection {
   dateCode: string
@@ -154,6 +154,20 @@ export const NON_SOCRATA: Record<NonSocrataId, NonSocrataSource> = {
     landingUrl: 'https://datadiver.jlabsf.org/about#source-sf-dd-storefront-histories',
     license: PDDL, servedPath: '/data/restaurants/storefronts.json',
     generator: 'scripts/build-storefronts.ts', derivedLicense: 'CC BY 4.0',
+  },
+  // DataDiver-AUTHORED: street-tree sites, species ranks, fall reports within
+  // 30 m and removal-notice counts, joined from Public Works' inventory and
+  // removal notices and 311 fall reports by scripts/build-trees.ts (hand-run,
+  // gated, asOf-stamped). Inputs PDDL; the join and classification are ours.
+  'dd-street-trees': {
+    id: 'dd-street-trees', cities: ['sf'], kind: 'derived',
+    publisher: { short: 'DataDiver', full: 'DataDiver, from San Francisco Public Works street-tree records and 311 service requests' },
+    title: 'Street trees (sites, species ranks, fall reports nearby, removal notices)',
+    vintage: 'rebuilt by hand, dated in the file',
+    upstreamUrl: 'https://data.sf.gov/d/tkzw-k3nq',
+    landingUrl: 'https://datadiver.jlabsf.org/about#source-sf-dd-street-trees',
+    license: PDDL, servedPath: '/data/trees/trees.json',
+    generator: 'scripts/build-trees.ts', derivedLicense: 'CC BY 4.0',
   },
   'mapbox-basemap': {
     id: 'mapbox-basemap', cities: ['sf', 'oakland'], kind: 'basemap',

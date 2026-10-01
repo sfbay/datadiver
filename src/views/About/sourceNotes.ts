@@ -55,4 +55,9 @@ export const SOURCE_NOTES: Readonly<Record<string, string>> = {
   'ub5g-m92u': 'Registered, not yet read by a view',
   '6ejr-39gh': 'Registered, not yet read by a view',
   'eted-3m9d': 'Registered, not yet read by a view',
+  // Street trees (Trees view). Figures from public/data/trees/aggregates.json
+  // (asOf 2026-09-30); final wording lands with the view's data notes.
+  'tkzw-k3nq': 'One row per planting site, not per tree — a new tree planted at a site keeps the site’s number. 144,504 rows on Sept. 30, 2026: 142,014 street trees, 635 stumps, 1,790 empty planting sites and 65 shrubs; 5,754 rows publish no map point. Trunk size is read from the measured diameter only, because the published size range files unmeasured trees (8,814) as large. Street trees only: trees inside parks and the Presidio are not in this inventory',
+  'qrwx-q4gg': 'A notice posted on a street tree after a removal permit (24-hour, 15-day or 30-day) — a notice, not a record that the tree came down. 5,713 notices at 5,571 sites since 2017. Since 2023 the site number is written “TRE-” followed by the number',
+  'dd-street-trees': 'Built by DataDiver from the street-tree inventory, its removal notices and 311 reports of fallen trees (vw6y-z8j6). Fall reports are counted within 30 meters of a site, leaving out reports the city closed as duplicates; a report names an address, never a tree. 2022 and 2023 are shown citywide only: 46.2% and 67.7% of those years’ reports carry a usable map point. Rebuilt by hand and dated in the file',
 }
