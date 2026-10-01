@@ -8,10 +8,11 @@
 // snapshot each note falls back to a wording that claims no figure.
 
 import { MIN_POPULATION } from '@/lib/trees/equity'
+import { NEARBY_METERS } from '@/lib/trees/fallReports'
 import { TRUNK_LABEL } from '@/lib/trees/trunk'
 import type { FallYear, TreesAggregates } from '@/lib/trees/types'
 import { apDate } from '@/utils/apDate'
-import { PARKS_LINE, TRUNK_NOTE, apCount } from './treesPhrase'
+import { PARKS_LINE, apCount } from './treesPhrase'
 
 export type NoteSectionId = 'general' | 'explore' | 'equity' | 'safety' | 'tree'
 
@@ -52,45 +53,49 @@ function flaggedNames(a: TreesAggregates | null, flag: 'park' | 'low-coverage' |
   return names.length ? ` (${list(names)})` : ''
 }
 
+const NEAR = `within ${NEARBY_METERS} meters`
+
 function fallReportsNote(a: TreesAggregates | null): string {
   const lead = 'These are 311 requests marked as a fallen tree or a tree about to fall'
   const close = 'A report gives an address or a corner, never a tree.'
   if (!a || a.falls.years.length === 0) {
     return `${lead}. ${close} Reports the city closed as duplicates are left out, and reports with no usable map point ` +
-      'count citywide only, so every count of fall reports within 30 meters is a minimum.'
+      `count citywide only, so every count of fall reports ${NEAR} is a minimum.`
   }
-  const years = a.falls.years
+  const years = [...a.falls.years].sort((x, y) => x.year - y.year)
   const dup = years.reduce((s, y) => s + y.duplicates, 0)
   const unplaced = years.reduce((s, y) => s + y.unplaced, 0)
-  let body = `${lead}, since ${years[0].year}. ${close} The ${apCount(dup)} reports the city closed as duplicates are left out; ` +
-    `another ${apCount(unplaced)} have no usable map point and count citywide only.`
+  let body = `${lead}, since ${years[0].year}. ${close} The ${apCount(dup)} reports the city closed as duplicates are left out`
+  body += unplaced > 0 ? `; another ${apCount(unplaced)} have no usable map point and count citywide only.` : '.'
   const gaps = years.filter((y) => !y.placeable)
   if (gaps.length > 0) {
     const parts = gaps.map((y, i) =>
       i === 0 ? `In ${y.year} only ${y.placedShare}% of reports carry a usable map point` : `in ${y.year} only ${y.placedShare}%`)
-    body += ` ${list(parts)}, so ${gaps.length === 1 ? 'that year is' : 'those years are'} shown citywide only. ` +
-      'Every count of fall reports within 30 meters is therefore a minimum.'
+    body += ` ${list(parts)}, so ${gaps.length === 1 ? 'that year is' : 'those years are'} shown citywide only.`
   }
+  // Any unplaced report is one the nearby counts cannot see (ruling R1).
+  if (unplaced > 0) body += ` Every count of fall reports ${NEAR} is therefore a minimum.`
   return body
 }
 
 function stormYearsNote(a: TreesAggregates | null, nowYear: number): string {
   const close = 'The years are shown side by side and never added into one figure.'
   if (!a || a.falls.years.length === 0) return `Some years hold far more fall reports than others. ${close}`
-  const busiest = a.falls.years.reduce((m, y) => (reportsIn(y) > reportsIn(m) ? y : m))
+  const busiest = a.falls.years.reduce((m, y) => (reportsIn(y) > reportsIn(m) || (reportsIn(y) === reportsIn(m) && y.year < m.year) ? y : m))
   const day = a.falls.busiestDay
   const dayYear = Number(day.ymd.slice(0, 4))
-  let body = `Of the years shown, ${busiest.year} has the most fall reports, ${apCount(reportsIn(busiest))}.`
+  let body = `Of the years shown, ${busiest.year} has the most fall reports, ${apCount(reportsIn(busiest))}`
   body += dayYear === busiest.year
-    ? ` Of those, ${apCount(day.reports)} were filed on ${apDate(day.ymd, nowYear)}.`
-    : ` The busiest single day was ${apDate(day.ymd, nowYear)}, with ${apCount(day.reports)}.`
+    ? `, including ${apCount(day.reports)} filed on ${apDate(day.ymd, nowYear)}`
+    : `; the busiest single day was ${apDate(day.ymd, nowYear)}, with ${apCount(day.reports)}`
   const citywide = [...new Set([busiest.year, dayYear])]
     .filter((yr) => a.falls.years.find((y) => y.year === yr)?.placeable === false)
+    .sort((x, y) => x - y)
   if (citywide.length > 0) {
-    body += ` These are citywide figures: too few of ` +
-      `${list(citywide.map(String))}’s reports carry a map point to split by neighborhood.`
+    body += `. These are citywide figures, since too few of the ${list(citywide.map(String))} reports carry a map point ` +
+      'to split by neighborhood'
   }
-  return `${body} ${close}`
+  return `${body}. ${close}`
 }
 
 export function buildDataNotes(a: TreesAggregates | null, nowYear: number): NoteSection[] {
@@ -159,7 +164,8 @@ export function buildDataNotes(a: TreesAggregates | null, nowYear: number): Note
       notes: [
         {
           title: 'Trunk size',
-          body: `${TRUNK_NOTE} The size classes are ${TRUNK_LABEL.small}, ${TRUNK_LABEL.medium} and ${TRUNK_LABEL.large}. ` +
+          body: 'Trunk size is shown as the city last recorded it, on a date the record does not give, in three classes: ' +
+            `${TRUNK_LABEL.small}, ${TRUNK_LABEL.medium} and ${TRUNK_LABEL.large}. ` +
             (t
               ? `The record has no measurement for ${apCount(t.unmeasuredTrunks)} street trees`
               : 'Some street trees have no measurement') +

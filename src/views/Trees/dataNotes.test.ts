@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import type { TreesAggregates } from '@/lib/trees/types'
+import type { FallYear, TreesAggregates } from '@/lib/trees/types'
 import { buildDataNotes } from './dataNotes'
 
 const A = JSON.parse(readFileSync(join(process.cwd(), 'public/data/trees/aggregates.json'), 'utf8')) as TreesAggregates
@@ -81,11 +81,79 @@ describe('fall reports — the unplaceable years are named, from the file', () =
 })
 
 describe('reader words', () => {
-  const BANNED = /σ|sigma|z-?score|ρ|\brho\b|spearman|correlat|baseline|\blive\b|\bage\b|\bremoved\b|this tree fell/i
-  it('no note, with or without the snapshot, carries a banned word', () => {
+  const BANNED = /σ|sigma|z-?score|ρ|\brho\b|spearman|correlat|baseline|\blive\b|\bage\b|removed|\bfell\b|this tree fell/i
+  it('no section title, note title, body or link text, with or without the snapshot, carries a banned word', () => {
     for (const s of [...buildDataNotes(A, 2026), ...buildDataNotes(null, 2026)]) {
-      for (const n of s.notes) if (BANNED.test(n.title) || BANNED.test(n.body)) throw new Error(`${n.title}: ${n.body}`)
       if (BANNED.test(s.title)) throw new Error(s.title)
+      for (const n of s.notes) {
+        for (const text of [n.title, n.body, n.link?.text ?? '']) if (BANNED.test(text)) throw new Error(`${n.title}: ${text}`)
+      }
     }
   })
+})
+
+// ── Synthetic aggregates: the fall notes' branches the real file may not hit ──
+const yr = (year: number, placedShare: number, unplaced: number): FallYear => ({
+  year, fallen: 100, aboutToFall: 0, duplicates: 1, unplaced, placedShare, placeable: placedShare >= 75, partial: false,
+})
+const withFalls = (years: FallYear[], busiestDay = A.falls.busiestDay): TreesAggregates =>
+  ({ ...A, falls: { years, busiestDay } })
+const body = (a: TreesAggregates, title: string) =>
+  buildDataNotes(a, 2026).flatMap((s) => s.notes).find((n) => n.title === title)!.body
+
+describe('fall reports — the minimum sentence follows ANY unplaced report', () => {
+  it('unplaced reports but every year placeable: still a minimum', () => {
+    const b = body(withFalls([yr(2024, 90, 10), yr(2025, 100, 0)]), 'Fall reports')
+    expect(b).toMatch(/within 30 meters is therefore a minimum/)
+    expect(b).not.toContain('shown citywide only')
+  })
+  it('no unplaced report anywhere: no minimum, no "another 0"', () => {
+    const b = body(withFalls([yr(2024, 100, 0), yr(2025, 100, 0)]), 'Fall reports')
+    expect(b).not.toContain('minimum')
+    expect(b).not.toContain('another 0')
+    expect(b).toContain('The 2 reports the city closed as duplicates are left out.')
+  })
+})
+
+describe('citywide-only years read correctly, in ascending order', () => {
+  it('one unplaceable year', () => {
+    expect(body(withFalls([yr(2024, 90, 10), yr(2022, 46.2, 54)]), 'Fall reports')).toContain(
+      'In 2022 only 46.2% of reports carry a usable map point, so that year is shown citywide only.')
+  })
+  it('two unplaceable years, given out of order', () => {
+    expect(body(withFalls([yr(2023, 67.7, 33), yr(2024, 90, 10), yr(2022, 46.2, 54)]), 'Fall reports')).toContain(
+      'In 2022 only 46.2% of reports carry a usable map point and in 2023 only 67.7%, so those years are shown citywide only.')
+  })
+  it('three unplaceable years, given out of order', () => {
+    const b = body(withFalls([yr(2023, 67.7, 33), yr(2021, 50, 50), yr(2022, 46.2, 54)]), 'Fall reports')
+    expect(b).toContain(
+      'In 2021 only 50% of reports carry a usable map point, in 2022 only 46.2% and in 2023 only 67.7%, so those years are shown citywide only.')
+    expect(b).toContain('since 2021.')
+  })
+  it('storm years: one citywide year, no dangling possessive', () => {
+    const years = [yr(2022, 90, 10), { ...yr(2023, 60, 40), fallen: 500 }]
+    const b = body(withFalls(years, { ymd: '2023-03-21', reports: 80 }), 'Storm years')
+    expect(b).toBe('Of the years shown, 2023 has the most fall reports, 500, including 80 filed on March 21, 2023. ' +
+      'These are citywide figures, since too few of the 2023 reports carry a map point to split by neighborhood. ' +
+      'The years are shown side by side and never added into one figure.')
+  })
+  it('storm years: two citywide years (busiest year ≠ busiest day’s year), ascending', () => {
+    const years = [{ ...yr(2023, 60, 40), fallen: 500 }, yr(2022, 50, 50)]
+    const b = body(withFalls(years, { ymd: '2022-01-05', reports: 90 }), 'Storm years')
+    expect(b).toContain('too few of the 2022 and 2023 reports carry a map point')
+    expect(b).toContain('the busiest single day was Jan. 5, 2022, with 90')
+    expect(b).not.toMatch(/’s reports/)
+  })
+})
+
+describe('note lengths: at most three sentences (Fall reports excepted, ruling R1)', () => {
+  const sentences = (t: string) => t.split(/(?<=[.!?])\s+(?=[A-Z0-9])/).length
+  for (const a of [A, null]) {
+    it(`${a ? 'with' : 'without'} the snapshot`, () => {
+      for (const n of buildDataNotes(a, 2026).flatMap((s) => s.notes)) {
+        if (n.title === 'Fall reports') continue
+        expect(sentences(n.body), `${n.title}: ${n.body}`).toBeLessThanOrEqual(3)
+      }
+    })
+  }
 })

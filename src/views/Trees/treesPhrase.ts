@@ -9,7 +9,9 @@
 
 import type { EquityCorrelations, EquityFlag, LinkStrength } from '@/lib/trees/equity'
 import { MIN_POPULATION, linkStrength } from '@/lib/trees/equity'
+import { NEARBY_METERS } from '@/lib/trees/fallReports'
 import type { NoticeReading } from '@/lib/trees/siteNotices'
+import type { RowKind } from '@/lib/trees/species'
 import type { DisappearedLog } from '@/lib/trees/types'
 import { apDate } from '@/utils/apDate'
 
@@ -44,6 +46,9 @@ type Measure = keyof typeof MEASURE
 const incomeSide = (positive: boolean): string => (positive ? 'higher-income' : 'lower-income')
 const cap = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1)
 
+/** "have more" for a strong link, "tend to have more" for a weak one (ruling R8). */
+const haveMore = (strength: LinkStrength): string => (strength === 'strong' ? 'have more' : 'tend to have more')
+
 export function equityLead(c: EquityCorrelations): string {
   const a: LinkStrength = linkStrength(c.perK.income)
   const b: LinkStrength = linkStrength(c.perKm2.income)
@@ -52,19 +57,20 @@ export function equityLead(c: EquityCorrelations): string {
   if (aHolds && bHolds) {
     const aPos = c.perK.income > 0, bPos = c.perKm2.income > 0
     if (aPos !== bPos) {
-      return `The two measures disagree. Counted ${MEASURE.perK}, ${incomeSide(aPos)} neighborhoods have more street trees; ` +
-        `counted ${MEASURE.perKm2}, ${incomeSide(bPos)} neighborhoods do.`
+      // Each side names its own strength, so a weak side never stands level with a strong one.
+      return `The two measures disagree. Counted ${MEASURE.perK}, ${incomeSide(aPos)} neighborhoods have more street trees, ` +
+        `and the link is ${a}. Counted ${MEASURE.perKm2}, ${incomeSide(bPos)} neighborhoods have more, and the link is ${b}.`
     }
-    const subject = `${cap(incomeSide(aPos))} neighborhoods have more street trees`
-    if (a === b) return `${subject}, whether trees are counted ${MEASURE.perK} or ${MEASURE.perKm2}.`
-    return `${subject}. The link is ${a} when trees are counted ${MEASURE.perK} and ${b} when counted ${MEASURE.perKm2}.`
+    const side = cap(incomeSide(aPos))
+    if (a === b) return `${side} neighborhoods ${haveMore(a)} street trees, whether trees are counted ${MEASURE.perK} or ${MEASURE.perKm2}.`
+    return `${side} neighborhoods have more street trees. The link is ${a} when trees are counted ${MEASURE.perK} and ${b} when counted ${MEASURE.perKm2}.`
   }
 
   if (aHolds !== bHolds) {
     const holds: Measure = aHolds ? 'perK' : 'perKm2'
     const other: Measure = aHolds ? 'perKm2' : 'perK'
     const positive = c[holds].income > 0
-    return `Counted ${MEASURE[holds]}, ${incomeSide(positive)} neighborhoods have more street trees. ` +
+    return `Counted ${MEASURE[holds]}, ${incomeSide(positive)} neighborhoods ${haveMore(aHolds ? a : b)} street trees. ` +
       `Counted ${MEASURE[other]}, there is no clear pattern. The answer depends on the measure.`
   }
 
@@ -96,16 +102,21 @@ export function noticeLine(reading: NoticeReading, postedYmd: string, type: stri
 }
 
 export function nearbyFallsLine(n: number, sinceYear: number): string {
-  if (n === 0) return `No fall reports within 30 meters since ${sinceYear}.`
-  return `${apCount(n)} fall report${n === 1 ? '' : 's'} within 30 meters since ${sinceYear}.`
+  const near = `within ${NEARBY_METERS} meters since ${sinceYear}.`
+  if (n === 0) return `No fall reports ${near}`
+  return `${apCount(n)} fall report${n === 1 ? '' : 's'} ${near}`
 }
 
-export function leftInventoryNote(asOf: string, nowYear: number): string {
-  return `This site is not in the city’s inventory. It was there on ${apDate(asOf, nowYear)}; the tree may have been taken out.`
+/** For a site whose last known row was a stump, an empty site or a shrub,
+ *  nothing is claimed about a tree. */
+export function leftInventoryNote(asOf: string, nowYear: number, kind: RowKind): string {
+  const was = `This site is not in the city’s inventory. It was there on ${apDate(asOf, nowYear)}`
+  return kind === 'tree' ? `${was}; the tree may have been taken out.` : `${was}.`
 }
 
 export function disappearedLine(log: DisappearedLog, nowYear: number): string {
   const latest = log.runs[log.runs.length - 1]
   if (!latest) return `DataDiver began recording which sites leave the inventory on ${apDate(log.trackingSince, nowYear)}.`
-  return `${apCount(latest.gone.length)} sites left the inventory between ${apDate(latest.from, nowYear)} and ${apDate(latest.to, nowYear)}.`
+  const n = latest.gone.length
+  return `${apCount(n)} site${n === 1 ? '' : 's'} left the inventory between ${apDate(latest.from, nowYear)} and ${apDate(latest.to, nowYear)}.`
 }
