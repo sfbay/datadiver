@@ -8,7 +8,7 @@
 // treesPhrase.test.ts fails the build if one does.
 
 import type { EquityFlag, LinkStrength, RobustLink } from '@/lib/trees/equity'
-import { MIN_POPULATION } from '@/lib/trees/equity'
+import { MIN_POPULATION, PARK_HEAVY } from '@/lib/trees/equity'
 import { NEARBY_METERS, PLACEABLE_FLOOR } from '@/lib/trees/fallReports'
 import type { NoticeReading, NoticedByKind } from '@/lib/trees/siteNotices'
 import type { RowKind } from '@/lib/trees/species'
@@ -170,10 +170,20 @@ export function equityLead(links: LeadLinks): string {
   return 'Street trees show no clear pattern by neighborhood income under either measure.'
 }
 
-export function equityFlagNote(flag: EquityFlag): string | null {
+/** `name` is the neighborhood: a park-heavy note carries its own measured
+ *  open-space share (PARK_HEAVY, ruling R20). No note says a neighborhood has
+ *  few trees overall — park trees are not in this inventory. */
+export function equityFlagNote(flag: EquityFlag, name: string): string | null {
   switch (flag) {
     case 'park': return 'Mostly parkland. Park trees are not in this inventory.'
     case 'low-coverage': return 'The inventory lists almost no trees here.'
+    case 'park-heavy': {
+      const tail = 'Its residential streets are counted citywide but not ranked here.'
+      const share = Object.prototype.hasOwnProperty.call(PARK_HEAVY, name) ? PARK_HEAVY[name] : null
+      return share === null
+        ? `Large parks take up much of its land, and park trees are not in this inventory. ${tail}`
+        : `About ${Math.round(share)}% of its land is open space, so few of its streets carry street trees. ${tail}`
+    }
     case 'small-population': return `Fewer than ${apCount(MIN_POPULATION)} residents, so the per-resident figure swings widely.`
     default: return null
   }
@@ -232,7 +242,7 @@ export function equityRowLabel(
   const figure = `${r.name}: ${equityFigure(r.value)} street trees ${UNIT[by]}.`
   const head = r.position !== null ? `No. ${r.position}, ${figure}` : figure
   const other = r.otherPosition !== null ? ` ${otherRankLine(r.otherPosition, by === 'perK' ? 'perKm2' : 'perK')}.` : ''
-  const note = r.flag !== null ? ` Not ranked: ${equityFlagNote(r.flag)}` : ''
+  const note = r.flag !== null ? ` Not ranked: ${equityFlagNote(r.flag, r.name)}` : ''
   const income = r.medianIncome !== null ? ` ${INCOME_KEY} ${incomeShort(r.medianIncome)}.` : ` ${NO_CENSUS}.`
   return `${head}${other}${note}${income}`
 }

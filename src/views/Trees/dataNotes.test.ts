@@ -2,6 +2,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { PARK_HEAVY } from '@/lib/trees/equity'
 import { noticedSitesByKind } from '@/lib/trees/siteNotices'
 import type { FallYear, TreesAggregates, TreesSnapshot } from '@/lib/trees/types'
 import { NOTES_SOURCES, buildDataNotes } from './dataNotes'
@@ -239,24 +240,36 @@ describe('removal notices: what the noticed sites are listed as now', () => {
   })
 })
 
-// Ruling R18: the lead's rule, the neighborhood whose removal changes a
-// reading, and the two park-heavy neighborhoods — all read from the file.
+// Ruling R18: the lead's rule and the neighborhoods whose removal changes a
+// reading — read from the file. Ruling R20: the park-heavy flag is listed
+// with its measured shares, read from PARK_HEAVY.
 describe('how the summary sentence is decided', () => {
   const note = (a: TreesAggregates | null) =>
     buildDataNotes(a, 2026).flatMap((s) => s.notes).find((n) => n.title === 'How the summary sentence is decided')!.body
-  it('names the rule, Lakeshore as the removal that changes the per-area reading, and the park-heavy pair with figures', () => {
+  it('names the rule and every neighborhood whose removal alone changes the per-area reading', () => {
     expect(note(A)).toBe(
       'A pattern is stated only if it still shows when any one neighborhood is left out. ' +
-      'Counted per square kilometer, the pattern no longer shows once Lakeshore is left out, so the sentence states none for that measure. ' +
-      'Lakeshore and Twin Peaks, both with large parkland, have far fewer street trees per square kilometer than any other ranked ' +
-      'neighborhood: 61 and 250, against 693 or more elsewhere.',
+      'Counted per square kilometer, the pattern no longer shows once any one of Bayview Hunters Point, Chinatown, Excelsior, ' +
+      'Seacliff or Visitacion Valley is left out, so the sentence states none for that measure.',
     )
   })
   it('without the file: the rule only, no figure', () => {
     expect(note(null)).toBe('A pattern is stated only if it still shows when any one neighborhood is left out.')
   })
-  it('if the two are no longer the lowest, the park sentence is dropped, never left wrong', () => {
-    const moved = { ...A, neighborhoods: A.neighborhoods.map((n) => (n.name === 'Twin Peaks' ? { ...n, perKm2: 5000 } : n)) }
-    expect(note(moved)).not.toContain('Twin Peaks')
+  it('when no single removal changes a reading, it says so', () => {
+    const flat = { ...A, neighborhoods: A.neighborhoods.map((n) => (n.flag === null ? { ...n, perK: n.medianIncome!, perKm2: n.medianIncome! } : n)) }
+    expect(note(flat)).toBe(
+      'A pattern is stated only if it still shows when any one neighborhood is left out. Leaving out any one neighborhood changes neither reading.')
+  })
+})
+
+describe('flagged neighborhoods: the park-heavy reason, with its shares and source (R20)', () => {
+  const body = () => buildDataNotes(A, 2026).flatMap((s) => s.notes).find((n) => n.title === 'Flagged neighborhoods')!.body
+  it('lists both names with their measured open-space shares, read from PARK_HEAVY', () => {
+    for (const [name, share] of Object.entries(PARK_HEAVY)) expect(body()).toContain(`${name} ${share}%`)
+    expect(body()).toContain('Planning Department’s land-use file, Sept. 30, 2026')
+  })
+  it('never says the neighborhood has few trees overall', () => {
+    expect(body()).not.toMatch(/few (street )?trees|fewer trees/i)
   })
 })

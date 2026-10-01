@@ -21328,7 +21328,7 @@
    "povertyRate": 26.99,
    "perK": 37.6,
    "perKm2": 60.6,
-   "flag": null,
+   "flag": "park-heavy",
    "falls": [
     [
      2021,
@@ -22168,7 +22168,7 @@
    "povertyRate": 9.85,
    "perK": 54.6,
    "perKm2": 250,
-   "flag": null,
+   "flag": "park-heavy",
    "falls": [
     [
      2021,
@@ -22299,14 +22299,14 @@
   }
  ],
  "equity": {
-  "n": 36,
+  "n": 34,
   "perK": {
    "income": 0.66,
-   "poverty": -0.59
+   "poverty": -0.56
   },
   "perKm2": {
-   "income": 0.35,
-   "poverty": -0.19
+   "income": 0.33,
+   "poverty": -0.11
   }
  },
  "falls": {

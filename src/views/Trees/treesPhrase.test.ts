@@ -186,10 +186,19 @@ describe('card lines never claim more than the record', () => {
     expect(phrase.unmeasuredLegendLine(5123)).toBe('No trunk measurement (5,123): drawn at the smallest size')
   })
   it('flag notes', () => {
-    expect(equityFlagNote('park')).toBe('Mostly parkland. Park trees are not in this inventory.')
-    expect(equityFlagNote('low-coverage')).toBe('The inventory lists almost no trees here.')
-    expect(equityFlagNote('small-population')).toBe('Fewer than 2,000 residents, so the per-resident figure swings widely.')
-    expect(equityFlagNote(null)).toBeNull()
+    expect(equityFlagNote('park', 'Presidio')).toBe('Mostly parkland. Park trees are not in this inventory.')
+    expect(equityFlagNote('low-coverage', 'Treasure Island')).toBe('The inventory lists almost no trees here.')
+    expect(equityFlagNote('small-population', 'X')).toBe('Fewer than 2,000 residents, so the per-resident figure swings widely.')
+    expect(equityFlagNote(null, 'Mission')).toBeNull()
+  })
+  it('park-heavy notes carry the measured open-space share, and never say few trees overall (R20)', () => {
+    expect(equityFlagNote('park-heavy', 'Lakeshore')).toBe(
+      'About 61% of its land is open space, so few of its streets carry street trees. Its residential streets are counted citywide but not ranked here.')
+    expect(equityFlagNote('park-heavy', 'Twin Peaks')).toBe(
+      'About 20% of its land is open space, so few of its streets carry street trees. Its residential streets are counted citywide but not ranked here.')
+    expect(equityFlagNote('park-heavy', 'Elsewhere')).toBe(
+      'Large parks take up much of its land, and park trees are not in this inventory. Its residential streets are counted citywide but not ranked here.')
+    for (const n of ['Lakeshore', 'Twin Peaks', 'Elsewhere']) expect(equityFlagNote('park-heavy', n)).not.toMatch(/few (street )?trees|fewer trees/i)
   })
   it('a site that left the inventory: no cause is claimed, for any kind of site', () => {
     expect(leftInventoryNote('2026-09-30', 2026))
@@ -244,7 +253,7 @@ const LEFT_OUT_SHAPES: FallYear[][] = [
   [fy(2022, false, false), fy(2023, false, false), fy(2026, true, true)],
   [fy(2025, false, false)], [fy(2026, true, true)], [fy(2026, true, false)], [fy(2025, false, true)],
 ]
-const FLAGS = ['park', 'low-coverage', 'small-population'] as const
+const FLAGS = ['park', 'low-coverage', 'park-heavy', 'small-population'] as const
 const BY = ['perK', 'perKm2'] as const
 
 const SAMPLES: Record<string, () => readonly (string | null)[]> = {
@@ -270,7 +279,10 @@ const SAMPLES: Record<string, () => readonly (string | null)[]> = {
     c(-0.6, 0, 0.1, 0), c(0.6, 0, -0.6, 0), c(0.7, 0, -0.35, 0), c(0, 0, 0, 0), c(0.1, 0, -0.1, 0),
     c(-0.65, 0.58, -0.33, 0.17), c(-0.35, 0, -0.7, 0),
   ].map((x) => equityLead(x)),
-  equityFlagNote: () => [...FLAGS, null].map((f) => equityFlagNote(f)),
+  equityFlagNote: () => [
+    ...[...FLAGS, null].map((f) => equityFlagNote(f, 'Lakeshore')), equityFlagNote('park-heavy', 'Twin Peaks'),
+    equityFlagNote('park-heavy', 'Elsewhere'),
+  ],
   equityFigure: () => [equityFigure(448.5), equityFigure(2.5)],
   incomeShort: () => [incomeShort(105807.78)],
   otherRankLine: () => [otherRankLine(33, 'perKm2'), otherRankLine(6, 'perK')],

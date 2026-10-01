@@ -14,11 +14,11 @@ import { describe, expect, it } from 'vitest'
 import { AGGREGATES_PATH, DISAPPEARED_PATH, TREES_PATH } from '../../../scripts/build-trees'
 import { SF_NEIGHBORHOODS } from '../../utils/geo'
 import { PLACEABLE_FLOOR } from './fallReports'
-import { linkStrength } from './equity'
+import { PARK_HEAVY, linkStrength } from './equity'
 import { noticedSitesByKind } from './siteNotices'
 import { classifyRow, parseSpecies } from './species'
 import { SOURCE_NOTES } from '../../views/About/sourceNotes'
-import { PARK_HEAVY_UNFLAGGED, leadLinks, parkHeavyLowest } from '../../views/Trees/equityView'
+import { leadLinks, unflaggedMedian } from '../../views/Trees/equityView'
 import { equityLead } from '../../views/Trees/treesPhrase'
 import type { DisappearedLog, TreesAggregates, TreesSnapshot } from './types'
 
@@ -184,7 +184,14 @@ describe('trees snapshot — EXACT pins at asOf (re-pin + sourceNotes + data-ins
       ['Posted 24hr', 1354],
     ])
 
-    expect(A.equity).toEqual({ n: 36, perK: { income: 0.66, poverty: -0.59 }, perKm2: { income: 0.35, poverty: -0.19 } })
+    expect(A.equity).toEqual({ n: 34, perK: { income: 0.66, poverty: -0.56 }, perKm2: { income: 0.33, poverty: -0.11 } })
+    // Flags (ruling R20 added the two park-heavy neighborhoods).
+    expect(A.neighborhoods.filter((n) => n.flag !== null).map((n) => [n.name, n.flag])).toEqual([
+      ['Golden Gate Park', 'park'], ['Lakeshore', 'park-heavy'], ['Lincoln Park', 'park'], ['McLaren Park', 'park'],
+      ['Presidio', 'park'], ['Treasure Island', 'low-coverage'], ['Twin Peaks', 'park-heavy'],
+    ])
+    expect(unflaggedMedian(A.neighborhoods, 'perK')).toBeCloseTo(169.05, 6)
+    expect(unflaggedMedian(A.neighborhoods, 'perKm2')).toBeCloseTo(1571.1, 6)
 
     expect(A.falls.years).toEqual([
       { year: 2021, fallen: 1121, aboutToFall: 263, duplicates: 269, unplaced: 35, placedShare: 97.5, placeable: true, partial: false },
@@ -226,18 +233,22 @@ describe('trees snapshot — EXACT pins at asOf (re-pin + sourceNotes + data-ins
   })
 
   // Ruling R18: the lead claims a link only if it survives leaving out any
-  // one neighborhood. Per area is 0.348 on all 36 but 0.299 without
-  // Lakeshore, so the lead names no pattern for that measure.
+  // one neighborhood. After R20 (34 unflagged), per area is 0.327 on all 34
+  // but 0.272 without Bayview Hunters Point (or Visitacion Valley), and five
+  // single removals each take it under 0.30 — so the lead names no pattern
+  // for that measure.
   it('the equity lead\'s leave-one-out reading, and the sentence it gives (R18)', () => {
     const l = leadLinks(A.neighborhoods)
-    expect(l.perK.rho).toBeCloseTo(0.6643, 4)
-    expect(l.perK.weakest).toBeCloseTo(0.6346, 4)
+    expect(l.perK.rho).toBeCloseTo(0.6644, 4)
+    expect(l.perK.weakest).toBeCloseTo(0.6329, 4)
     expect(l.perK.without).toBe('Seacliff')
+    expect(l.perK.breakers).toEqual([])
     expect(l.perK.strength).toBe('strong')
-    expect(l.perKm2.rho).toBeCloseTo(0.3477, 4)
+    expect(l.perKm2.rho).toBeCloseTo(0.3268, 4)
     expect(linkStrength(l.perKm2.rho)).toBe('weak')
-    expect(l.perKm2.weakest).toBeCloseTo(0.2986, 4)
-    expect(l.perKm2.without).toBe('Lakeshore')
+    expect(l.perKm2.weakest).toBeCloseTo(0.2724, 4)
+    expect(l.perKm2.without).toBe('Bayview Hunters Point')
+    expect(l.perKm2.breakers).toEqual(['Bayview Hunters Point', 'Chinatown', 'Excelsior', 'Seacliff', 'Visitacion Valley'])
     expect(l.perKm2.strength).toBe('none')
     expect(equityLead(l)).toBe(
       'Counted per resident, higher-income neighborhoods have more street trees. ' +
@@ -245,10 +256,8 @@ describe('trees snapshot — EXACT pins at asOf (re-pin + sourceNotes + data-ins
     )
   })
 
-  it('the two park-heavy unflagged neighborhoods are the two lowest per square kilometer', () => {
-    expect([...PARK_HEAVY_UNFLAGGED]).toEqual(['Lakeshore', 'Twin Peaks'])
-    expect(parkHeavyLowest(A.neighborhoods)).toEqual({ figures: [60.6, 250], next: 693.2 })
-    for (const name of PARK_HEAVY_UNFLAGGED) expect(A.neighborhoods.find((n) => n.name === name)!.flag, name).toBeNull()
+  it('the park-heavy neighborhoods (ruling R20) are flagged in the file, exactly the authored list', () => {
+    expect(A.neighborhoods.filter((n) => n.flag === 'park-heavy').map((n) => n.name)).toEqual(Object.keys(PARK_HEAVY).sort())
   })
 })
 
@@ -302,6 +311,10 @@ describe('About source notes quote the committed file', () => {
     expect(has(file, A.falls.years.reduce((s, y) => s + y.unplaced, 0))).toBe(true)
     for (const y of A.falls.years.filter((x) => !x.placeable)) expect(file).toContain(`${y.year} (${y.placedShare}%)`)
     for (const n of A.neighborhoods.filter((x) => x.flag !== null)) expect(file).toContain(n.name)
+    // R20: each park-heavy neighborhood is quoted with its measured share.
+    for (const [name, share] of Object.entries(PARK_HEAVY)) expect(file).toMatch(new RegExp(`${name} \\(${share}%`))
+    const WORDS = ['None', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten']
+    expect(file).toContain(`${WORDS[A.neighborhoods.filter((x) => x.flag !== null).length]} neighborhoods are flagged`)
   })
   it('no banned reader word', () => {
     const BANNED = /\bremoved\b|taken out|\bage\b|\blive\b|σ|z-?score|ρ|spearman|correlat|baseline|per 1,000 street trees/i

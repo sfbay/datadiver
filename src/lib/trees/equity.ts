@@ -48,14 +48,28 @@ export function spearman(x: readonly number[], y: readonly number[]): number {
   return sx === 0 || sy === 0 ? 0 : sxy / Math.sqrt(sx * sy)
 }
 
-export type EquityFlag = 'park' | 'low-coverage' | 'small-population' | null
+export type EquityFlag = 'park' | 'low-coverage' | 'park-heavy' | 'small-population' | null
 /** Treasure Island: 7 rows in the whole inventory on Sept. 30, 2026. */
 export const LOW_COVERAGE: ReadonlySet<string> = new Set(['Treasure Island'])
 export const MIN_POPULATION = 2000
 
+/**
+ * Neighborhoods where large parks dominate the land, flagged by the editor's
+ * ruling R20 (Jesse, Sept. 30, 2026) — an AUTHORED list, not a threshold rule.
+ * Value = the measured open-space share of the neighborhood's land, percent:
+ * Planning Department land-use parcels (`c5ge-t6pj`, `open_space = true`),
+ * parcel area summed by neighborhood via parcel centroid, divided by the land
+ * area of public/data/geo/sf-analysis-neighborhoods.geojson, measured Sept. 30,
+ * 2026 (the next ranked neighborhood, Outer Richmond, is 14.6%). Their
+ * residential streets deserve their own analysis (banked, spec §8).
+ */
+export const PARK_HEAVY: Readonly<Record<string, number>> = { Lakeshore: 61.2, 'Twin Peaks': 20.2 }
+
+/** Precedence: park → low-coverage → park-heavy → small-population. */
 export function equityFlag(name: string, population: number, parks: ReadonlySet<string>): EquityFlag {
   if (parks.has(name)) return 'park'
   if (LOW_COVERAGE.has(name)) return 'low-coverage'
+  if (Object.prototype.hasOwnProperty.call(PARK_HEAVY, name)) return 'park-heavy'
   if (population < MIN_POPULATION) return 'small-population'
   return null
 }
@@ -130,8 +144,12 @@ export interface RobustLink {
   rho: number
   /** The leave-one-out value with the smallest magnitude, unrounded (= rho when n < 2). */
   weakest: number
-  /** The neighborhood whose removal gives `weakest`; null when n < 2. */
+  /** The neighborhood whose removal gives `weakest` (the first in row order
+   *  on a tie); null when n < 2. */
   without: string | null
+  /** Every neighborhood whose removal ALONE lowers the full set's tier or
+   *  flips its sign — the names the data note gives. Name order. */
+  breakers: string[]
   /** The tier the lead may claim: linkStrength(weakest), never above the
    *  full set's own tier, and 'none' when any leave-one-out set flips sign. */
   strength: LinkStrength
@@ -151,12 +169,16 @@ export function robustLink(rows: readonly LinkRow[], measure: 'perK' | 'perKm2')
   let weakest = rho
   let without: string | null = null
   let flipped = false
+  const breakers: string[] = []
+  const fullTier = TIER[linkStrength(rho)]
   for (let i = 0; i < s.length; i += 1) {
     const v = spearman(xs.filter((_, j) => j !== i), ys.filter((_, j) => j !== i))
-    if (Math.sign(v) !== Math.sign(rho)) flipped = true
+    const flips = Math.sign(v) !== Math.sign(rho)
+    if (flips) flipped = true
+    if (flips || TIER[linkStrength(v)] < fullTier) breakers.push(s[i].name)
     if (without === null || Math.abs(v) < Math.abs(weakest)) { weakest = v; without = s[i].name }
   }
   const tier = Math.min(TIER[linkStrength(rho)], TIER[linkStrength(weakest)])
   const strength: LinkStrength = flipped ? 'none' : tier === 2 ? 'strong' : tier === 1 ? 'weak' : 'none'
-  return { rho, weakest, without, strength }
+  return { rho, weakest, without, breakers: breakers.sort(), strength }
 }

@@ -135,23 +135,3 @@ export function unflaggedRange(rows: readonly NeighborhoodAggregate[], key: Medi
 export function leadLinks(rows: readonly NeighborhoodAggregate[]): Record<EquityRank, RobustLink> {
   return { perK: robustLink(rows, 'perK'), perKm2: robustLink(rows, 'perKm2') }
 }
-
-/** Two UNFLAGGED neighborhoods that hold large parkland (Lakeshore: Lake
- *  Merced, Harding Park, Fort Funston; Twin Peaks: the Twin Peaks open space)
- *  and sit far below every other ranked neighborhood per square kilometer —
- *  named in the Equity data note (final review I4, ruling R18). Authored
- *  names; the figures always come from the file. */
-export const PARK_HEAVY_UNFLAGGED = ['Lakeshore', 'Twin Peaks'] as const
-
-/** The two names' per-km² figures and the next-lowest unflagged figure — but
- *  only when the two ARE the two lowest unflagged rows (else null, so the
- *  note drops the sentence rather than print a wrong one). */
-export function parkHeavyLowest(rows: readonly NeighborhoodAggregate[]): { figures: [number, number]; next: number } | null {
-  const sorted = rows.filter((r) => r.flag === null).sort((a, b) => a.perKm2 - b.perKm2)
-  if (sorted.length < 3) return null
-  const [a, b, next] = sorted
-  const names: readonly string[] = PARK_HEAVY_UNFLAGGED
-  if (!names.includes(a.name) || !names.includes(b.name)) return null
-  const fig = (name: string) => (sorted.find((r) => r.name === name) as NeighborhoodAggregate).perKm2
-  return { figures: [fig(PARK_HEAVY_UNFLAGGED[0]), fig(PARK_HEAVY_UNFLAGGED[1])], next: next.perKm2 }
-}

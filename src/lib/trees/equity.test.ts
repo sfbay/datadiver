@@ -1,6 +1,6 @@
 // src/lib/trees/equity.test.ts
 import { describe, expect, it } from 'vitest'
-import { equityCorrelations, equityFlag, equityRows, featureAreaKm2, linkStrength, robustLink, spearman } from './equity'
+import { PARK_HEAVY, equityCorrelations, equityFlag, equityRows, featureAreaKm2, linkStrength, robustLink, spearman } from './equity'
 
 const PARKS = new Set(['Golden Gate Park', 'McLaren Park', 'Lincoln Park', 'Presidio'])
 
@@ -40,6 +40,18 @@ describe('equityFlag — shown, flagged, and left out of the lead sentence', () 
     expect(equityFlag('Seacliff', 1999, PARKS)).toBe('small-population')
     expect(equityFlag('Mission', 58000, PARKS)).toBeNull()
   })
+  it('the two park-heavy neighborhoods (ruling R20), with their measured open-space shares', () => {
+    expect(PARK_HEAVY).toEqual({ Lakeshore: 61.2, 'Twin Peaks': 20.2 })
+    expect(equityFlag('Lakeshore', 15000, PARKS)).toBe('park-heavy')
+    expect(equityFlag('Twin Peaks', 8000, PARKS)).toBe('park-heavy')
+  })
+  it('precedence: park → low-coverage → park-heavy → small-population', () => {
+    expect(equityFlag('Lakeshore', 15000, new Set(['Lakeshore']))).toBe('park')
+    expect(equityFlag('Lakeshore', 100, PARKS)).toBe('park-heavy')
+    expect(equityFlag('Presidio', 100, PARKS)).toBe('park')
+    expect(equityFlag('Treasure Island', 100, PARKS)).toBe('low-coverage')
+    expect(equityFlag('toString', 15000, PARKS)).toBeNull()
+  })
 })
 
 describe('equityRows + equityCorrelations', () => {
@@ -75,7 +87,7 @@ describe('robustLink — a link counts only if it survives leaving out any one n
   const mk = (xs: number[], ys: number[]) =>
     xs.map((x, i) => ({ name: String.fromCharCode(65 + i), flag: null, perK: x, perKm2: -x, medianIncome: ys[i] }))
   it('a clean ordering keeps its tier under every removal', () => {
-    expect(robustLink(mk([1, 2, 3, 4, 5, 6], [10, 20, 30, 40, 50, 60]), 'perK')).toEqual({ rho: 1, weakest: 1, without: 'A', strength: 'strong' })
+    expect(robustLink(mk([1, 2, 3, 4, 5, 6], [10, 20, 30, 40, 50, 60]), 'perK')).toEqual({ rho: 1, weakest: 1, without: 'A', breakers: [], strength: 'strong' })
     // the measure is read by name: perKm2 runs the other way
     expect(robustLink(mk([1, 2, 3, 4, 5, 6], [10, 20, 30, 40, 50, 60]), 'perKm2')).toMatchObject({ rho: -1, strength: 'strong' })
   })
@@ -85,6 +97,7 @@ describe('robustLink — a link counts only if it survives leaving out any one n
     expect(linkStrength(r.rho)).toBe('weak')
     expect(r.weakest).toBeCloseTo(0.1, 6)
     expect(r.without).toBe('J')
+    expect(r.breakers).toContain('J')
     expect(r.strength).toBe('none')
   })
   it('the tier is never above the full set’s own, and a sign flip gives none', () => {
@@ -92,6 +105,7 @@ describe('robustLink — a link counts only if it survives leaving out any one n
     const r = robustLink(mk([1, 2, 3, 4], [88, 49, 44, 70]), 'perK')
     expect(r.rho).toBeCloseTo(-0.4, 6)
     expect(r.weakest).toBeCloseTo(0.5, 6)
+    expect(r.breakers).toContain('A') // its removal flips the sign
     expect(r.strength).toBe('none')
   })
   it('a strong link that only weakens stays strong when every removal keeps it at 0.5 or more', () => {

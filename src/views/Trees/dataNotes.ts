@@ -8,14 +8,14 @@
 // notices breakdown from the big snapshot, passed in once it has loaded);
 // with no file each note falls back to a wording that claims no figure.
 
-import { MIN_POPULATION, linkStrength } from '@/lib/trees/equity'
+import { MIN_POPULATION, PARK_HEAVY, linkStrength } from '@/lib/trees/equity'
 import { NEARBY_METERS } from '@/lib/trees/fallReports'
 import type { NoticedByKind } from '@/lib/trees/siteNotices'
 import { TRUNK_LABEL } from '@/lib/trees/trunk'
 import type { FallYear, TreesAggregates } from '@/lib/trees/types'
 import { apDate } from '@/utils/apDate'
-import { PARK_HEAVY_UNFLAGGED, leadLinks, parkHeavyLowest, unflaggedCount } from './equityView'
-import { PARKS_LINE, apCount, equityFigure, noticedKindsList } from './treesPhrase'
+import { leadLinks, unflaggedCount } from './equityView'
+import { PARKS_LINE, apCount, noticedKindsList } from './treesPhrase'
 
 export type NoteSectionId = 'general' | 'explore' | 'equity' | 'safety' | 'tree'
 
@@ -59,6 +59,14 @@ function parkCounts(a: TreesAggregates): string {
   if (!ggp || !presidio) return ''
   return ` The inventory places ${apCount(ggp.trees)} street trees in the Golden Gate Park neighborhood and ` +
     `${apCount(presidio.trees)} in the Presidio.`
+}
+
+/** The park-heavy neighborhoods with their measured open-space shares, read
+ *  from PARK_HEAVY (ruling R20) — never typed here. */
+function parkHeavyList(): string {
+  const items = Object.entries(PARK_HEAVY).sort(([x], [y]) => (x < y ? -1 : 1))
+    .map(([name, share], i) => `${name} ${share}%${i === 0 ? ' open space' : ''}`)
+  return items.length ? ` (${list(items)}, by the Planning Department’s land-use file, Sept. 30, 2026)` : ''
 }
 
 function flaggedNames(a: TreesAggregates | null, flag: 'park' | 'low-coverage' | 'small-population'): string {
@@ -130,29 +138,24 @@ function stormYearsNote(a: TreesAggregates | null, nowYear: number): string {
 
 const MEASURE_WORDS = { perK: 'per resident', perKm2: 'per square kilometer' } as const
 
-/** Ruling R18, said plainly: the rule, which neighborhood's removal changes a
- *  reading (computed from the file), and the two park-heavy neighborhoods
- *  that sit far below the rest per square kilometer (names authored in
- *  equityView, figures from the file — the sentence is dropped, never left
- *  wrong, if a regeneration moves them; trees.test.ts pins that it shows). */
+/** Ruling R18, said plainly: the rule, and which neighborhood's removal
+ *  changes a reading — computed from the file, so a regeneration names
+ *  whatever the data gives (or says no single removal changes either). */
 function leadRuleNote(a: TreesAggregates | null): string {
   const rule = 'A pattern is stated only if it still shows when any one neighborhood is left out.'
   if (!a) return rule
   const links = leadLinks(a.neighborhoods)
   const changed = (['perK', 'perKm2'] as const)
-    .filter((m) => links[m].without !== null && links[m].strength !== linkStrength(links[m].rho))
-    .map((m) => links[m].strength === 'none'
-      ? `counted ${MEASURE_WORDS[m]}, the pattern no longer shows once ${links[m].without} is left out, so the sentence states none for that measure`
-      : `counted ${MEASURE_WORDS[m]}, the pattern is only weak once ${links[m].without} is left out, so the sentence hedges it`)
-  let body = rule
-  if (changed.length) body += ` ${changed.map((c, i) => (i === 0 ? c.charAt(0).toUpperCase() + c.slice(1) : c)).join('; ')}.`
-  const low = parkHeavyLowest(a.neighborhoods)
-  if (low) {
-    const [first, second] = PARK_HEAVY_UNFLAGGED
-    body += ` ${first} and ${second}, both with large parkland, have far fewer street trees per square kilometer than any other ` +
-      `ranked neighborhood: ${equityFigure(low.figures[0])} and ${equityFigure(low.figures[1])}, against ${equityFigure(low.next)} or more elsewhere.`
-  }
-  return body
+    .filter((m) => links[m].breakers.length > 0 && links[m].strength !== linkStrength(links[m].rho))
+    .map((m) => {
+      const b = links[m].breakers
+      const who = b.length === 1 ? b[0] : `any one of ${list(b.map((n) => n)).replace(/ and ([^,]+)$/, ' or $1')}`
+      return links[m].strength === 'none'
+        ? `counted ${MEASURE_WORDS[m]}, the pattern no longer shows once ${who} is left out, so the sentence states none for that measure`
+        : `counted ${MEASURE_WORDS[m]}, the pattern is only weak once ${who} is left out, so the sentence hedges it`
+    })
+  if (changed.length === 0) return `${rule} Leaving out any one neighborhood changes neither reading.`
+  return `${rule} ${changed.map((c, i) => (i === 0 ? c.charAt(0).toUpperCase() + c.slice(1) : c)).join('; ')}.`
 }
 
 export function buildDataNotes(a: TreesAggregates | null, nowYear: number, noticed: NoticedByKind | null = null): NoteSection[] {
@@ -209,7 +212,8 @@ export function buildDataNotes(a: TreesAggregates | null, nowYear: number, notic
         {
           title: 'Flagged neighborhoods',
           body: `A neighborhood is flagged when it is mostly parkland, since park trees are not in this inventory${flaggedNames(a, 'park')}; ` +
-            `when the inventory lists almost no trees there${flaggedNames(a, 'low-coverage')}; or when it has fewer than ` +
+            `when the inventory lists almost no trees there${flaggedNames(a, 'low-coverage')}; when large parks dominate its land, ` +
+            `so few of its streets carry street trees${parkHeavyList()}; or when it has fewer than ` +
             `${apCount(MIN_POPULATION)} residents, so the per-resident figure swings widely${flaggedNames(a, 'small-population')}. ` +
             'Flagged neighborhoods are listed and hatched on the map, but left out of the rank positions, the medians, ' +
             'the color scale and the summary sentence.',

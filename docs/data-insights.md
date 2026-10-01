@@ -847,10 +847,9 @@ the registry publishes them.
 
 The view is **Trees** (`/trees`, masthead "Street trees"). Design:
 `docs/superpowers/specs/2026-09-30-trees-design.md` (§10 supersedes everything
-above it); the build rulings (P1, R1–R19; R17 reverses R16) are in the plan
+above it); the build rulings (P1, R1–R20; R17 reverses R16) are in the plan
 `docs/superpowers/plans/2026-09-30-trees.md`, sections "Rulings after the first
-generator run", "Rulings made during the build" and "Rulings from the final
-review". The page reads
+generator run" and "Rulings made during the build". The page reads
 a committed snapshot (`public/data/trees/{trees,aggregates,disappeared}.json`,
 written by `pnpm build:trees` → `scripts/build-trees.ts`, gates G0–G6) and
 exact-pinned in `src/lib/trees/trees.test.ts`; the only live reads are the
@@ -1104,7 +1103,7 @@ in('fallen_tree','about_to_fall') AND requested_datetime >= '2021-01-01'`
   any tree — park, open-space and private trees included — while the only
   denominator on hand is street trees in TODAY's inventory. The rate's two
   highest figures in every offered year were Twin Peaks and Lakeshore, the two
-  park-heavy unflagged neighborhoods (2024: Twin Peaks 23 reports ÷ 429 street
+  park-heavy neighborhoods (flagged since ruling R20; 2024: Twin Peaks 23 reports ÷ 429 street
   trees = 53.6 per 1,000; Lakeshore 42.0; Mission, the largest count, 28.9).
   Each Safety row now shows the year's mapped fallen-tree reports and, beside
   it, the street-tree count as a separate figure, never divided.
@@ -1113,39 +1112,40 @@ in('fallen_tree','about_to_fall') AND requested_datetime >= '2021-01-01'`
 
 Street trees per 1,000 residents (ACS 2019–2023 `totalPopulation`) and per
 square kilometer of each neighborhood's boundary polygon
-(`featureAreaKm2`), over the **36 unflagged neighborhoods**. Flagged (file):
-Golden Gate Park, Lincoln Park, McLaren Park, Presidio (`park`) and Treasure
-Island (`low-coverage`); under 2,000 residents would be `small-population`
-(none today that is not already park). Rank links (file `equity`, Spearman):
+(`featureAreaKm2`), over the **34 unflagged neighborhoods**. Flagged (file):
+Golden Gate Park, Lincoln Park, McLaren Park, Presidio (`park`); Lakeshore and
+Twin Peaks (`park-heavy`, ruling R20 — below); Treasure Island
+(`low-coverage`); under 2,000 residents would be `small-population` (none today
+that is not already flagged). Rank links (file `equity`, Spearman; before R20,
+over 36: +0.66 / −0.59 and +0.35 / −0.19):
 
 | Street trees… | vs median income | vs poverty rate |
 |---|---|---|
-| per 1,000 residents | +0.66 | −0.59 |
-| per square kilometer | +0.35 | −0.19 |
+| per 1,000 residents | +0.66 | −0.56 |
+| per square kilometer | +0.33 | −0.11 |
 
 **The lead claims only a link that survives leaving out any one neighborhood
-(ruling R18, `robustLink`).** Leave-one-out range over the 36 (file, computed
+(ruling R18, `robustLink`).** Leave-one-out range over the 34 (file, computed
 unrounded from `aggregates.json → neighborhoods`, pinned in `trees.test.ts`):
-per 1,000 residents **0.635 (without Seacliff) to 0.730 (without Bayview
-Hunters Point)** — strong under every removal; per km² **0.299 (without
-Lakeshore) to 0.424 (without Japantown)**, and 0.304 without Bayview Hunters
-Point or Visitacion Valley. The per-area figure is 0.348 on all 36, so it
-rests on the "weak" line's last hundredth, and one park-heavy neighborhood
-supplies the margin: dropping Lakeshore takes it under 0.30. **Lakeshore (60.6
-street trees per km², 452 street trees — Lake Merced, Harding Park, Fort
-Funston, SF State) and Twin Peaks (250.0; the Twin Peaks open space)** have far
-fewer street trees per km² than any other ranked neighborhood (next: Visitacion
-Valley 693.2; the unflagged median is about 1,548) and are NOT flagged —
-`NON_RESIDENTIAL_NEIGHBORHOODS` was authored for census underlays (who lives
-there), not "is the land mostly park". They stay ranked and are named in the
-"How the summary sentence is decided" data note. A regeneration that moves any
-leave-one-out value across 0.30 or 0.50 flips the lead: expect it, re-read it.
+per 1,000 residents **0.633 (without Seacliff or Visitacion Valley) to 0.739
+(without Bayview Hunters Point)** — strong under every removal (0.664 on all
+34); per km² **0.272 (without Bayview Hunters Point or Visitacion Valley) to
+0.411 (without Japantown)**, 0.327 on all 34. Five single removals each take
+the per-area figure under 0.30 — Bayview Hunters Point, Visitacion Valley
+(0.272), Chinatown (0.290), Seacliff (0.299) and Excelsior — so the lead
+states no per-area pattern; `robustLink.breakers` lists them and the "How the
+summary sentence is decided" data note names them. (Before R20, over 36, the
+per-area figure was 0.348 and only dropping Lakeshore took it under 0.30, to
+0.299; flagging the two park-heavy neighborhoods lowered it, so the lead's
+reading did not change.) A regeneration that moves any leave-one-out value
+across 0.30 or 0.50 flips the lead: expect it, re-read it.
 
 Per resident punishes density by construction. **Tenderloin: 51.8 per 1,000
-residents, 34th of 36 (tied with Chinatown); 1,631.3 per km², 15th.
+residents, 33rd of 34 (tied with Chinatown); 1,631.3 per km², 15th.
 Bayview Hunters Point: 238.2 per 1,000, 7th; 708.2 per km², 33rd** (ranks
 computed from `aggregates.json → neighborhoods`, competition ranking, unflagged
-only). So the lens shows both
+only; the unflagged medians are 169.05 per 1,000 residents and 1,571.1 per
+km²). So the lens shows both
 (`?rank=perK|perKm2`) and the lead sentence states only what holds under both,
 in the WEAKER measure's words (R10), and only what survives leaving out any one
 neighborhood (R18): today "Counted per resident, higher-income neighborhoods
@@ -1154,6 +1154,41 @@ pattern. The answer depends on the measure." Re-probe: recompute the ranks
 from the file; the full-set links are the generator's `equityCorrelations`
 (rounded, for the record); the lead's input is `robustLink`, computed in the
 browser from the rows.
+
+### Park-heavy neighborhoods (ruling R20)
+
+Lakeshore (Lake Merced, Harding Park, Fort Funston, SF State) and Twin Peaks
+(the Twin Peaks open space) were ranked last per km² (60.6 and 250.0 street
+trees per km², against 693.2 for the next) and supplied the margin of the old
+per-area link. Jesse's ruling, Sept. 30, 2026: "huge parks dominate both
+districts" — both are flagged `park-heavy` (shown, hatched, unranked, out of
+the medians, colour scale and summary sentence, like every flag). The list is
+AUTHORED (`PARK_HEAVY` in `src/lib/trees/equity.ts`), not a threshold rule;
+each value is the measured open-space share below, and the flag note on the
+page quotes it. `NON_RESIDENTIAL_NEIGHBORHOODS` (authored for census underlays:
+who lives there) still supplies the `park` flag.
+
+Open-space share of each neighborhood's land (probe, Sept. 30, 2026):
+
+| Neighborhood | Open space | Flag |
+|---|---|---|
+| Golden Gate Park | 92.8% | park |
+| McLaren Park | 84.5% | park |
+| **Lakeshore** | **61.2%** | **park-heavy** |
+| Lincoln Park | 44.5% | park |
+| Presidio | 21.6% (federal land is under-counted in this file) | park |
+| **Twin Peaks** | **20.2%** | **park-heavy** |
+| Outer Richmond (next ranked) | 14.6% | — |
+
+Re-probe: `https://data.sf.gov/resource/c5ge-t6pj.geojson?$where=open_space=true&$select=the_geom&$limit=20000`
+(the Planning Department's land-use parcels) → the area of each parcel → a
+point-in-polygon of each parcel's centroid against
+`public/data/geo/sf-analysis-neighborhoods.geojson` → open-space area summed by
+neighborhood ÷ the neighborhood's land area from the same boundary file.
+
+**Banked follow-up:** a finer analysis of the residential streets of Lakeshore
+and Twin Peaks — by census tract or per street mile — so those streets can be
+ranked without the parkland (spec §8).
 
 ### Lead: the archived list `uzd4-f6yf` (UNVERIFIED)
 

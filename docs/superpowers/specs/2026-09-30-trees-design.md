@@ -329,6 +329,7 @@ Stale/unknown values are silent no-ops (validated against the loaded tables).
 - A scheduled job that regenerates the snapshot daily; species photos; alert
   emails for removal notices (would be a new alerts stream: separate spec).
 - Any "hazardous tree" list or per-tree risk score: deliberately excluded.
+- **The residential streets of Lakeshore and Twin Peaks** (flagged park-heavy by ruling R20, Sept. 30, 2026): a finer analysis by census tract or per street mile, so their streets can be ranked without the parkland that dominates both neighborhoods.
 
 ## 9. Questions for Fable's review
 

@@ -182,7 +182,7 @@ export default function EquityTab({ agg, rank, onRank, neighborhood, onSelect }:
                   </span>
                   {flagged && r.flag !== null && (
                     <span className="mt-1 block font-serif italic text-nano text-paper-700 dark:text-paper-300 break-words">
-                      {equityFlagNote(r.flag)}
+                      {equityFlagNote(r.flag, r.name)}
                     </span>
                   )}
                 </span>
