@@ -447,6 +447,7 @@ export default function Trees() {
           onRank={setRank}
           neighborhood={nh}
           onSelectNeighborhood={selectNeighborhood}
+          nowYear={nowYear}
         />
       </div>
     </div>

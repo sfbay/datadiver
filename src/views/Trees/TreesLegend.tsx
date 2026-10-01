@@ -4,15 +4,16 @@
 // measured trunk classes (radii from mapLayers' zoom-15 stop, so the legend
 // and the map cannot drift), the stump ring, and — with a species picked
 // under Explore — that species' swatch. The Safety lens draws large trunks
-// only, so it lists only that class. The Equity lens shows the choropleth's
-// five moss steps instead (the dots are dimmed under it) and the hatch for
-// flagged neighborhoods. Tier 3: no glow.
+// and stumps only, so it lists only those two, plus the line that fall
+// reports are not drawn (a report marks an address, never a tree). The
+// Equity lens shows the choropleth's five moss steps instead (the dots are
+// dimmed under it) and the hatch for flagged neighborhoods. Tier 3: no glow.
 
 import type { ReactNode } from 'react'
 import { TRUNK_LABEL, type TrunkClass } from '@/lib/trees/trunk'
 import type { EquityRank, Lens } from './treesUrl'
 import { BRICK_600, HATCH_SWATCH_CSS, LEGEND_DOT_RADII, MOSS_400, MOSS_500, selectedKeyline } from './mapLayers'
-import { EQUITY_LEGEND_HEAD, FLAGGED_LEGEND, STUMP_LEGEND, TRUNK_HEADING, equityFigure } from './treesPhrase'
+import { EQUITY_LEGEND_HEAD, FALLS_NOT_DRAWN, FLAGGED_LEGEND, STUMP_LEGEND, TRUNK_HEADING, equityFigure } from './treesPhrase'
 
 const MEASURED: readonly TrunkClass[] = ['small', 'medium', 'large']
 const BOX = 14
@@ -68,6 +69,9 @@ export default function TreesLegend({ lens, speciesLabel, dark, equity }: {
         <Swatch><circle cx={BOX / 2} cy={BOX / 2} r={4} fill="none" stroke={BRICK_600} strokeWidth={1.5} /></Swatch>
         <span className={text}>{STUMP_LEGEND}</span>
       </div>
+      {lens === 'safety' && (
+        <p className="font-serif italic text-nano text-paper-700 dark:text-paper-300 break-words">{FALLS_NOT_DRAWN}</p>
+      )}
       {lens === 'explore' && speciesLabel && (
         <div className={row}>
           <Swatch><circle cx={BOX / 2} cy={BOX / 2} r={4} fill={MOSS_400} stroke={selectedKeyline(dark)} strokeWidth={1} /></Swatch>

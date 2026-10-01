@@ -9,11 +9,13 @@
 
 import type { EquityCorrelations, EquityFlag, LinkStrength } from '@/lib/trees/equity'
 import { MIN_POPULATION, linkStrength } from '@/lib/trees/equity'
-import { NEARBY_METERS } from '@/lib/trees/fallReports'
+import { NEARBY_METERS, PLACEABLE_FLOOR } from '@/lib/trees/fallReports'
 import type { NoticeReading } from '@/lib/trees/siteNotices'
 import type { RowKind } from '@/lib/trees/species'
-import type { DisappearedLog } from '@/lib/trees/types'
+import { TRUNK_LABEL } from '@/lib/trees/trunk'
+import type { DisappearedLog, FallYear } from '@/lib/trees/types'
 import { apDate } from '@/utils/apDate'
+import { MIN_TREES_FOR_RATE } from './safetyView'
 
 /** Figures with thousands commas. Local on purpose: Restaurants' apCount
  *  spells out one–nine, and views do not import each other's phrase layers. */
@@ -265,4 +267,121 @@ export function disappearedLine(log: DisappearedLog, nowYear: number): string {
   if (!latest) return `DataDiver began recording which sites leave the inventory on ${apDate(log.trackingSince, nowYear)}.`
   const n = latest.gone.length
   return `${apCount(n)} site${n === 1 ? '' : 's'} left the inventory between ${apDate(latest.from, nowYear)} and ${apDate(latest.to, nowYear)}.`
+}
+
+// ── Safety tab ───────────────────────────────────────────────────────────────
+// A dispassionate ledger, not an alarm: every figure names what it counts,
+// nothing scores a tree, and the two kinds of fall report (a fall that
+// happened vs a worry) are never summed. The busiest day is citywide only.
+
+export const CAPTION_LARGE_TRUNKS = 'Trunks 21+ inches wide'
+export const CAPTION_STUMPS = 'Stumps on record'
+export const FALLS_BY_YEAR_HEAD = 'Fall reports by year'
+export const FALLEN_KEY = 'Fallen tree'
+export const ABOUT_KEY = 'About to fall'
+export const SO_FAR = 'so far'
+export const CITYWIDE_ONLY = 'citywide only'
+export const NEIGHBORHOOD_FALLS_HEAD = 'Fallen-tree reports by neighborhood'
+export const NEIGHBORHOOD_YEARS_LABEL = 'Year of fall reports'
+export const PER_1K_UNIT = 'per 1,000 street trees'
+/** The row's small rate label; the row's aria-label carries PER_1K_UNIT. */
+export const PER_1K_SHORT = 'per 1,000'
+export const LARGE_TRUNKS_UNIT = 'trunks 21+ in.'
+export const STUMPS_UNIT = 'stumps'
+export const NO_FALL_YEARS = 'No full year has enough mapped reports to count by neighborhood.'
+export const NOTICES_HEAD = 'Removal notices'
+export const NOTICES_LISTED_CAPTION = 'sites with a notice still in the inventory'
+export const FORMER_HEAD = 'Former trees'
+export const DISAPPEARED_ERROR = 'The log of sites that left the inventory did not load.'
+/** The map legend's line under the Safety lens. */
+export const FALLS_NOT_DRAWN = 'Fall reports are not drawn: a report marks an address, not a tree.'
+
+const plural = (n: number, one: string, many: string): string => `${apCount(n)} ${n === 1 ? one : many}`
+
+/** "2022", "2022 and 2023", "2021, 2022 and 2023" (AP: no serial comma). */
+function listAnd(items: readonly string[]): string {
+  if (items.length <= 1) return items.join('')
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`
+}
+
+export function largeTrunksLine(n: number): string {
+  return `${plural(n, 'street tree has', 'street trees have')} a recorded trunk ${TRUNK_LABEL.large}.`
+}
+
+export function stumpsLine(n: number): string {
+  return `The inventory lists ${plural(n, 'stump', 'stumps')} at street tree sites.`
+}
+
+export function fallChipCaption(year: number): string {
+  return `Fallen-tree reports, ${year}`
+}
+
+export function fallChipTip(year: number, fallen: number, aboutToFall: number): string {
+  return `In ${year}, 311 logged ${plural(fallen, 'report', 'reports')} of a fallen tree and ${apCount(aboutToFall)} of a tree ` +
+    'about to fall, not counting reports the city closed as duplicates.'
+}
+
+/** One bar of the year strip, for its aria-label. */
+export function fallBarLabel(b: { year: number; fallen: number; aboutToFall: number; partial: boolean; placeable: boolean }): string {
+  const head = b.partial ? `${b.year} ${SO_FAR}` : `${b.year}`
+  const counts = `${plural(b.fallen, 'fallen-tree report', 'fallen-tree reports')}, ` +
+    `${plural(b.aboutToFall, 'about-to-fall report', 'about-to-fall reports')}.`
+  const where = b.placeable ? '' : ' Citywide only: too few of these reports carry a map point to count by neighborhood.'
+  return `${head}: ${counts}${where}`
+}
+
+/** The line under the neighborhood pills: which years they leave out and
+ *  why, read from the data (R1). null when none is left out. A year that is
+ *  both partial and unplaceable is named once, for the map point. */
+export function yearsLeftOutLine(years: readonly FallYear[]): string | null {
+  const sorted = [...years].sort((a, b) => a.year - b.year)
+  const unplaced = sorted.filter((y) => !y.placeable).map((y) => String(y.year))
+  const partial = sorted.filter((y) => y.placeable && y.partial).map((y) => String(y.year))
+  const parts: string[] = []
+  if (unplaced.length) parts.push(`${listAnd(unplaced)}, when fewer than ${PLACEABLE_FLOOR}% of reports carry a map point`)
+  if (partial.length) parts.push(`${listAnd(partial)}, which ${partial.length === 1 ? 'is' : 'are'} not over`)
+  if (parts.length === 0) return null
+  return `Neighborhood counts leave out ${parts.join(', and ')}.`
+}
+
+/** Citywide only — the busiest day is never split by neighborhood. */
+export function busiestDayLine(day: { ymd: string; reports: number }, nowYear: number): string {
+  return `The busiest single day was ${apDate(day.ymd, nowYear)}, with ${plural(day.reports, 'fall report', 'fall reports')} citywide.`
+}
+
+export function rateWithheldTip(min: number): string {
+  return `Fewer than ${apCount(min)} street trees here, so no rate is given.`
+}
+
+/** A neighborhood row's sentence, for its aria-label. */
+export function safetyRowLabel(
+  r: { name: string; fallen: number; aboutToFall: number; per1kTrees: number | null; largeTrunks: number; stumps: number },
+  year: number,
+): string {
+  const rate = r.per1kTrees === null
+    ? `no rate: fewer than ${apCount(MIN_TREES_FOR_RATE)} street trees`
+    : `${equityFigure(r.per1kTrees)} ${PER_1K_UNIT}`
+  return `${r.name}: ${plural(r.fallen, 'fallen-tree report', 'fallen-tree reports')} in ${year}, ${rate}; ` +
+    `${plural(r.aboutToFall, 'about-to-fall report', 'about-to-fall reports')}. ` +
+    `${plural(r.largeTrunks, 'street tree', 'street trees')} with a recorded trunk ${TRUNK_LABEL.large}; ` +
+    `${plural(r.stumps, 'stump', 'stumps')}.`
+}
+
+export function noticesListedLabel(listed: number, sites: number): string {
+  return `${apCount(listed)} of ${apCount(sites)} sites with a removal notice are still in the inventory.`
+}
+
+/** The notice type under its PUBLISHED name — the page does not interpret it. */
+export function noticeTypeLabel(type: string, n: number): string {
+  return `${type}: ${plural(n, 'removal notice', 'removal notices')}`
+}
+
+export function noticesTotalLine(rows: number, sinceYear: number | null): string {
+  const head = `${plural(rows, 'removal notice', 'removal notices')} posted`
+  return sinceYear === null ? head : `${head} since ${sinceYear}`
+}
+
+export function replantedAfterLine(n: number): string {
+  return `At ${plural(n, 'site', 'sites')}, the street tree listed now was planted after the site’s removal notice, ` +
+    'so that notice belongs to an earlier tree.'
 }

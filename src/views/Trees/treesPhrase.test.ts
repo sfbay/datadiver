@@ -1,6 +1,6 @@
 // src/views/Trees/treesPhrase.test.ts
 import { describe, expect, it } from 'vitest'
-import type { DisappearedLog } from '@/lib/trees/types'
+import type { DisappearedLog, FallYear } from '@/lib/trees/types'
 import * as phrase from './treesPhrase'
 import {
   EQUITY_MEASURE, MEDIAN_CAPTION, NO_CENSUS, equityFigure, equityRowLabel, incomeShort, medianTip, otherRankLine,
@@ -210,7 +210,9 @@ describe('card lines never claim more than the record', () => {
 
 describe('jargon ban — statistics words and over-claims never reach a reader', () => {
   const BANNED = /σ|sigma|z-?score|ρ|\brho\b|spearman|correlat|baseline|\blive\b|\bage\b|removed|\bfell\b/i
-  const log = (gone: number[]): DisappearedLog => ({ trackingSince: '2026-09-30', runs: gone.length ? [{ from: '2026-09-30', to: '2026-10-14', gone, changed: [] }] : [] })
+  const fy = (year: number, partial: boolean, placeable: boolean): FallYear =>
+    ({ year, fallen: 1, aboutToFall: 1, duplicates: 0, unplaced: 0, placedShare: placeable ? 100 : 46.2, placeable, partial })
+  const log = (gone: number[]): DisappearedLog =>({ trackingSince: '2026-09-30', runs: gone.length ? [{ from: '2026-09-30', to: '2026-10-14', gone, changed: [] }] : [] })
 
   it('no exported string constant carries one', () => {
     for (const [k, v] of Object.entries(phrase)) if (typeof v === 'string' && BANNED.test(v)) throw new Error(`${k}: ${v}`)
@@ -263,6 +265,24 @@ describe('jargon ban — statistics words and over-claims never reach a reader',
       ...(['stump', 'site', 'shrub'] as const).map((k) => kindTitle(k)),
       plantedLine('2026-05-07', 2026), plantedLine(null, 2026),
       trunkLine(3, '10 inches or narrower'), trunkLine(1, '10 inches or narrower'), trunkLine(null, 'Not measured'),
+      // Safety tab — every exported function, every branch
+      phrase.largeTrunksLine(8633), phrase.largeTrunksLine(1), phrase.stumpsLine(635), phrase.stumpsLine(1),
+      phrase.fallChipCaption(2025), phrase.fallChipTip(2025, 1592, 752), phrase.fallChipTip(2025, 1, 0),
+      ...[true, false].flatMap((partial) => [true, false].map((placeable) =>
+        phrase.fallBarLabel({ year: 2023, fallen: 4390, aboutToFall: 436, partial, placeable }))),
+      phrase.fallBarLabel({ year: 2023, fallen: 1, aboutToFall: 1, partial: false, placeable: true }),
+      ...[
+        [fy(2022, false, false), fy(2023, false, false), fy(2026, true, true)],
+        [fy(2025, false, false)], [fy(2026, true, true)], [fy(2026, true, false)], [fy(2025, false, true)],
+      ].map((ys) => phrase.yearsLeftOutLine(ys) ?? ''),
+      phrase.busiestDayLine({ ymd: '2023-03-21', reports: 467 }, 2026), phrase.busiestDayLine({ ymd: '2026-01-02', reports: 1 }, 2026),
+      phrase.rateWithheldTip(200),
+      ...[10, null].map((per1kTrees) => phrase.safetyRowLabel(
+        { name: 'Mission', fallen: 90, aboutToFall: 10, per1kTrees, largeTrunks: 40, stumps: 3 }, 2025)),
+      phrase.safetyRowLabel({ name: 'X', fallen: 1, aboutToFall: 1, per1kTrees: 2.5, largeTrunks: 1, stumps: 1 }, 2025),
+      phrase.noticesListedLabel(4831, 5571), phrase.noticeTypeLabel('Posted 24hr', 1354), phrase.noticeTypeLabel('Posted 15 Day', 1),
+      phrase.noticesTotalLine(5713, 2017), phrase.noticesTotalLine(1, null),
+      phrase.replantedAfterLine(1022), phrase.replantedAfterLine(1),
     ]
     expect(out.length).toBeGreaterThan(30)
     for (const s of out) if (BANNED.test(s)) throw new Error(s)

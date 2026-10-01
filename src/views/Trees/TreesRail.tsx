@@ -20,6 +20,7 @@ import type { TreesAggregates } from '@/lib/trees/types'
 import type { NoteSectionId } from './dataNotes'
 import EquityTab from './EquityTab'
 import ExploreTab from './ExploreTab'
+import SafetyTab from './SafetyTab'
 import { RAIL_ERROR } from './treesPhrase'
 import { LENSES, LENS_LABEL, type EquityRank, type Lens } from './treesUrl'
 
@@ -43,6 +44,8 @@ export interface TreesRailProps {
   neighborhood: string | null
   onSelectNeighborhood(name: string | null): void
   onOpenNotes?: (section: NoteSectionId) => void
+  /** The reader's year, for AP dates (Safety's busiest day, the former-sites log). */
+  nowYear: number
 }
 
 function NotesLink({ section, onOpenNotes }: { section: NoteSectionId; onOpenNotes?: (section: NoteSectionId) => void }) {
@@ -108,9 +111,12 @@ export default function TreesRail(props: TreesRailProps) {
               onSelect={props.onSelectNeighborhood}
             />
           ) : (
-            // Safety is built in a later task; until then the panel names
-            // its lens and claims nothing else.
-            <h2 className="font-display italic text-xl text-ink dark:text-paper-100">{LENS_LABEL[lens]}</h2>
+            <SafetyTab
+              agg={agg}
+              neighborhood={props.neighborhood}
+              onSelect={props.onSelectNeighborhood}
+              nowYear={props.nowYear}
+            />
           )}
           <div className="mt-6">
             <NotesLink section={lens} onOpenNotes={onOpenNotes} />

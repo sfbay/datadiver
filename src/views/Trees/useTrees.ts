@@ -3,7 +3,7 @@
 // The committed Trees snapshot files, fetched LAZILY (the Restaurants
 // useStorefronts pattern): `public/data/trees/trees.json` is ~5 MB columnar
 // (~144,500 sites) and must never ride the entry bundle, so it is fetched,
-// not imported. Both files are written by scripts/build-trees.ts.
+// not imported. All three files are written by scripts/build-trees.ts.
 //
 // One module-level promise per file: every consumer on the page shares one
 // request, and a remount after navigating away re-reads the cache instantly.
@@ -14,10 +14,13 @@
 // for the 144k-row file.
 
 import { useCallback, useEffect, useState } from 'react'
-import type { TreesAggregates, TreesSnapshot } from '@/lib/trees/types'
+import type { DisappearedLog, TreesAggregates, TreesSnapshot } from '@/lib/trees/types'
 
 export const TREES_URL = '/data/trees/trees.json'
 export const AGGREGATES_URL = '/data/trees/aggregates.json'
+/** The generator's log of sites that left the inventory; read only by the
+ *  Safety tab, so it is requested only when that tab mounts. */
+export const DISAPPEARED_URL = '/data/trees/disappeared.json'
 
 interface Loader<T> {
   cached: T | null
@@ -65,6 +68,7 @@ const snapshotLoader = makeLoader<TreesSnapshot>(TREES_URL, 'The street-tree inv
   try { snapshotStartedAt = performance.now() } catch { /* no performance clock */ }
 })
 const aggregatesLoader = makeLoader<TreesAggregates>(AGGREGATES_URL, 'The street-tree summaries')
+const disappearedLoader = makeLoader<DisappearedLog>(DISAPPEARED_URL, 'The former-sites log')
 
 export interface LoadState<T> {
   data: T | null
@@ -105,4 +109,8 @@ export function useTreesSnapshot(): LoadState<TreesSnapshot> {
 
 export function useTreesAggregates(): LoadState<TreesAggregates> {
   return useLoader(aggregatesLoader)
+}
+
+export function useTreesDisappeared(): LoadState<DisappearedLog> {
+  return useLoader(disappearedLoader)
 }
