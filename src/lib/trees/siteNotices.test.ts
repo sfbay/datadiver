@@ -25,6 +25,10 @@ describe('readNotice — a treeid is a SITE; trees get replaced', () => {
     expect(readNotice('2023-12-07', '2009-07-29')).toBe('this-site')
     expect(readNotice('2023-12-07', '2023-12-07')).toBe('this-site')
     expect(readNotice('2023-12-07', null)).toBe('this-site')
+    // A notice with no posted date can't be placed before the tree.
+    expect(readNotice('', '2020-01-01')).toBe('this-site')
+    expect(readNotice(null, '2020-01-01')).toBe('this-site')
+    expect(readNotice(undefined, '2020-01-01')).toBe('this-site')
   })
   it('compares the date prefix only (floating SF-local timestamps)', () => {
     expect(readNotice('2018-02-27T00:00:00.000', '2018-02-28')).toBe('earlier-tree')

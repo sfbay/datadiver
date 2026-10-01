@@ -14,7 +14,12 @@ export function noticeIdForms(siteId: number): string[] {
 
 export type NoticeReading = 'earlier-tree' | 'this-site'
 
-export function readNotice(postedYmd: string, plantedYmd: string | null): NoticeReading {
-  if (!plantedYmd) return 'this-site'
+/**
+ * A notice with no posted date (or a tree with no planting date) can't be
+ * placed before or after the tree, so it reads as this site's — never as an
+ * earlier tree's.
+ */
+export function readNotice(postedYmd: string | null | undefined, plantedYmd: string | null | undefined): NoticeReading {
+  if (!plantedYmd || !postedYmd) return 'this-site'
   return plantedYmd.slice(0, 10) > postedYmd.slice(0, 10) ? 'earlier-tree' : 'this-site'
 }

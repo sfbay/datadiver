@@ -37,8 +37,12 @@
  *       the authored list in species.ts
  *   G1  paged inventory row count within 0.5% of a live count(*) taken AFTER
  *       the paged read (a snapshot made mid-refresh is refused)
- *   G2  every non-null analysis_neighborhood is one of the 41; each of the 41
- *       has a boundary feature and a census row; every sp/nb index resolves
+ *   G2  every non-null inventory analysis_neighborhood is one of the 41; each
+ *       of the 41 has a boundary feature and a census row; every sp/nb index
+ *       resolves; every NON-BLANK 311 analysis_neighborhood is one of the 41
+ *       (blank is allowed and counted); every UNFLAGGED neighborhood has a
+ *       finite, positive population, area and median income and a finite
+ *       poverty rate (a missing census figure is published as null, never 0)
  *   G3  the most recent FULL year's non-duplicate fall reports are placeable
  *       (placed share ≥ PLACEABLE_FLOOR, 75%). Older unplaceable years are
  *       recorded (placedShare / placeable on each FallYear) and shown citywide
@@ -61,13 +65,13 @@
  *       VITE_SOCRATA_APP_TOKEN is read from the environment if present.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { gzipSync } from 'node:zlib'
 import { pathToFileURL } from 'node:url'
 
 import { sodaAll, sodaCount } from './lib/soda'
-import { equityCorrelations, equityRows, featureAreaKm2, type EquityInput } from '../src/lib/trees/equity'
+import { equityCorrelations, equityFlag, equityRows, featureAreaKm2, type EquityInput } from '../src/lib/trees/equity'
 import {
   FALL_WHERE, FALL_WINDOW_START, PLACEABLE_FLOOR, buildGrid, countWithin, fallKind, isCityDuplicate, isPlaced, placedShare,
 } from '../src/lib/trees/fallReports'
@@ -106,7 +110,7 @@ interface InvRow { treeid: string; species?: string; planteddate?: string; mapdb
 interface NoticeRow { treeid?: string; posteddate: string; postedtype?: string }
 interface FallRow { requested_datetime: string; service_details?: string; status_notes?: string; lat?: string; long?: string; analysis_neighborhood?: string }
 
-interface CensusRow { name: string; totalPopulation: number; medianIncome: number; povertyRate: number }
+interface CensusRow { name: string; totalPopulation?: number | null; medianIncome?: number | null; povertyRate?: number | null }
 interface BoundaryFeature { properties: { nhood: string }; geometry: { type: 'Polygon' | 'MultiPolygon'; coordinates: unknown } }
 
 const KIND_CODE: Readonly<Record<RowKind, number>> = { tree: 0, stump: 1, site: 2, shrub: 3 }
@@ -295,8 +299,10 @@ async function main(): Promise<void> {
   const rowBySite = new Map<number, number>()
   for (let i = 0; i < n; i += 1) rowBySite.set(id[i], i)
   const nt: number[] = new Array(n).fill(0)
-  const latestBySite = new Map<number, string>()
+  const latestBySite = new Map<number, string>()   // latest DATED notice per site
+  const noticeSiteSet = new Set<number>()
   let unjoinable = 0
+  let undatedNotices = 0
   const byType = new Map<string, number>()
   const byYear = new Map<number, number>()
   for (const r of notices) {
@@ -306,21 +312,28 @@ async function main(): Promise<void> {
     if (yy) byYear.set(yy, (byYear.get(yy) ?? 0) + 1)
     const site = noticeSiteId(r.treeid)
     if (site === null) { unjoinable += 1; continue }
-    const prev = latestBySite.get(site)
+    noticeSiteSet.add(site)
     const posted = ymd(r.posteddate)
-    if (prev === undefined || posted > prev) latestBySite.set(site, posted)
+    // An undated notice can't be placed before or after the tree: it stays out
+    // of the replanted-after rule (counted in diagnostics).
+    if (!posted) undatedNotices += 1
+    else {
+      const prev = latestBySite.get(site)
+      if (prev === undefined || posted > prev) latestBySite.set(site, posted)
+    }
     const row = rowBySite.get(site)
     if (row !== undefined) nt[row] += 1
   }
   let listed = 0
   let replantedAfter = 0
-  for (const [site, posted] of latestBySite) {
+  for (const site of noticeSiteSet) {
     const row = rowBySite.get(site)
     if (row === undefined) continue
     listed += 1
-    if (readNotice(posted, planted[row]) === 'earlier-tree') replantedAfter += 1
+    const posted = latestBySite.get(site)
+    if (posted !== undefined && readNotice(posted, planted[row]) === 'earlier-tree') replantedAfter += 1
   }
-  const noticeSites = latestBySite.size
+  const noticeSites = noticeSiteSet.size
   gate('G4', notices.length > 0 && unjoinable / notices.length <= 0.01, `notice rows with no joinable site id: ${unjoinable} of ${notices.length} (${pct(unjoinable, notices.length)}, limit 1%)`)
 
   // ── Fall reports (G3) ─────────────────────────────────────────────────────
@@ -332,12 +345,15 @@ async function main(): Promise<void> {
   const placedPoints: { lat: number; lon: number }[] = []
   const reportsByDay = new Map<string, number>()
   const nbFalls = new Map<string, Map<number, [number, number]>>()
-  const unknown311Nb = new Map<string, number>()
+  const unknown311Nb = new Map<string, number>()   // NON-BLANK names outside the 41 (G2), any fall row
+  let blank311Placed = 0                            // placed non-duplicate reports with a blank name
   let notFallKind = 0
   let outOfWindow = 0
   for (const r of falls) {
     const k = fallKind(r.service_details)
     if (k === null) { notFallKind += 1; continue }
+    const nh = (r.analysis_neighborhood ?? '').trim()
+    if (nh && !nbIndex.has(nh)) unknown311Nb.set(nh, (unknown311Nb.get(nh) ?? 0) + 1)
     const day = ymd(r.requested_datetime)
     const yr311 = yearRow.get(Number(day.slice(0, 4)))
     if (!yr311) { outOfWindow += 1; continue }
@@ -346,14 +362,17 @@ async function main(): Promise<void> {
     reportsByDay.set(day, (reportsByDay.get(day) ?? 0) + 1)
     if (!isPlaced(r.lat, r.long)) { yr311.unplaced += 1; continue }
     placedPoints.push({ lat: Number(r.lat), lon: Number(r.long) })
-    const nh = (r.analysis_neighborhood ?? '').trim()
-    if (!nbIndex.has(nh)) { unknown311Nb.set(nh || '(blank)', (unknown311Nb.get(nh || '(blank)') ?? 0) + 1); continue }
+    if (!nh) { blank311Placed += 1; continue }
+    if (!nbIndex.has(nh)) continue // already failing G2
     let perYear = nbFalls.get(nh)
     if (!perYear) { perYear = new Map(); nbFalls.set(nh, perYear) }
     const cell = perYear.get(yr311.year) ?? [0, 0]
     if (k === 'fallen') cell[0] += 1; else cell[1] += 1
     perYear.set(yr311.year, cell)
   }
+  gate('G2', unknown311Nb.size === 0,
+    `311 fall reports naming a neighborhood outside the 41: ${unknown311Nb.size}` +
+    `${unknown311Nb.size ? ` (${[...unknown311Nb].map(([k, v]) => `${k}: ${v}`).join(', ')})` : ''} · blank names allowed`)
   let busiestDay = { ymd: '', reports: 0 }
   for (const [d, c] of reportsByDay) {
     if (c > busiestDay.reports || (c === busiestDay.reports && d < busiestDay.ymd)) busiestDay = { ymd: d, reports: c }
@@ -438,20 +457,36 @@ async function main(): Promise<void> {
     if (kind[i] === 0) { nbTrees[nb[i]] += 1; if (cls[i] === 2) nbLarge[nb[i]] += 1 }
     if (kind[i] === 1) nbStumps[nb[i]] += 1
   }
+  const finiteOrNull = (v: number | null | undefined): number | null =>
+    typeof v === 'number' && Number.isFinite(v) ? v : null
   const inputs: EquityInput[] = SF_NEIGHBORHOODS.map((name, k) => {
     const c = censusByName.get(name)
     const f = featureByName.get(name)
     return {
       name,
       trees: nbTrees[k],
-      population: c?.totalPopulation ?? 0,
+      population: finiteOrNull(c?.totalPopulation) ?? 0,
       // Rounded to 0.001 km² BEFORE the rate is computed, so the stored area
       // and the stored rate agree.
       areaKm2: f ? Math.round(featureAreaKm2(f.geometry) * 1000) / 1000 : 0,
-      medianIncome: c?.medianIncome ?? 0,
-      povertyRate: c?.povertyRate ?? 0,
+      // A missing census figure is null, never 0 (a 0 would rank as the poorest).
+      medianIncome: finiteOrNull(c?.medianIncome),
+      povertyRate: finiteOrNull(c?.povertyRate),
     }
   })
+  const censusGaps = inputs
+    .filter((i) => equityFlag(i.name, i.population, NON_RESIDENTIAL_NEIGHBORHOODS) === null)
+    .filter((i) => !(i.population > 0) || !(i.areaKm2 > 0) || i.medianIncome === null || !(i.medianIncome > 0) || i.povertyRate === null)
+    .map((i) => `${i.name} (pop ${i.population}, area ${i.areaKm2}, income ${i.medianIncome}, poverty ${i.povertyRate})`)
+  gate('G2', censusGaps.length === 0,
+    `unflagged neighborhoods missing a positive population, area or income or a poverty rate: ${censusGaps.length}` +
+    `${censusGaps.length ? ` (${censusGaps.join('; ')})` : ''}`)
+  if (censusGaps.length) {
+    // equityRows refuses an unflagged row with a census gap; stop here.
+    console.error(`\n${failures.length} gate failure(s) — nothing written (later gates not run):\n  ${failures.join('\n  ')}`)
+    process.exitCode = 1
+    return
+  }
   const eqRows = equityRows(inputs, NON_RESIDENTIAL_NEIGHBORHOODS)
   const equity = equityCorrelations(eqRows)
   const neighborhoods: NeighborhoodAggregate[] = eqRows.map((r, k) => {
@@ -539,7 +574,8 @@ async function main(): Promise<void> {
   console.log('diagnostics')
   console.log(`  unmapped sites that still carry a neighborhood: ${unmappedWithNb}`)
   console.log(`  311 rows outside the fall vocabulary: ${notFallKind}; outside the year window: ${outOfWindow}`)
-  console.log(`  placed non-duplicate 311 reports with no known neighborhood: ${[...unknown311Nb].map(([k, v]) => `${k}: ${v}`).join(', ') || 0}`)
+  console.log(`  placed non-duplicate 311 reports with a blank neighborhood (in fl, in no neighborhood row): ${blank311Placed}`)
+  console.log(`  removal notices with no posted date (kept out of the replanted-after rule): ${undatedNotices}`)
   console.log(`  placed non-duplicate fall reports in the 30 m grid: ${placedPoints.length}`)
   console.log(`  sizes: trees.json ${treesJson.length.toLocaleString()} B raw · ${treesGz.toLocaleString()} B gzip; aggregates.json ${aggregatesJson.length.toLocaleString()} B raw · ${aggregatesGz.toLocaleString()} B gzip`)
 
@@ -549,10 +585,18 @@ async function main(): Promise<void> {
     process.exitCode = 1
     return
   }
+  // disappeared.json FIRST: if a run dies part-way, the next run must not see a
+  // new trees.json beside a log that never recorded the step to it. Each file
+  // is written to a temp path and renamed into place (atomic on one volume).
   mkdirSync(dirname(TREES_PATH), { recursive: true })
-  writeFileSync(TREES_PATH, treesJson)
-  writeFileSync(AGGREGATES_PATH, aggregatesJson)
-  if (disappeared) writeFileSync(DISAPPEARED_PATH, JSON.stringify(disappeared, null, 1))
+  const writeAtomic = (path: string, body: string) => {
+    const tmp = `${path}.tmp`
+    writeFileSync(tmp, body)
+    renameSync(tmp, path)
+  }
+  if (disappeared) writeAtomic(DISAPPEARED_PATH, JSON.stringify(disappeared, null, 1))
+  writeAtomic(TREES_PATH, treesJson)
+  writeAtomic(AGGREGATES_PATH, aggregatesJson)
   console.log(`\nwrote ${TREES_PATH}, ${AGGREGATES_PATH}${disappeared ? `, ${DISAPPEARED_PATH}` : ''} · ${((Date.now() - started) / 1000).toFixed(0)} s`)
 }
 

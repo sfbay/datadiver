@@ -9,11 +9,13 @@ export type RowKind = 'tree' | 'stump' | 'site' | 'shrub'
 export interface ParsedSpecies {
   latin: string | null
   common: string | null
-  /** False for NULL, blank, and the city's two placeholders. */
+  /** False for NULL, blank, and the city's placeholders (incl. `Other :: Other`, ruling R4). */
   recorded: boolean
 }
 
-const PLACEHOLDER = /^(tree\(s\)|to be determined?)$/i
+// Ruling R4 (Sept. 30, 2026): `Other :: Other` is a TREE whose species is not
+// recorded — `other` is a placeholder on either half.
+const PLACEHOLDER = /^(tree\(s\)|to be determined?|other)$/i
 
 export function parseSpecies(raw: string | null | undefined): ParsedSpecies {
   const s = (raw ?? '').trim()
@@ -38,25 +40,54 @@ export function speciesLabel(p: ParsedSpecies): string {
   return p.common ?? p.latin ?? 'Species not recorded'
 }
 
-/** Authored: every non-tree value the COMMON half took on Sept. 30, 2026. */
+/**
+ * Authored: every non-tree value either half took on Sept. 30, 2026, matched
+ * case-folded. Ruling R5 added the empty-site leftovers: potential sites,
+ * paved-over and paved-temporary sites, and empty basins.
+ */
 const NON_TREE: Readonly<Record<string, RowKind>> = {
   'stump': 'stump', 'stump (use grinder)': 'stump', 'stump (hand remove)': 'stump',
   'planting site': 'site', 'planting site (plant)': 'site', 'planting site (cut)': 'site', 'planting site (pave)': 'site',
+  'potential site': 'site', 'paved over': 'site', 'pave': 'site', 'paved': 'site',
+  'paved temp': 'site', 'pavedtemp': 'site', 'basin(s)': 'site',
   'shrub': 'shrub', 'private shrub': 'shrub',
+}
+
+/**
+ * Authored: corrupt WHOLE strings (no usable separator) that are non-trees —
+ * matched against the entire case-folded string, never a half (ruling R5).
+ */
+const NON_TREE_EXACT: Readonly<Record<string, RowKind>> = {
+  'lophostemon confertusting site': 'site',
 }
 
 const halves = (raw: string | null | undefined): string[] =>
   (raw ?? '').split('::').map((h) => h.trim().toLowerCase())
 
 export function classifyRow(raw: string | null | undefined): RowKind {
+  const exact = NON_TREE_EXACT[(raw ?? '').trim().toLowerCase()]
+  if (exact) return exact
   const h = halves(raw)
   // The common half decides: "Zelkova … (plant) :: Planting Site (plant)" is a site.
   return NON_TREE[h[h.length - 1]] ?? NON_TREE[h[0]] ?? 'tree'
 }
 
-const NON_TREE_WORD = /\b(stump|planting site|shrub|vacant|empty basin)\b/i
+/** Ruling R6: any of these as a word (plural allowed) makes a string suspect. */
+const NON_TREE_WORD = /\b(stumps?|sites?|shrubs?|vacant|empty|basins?|pave|paved|pavedtemp|potentials?|others?|unknowns?)\b/i
 
-/** Strings that LOOK like a non-tree but are not in the authored list. */
+/**
+ * Authored: strings that carry a suspect word but ARE trees (case-folded
+ * whole string). `Other :: Other` is a tree with no recorded species (R4);
+ * the two palms are trees ranked under their published names (R9).
+ */
+const TREE_DESPITE_WORD: ReadonlySet<string> = new Set([
+  'other :: other',
+  'palm (unknown genus) :: palm spp',
+  'phoenix spp :: date palm (species unknown)',
+])
+
+/** Strings that LOOK like a non-tree but are classed as trees without an authored reason. */
 export function unclassifiedNonTrees(strings: readonly string[]): string[] {
-  return strings.filter((s) => NON_TREE_WORD.test(s) && classifyRow(s) === 'tree')
+  return strings.filter((s) =>
+    NON_TREE_WORD.test(s) && classifyRow(s) === 'tree' && !TREE_DESPITE_WORD.has(s.trim().toLowerCase()))
 }

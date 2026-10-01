@@ -60,6 +60,15 @@ describe('equityRows + equityCorrelations', () => {
     expect(c.perK.income).toBe(1)
     expect(c.perK.poverty).toBe(-1)
   })
+  it('a flagged row may lack census figures; they stay null, never 0', () => {
+    const [r] = equityRows([{ name: 'Presidio', trees: 86, population: 4000, areaKm2: 6, medianIncome: null, povertyRate: null }], PARKS)
+    expect(r).toMatchObject({ flag: 'park', medianIncome: null, povertyRate: null })
+  })
+  it('an unflagged row with a census gap is refused, never ranked', () => {
+    expect(() => equityRows([inp('A', 1000, 10000, 2, 50000, 20), { ...inp('B', 1, 9000, 1, 0, 0), medianIncome: null }], PARKS))
+      .toThrow(/B has no census income or poverty/)
+    expect(() => equityRows([{ ...inp('C', 1, 9000, 1, 80000, 0), povertyRate: Number.NaN }], PARKS)).toThrow(/C/)
+  })
 })
 
 it('linkStrength tiers', () => {

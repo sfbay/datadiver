@@ -60,25 +60,46 @@ export function equityFlag(name: string, population: number, parks: ReadonlySet<
   return null
 }
 
-export interface EquityInput { name: string; trees: number; population: number; areaKm2: number; medianIncome: number; povertyRate: number }
-export interface EquityRow extends EquityInput { perK: number; perKm2: number; flag: EquityFlag }
+/** Census income / poverty are `null` when the ACS row lacks them — never 0. */
+export interface EquityInput {
+  name: string; trees: number; population: number; areaKm2: number
+  medianIncome: number | null; povertyRate: number | null
+}
+interface EquityRowBase extends EquityInput { perK: number; perKm2: number }
+/** An unflagged row always carries finite census figures — the type proves it. */
+export interface UnflaggedEquityRow extends EquityRowBase { flag: null; medianIncome: number; povertyRate: number }
+export interface FlaggedEquityRow extends EquityRowBase { flag: Exclude<EquityFlag, null> }
+export type EquityRow = UnflaggedEquityRow | FlaggedEquityRow
 
 const r1 = (n: number) => Math.round(n * 10) / 10
+const finite = (n: number | null): n is number => n !== null && Number.isFinite(n)
 
+/**
+ * An unflagged neighborhood with no census income or poverty figure cannot be
+ * compared, and is a data error rather than a flag: callers check first (the
+ * generator's G2), and this throws if one gets through.
+ */
 export function equityRows(inputs: readonly EquityInput[], parks: ReadonlySet<string>): EquityRow[] {
-  return inputs.map((i) => ({
-    ...i,
-    perK: i.population > 0 ? r1((i.trees / i.population) * 1000) : 0,
-    perKm2: i.areaKm2 > 0 ? r1(i.trees / i.areaKm2) : 0,
-    flag: equityFlag(i.name, i.population, parks),
-  }))
+  return inputs.map((i): EquityRow => {
+    const perK = i.population > 0 ? r1((i.trees / i.population) * 1000) : 0
+    const perKm2 = i.areaKm2 > 0 ? r1(i.trees / i.areaKm2) : 0
+    const flag = equityFlag(i.name, i.population, parks)
+    if (flag !== null) return { ...i, perK, perKm2, flag }
+    const { medianIncome, povertyRate } = i
+    if (!finite(medianIncome) || !finite(povertyRate)) {
+      throw new Error(`equityRows: unflagged neighborhood ${i.name} has no census income or poverty figure`)
+    }
+    return { ...i, perK, perKm2, flag, medianIncome, povertyRate }
+  })
 }
+
+export const isUnflagged = (r: EquityRow): r is UnflaggedEquityRow => r.flag === null
 
 export interface EquityCorrelations { n: number; perK: { income: number; poverty: number }; perKm2: { income: number; poverty: number } }
 const r2 = (n: number) => Math.round(n * 100) / 100
 
 export function equityCorrelations(rows: readonly EquityRow[]): EquityCorrelations {
-  const s = rows.filter((r) => r.flag === null)
+  const s = rows.filter(isUnflagged)
   const inc = s.map((r) => r.medianIncome), pov = s.map((r) => r.povertyRate)
   return {
     n: s.length,

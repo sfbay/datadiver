@@ -17,7 +17,7 @@ export function isCityDuplicate(statusNotes: string | null | undefined): boolean
   return /duplicate/i.test(statusNotes ?? '')
 }
 
-/** SF bounding box. 2,161 of 13,508 reports since 2021 sit at 0,0. */
+/** SF bounding box. Many phone reports arrive at 0,0; the measured share per year is in aggregates.json. */
 export function isPlaced(lat: string | number | null | undefined, lon: string | number | null | undefined): boolean {
   const a = Number(lat), o = Number(lon)
   return lat !== null && lat !== undefined && lon !== null && lon !== undefined &&
@@ -36,7 +36,7 @@ export function placedShare(nonDuplicate: number, unplaced: number): number {
   return nonDuplicate ? Math.round(((nonDuplicate - unplaced) / nonDuplicate) * 1000) / 10 : 100
 }
 
-const CELL = 0.0005// degrees: ~55 m north-south, ~44 m east-west at SF
+const CELL = 0.0005 // degrees: ~55 m north-south, ~44 m east-west at SF
 export interface Grid { cells: Map<string, { lat: number; lon: number }[]> }
 const cellOf = (lat: number, lon: number) => `${Math.floor(lat / CELL)}|${Math.floor(lon / CELL)}`
 

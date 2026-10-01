@@ -40,8 +40,8 @@ export interface NeighborhoodAggregate {
   largeTrunks: number
   population: number
   areaKm2: number
-  medianIncome: number
-  povertyRate: number
+  medianIncome: number | null   // null = the census row lacks it (only ever on a flagged neighborhood — G2)
+  povertyRate: number | null
   perK: number
   perKm2: number
   flag: EquityFlag

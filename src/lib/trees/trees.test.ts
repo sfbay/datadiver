@@ -51,6 +51,8 @@ describe('trees snapshot — structural (hold at every regeneration)', () => {
     }
   })
   it('neighborhoods are the 41, in the app\'s order', () => {
+    expect(T.neighborhoods).toHaveLength(41)
+    expect(A.neighborhoods).toHaveLength(41)
     expect(T.neighborhoods).toEqual([...SF_NEIGHBORHOODS])
     expect(A.neighborhoods.map((n) => n.name)).toEqual([...SF_NEIGHBORHOODS])
   })
@@ -60,10 +62,33 @@ describe('trees snapshot — structural (hold at every regeneration)', () => {
     expect(t.rows).toBe(T.id.length)
     expect(T.x.filter((v) => v === -1).length).toBe(t.unmapped)
   })
+  it('kind counts in the snapshot equal the totals', () => {
+    const count = (k: number) => T.kind.filter((v) => v === k).length
+    expect([count(0), count(1), count(2), count(3)]).toEqual([A.totals.trees, A.totals.stumps, A.totals.emptySites, A.totals.shrubs])
+  })
+  it('an unmapped site counts no fall reports nearby', () => {
+    for (let i = 0; i < T.id.length; i += 1) if (T.x[i] === -1 && T.fl[i] !== 0) throw new Error(`site ${T.id[i]}`)
+  })
+  it('sites carrying a notice are exactly the listed notice sites', () => {
+    expect(T.nt.filter((v) => v > 0).length).toBe(A.notices.listed)
+  })
+  it('unflagged neighborhoods carry finite census figures; none is published as a stand-in 0', () => {
+    for (const nh of A.neighborhoods) {
+      if (nh.flag !== null) continue
+      expect(nh.population > 0 && nh.areaKm2 > 0, nh.name).toBe(true)
+      expect(nh.medianIncome !== null && Number.isFinite(nh.medianIncome) && nh.medianIncome > 0, nh.name).toBe(true)
+      expect(nh.povertyRate !== null && Number.isFinite(nh.povertyRate), nh.name).toBe(true)
+    }
+  })
   it('ranked species are recorded, tree-only, verbatim and in count order', () => {
     expect(A.species.every((s) => parseSpecies(s.name).recorded && classifyRow(s.name) === 'tree')).toBe(true)
     for (let i = 1; i < A.species.length; i += 1) expect(A.species[i - 1].count).toBeGreaterThanOrEqual(A.species[i].count)
     expect(A.species[0].rank).toBe(1)
+    // Standard competition ranking over the whole list: ties share the lower rank.
+    for (let i = 1; i < A.species.length; i += 1) {
+      const prev = A.species[i - 1], cur = A.species[i]
+      if (cur.rank !== (cur.count === prev.count ? prev.rank : i + 1)) throw new Error(`rank ${i}: ${cur.name}`)
+    }
     expect(A.totals.topFive).toBe(A.species.slice(0, 5).reduce((s, x) => s + x.count, 0))
   })
   it('topFiveShare is the top five over ALL street trees (ruling R2)', () => {
@@ -119,21 +144,21 @@ describe('trees snapshot — EXACT pins at asOf (re-pin + sourceNotes + data-ins
 
     expect(A.totals).toEqual({
       rows: 144504,
-      trees: 142321,
+      trees: 142014,
       stumps: 635,
-      emptySites: 1483,
+      emptySites: 1790,
       shrubs: 65,
       unmapped: 5754,
-      speciesNotRecorded: 2265,
-      distinctSpecies: 648,
+      speciesNotRecorded: 2505,
+      distinctSpecies: 639,
       topFive: 34899,
-      topFiveShare: 24.5,
-      largeTrunks: 8645,
-      unmeasuredTrunks: 8935,
-      plantedRecorded: 38083,
+      topFiveShare: 24.6,
+      largeTrunks: 8633,
+      unmeasuredTrunks: 8814,
+      plantedRecorded: 38024,
     })
 
-    expect(A.species.length).toBe(648)
+    expect(A.species.length).toBe(639)
     expect(A.species.slice(0, 5).map((s) => [s.name, s.count])).toEqual([
       ['Platanus x hispanica :: Sycamore, London Plane', 8943],
       ['Lophostemon confertus :: Brisbane Box', 6973],
@@ -154,7 +179,7 @@ describe('trees snapshot — EXACT pins at asOf (re-pin + sourceNotes + data-ins
       ['Posted 24hr', 1354],
     ])
 
-    expect(A.equity).toEqual({ n: 36, perK: { income: 0.66, poverty: -0.59 }, perKm2: { income: 0.34, poverty: -0.18 } })
+    expect(A.equity).toEqual({ n: 36, perK: { income: 0.66, poverty: -0.59 }, perKm2: { income: 0.35, poverty: -0.19 } })
 
     expect(A.falls.years).toEqual([
       { year: 2021, fallen: 1121, aboutToFall: 263, duplicates: 269, unplaced: 35, placedShare: 97.5, placeable: true, partial: false },
@@ -178,10 +203,13 @@ describe('trees snapshot — EXACT pins at asOf (re-pin + sourceNotes + data-ins
       const r = A.neighborhoods.find((n) => n.name === name)!
       return [r.name, r.trees, r.perK, r.perKm2]
     }
-    expect(row('Tenderloin')).toEqual(['Tenderloin', 1676, 52.4, 1648])
-    expect(row('Bayview Hunters Point')).toEqual(['Bayview Hunters Point', 9500, 238.6, 709.3])
-    expect(row('Chinatown')).toEqual(['Chinatown', 664, 52.5, 1140.9])
-    expect(row('Seacliff')).toEqual(['Seacliff', 1086, 448.9, 1971])
+    expect(row('Tenderloin')).toEqual(['Tenderloin', 1659, 51.8, 1631.3])
+    expect(row('Bayview Hunters Point')).toEqual(['Bayview Hunters Point', 9485, 238.2, 708.2])
+    expect(row('Chinatown')).toEqual(['Chinatown', 655, 51.8, 1125.4])
+    expect(row('Seacliff')).toEqual(['Seacliff', 1085, 448.5, 1969.1])
+
+    expect(T.nt.reduce((s, v) => s + v, 0)).toBe(4953)
+    expect(T.fl.reduce((s, v) => s + v, 0)).toBe(97561)
 
     expect(D).toEqual({ trackingSince: '2026-09-30', runs: [] })
   })
