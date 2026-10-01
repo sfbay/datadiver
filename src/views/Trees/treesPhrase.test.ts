@@ -122,6 +122,7 @@ describe('card lines never claim more than the record', () => {
       expect(leftInventoryNote('2026-09-30', 2026, kind)).toBe('This site is not in the city’s inventory. It was there on Sept. 30.')
     }
     expect(phrase.UNKNOWN_SITE).toBe('No street tree site has this number.')
+    expect(phrase.CARD_ERROR).toBe('The city’s tree record did not load.')
   })
   it('card labels: kind titles, planting and trunk size as recorded', () => {
     expect(kindTitle('stump')).toBe('Stump')

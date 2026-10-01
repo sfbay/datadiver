@@ -251,8 +251,8 @@ export default function TreeCard({
       )}
       {state.kind === 'error' && (
         <OneLine siteId={siteId}>
-          <p className="font-serif text-sm text-slate-700 dark:text-slate-200 leading-snug">{CARD_ERROR}</p>
-          <p className="mt-1 text-nano font-mono text-slate-500 dark:text-slate-400 break-words">{state.message}</p>
+          {/* The raw fetch error stays off the card; it rides the title. */}
+          <p title={state.message} className="font-serif text-sm text-slate-700 dark:text-slate-200 leading-snug">{CARD_ERROR}</p>
           <button
             type="button"
             onClick={retry}

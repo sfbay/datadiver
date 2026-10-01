@@ -15,7 +15,7 @@
 // planting date belongs to an earlier tree at the site (readNotice).
 
 import { classifyRow, parseSpecies, speciesLabel, type RowKind } from '@/lib/trees/species'
-import { readNotice } from '@/lib/trees/siteNotices'
+import { noticeIdForms, noticeSiteId, readNotice } from '@/lib/trees/siteNotices'
 import { FALL_WINDOW_START } from '@/lib/trees/fallReports'
 import { TRUNK_LABEL, trunkClass } from '@/lib/trees/trunk'
 import type { SpeciesAggregate, TreesSnapshot } from '@/lib/trees/types'
@@ -54,6 +54,50 @@ export const INVENTORY_SELECT = [
   'waterresponsibility', 'siteinfo', 'plotsize', 'analysis_neighborhood',
 ].join(',')
 export const NOTICE_SELECT = 'treeid,posteddate,postedtype'
+
+/** The inventory read's `$where`. `treeid` is a NUMBER column there: the id
+ *  is UNQUOTED (a quoted value is a type mismatch). */
+export function inventoryWhere(siteId: number): string {
+  return `treeid = ${Math.trunc(siteId)}`
+}
+
+/** The notices read's `$where`. `treeid` is TEXT there, in two spellings
+ *  ("123", "TRE-123"): both forms, quoted. */
+export function noticesWhere(siteId: number): string {
+  const [a, b] = noticeIdForms(siteId)
+  return `treeid in('${a}','${b}')`
+}
+
+/** What the card's live reads last settled on: the site id and the attempt
+ *  (Retry count) the reads were ISSUED for, and what came back. */
+export interface SettledRead {
+  forId: number
+  attempt: number
+  rows: InventoryRow[]
+  notices: NoticeRow[]
+  error: string | null
+}
+
+/**
+ * Does the settled read belong to the site and attempt on screen now? After
+ * an id change (or a Retry) the hook still holds the previous read until the
+ * new one lands; that read is not this site's, so the card is loading. An
+ * EMPTY result counts only when it was issued for this id — that is what
+ * lets "left the inventory" be said.
+ */
+export function readBelongsTo(siteId: number, attempt: number, settled: SettledRead | null): settled is SettledRead {
+  return settled !== null && settled.forId === siteId && settled.attempt === attempt
+}
+
+/** Belt and braces: only rows and notices that NAME the site count (a row
+ *  naming another site is dropped, never allowed to disown the read — that
+ *  would be a spinner with no end). */
+export function rowsForSite(siteId: number, settled: SettledRead): { row: InventoryRow | null; notices: NoticeRow[] } {
+  return {
+    row: settled.rows.find((r) => Number(r.treeid) === siteId) ?? null,
+    notices: settled.notices.filter((n) => noticeSiteId(n.treeid) === siteId),
+  }
+}
 
 export interface CardModel {
   kind: RowKind
@@ -177,7 +221,9 @@ export function buildCardModel(row: InventoryRow, notices: NoticeRow[], extras: 
 
 export interface SnapshotSite {
   kind: RowKind
-  fallsNearby: number
+  /** Snapshot `fl`; null when the site has no map point — nothing was
+   *  measured around it, so no "No fall reports" claim can be made. */
+  fallsNearby: number | null
   /** [lng, lat], or null when the city published no point for the site. */
   center: [number, number] | null
 }
@@ -191,10 +237,11 @@ export function snapshotSite(
   if (!snap) return null
   const i = snap.id.indexOf(siteId)
   if (i < 0) return null
+  const center = siteLngLat(snap.x[i], snap.y[i])
   return {
     kind: KIND_BY_CODE[snap.kind[i]] ?? 'tree',
-    fallsNearby: snap.fl[i] ?? 0,
-    center: siteLngLat(snap.x[i], snap.y[i]),
+    fallsNearby: center ? snap.fl[i] ?? 0 : null,
+    center,
   }
 }
 

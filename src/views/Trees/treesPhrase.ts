@@ -28,7 +28,7 @@ export const STUMP_LEGEND = 'A stump stands here'
 export const FALLS_LEGEND = '311 reports of a fallen tree'
 export const UNKNOWN_SITE = 'No street tree site has this number.'
 export const UNDATED_NOTICE = 'A removal notice with no posted date is on record for this site.'
-export const CARD_ERROR = 'This site’s record did not load.'
+export const CARD_ERROR = 'The city’s tree record did not load.'
 
 export function speciesRankLine(rank: number, of: number): string {
   return `No. ${rank} of ${apCount(of)} recorded species`
