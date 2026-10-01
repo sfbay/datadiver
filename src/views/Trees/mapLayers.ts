@@ -10,7 +10,8 @@
 //   trees-dots     street trees from DOT_MINZOOM, radius by trunk class as
 //                  recorded (small · medium · large · not measured), scaled
 //                  by zoom with the class ratios kept.
-//   trees-stumps   hollow brick rings (the hollow-ring idiom) from zoom 12.
+//   trees-stumps   hollow brick rings (the hollow-ring idiom): Explore from
+//                  zoom 12, Safety at every zoom, never under Equity (R23).
 //   trees-species  the selected species at EVERY zoom, keylined, drawn last.
 //
 // The point layers PARTITION the sites: a tree is drawn — and hovered and
@@ -46,6 +47,8 @@ const STUMP = 1
 const LARGE = 2
 /** A species index no site carries — the "nothing selected" filter. */
 const NO_SPECIES = -2
+/** A site kind no site carries — the "draw nothing" filter (R23). */
+const NO_KIND = -1
 
 // ── features ───────────────────────────────────────────────────────────────
 
@@ -75,6 +78,9 @@ export function siteFeatures(snap: TreesSnapshot): GeoJSON.FeatureCollection {
 const isTree: mapboxgl.FilterSpecification = ['==', ['get', 'kind'], TREE]
 const isStump: mapboxgl.FilterSpecification = ['==', ['get', 'kind'], STUMP]
 const noSpecies: mapboxgl.FilterSpecification = ['all', isTree, ['==', ['get', 'sp'], NO_SPECIES]]
+/** Admits no feature of any kind. A filtered-out layer draws, hovers and
+ *  clicks nothing — which opacity 0 would not guarantee. */
+const noSites: mapboxgl.FilterSpecification = ['==', ['get', 'kind'], NO_KIND]
 
 const DOT_OPACITY = 0.75
 const HEAT_OPACITY = 0.8
@@ -105,7 +111,7 @@ export interface LegendRows {
   unmeasured: boolean
   /** Heatmap only: the heat swatch and a "zoom in" line replace the dot rows. */
   zoomIn: boolean
-  /** The stump ring row — only where stumps are drawn. */
+  /** The stump ring row — only where stumps are drawn (never under Equity, R23). */
   stumps: boolean
   /** The picked species' swatch — it is drawn at EVERY zoom. */
   species: boolean
@@ -115,12 +121,13 @@ export interface LegendRows {
  *  never describes a mark that is not on screen. Explore below DOT_MINZOOM
  *  draws the heatmap only: no dot rows, the heat swatch and "zoom in"
  *  instead — but a picked species is drawn at every zoom, so its swatch stays.
- *  Stumps are drawn from STUMP_MINZOOM outside Safety, at every zoom inside
- *  it. Safety draws large trunks at every zoom and no species layer. */
+ *  Stumps are drawn from STUMP_MINZOOM under Explore, at every zoom under
+ *  Safety, and never under Equity (R23) — so the Equity row is never listed.
+ *  Safety draws large trunks at every zoom and no species layer. */
 export function legendDots(lens: Lens, band: 0 | 1 | 2, speciesPicked: boolean): LegendRows {
   if (lens === 'safety') return { classes: ['large'], unmeasured: false, zoomIn: false, stumps: true, species: false }
   const species = lens === 'explore' && speciesPicked
-  const stumps = band >= 1
+  const stumps = lens !== 'equity' && band >= 1
   if (band < 2) return { classes: [], unmeasured: false, zoomIn: true, stumps, species }
   return { classes: ['small', 'medium', 'large'], unmeasured: true, zoomIn: false, stumps, species }
 }
@@ -292,7 +299,9 @@ export interface LensPaint {
  *    explore  the defaults; a selected species lights up at every zoom (and
  *             leaves the dots layer, so each tree is drawn and hit once)
  *             while the other street trees drop back to 0.25.
- *    equity   dots and heat at 0.35 — the neighborhood fill carries the lens.
+ *    equity   dots and heat at 0.35 — the neighborhood fill carries the lens;
+ *             no stump rings (R23): the layer's filter admits nothing, so a
+ *             hidden stump can be neither hovered nor clicked.
  *    safety   large trunks only, at EVERY zoom (~8,600 — the lens is never
  *             empty at the default view; R13); stumps at every zoom; heat
  *             hidden; no species layer. */
@@ -315,7 +324,7 @@ export function lensPaint(lens: Lens, speciesIdx: number | null, dark: boolean):
     filters: {
       'trees-heat': isTree,
       'trees-dots': dotsFilter,
-      'trees-stumps': isStump,
+      'trees-stumps': lens === 'equity' ? noSites : isStump,
       'trees-species': speciesFilter,
     },
     paint: {

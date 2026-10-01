@@ -13,7 +13,8 @@
 // and stumps only, so it lists only those two, plus the line that fall
 // reports are not drawn (a report marks an address, never a tree). The
 // Equity lens shows the choropleth's five moss steps instead (the dots are
-// dimmed under it) and the hatch for flagged neighborhoods. Tier 3: no glow.
+// dimmed under it) and the hatch for flagged neighborhoods; it never lists
+// stumps — they are not drawn there (R23). Tier 3: no glow.
 
 import type { ReactNode } from 'react'
 import { TRUNK_LABEL, type TrunkClass } from '@/lib/trees/trunk'

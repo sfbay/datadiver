@@ -1211,6 +1211,42 @@ management system in December 2024" (probe: `https://data.sf.gov/api/views/tkzw-
 → `description`). Counts from before and after that date are not comparable;
 the snapshot is stamped `asOf` and the header chip shows the snapshot's date.
 
+### Stumps (banked follow-up)
+
+Ruling R23 (Jesse, Oct. 1, 2026): stump rings are not drawn on the Equity map,
+and no stump-based equity measure is added. Stumps stay on the Safety lens at
+every zoom and on the Explore lens from street zoom. Measured Oct. 1, 2026
+from the committed `public/data/trees/` files (snapshot `asOf` 2026-09-30):
+
+- **635 stump rows**, 626 of them mapped (the other 9 carry no coordinates). By
+  published label: 400 `Stump (use Grinder)`, 201 `Stump`, 34 `Stump (hand Remove)`.
+- **136** stumps sit at a site that has a removal notice (the same 136 the
+  Safety tab's "listed now as" breakdown counts).
+- **4.5 stumps per 1,000 street trees** citywide (635 ÷ 142,014).
+- Among the 34 ranked neighborhoods the stump count runs from **2** (Seacliff)
+  to **51** (Bayview Hunters Point). The seven flagged neighborhoods are
+  listed, not ranked: Lakeshore 5, Twin Peaks 8, the other five 0.
+
+A stump is one moment in the city's work queue: the file records that a stump
+stands where a tree stood, and cannot say how long it has stood. The
+per-neighborhood counts are too small to state a pattern, so the page states
+none.
+
+**Banked follow-up:** once several dated snapshots exist, `disappeared.json`
+(the generator's log of sites that change between saved copies) could measure
+how long a stump stands before its site is replanted or leaves the inventory,
+by neighborhood. What the log records today (`diffSnapshots` in
+`scripts/build-trees.ts`): a site id present in the earlier snapshot and absent
+from the later one goes in `gone` (the id alone); a site present in both with a
+different species string or planting year goes in `changed` (`was`, `now`,
+`plantedWas`, `plantedNow`). So a stump replaced by a tree IS caught — as a
+species-string change, whose `was` is the stump's label — but the log stores no
+site class (stump, tree, empty site) and no neighborhood, so it cannot say that
+a site changed class, and a `gone` id does not say what the site was. The
+follow-up needs the log to record each site's class and neighborhood on both
+sides of a change and for every `gone` site, and its resolution is the spacing
+between snapshots (the log began 2026-09-30 and has no runs yet).
+
 ## Police Incidents — a subcategory's identity is its PAIR with the category
 
 `wg3w-h783` publishes three levels: `incident_category` (49 values),

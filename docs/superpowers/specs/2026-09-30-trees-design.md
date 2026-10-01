@@ -330,6 +330,7 @@ Stale/unknown values are silent no-ops (validated against the loaded tables).
   emails for removal notices (would be a new alerts stream: separate spec).
 - Any "hazardous tree" list or per-tree risk score: deliberately excluded.
 - **The residential streets of Lakeshore and Twin Peaks** (flagged park-heavy by ruling R20, Sept. 30, 2026): a finer analysis by census tract or per street mile, so their streets can be ranked without the parkland that dominates both neighborhoods.
+- **How long a stump stands** (ruling R23, Oct. 1, 2026): once several dated snapshots exist, `disappeared.json` could measure how long a stump stands before its site is replanted or leaves the inventory, by neighborhood — but only after the log also records each site's class (stump, tree), which it does not yet (data-insights.md → Street trees → Stumps).
 
 ## 9. Questions for Fable's review
 

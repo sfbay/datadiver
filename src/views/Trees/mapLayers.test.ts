@@ -147,6 +147,36 @@ describe('lensPaint', () => {
     }
   })
 
+  it('equity draws no stump rings (R23): the stump layer admits no feature of any kind, so none is hovered or clicked', () => {
+    for (const pick of PICKS) {
+      for (const dark of [true, false]) {
+        const f = lensPaint('equity', pick, dark).filters['trees-stumps']
+        for (const s of SITES) expect(admits(f, s), `equity/${pick} ${JSON.stringify(s)}`).toBe(false)
+      }
+    }
+    // …and no stump is hit by ANY layer under equity (the dots layer is trees only)
+    for (const pick of PICKS) {
+      const lp = lensPaint('equity', pick, true)
+      for (const s of SITES.filter((x) => x.kind === 1)) {
+        expect(TREE_POINT_LAYER_IDS.filter((id) => admits(lp.filters[id], s)), JSON.stringify(s)).toEqual([])
+      }
+    }
+  })
+
+  it('explore keeps its stump rings: every stump is admitted, nothing else', () => {
+    for (const pick of PICKS) {
+      const f = lensPaint('explore', pick, true).filters['trees-stumps']
+      for (const s of SITES) expect(admits(f, s), `explore/${pick} ${JSON.stringify(s)}`).toBe(s.kind === 1)
+    }
+  })
+
+  it('safety keeps its stump rings: every stump is admitted, nothing else', () => {
+    for (const pick of PICKS) {
+      const f = lensPaint('safety', pick, true).filters['trees-stumps']
+      for (const s of SITES) expect(admits(f, s), `safety/${pick} ${JSON.stringify(s)}`).toBe(s.kind === 1)
+    }
+  })
+
   it('outside safety, dots keep their zoom floor and stumps start at 12', () => {
     for (const lens of ['explore', 'equity'] as const) {
       const lp = lensPaint(lens, null, true)
@@ -225,6 +255,13 @@ describe('the legend follows what the map draws', () => {
     for (const band of [0, 1, 2] as const) {
       expect(legendDots('safety', band, true)).toEqual({ classes: ['large'], unmeasured: false, zoomIn: false, stumps: true, species: false })
     }
+  })
+  it('equity lists no stump row at any zoom band (R23), with or without a species', () => {
+    for (const band of [0, 1, 2] as const) {
+      for (const picked of [false, true]) expect(legendDots('equity', band, picked).stumps, `${band}/${picked}`).toBe(false)
+    }
+    // the rest of the equity rows are unchanged
+    expect(legendDots('equity', 2, false)).toEqual({ classes: ['small', 'medium', 'large'], unmeasured: true, zoomIn: false, stumps: false, species: false })
   })
   it('the bands match the layers\' own zoom floors outside safety', () => {
     const lp = lensPaint('explore', null, true)
