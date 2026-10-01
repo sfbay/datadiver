@@ -27,6 +27,8 @@ export const TRUNK_NOTE = 'Trunk size as the city last recorded it. The record d
 export const STUMP_LEGEND = 'A stump stands here'
 export const FALLS_LEGEND = '311 reports of a fallen tree'
 export const UNKNOWN_SITE = 'No street tree site has this number.'
+export const UNDATED_NOTICE = 'A removal notice with no posted date is on record for this site.'
+export const CARD_ERROR = 'This site’s record did not load.'
 
 export function speciesRankLine(rank: number, of: number): string {
   return `No. ${rank} of ${apCount(of)} recorded species`
@@ -99,6 +101,26 @@ export function noticeLine(reading: NoticeReading, postedYmd: string, type: stri
   const notice = kind ? `A removal notice (${kind})` : 'A removal notice'
   const where = reading === 'earlier-tree' ? 'for an earlier tree at this site' : 'at this site'
   return `${notice} was posted ${where} on ${apDate(postedYmd, nowYear)}.`
+}
+
+export const NOT_RECORDED = 'Not recorded'
+export const NO_ADDRESS = 'Address not recorded'
+
+/** A non-tree row's card title; a tree is titled by its species. */
+export function kindTitle(kind: Exclude<RowKind, 'tree'>): string {
+  return kind === 'stump' ? 'Stump' : kind === 'site' ? 'Empty planting site' : 'Shrub'
+}
+
+/** `plantedYmd` 'YYYY-MM-DD' (or a floating SF-local datetime), or null. */
+export function plantedLine(plantedYmd: string | null, nowYear: number): string {
+  return plantedYmd ? `Planted ${apDate(plantedYmd.slice(0, 10), nowYear)}` : 'Planting date not recorded'
+}
+
+/** "3 inches (10 inches or narrower)" — trunk size as recorded, in the
+ *  class's own words; `classLabel` is TRUNK_LABEL for the class. */
+export function trunkLine(inches: number | null, classLabel: string): string {
+  if (inches === null) return classLabel
+  return `${inches} inch${inches === 1 ? '' : 'es'} (${classLabel})`
 }
 
 export function nearbyFallsLine(n: number, sinceYear: number): string {

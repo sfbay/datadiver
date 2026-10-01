@@ -27,14 +27,21 @@ import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { useDataset } from '@/hooks/useDataset'
 import { useProgressScope } from '@/hooks/useLoadingProgress'
 import { useActiveCity } from '@/cities/useActiveCity'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { eventFlyToOffset } from '@/utils/cameraPadding'
 import { useAppStore } from '@/stores/appStore'
 import { apDate } from '@/utils/apDate'
 import { TRUNK_CLASSES, TRUNK_LABEL } from '@/lib/trees/trunk'
 import { parseSpecies, speciesLabel } from '@/lib/trees/species'
 import { SUBHEAD, STUMP_LEGEND } from './treesPhrase'
-import { liveEdgeRelation, parseLens, resolveSpecies, type Lens } from './treesUrl'
+import { liveEdgeRelation, parseLens, parseTreeId, resolveSpecies, type Lens } from './treesUrl'
 import { msSinceSnapshotFetch, useTreesAggregates, useTreesSnapshot } from './useTrees'
-import { TREES_SOURCE, TREE_LAYERS, TREE_POINT_LAYER_IDS, MOSS_500, lensPaint, siteFeatures } from './mapLayers'
+import {
+  TREES_SOURCE, TREE_LAYERS, TREE_POINT_LAYER_IDS, MOSS_500, lensPaint, siteFeatures,
+  SELECTED_KEYLINE_LAYER, SELECTED_LAYERS, SELECTED_SOURCE, selectedFeature, selectedKeyline,
+} from './mapLayers'
+import TreeCard, { TREE_CARD_REM } from './TreeCard'
+import { snapshotSite } from './treeCardModel'
 
 const LENS_PILLS: readonly { id: Lens; label: string }[] = [
   { id: 'explore', label: 'Explore' },
@@ -45,6 +52,19 @@ const LENS_PILLS: readonly { id: Lens; label: string }[] = [
 const VIEW = 'trees' as const
 const SLOW = { timeoutMs: 20_000, retries: 1 } as const
 const NO_NAMES: readonly string[] = []
+/** Clicks in the rail re-target the card, so they never dismiss it. */
+const CARD_INSIDE = ['[data-trees-rail]']
+
+/** The tree card's pixel width for the flyTo offset (its `max-w-[54vw]`
+ *  cap on mobile — DetailPanelShell's mobileCompact). */
+function cardPx(mobile: boolean): number {
+  let rootPx = 16
+  try {
+    rootPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+  } catch { /* no DOM — the default root size */ }
+  const width = TREE_CARD_REM * rootPx
+  return Math.min(width, mobile ? window.innerWidth * 0.54 : window.innerWidth - 2.5 * rootPx)
+}
 
 interface EdgeRow { edge?: string }
 
@@ -56,6 +76,7 @@ export default function Trees() {
   const [searchParams, setSearchParams] = useSearchParams()
   const city = useActiveCity()
   const isDarkMode = useAppStore((s) => s.isDarkMode)
+  const isMobile = useIsMobile()
   const nowYear = new Date().getFullYear()
   const tuneOn = searchParams.get('tune') === '1'
 
@@ -67,10 +88,10 @@ export default function Trees() {
   const { data: agg, error: aggError, retry: retryAgg } = useTreesAggregates()
 
   // ── URL state — stale or junk values are silent no-ops (treesUrl.ts) ──
-  // `tree`, `nh` and `rank` (parseTreeId / resolveNeighborhood /
-  // parseEquityRank) are read where they are consumed — the tree card and the
-  // rail — and written through setParam below.
+  // `nh` and `rank` (resolveNeighborhood / parseEquityRank) are read where
+  // they are consumed — the rail — and written through setParam below.
   const lens = parseLens(searchParams.get('lens'))
+  const treeId = parseTreeId(searchParams.get('tree'))
   const species = resolveSpecies(searchParams.get('species'), snap?.species ?? NO_NAMES)
   const speciesIdx = species !== null && snap ? snap.species.indexOf(species) : null
 
@@ -119,6 +140,62 @@ export default function Trees() {
   }, [tuneOn, built, snapCachedAtMount])
 
   useMapLayer(mapInstance, TREES_SOURCE, geo, TREE_LAYERS)
+
+  // ── the selected site: ring + flight (only for a site in the snapshot
+  // with a published point; a live-only site gets the card, no ring) ──
+  const selectedCenter = useMemo(() => {
+    if (treeId === null) return null
+    return snapshotSite(snap, treeId)?.center ?? null
+  }, [snap, treeId])
+  const selectedFc = useMemo(() => selectedFeature(selectedCenter), [selectedCenter])
+  useMapLayer(mapInstance, SELECTED_SOURCE, selectedFc, SELECTED_LAYERS)
+
+  // Keyline follows the theme; the ring stays above the tree layers (a
+  // theme swap re-adds sources in retry order). Both writes are guarded by
+  // a compare — an unconditional set on idle would repaint forever.
+  useEffect(() => {
+    if (!mapInstance) return
+    const wanted = selectedKeyline(isDarkMode)
+    const apply = () => {
+      try {
+        if (!mapInstance.getLayer(SELECTED_KEYLINE_LAYER)) return
+        if (mapInstance.getPaintProperty(SELECTED_KEYLINE_LAYER, 'circle-stroke-color') !== wanted) {
+          mapInstance.setPaintProperty(SELECTED_KEYLINE_LAYER, 'circle-stroke-color', wanted)
+        }
+        const order = (mapInstance.getStyle().layers ?? []).map((l) => l.id)
+        const ringAt = order.indexOf(SELECTED_KEYLINE_LAYER)
+        const highestTree = Math.max(...TREE_LAYERS.map((l) => order.indexOf(l.id)))
+        if (ringAt >= 0 && ringAt < highestTree) {
+          for (const l of SELECTED_LAYERS) mapInstance.moveLayer(l.id)
+        }
+      } catch { /* style mid-swap; the next idle re-applies */ }
+    }
+    apply()
+    mapInstance.on('idle', apply)
+    return () => { try { mapInstance.off('idle', apply) } catch { /* */ } }
+  }, [mapInstance, isDarkMode])
+
+  // Fly to the selected site — map click or deep link — offset so the point
+  // lands clear of the card. Once per site.
+  const flownTo = useRef<number | null>(null)
+  useEffect(() => {
+    if (!mapInstance || treeId === null || !selectedCenter) return
+    if (flownTo.current === treeId) return
+    flownTo.current = treeId
+    try {
+      mapInstance.flyTo({
+        center: selectedCenter,
+        zoom: Math.max(mapInstance.getZoom(), 16),
+        duration: 900,
+        offset: eventFlyToOffset(mapInstance, cardPx(isMobile)),
+      })
+    } catch { /* map mid-construction; the next selection flies */ }
+  }, [mapInstance, treeId, selectedCenter, isMobile])
+  useEffect(() => { if (treeId === null) flownTo.current = null }, [treeId])
+
+  const closeCard = useCallback(() => setParam('tree', null), [setParam])
+  const pickNeighborhood = useCallback((name: string) => setParam('nh', name), [setParam])
+  const pickSpecies = useCallback((name: string) => setParam('species', name), [setParam])
 
   // Lens filters + paint + zoom floors, re-applied on idle: useMapLayer
   // re-adds the static specs after a theme swap. Every write is guarded by a
@@ -262,7 +339,21 @@ export default function Trees() {
             )}
 
             {/* Legend mount (later task). */}
-            {/* Tree card mount (later task): DetailPanelShell keyed on treeId. */}
+            {treeId !== null && (
+              <TreeCard
+                key={treeId}
+                siteId={treeId}
+                snapshot={snap}
+                snapshotError={snapError?.message ?? null}
+                aggregates={agg}
+                nowYear={nowYear}
+                onClose={closeCard}
+                onRetrySnapshot={retrySnap}
+                onPickNeighborhood={pickNeighborhood}
+                onPickSpecies={pickSpecies}
+                insideSelectors={CARD_INSIDE}
+              />
+            )}
           </MapView>
         </div>
 

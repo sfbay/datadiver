@@ -175,6 +175,60 @@ export const TREE_LAYERS: TreeLayer[] = [
 /** Click + hover targets: the layers that draw a site you can point at. */
 export const TREE_POINT_LAYER_IDS: readonly string[] = ['trees-dots', 'trees-stumps', 'trees-species']
 
+// ── the selected site (the tree card's ring) ───────────────────────────────
+
+/** One snapshot site's point: the same decode as siteFeatures, or null when
+ *  the city published no coordinates (−1). */
+export function siteLngLat(x: number, y: number): [number, number] | null {
+  if (x < 0 || y < 0) return null
+  return [(x - 12_300_000) / 1e5, (y + 3_700_000) / 1e5]
+}
+
+export const SELECTED_SOURCE = 'trees-selected'
+export const SELECTED_KEYLINE_LAYER = 'trees-selected-keyline'
+export const EMPTY_FC: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] }
+
+/** The ring's radius by zoom — always wider than the largest dot at that zoom. */
+const SELECTED_RADIUS_STOPS: readonly (readonly [number, number])[] = [[11, 6], [13, 7], [15, 10], [17, 14]]
+
+/** A paper (dark) / espresso (light) keyline under a moss ring, at every
+ *  zoom, drawn above every tree layer (its source is added after theirs).
+ *  The keyline colour follows the theme through `selectedKeyline`, applied
+ *  on idle only when it differs. Not a click target. */
+export const SELECTED_LAYERS: mapboxgl.CircleLayerSpecification[] = [
+  {
+    id: SELECTED_KEYLINE_LAYER,
+    type: 'circle',
+    source: SELECTED_SOURCE,
+    paint: {
+      'circle-radius': byZoom(SELECTED_RADIUS_STOPS),
+      'circle-opacity': 0,
+      'circle-stroke-color': KEYLINE_DARK,
+      'circle-stroke-width': 4.5,
+    },
+  },
+  {
+    id: 'trees-selected',
+    type: 'circle',
+    source: SELECTED_SOURCE,
+    paint: {
+      'circle-radius': byZoom(SELECTED_RADIUS_STOPS),
+      'circle-opacity': 0,
+      'circle-stroke-color': MOSS_500,
+      'circle-stroke-width': 2,
+    },
+  },
+]
+
+export function selectedKeyline(dark: boolean): string {
+  return dark ? KEYLINE_DARK : KEYLINE_LIGHT
+}
+
+export function selectedFeature(center: [number, number] | null): GeoJSON.FeatureCollection {
+  if (!center) return EMPTY_FC
+  return { type: 'FeatureCollection', features: [{ type: 'Feature', geometry: { type: 'Point', coordinates: center }, properties: {} }] }
+}
+
 // ── lenses ─────────────────────────────────────────────────────────────────
 
 export interface LensPaint {

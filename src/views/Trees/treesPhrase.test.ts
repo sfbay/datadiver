@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest'
 import type { DisappearedLog } from '@/lib/trees/types'
 import * as phrase from './treesPhrase'
 import {
-  disappearedLine, equityFlagNote, equityLead, leftInventoryNote, nearbyFallsLine, noticeLine, speciesRankLine,
-  topFiveLine,
+  disappearedLine, equityFlagNote, equityLead, kindTitle, leftInventoryNote, nearbyFallsLine, noticeLine, plantedLine,
+  speciesRankLine, topFiveLine, trunkLine,
 } from './treesPhrase'
 
 const c = (pkI: number, pkP: number, kmI: number, kmP: number) =>
@@ -109,6 +109,16 @@ describe('card lines never claim more than the record', () => {
     }
     expect(phrase.UNKNOWN_SITE).toBe('No street tree site has this number.')
   })
+  it('card labels: kind titles, planting and trunk size as recorded', () => {
+    expect(kindTitle('stump')).toBe('Stump')
+    expect(kindTitle('site')).toBe('Empty planting site')
+    expect(kindTitle('shrub')).toBe('Shrub')
+    expect(plantedLine('2026-05-07T00:00:00.000', 2026)).toBe('Planted May 7')
+    expect(plantedLine(null, 2026)).toBe('Planting date not recorded')
+    expect(trunkLine(3, '10 inches or narrower')).toBe('3 inches (10 inches or narrower)')
+    expect(trunkLine(1, '10 inches or narrower')).toBe('1 inch (10 inches or narrower)')
+    expect(trunkLine(null, 'Not measured')).toBe('Not measured')
+  })
   it('the disappeared log', () => {
     expect(disappearedLine({ trackingSince: '2026-09-30', runs: [] }, 2026))
       .toBe('DataDiver began recording which sites leave the inventory on Sept. 30.')
@@ -154,7 +164,11 @@ describe('jargon ban — statistics words and over-claims never reach a reader',
       ...(['earlier-tree', 'this-site'] as const).flatMap((r) =>
         ['Posted 24hr', 'Posted 15 Day', 'Posted 30 Day', 'Other'].map((t) => noticeLine(r, '2018-02-27', t, 2026))),
       nearbyFallsLine(0, 2021), nearbyFallsLine(1, 2021), nearbyFallsLine(3, 2021),
-      phrase.UNKNOWN_SITE,
+      phrase.UNKNOWN_SITE, phrase.UNDATED_NOTICE, phrase.CARD_ERROR,
+      // card labels — every kind, both planting branches, both trunk branches
+      ...(['stump', 'site', 'shrub'] as const).map((k) => kindTitle(k)),
+      plantedLine('2026-05-07', 2026), plantedLine(null, 2026),
+      trunkLine(3, '10 inches or narrower'), trunkLine(1, '10 inches or narrower'), trunkLine(null, 'Not measured'),
     ]
     expect(out.length).toBeGreaterThan(30)
     for (const s of out) if (BANNED.test(s)) throw new Error(s)

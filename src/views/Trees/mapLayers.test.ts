@@ -1,7 +1,10 @@
 // src/views/Trees/mapLayers.test.ts
 import { describe, expect, it } from 'vitest'
 import type { TreesSnapshot } from '@/lib/trees/types'
-import { DOT_MINZOOM, TREE_LAYERS, TREE_POINT_LAYER_IDS, lensPaint, siteFeatures } from './mapLayers'
+import {
+  DOT_MINZOOM, EMPTY_FC, SELECTED_KEYLINE_LAYER, SELECTED_LAYERS, SELECTED_SOURCE, TREE_LAYERS, TREE_POINT_LAYER_IDS,
+  lensPaint, selectedFeature, selectedKeyline, siteFeatures, siteLngLat,
+} from './mapLayers'
 import type { Lens } from './treesUrl'
 
 const snap: TreesSnapshot = {
@@ -169,5 +172,29 @@ describe('dot radii scale with zoom and keep the trunk-class ratios', () => {
     expect(stops.get(13)).toEqual([1.2, 1.7, 2.4, 1.2])
     expect(stops.get(15)).toEqual([2.5, 3.5, 5, 2.5])
     expect(stops.get(17)).toEqual([4, 5.5, 8, 4])
+  })
+})
+
+describe('the selected-site ring', () => {
+  it('decodes a site point the way siteFeatures does, and none without one', () => {
+    const [lon, lat] = siteLngLat(58094, 78896)!
+    expect(lon).toBeCloseTo(-122.41906, 5)
+    expect(lat).toBeCloseTo(37.78896, 5)
+    expect(siteLngLat(-1, -1)).toBeNull()
+  })
+  it('one feature for a point, none without one', () => {
+    expect(selectedFeature([-122.4, 37.7]).features).toHaveLength(1)
+    expect(selectedFeature(null)).toEqual(EMPTY_FC)
+  })
+  it('a keyline under a moss ring, both on their own source, never a click target', () => {
+    expect(SELECTED_LAYERS.map((l) => l.id)).toEqual([SELECTED_KEYLINE_LAYER, 'trees-selected'])
+    for (const l of SELECTED_LAYERS) {
+      expect(l.source).toBe(SELECTED_SOURCE)
+      expect(TREE_POINT_LAYER_IDS).not.toContain(l.id)
+    }
+  })
+  it('the keyline follows the theme', () => {
+    expect(selectedKeyline(true)).toBe('#f5ecd9')
+    expect(selectedKeyline(false)).toBe('#1e140d')
   })
 })

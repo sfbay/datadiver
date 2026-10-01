@@ -185,12 +185,12 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     // DATELESS, no eraSource: the inventory is a snapshot of what stands now.
     dateless: true,
     omniDatasetKeys: ['streetTrees'],
-    // Today the browser reads only the inventory's freshness probe; every
-    // figure on the page comes from the derived file below, built at BUILD
-    // time by scripts/build-trees.ts (inventory, removal notices and 311 fall
-    // reports). streetTreeRemovals joins `sources` when the tree card starts
-    // reading one site's notices live.
-    sources: ['streetTrees'],
+    // The browser reads the inventory's freshness probe and, for the tree
+    // card, ONE site's inventory row and its removal notices (keyed live
+    // reads by site id). Every aggregate figure on the page comes from the
+    // derived file below, built at BUILD time by scripts/build-trees.ts
+    // (inventory, removal notices and 311 fall reports).
+    sources: ['streetTreeRemovals', 'streetTrees'],
     staticSources: ['dd-street-trees', 'sf-analysis-neighborhoods', 'acs-2023-5yr'],
     citable: ['freshness'],
   },
