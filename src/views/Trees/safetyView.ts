@@ -11,9 +11,6 @@
 
 import type { FallYear, NeighborhoodAggregate } from '@/lib/trees/types'
 
-/** Below this many street trees a per-1,000 rate swings on a single report. */
-export const MIN_TREES_FOR_RATE = 200
-
 export interface FallBar {
   year: number
   fallen: number
@@ -51,8 +48,11 @@ export interface SafetyRow {
   stumps: number
   fallen: number
   aboutToFall: number
-  /** Fallen-tree reports per 1,000 street trees; null under MIN_TREES_FOR_RATE. */
-  per1kTrees: number | null
+  /** The neighborhood's street trees in the inventory TODAY — printed beside
+   *  the reports as a plain figure, never divided into a rate (ruling R17,
+   *  reversing R16): a report may concern any tree, park and private trees
+   *  included, so the two are different populations. */
+  trees: number
 }
 
 /** One row per neighborhood for `year`, by that year's fallen-tree reports,
@@ -74,7 +74,7 @@ export function safetyRows(nbs: readonly NeighborhoodAggregate[], year: number, 
         stumps: n.stumps,
         fallen,
         aboutToFall,
-        per1kTrees: n.trees >= MIN_TREES_FOR_RATE ? (fallen / n.trees) * 1000 : null,
+        trees: n.trees,
       }
     })
     .sort((a, b) => b.fallen - a.fallen || a.name.localeCompare(b.name))

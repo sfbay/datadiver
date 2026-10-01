@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { FallYear, NeighborhoodAggregate } from '@/lib/trees/types'
 import * as phrase from './treesPhrase'
 import {
-  MIN_TREES_FOR_RATE, fallBars, latestFullYear, neighborhoodYears, safetyRows,
+  fallBars, latestFullYear, neighborhoodYears, safetyRows,
 } from './safetyView'
 
 const fy = (year: number, fallen: number, aboutToFall: number, partial = false, placeable = true): FallYear =>
@@ -73,11 +73,9 @@ describe('safetyRows', () => {
   it('sorts by that year\'s fallen-tree reports', () => {
     expect(rows.map((r) => r.name)).toEqual(['Mission', 'Lincoln Park', 'Marina'])
   })
-  it('gives a rate per 1,000 street trees, withheld under 200 trees', () => {
-    expect(MIN_TREES_FOR_RATE).toBe(200)
-    expect(rows[0].per1kTrees).toBe(10)
-    expect(rows[1].per1kTrees).toBeNull()
-    expect(rows[2]).toMatchObject({ fallen: 0, per1kTrees: 0 })
+  it('carries the street trees beside the reports as a plain figure, never a rate (R17)', () => {
+    expect(rows.map((r) => [r.name, r.fallen, r.trees])).toEqual([['Mission', 90, 9000], ['Lincoln Park', 5, 11], ['Marina', 0, 4000]])
+    for (const r of rows) expect(Object.keys(r)).not.toContain('per1kTrees')
   })
   it('within a readable year, a neighborhood with no row for it has 0 of each kind', () => {
     expect(rows[2]).toMatchObject({ fallen: 0, aboutToFall: 0 })
@@ -121,8 +119,10 @@ describe('safety lines', () => {
     expect(phrase.fallBarCaptions({ partial: true, placeable: false })).toEqual(['so far', 'citywide only'])
     expect(phrase.fallBarCaptions({ partial: false, placeable: true })).toEqual([])
   })
-  it('the list head names the rate in full, and says rows count only mapped reports (S1, S3)', () => {
-    expect(phrase.PER_1K_UNIT).toBe('per 1,000 street trees')
+  it('the list head names both figures, no rate, and says rows count only mapped reports (R17, S3)', () => {
+    expect([phrase.ROWS_COUNT_HEAD, phrase.ROWS_TREES_HEAD]).toEqual(['Reports', 'Street trees'])
+    expect((phrase as Record<string, unknown>).PER_1K_UNIT).toBeUndefined()
+    expect((phrase as Record<string, unknown>).rateWithheldTip).toBeUndefined()
     expect(phrase.ROWS_MAPPED_ONLY).toBe('Rows count only reports with a map point, so a year’s rows can add up to less than its bar above.')
   })
   it('a partial year that also cannot be placed is named once, for the map point', () => {
@@ -149,35 +149,47 @@ describe('safety lines', () => {
       'In 2025, 311 logged 1,592 reports of a fallen tree and 752 of a tree about to fall, not counting reports the city closed as duplicates.',
     )
   })
-  it('a row\'s sentence: figure, rate or why none, trunks and stumps', () => {
+  it('a row\'s sentence: reports, street trees beside them (never divided), trunks and stumps', () => {
     const [row] = safetyRows([{
       name: 'Mission', trees: 9000, stumps: 3, largeTrunks: 40, population: 1, areaKm2: 1, medianIncome: 1, povertyRate: 1,
       perK: 1, perKm2: 1, flag: null, falls: [[2025, 90, 10]],
     }], 2025, [fy(2025, 1, 1)])
     expect(phrase.safetyRowLabel(row, 2025)).toBe(
-      'Mission: 90 fallen-tree reports in 2025, 10 per 1,000 street trees; 10 about-to-fall reports. ' +
-        '40 street trees with a recorded trunk 21 inches or wider; 3 stumps.',
+      'Mission: 90 fallen-tree reports and 10 about-to-fall reports in 2025. ' +
+        '9,000 street trees in the inventory today, 40 with a recorded trunk 21 inches or wider; 3 stumps.',
     )
-    expect(phrase.safetyRowLabel({ ...row, name: 'Lincoln Park', per1kTrees: null, fallen: 1, aboutToFall: 0, largeTrunks: 1, stumps: 1 }, 2025)).toBe(
-      'Lincoln Park: 1 fallen-tree report in 2025, no rate: fewer than 200 street trees; 0 about-to-fall reports. ' +
-        '1 street tree with a recorded trunk 21 inches or wider; 1 stump.',
+    expect(phrase.safetyRowLabel({ ...row, name: 'Lincoln Park', trees: 1, fallen: 1, aboutToFall: 0, largeTrunks: 1, stumps: 1 }, 2025)).toBe(
+      'Lincoln Park: 1 fallen-tree report and 0 about-to-fall reports in 2025. ' +
+        '1 street tree in the inventory today, 1 with a recorded trunk 21 inches or wider; 1 stump.',
     )
-    expect(phrase.rateWithheldTip(200)).toBe('Fewer than 200 street trees here, so no rate is given.')
+    expect(phrase.safetyRowLabel(row, 2025)).not.toMatch(/per 1,000|rate/)
   })
   it('removal notices: a notice, never a removal', () => {
     expect(phrase.noticesListedLabel(4831, 5571)).toBe('4,831 of 5,571 sites with a removal notice are still in the inventory.')
     expect(phrase.noticeTypeLabel('Posted 24hr', 1354)).toBe('Posted 24hr: 1,354 removal notices')
     expect(phrase.noticeTypeLabel('Posted 24hr', 1)).toBe('Posted 24hr: 1 removal notice')
-    expect(phrase.noticesTotalLine(5713, 2017, 5571)).toBe(
-      '5,713 removal notices posted since 2017 at 5,571 sites. A site can hold more than one notice.')
-    expect(phrase.noticesTotalLine(5713, null, 5571)).toBe('5,713 removal notices posted at 5,571 sites. A site can hold more than one notice.')
-    expect(phrase.noticesTotalLine(1, null, 1)).toBe('1 removal notice posted at 1 site. A site can hold more than one notice.')
+    expect(phrase.noticesTotalLine(5713, 2017, 5571, 3)).toBe(
+      '5,713 removal notices posted since 2017 at 5,571 sites; 3 carry no readable site number. A site can hold more than one notice.')
+    expect(phrase.noticesTotalLine(5713, null, 5571, 1)).toBe(
+      '5,713 removal notices posted at 5,571 sites; 1 carries no readable site number. A site can hold more than one notice.')
+    expect(phrase.noticesTotalLine(1, null, 1, 0)).toBe('1 removal notice posted at 1 site. A site can hold more than one notice.')
     expect(phrase.replantedAfterLine(1022)).toBe(
-      'At 1,022 sites, the street tree listed now was planted after the site’s removal notice, so that notice belongs to an earlier tree.',
+      'At 1,022 sites, the planting date now on record is later than the site’s removal notice, so that notice belongs to an earlier tree.',
     )
     expect(phrase.replantedAfterLine(1)).toBe(
-      'At 1 site, the street tree listed now was planted after the site’s removal notice, so that notice belongs to an earlier tree.',
+      'At 1 site, the planting date now on record is later than the site’s removal notice, so that notice belongs to an earlier tree.',
     )
+  })
+  it('noticed sites still in the inventory: what they are listed as now (final review I2)', () => {
+    expect(phrase.noticedKindsLine({ tree: 4368, stump: 136, site: 325, shrub: 2 })).toBe(
+      'Of those, 4,368 are listed as a street tree, 136 as a stump, 325 as an empty planting site and 2 as a shrub.')
+    expect(phrase.noticedKindsList({ tree: 4368, stump: 136, site: 325, shrub: 2 })).toBe(
+      '4,368 listed as a street tree, 136 as a stump, 325 as an empty planting site and 2 as a shrub')
+    expect(phrase.noticedKindsLine({ tree: 1, stump: 0, site: 2, shrub: 0 })).toBe(
+      'Of those, 1 is listed as a street tree and 2 as an empty planting site.')
+    expect(phrase.noticedKindsLine({ tree: 0, stump: 1, site: 0, shrub: 0 })).toBe('Of those, 1 is listed as a stump.')
+    expect(phrase.noticedKindsLine({ tree: 0, stump: 0, site: 0, shrub: 0 })).toBeNull()
+    expect(phrase.noticedKindsList({ tree: 0, stump: 0, site: 0, shrub: 0 })).toBeNull()
   })
 })
 

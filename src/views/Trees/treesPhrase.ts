@@ -7,15 +7,14 @@
 // never a tree), "left the inventory". No statistics words reach a reader —
 // treesPhrase.test.ts fails the build if one does.
 
-import type { EquityCorrelations, EquityFlag, LinkStrength } from '@/lib/trees/equity'
-import { MIN_POPULATION, linkStrength } from '@/lib/trees/equity'
+import type { EquityFlag, LinkStrength, RobustLink } from '@/lib/trees/equity'
+import { MIN_POPULATION } from '@/lib/trees/equity'
 import { NEARBY_METERS, PLACEABLE_FLOOR } from '@/lib/trees/fallReports'
-import type { NoticeReading } from '@/lib/trees/siteNotices'
+import type { NoticeReading, NoticedByKind } from '@/lib/trees/siteNotices'
 import type { RowKind } from '@/lib/trees/species'
 import { TRUNK_LABEL } from '@/lib/trees/trunk'
 import type { DisappearedLog, FallYear } from '@/lib/trees/types'
 import { apDate } from '@/utils/apDate'
-import { MIN_TREES_FOR_RATE } from './safetyView'
 
 /** Figures with thousands commas. Local on purpose: Restaurants' apCount
  *  spells out one–nine, and views do not import each other's phrase layers. */
@@ -26,6 +25,9 @@ export function apCount(n: number): string {
 export const SUBHEAD = 'Every street tree the city keeps on record'
 export const PARKS_LINE = 'Street trees only. Trees inside parks and the Presidio are not in this inventory.'
 export const TRUNK_NOTE = 'Trunk size as the city last recorded it. The record does not say when.'
+/** The card's trunk note for a stump, an empty site or a shrub: the row still
+ *  carries a trunk size, and the record does not say which tree it measured. */
+export const TRUNK_NOTE_NOT_TREE = 'The city’s record still carries a trunk size for this site. It does not say which tree was measured, or when.'
 export const STUMP_LEGEND = 'A stump stands here'
 export const FALLS_LEGEND = '311 reports of a fallen tree'
 export const UNKNOWN_SITE = 'No street tree site has this number.'
@@ -38,8 +40,10 @@ export function speciesRankLine(rank: number, of: number): string {
   return `No. ${rank} of ${apCount(of)} species names`
 }
 
+/** The unit is published NAMES (cultivars and spellings apart), so the line
+ *  says names, never species. */
 export function topFiveLine(share: number): string {
-  return `The five most common species are ${share}% of street trees.`
+  return `The five most common species names are ${share}% of street trees.`
 }
 
 // ── Explore tab ──────────────────────────────────────────────────────────────
@@ -48,17 +52,22 @@ export function topFiveLine(share: number): string {
 
 export const CAPTION_STREET_TREES = 'Street trees'
 export const CAPTION_SPECIES = 'Species names'
-export const CAPTION_TOP_FIVE = 'Top five species'
+export const CAPTION_TOP_FIVE = 'Top five names'
 export const CAPTION_SHARE = 'Of street trees'
 export const TRUNK_HEADING = 'Trunk size as recorded'
 export const TOP_NEIGHBORHOODS_HEADING = 'Neighborhoods with the most of this species'
-export const SEARCH_PLACEHOLDER = 'Species, or an address like 1330 Bush'
+// The example address must match an inventory site (1300 Bush St held three
+// on Sept. 30, 2026). A live address cannot be unit-pinned: re-probe it at
+// every regeneration (CLAUDE.md Trees bullet, data-insights → Street trees).
+export const SEARCH_PLACEHOLDER = 'Species, or an address like 1300 Bush'
 export const SEARCH_LABEL = 'Search species or a street address'
 export const ADDRESS_SEARCHING = 'Searching addresses…'
 export const ADDRESS_ERROR = 'The address search did not load.'
 export const NO_PLANTING_DATES = 'No planting dates recorded'
 export const SHOW_FEWER = 'Show fewer'
 export const RAIL_ERROR = 'The street-tree summaries did not load.'
+/** Under the Equity lens, when the neighborhood shapes the fill needs fail to load. */
+export const BOUNDARIES_ERROR = 'The neighborhood map shapes did not load, so the Equity colors cannot be drawn.'
 
 export function streetTreesTip(n: number): string {
   return `The city’s inventory lists ${apCount(n)} street trees. ${PARKS_LINE}`
@@ -113,8 +122,10 @@ export function noAddressLine(query: string): string {
 
 
 // ── Equity lead ──────────────────────────────────────────────────────────────
-// Income pair only. A measure "holds" when its link is at least weak; its
-// direction is the sign. The sentence states only what both measures support.
+// Income pair only. A measure "holds" when its ROBUST link is at least weak —
+// the tier that survives leaving out any one neighborhood (ruling R18,
+// `robustLink` in src/lib/trees/equity.ts); its direction is the full set's
+// sign. The sentence states only what both measures support.
 
 const MEASURE = { perK: 'per resident', perKm2: 'per square kilometer' } as const
 type Measure = keyof typeof MEASURE
@@ -125,13 +136,16 @@ const cap = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1)
 /** "have more" for a strong link, "tend to have more" for a weak one (ruling R8). */
 const haveMore = (strength: LinkStrength): string => (strength === 'strong' ? 'have more' : 'tend to have more')
 
-export function equityLead(c: EquityCorrelations): string {
-  const a: LinkStrength = linkStrength(c.perK.income)
-  const b: LinkStrength = linkStrength(c.perKm2.income)
+/** Each measure's robust tier and the full set's link (its sign is the direction). */
+export type LeadLinks = Record<Measure, Pick<RobustLink, 'rho' | 'strength'>>
+
+export function equityLead(links: LeadLinks): string {
+  const a: LinkStrength = links.perK.strength
+  const b: LinkStrength = links.perKm2.strength
   const aHolds = a !== 'none', bHolds = b !== 'none'
 
   if (aHolds && bHolds) {
-    const aPos = c.perK.income > 0, bPos = c.perKm2.income > 0
+    const aPos = links.perK.rho > 0, bPos = links.perKm2.rho > 0
     if (aPos !== bPos) {
       // Each side names its own strength, so a weak side never stands level with a strong one.
       return `The two measures disagree. Counted ${MEASURE.perK}, ${incomeSide(aPos)} neighborhoods have more street trees, ` +
@@ -148,7 +162,7 @@ export function equityLead(c: EquityCorrelations): string {
   if (aHolds !== bHolds) {
     const holds: Measure = aHolds ? 'perK' : 'perKm2'
     const other: Measure = aHolds ? 'perKm2' : 'perK'
-    const positive = c[holds].income > 0
+    const positive = links[holds].rho > 0
     return `Counted ${MEASURE[holds]}, ${incomeSide(positive)} neighborhoods ${haveMore(aHolds ? a : b)} street trees. ` +
       `Counted ${MEASURE[other]}, there is no clear pattern. The answer depends on the measure.`
   }
@@ -202,9 +216,11 @@ export function otherRankLine(position: number, other: 'perK' | 'perKm2'): strin
   return `No. ${position} ${other === 'perKm2' ? 'by area' : 'per resident'}`
 }
 
-/** A median chip's sentence (its InfoTip and aria-label). */
+/** A median chip's sentence (its InfoTip and aria-label). With an even count
+ *  the figure is the mean of the middle two, and the sentence says so. */
 export function medianTip(by: 'perK' | 'perKm2', value: number, n: number): string {
-  return `Among the ${apCount(n)} neighborhoods without a flag, the middle one has ${equityFigure(value)} street trees ${UNIT[by]}.`
+  const middle = n % 2 === 0 ? 'the middle two average' : 'the middle one has'
+  return `Among the ${apCount(n)} neighborhoods without a flag, ${middle} ${equityFigure(value)} street trees ${UNIT[by]}.`
 }
 
 /** A list row's sentence, for its aria-label: the marks it replaces are the
@@ -256,17 +272,18 @@ export function trunkLine(inches: number | null, classLabel: string): string {
   return `${inches} inch${inches === 1 ? '' : 'es'} (${classLabel})`
 }
 
+/** "mapped" in both branches (ruling R19): the count sees only reports with a
+ *  map point, so a zero is no report WITH A POINT nearby, never no report. */
 export function nearbyFallsLine(n: number, sinceYear: number): string {
   const near = `within ${NEARBY_METERS} meters since ${sinceYear}.`
-  if (n === 0) return `No fall reports ${near}`
-  return `${apCount(n)} fall report${n === 1 ? '' : 's'} ${near}`
+  if (n === 0) return `No mapped fall reports ${near}`
+  return `${apCount(n)} mapped fall report${n === 1 ? '' : 's'} ${near}`
 }
 
-/** For a site whose last known row was a stump, an empty site or a shrub,
- *  nothing is claimed about a tree. */
-export function leftInventoryNote(asOf: string, nowYear: number, kind: RowKind): string {
-  const was = `This site is not in the city’s inventory. It was there on ${apDate(asOf, nowYear)}`
-  return kind === 'tree' ? `${was}; the tree may have been taken out.` : `${was}.`
+/** A site the live inventory no longer lists. The record does not say why —
+ *  a tree coming down, record clean-up, renumbering — so nothing is claimed. */
+export function leftInventoryNote(asOf: string, nowYear: number): string {
+  return `This site is no longer listed in the city’s inventory. It was there on ${apDate(asOf, nowYear)}; the record does not say why.`
 }
 
 export function disappearedLine(log: DisappearedLog, nowYear: number): string {
@@ -290,11 +307,12 @@ export const SO_FAR = 'so far'
 export const CITYWIDE_ONLY = 'citywide only'
 export const NEIGHBORHOOD_FALLS_HEAD = 'Fallen-tree reports by neighborhood'
 export const NEIGHBORHOOD_YEARS_LABEL = 'Year of fall reports'
-export const PER_1K_UNIT = 'per 1,000 street trees'
-/** The row's small rate label; the list head prints PER_1K_UNIT in full. */
-export const PER_1K_SHORT = 'per 1,000'
-/** The list head over each row's two figures, top to bottom. */
+/** The list head over each row's two figures, top to bottom: the year's
+ *  mapped fallen-tree reports, and the neighborhood's street trees as a plain
+ *  figure beside it — never divided into a rate (ruling R17). */
 export const ROWS_COUNT_HEAD = 'Reports'
+export const ROWS_TREES_HEAD = 'Street trees'
+export const STREET_TREES_UNIT = 'street trees'
 /** Under the year pills: rows count only mapped reports (S3). */
 export const ROWS_MAPPED_ONLY = 'Rows count only reports with a map point, so a year’s rows can add up to less than its bar above.'
 export const LARGE_TRUNKS_UNIT = 'trunks 21+ in.'
@@ -302,7 +320,7 @@ export const STUMPS_UNIT = 'stumps'
 export const NO_FALL_YEARS = 'No full year has enough mapped reports to count by neighborhood.'
 export const NOTICES_HEAD = 'Removal notices'
 export const NOTICES_LISTED_CAPTION = 'sites with a notice still in the inventory'
-export const FORMER_HEAD = 'Former trees'
+export const FORMER_HEAD = 'Sites that left the inventory'
 export const DISAPPEARED_ERROR = 'The log of sites that left the inventory did not load.'
 /** The map legend's line under the Safety lens. */
 export const FALLS_NOT_DRAWN = 'Fall reports are not drawn: a report marks an address, not a tree.'
@@ -382,21 +400,16 @@ export function busiestDayLine(day: { ymd: string; reports: number }, nowYear: n
     'counting fallen-tree and about-to-fall reports together.'
 }
 
-export function rateWithheldTip(min: number): string {
-  return `Fewer than ${apCount(min)} street trees here, so no rate is given.`
-}
-
-/** A neighborhood row's sentence, for its aria-label. */
+/** A neighborhood row's sentence, for its aria-label. The street trees stand
+ *  beside the reports as their own figure, never divided (ruling R17). */
 export function safetyRowLabel(
-  r: { name: string; fallen: number; aboutToFall: number; per1kTrees: number | null; largeTrunks: number; stumps: number },
+  r: { name: string; fallen: number; aboutToFall: number; trees: number; largeTrunks: number; stumps: number },
   year: number,
 ): string {
-  const rate = r.per1kTrees === null
-    ? `no rate: fewer than ${apCount(MIN_TREES_FOR_RATE)} street trees`
-    : `${equityFigure(r.per1kTrees)} ${PER_1K_UNIT}`
-  return `${r.name}: ${plural(r.fallen, 'fallen-tree report', 'fallen-tree reports')} in ${year}, ${rate}; ` +
-    `${plural(r.aboutToFall, 'about-to-fall report', 'about-to-fall reports')}. ` +
-    `${plural(r.largeTrunks, 'street tree', 'street trees')} with a recorded trunk ${TRUNK_LABEL.large}; ` +
+  return `${r.name}: ${plural(r.fallen, 'fallen-tree report', 'fallen-tree reports')} and ` +
+    `${plural(r.aboutToFall, 'about-to-fall report', 'about-to-fall reports')} in ${year}. ` +
+    `${plural(r.trees, 'street tree', 'street trees')} in the inventory today, ` +
+    `${apCount(r.largeTrunks)} with a recorded trunk ${TRUNK_LABEL.large}; ` +
     `${plural(r.stumps, 'stump', 'stumps')}.`
 }
 
@@ -410,14 +423,42 @@ export function noticeTypeLabel(type: string, n: number): string {
 }
 
 /** Notices beside sites: a site can hold more than one notice, so the two
- *  totals differ and the line says why. */
-export function noticesTotalLine(rows: number, sinceYear: number | null, sites: number): string {
+ *  totals differ and the line says why; notices with no readable site number
+ *  are named, so the sites never claim every notice. */
+export function noticesTotalLine(rows: number, sinceYear: number | null, sites: number, unjoinable: number): string {
   const head = `${plural(rows, 'removal notice', 'removal notices')} posted`
   const since = sinceYear === null ? head : `${head} since ${sinceYear}`
-  return `${since} at ${plural(sites, 'site', 'sites')}. A site can hold more than one notice.`
+  const loose = unjoinable > 0 ? `; ${apCount(unjoinable)} carr${unjoinable === 1 ? 'ies' : 'y'} no readable site number` : ''
+  return `${since} at ${plural(sites, 'site', 'sites')}${loose}. A site can hold more than one notice.`
 }
 
+const NOTICED_AS: readonly (readonly [keyof NoticedByKind, string])[] = [
+  ['tree', 'a street tree'], ['stump', 'a stump'], ['site', 'an empty planting site'], ['shrub', 'a shrub'],
+]
+
+/** "4,368 listed as a street tree, 136 as a stump, 325 as an empty planting
+ *  site and 2 as a shrub" — what the noticed sites still in the inventory are
+ *  listed as now (final review I2). Kinds with none are left out; null when
+ *  every count is zero. Shared by the Safety tab's line and the data note. */
+export function noticedKindsList(k: NoticedByKind): string | null {
+  const parts = NOTICED_AS.filter(([key]) => k[key] > 0)
+    .map(([key, as], i) => `${apCount(k[key])} ${i === 0 ? 'listed ' : ''}as ${as}`)
+  return parts.length ? listAnd(parts) : null
+}
+
+/** The line under the "still in the inventory" bar. */
+export function noticedKindsLine(k: NoticedByKind): string | null {
+  const list = noticedKindsList(k)
+  if (list === null) return null
+  const first = NOTICED_AS.find(([key]) => k[key] > 0) as readonly [keyof NoticedByKind, string]
+  const verb = k[first[0]] === 1 ? 'is' : 'are'
+  return `Of those, ${list.replace(/^(\S+) listed /, `$1 ${verb} listed `)}.`
+}
+
+/** `replantedAfter` counts every listed site whose planting date on record is
+ *  later than its latest notice, whatever the site holds now — so the line
+ *  speaks of the date, never of "the tree listed now". */
 export function replantedAfterLine(n: number): string {
-  return `At ${plural(n, 'site', 'sites')}, the street tree listed now was planted after the site’s removal notice, ` +
+  return `At ${plural(n, 'site', 'sites')}, the planting date now on record is later than the site’s removal notice, ` +
     'so that notice belongs to an earlier tree.'
 }

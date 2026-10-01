@@ -14,8 +14,12 @@ import { describe, expect, it } from 'vitest'
 import { AGGREGATES_PATH, DISAPPEARED_PATH, TREES_PATH } from '../../../scripts/build-trees'
 import { SF_NEIGHBORHOODS } from '../../utils/geo'
 import { PLACEABLE_FLOOR } from './fallReports'
+import { linkStrength } from './equity'
+import { noticedSitesByKind } from './siteNotices'
 import { classifyRow, parseSpecies } from './species'
 import { SOURCE_NOTES } from '../../views/About/sourceNotes'
+import { PARK_HEAVY_UNFLAGGED, leadLinks, parkHeavyLowest } from '../../views/Trees/equityView'
+import { equityLead } from '../../views/Trees/treesPhrase'
 import type { DisappearedLog, TreesAggregates, TreesSnapshot } from './types'
 
 const read = <T,>(p: string) => JSON.parse(readFileSync(join(process.cwd(), p), 'utf8')) as T
@@ -214,6 +218,38 @@ describe('trees snapshot — EXACT pins at asOf (re-pin + sourceNotes + data-ins
 
     expect(D).toEqual({ trackingSince: '2026-09-30', runs: [] })
   })
+
+  it('noticed sites still in the inventory, by what they are listed as now (final review I2)', () => {
+    const k = noticedSitesByKind(T)
+    expect(k).toEqual({ tree: 4368, stump: 136, site: 325, shrub: 2 })
+    expect(k.tree + k.stump + k.site + k.shrub).toBe(A.notices.listed)
+  })
+
+  // Ruling R18: the lead claims a link only if it survives leaving out any
+  // one neighborhood. Per area is 0.348 on all 36 but 0.299 without
+  // Lakeshore, so the lead names no pattern for that measure.
+  it('the equity lead\'s leave-one-out reading, and the sentence it gives (R18)', () => {
+    const l = leadLinks(A.neighborhoods)
+    expect(l.perK.rho).toBeCloseTo(0.6643, 4)
+    expect(l.perK.weakest).toBeCloseTo(0.6346, 4)
+    expect(l.perK.without).toBe('Seacliff')
+    expect(l.perK.strength).toBe('strong')
+    expect(l.perKm2.rho).toBeCloseTo(0.3477, 4)
+    expect(linkStrength(l.perKm2.rho)).toBe('weak')
+    expect(l.perKm2.weakest).toBeCloseTo(0.2986, 4)
+    expect(l.perKm2.without).toBe('Lakeshore')
+    expect(l.perKm2.strength).toBe('none')
+    expect(equityLead(l)).toBe(
+      'Counted per resident, higher-income neighborhoods have more street trees. ' +
+        'Counted per square kilometer, there is no clear pattern. The answer depends on the measure.',
+    )
+  })
+
+  it('the two park-heavy unflagged neighborhoods are the two lowest per square kilometer', () => {
+    expect([...PARK_HEAVY_UNFLAGGED]).toEqual(['Lakeshore', 'Twin Peaks'])
+    expect(parkHeavyLowest(A.neighborhoods)).toEqual({ figures: [60.6, 250], next: 693.2 })
+    for (const name of PARK_HEAVY_UNFLAGGED) expect(A.neighborhoods.find((n) => n.name === name)!.flag, name).toBeNull()
+  })
 })
 
 // About's three Trees notes quote the file. A regeneration that moves any of
@@ -247,6 +283,18 @@ describe('About source notes quote the committed file', () => {
   it('the notices note', () => {
     for (const n of [A.notices.rows, A.notices.sites, A.notices.listed, A.notices.replantedAfter]) expect(has(notices, n), String(n)).toBe(true)
   })
+  it('the notices note gives what the noticed sites are listed as now, computed from the snapshot (I2)', () => {
+    const k = noticedSitesByKind(T)
+    expect(notices).toContain(
+      `${fmt(k.tree)} listed as a street tree, ${fmt(k.stump)} as a stump, ${fmt(k.site)} as an empty planting site and ${fmt(k.shrub)} as a shrub`)
+  })
+  it('neither note says a site leaves the inventory when its tree comes down, nor "the tree listed now"', () => {
+    for (const note of [inv, notices]) {
+      expect(note).not.toMatch(/leaves the (list|inventory)/)
+      expect(note).not.toMatch(/tree (now )?listed( now)?/)
+    }
+    expect(inv).toContain('may drop its row or keep the site as a stump or an empty planting site')
+  })
   it('the derived-file note', () => {
     expect(has(file, A.falls.years.reduce((s, y) => s + y.duplicates, 0))).toBe(true)
     // The general rule for a report with no usable map point, with its total.
@@ -256,7 +304,7 @@ describe('About source notes quote the committed file', () => {
     for (const n of A.neighborhoods.filter((x) => x.flag !== null)) expect(file).toContain(n.name)
   })
   it('no banned reader word', () => {
-    const BANNED = /\bremoved\b|\bage\b|\blive\b|σ|z-?score|ρ|spearman|correlat|baseline/i
+    const BANNED = /\bremoved\b|taken out|\bage\b|\blive\b|σ|z-?score|ρ|spearman|correlat|baseline|per 1,000 street trees/i
     for (const note of [inv, notices, file]) expect(note).not.toMatch(BANNED)
   })
   it('says only what the records show: no "only records", no planting-size inference, the emergency gap named', () => {

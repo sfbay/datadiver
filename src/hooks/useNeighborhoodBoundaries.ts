@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouteView } from '@/cities/useActiveCity'
 import { getCity, censusCoarseGeojsonPath } from '@/cities/registry'
 import type { CityId } from '@/cities/routing'
@@ -21,6 +21,9 @@ export interface BoundariesResult {
   boundaries: GeoJSON.FeatureCollection | null
   isLoading: boolean
   error: string | null
+  /** Clear a failed load and fetch again (a view's Retry). A no-op while
+   *  idle or once the asset is cached. Optional to call; additive. */
+  retry: () => void
 }
 
 /**
@@ -65,6 +68,9 @@ export function useBoundariesAsset(url: string | null): BoundariesResult {
   )
   const [isLoading, setIsLoading] = useState(url ? !cachedByUrl.has(url) : false)
   const [error, setError] = useState<string | null>(null)
+  // Bumped by retry(): re-runs the effect, which re-fetches (a failed load
+  // never reaches the cache).
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     setError(null)
@@ -84,7 +90,9 @@ export function useBoundariesAsset(url: string | null): BoundariesResult {
       .catch((err) => { if (!cancelled) setError(err.message) })
       .finally(() => { if (!cancelled) setIsLoading(false) })
     return () => { cancelled = true }
-  }, [url])
+  }, [url, attempt])
 
-  return { boundaries, isLoading, error }
+  const retry = useCallback(() => setAttempt((n) => n + 1), [])
+
+  return { boundaries, isLoading, error, retry }
 }

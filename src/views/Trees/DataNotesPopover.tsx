@@ -14,13 +14,16 @@
 
 import { useEffect, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import type { NoticedByKind } from '@/lib/trees/siteNotices'
 import type { TreesAggregates } from '@/lib/trees/types'
 import { NOTES_SOURCES, buildDataNotes, type NoteSectionId } from './dataNotes'
 
 const LINK = 'underline decoration-moss-500/50 hover:decoration-moss-500'
 
-export default function DataNotesPopover({ aggregates, nowYear, section, onOpen, onClose }: {
+export default function DataNotesPopover({ aggregates, noticed, nowYear, section, onOpen, onClose }: {
   aggregates: TreesAggregates | null
+  /** What the noticed sites are listed as now (from the snapshot); null until it loads. */
+  noticed: NoticedByKind | null
   nowYear: number
   /** The open section, or null when closed. */
   section: NoteSectionId | null
@@ -47,7 +50,7 @@ export default function DataNotesPopover({ aggregates, nowYear, section, onOpen,
     el?.scrollIntoView({ block: 'start' })
   }, [section])
 
-  const sections = useMemo(() => buildDataNotes(aggregates, nowYear), [aggregates, nowYear])
+  const sections = useMemo(() => buildDataNotes(aggregates, nowYear, noticed), [aggregates, nowYear, noticed])
 
   return (
     <div ref={ref} data-trees-notes className="relative">

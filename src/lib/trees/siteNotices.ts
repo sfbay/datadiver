@@ -23,3 +23,24 @@ export function readNotice(postedYmd: string | null | undefined, plantedYmd: str
   if (!plantedYmd || !postedYmd) return 'this-site'
   return plantedYmd.slice(0, 10) > postedYmd.slice(0, 10) ? 'earlier-tree' : 'this-site'
 }
+
+export interface NoticedByKind { tree: number; stump: number; site: number; shrub: number }
+
+/**
+ * What the sites with a removal notice are listed as NOW (final review I2): a
+ * site can stay in the inventory re-classed as a stump or an empty planting
+ * site, so "still in the inventory" alone would hide it. Counts sites with
+ * `nt > 0` by the snapshot's `kind` code (0 tree · 1 stump · 2 empty site ·
+ * 3 shrub). Structural input, so this leaf imports nothing.
+ */
+export function noticedSitesByKind(snap: { nt: readonly number[]; kind: readonly number[] }): NoticedByKind {
+  const out: NoticedByKind = { tree: 0, stump: 0, site: 0, shrub: 0 }
+  const keys = ['tree', 'stump', 'site', 'shrub'] as const
+  for (let i = 0; i < snap.nt.length; i += 1) {
+    if (snap.nt[i] > 0) {
+      const k = keys[snap.kind[i]]
+      if (k) out[k] += 1
+    }
+  }
+  return out
+}

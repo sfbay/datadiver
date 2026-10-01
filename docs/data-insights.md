@@ -847,9 +847,10 @@ the registry publishes them.
 
 The view is **Trees** (`/trees`, masthead "Street trees"). Design:
 `docs/superpowers/specs/2026-09-30-trees-design.md` (§10 supersedes everything
-above it); the build rulings (P1, R1–R16) are in the plan
+above it); the build rulings (P1, R1–R19; R17 reverses R16) are in the plan
 `docs/superpowers/plans/2026-09-30-trees.md`, sections "Rulings after the first
-generator run" and "Rulings made during the build". The page reads
+generator run", "Rulings made during the build" and "Rulings from the final
+review". The page reads
 a committed snapshot (`public/data/trees/{trees,aggregates,disappeared}.json`,
 written by `pnpm build:trees` → `scripts/build-trees.ts`, gates G0–G6) and
 exact-pinned in `src/lib/trees/trees.test.ts`; the only live reads are the
@@ -858,7 +859,11 @@ are from the committed `aggregates.json` (asOf Sept. 30, 2026); figures marked
 (probe) were measured on `data.sf.gov` on Sept. 30, 2026 with the query shown.**
 Regenerating the snapshot = re-pin `trees.test.ts` + About's three notes
 (`sourceNotes.ts`, which `trees.test.ts` also checks) + this section, in the
-SAME commit. The probes below use `T=https://data.sf.gov/resource/tkzw-k3nq.json`,
+SAME commit. **Also re-probe the search box's example address**
+(`SEARCH_PLACEHOLDER`, "1300 Bush" — 3 inventory sites on Sept. 30, 2026;
+probe: `$select=count(*)` `$where=upper(description) like '1300 BUSH%'` on
+`$T`, must be > 0). A live address cannot be unit-pinned; the first example,
+"1330 Bush", was a 311 REPORT address and matched no inventory site. The probes below use `T=https://data.sf.gov/resource/tkzw-k3nq.json`,
 `N=…/qrwx-q4gg.json`, `S=…/vw6y-z8j6.json`, run as
 `curl -sG "$T" --data-urlencode '$select=…' --data-urlencode '$where=…'`.
 
@@ -912,9 +917,13 @@ unclassed string.
 ### `treeid` names a planting SITE, not a tree
 
 Of the **5,571** sites with a removal notice, **4,831** are still in the
-inventory, and at **1,022** of them the tree listed now was planted AFTER the
-notice (file): the record shows a tree with a planting date after the notice
-now listed at that site, under the same number. So a notice dated before the listed tree's planting date belongs to an earlier
+inventory, and at **1,022** of them the planting date now on record is LATER
+than the notice (file): the site, under the same number, carries a planting
+date after the notice. (`replantedAfter` counts every listed site whatever it
+holds now — up to 96 of those noticed sites are a stump or an empty site with a
+planting year — so the page speaks of "the planting date now on record", never
+"the tree listed now"; counting `kind === 0` only is a next-regeneration
+change.) So a notice dated before the listed tree's planting date belongs to an earlier
 tree (`readNotice` → `'earlier-tree'`); with no planting date the card says
 only that a notice was posted at this site. A `?tree=` link is a link to a
 site. The disappeared log (`disappeared.json`) records vanished sites AND a
@@ -937,9 +946,16 @@ in('123','TRE-123')`).
 A notice is posted on a tree after the city issues a removal permit
 (`postedtype`: Posted 24hr 1,354 · Posted 15 Day 2,492 · Posted 30 Day 1,867;
 5,713 rows since July 5, 2017 — file, probe `min(posteddate)`). Most noticed
-sites are still listed (4,831 of 5,571) and many hold a tree planted after the
-notice, so the page says "a removal notice was posted", never that a tree was
-taken out. By year (file): 2017 539 · 2018 1,483 · 2019 956 · 2020 567 · 2021
+sites are still listed (4,831 of 5,571), but "still listed" is not "still a
+tree": **4,368 are listed as a street tree, 136 as a stump, 325 as an empty
+planting site and 2 as a shrub** (file: `noticedSitesByKind` over `trees.json`
+`nt > 0` by `kind`, pinned in `trees.test.ts`). A site can stay in the
+inventory re-classed, so the bar is never printed without that breakdown (the
+fairness rule: a figure with its confounder beside it), and the page never says
+a tree that comes down "leaves the inventory" — the inventory may drop the row
+or keep the site as a stump or an empty site. The page says "a removal notice
+was posted", never that a tree was taken out. Three notice rows carry no
+readable site number, and the notices line says so. By year (file): 2017 539 · 2018 1,483 · 2019 956 · 2020 567 · 2021
 362 · 2022 466 · 2023 478 · 2024 361 · 2025 301 · 2026 200 (to Sept. 28).
 Whether a notice row's `species` describes the old tree or the site's state is
 unresolved (some read `Planting site (cut)`), so no "former species" is
@@ -1078,9 +1094,20 @@ in('fallen_tree','about_to_fall') AND requested_datetime >= '2021-01-01'`
   is a minimum.
 - **A report is not a tree.** It names an address or a corner, where several
   street trees can stand within a few meters (the per-report tree count was
-  not re-measured for this section). The card says "N fall reports within 30
-  meters since 2021", measured from the report's point, and nothing stronger;
-  a fall report is never attached to one tree.
+  not re-measured for this section). The card says "N mapped fall reports
+  within 30 meters since 2021." or "No mapped fall reports within 30 meters
+  since 2021." (ruling R19 — "mapped" in both branches: 86,956 mapped sites
+  carry a zero, and 2,283 of the 13,852 non-duplicate reports since 2021,
+  16.5%, have no map point the count could see), measured from the report's
+  point, and nothing stronger; a fall report is never attached to one tree.
+- **No rate per street tree (ruling R17, reversing R16).** A report may concern
+  any tree — park, open-space and private trees included — while the only
+  denominator on hand is street trees in TODAY's inventory. The rate's two
+  highest figures in every offered year were Twin Peaks and Lakeshore, the two
+  park-heavy unflagged neighborhoods (2024: Twin Peaks 23 reports ÷ 429 street
+  trees = 53.6 per 1,000; Lakeshore 42.0; Mission, the largest count, 28.9).
+  Each Safety row now shows the year's mapped fallen-tree reports and, beside
+  it, the street-tree count as a separate figure, never divided.
 
 ### Equity: the finding flips with the denominator
 
@@ -1096,15 +1123,37 @@ Island (`low-coverage`); under 2,000 residents would be `small-population`
 | per 1,000 residents | +0.66 | −0.59 |
 | per square kilometer | +0.35 | −0.19 |
 
+**The lead claims only a link that survives leaving out any one neighborhood
+(ruling R18, `robustLink`).** Leave-one-out range over the 36 (file, computed
+unrounded from `aggregates.json → neighborhoods`, pinned in `trees.test.ts`):
+per 1,000 residents **0.635 (without Seacliff) to 0.730 (without Bayview
+Hunters Point)** — strong under every removal; per km² **0.299 (without
+Lakeshore) to 0.424 (without Japantown)**, and 0.304 without Bayview Hunters
+Point or Visitacion Valley. The per-area figure is 0.348 on all 36, so it
+rests on the "weak" line's last hundredth, and one park-heavy neighborhood
+supplies the margin: dropping Lakeshore takes it under 0.30. **Lakeshore (60.6
+street trees per km², 452 street trees — Lake Merced, Harding Park, Fort
+Funston, SF State) and Twin Peaks (250.0; the Twin Peaks open space)** have far
+fewer street trees per km² than any other ranked neighborhood (next: Visitacion
+Valley 693.2; the unflagged median is about 1,548) and are NOT flagged —
+`NON_RESIDENTIAL_NEIGHBORHOODS` was authored for census underlays (who lives
+there), not "is the land mostly park". They stay ranked and are named in the
+"How the summary sentence is decided" data note. A regeneration that moves any
+leave-one-out value across 0.30 or 0.50 flips the lead: expect it, re-read it.
+
 Per resident punishes density by construction. **Tenderloin: 51.8 per 1,000
 residents, 34th of 36 (tied with Chinatown); 1,631.3 per km², 15th.
 Bayview Hunters Point: 238.2 per 1,000, 7th; 708.2 per km², 33rd** (ranks
 computed from `aggregates.json → neighborhoods`, competition ranking, unflagged
 only). So the lens shows both
 (`?rank=perK|perKm2`) and the lead sentence states only what holds under both,
-in the WEAKER measure's words (R10): today "Higher-income neighborhoods tend to
-have more street trees." Re-probe: recompute the ranks from the file; the
-correlations are the generator's `equityCorrelations`.
+in the WEAKER measure's words (R10), and only what survives leaving out any one
+neighborhood (R18): today "Counted per resident, higher-income neighborhoods
+have more street trees. Counted per square kilometer, there is no clear
+pattern. The answer depends on the measure." Re-probe: recompute the ranks
+from the file; the full-set links are the generator's `equityCorrelations`
+(rounded, for the record); the lead's input is `robustLink`, computed in the
+browser from the rows.
 
 ### Lead: the archived list `uzd4-f6yf` (UNVERIFIED)
 

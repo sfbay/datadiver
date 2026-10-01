@@ -4,17 +4,18 @@
 // simplified label (chrome stays clean, the notes carry the detail). The
 // header popover renders it once, grouped by surface; each rail tab and the
 // tree card link to their section instead of printing their own copy (the
-// Restaurants lesson). Every figure is read from aggregates.json; with no
-// snapshot each note falls back to a wording that claims no figure.
+// Restaurants lesson). Every figure is read from aggregates.json (and the one
+// notices breakdown from the big snapshot, passed in once it has loaded);
+// with no file each note falls back to a wording that claims no figure.
 
-import { MIN_POPULATION } from '@/lib/trees/equity'
+import { MIN_POPULATION, linkStrength } from '@/lib/trees/equity'
 import { NEARBY_METERS } from '@/lib/trees/fallReports'
+import type { NoticedByKind } from '@/lib/trees/siteNotices'
 import { TRUNK_LABEL } from '@/lib/trees/trunk'
 import type { FallYear, TreesAggregates } from '@/lib/trees/types'
 import { apDate } from '@/utils/apDate'
-import { unflaggedCount } from './equityView'
-import { MIN_TREES_FOR_RATE } from './safetyView'
-import { PARKS_LINE, apCount } from './treesPhrase'
+import { PARK_HEAVY_UNFLAGGED, leadLinks, parkHeavyLowest, unflaggedCount } from './equityView'
+import { PARKS_LINE, apCount, equityFigure, noticedKindsList } from './treesPhrase'
 
 export type NoteSectionId = 'general' | 'explore' | 'equity' | 'safety' | 'tree'
 
@@ -68,6 +69,20 @@ function flaggedNames(a: TreesAggregates | null, flag: 'park' | 'low-coverage' |
 
 const NEAR = `within ${NEARBY_METERS} meters`
 
+/** Final review I2: a noticed site "still in the inventory" may now be listed
+ *  as a stump or an empty site, so the note says what those sites hold now
+ *  (from the snapshot, once loaded), never the bare figure alone. */
+function noticesNote(a: TreesAggregates | null, firstNoticeYear: number | undefined, noticed: NoticedByKind | null): string {
+  const lead = 'A removal notice is posted after the city issues a removal permit; it does not show what happened to the tree.'
+  if (!a) return `${lead} A site with a notice may still be in the inventory, as a tree, a stump or an empty planting site.`
+  const head = `Of the ${apCount(a.notices.sites)} sites with a notice${firstNoticeYear ? ` since ${firstNoticeYear}` : ''}, ` +
+    `${apCount(a.notices.listed)} are still in the inventory`
+  const kinds = noticed ? noticedKindsList(noticed) : null
+  return kinds
+    ? `${lead} ${head}: ${kinds}.`
+    : `${lead} ${head}, some of them now as a stump or an empty planting site.`
+}
+
 function fallReportsNote(a: TreesAggregates | null): string {
   const lead = 'These are 311 requests marked as a fallen tree or a tree about to fall'
   const close = 'A report gives an address or a corner, never a tree.'
@@ -113,7 +128,34 @@ function stormYearsNote(a: TreesAggregates | null, nowYear: number): string {
   return `${body}. ${close}`
 }
 
-export function buildDataNotes(a: TreesAggregates | null, nowYear: number): NoteSection[] {
+const MEASURE_WORDS = { perK: 'per resident', perKm2: 'per square kilometer' } as const
+
+/** Ruling R18, said plainly: the rule, which neighborhood's removal changes a
+ *  reading (computed from the file), and the two park-heavy neighborhoods
+ *  that sit far below the rest per square kilometer (names authored in
+ *  equityView, figures from the file — the sentence is dropped, never left
+ *  wrong, if a regeneration moves them; trees.test.ts pins that it shows). */
+function leadRuleNote(a: TreesAggregates | null): string {
+  const rule = 'A pattern is stated only if it still shows when any one neighborhood is left out.'
+  if (!a) return rule
+  const links = leadLinks(a.neighborhoods)
+  const changed = (['perK', 'perKm2'] as const)
+    .filter((m) => links[m].without !== null && links[m].strength !== linkStrength(links[m].rho))
+    .map((m) => links[m].strength === 'none'
+      ? `counted ${MEASURE_WORDS[m]}, the pattern no longer shows once ${links[m].without} is left out, so the sentence states none for that measure`
+      : `counted ${MEASURE_WORDS[m]}, the pattern is only weak once ${links[m].without} is left out, so the sentence hedges it`)
+  let body = rule
+  if (changed.length) body += ` ${changed.map((c, i) => (i === 0 ? c.charAt(0).toUpperCase() + c.slice(1) : c)).join('; ')}.`
+  const low = parkHeavyLowest(a.neighborhoods)
+  if (low) {
+    const [first, second] = PARK_HEAVY_UNFLAGGED
+    body += ` ${first} and ${second}, both with large parkland, have far fewer street trees per square kilometer than any other ` +
+      `ranked neighborhood: ${equityFigure(low.figures[0])} and ${equityFigure(low.figures[1])}, against ${equityFigure(low.next)} or more elsewhere.`
+  }
+  return body
+}
+
+export function buildDataNotes(a: TreesAggregates | null, nowYear: number, noticed: NoticedByKind | null = null): NoteSection[] {
   const t = a?.totals
   const firstNoticeYear = a?.notices.byYear[0]?.[0]
 
@@ -172,6 +214,7 @@ export function buildDataNotes(a: TreesAggregates | null, nowYear: number): Note
             'Flagged neighborhoods are listed and hatched on the map, but left out of the rank positions, the medians, ' +
             'the color scale and the summary sentence.',
         },
+        { title: 'How the summary sentence is decided', body: leadRuleNote(a) },
       ],
     },
     {
@@ -191,19 +234,13 @@ export function buildDataNotes(a: TreesAggregates | null, nowYear: number): Note
         { title: 'Fall reports', body: fallReportsNote(a) },
         { title: 'Storm years', body: stormYearsNote(a, nowYear) },
         {
-          title: 'Reports per 1,000 street trees',
-          body: 'The count is that year’s fallen-tree reports with a map point in the neighborhood, divided by the street trees ' +
-            'in the inventory today, not in that year. A report may concern a tree that is not in the inventory, such as a park ' +
-            `or private tree. The figure is not shown for a neighborhood with fewer than ${apCount(MIN_TREES_FOR_RATE)} street trees.`,
+          // Ruling R17 (reverses R16): no rate. Why, in the reader's words.
+          title: 'Reports and street trees',
+          body: 'Each neighborhood row gives that year’s fallen-tree reports with a map point in the neighborhood and, beside it, ' +
+            'the neighborhood’s street trees. No rate is shown, because the two count different things: a report may concern any ' +
+            'tree, including park and private trees, while the count beside it is the street trees in the inventory today, not in that year.',
         },
-        {
-          title: 'Removal notices',
-          body: 'A removal notice is posted after the city issues a removal permit; it does not show that the tree was taken out. ' +
-            (a
-              ? `Of the ${apCount(a.notices.sites)} sites with a notice${firstNoticeYear ? ` since ${firstNoticeYear}` : ''}, ` +
-                `${apCount(a.notices.listed)} are still in the inventory.`
-              : 'A site with a notice may still be in the inventory.'),
-        },
+        { title: 'Removal notices', body: noticesNote(a, firstNoticeYear, noticed) },
       ],
     },
     {
@@ -214,14 +251,15 @@ export function buildDataNotes(a: TreesAggregates | null, nowYear: number): Note
           title: 'One site, more than one tree',
           body: 'The city’s tree number names a planting site, not a single tree. ' +
             (a
-              ? `At ${apCount(a.notices.replantedAfter)} sites the tree now listed was planted after the site’s removal notice, so that notice belongs to an earlier tree.`
-              : 'Where the tree now listed was planted after the site’s removal notice, that notice belongs to an earlier tree.'),
+              ? `At ${apCount(a.notices.replantedAfter)} sites the planting date now on record is later than the site’s removal notice, so that notice belongs to an earlier tree.`
+              : 'Where the planting date on record is later than the site’s removal notice, that notice belongs to an earlier tree.'),
         },
         {
           title: 'Former trees',
-          body: 'A tree that is taken out leaves the inventory. Stumps, removal notices and DataDiver’s own log of sites that leave ' +
-            'the inventory from one saved copy to the next are the records this page uses for former trees. They are not complete: ' +
-            'some trees are taken out with no notice, and the city says trees taken out in an emergency may appear in neither its inventory nor its removal notices.',
+          body: 'When a street tree comes down, the inventory may drop its row or keep the site as a stump or an empty planting site. ' +
+            'Stumps, removal notices and DataDiver’s own log of sites that leave the inventory from one saved copy to the next are ' +
+            'the records this page uses for former trees. They are not complete: some trees come down with no notice, and the city ' +
+            'says trees cut down in an emergency may appear in neither its inventory nor its removal notices.',
         },
       ],
     },

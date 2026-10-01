@@ -37,7 +37,8 @@ import { useAppStore } from '@/stores/appStore'
 import { apDate } from '@/utils/apDate'
 import { TRUNK_CLASSES, TRUNK_LABEL } from '@/lib/trees/trunk'
 import { parseSpecies, speciesLabel } from '@/lib/trees/species'
-import { SUBHEAD, STUMP_LEGEND } from './treesPhrase'
+import { noticedSitesByKind } from '@/lib/trees/siteNotices'
+import { BOUNDARIES_ERROR, SUBHEAD, STUMP_LEGEND } from './treesPhrase'
 import {
   LENSES, LENS_LABEL, liveEdgeRelation, parseEquityRank, parseLens, parseTreeId, resolveNeighborhood, resolveSpecies,
   type EquityRank, type Lens,
@@ -156,6 +157,9 @@ export default function Trees() {
     return { fc, ms: msSinceSnapshotFetch() }
   }, [snap])
   const geo = built?.fc ?? null
+  // What the noticed sites still in the inventory are listed as now (I2) —
+  // for the data notes; null until the big file lands.
+  const noticed = useMemo(() => (snap ? noticedSitesByKind(snap) : null), [snap])
 
   // `?tune=1`: the plan's performance gate — once per mount.
   const tuneLogged = useRef(false)
@@ -182,7 +186,7 @@ export default function Trees() {
   // lens (an EMPTY collection otherwise — never null, which useMapLayer
   // ignores after the first population), below the basemap labels. The
   // ~1 MB polygon file loads on the first visit to the lens (cached after).
-  const { boundaries } = useBoundariesAsset(lens === 'equity' ? city.areas.geojsonPath : null)
+  const { boundaries, error: boundariesError, retry: retryBoundaries } = useBoundariesAsset(lens === 'equity' ? city.areas.geojsonPath : null)
   const equityFc = useMemo(
     () => (lens === 'equity' && agg ? equityFeatures(boundaries, agg.neighborhoods) : EMPTY_FC),
     [lens, agg, boundaries],
@@ -423,7 +427,7 @@ export default function Trees() {
                 </button>
               ))}
             </div>
-            <DataNotesPopover aggregates={agg} nowYear={nowYear} section={notesSection} onOpen={openNotes} onClose={closeNotes} />
+            <DataNotesPopover aggregates={agg} noticed={noticed} nowYear={nowYear} section={notesSection} onOpen={openNotes} onClose={closeNotes} />
             <ExportButton targetSelector="#trees-capture" filename="trees" />
           </div>
         </div>
@@ -437,6 +441,21 @@ export default function Trees() {
             {loadError && (
               <div className="absolute top-5 left-1/2 -translate-x-1/2 z-20 w-full max-w-md rounded-[14px] backdrop-blur-xl bg-white/60 dark:bg-slate-900/60">
                 <ErrorState message={loadError.message} onRetry={retryAll} what={snapError ? 'the street-tree inventory' : 'the street-tree summaries'} />
+              </div>
+            )}
+
+            {/* The Equity fill's polygons failed to load: say so, with Retry,
+                rather than leave a colour key over an empty map. */}
+            {lens === 'equity' && boundariesError && !loadError && (
+              <div className="absolute top-5 left-1/2 -translate-x-1/2 z-20 w-[min(26rem,calc(100%-2rem))] rounded-[14px] backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 px-4 py-3 flex items-center justify-between gap-3">
+                <p title={boundariesError} className="font-serif text-xs text-paper-800 dark:text-paper-200">{BOUNDARIES_ERROR}</p>
+                <button
+                  type="button"
+                  onClick={retryBoundaries}
+                  className="shrink-0 px-2.5 py-1 rounded-md text-micro font-mono uppercase tracking-[0.15em] bg-moss-500/10 text-moss-700 dark:text-moss-400 hover:bg-moss-500/20 transition-colors"
+                >
+                  Retry
+                </button>
               </div>
             )}
 
@@ -475,6 +494,7 @@ export default function Trees() {
           lens={lens}
           onLens={setLens}
           agg={agg}
+          snap={snap}
           aggError={aggError?.message ?? null}
           onRetry={retryAgg}
           species={species}

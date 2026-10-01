@@ -82,7 +82,7 @@ describe('buildCardModel', () => {
     expect(m.planted).toBe('Planted May 7')
     expect(m.plantedDate).toBe('May 7')
     expect(m.rankLine).toBe('No. 2 of 544 species names')
-    expect(m.falls).toBe('2 fall reports within 30 meters since 2021.')
+    expect(m.falls).toBe('2 mapped fall reports within 30 meters since 2021.')
   })
   it('the city record is the row itself on the portal', () => {
     expect(m.portalUrl).toBe('https://data.sf.gov/resource/tkzw-k3nq.json?treeid=4155')
@@ -178,7 +178,7 @@ describe('nearby fall reports on the card follow the snapshot point', () => {
     expect(model(20).falls).toBeNull()
   })
   it('a mapped site with zero: the "No fall reports" line', () => {
-    expect(model(10).falls).toBe('No fall reports within 30 meters since 2021.')
+    expect(model(10).falls).toBe('No mapped fall reports within 30 meters since 2021.')
   })
 })
 

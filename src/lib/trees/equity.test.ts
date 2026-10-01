@@ -1,6 +1,6 @@
 // src/lib/trees/equity.test.ts
 import { describe, expect, it } from 'vitest'
-import { equityCorrelations, equityFlag, equityRows, featureAreaKm2, linkStrength, spearman } from './equity'
+import { equityCorrelations, equityFlag, equityRows, featureAreaKm2, linkStrength, robustLink, spearman } from './equity'
 
 const PARKS = new Set(['Golden Gate Park', 'McLaren Park', 'Lincoln Park', 'Presidio'])
 
@@ -68,6 +68,43 @@ describe('equityRows + equityCorrelations', () => {
     expect(() => equityRows([inp('A', 1000, 10000, 2, 50000, 20), { ...inp('B', 1, 9000, 1, 0, 0), medianIncome: null }], PARKS))
       .toThrow(/B has no census income or poverty/)
     expect(() => equityRows([{ ...inp('C', 1, 9000, 1, 80000, 0), povertyRate: Number.NaN }], PARKS)).toThrow(/C/)
+  })
+})
+
+describe('robustLink — a link counts only if it survives leaving out any one neighborhood (R18)', () => {
+  const mk = (xs: number[], ys: number[]) =>
+    xs.map((x, i) => ({ name: String.fromCharCode(65 + i), flag: null, perK: x, perKm2: -x, medianIncome: ys[i] }))
+  it('a clean ordering keeps its tier under every removal', () => {
+    expect(robustLink(mk([1, 2, 3, 4, 5, 6], [10, 20, 30, 40, 50, 60]), 'perK')).toEqual({ rho: 1, weakest: 1, without: 'A', strength: 'strong' })
+    // the measure is read by name: perKm2 runs the other way
+    expect(robustLink(mk([1, 2, 3, 4, 5, 6], [10, 20, 30, 40, 50, 60]), 'perKm2')).toMatchObject({ rho: -1, strength: 'strong' })
+  })
+  it('one neighborhood carrying a weak link drops it to none, and is named', () => {
+    const r = robustLink(mk([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [5, 3, 8, 1, 9, 2, 7, 4, 6, 100]), 'perK')
+    expect(r.rho).toBeCloseTo(0.3455, 4)
+    expect(linkStrength(r.rho)).toBe('weak')
+    expect(r.weakest).toBeCloseTo(0.1, 6)
+    expect(r.without).toBe('J')
+    expect(r.strength).toBe('none')
+  })
+  it('the tier is never above the full set’s own, and a sign flip gives none', () => {
+    // full −0.40 (weak); leaving out the first row gives +0.50
+    const r = robustLink(mk([1, 2, 3, 4], [88, 49, 44, 70]), 'perK')
+    expect(r.rho).toBeCloseTo(-0.4, 6)
+    expect(r.weakest).toBeCloseTo(0.5, 6)
+    expect(r.strength).toBe('none')
+  })
+  it('a strong link that only weakens stays strong when every removal keeps it at 0.5 or more', () => {
+    expect(robustLink(mk([1, 2, 3, 4, 5], [2, 1, 4, 3, 5]), 'perK')).toMatchObject({ rho: 0.8, without: 'E', strength: 'strong' })
+  })
+  it('flagged rows and rows with no income are left out', () => {
+    const base = mk([1, 2, 3, 4, 5, 6], [10, 20, 30, 40, 50, 60])
+    const withExtras = [
+      ...base,
+      { name: 'Presidio', flag: 'park' as const, perK: 99, perKm2: 99, medianIncome: 1 },
+      { name: 'Gap', flag: null, perK: 0, perKm2: 0, medianIncome: null },
+    ]
+    expect(robustLink(withExtras, 'perK')).toEqual(robustLink(base, 'perK'))
   })
 })
 

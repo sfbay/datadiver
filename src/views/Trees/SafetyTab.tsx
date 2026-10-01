@@ -17,14 +17,19 @@
 //      only placeable FULL years (neighborhoodYears); one line names the
 //      years left out and why, from the data, and a second line that rows
 //      count only reports with a map point (so they sum to less than the
-//      bar). A list head names the right column's units in full. A row: name
-//      · fallen-tree reports · per 1,000 street trees (withheld under 200
-//      trees) · large trunks · stumps. Selecting a row sets `?nh=`; it never
-//      filters.
-//   4. Removal notices: a PartWhole of sites still in the inventory, the
-//      types under their published names, and the replanted-after line.
-//   5. Former trees: the generator's left-the-inventory log, fetched only
-//      when this tab mounts.
+//      bar). A list head names the right column's two figures. A row: name
+//      · that year's mapped fallen-tree reports · the neighborhood's street
+//      trees, as a plain figure BESIDE the reports and never divided into a
+//      rate (ruling R17: a report may concern any tree, park and private
+//      trees included) · large trunks · stumps. Selecting a row sets `?nh=`;
+//      it never filters.
+//   4. Removal notices: a PartWhole of sites still in the inventory, then
+//      what those sites are listed as NOW (street tree / stump / empty site /
+//      shrub — final review I2; needs the snapshot, so the bar shows first and
+//      the line joins it when the big file lands), the types under their
+//      published names, and the replanted-after line.
+//   5. Sites that left the inventory: the generator's log, fetched only when
+//      this tab mounts.
 //
 // The rail itself prints the one "Data notes ›" link (section 'safety').
 // Every mark's sentence rides its aria-label.
@@ -35,16 +40,17 @@ import PartWhole from '@/components/charts/PartWhole'
 import { useMapSidebarMode } from '@/components/layout/MapSidebar'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import type { TreesAggregates } from '@/lib/trees/types'
+import { noticedSitesByKind } from '@/lib/trees/siteNotices'
+import type { TreesAggregates, TreesSnapshot } from '@/lib/trees/types'
 import {
   ABOUT_KEY, CAPTION_LARGE_TRUNKS, CAPTION_STUMPS, DISAPPEARED_ERROR, FALLEN_KEY, FALLS_BY_YEAR_HEAD,
   FORMER_HEAD, LARGE_TRUNKS_UNIT, NEIGHBORHOOD_FALLS_HEAD, NEIGHBORHOOD_YEARS_LABEL, NOTICES_HEAD,
-  NOTICES_LISTED_CAPTION, NO_FALL_YEARS, PER_1K_SHORT, PER_1K_UNIT, ROWS_COUNT_HEAD, ROWS_MAPPED_ONLY, STUMPS_UNIT,
-  TRUNK_NOTE, apCount, busiestDayLine, disappearedLine, equityFigure, fallBarCaptions, fallBarLabel, fallChipCaption,
-  fallChipTip, largeTrunksLine, noticeTypeLabel, noticesListedLabel, noticesTotalLine, rateWithheldTip,
+  NOTICES_LISTED_CAPTION, NO_FALL_YEARS, ROWS_COUNT_HEAD, ROWS_MAPPED_ONLY, ROWS_TREES_HEAD, STREET_TREES_UNIT, STUMPS_UNIT,
+  TRUNK_NOTE, apCount, busiestDayLine, disappearedLine, fallBarCaptions, fallBarLabel, fallChipCaption,
+  fallChipTip, largeTrunksLine, noticeTypeLabel, noticedKindsLine, noticesListedLabel, noticesTotalLine,
   replantedAfterLine, safetyRowLabel, stumpsLine, yearsLeftOutLine,
 } from './treesPhrase'
-import { MIN_TREES_FOR_RATE, fallBars, latestFullYear, neighborhoodYears, safetyRows } from './safetyView'
+import { fallBars, latestFullYear, neighborhoodYears, safetyRows } from './safetyView'
 import { barShare } from './exploreRows'
 import { BRICK_600, LEGEND_DOT_RADII, MOSS_500, OCHRE_500 } from './mapLayers'
 import { useTreesDisappeared } from './useTrees'
@@ -61,6 +67,9 @@ const hatch = (color: string): string =>
 
 export interface SafetyTabProps {
   agg: TreesAggregates
+  /** The 144k-site snapshot, or null while it loads: only the notices'
+   *  listed-as-now line needs it, and it simply waits for it. */
+  snap: TreesSnapshot | null
   /** The resolved `?nh=` name, or null. */
   neighborhood: string | null
   /** Toggle: the selected row's own click passes null. */
@@ -72,7 +81,7 @@ function Mark({ children }: { children: ReactNode }) {
   return <svg width={14} height={14} viewBox="0 0 14 14" className="block" aria-hidden>{children}</svg>
 }
 
-export default function SafetyTab({ agg, neighborhood, onSelect, nowYear }: SafetyTabProps) {
+export default function SafetyTab({ agg, snap, neighborhood, onSelect, nowYear }: SafetyTabProps) {
   const { isCompressed } = useMapSidebarMode()
   const isMobile = useIsMobile()
   const t = agg.totals
@@ -92,6 +101,7 @@ export default function SafetyTab({ agg, neighborhood, onSelect, nowYear }: Safe
   const notices = agg.notices
   const firstNoticeYear = notices.byYear.length ? Math.min(...notices.byYear.map(([y]) => y)) : null
   const topType = notices.byType.reduce((m, [, n]) => Math.max(m, n), 0)
+  const kindsLine = useMemo(() => (snap ? noticedKindsLine(noticedSitesByKind(snap)) : null), [snap])
 
   // A neighborhood chosen elsewhere scrolls into view. Desktop only: the
   // mobile sheet is translateY'd, where scrollIntoView misbehaves.
@@ -203,11 +213,11 @@ export default function SafetyTab({ agg, neighborhood, onSelect, nowYear }: Safe
             {leftOut && <p className="font-serif italic text-xs text-paper-700 dark:text-paper-300">{leftOut}</p>}
             <p className="font-serif italic text-xs text-paper-700 dark:text-paper-300">{ROWS_MAPPED_ONLY}</p>
 
-            {/* The right column's units, in full (the rows print the short form). */}
+            {/* The right column's two figures, top to bottom — side by side, never divided (R17). */}
             <div className="flex justify-end px-2" aria-hidden>
               <span className="text-right font-mono text-nano uppercase tracking-[0.15em] text-paper-600 dark:text-paper-400">
                 <span className="block">{ROWS_COUNT_HEAD}</span>
-                <span className="block">{PER_1K_UNIT}</span>
+                <span className="block">{ROWS_TREES_HEAD}</span>
               </span>
             </div>
             <ol ref={listRef} className="flex flex-col gap-0.5">
@@ -240,11 +250,8 @@ export default function SafetyTab({ agg, neighborhood, onSelect, nowYear }: Safe
                       </span>
                       <span className="shrink-0 text-right pt-px" aria-hidden>
                         <span className="block font-mono text-label tabular-nums text-ink dark:text-paper-200">{apCount(r.fallen)}</span>
-                        <span
-                          className="block font-mono text-nano tabular-nums text-paper-500 dark:text-paper-500 whitespace-nowrap"
-                          title={r.per1kTrees === null ? rateWithheldTip(MIN_TREES_FOR_RATE) : undefined}
-                        >
-                          {r.per1kTrees === null ? '—' : equityFigure(r.per1kTrees)} {PER_1K_SHORT}
+                        <span className="block font-mono text-nano tabular-nums text-paper-500 dark:text-paper-500 whitespace-nowrap">
+                          {apCount(r.trees)} {STREET_TREES_UNIT}
                         </span>
                       </span>
                     </button>
@@ -259,7 +266,9 @@ export default function SafetyTab({ agg, neighborhood, onSelect, nowYear }: Safe
       {/* ── removal notices: a notice, never a removal ── */}
       <section className="flex flex-col gap-2" aria-label={NOTICES_HEAD}>
         <p className={MONO_HEAD}>{NOTICES_HEAD}</p>
-        <p className="font-serif text-xs text-paper-800 dark:text-paper-200">{noticesTotalLine(notices.rows, firstNoticeYear, notices.sites)}</p>
+        <p className="font-serif text-xs text-paper-800 dark:text-paper-200">
+          {noticesTotalLine(notices.rows, firstNoticeYear, notices.sites, notices.unjoinable)}
+        </p>
         <div className="flex flex-col gap-0.5">
           <PartWhole
             part={notices.listed}
@@ -272,6 +281,7 @@ export default function SafetyTab({ agg, neighborhood, onSelect, nowYear }: Safe
           <span className="font-mono text-nano uppercase tracking-[0.15em] text-paper-600 dark:text-paper-400" aria-hidden>
             {NOTICES_LISTED_CAPTION}
           </span>
+          {kindsLine && <p className="mt-0.5 font-serif text-xs text-paper-800 dark:text-paper-200">{kindsLine}</p>}
         </div>
         <ul className="flex flex-col gap-1">
           {notices.byType.map(([type, n]) => (
@@ -289,7 +299,7 @@ export default function SafetyTab({ agg, neighborhood, onSelect, nowYear }: Safe
         )}
       </section>
 
-      {/* ── former trees: the left-the-inventory log ── */}
+      {/* ── sites that left the inventory: the generator's log ── */}
       <section className="flex flex-col gap-2" aria-label={FORMER_HEAD}>
         <p className={MONO_HEAD}>{FORMER_HEAD}</p>
         <FormerTrees nowYear={nowYear} />

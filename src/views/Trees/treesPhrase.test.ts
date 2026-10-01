@@ -1,5 +1,6 @@
 // src/views/Trees/treesPhrase.test.ts
 import { describe, expect, it } from 'vitest'
+import { linkStrength } from '@/lib/trees/equity'
 import type { DisappearedLog, FallYear } from '@/lib/trees/types'
 import * as phrase from './treesPhrase'
 import {
@@ -10,17 +11,22 @@ import {
   trunkMixLabel,
 } from './treesPhrase'
 
-const c = (pkI: number, pkP: number, kmI: number, kmP: number) =>
-  ({ n: 36, perK: { income: pkI, poverty: pkP }, perKm2: { income: kmI, poverty: kmP } })
+/** A lead input whose robust tier equals the plain tier of each figure (the
+ *  leave-one-out step lives in robustLink, tested in equity.test.ts). The
+ *  poverty arguments are kept so each case still reads as one row of figures;
+ *  the lead never reads them. */
+const c = (pkI: number, _pkP: number, kmI: number, _kmP: number) =>
+  ({ perK: { rho: pkI, strength: linkStrength(pkI) }, perKm2: { rho: kmI, strength: linkStrength(kmI) } })
 
 describe('equityLead — says only what holds under BOTH measures', () => {
   it('strong per resident, weak per area (the Sept. 30, 2026 reading): the first sentence hedges to the weaker side (R10)', () => {
     expect(equityLead(c(0.65, -0.58, 0.33, -0.17))).toBe(
       'Higher-income neighborhoods tend to have more street trees. The link is strong when trees are counted per resident and weak when counted per square kilometer.',
     )
-    // the committed aggregates' reading (0.66 vs 0.35) takes the same branch
-    expect(equityLead(c(0.66, -0.59, 0.35, -0.19))).toBe(
-      'Higher-income neighborhoods tend to have more street trees. The link is strong when trees are counted per resident and weak when counted per square kilometer.',
+  })
+  it('reads the ROBUST tier, not the full set’s: per area survives on all 36 but not without one neighborhood (R18)', () => {
+    expect(equityLead({ perK: { rho: 0.66, strength: 'strong' }, perKm2: { rho: 0.35, strength: 'none' } })).toBe(
+      'Counted per resident, higher-income neighborhoods have more street trees. Counted per square kilometer, there is no clear pattern. The answer depends on the measure.',
     )
   })
   it('a quote of the first sentence alone never overclaims: mixed strengths always hedge (R10)', () => {
@@ -109,12 +115,15 @@ describe('equity tab lines', () => {
     expect(incomeShort(238958.91)).toBe('$239K')
     expect(NO_CENSUS).toBe('No census figure')
   })
-  it('the median chip’s sentence names its denominator and its unflagged scope', () => {
+  it('the median chip’s sentence names its denominator and its unflagged scope; an even count averages the middle two', () => {
     expect(medianTip('perK', 164.2, 36)).toBe(
-      'Among the 36 neighborhoods without a flag, the middle one has 164 street trees per 1,000 residents.',
+      'Among the 36 neighborhoods without a flag, the middle two average 164 street trees per 1,000 residents.',
     )
     expect(medianTip('perKm2', 1497.9, 36)).toBe(
-      'Among the 36 neighborhoods without a flag, the middle one has 1,498 street trees per square kilometer.',
+      'Among the 36 neighborhoods without a flag, the middle two average 1,498 street trees per square kilometer.',
+    )
+    expect(medianTip('perK', 164.2, 35)).toBe(
+      'Among the 35 neighborhoods without a flag, the middle one has 164 street trees per 1,000 residents.',
     )
   })
   it('a row’s sentence: ranked, flagged, and with no census figure', () => {
@@ -145,14 +154,18 @@ describe('card lines never claim more than the record', () => {
     expect(noticeLine('this-site', '2024-01-05', 'Something else', 2026))
       .toBe('A removal notice was posted at this site on Jan. 5, 2024.')
   })
-  it('fall reports are nearby reports', () => {
-    expect(nearbyFallsLine(0, 2021)).toBe('No fall reports within 30 meters since 2021.')
-    expect(nearbyFallsLine(1, 2021)).toBe('1 fall report within 30 meters since 2021.')
-    expect(nearbyFallsLine(4, 2021)).toBe('4 fall reports within 30 meters since 2021.')
+  it('fall reports are nearby MAPPED reports, in both branches (R19)', () => {
+    expect(nearbyFallsLine(0, 2021)).toBe('No mapped fall reports within 30 meters since 2021.')
+    expect(nearbyFallsLine(1, 2021)).toBe('1 mapped fall report within 30 meters since 2021.')
+    expect(nearbyFallsLine(4, 2021)).toBe('4 mapped fall reports within 30 meters since 2021.')
+  })
+  it('the search example is an address the inventory holds (re-probed at each regeneration)', () => {
+    expect(phrase.SEARCH_PLACEHOLDER).toBe('Species, or an address like 1300 Bush')
   })
   it('rank and share lines', () => {
     expect(speciesRankLine(3, 544)).toBe('No. 3 of 544 species names')
-    expect(topFiveLine(24.2)).toBe('The five most common species are 24.2% of street trees.')
+    expect(topFiveLine(24.2)).toBe('The five most common species names are 24.2% of street trees.')
+    expect(phrase.CAPTION_TOP_FIVE).toBe('Top five names')
   })
   it('explore lines: street trees in every count, planting where recorded', () => {
     expect(speciesPlantedLine([1998, 2024], 1007, 8943)).toBe('Planted 1998–2024 where recorded (1,007 of 8,943)')
@@ -178,12 +191,13 @@ describe('card lines never claim more than the record', () => {
     expect(equityFlagNote('small-population')).toBe('Fewer than 2,000 residents, so the per-resident figure swings widely.')
     expect(equityFlagNote(null)).toBeNull()
   })
-  it('a site that left the inventory: only a tree row speaks of a tree', () => {
-    expect(leftInventoryNote('2026-09-30', 2026, 'tree'))
-      .toBe('This site is not in the city’s inventory. It was there on Sept. 30; the tree may have been taken out.')
-    for (const kind of ['stump', 'site', 'shrub'] as const) {
-      expect(leftInventoryNote('2026-09-30', 2026, kind)).toBe('This site is not in the city’s inventory. It was there on Sept. 30.')
-    }
+  it('a site that left the inventory: no cause is claimed, for any kind of site', () => {
+    expect(leftInventoryNote('2026-09-30', 2026))
+      .toBe('This site is no longer listed in the city’s inventory. It was there on Sept. 30; the record does not say why.')
+    expect(leftInventoryNote('2026-09-30', 2026)).not.toMatch(/taken out|tree/)
+    expect(phrase.FORMER_HEAD).toBe('Sites that left the inventory')
+    expect(phrase.TRUNK_NOTE_NOT_TREE).toBe(
+      'The city’s record still carries a trunk size for this site. It does not say which tree was measured, or when.')
     expect(phrase.UNKNOWN_SITE).toBe('No street tree site has this number.')
     expect(phrase.CARD_ERROR).toBe('The city’s tree record did not load.')
   })
@@ -260,7 +274,7 @@ const SAMPLES: Record<string, () => readonly (string | null)[]> = {
   equityFigure: () => [equityFigure(448.5), equityFigure(2.5)],
   incomeShort: () => [incomeShort(105807.78)],
   otherRankLine: () => [otherRankLine(33, 'perKm2'), otherRankLine(6, 'perK')],
-  medianTip: () => [medianTip('perK', 164.2, 36), medianTip('perKm2', 1497.9, 36)],
+  medianTip: () => [medianTip('perK', 164.2, 36), medianTip('perKm2', 1497.9, 36), medianTip('perK', 164.2, 35)],
   equityRowLabel: () => BY.flatMap((by) => [
     equityRowLabel({ name: 'Tenderloin', value: 51.8, position: 34, otherPosition: 15, medianIncome: 62729.66, flag: null }, by),
     ...FLAGS.flatMap((flag) => [
@@ -275,7 +289,7 @@ const SAMPLES: Record<string, () => readonly (string | null)[]> = {
   plantedLine: () => [plantedLine('2026-05-07', 2026), plantedLine(null, 2026)],
   trunkLine: () => [trunkLine(3, '10 inches or narrower'), trunkLine(1, '10 inches or narrower'), trunkLine(null, 'Not measured')],
   nearbyFallsLine: () => [nearbyFallsLine(0, 2021), nearbyFallsLine(1, 2021), nearbyFallsLine(3, 2021)],
-  leftInventoryNote: () => (['tree', 'stump', 'site', 'shrub'] as const).map((k) => leftInventoryNote('2025-03-01', 2026, k)),
+  leftInventoryNote: () => [leftInventoryNote('2025-03-01', 2026), leftInventoryNote('2026-09-30', 2026)],
   disappearedLine: () => [disappearedLine(log([]), 2026), disappearedLine(log([1]), 2026), disappearedLine(log([1, 2, 3]), 2026)],
   unmeasuredLegendLine: () => [phrase.unmeasuredLegendLine(5123), phrase.unmeasuredLegendLine(1)],
   largeTrunksLine: () => [phrase.largeTrunksLine(8633), phrase.largeTrunksLine(1)],
@@ -291,16 +305,23 @@ const SAMPLES: Record<string, () => readonly (string | null)[]> = {
   busiestDayLine: () => [
     phrase.busiestDayLine({ ymd: '2023-03-21', reports: 467 }, 2026), phrase.busiestDayLine({ ymd: '2026-01-02', reports: 1 }, 2026),
   ],
-  rateWithheldTip: () => [phrase.rateWithheldTip(200)],
   safetyRowLabel: () => [
-    ...[10, null].map((per1kTrees) => phrase.safetyRowLabel(
-      { name: 'Mission', fallen: 90, aboutToFall: 10, per1kTrees, largeTrunks: 40, stumps: 3 }, 2025)),
-    phrase.safetyRowLabel({ name: 'X', fallen: 1, aboutToFall: 1, per1kTrees: 2.5, largeTrunks: 1, stumps: 1 }, 2025),
+    phrase.safetyRowLabel({ name: 'Mission', fallen: 90, aboutToFall: 10, trees: 9000, largeTrunks: 40, stumps: 3 }, 2025),
+    phrase.safetyRowLabel({ name: 'X', fallen: 1, aboutToFall: 1, trees: 1, largeTrunks: 1, stumps: 1 }, 2025),
   ],
   noticesListedLabel: () => [phrase.noticesListedLabel(4831, 5571)],
   noticeTypeLabel: () => [phrase.noticeTypeLabel('Posted 24hr', 1354), phrase.noticeTypeLabel('Posted 15 Day', 1)],
-  noticesTotalLine: () => [phrase.noticesTotalLine(5713, 2017, 5571), phrase.noticesTotalLine(1, null, 1)],
+  noticesTotalLine: () => [
+    phrase.noticesTotalLine(5713, 2017, 5571, 3), phrase.noticesTotalLine(1, null, 1, 0), phrase.noticesTotalLine(2, null, 1, 1),
+  ],
   replantedAfterLine: () => [phrase.replantedAfterLine(1022), phrase.replantedAfterLine(1)],
+  noticedKindsList: () => [
+    phrase.noticedKindsList({ tree: 4368, stump: 136, site: 325, shrub: 2 }), phrase.noticedKindsList({ tree: 0, stump: 0, site: 0, shrub: 0 }),
+  ],
+  noticedKindsLine: () => [
+    phrase.noticedKindsLine({ tree: 4368, stump: 136, site: 325, shrub: 2 }), phrase.noticedKindsLine({ tree: 1, stump: 0, site: 2, shrub: 0 }),
+    phrase.noticedKindsLine({ tree: 0, stump: 1, site: 0, shrub: 0 }), phrase.noticedKindsLine({ tree: 0, stump: 0, site: 0, shrub: 0 }),
+  ],
 }
 
 /** Every reader string the module can produce, labelled by export name. */
@@ -338,7 +359,7 @@ describe('every export of treesPhrase.ts is scanned', () => {
 })
 
 describe('jargon ban — statistics words and over-claims never reach a reader', () => {
-  const BANNED = /σ|sigma|z-?score|ρ|\brho\b|spearman|correlat|baseline|\blive\b|\bage\b|removed|\bfell\b/i
+  const BANNED = /σ|sigma|z-?score|ρ|\brho\b|spearman|correlat|baseline|\blive\b|\bage\b|removed|taken out|\bfell\b|per 1,000 street trees/i
   it('no exported constant, record value or generated sentence, from any branch, carries one', () => {
     for (const { name, text } of allReaderText()) if (BANNED.test(text)) throw new Error(`${name}: ${text}`)
   })

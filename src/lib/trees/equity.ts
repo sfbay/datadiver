@@ -113,3 +113,50 @@ export function linkStrength(rho: number): LinkStrength {
   const a = Math.abs(rho)
   return a >= 0.5 ? 'strong' : a >= 0.3 ? 'weak' : 'none'
 }
+
+const TIER: Readonly<Record<LinkStrength, number>> = { none: 0, weak: 1, strong: 2 }
+
+/** The rows robustLink reads: an aggregates row or an EquityRow both fit. */
+export interface LinkRow {
+  name: string
+  flag: EquityFlag
+  perK: number
+  perKm2: number
+  medianIncome: number | null
+}
+
+export interface RobustLink {
+  /** Rank link of the measure against median income, all unflagged rows, unrounded. */
+  rho: number
+  /** The leave-one-out value with the smallest magnitude, unrounded (= rho when n < 2). */
+  weakest: number
+  /** The neighborhood whose removal gives `weakest`; null when n < 2. */
+  without: string | null
+  /** The tier the lead may claim: linkStrength(weakest), never above the
+   *  full set's own tier, and 'none' when any leave-one-out set flips sign. */
+  strength: LinkStrength
+}
+
+/**
+ * Ruling R18: the equity lead claims a link under a measure only if it
+ * survives leaving out ANY ONE neighborhood. Over UNFLAGGED rows with a
+ * finite income: the rank link on the full set and on every leave-one-out
+ * set, all unrounded (rounding first let 0.299 pass as 0.30). A sign that
+ * differs from the full set's in any leave-one-out set gives 'none'.
+ */
+export function robustLink(rows: readonly LinkRow[], measure: 'perK' | 'perKm2'): RobustLink {
+  const s = rows.filter((r) => r.flag === null && finite(r.medianIncome))
+  const xs = s.map((r) => r[measure]), ys = s.map((r) => r.medianIncome as number)
+  const rho = spearman(xs, ys)
+  let weakest = rho
+  let without: string | null = null
+  let flipped = false
+  for (let i = 0; i < s.length; i += 1) {
+    const v = spearman(xs.filter((_, j) => j !== i), ys.filter((_, j) => j !== i))
+    if (Math.sign(v) !== Math.sign(rho)) flipped = true
+    if (without === null || Math.abs(v) < Math.abs(weakest)) { weakest = v; without = s[i].name }
+  }
+  const tier = Math.min(TIER[linkStrength(rho)], TIER[linkStrength(weakest)])
+  const strength: LinkStrength = flipped ? 'none' : tier === 2 ? 'strong' : tier === 1 ? 'weak' : 'none'
+  return { rho, weakest, without, strength }
+}

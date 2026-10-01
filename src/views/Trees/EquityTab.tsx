@@ -5,8 +5,10 @@
 // per area does not, and one measure alone would let the page assert what
 // the other does not support).
 //
-//   1. The lead (`equityLead`, which states only what holds under both) and
-//      the standing parks line, in body serif.
+//   1. The lead (`equityLead`, which states only what holds under both, and
+//      only a link that survives leaving out any one neighborhood — ruling
+//      R18, `leadLinks`, computed here from the rows) and the standing parks
+//      line, in body serif.
 //   2. Two RailStat chips: the median neighborhood under each measure,
 //      unflagged rows only (equityView.unflaggedMedian).
 //   3. The measure pills → `?rank=perK|perKm2`. They re-rank this list AND
@@ -32,7 +34,7 @@ import {
   EQUITY_MEASURE, INCOME_KEY, INCOME_KEY_TIP, MEDIAN_CAPTION, NO_CENSUS, PARKS_LINE, RANK_BY_LABEL,
   equityFigure, equityFlagNote, equityLead, equityRowLabel, incomeShort, medianTip, otherRankLine,
 } from './treesPhrase'
-import { OTHER_MEASURE, rankNeighborhoods, unflaggedCount, unflaggedMedian, unflaggedRange } from './equityView'
+import { OTHER_MEASURE, leadLinks, rankNeighborhoods, unflaggedCount, unflaggedMedian, unflaggedRange } from './equityView'
 import { barShare } from './exploreRows'
 import { HATCH_SWATCH_CSS, MOSS_500 } from './mapLayers'
 import type { EquityRank } from './treesUrl'
@@ -57,6 +59,8 @@ export default function EquityTab({ agg, rank, onRank, neighborhood, onSelect }:
   const rows = agg.neighborhoods
 
   const ranked = useMemo(() => rankNeighborhoods(rows, rank), [rows, rank])
+  // 2 × 37 small rank computations; memoised on the rows (the file never changes in a session).
+  const lead = useMemo(() => equityLead(leadLinks(rows)), [rows])
   const medians = useMemo(() => ({ perK: unflaggedMedian(rows, 'perK'), perKm2: unflaggedMedian(rows, 'perKm2') }), [rows])
   const income = useMemo(() => ({ range: unflaggedRange(rows, 'medianIncome'), median: unflaggedMedian(rows, 'medianIncome') }), [rows])
   // Bars run against the top UNFLAGGED figure (a park's per-resident figure
@@ -80,7 +84,7 @@ export default function EquityTab({ agg, rank, onRank, neighborhood, onSelect }:
     <div className="flex flex-col gap-4">
       {/* ── the lead: only what holds under both measures ── */}
       <div className="flex flex-col gap-1.5">
-        <p className="font-serif text-sm leading-relaxed text-ink dark:text-paper-100">{equityLead(agg.equity)}</p>
+        <p className="font-serif text-sm leading-relaxed text-ink dark:text-paper-100">{lead}</p>
         <p className="font-serif italic text-xs text-paper-700 dark:text-paper-300">{PARKS_LINE}</p>
       </div>
 

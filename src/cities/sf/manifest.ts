@@ -179,9 +179,10 @@ export const SF_MANIFEST: readonly ViewManifestEntry[] = [
     viewId: 'trees',
     navLabel: 'Trees',
     navShortLabel: 'TREE',
-    navDescription: 'Street trees, species and shade',
+    // Names what the view shows; it measures neither shade nor falls (final review M4).
+    navDescription: 'Street trees, species, fall reports and notices',
     accentColor: '#7a9954', // moss-500 — civic upkeep
-    homeCard: { title: 'Street Trees', subtitle: 'SF Public Works · Species, Equity & Falls', order: 16 },
+    homeCard: { title: 'Street Trees', subtitle: 'SF Public Works & 311 · Species & Fall Reports', order: 16 },
     // DATELESS, no eraSource: the inventory is a snapshot of what stands now.
     dateless: true,
     omniDatasetKeys: ['streetTrees'],

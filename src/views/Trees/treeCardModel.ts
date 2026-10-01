@@ -20,6 +20,7 @@ import { FALL_WINDOW_START } from '@/lib/trees/fallReports'
 import { TRUNK_LABEL, trunkClass } from '@/lib/trees/trunk'
 import type { SpeciesAggregate, TreesSnapshot } from '@/lib/trees/types'
 import { apDate } from '@/utils/apDate'
+import { getDatasetConfig } from '@/cities/registry'
 import {
   NO_ADDRESS, UNDATED_NOTICE, kindTitle, nearbyFallsLine, noticeLine, plantedLine, speciesRankLine, trunkLine,
 } from './treesPhrase'
@@ -215,7 +216,9 @@ export function buildCardModel(row: InventoryRow, notices: NoticeRow[], extras: 
     neighborhood: text(row.analysis_neighborhood),
     notices: noticeLines,
     falls: extras.fallsNearby !== null ? nearbyFallsLine(extras.fallsNearby, FALLS_SINCE) : null,
-    portalUrl: `https://data.sf.gov/resource/tkzw-k3nq.json?treeid=${encodeURIComponent(row.treeid)}`,
+    // The row as the portal serves it (raw data — the link says so). The host
+    // comes from the registry, never a hand-typed string.
+    portalUrl: `${getDatasetConfig('sf', 'streetTrees').endpoint}?treeid=${encodeURIComponent(row.treeid)}`,
   }
 }
 

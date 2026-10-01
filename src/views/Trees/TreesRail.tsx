@@ -10,12 +10,12 @@
 // inside-selector, so a click in the rail re-targets the card rather than
 // closing it. Each tab ends with one "Data notes ›" link to its section.
 //
-// The rail reads only the small aggregates file — it never waits for the
-// 144k-site snapshot.
+// The rail reads the small aggregates file — it never waits for the
+// 144k-site snapshot (Safety's one notices line joins when it lands).
 
 import MapSidebar from '@/components/layout/MapSidebar'
 import { SkeletonSidebarRows } from '@/components/ui/Skeleton'
-import type { TreesAggregates } from '@/lib/trees/types'
+import type { TreesAggregates, TreesSnapshot } from '@/lib/trees/types'
 import type { NoteSectionId } from './dataNotes'
 import EquityTab from './EquityTab'
 import ExploreTab from './ExploreTab'
@@ -27,6 +27,9 @@ export interface TreesRailProps {
   lens: Lens
   onLens(lens: Lens): void
   agg: TreesAggregates | null
+  /** The big snapshot, or null while it loads — only Safety's notices line
+   *  reads it; the rail never waits for it. */
+  snap: TreesSnapshot | null
   aggError: string | null
   onRetry(): void
   species: string | null
@@ -106,6 +109,7 @@ export default function TreesRail(props: TreesRailProps) {
           ) : (
             <SafetyTab
               agg={agg}
+              snap={props.snap}
               neighborhood={props.neighborhood}
               onSelect={props.onSelectNeighborhood}
               nowYear={props.nowYear}

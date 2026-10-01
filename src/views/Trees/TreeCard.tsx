@@ -24,7 +24,7 @@ import type { TreesAggregates, TreesSnapshot } from '@/lib/trees/types'
 import type { NoteSectionId } from './dataNotes'
 import { BRICK_600, MOSS_500 } from './mapLayers'
 import { cardState, snapshotSite, speciesRank, type CardModel } from './treeCardModel'
-import { CARD_ERROR, NOT_RECORDED, TRUNK_NOTE, UNKNOWN_SITE, leftInventoryNote } from './treesPhrase'
+import { CARD_ERROR, NOT_RECORDED, TRUNK_NOTE, TRUNK_NOTE_NOT_TREE, UNKNOWN_SITE, leftInventoryNote } from './treesPhrase'
 import { useTreeCard } from './useTreeCard'
 
 const OCHRE_500 = '#d4a435'
@@ -89,6 +89,10 @@ function SiteBody({
   onOpenNotes(section: NoteSectionId): void
 }) {
   const species = model.species
+  // A stump, empty site or shrub row can still carry a trunk size (ruling R5:
+  // a former tree's measurement). It is shown — the record holds it — but
+  // labelled as the record's, never as this site's tree.
+  const isTree = model.kind === 'tree'
   return (
     <article data-tree-site={siteId}>
       <header className="pr-14">
@@ -99,7 +103,7 @@ function SiteBody({
       </header>
 
       <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 items-baseline">
-        <Fact label="Trunk size">{model.trunk}</Fact>
+        <Fact label={isTree ? 'Trunk size' : 'Trunk on record'}>{model.trunk}</Fact>
         <Fact label="Planted">{orNot(model.plantedDate)}</Fact>
         <Fact label="Legal status">{orNot(model.legalStatus)}</Fact>
         <Fact label="Planted by">{orNot(model.planter)}</Fact>
@@ -142,7 +146,7 @@ function SiteBody({
         </ul>
       )}
 
-      <p className="mt-3 text-nano font-serif italic text-slate-500 dark:text-slate-400 leading-snug">{TRUNK_NOTE}</p>
+      <p className="mt-3 text-nano font-serif italic text-slate-500 dark:text-slate-400 leading-snug">{isTree ? TRUNK_NOTE : TRUNK_NOTE_NOT_TREE}</p>
 
       <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1">
         <NotesLink onOpenNotes={onOpenNotes} />
@@ -152,7 +156,7 @@ function SiteBody({
           rel="noopener noreferrer"
           className={`text-micro font-mono text-moss-700 dark:text-moss-400 ${LINK}`}
         >
-          Open the city record ↗
+          Open the city’s raw record ↗
         </a>
       </div>
     </article>
@@ -233,7 +237,7 @@ export default function TreeCard({
       )}
       {state.kind === 'left' && (
         <OneLine siteId={siteId}>
-          <p className="font-serif text-sm text-slate-700 dark:text-slate-200 leading-snug">{leftInventoryNote(state.asOf, nowYear, state.rowKind)}</p>
+          <p className="font-serif text-sm text-slate-700 dark:text-slate-200 leading-snug">{leftInventoryNote(state.asOf, nowYear)}</p>
           <div className="mt-3"><NotesLink onOpenNotes={onOpenNotes} /></div>
         </OneLine>
       )}

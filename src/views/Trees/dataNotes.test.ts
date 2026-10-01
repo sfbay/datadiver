@@ -2,11 +2,14 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import type { FallYear, TreesAggregates } from '@/lib/trees/types'
+import { noticedSitesByKind } from '@/lib/trees/siteNotices'
+import type { FallYear, TreesAggregates, TreesSnapshot } from '@/lib/trees/types'
 import { NOTES_SOURCES, buildDataNotes } from './dataNotes'
 import { buildSourceRows } from '@/views/About/sourceRows'
 
 const A = JSON.parse(readFileSync(join(process.cwd(), 'public/data/trees/aggregates.json'), 'utf8')) as TreesAggregates
+const T = JSON.parse(readFileSync(join(process.cwd(), 'public/data/trees/trees.json'), 'utf8')) as TreesSnapshot
+const K = noticedSitesByKind(T)
 
 describe('data notes — one table, grouped by surface', () => {
   const sections = buildDataNotes(A, 2026)
@@ -18,8 +21,8 @@ describe('data notes — one table, grouped by surface', () => {
     expect(new Set(titles).size).toBe(titles.length)
     for (const t of [
       'Street trees only', 'Stumps and empty sites', 'Sites without a map point', 'Species names',
-      'Two ways to count', 'Flagged neighborhoods', 'Trunk size', 'Fall reports', 'Storm years',
-      'Reports per 1,000 street trees', 'Removal notices', 'One site, more than one tree', 'Former trees',
+      'Two ways to count', 'Flagged neighborhoods', 'How the summary sentence is decided', 'Trunk size', 'Fall reports',
+      'Storm years', 'Reports and street trees', 'Removal notices', 'One site, more than one tree', 'Former trees',
     ]) expect(titles, t).toContain(t)
   })
   it('renders without the snapshot', () => {
@@ -84,7 +87,7 @@ describe('fall reports — the unplaceable years are named, from the file', () =
 describe('reader words', () => {
   const BANNED = /σ|sigma|z-?score|ρ|\brho\b|spearman|correlat|baseline|\blive\b|\bage\b|removed|\bfell\b|this tree fell/i
   it('no section title, note title, body or link text, with or without the snapshot, carries a banned word', () => {
-    for (const s of [...buildDataNotes(A, 2026), ...buildDataNotes(null, 2026)]) {
+    for (const s of [...buildDataNotes(A, 2026, K), ...buildDataNotes(A, 2026), ...buildDataNotes(null, 2026)]) {
       if (BANNED.test(s.title)) throw new Error(s.title)
       for (const n of s.notes) {
         for (const text of [n.title, n.body, n.link?.text ?? '']) if (BANNED.test(text)) throw new Error(`${n.title}: ${text}`)
@@ -159,13 +162,15 @@ describe('citywide-only years read correctly, in ascending order', () => {
   })
 })
 
-describe('the rate note and the storm years say what their figures count', () => {
+describe('the reports note and the storm years say what their figures count', () => {
   const note = (title: string) => buildDataNotes(A, 2026).flatMap((s) => s.notes).find((n) => n.title === title)!.body
-  it('reports per 1,000 street trees: mapped reports, today’s trees, outside trees, the 200 floor', () => {
-    const b = note('Reports per 1,000 street trees')
-    for (const part of ['with a map point in the neighborhood', 'in the inventory today, not in that year',
-      'not in the inventory, such as a park or private tree', 'fewer than 200 street trees']) expect(b).toContain(part)
-    expect(buildDataNotes(A, 2026).find((s) => s.id === 'safety')!.notes.map((n) => n.title)).toContain('Reports per 1,000 street trees')
+  it('reports and street trees: no rate, and why (R17)', () => {
+    const b = note('Reports and street trees')
+    for (const part of ['with a map point in the neighborhood', 'No rate is shown', 'any tree, including park and private trees',
+      'street trees in the inventory today, not in that year']) expect(b).toContain(part)
+    const titles = buildDataNotes(A, 2026).flatMap((s) => s.notes).map((n) => n.title)
+    expect(titles).not.toContain('Reports per 1,000 street trees')
+    for (const n of buildDataNotes(A, 2026).flatMap((s) => s.notes)) expect(n.body, n.title).not.toMatch(/per 1,000 street trees/)
   })
   it('storm years: the combined figure is named as both kinds together', () => {
     expect(note('Storm years')).toMatch(/^Counting fallen-tree and about-to-fall reports together, /)
@@ -211,5 +216,47 @@ describe('the popover’s source links', () => {
       '/about#source-sf-tkzw-k3nq', '/about#source-sf-qrwx-q4gg', '/about#source-sf-dd-street-trees',
     ])
     for (const l of NOTES_SOURCES.links) expect(anchors.has(l.href), l.href).toBe(true)
+  })
+})
+
+// Final review I2: a noticed site still in the inventory may now be a stump or
+// an empty site, and the note says what the sites hold now.
+describe('removal notices: what the noticed sites are listed as now', () => {
+  const note = (k: typeof K | null) => buildDataNotes(A, 2026, k).flatMap((s) => s.notes).find((n) => n.title === 'Removal notices')!.body
+  it('with the snapshot: the four figures, computed', () => {
+    const b = note(K)
+    expect(b).toContain(`${A.notices.listed.toLocaleString('en-US')} are still in the inventory: ` +
+      `${K.tree.toLocaleString('en-US')} listed as a street tree, ${K.stump} as a stump, ${K.site} as an empty planting site and ${K.shrub} as a shrub.`)
+    expect(b).not.toMatch(/taken out/)
+  })
+  it('before the snapshot loads: the bare figure never stands alone', () => {
+    expect(note(null)).toContain('some of them now as a stump or an empty planting site')
+  })
+  it('the former-trees note: a site may stay, re-classed', () => {
+    const b = buildDataNotes(A, 2026).flatMap((s) => s.notes).find((n) => n.title === 'Former trees')!.body
+    expect(b).toContain('may drop its row or keep the site as a stump or an empty planting site')
+    expect(b).not.toMatch(/leaves the inventory|taken out/)
+  })
+})
+
+// Ruling R18: the lead's rule, the neighborhood whose removal changes a
+// reading, and the two park-heavy neighborhoods — all read from the file.
+describe('how the summary sentence is decided', () => {
+  const note = (a: TreesAggregates | null) =>
+    buildDataNotes(a, 2026).flatMap((s) => s.notes).find((n) => n.title === 'How the summary sentence is decided')!.body
+  it('names the rule, Lakeshore as the removal that changes the per-area reading, and the park-heavy pair with figures', () => {
+    expect(note(A)).toBe(
+      'A pattern is stated only if it still shows when any one neighborhood is left out. ' +
+      'Counted per square kilometer, the pattern no longer shows once Lakeshore is left out, so the sentence states none for that measure. ' +
+      'Lakeshore and Twin Peaks, both with large parkland, have far fewer street trees per square kilometer than any other ranked ' +
+      'neighborhood: 61 and 250, against 693 or more elsewhere.',
+    )
+  })
+  it('without the file: the rule only, no figure', () => {
+    expect(note(null)).toBe('A pattern is stated only if it still shows when any one neighborhood is left out.')
+  })
+  it('if the two are no longer the lowest, the park sentence is dropped, never left wrong', () => {
+    const moved = { ...A, neighborhoods: A.neighborhoods.map((n) => (n.name === 'Twin Peaks' ? { ...n, perKm2: 5000 } : n)) }
+    expect(note(moved)).not.toContain('Twin Peaks')
   })
 })
