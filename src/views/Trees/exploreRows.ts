@@ -7,6 +7,16 @@
 
 import type { SpeciesAggregate } from '@/lib/trees/types'
 
+/** The opener grid every Trees tab puts its RailStat chips in (ruling R22:
+ *  the tab opens with them). LIQUID, not a fixed two columns: a chip needs
+ *  about 7.5rem for its italic numeral and "i", and the desktop rail stays
+ *  320 px under Large Type while the numerals grow — a fixed half-width chip
+ *  overflowed by up to 22 px under XL (walk, Sept. 30 2026). auto-fit gives
+ *  two columns where two fit and one where they do not, at any rail width or
+ *  type scale; a wide chip spans with `col-span-full` (never `col-span-2`,
+ *  which would conjure a second column in the one-column case). */
+export const RAIL_STAT_GRID = 'grid gap-2 grid-cols-[repeat(auto-fit,minmax(7.5rem,1fr))]'
+
 /** Case-insensitive substring over the Latin and common names; an empty or
  *  blank query keeps every row. Rank order is the input's — never re-sorted. */
 export function filterSpecies(rows: readonly SpeciesAggregate[], query: string): SpeciesAggregate[] {

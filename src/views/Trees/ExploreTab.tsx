@@ -15,7 +15,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import RailStat from '@/components/charts/RailStat'
 import PartWhole from '@/components/charts/PartWhole'
-import { useMapSidebarMode } from '@/components/layout/MapSidebar'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { TRUNK_CLASSES, TRUNK_LABEL } from '@/lib/trees/trunk'
 import { parseSpecies, speciesLabel } from '@/lib/trees/species'
@@ -26,7 +25,7 @@ import {
   noAddressLine, noSpeciesMatchLine, shareLine, showAllLine, speciesCountTip, speciesPlantedLine, speciesRankLine,
   speciesRowLabel, streetTreesTip, topFiveLine, trunkMixLabel,
 } from './treesPhrase'
-import { barShare, sharePercent, speciesListRows } from './exploreRows'
+import { RAIL_STAT_GRID, barShare, sharePercent, speciesListRows } from './exploreRows'
 import { MOSS_500 } from './mapLayers'
 import { useTreeAddressSearch } from './useTreeAddressSearch'
 
@@ -49,7 +48,6 @@ export interface ExploreTabProps {
 const titleOf = (s: SpeciesAggregate): string => s.common ?? s.latin ?? s.name
 
 export default function ExploreTab({ agg, species, onSpecies, onTree, onNeighborhood }: ExploreTabProps) {
-  const { isCompressed } = useMapSidebarMode()
   const isMobile = useIsMobile()
   const [query, setQuery] = useState('')
   const [showAll, setShowAll] = useState(false)
@@ -77,21 +75,25 @@ export default function ExploreTab({ agg, species, onSpecies, onTree, onNeighbor
   return (
     <div className="flex flex-col gap-4">
       {/* ── opener: three chips ── */}
-      <div className={`grid gap-2 ${isCompressed ? 'grid-cols-1' : 'grid-cols-2'}`}>
+      <div className={RAIL_STAT_GRID}>
         {/* "142,014" overflows a half-width chip: the street-tree count takes
             the full row, the other two share the next. */}
         <RailStat
-          className={isCompressed ? '' : 'col-span-2'}
+          className="col-span-full"
           value={t.trees}
           caption={CAPTION_STREET_TREES}
           tip={streetTreesTip(t.trees)}
         />
         <RailStat value={agg.species.length} caption={CAPTION_SPECIES} tip={speciesCountTip(agg.species.length)} />
+        {/* The mark is fluid and figure-less: a fixed 120px bar plus
+            "34,899 of 142,014" ran past a half-width chip's edge (walk,
+            Sept. 30). The numeral states the share; the tip and aria-label
+            carry the sentence. */}
         <RailStat
           value={`${t.topFiveShare}%`}
           caption={CAPTION_TOP_FIVE}
           tip={topFiveLine(t.topFiveShare)}
-          mark={<PartWhole part={t.topFive} whole={t.trees} color={MOSS_500} width={120} label={topFiveLine(t.topFiveShare)} className="text-paper-700 dark:text-paper-300" />}
+          mark={<PartWhole part={t.topFive} whole={t.trees} color={MOSS_500} fluid figures={false} label={topFiveLine(t.topFiveShare)} />}
         />
       </div>
 

@@ -5,15 +5,15 @@
 // per area does not, and one measure alone would let the page assert what
 // the other does not support).
 //
-//   1. The lead (`equityLead`, which states only what holds under both, and
-//      only a link that survives leaving out any one neighborhood — ruling
-//      R18, `leadLinks`, computed here from the rows) and the standing parks
-//      line, in body serif.
-//   2. Two RailStat chips: the median neighborhood under each measure,
-//      unflagged rows only (equityView.unflaggedMedian).
-//   3. The measure pills → `?rank=perK|perKm2`. They re-rank this list AND
+//   1. Two RailStat chips: the median neighborhood under each measure,
+//      unflagged rows only (equityView.unflaggedMedian). The tab OPENS with
+//      them (ruling R22, Jesse: "lead with the big numbers") — the summary
+//      sentence (`equityLead`, ruling R18) and the parks line live in the
+//      data notes, which the rail's one "Data notes ›" link opens at the
+//      Equity section.
+//   2. The measure pills → `?rank=perK|perKm2`. They re-rank this list AND
 //      re-paint the map (the page reads the same param for the choropleth).
-//   4. The list: position · name · figure · bar, the median-income dot on
+//   3. The list: position · name · figure · bar, the median-income dot on
 //      the city's range beneath, and the OTHER measure's rank printed small
 //      beside the figure — so the flip is visible without switching.
 //      Flagged neighborhoods are listed last, never ranked: a hatched swatch
@@ -27,15 +27,14 @@ import { useEffect, useMemo, useRef } from 'react'
 import RailStat from '@/components/charts/RailStat'
 import PositionScale from '@/components/charts/PositionScale'
 import InfoTip from '@/components/ui/InfoTip'
-import { useMapSidebarMode } from '@/components/layout/MapSidebar'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import type { TreesAggregates } from '@/lib/trees/types'
 import {
-  EQUITY_MEASURE, INCOME_KEY, INCOME_KEY_TIP, MEDIAN_CAPTION, NO_CENSUS, PARKS_LINE, RANK_BY_LABEL,
-  equityFigure, equityFlagNote, equityLead, equityRowLabel, incomeShort, medianTip, otherRankLine,
+  EQUITY_MEASURE, INCOME_KEY, INCOME_KEY_TIP, MEDIAN_CAPTION, NO_CENSUS, RANK_BY_LABEL,
+  equityFigure, equityFlagNote, equityRowLabel, incomeShort, medianTip, otherRankLine,
 } from './treesPhrase'
-import { OTHER_MEASURE, leadLinks, rankNeighborhoods, unflaggedCount, unflaggedMedian, unflaggedRange } from './equityView'
-import { barShare } from './exploreRows'
+import { OTHER_MEASURE, rankNeighborhoods, unflaggedCount, unflaggedMedian, unflaggedRange } from './equityView'
+import { RAIL_STAT_GRID, barShare } from './exploreRows'
 import { HATCH_SWATCH_CSS, MOSS_500 } from './mapLayers'
 import type { EquityRank } from './treesUrl'
 
@@ -54,13 +53,10 @@ export interface EquityTabProps {
 }
 
 export default function EquityTab({ agg, rank, onRank, neighborhood, onSelect }: EquityTabProps) {
-  const { isCompressed } = useMapSidebarMode()
   const isMobile = useIsMobile()
   const rows = agg.neighborhoods
 
   const ranked = useMemo(() => rankNeighborhoods(rows, rank), [rows, rank])
-  // 2 × 37 small rank computations; memoised on the rows (the file never changes in a session).
-  const lead = useMemo(() => equityLead(leadLinks(rows)), [rows])
   const medians = useMemo(() => ({ perK: unflaggedMedian(rows, 'perK'), perKm2: unflaggedMedian(rows, 'perKm2') }), [rows])
   const income = useMemo(() => ({ range: unflaggedRange(rows, 'medianIncome'), median: unflaggedMedian(rows, 'medianIncome') }), [rows])
   // Bars run against the top UNFLAGGED figure (a park's per-resident figure
@@ -82,14 +78,9 @@ export default function EquityTab({ agg, rank, onRank, neighborhood, onSelect }:
 
   return (
     <div className="flex flex-col gap-4">
-      {/* ── the lead: only what holds under both measures ── */}
-      <div className="flex flex-col gap-1.5">
-        <p className="font-serif text-sm leading-relaxed text-ink dark:text-paper-100">{lead}</p>
-        <p className="font-serif italic text-xs text-paper-700 dark:text-paper-300">{PARKS_LINE}</p>
-      </div>
-
-      {/* ── the two medians, one per measure ── */}
-      <div className={`grid gap-2 ${isCompressed ? 'grid-cols-1' : 'grid-cols-2'}`}>
+      {/* ── opener: the two medians, one per measure (R22 — numbers first;
+          the summary sentence lives in the data notes) ── */}
+      <div className={RAIL_STAT_GRID}>
         {RANKS.map((by) => {
           const m = medians[by]
           return (

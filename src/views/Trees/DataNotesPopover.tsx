@@ -17,13 +17,17 @@ import { Link } from 'react-router-dom'
 import type { NoticedByKind } from '@/lib/trees/siteNotices'
 import type { TreesAggregates } from '@/lib/trees/types'
 import { NOTES_SOURCES, buildDataNotes, type NoteSectionId } from './dataNotes'
+import type { EquityLinks } from './equityView'
 
 const LINK = 'underline decoration-moss-500/50 hover:decoration-moss-500'
 
-export default function DataNotesPopover({ aggregates, noticed, nowYear, section, onOpen, onClose }: {
+export default function DataNotesPopover({ aggregates, noticed, links, nowYear, section, onOpen, onClose }: {
   aggregates: TreesAggregates | null
   /** What the noticed sites are listed as now (from the snapshot); null until it loads. */
   noticed: NoticedByKind | null
+  /** Both measures' robust links (R18), memoised by Trees.tsx; null until the
+   *  aggregates load. The Equity section's summary sentence reads them. */
+  links: EquityLinks | null
   nowYear: number
   /** The open section, or null when closed. */
   section: NoteSectionId | null
@@ -50,7 +54,7 @@ export default function DataNotesPopover({ aggregates, noticed, nowYear, section
     el?.scrollIntoView({ block: 'start' })
   }, [section])
 
-  const sections = useMemo(() => buildDataNotes(aggregates, nowYear, noticed), [aggregates, nowYear, noticed])
+  const sections = useMemo(() => buildDataNotes(aggregates, nowYear, noticed, links), [aggregates, nowYear, noticed, links])
 
   return (
     <div ref={ref} data-trees-notes className="relative">

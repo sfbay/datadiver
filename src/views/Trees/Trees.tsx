@@ -49,7 +49,7 @@ import {
   SELECTED_KEYLINE_LAYER, SELECTED_LAYERS, SELECTED_SOURCE, selectedFeature, selectedKeyline,
   EMPTY_FC, EQUITY_SOURCE, equityFeatures, equityLayers,
 } from './mapLayers'
-import { choroplethStops } from './equityView'
+import { choroplethStops, leadLinks } from './equityView'
 import TreeCard, { TREE_CARD_REM } from './TreeCard'
 import { snapshotSite } from './treeCardModel'
 import TreesRail from './TreesRail'
@@ -160,6 +160,10 @@ export default function Trees() {
   // What the noticed sites still in the inventory are listed as now (I2) —
   // for the data notes; null until the big file lands.
   const noticed = useMemo(() => (snap ? noticedSitesByKind(snap) : null), [snap])
+  // Both measures' robust links (R18) — 2 × 35 small rank computations, once
+  // per file. The data notes' Equity section states the summary sentence from
+  // them (R22: the tab opens with its numbers, the sentence lives in the notes).
+  const equityLinks = useMemo(() => (agg ? leadLinks(agg.neighborhoods) : null), [agg])
 
   // `?tune=1`: the plan's performance gate — once per mount.
   const tuneLogged = useRef(false)
@@ -427,7 +431,7 @@ export default function Trees() {
                 </button>
               ))}
             </div>
-            <DataNotesPopover aggregates={agg} noticed={noticed} nowYear={nowYear} section={notesSection} onOpen={openNotes} onClose={closeNotes} />
+            <DataNotesPopover aggregates={agg} noticed={noticed} links={equityLinks} nowYear={nowYear} section={notesSection} onOpen={openNotes} onClose={closeNotes} />
             <ExportButton targetSelector="#trees-capture" filename="trees" />
           </div>
         </div>

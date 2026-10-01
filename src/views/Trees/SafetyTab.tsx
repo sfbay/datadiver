@@ -37,7 +37,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import RailStat from '@/components/charts/RailStat'
 import PartWhole from '@/components/charts/PartWhole'
-import { useMapSidebarMode } from '@/components/layout/MapSidebar'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { noticedSitesByKind } from '@/lib/trees/siteNotices'
@@ -51,7 +50,7 @@ import {
   replantedAfterLine, safetyRowLabel, stumpsLine, yearsLeftOutLine,
 } from './treesPhrase'
 import { fallBars, latestFullYear, neighborhoodYears, safetyRows } from './safetyView'
-import { barShare } from './exploreRows'
+import { RAIL_STAT_GRID, barShare } from './exploreRows'
 import { BRICK_600, LEGEND_DOT_RADII, MOSS_500, OCHRE_500 } from './mapLayers'
 import { useTreesDisappeared } from './useTrees'
 
@@ -84,7 +83,6 @@ function Mark({ children }: { children: ReactNode }) {
 }
 
 export default function SafetyTab({ agg, snap, snapFailed, neighborhood, onSelect, nowYear }: SafetyTabProps) {
-  const { isCompressed } = useMapSidebarMode()
   const isMobile = useIsMobile()
   const t = agg.totals
   const years = agg.falls.years
@@ -123,7 +121,7 @@ export default function SafetyTab({ agg, snap, snapFailed, neighborhood, onSelec
   return (
     <div className="flex flex-col gap-5">
       {/* ── opener: three chips ── */}
-      <div className={`grid gap-2 ${isCompressed ? 'grid-cols-1' : 'grid-cols-2'}`}>
+      <div className={RAIL_STAT_GRID}>
         <RailStat
           value={t.largeTrunks}
           caption={CAPTION_LARGE_TRUNKS}
@@ -139,7 +137,7 @@ export default function SafetyTab({ agg, snap, snapFailed, neighborhood, onSelec
         />
         {full && (
           <RailStat
-            className={isCompressed ? '' : 'col-span-2'}
+            className="col-span-full"
             value={full.fallen}
             caption={fallChipCaption(full.year)}
             tip={fallChipTip(full.year, full.fallen, full.aboutToFall)}

@@ -128,10 +128,15 @@ export function unflaggedRange(rows: readonly NeighborhoodAggregate[], key: Medi
 
 // ── the lead's input (ruling R18) ──────────────────────────────────────────
 
+/** Both measures' robust links, one per measure. */
+export type EquityLinks = Record<EquityRank, RobustLink>
+
 /** Both measures' robust links against median income, from the rows the page
  *  already holds: a link reaches the lead sentence only if it survives
  *  leaving out any one neighborhood. `equityLead` reads `rho` (direction) and
- *  `strength`; the data note reads `without`. */
-export function leadLinks(rows: readonly NeighborhoodAggregate[]): Record<EquityRank, RobustLink> {
+ *  `strength`; the "How the summary sentence is decided" note reads
+ *  `breakers`. Computed ONCE per file, in Trees.tsx (memoised), and threaded
+ *  to the data notes — the only place the lead sentence is shown (R22). */
+export function leadLinks(rows: readonly NeighborhoodAggregate[]): EquityLinks {
   return { perK: robustLink(rows, 'perK'), perKm2: robustLink(rows, 'perKm2') }
 }

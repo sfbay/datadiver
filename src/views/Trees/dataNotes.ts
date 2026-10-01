@@ -14,8 +14,8 @@ import type { NoticedByKind } from '@/lib/trees/siteNotices'
 import { TRUNK_LABEL } from '@/lib/trees/trunk'
 import type { FallYear, TreesAggregates } from '@/lib/trees/types'
 import { apDate } from '@/utils/apDate'
-import { leadLinks, unflaggedCount } from './equityView'
-import { PARKS_LINE, apCount, noticedKindsList } from './treesPhrase'
+import { unflaggedCount, type EquityLinks } from './equityView'
+import { PARKS_LINE, apCount, equityLead, noticedKindsList } from './treesPhrase'
 
 export type NoteSectionId = 'general' | 'explore' | 'equity' | 'safety' | 'tree'
 
@@ -141,10 +141,9 @@ const MEASURE_WORDS = { perK: 'per resident', perKm2: 'per square kilometer' } a
 /** Ruling R18, said plainly: the rule, and which neighborhood's removal
  *  changes a reading — computed from the file, so a regeneration names
  *  whatever the data gives (or says no single removal changes either). */
-function leadRuleNote(a: TreesAggregates | null): string {
+function leadRuleNote(links: EquityLinks | null): string {
   const rule = 'A pattern is stated only if it still shows when any one neighborhood is left out.'
-  if (!a) return rule
-  const links = leadLinks(a.neighborhoods)
+  if (!links) return rule
   const changed = (['perK', 'perKm2'] as const)
     .filter((m) => links[m].breakers.length > 0 && links[m].strength !== linkStrength(links[m].rho))
     .map((m) => {
@@ -158,7 +157,25 @@ function leadRuleNote(a: TreesAggregates | null): string {
   return `${rule} ${changed.map((c, i) => (i === 0 ? c.charAt(0).toUpperCase() + c.slice(1) : c)).join('; ')}.`
 }
 
-export function buildDataNotes(a: TreesAggregates | null, nowYear: number, noticed: NoticedByKind | null = null): NoteSection[] {
+/** The Equity section's opening note (ruling R22, Jesse: "lead with the big
+ *  numbers" — the tab opens with its chips, and the summary sentence lives
+ *  here). The ONE place the sentence is produced: `equityLead` over the
+ *  robust links (R18) the page computed once. Without them, no figure. */
+const LEAD_PENDING = 'This note says what both measures show once the neighborhood figures have loaded.'
+function leadNote(links: EquityLinks | null): string {
+  return links ? equityLead(links) : LEAD_PENDING
+}
+
+/** `links` — both measures' robust links (`leadLinks(a.neighborhoods)`),
+ *  computed once by the caller and passed in, so the summary sentence and the
+ *  note on how it is decided read the same computation. Null when the
+ *  aggregates have not loaded. */
+export function buildDataNotes(
+  a: TreesAggregates | null,
+  nowYear: number,
+  noticed: NoticedByKind | null,
+  links: EquityLinks | null,
+): NoteSection[] {
   const t = a?.totals
   const firstNoticeYear = a?.notices.byYear[0]?.[0]
 
@@ -202,10 +219,12 @@ export function buildDataNotes(a: TreesAggregates | null, nowYear: number, notic
       id: 'equity',
       title: 'Income and street trees',
       notes: [
+        { title: 'What the two measures show', body: leadNote(links) },
+        { title: 'How the summary sentence is decided', body: leadRuleNote(links) },
         {
           title: 'Two ways to count',
           body: 'Counting per 1,000 residents favors thinly populated neighborhoods; counting per square kilometer does not. ' +
-            'The page shows both, and its summary sentence states only what holds under both' +
+            'The page shows both, and the summary sentence states only what holds under both' +
             (a ? `, across the ${apCount(unflaggedCount(a.neighborhoods))} neighborhoods without a flag.` : '.') +
             ' Population and income come from the American Community Survey, 2019–2023.',
         },
@@ -219,7 +238,6 @@ export function buildDataNotes(a: TreesAggregates | null, nowYear: number, notic
             'Flagged neighborhoods are listed and hatched on the map, but left out of the rank positions, the medians, ' +
             'the color scale and the summary sentence.',
         },
-        { title: 'How the summary sentence is decided', body: leadRuleNote(a) },
       ],
     },
     {
