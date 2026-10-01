@@ -18,7 +18,6 @@
 // plain nouns; the precision behind them lives in the data notes.
 
 import type { ReactNode } from 'react'
-import { Link } from 'react-router-dom'
 import DetailPanelShell from '@/components/ui/DetailPanelShell'
 import { classifyRow } from '@/lib/trees/species'
 import type { TreesAggregates, TreesSnapshot } from '@/lib/trees/types'
@@ -36,7 +35,6 @@ export const TREE_CARD_REM = 20
 const LINK =
   'underline decoration-dotted underline-offset-2 hover:text-moss-600 dark:hover:text-moss-400 transition-colors'
 const EYEBROW = 'text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-1'
-const INVENTORY_NOTES_HREF = '/about#source-sf-tkzw-k3nq'
 
 export interface TreeCardProps {
   siteId: number
@@ -48,9 +46,8 @@ export interface TreeCardProps {
   onRetrySnapshot(): void
   onPickNeighborhood(name: string): void
   onPickSpecies(name: string): void
-  /** Opens the header's data-notes popover at a section (a later task wires
-   *  it); without it, "Data notes ›" links to the inventory's About row. */
-  onOpenNotes?: (section: NoteSectionId) => void
+  /** Opens the header's data-notes popover at a section ('tree'). */
+  onOpenNotes(section: NoteSectionId): void
   insideSelectors?: string[]
 }
 
@@ -69,16 +66,12 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
 
 const orNot = (v: string | null): string => v ?? NOT_RECORDED
 
-function NotesLink({ onOpenNotes }: { onOpenNotes?: (section: NoteSectionId) => void }) {
+function NotesLink({ onOpenNotes }: { onOpenNotes(section: NoteSectionId): void }) {
   const cls = 'text-nano font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 hover:text-moss-600 dark:hover:text-moss-400 transition-colors'
-  return onOpenNotes ? (
+  return (
     <button type="button" onClick={() => onOpenNotes('tree')} className={cls}>
       Data notes ›
     </button>
-  ) : (
-    <Link to={INVENTORY_NOTES_HREF} className={cls}>
-      Data notes ›
-    </Link>
   )
 }
 
@@ -93,7 +86,7 @@ function SiteBody({
   siteId: number
   onPickNeighborhood(name: string): void
   onPickSpecies(name: string): void
-  onOpenNotes?: (section: NoteSectionId) => void
+  onOpenNotes(section: NoteSectionId): void
 }) {
   const species = model.species
   return (

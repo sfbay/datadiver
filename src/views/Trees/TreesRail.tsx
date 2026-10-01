@@ -13,7 +13,6 @@
 // The rail reads only the small aggregates file — it never waits for the
 // 144k-site snapshot.
 
-import { Link } from 'react-router-dom'
 import MapSidebar from '@/components/layout/MapSidebar'
 import { SkeletonSidebarRows } from '@/components/ui/Skeleton'
 import type { TreesAggregates } from '@/lib/trees/types'
@@ -23,10 +22,6 @@ import ExploreTab from './ExploreTab'
 import SafetyTab from './SafetyTab'
 import { RAIL_ERROR } from './treesPhrase'
 import { LENSES, LENS_LABEL, type EquityRank, type Lens } from './treesUrl'
-
-/** Until the header's notes popover lands, the link goes to the
- *  inventory's About row (the tree card does the same). */
-const INVENTORY_NOTES_HREF = '/about#source-sf-tkzw-k3nq'
 
 export interface TreesRailProps {
   lens: Lens
@@ -43,18 +38,16 @@ export interface TreesRailProps {
   onRank(rank: EquityRank): void
   neighborhood: string | null
   onSelectNeighborhood(name: string | null): void
-  onOpenNotes?: (section: NoteSectionId) => void
+  /** Opens the header's data-notes popover at a section (the notes live
+   *  once, in dataNotes.ts). */
+  onOpenNotes(section: NoteSectionId): void
   /** The reader's year, for AP dates (Safety's busiest day, the former-sites log). */
   nowYear: number
 }
 
-function NotesLink({ section, onOpenNotes }: { section: NoteSectionId; onOpenNotes?: (section: NoteSectionId) => void }) {
+function NotesLink({ section, onOpenNotes }: { section: NoteSectionId; onOpenNotes(section: NoteSectionId): void }) {
   const cls = 'font-mono text-micro uppercase tracking-[0.18em] text-paper-600 dark:text-paper-400 hover:text-moss-600 dark:hover:text-moss-400 transition-colors'
-  return onOpenNotes ? (
-    <button type="button" onClick={() => onOpenNotes(section)} className={cls}>Data notes ›</button>
-  ) : (
-    <Link to={INVENTORY_NOTES_HREF} className={cls}>Data notes ›</Link>
-  )
+  return <button type="button" onClick={() => onOpenNotes(section)} className={cls}>Data notes ›</button>
 }
 
 export default function TreesRail(props: TreesRailProps) {

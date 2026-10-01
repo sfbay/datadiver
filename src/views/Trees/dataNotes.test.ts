@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { FallYear, TreesAggregates } from '@/lib/trees/types'
-import { buildDataNotes } from './dataNotes'
+import { NOTES_SOURCES, buildDataNotes } from './dataNotes'
+import { buildSourceRows } from '@/views/About/sourceRows'
 
 const A = JSON.parse(readFileSync(join(process.cwd(), 'public/data/trees/aggregates.json'), 'utf8')) as TreesAggregates
 
@@ -156,4 +157,34 @@ describe('note lengths: at most three sentences (Fall reports excepted, ruling R
       }
     })
   }
+})
+
+// Task 13 polish: the equity count is read from the rows, the flagged note
+// names every place a flagged neighborhood is left out of, the trunk note
+// reads plainly, and the popover's source links land on real About rows.
+describe('equity and trunk notes read from the rows, and say what they mean', () => {
+  const note = (a: TreesAggregates, title: string) => buildDataNotes(a, 2026).flatMap((s) => s.notes).find((n) => n.title === title)!.body
+  it('"neighborhoods without a flag" counts unflagged rows, not equity.n', () => {
+    const unflagged = A.neighborhoods.filter((n) => n.flag === null).length
+    expect(note(A, 'Two ways to count')).toContain(`across the ${unflagged} neighborhoods without a flag`)
+    const skewed = { ...A, equity: { ...A.equity, n: 999 } }
+    expect(note(skewed, 'Two ways to count')).toContain(`across the ${unflagged} neighborhoods without a flag`)
+  })
+  it('flagged neighborhoods: hatched, and left out of ranks, medians, color scale and summary', () => {
+    const b = note(A, 'Flagged neighborhoods')
+    for (const part of ['hatched on the map', 'rank positions', 'medians', 'color scale', 'summary sentence']) expect(b).toContain(part)
+  })
+  it('trunk size: the city’s size category is named, and DataDiver reads the trunk width', () => {
+    expect(note(A, 'Trunk size')).toContain('the city’s own size category files those as large, so DataDiver reads the trunk width directly')
+  })
+})
+
+describe('the popover’s source links', () => {
+  it('each lands on a row of the About sources table', () => {
+    const anchors = new Set(buildSourceRows('sf').map((r) => `/about#${r.anchorId}`))
+    expect(NOTES_SOURCES.links.map((l) => l.href)).toEqual([
+      '/about#source-sf-tkzw-k3nq', '/about#source-sf-qrwx-q4gg', '/about#source-sf-dd-street-trees',
+    ])
+    for (const l of NOTES_SOURCES.links) expect(anchors.has(l.href), l.href).toBe(true)
+  })
 })

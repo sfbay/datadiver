@@ -1,4 +1,6 @@
 // src/views/Trees/treesPhrase.test.ts
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { DisappearedLog, FallYear } from '@/lib/trees/types'
 import * as phrase from './treesPhrase'
@@ -283,8 +285,45 @@ describe('jargon ban — statistics words and over-claims never reach a reader',
       phrase.noticesListedLabel(4831, 5571), phrase.noticeTypeLabel('Posted 24hr', 1354), phrase.noticeTypeLabel('Posted 15 Day', 1),
       phrase.noticesTotalLine(5713, 2017), phrase.noticesTotalLine(1, null),
       phrase.replantedAfterLine(1022), phrase.replantedAfterLine(1),
+      // the count formatter every sentence above leans on
+      phrase.apCount(144504), phrase.apCount(1),
     ]
     expect(out.length).toBeGreaterThan(30)
     for (const s of out) if (BANNED.test(s)) throw new Error(s)
+  })
+})
+
+// The scan above only protects what it covers. A new export of treesPhrase.ts
+// must join it: a string constant is scanned by enumeration (no list needed);
+// every function and every object of strings must be NAMED here, and each
+// named function must be CALLED in this file. A missing entry fails the build.
+describe('jargon ban — covers every export of treesPhrase.ts', () => {
+  const SCANNED_FUNCTIONS = [
+    'apCount', 'speciesRankLine', 'topFiveLine', 'streetTreesTip', 'speciesCountTip', 'speciesRowLabel', 'shareLine',
+    'trunkMixLabel', 'speciesPlantedLine', 'neighborhoodCountLabel', 'showAllLine', 'noSpeciesMatchLine', 'noAddressLine',
+    'equityLead', 'equityFlagNote', 'equityFigure', 'incomeShort', 'otherRankLine', 'medianTip', 'equityRowLabel',
+    'noticeLine', 'kindTitle', 'plantedLine', 'trunkLine', 'nearbyFallsLine', 'leftInventoryNote', 'disappearedLine',
+    'largeTrunksLine', 'stumpsLine', 'fallChipCaption', 'fallChipTip', 'fallBarLabel', 'yearsLeftOutLine',
+    'busiestDayLine', 'rateWithheldTip', 'safetyRowLabel', 'noticesListedLabel', 'noticeTypeLabel', 'noticesTotalLine',
+    'replantedAfterLine',
+  ]
+  /** Exported records of reader strings — the scan spreads their values. */
+  const SCANNED_OBJECTS = ['EQUITY_MEASURE', 'MEDIAN_CAPTION', 'EQUITY_LEGEND_HEAD']
+  const source = readFileSync(join(process.cwd(), 'src/views/Trees/treesPhrase.test.ts'), 'utf8')
+  const scanBlock = source.slice(source.indexOf('no generated sentence'), source.indexOf('jargon ban — covers every export'))
+
+  it('every exported function and object is on the covered list', () => {
+    for (const [name, value] of Object.entries(phrase)) {
+      if (typeof value === 'string') continue
+      if (typeof value === 'function') expect(SCANNED_FUNCTIONS, `${name}: add it to the scan and to SCANNED_FUNCTIONS`).toContain(name)
+      else expect(SCANNED_OBJECTS, `${name}: add its values to the scan and to SCANNED_OBJECTS`).toContain(name)
+    }
+  })
+  it('the list names nothing that is no longer exported', () => {
+    for (const name of [...SCANNED_FUNCTIONS, ...SCANNED_OBJECTS]) expect(Object.keys(phrase), name).toContain(name)
+  })
+  it('every listed function is called, and every listed object spread, inside the scan', () => {
+    for (const name of SCANNED_FUNCTIONS) expect(scanBlock, name).toMatch(new RegExp(`\\b${name}\\(`))
+    for (const name of SCANNED_OBJECTS) expect(scanBlock, name).toMatch(new RegExp(`\\b${name}\\b`))
   })
 })

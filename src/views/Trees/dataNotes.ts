@@ -12,6 +12,7 @@ import { NEARBY_METERS } from '@/lib/trees/fallReports'
 import { TRUNK_LABEL } from '@/lib/trees/trunk'
 import type { FallYear, TreesAggregates } from '@/lib/trees/types'
 import { apDate } from '@/utils/apDate'
+import { unflaggedCount } from './equityView'
 import { PARKS_LINE, apCount } from './treesPhrase'
 
 export type NoteSectionId = 'general' | 'explore' | 'equity' | 'safety' | 'tree'
@@ -27,6 +28,17 @@ export interface NoteSection {
   id: NoteSectionId
   title: string
   notes: DataNote[]
+}
+
+/** The popover's closing line: the three About rows that carry each
+ *  source's known limitations (anchors are `source-<city>-<id>`). */
+export const NOTES_SOURCES: { lead: string; links: readonly { href: string; text: string }[] } = {
+  lead: 'Sources and known limitations:',
+  links: [
+    { href: '/about#source-sf-tkzw-k3nq', text: 'tree inventory' },
+    { href: '/about#source-sf-qrwx-q4gg', text: 'removal notices' },
+    { href: '/about#source-sf-dd-street-trees', text: 'DataDiver’s street-tree file' },
+  ],
 }
 
 const INVENTORY_LINK = { href: 'https://data.sf.gov/d/tkzw-k3nq', text: 'Open the city’s tree inventory' }
@@ -146,7 +158,7 @@ export function buildDataNotes(a: TreesAggregates | null, nowYear: number): Note
           title: 'Two ways to count',
           body: 'Counting per 1,000 residents favors thinly populated neighborhoods; counting per square kilometer does not. ' +
             'The page shows both, and its summary sentence states only what holds under both' +
-            (a ? `, across the ${apCount(a.equity.n)} neighborhoods without a flag.` : '.') +
+            (a ? `, across the ${apCount(unflaggedCount(a.neighborhoods))} neighborhoods without a flag.` : '.') +
             ' Population and income come from the American Community Survey, 2019–2023.',
         },
         {
@@ -154,7 +166,8 @@ export function buildDataNotes(a: TreesAggregates | null, nowYear: number): Note
           body: `A neighborhood is flagged when it is mostly parkland, since park trees are not in this inventory${flaggedNames(a, 'park')}; ` +
             `when the inventory lists almost no trees there${flaggedNames(a, 'low-coverage')}; or when it has fewer than ` +
             `${apCount(MIN_POPULATION)} residents, so the per-resident figure swings widely${flaggedNames(a, 'small-population')}. ` +
-            'Flagged neighborhoods are listed but left out of the summary sentence.',
+            'Flagged neighborhoods are listed and hatched on the map, but left out of the rank positions, the medians, ' +
+            'the color scale and the summary sentence.',
         },
       ],
     },
@@ -169,7 +182,7 @@ export function buildDataNotes(a: TreesAggregates | null, nowYear: number): Note
             (t
               ? `The record has no measurement for ${apCount(t.unmeasuredTrunks)} street trees`
               : 'Some street trees have no measurement') +
-            '; the city’s own map category files those as large, so DataDiver reads the measurement itself. ' +
+            '; the city’s own size category files those as large, so DataDiver reads the trunk width directly. ' +
             'A wide trunk is not a finding about a tree’s health.',
         },
         { title: 'Fall reports', body: fallReportsNote(a) },

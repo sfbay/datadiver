@@ -90,6 +90,13 @@ const unflaggedValues = (rows: readonly NeighborhoodAggregate[], key: MedianKey)
     .filter((v): v is number => v !== null && Number.isFinite(v))
     .sort((a, b) => a - b)
 
+/** How many neighborhoods carry no flag — the N in every "Among the N
+ *  neighborhoods without a flag" sentence. Counted from the rows themselves,
+ *  never read from `equity.n` (that is the link measurement's own count). */
+export function unflaggedCount(rows: readonly NeighborhoodAggregate[]): number {
+  return rows.filter((r) => r.flag === null).length
+}
+
 /** The citywide median of `key` across unflagged neighborhoods — the middle
  *  value, or the mean of the middle two. Null when nothing qualifies. */
 export function unflaggedMedian(rows: readonly NeighborhoodAggregate[], key: MedianKey): number | null {

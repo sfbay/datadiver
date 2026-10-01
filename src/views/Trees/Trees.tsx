@@ -53,6 +53,8 @@ import TreeCard, { TREE_CARD_REM } from './TreeCard'
 import { snapshotSite } from './treeCardModel'
 import TreesRail from './TreesRail'
 import TreesLegend from './TreesLegend'
+import DataNotesPopover from './DataNotesPopover'
+import type { NoteSectionId } from './dataNotes'
 
 /** A lens's `?lens=` value: Explore is the default, so it deletes the key. */
 const lensValue = (l: Lens): string | null => (l === 'explore' ? null : l)
@@ -60,8 +62,9 @@ const lensValue = (l: Lens): string | null => (l === 'explore' ? null : l)
 const VIEW = 'trees' as const
 const SLOW = { timeoutMs: 20_000, retries: 1 } as const
 const NO_NAMES: readonly string[] = []
-/** Clicks in the rail re-target the card, so they never dismiss it. */
-const CARD_INSIDE = ['[data-trees-rail]']
+/** Clicks in the rail re-target the card, and reading the data notes the
+ *  card's own link opened must not close it, so neither dismisses it. */
+const CARD_INSIDE = ['[data-trees-rail]', '[data-trees-notes]']
 
 /** The tree card's pixel width for the flyTo offset (its `max-w-[54vw]`
  *  cap on mobile — DetailPanelShell's mobileCompact). */
@@ -125,6 +128,12 @@ export default function Trees() {
   /** `?lens=` is the one source of truth: the header pills and the rail's
    *  tabs both write it here. */
   const setLens = useCallback((l: Lens) => setParam('lens', lensValue(l)), [setParam])
+
+  // ── the data-notes popover: the header button opens it at 'general', each
+  // rail tab at its lens's section, the tree card at 'tree' ──
+  const [notesSection, setNotesSection] = useState<NoteSectionId | null>(null)
+  const openNotes = useCallback((sec: NoteSectionId) => setNotesSection(sec), [])
+  const closeNotes = useCallback(() => setNotesSection(null), [])
 
   // ── freshness probe: the inventory's own edge for the chip ──
   const edgeQ = useDataset<EdgeRow>(
@@ -396,6 +405,7 @@ export default function Trees() {
                 </button>
               ))}
             </div>
+            <DataNotesPopover aggregates={agg} nowYear={nowYear} section={notesSection} onOpen={openNotes} onClose={closeNotes} />
             <ExportButton targetSelector="#trees-capture" filename="trees" />
           </div>
         </div>
@@ -427,6 +437,7 @@ export default function Trees() {
                 onRetrySnapshot={retrySnap}
                 onPickNeighborhood={pickNeighborhood}
                 onPickSpecies={pickSpecies}
+                onOpenNotes={openNotes}
                 insideSelectors={CARD_INSIDE}
               />
             )}
@@ -447,6 +458,7 @@ export default function Trees() {
           onRank={setRank}
           neighborhood={nh}
           onSelectNeighborhood={selectNeighborhood}
+          onOpenNotes={openNotes}
           nowYear={nowYear}
         />
       </div>

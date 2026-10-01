@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import type { NeighborhoodAggregate } from '@/lib/trees/types'
 import { choroplethStops, rankNeighborhoods } from './equityView'
-import { MOSS_RAMP, stopColor, unflaggedMedian, unflaggedRange } from './equityView'
+import { MOSS_RAMP, stopColor, unflaggedCount, unflaggedMedian, unflaggedRange } from './equityView'
 
 const nb = (name: string, perK: number, perKm2: number, flag: NeighborhoodAggregate['flag'] = null): NeighborhoodAggregate =>
   ({ name, trees: 1, stumps: 0, largeTrunks: 0, population: 5000, areaKm2: 1, medianIncome: 1, povertyRate: 1, perK, perKm2, flag, falls: [] })
@@ -100,5 +100,13 @@ describe('citywide medians come from UNFLAGGED rows only', () => {
   it('nothing unflagged: null', () => {
     expect(unflaggedMedian([nb('Presidio', 23, 14, 'park')], 'perK')).toBeNull()
     expect(unflaggedRange([nb('Presidio', 23, 14, 'park')], 'medianIncome')).toBeNull()
+  })
+})
+
+describe('unflaggedCount — the N in "among the N neighborhoods without a flag"', () => {
+  it('counts the rows with no flag, whatever their figures', () => {
+    expect(unflaggedCount(rows)).toBe(3)
+    expect(unflaggedCount([nb('Presidio', 23, 14, 'park'), nb('Treasure Island', 2.5, 3, 'low-coverage')])).toBe(0)
+    expect(unflaggedCount([])).toBe(0)
   })
 })

@@ -15,6 +15,7 @@ import { AGGREGATES_PATH, DISAPPEARED_PATH, TREES_PATH } from '../../../scripts/
 import { SF_NEIGHBORHOODS } from '../../utils/geo'
 import { PLACEABLE_FLOOR } from './fallReports'
 import { classifyRow, parseSpecies } from './species'
+import { SOURCE_NOTES } from '../../views/About/sourceNotes'
 import type { DisappearedLog, TreesAggregates, TreesSnapshot } from './types'
 
 const read = <T,>(p: string) => JSON.parse(readFileSync(join(process.cwd(), p), 'utf8')) as T
@@ -212,5 +213,35 @@ describe('trees snapshot — EXACT pins at asOf (re-pin + sourceNotes + data-ins
     expect(T.fl.reduce((s, v) => s + v, 0)).toBe(97561)
 
     expect(D).toEqual({ trackingSince: '2026-09-30', runs: [] })
+  })
+})
+
+// About's three Trees notes quote the file. A regeneration that moves any of
+// these figures fails HERE until the notes are rewritten in the same commit.
+describe('About source notes quote the committed file', () => {
+  const fmt = (n: number) => n.toLocaleString('en-US')
+  const inv = SOURCE_NOTES['tkzw-k3nq'], notices = SOURCE_NOTES['qrwx-q4gg'], file = SOURCE_NOTES['dd-street-trees']
+  it('the inventory note', () => {
+    const t = A.totals
+    for (const n of [t.rows, t.trees, t.stumps, t.emptySites, t.shrubs, t.unmapped, t.speciesNotRecorded, t.plantedRecorded, t.unmeasuredTrunks]) {
+      expect(inv, String(n)).toContain(fmt(n))
+    }
+    expect(inv).toContain(`${((100 * t.plantedRecorded) / t.trees).toFixed(1)}%`)
+    expect(inv).toContain(`${((100 * t.unmapped) / t.rows).toFixed(1)}%`)
+    for (const name of ['Golden Gate Park', 'Presidio']) {
+      expect(inv).toContain(`${fmt(A.neighborhoods.find((x) => x.name === name)!.trees)} in the ${name === 'Presidio' ? 'Presidio' : `${name} neighborhood`}`)
+    }
+  })
+  it('the notices note', () => {
+    for (const n of [A.notices.rows, A.notices.sites, A.notices.listed, A.notices.replantedAfter]) expect(notices, String(n)).toContain(fmt(n))
+  })
+  it('the derived-file note', () => {
+    expect(file).toContain(fmt(A.falls.years.reduce((s, y) => s + y.duplicates, 0)))
+    for (const y of A.falls.years.filter((x) => !x.placeable)) expect(file).toContain(`${y.year} (${y.placedShare}%)`)
+    for (const n of A.neighborhoods.filter((x) => x.flag !== null)) expect(file).toContain(n.name)
+  })
+  it('no banned reader word', () => {
+    const BANNED = /\bremoved\b|\bage\b|\blive\b|σ|z-?score|ρ|spearman|correlat|baseline/i
+    for (const note of [inv, notices, file]) expect(note).not.toMatch(BANNED)
   })
 })

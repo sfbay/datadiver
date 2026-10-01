@@ -32,7 +32,7 @@ import {
   EQUITY_MEASURE, INCOME_KEY, INCOME_KEY_TIP, MEDIAN_CAPTION, NO_CENSUS, PARKS_LINE, RANK_BY_LABEL,
   equityFigure, equityFlagNote, equityLead, equityRowLabel, incomeShort, medianTip, otherRankLine,
 } from './treesPhrase'
-import { OTHER_MEASURE, rankNeighborhoods, unflaggedMedian, unflaggedRange } from './equityView'
+import { OTHER_MEASURE, rankNeighborhoods, unflaggedCount, unflaggedMedian, unflaggedRange } from './equityView'
 import { barShare } from './exploreRows'
 import { HATCH_SWATCH_CSS, MOSS_500 } from './mapLayers'
 import type { EquityRank } from './treesUrl'
@@ -92,7 +92,7 @@ export default function EquityTab({ agg, rank, onRank, neighborhood, onSelect }:
               key={by}
               value={m === null ? '—' : equityFigure(m)}
               caption={MEDIAN_CAPTION[by]}
-              tip={m === null ? undefined : medianTip(by, m, agg.equity.n)}
+              tip={m === null ? undefined : medianTip(by, m, unflaggedCount(rows))}
             />
           )
         })}
