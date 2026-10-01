@@ -30,6 +30,8 @@ export interface TreesRailProps {
   /** The big snapshot, or null while it loads — only Safety's notices line
    *  reads it; the rail never waits for it. */
   snap: TreesSnapshot | null
+  /** The snapshot request failed (Safety's notices line says so). */
+  snapFailed: boolean
   aggError: string | null
   onRetry(): void
   species: string | null
@@ -110,6 +112,7 @@ export default function TreesRail(props: TreesRailProps) {
             <SafetyTab
               agg={agg}
               snap={props.snap}
+              snapFailed={props.snapFailed}
               neighborhood={props.neighborhood}
               onSelect={props.onSelectNeighborhood}
               nowYear={props.nowYear}

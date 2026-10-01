@@ -142,10 +142,11 @@ export interface LinkRow {
 export interface RobustLink {
   /** Rank link of the measure against median income, all unflagged rows, unrounded. */
   rho: number
-  /** The leave-one-out value with the smallest magnitude, unrounded (= rho when n < 2). */
+  /** The leave-one-out value with the smallest magnitude, unrounded (= rho when there are no rows). */
   weakest: number
   /** The neighborhood whose removal gives `weakest` (the first in row order
-   *  on a tie); null when n < 2. */
+   *  on a tie); null only when there are no rows (with one row, it names that
+   *  row and `weakest` is the empty set's 0). */
   without: string | null
   /** Every neighborhood whose removal ALONE lowers the full set's tier or
    *  flips its sign — the names the data note gives. Name order. */

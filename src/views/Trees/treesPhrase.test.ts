@@ -131,10 +131,10 @@ describe('equity tab lines', () => {
       'No. 34, Tenderloin: 52 street trees per 1,000 residents. No. 15 by area. Median household income $63K.',
     )
     expect(equityRowLabel({ name: 'Presidio', value: 14.1, position: null, otherPosition: null, medianIncome: 233828.79, flag: 'park' }, 'perKm2')).toBe(
-      'Presidio: 14 street trees per square kilometer. Not ranked: Mostly parkland. Park trees are not in this inventory. Median household income $234K.',
+      'Presidio: 14 street trees per square kilometer. Not ranked: mostly parkland. Park trees are not in this inventory. Median household income $234K.',
     )
     expect(equityRowLabel({ name: 'Lincoln Park', value: 61.5, position: null, otherPosition: null, medianIncome: null, flag: 'park' }, 'perK')).toBe(
-      'Lincoln Park: 62 street trees per 1,000 residents. Not ranked: Mostly parkland. Park trees are not in this inventory. No census figure.',
+      'Lincoln Park: 62 street trees per 1,000 residents. Not ranked: mostly parkland. Park trees are not in this inventory. No census figure.',
     )
   })
 })
@@ -191,14 +191,32 @@ describe('card lines never claim more than the record', () => {
     expect(equityFlagNote('small-population', 'X')).toBe('Fewer than 2,000 residents, so the per-resident figure swings widely.')
     expect(equityFlagNote(null, 'Mission')).toBeNull()
   })
-  it('park-heavy notes carry the measured open-space share, and never say few trees overall (R20)', () => {
+  it('park-heavy notes carry the measured share and say nothing about streets or tree counts (R20, N1)', () => {
     expect(equityFlagNote('park-heavy', 'Lakeshore')).toBe(
-      'About 61% of its land is open space, so few of its streets carry street trees. Its residential streets are counted citywide but not ranked here.')
+      'About 61% of its land is open space, and trees there are not in this inventory. Listed, not ranked; its residential streets count in the citywide figures.')
     expect(equityFlagNote('park-heavy', 'Twin Peaks')).toBe(
-      'About 20% of its land is open space, so few of its streets carry street trees. Its residential streets are counted citywide but not ranked here.')
+      'About 20% of its land is open space, and trees there are not in this inventory. Listed, not ranked; its residential streets count in the citywide figures.')
     expect(equityFlagNote('park-heavy', 'Elsewhere')).toBe(
-      'Large parks take up much of its land, and park trees are not in this inventory. Its residential streets are counted citywide but not ranked here.')
-    for (const n of ['Lakeshore', 'Twin Peaks', 'Elsewhere']) expect(equityFlagNote('park-heavy', n)).not.toMatch(/few (street )?trees|fewer trees/i)
+      'Much of its land is open space, and trees there are not in this inventory. Listed, not ranked; its residential streets count in the citywide figures.')
+  })
+  it('the notices bar is never alone: a pending line while the breakdown loads or fails', () => {
+    expect(phrase.noticedKindsPendingLine(false)).toBe('Some of these sites now hold a stump or an empty planting site; the breakdown is loading.')
+    expect(phrase.noticedKindsPendingLine(true)).toBe('Some of these sites now hold a stump or an empty planting site; the breakdown did not load.')
+  })
+  it('no flag note, for any flag or name, claims few streets or few trees (N1)', () => {
+    const FEW = /\bfew\b[^.]*\b(streets?|trees)\b/i
+    for (const f of ['park', 'low-coverage', 'park-heavy', 'small-population'] as const) {
+      for (const n of ['Lakeshore', 'Twin Peaks', 'Elsewhere', 'Presidio']) expect(equityFlagNote(f, n) ?? '').not.toMatch(FEW)
+    }
+  })
+  it('a row label lower-cases after the colon, and a park-heavy note is not prefixed twice', () => {
+    const row = (flag: 'park' | 'park-heavy', name: string) =>
+      equityRowLabel({ name, value: 60.6, position: null, otherPosition: null, medianIncome: 78000, flag }, 'perKm2')
+    expect(row('park-heavy', 'Lakeshore')).toBe(
+      'Lakeshore: 61 street trees per square kilometer. About 61% of its land is open space, and trees there are not in this inventory. ' +
+        'Listed, not ranked; its residential streets count in the citywide figures. Median household income $78K.')
+    expect(row('park', 'Presidio')).toContain('Not ranked: mostly parkland.')
+    expect(row('park', 'Presidio')).not.toMatch(/: [A-Z]/)
   })
   it('a site that left the inventory: no cause is claimed, for any kind of site', () => {
     expect(leftInventoryNote('2026-09-30', 2026))
@@ -327,6 +345,7 @@ const SAMPLES: Record<string, () => readonly (string | null)[]> = {
     phrase.noticesTotalLine(5713, 2017, 5571, 3), phrase.noticesTotalLine(1, null, 1, 0), phrase.noticesTotalLine(2, null, 1, 1),
   ],
   replantedAfterLine: () => [phrase.replantedAfterLine(1022), phrase.replantedAfterLine(1)],
+  noticedKindsPendingLine: () => [phrase.noticedKindsPendingLine(false), phrase.noticedKindsPendingLine(true)],
   noticedKindsList: () => [
     phrase.noticedKindsList({ tree: 4368, stump: 136, site: 325, shrub: 2 }), phrase.noticedKindsList({ tree: 0, stump: 0, site: 0, shrub: 0 }),
   ],

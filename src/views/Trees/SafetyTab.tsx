@@ -47,7 +47,7 @@ import {
   FORMER_HEAD, LARGE_TRUNKS_UNIT, NEIGHBORHOOD_FALLS_HEAD, NEIGHBORHOOD_YEARS_LABEL, NOTICES_HEAD,
   NOTICES_LISTED_CAPTION, NO_FALL_YEARS, ROWS_COUNT_HEAD, ROWS_MAPPED_ONLY, ROWS_TREES_HEAD, STREET_TREES_UNIT, STUMPS_UNIT,
   TRUNK_NOTE, apCount, busiestDayLine, disappearedLine, fallBarCaptions, fallBarLabel, fallChipCaption,
-  fallChipTip, largeTrunksLine, noticeTypeLabel, noticedKindsLine, noticesListedLabel, noticesTotalLine,
+  fallChipTip, largeTrunksLine, noticeTypeLabel, noticedKindsLine, noticedKindsPendingLine, noticesListedLabel, noticesTotalLine,
   replantedAfterLine, safetyRowLabel, stumpsLine, yearsLeftOutLine,
 } from './treesPhrase'
 import { fallBars, latestFullYear, neighborhoodYears, safetyRows } from './safetyView'
@@ -70,6 +70,8 @@ export interface SafetyTabProps {
   /** The 144k-site snapshot, or null while it loads: only the notices'
    *  listed-as-now line needs it, and it simply waits for it. */
   snap: TreesSnapshot | null
+  /** The snapshot request failed: the pending line says the breakdown did not load. */
+  snapFailed: boolean
   /** The resolved `?nh=` name, or null. */
   neighborhood: string | null
   /** Toggle: the selected row's own click passes null. */
@@ -81,7 +83,7 @@ function Mark({ children }: { children: ReactNode }) {
   return <svg width={14} height={14} viewBox="0 0 14 14" className="block" aria-hidden>{children}</svg>
 }
 
-export default function SafetyTab({ agg, snap, neighborhood, onSelect, nowYear }: SafetyTabProps) {
+export default function SafetyTab({ agg, snap, snapFailed, neighborhood, onSelect, nowYear }: SafetyTabProps) {
   const { isCompressed } = useMapSidebarMode()
   const isMobile = useIsMobile()
   const t = agg.totals
@@ -101,7 +103,12 @@ export default function SafetyTab({ agg, snap, neighborhood, onSelect, nowYear }
   const notices = agg.notices
   const firstNoticeYear = notices.byYear.length ? Math.min(...notices.byYear.map(([y]) => y)) : null
   const topType = notices.byType.reduce((m, [, n]) => Math.max(m, n), 0)
-  const kindsLine = useMemo(() => (snap ? noticedKindsLine(noticedSitesByKind(snap)) : null), [snap])
+  // Never the bare bar (CLAUDE.md contract 2): the breakdown once the
+  // snapshot lands, a pending line while it loads or after it failed.
+  const kindsLine = useMemo(
+    () => (snap ? noticedKindsLine(noticedSitesByKind(snap)) : noticedKindsPendingLine(snapFailed)),
+    [snap, snapFailed],
+  )
 
   // A neighborhood chosen elsewhere scrolls into view. Desktop only: the
   // mobile sheet is translateY'd, where scrollIntoView misbehaves.

@@ -269,7 +269,10 @@ describe('flagged neighborhoods: the park-heavy reason, with its shares and sour
     for (const [name, share] of Object.entries(PARK_HEAVY)) expect(body()).toContain(`${name} ${share}%`)
     expect(body()).toContain('Planning Department’s land-use file, Sept. 30, 2026')
   })
-  it('never says the neighborhood has few trees overall', () => {
-    expect(body()).not.toMatch(/few (street )?trees|fewer trees/i)
+  it('never claims few streets or few trees about a flagged neighborhood (N1)', () => {
+    expect(body()).not.toMatch(/\bfew\b[^.]*\b(streets?|trees)\b/i)
+    expect(body()).not.toMatch(/dominate/)
+    expect(body()).toContain('trees there are not in this inventory')
+    expect(body()).toContain('residential streets count in the citywide figures')
   })
 })

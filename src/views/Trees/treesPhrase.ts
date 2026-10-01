@@ -171,18 +171,18 @@ export function equityLead(links: LeadLinks): string {
 }
 
 /** `name` is the neighborhood: a park-heavy note carries its own measured
- *  open-space share (PARK_HEAVY, ruling R20). No note says a neighborhood has
- *  few trees overall — park trees are not in this inventory. */
+ *  open-space share (PARK_HEAVY, ruling R20, whole percent). It says only what
+ *  is measured — the share, and that trees there are not in this inventory —
+ *  never anything about its streets (nothing on the page measures streets). */
 export function equityFlagNote(flag: EquityFlag, name: string): string | null {
   switch (flag) {
     case 'park': return 'Mostly parkland. Park trees are not in this inventory.'
     case 'low-coverage': return 'The inventory lists almost no trees here.'
     case 'park-heavy': {
-      const tail = 'Its residential streets are counted citywide but not ranked here.'
+      const tail = 'Listed, not ranked; its residential streets count in the citywide figures.'
       const share = Object.prototype.hasOwnProperty.call(PARK_HEAVY, name) ? PARK_HEAVY[name] : null
-      return share === null
-        ? `Large parks take up much of its land, and park trees are not in this inventory. ${tail}`
-        : `About ${Math.round(share)}% of its land is open space, so few of its streets carry street trees. ${tail}`
+      const land = share === null ? 'Much of its land is open space' : `About ${Math.round(share)}% of its land is open space`
+      return `${land}, and trees there are not in this inventory. ${tail}`
     }
     case 'small-population': return `Fewer than ${apCount(MIN_POPULATION)} residents, so the per-resident figure swings widely.`
     default: return null
@@ -242,7 +242,12 @@ export function equityRowLabel(
   const figure = `${r.name}: ${equityFigure(r.value)} street trees ${UNIT[by]}.`
   const head = r.position !== null ? `No. ${r.position}, ${figure}` : figure
   const other = r.otherPosition !== null ? ` ${otherRankLine(r.otherPosition, by === 'perK' ? 'perKm2' : 'perK')}.` : ''
-  const note = r.flag !== null ? ` Not ranked: ${equityFlagNote(r.flag, r.name)}` : ''
+  // "Not ranked: " + the note, lower-cased after the colon; a note that
+  // already says "not ranked" (park-heavy) stands on its own.
+  const flagNote = r.flag !== null ? equityFlagNote(r.flag, r.name) ?? '' : ''
+  const note = r.flag === null ? ''
+    : /not ranked/i.test(flagNote) ? ` ${flagNote}`
+      : ` Not ranked: ${flagNote.charAt(0).toLowerCase()}${flagNote.slice(1)}`
   const income = r.medianIncome !== null ? ` ${INCOME_KEY} ${incomeShort(r.medianIncome)}.` : ` ${NO_CENSUS}.`
   return `${head}${other}${note}${income}`
 }
@@ -463,6 +468,13 @@ export function noticedKindsLine(k: NoticedByKind): string | null {
   const first = NOTICED_AS.find(([key]) => k[key] > 0) as readonly [keyof NoticedByKind, string]
   const verb = k[first[0]] === 1 ? 'is' : 'are'
   return `Of those, ${list.replace(/^(\S+) listed /, `$1 ${verb} listed `)}.`
+}
+
+/** Under the bar while the snapshot is loading or has failed, so the bare
+ *  "still in the inventory" figure is never printed alone (CLAUDE.md
+ *  contract 2). */
+export function noticedKindsPendingLine(failed: boolean): string {
+  return `Some of these sites now hold a stump or an empty planting site; the breakdown ${failed ? 'did not load' : 'is loading'}.`
 }
 
 /** `replantedAfter` counts every listed site whose planting date on record is

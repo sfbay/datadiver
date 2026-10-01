@@ -212,8 +212,9 @@ export function buildDataNotes(a: TreesAggregates | null, nowYear: number, notic
         {
           title: 'Flagged neighborhoods',
           body: `A neighborhood is flagged when it is mostly parkland, since park trees are not in this inventory${flaggedNames(a, 'park')}; ` +
-            `when the inventory lists almost no trees there${flaggedNames(a, 'low-coverage')}; when large parks dominate its land, ` +
-            `so few of its streets carry street trees${parkHeavyList()}; or when it has fewer than ` +
+            `when the inventory lists almost no trees there${flaggedNames(a, 'low-coverage')}; when part of its land is open space ` +
+            `and the trees there are not in this inventory${parkHeavyList()}, so it is listed, not ranked, while its ` +
+            'residential streets count in the citywide figures; or when it has fewer than ' +
             `${apCount(MIN_POPULATION)} residents, so the per-resident figure swings widely${flaggedNames(a, 'small-population')}. ` +
             'Flagged neighborhoods are listed and hatched on the map, but left out of the rank positions, the medians, ' +
             'the color scale and the summary sentence.',

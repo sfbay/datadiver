@@ -495,6 +495,7 @@ export default function Trees() {
           onLens={setLens}
           agg={agg}
           snap={snap}
+          snapFailed={snapError !== null}
           aggError={aggError?.message ?? null}
           onRetry={retryAgg}
           species={species}
