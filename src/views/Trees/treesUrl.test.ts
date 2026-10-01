@@ -1,6 +1,6 @@
 // src/views/Trees/treesUrl.test.ts
 import { describe, expect, it } from 'vitest'
-import { parseEquityRank, parseLens, parseTreeId, resolveNeighborhood, resolveSpecies } from './treesUrl'
+import { liveEdgeRelation, parseEquityRank, parseLens, parseTreeId, resolveNeighborhood, resolveSpecies } from './treesUrl'
 
 describe('treesUrl — stale or junk params are silent no-ops', () => {
   it('lens defaults to explore', () => {
@@ -27,5 +27,16 @@ describe('treesUrl — stale or junk params are silent no-ops', () => {
   it('neighborhood must be one of the loaded names', () => {
     expect(resolveNeighborhood('Mission', ['Mission', 'Marina'])).toBe('Mission')
     expect(resolveNeighborhood('Narnia', ['Mission'])).toBeNull()
+  })
+})
+
+describe('liveEdgeRelation — the live inventory edge against the snapshot date', () => {
+  it('later / same / earlier, compared as SF-local date text', () => {
+    expect(liveEdgeRelation('2026-09-30', '2026-10-02T03:10:00.000')).toBe('later')
+    expect(liveEdgeRelation('2026-09-30', '2026-09-30T23:59:59.000')).toBe('same')
+    expect(liveEdgeRelation('2026-09-30', '2026-09-29T08:00:00.000')).toBe('earlier')
+  })
+  it('a probe that has not answered, failed or returned junk is missing', () => {
+    for (const v of [null, undefined, '', 'yesterday']) expect(liveEdgeRelation('2026-09-30', v), String(v)).toBe('missing')
   })
 })

@@ -35,3 +35,18 @@ export function resolveSpecies(raw: string | null, names: readonly string[]): st
 export function resolveNeighborhood(raw: string | null, names: readonly string[]): string | null {
   return raw !== null && names.includes(raw) ? raw : null
 }
+
+/** How the city's live inventory edge (`max(data_as_of)`, a floating
+ *  SF-local datetime) stands against the snapshot's `dataAsOf`
+ *  ('YYYY-MM-DD'). Compared as date TEXT — never through Date. 'missing' =
+ *  the probe has not answered, failed, or returned something unreadable. */
+export type EdgeRelation = 'later' | 'same' | 'earlier' | 'missing'
+
+const YMD = /^\d{4}-\d{2}-\d{2}/
+
+export function liveEdgeRelation(snapshotYmd: string, liveEdge: string | null | undefined): EdgeRelation {
+  if (!liveEdge || !YMD.test(liveEdge) || !YMD.test(snapshotYmd)) return 'missing'
+  const live = liveEdge.slice(0, 10)
+  const snap = snapshotYmd.slice(0, 10)
+  return live > snap ? 'later' : live === snap ? 'same' : 'earlier'
+}

@@ -10,10 +10,12 @@
 //
 // Two files feed it, both committed by scripts/build-trees.ts and fetched
 // lazily (useTrees.ts): the small aggregates file and the ~144k-site
-// snapshot. The only live read is the inventory's freshness probe for the
-// "Updated" chip.
+// snapshot. The header chip dates the page by the SNAPSHOT ("Data as of"),
+// because every figure on it is the snapshot's (R12). The only live read is
+// the inventory's freshness probe, which only adds a note to that chip when
+// the city has published something newer.
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import type mapboxgl from 'mapbox-gl'
 import MapView from '@/components/maps/MapView'
@@ -30,7 +32,7 @@ import { apDate } from '@/utils/apDate'
 import { TRUNK_CLASSES, TRUNK_LABEL } from '@/lib/trees/trunk'
 import { parseSpecies, speciesLabel } from '@/lib/trees/species'
 import { SUBHEAD, STUMP_LEGEND } from './treesPhrase'
-import { parseLens, resolveSpecies, type Lens } from './treesUrl'
+import { liveEdgeRelation, parseLens, resolveSpecies, type Lens } from './treesUrl'
 import { msSinceSnapshotFetch, useTreesAggregates, useTreesSnapshot } from './useTrees'
 import { TREES_SOURCE, TREE_LAYERS, TREE_POINT_LAYER_IDS, MOSS_500, lensPaint, siteFeatures } from './mapLayers'
 
@@ -49,11 +51,6 @@ interface EdgeRow { edge?: string }
 const esc = (s: unknown): string =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string)
 
-/** `?tune=1` logs the snapshot fetch→features time ONCE per page load (the
- *  plan's performance gate). A remount reads the cached snapshot, whose fetch
- *  start is long past — measuring it again would report the idle gap. */
-let tuneLogged = false
-
 export default function Trees() {
   useProgressScope()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -64,6 +61,9 @@ export default function Trees() {
 
   // ── data ──
   const { data: snap, error: snapError, loading: snapLoading, retry: retrySnap } = useTreesSnapshot()
+  // Did THIS mount find the snapshot already cached (a remount)? Then there
+  // was no fetch to time — `?tune=1` says so instead of reporting the gap.
+  const [snapCachedAtMount] = useState(() => snap !== null)
   const { data: agg, error: aggError, retry: retryAgg } = useTreesAggregates()
 
   // ── URL state — stale or junk values are silent no-ops (treesUrl.ts) ──
@@ -91,8 +91,11 @@ export default function Trees() {
     'streetTrees', { $select: 'max(data_as_of) AS edge', $limit: 1 }, [],
     { ...SLOW, cite: { viewId: VIEW, purpose: 'freshness' } },
   )
-  const liveEdge = edgeQ.data[0]?.edge?.slice(0, 10) ?? null
-  const edge = liveEdge ?? agg?.dataAsOf ?? snap?.dataAsOf ?? null
+  const liveEdge = edgeQ.data[0]?.edge ?? null
+  const dataAsOf = agg?.dataAsOf ?? snap?.dataAsOf ?? null
+  const newerTitle = dataAsOf && liveEdgeRelation(dataAsOf, liveEdge) === 'later'
+    ? `The city has published newer data (${apDate(liveEdge as string, nowYear)}). This page shows the snapshot.`
+    : undefined
 
   // ── map ──
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null)
@@ -105,11 +108,15 @@ export default function Trees() {
   }, [snap])
   const geo = built?.fc ?? null
 
+  // `?tune=1`: the plan's performance gate — once per mount.
+  const tuneLogged = useRef(false)
   useEffect(() => {
-    if (!tuneOn || !built || tuneLogged || built.ms === null) return
-    tuneLogged = true
-    console.log(`[trees] snapshot fetch→features: ${Math.round(built.ms)} ms, ${built.fc.features.length} features`)
-  }, [tuneOn, built])
+    if (!tuneOn || !built || tuneLogged.current) return
+    tuneLogged.current = true
+    const n = built.fc.features.length
+    if (snapCachedAtMount || built.ms === null) console.log(`[trees] snapshot cached, ${n} features`)
+    else console.log(`[trees] snapshot fetch→features: ${Math.round(built.ms)} ms, ${n} features`)
+  }, [tuneOn, built, snapCachedAtMount])
 
   useMapLayer(mapInstance, TREES_SOURCE, geo, TREE_LAYERS)
 
@@ -209,9 +216,12 @@ export default function Trees() {
                 {SUBHEAD}
               </p>
             </div>
-            {edge && (
-              <span className="inline-flex items-center gap-1.5 text-micro font-mono text-moss-700 dark:text-moss-400 bg-moss-500/10 px-2 py-1 rounded-full flex-shrink-0">
-                Updated {apDate(edge, nowYear)} · {city.portal.host}
+            {dataAsOf && (
+              <span
+                title={newerTitle}
+                className="inline-flex items-center gap-1.5 text-micro font-mono text-moss-700 dark:text-moss-400 bg-moss-500/10 px-2 py-1 rounded-full flex-shrink-0"
+              >
+                Data as of {apDate(dataAsOf, nowYear)} · {city.portal.host}
               </span>
             )}
           </div>
