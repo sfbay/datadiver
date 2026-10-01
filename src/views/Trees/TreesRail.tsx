@@ -18,9 +18,10 @@ import MapSidebar from '@/components/layout/MapSidebar'
 import { SkeletonSidebarRows } from '@/components/ui/Skeleton'
 import type { TreesAggregates } from '@/lib/trees/types'
 import type { NoteSectionId } from './dataNotes'
+import EquityTab from './EquityTab'
 import ExploreTab from './ExploreTab'
 import { RAIL_ERROR } from './treesPhrase'
-import { LENSES, LENS_LABEL, type Lens } from './treesUrl'
+import { LENSES, LENS_LABEL, type EquityRank, type Lens } from './treesUrl'
 
 /** Until the header's notes popover lands, the link goes to the
  *  inventory's About row (the tree card does the same). */
@@ -36,6 +37,11 @@ export interface TreesRailProps {
   onSpecies(name: string | null): void
   onTree(id: number): void
   onNeighborhood(name: string): void
+  /** Equity: the measure (`?rank=`) and the resolved `?nh=` selection. */
+  rank: EquityRank
+  onRank(rank: EquityRank): void
+  neighborhood: string | null
+  onSelectNeighborhood(name: string | null): void
   onOpenNotes?: (section: NoteSectionId) => void
 }
 
@@ -93,9 +99,17 @@ export default function TreesRail(props: TreesRailProps) {
               onTree={props.onTree}
               onNeighborhood={props.onNeighborhood}
             />
+          ) : lens === 'equity' ? (
+            <EquityTab
+              agg={agg}
+              rank={props.rank}
+              onRank={props.onRank}
+              neighborhood={props.neighborhood}
+              onSelect={props.onSelectNeighborhood}
+            />
           ) : (
-            // Equity and Safety are built in later tasks; until then the
-            // panel names its lens and claims nothing else.
+            // Safety is built in a later task; until then the panel names
+            // its lens and claims nothing else.
             <h2 className="font-display italic text-xl text-ink dark:text-paper-100">{LENS_LABEL[lens]}</h2>
           )}
           <div className="mt-6">

@@ -20,8 +20,9 @@
 // still name one — but no layer's filter, under any lens, ever admits them.
 
 import type mapboxgl from 'mapbox-gl'
-import type { TreesSnapshot } from '@/lib/trees/types'
-import type { Lens } from './treesUrl'
+import type { NeighborhoodAggregate, TreesSnapshot } from '@/lib/trees/types'
+import { choroplethStops, stopColor } from './equityView'
+import type { EquityRank, Lens } from './treesUrl'
 
 export const TREES_SOURCE = 'trees-sites'
 
@@ -286,4 +287,106 @@ export function lensPaint(lens: Lens, speciesIdx: number | null, dark: boolean):
       'trees-species': [0, 24],
     },
   }
+}
+
+// ── the equity choropleth ──────────────────────────────────────────────────
+//
+// Its OWN source (the 41 neighborhood polygons), drawn only under the Equity
+// lens — the page hands useMapLayer an EMPTY collection otherwise (never
+// null: the hook ignores null after the first population). All three layers
+// go BELOW the basemap labels (`belowLabels`) — a dense fill on top muddies
+// every label — and so below the tree layers too.
+//
+//   trees-equity-fill      the moss ramp, unflagged neighborhoods only,
+//                          coloured by a `match` on the name (re-ranking
+//                          re-paints: the paint is pushed, the data is not
+//                          rebuilt).
+//   trees-equity-flagged   the demographic underlay's park-exclusion HATCH
+//                          for flagged neighborhoods (the image is registered
+//                          by DemographicUnderlay's ensureHatchPattern; its id
+//                          comes in as `hatchImage`, so this file stays pure).
+//   trees-equity-selected  the `?nh=` neighborhood's outline, selection ochre.
+//
+// Filters are static (`flagged` is stamped on the features); everything that
+// changes with the measure, the theme or the selection is PAINT, because
+// useMapLayer pushes paint on a layer-config change but not filters.
+
+export const EQUITY_SOURCE = 'trees-equity'
+export const CHOROPLETH_LAYER_ID = 'trees-equity-fill'
+export const EQUITY_HATCH_LAYER_ID = 'trees-equity-flagged'
+export const EQUITY_OUTLINE_LAYER_ID = 'trees-equity-selected'
+export const OCHRE_500 = '#d4a435'
+const CLEAR = 'rgba(0,0,0,0)'
+
+/** The rail's and legend's flagged swatch, in CSS: the same paper-500
+ *  stripes (≈55%) on a ≈10% wash as the map's hatch image. */
+export const HATCH_SWATCH_CSS =
+  'repeating-linear-gradient(45deg, rgba(168,146,106,0.55) 0 1.4px, rgba(168,146,106,0.10) 1.4px 4px)'
+
+/** The boundary polygons with only the join name (`nhood`) and the flag. A
+ *  polygon with no aggregate row is unflagged and paints clear (the match
+ *  fallback). */
+export function equityFeatures(
+  boundaries: GeoJSON.FeatureCollection | null,
+  rows: readonly NeighborhoodAggregate[],
+): GeoJSON.FeatureCollection {
+  if (!boundaries) return EMPTY_FC
+  const flagged = new Set(rows.filter((r) => r.flag !== null).map((r) => r.name))
+  return {
+    type: 'FeatureCollection',
+    features: boundaries.features.map((f) => {
+      const nhood = String(f.properties?.nhood ?? '')
+      return { type: 'Feature', geometry: f.geometry, properties: { nhood, flagged: flagged.has(nhood) } }
+    }),
+  }
+}
+
+/** `fill-color`: a `match` on the neighborhood name, each unflagged row
+ *  coloured by its step on the quantile stops. Flagged and unknown names fall
+ *  through to clear (the hatch layer draws the flagged ones). */
+export function choroplethFill(rows: readonly NeighborhoodAggregate[], by: EquityRank): mapboxgl.ExpressionSpecification | string {
+  const stops = choroplethStops(rows, by)
+  const pairs = rows.filter((r) => r.flag === null).flatMap((r) => [r.name, stopColor(r[by], stops)])
+  // An empty match is an invalid expression.
+  if (pairs.length === 0) return CLEAR
+  return ['match', ['get', 'nhood'], ...pairs, CLEAR] as mapboxgl.ExpressionSpecification
+}
+
+export function equityLayers(o: {
+  rows: readonly NeighborhoodAggregate[]
+  by: EquityRank
+  dark: boolean
+  selected: string | null
+  hatchImage: string
+}): (mapboxgl.FillLayerSpecification | mapboxgl.LineLayerSpecification)[] {
+  return [
+    {
+      id: CHOROPLETH_LAYER_ID,
+      type: 'fill',
+      source: EQUITY_SOURCE,
+      filter: ['!=', ['get', 'flagged'], true],
+      paint: {
+        'fill-color': choroplethFill(o.rows, o.by),
+        // The cream basemap washes a translucent fill toward pastel (CLAUDE.md, Maps).
+        'fill-opacity': o.dark ? 0.5 : 0.8,
+      },
+    },
+    {
+      id: EQUITY_HATCH_LAYER_ID,
+      type: 'fill',
+      source: EQUITY_SOURCE,
+      filter: ['==', ['get', 'flagged'], true],
+      paint: { 'fill-pattern': o.hatchImage, 'fill-opacity': 1 },
+    },
+    {
+      id: EQUITY_OUTLINE_LAYER_ID,
+      type: 'line',
+      source: EQUITY_SOURCE,
+      paint: {
+        'line-color': OCHRE_500,
+        'line-width': 2.5,
+        'line-opacity': o.selected === null ? 0 : ['case', ['==', ['get', 'nhood'], o.selected], 1, 0],
+      },
+    },
+  ]
 }

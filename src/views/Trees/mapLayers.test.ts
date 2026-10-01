@@ -1,7 +1,9 @@
 // src/views/Trees/mapLayers.test.ts
 import { describe, expect, it } from 'vitest'
-import type { TreesSnapshot } from '@/lib/trees/types'
+import type mapboxgl from 'mapbox-gl'
+import type { NeighborhoodAggregate, TreesSnapshot } from '@/lib/trees/types'
 import {
+  CHOROPLETH_LAYER_ID, EQUITY_HATCH_LAYER_ID, EQUITY_OUTLINE_LAYER_ID, EQUITY_SOURCE, choroplethFill, equityFeatures, equityLayers,
   DOT_MINZOOM, EMPTY_FC, SELECTED_KEYLINE_LAYER, SELECTED_LAYERS, SELECTED_SOURCE, TREE_LAYERS, TREE_POINT_LAYER_IDS,
   lensPaint, selectedFeature, selectedKeyline, siteFeatures, siteLngLat,
 } from './mapLayers'
@@ -196,5 +198,72 @@ describe('the selected-site ring', () => {
   it('the keyline follows the theme', () => {
     expect(selectedKeyline(true)).toBe('#f5ecd9')
     expect(selectedKeyline(false)).toBe('#1e140d')
+  })
+})
+
+// ── the equity choropleth ──────────────────────────────────────────────────
+
+describe('equity choropleth', () => {
+  const nb = (name: string, perK: number, perKm2: number, flag: NeighborhoodAggregate['flag'] = null): NeighborhoodAggregate =>
+    ({ name, trees: 1, stumps: 0, largeTrunks: 0, population: 5000, areaKm2: 1, medianIncome: 1, povertyRate: 1, perK, perKm2, flag, falls: [] })
+  const rows = [nb('Tenderloin', 54, 1701), nb('Bayview Hunters Point', 243, 724), nb('Presidio', 23, 14, 'park'), nb('Seacliff', 452, 1983)]
+  const square = (n: number): GeoJSON.Polygon => ({ type: 'Polygon', coordinates: [[[n, 0], [n + 1, 0], [n + 1, 1], [n, 0]]] })
+  const boundaries: GeoJSON.FeatureCollection = {
+    type: 'FeatureCollection',
+    features: ['Tenderloin', 'Presidio', 'Nowhere'].map((nhood, i) => ({ type: 'Feature', geometry: square(i), properties: { nhood, extra: 1 } })),
+  }
+
+  it('features keep the geometry and carry only the join name and the flag', () => {
+    const fc = equityFeatures(boundaries, rows)
+    expect(fc.features.map((f) => f.properties)).toEqual([
+      { nhood: 'Tenderloin', flagged: false },
+      { nhood: 'Presidio', flagged: true },
+      { nhood: 'Nowhere', flagged: false },
+    ])
+    expect(fc.features[0].geometry).toBe(boundaries.features[0].geometry)
+    expect(equityFeatures(null, rows)).toEqual(EMPTY_FC)
+  })
+
+  it('the fill is a match on the neighborhood name, coloured from the stops; flagged and unknown names stay clear', () => {
+    const fill = choroplethFill(rows, 'perK') as unknown[]
+    expect(fill[0]).toBe('match')
+    expect(fill[1]).toEqual(['get', 'nhood'])
+    const pairs = new Map<string, string>()
+    for (let i = 2; i < fill.length - 1; i += 2) pairs.set(fill[i] as string, fill[i + 1] as string)
+    expect([...pairs.keys()].sort()).toEqual(['Bayview Hunters Point', 'Seacliff', 'Tenderloin'])
+    expect(pairs.get('Seacliff')).toBe('#4f6b33')
+    expect(fill[fill.length - 1]).toBe('rgba(0,0,0,0)')
+    // re-ranking re-paints
+    expect(choroplethFill(rows, 'perKm2')).not.toEqual(fill)
+    // nothing unflagged: a constant clear fill (an empty match is invalid)
+    expect(choroplethFill([nb('Presidio', 23, 14, 'park')], 'perK')).toBe('rgba(0,0,0,0)')
+  })
+
+  it('three layers on their own source: the ramp (unflagged), the hatch (flagged), the selected outline', () => {
+    const layers = equityLayers({ rows, by: 'perK', dark: true, selected: null, hatchImage: 'demographic-hatch' })
+    expect(layers.map((l) => l.id)).toEqual([CHOROPLETH_LAYER_ID, EQUITY_HATCH_LAYER_ID, EQUITY_OUTLINE_LAYER_ID])
+    expect(CHOROPLETH_LAYER_ID).toBe('trees-equity-fill')
+    for (const l of layers) expect((l as { source: string }).source).toBe(EQUITY_SOURCE)
+    const [fill, hatch] = layers as [mapboxgl.FillLayerSpecification, mapboxgl.FillLayerSpecification]
+    expect(fill.filter).toEqual(['!=', ['get', 'flagged'], true])
+    expect(hatch.filter).toEqual(['==', ['get', 'flagged'], true])
+    expect(hatch.paint?.['fill-pattern']).toBe('demographic-hatch')
+  })
+
+  it('theme-aware opacity: 0.5 on espresso, 0.8 on cream', () => {
+    const op = (dark: boolean) => (equityLayers({ rows, by: 'perK', dark, selected: null, hatchImage: 'h' })[0] as mapboxgl.FillLayerSpecification).paint?.['fill-opacity']
+    expect(op(true)).toBe(0.5)
+    expect(op(false)).toBe(0.8)
+  })
+
+  it('the outline shows only the selected neighborhood, in the selection ochre', () => {
+    const line = (selected: string | null) => equityLayers({ rows, by: 'perK', dark: false, selected, hatchImage: 'h' })[2] as mapboxgl.LineLayerSpecification
+    expect(line('Tenderloin').paint?.['line-opacity']).toEqual(['case', ['==', ['get', 'nhood'], 'Tenderloin'], 1, 0])
+    expect(line(null).paint?.['line-opacity']).toBe(0)
+    expect(line('Tenderloin').paint?.['line-color']).toBe('#d4a435')
+  })
+
+  it('the choropleth is never a click or hover target of the tree layers', () => {
+    expect(TREE_POINT_LAYER_IDS).not.toContain(CHOROPLETH_LAYER_ID)
   })
 })

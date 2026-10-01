@@ -6,7 +6,8 @@
 // This file owns the page: the URL params (all view-owned, written with
 // `replace: true` — useUrlSync never touches them; the view is dateless), the
 // header and lens pills, the map (one source, four filtered layers in
-// mapLayers.ts), and the mounts for the rail, the tree card and the legend.
+// mapLayers.ts, plus the Equity lens's neighborhood choropleth on its own
+// source), and the mounts for the rail, the tree card and the legend.
 //
 // Two files feed it, both committed by scripts/build-trees.ts and fetched
 // lazily (useTrees.ts): the small aggregates file and the ~144k-site
@@ -23,6 +24,9 @@ import ExportButton from '@/components/export/ExportButton'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { MapScanOverlay } from '@/components/ui/Skeleton'
 import { useMapLayer } from '@/hooks/useMapLayer'
+import { useBoundariesAsset } from '@/hooks/useNeighborhoodBoundaries'
+import { useMapCameraPresets } from '@/hooks/useMapCameraPresets'
+import { HATCH_IMAGE_ID, ensureHatchPattern } from '@/components/maps/DemographicUnderlay'
 import { useMapTooltip } from '@/hooks/useMapTooltip'
 import { useDataset } from '@/hooks/useDataset'
 import { useProgressScope } from '@/hooks/useLoadingProgress'
@@ -34,12 +38,17 @@ import { apDate } from '@/utils/apDate'
 import { TRUNK_CLASSES, TRUNK_LABEL } from '@/lib/trees/trunk'
 import { parseSpecies, speciesLabel } from '@/lib/trees/species'
 import { SUBHEAD, STUMP_LEGEND } from './treesPhrase'
-import { LENSES, LENS_LABEL, liveEdgeRelation, parseLens, parseTreeId, resolveSpecies, type Lens } from './treesUrl'
+import {
+  LENSES, LENS_LABEL, liveEdgeRelation, parseEquityRank, parseLens, parseTreeId, resolveNeighborhood, resolveSpecies,
+  type EquityRank, type Lens,
+} from './treesUrl'
 import { msSinceSnapshotFetch, useTreesAggregates, useTreesSnapshot } from './useTrees'
 import {
   TREES_SOURCE, TREE_LAYERS, TREE_POINT_LAYER_IDS, MOSS_500, lensPaint, siteFeatures,
   SELECTED_KEYLINE_LAYER, SELECTED_LAYERS, SELECTED_SOURCE, selectedFeature, selectedKeyline,
+  EMPTY_FC, EQUITY_SOURCE, equityFeatures, equityLayers,
 } from './mapLayers'
+import { choroplethStops } from './equityView'
 import TreeCard, { TREE_CARD_REM } from './TreeCard'
 import { snapshotSite } from './treeCardModel'
 import TreesRail from './TreesRail'
@@ -87,9 +96,12 @@ export default function Trees() {
   const { data: agg, error: aggError, retry: retryAgg } = useTreesAggregates()
 
   // ── URL state — stale or junk values are silent no-ops (treesUrl.ts) ──
-  // `nh` and `rank` (resolveNeighborhood / parseEquityRank) are read where
-  // they are consumed — the rail — and written through setParam below.
   const lens = parseLens(searchParams.get('lens'))
+  // Equity: the measure re-ranks the rail AND re-paints the choropleth; `nh`
+  // resolves against the aggregates' neighborhood names (null until loaded).
+  const rank = parseEquityRank(searchParams.get('rank'))
+  const nhNames = useMemo(() => agg?.neighborhoods.map((n) => n.name) ?? NO_NAMES, [agg])
+  const nh = resolveNeighborhood(searchParams.get('nh'), nhNames)
   const treeId = parseTreeId(searchParams.get('tree'))
   // A species resolves against the RANKED names once the aggregates file is
   // in (the rail's rows), else against the snapshot's published strings.
@@ -157,6 +169,48 @@ export default function Trees() {
   const selectedFc = useMemo(() => selectedFeature(selectedCenter), [selectedCenter])
   useMapLayer(mapInstance, SELECTED_SOURCE, selectedFc, SELECTED_LAYERS)
 
+  // ── the equity choropleth: its own source, drawn ONLY under the Equity
+  // lens (an EMPTY collection otherwise — never null, which useMapLayer
+  // ignores after the first population), below the basemap labels. The
+  // ~1 MB polygon file loads on the first visit to the lens (cached after).
+  const { boundaries } = useBoundariesAsset(lens === 'equity' ? city.areas.geojsonPath : null)
+  const equityFc = useMemo(
+    () => (lens === 'equity' && agg ? equityFeatures(boundaries, agg.neighborhoods) : EMPTY_FC),
+    [lens, agg, boundaries],
+  )
+  const equitySpecs = useMemo(
+    () => equityLayers({ rows: agg?.neighborhoods ?? [], by: rank, dark: isDarkMode, selected: nh, hatchImage: HATCH_IMAGE_ID }),
+    [agg, rank, isDarkMode, nh],
+  )
+  useMapLayer(mapInstance, EQUITY_SOURCE, equityFc, equitySpecs, { belowLabels: true })
+  const equityLegend = useMemo(
+    () => (agg ? { stops: choroplethStops(agg.neighborhoods, rank), by: rank } : null),
+    [agg, rank],
+  )
+
+  // The flagged neighborhoods' hatch is the demographic underlay's image —
+  // registered here too, and again whenever a style swap drops it (Mapbox
+  // asks through 'styleimagemissing').
+  useEffect(() => {
+    if (!mapInstance) return
+    const ensure = () => { try { ensureHatchPattern(mapInstance) } catch { /* style not ready; the miss event retries */ } }
+    const onMissing = (e: { id?: string }) => { if (e.id === HATCH_IMAGE_ID) ensure() }
+    ensure()
+    mapInstance.on('style.load', ensure)
+    mapInstance.on('styleimagemissing', onMissing)
+    return () => {
+      try {
+        mapInstance.off('style.load', ensure)
+        mapInstance.off('styleimagemissing', onMissing)
+      } catch { /* map disposed */ }
+    }
+  }, [mapInstance])
+
+  // `?nh=` flies the camera (SF's preset table covers all 41 names, so no
+  // polygon fallback is passed — the lazily loaded boundaries would re-fire
+  // the flight every time the lens changed). Selection never filters.
+  useMapCameraPresets(mapInstance, { selectedNeighborhood: nh })
+
   // Keyline follows the theme; the ring stays above the tree layers (a
   // theme swap re-adds sources in retry order). Both writes are guarded by
   // a compare — an unconditional set on idle would repaint forever.
@@ -202,6 +256,9 @@ export default function Trees() {
 
   const closeCard = useCallback(() => setParam('tree', null), [setParam])
   const pickNeighborhood = useCallback((name: string) => setParam('nh', name), [setParam])
+  const selectNeighborhood = useCallback((name: string | null) => setParam('nh', name), [setParam])
+  // `perK` is the default, so it deletes the key.
+  const setRank = useCallback((r: EquityRank) => setParam('rank', r === 'perK' ? null : r), [setParam])
   // The card's species-rank line opens the species in Explore (ruling R14):
   // `?species=` AND the Explore lens, in one write.
   const pickSpecies = useCallback((name: string) => setParams({ species: name, lens: lensValue('explore') }), [setParams])
@@ -357,7 +414,7 @@ export default function Trees() {
 
             {/* The legend sits under the mobile sheet's peek, so it is
                 desktop only; the dots' meaning is also in each tooltip. */}
-            {!isMobile && <TreesLegend lens={lens} speciesLabel={selectedLabel} dark={isDarkMode} />}
+            {!isMobile && <TreesLegend lens={lens} speciesLabel={selectedLabel} dark={isDarkMode} equity={equityLegend} />}
             {treeId !== null && (
               <TreeCard
                 key={treeId}
@@ -386,6 +443,10 @@ export default function Trees() {
           onSpecies={toggleSpecies}
           onTree={pickTree}
           onNeighborhood={pickNeighborhood}
+          rank={rank}
+          onRank={setRank}
+          neighborhood={nh}
+          onSelectNeighborhood={selectNeighborhood}
         />
       </div>
     </div>

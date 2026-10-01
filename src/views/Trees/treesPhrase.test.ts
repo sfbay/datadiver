@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { DisappearedLog } from '@/lib/trees/types'
 import * as phrase from './treesPhrase'
 import {
+  EQUITY_MEASURE, MEDIAN_CAPTION, NO_CENSUS, equityFigure, equityRowLabel, incomeShort, medianTip, otherRankLine,
   disappearedLine, equityFlagNote, equityLead, kindTitle, leftInventoryNote, nearbyFallsLine,
   neighborhoodCountLabel, noAddressLine, noSpeciesMatchLine, noticeLine, plantedLine, shareLine, showAllLine,
   speciesCountTip, speciesPlantedLine, speciesRankLine, speciesRowLabel, streetTreesTip, topFiveLine, trunkLine,
@@ -13,9 +14,24 @@ const c = (pkI: number, pkP: number, kmI: number, kmP: number) =>
   ({ n: 36, perK: { income: pkI, poverty: pkP }, perKm2: { income: kmI, poverty: kmP } })
 
 describe('equityLead — says only what holds under BOTH measures', () => {
-  it('strong per resident, weak per area (the Sept. 30, 2026 reading)', () => {
+  it('strong per resident, weak per area (the Sept. 30, 2026 reading): the first sentence hedges to the weaker side (R10)', () => {
     expect(equityLead(c(0.65, -0.58, 0.33, -0.17))).toBe(
-      'Higher-income neighborhoods have more street trees. The link is strong when trees are counted per resident and weak when counted per square kilometer.',
+      'Higher-income neighborhoods tend to have more street trees. The link is strong when trees are counted per resident and weak when counted per square kilometer.',
+    )
+    // the committed aggregates' reading (0.66 vs 0.35) takes the same branch
+    expect(equityLead(c(0.66, -0.59, 0.35, -0.19))).toBe(
+      'Higher-income neighborhoods tend to have more street trees. The link is strong when trees are counted per resident and weak when counted per square kilometer.',
+    )
+  })
+  it('a quote of the first sentence alone never overclaims: mixed strengths always hedge (R10)', () => {
+    for (const [a, b] of [[0.65, 0.33], [0.35, 0.7], [-0.65, -0.33], [-0.35, -0.7]]) {
+      const first = equityLead(c(a, 0, b, 0)).split('. ')[0]
+      expect(first).toMatch(/ tend to have more street trees$/)
+    }
+  })
+  it('the lower-income mirror of the mixed reading hedges too (R10)', () => {
+    expect(equityLead(c(-0.65, 0.58, -0.33, 0.17))).toBe(
+      'Lower-income neighborhoods tend to have more street trees. The link is strong when trees are counted per resident and weak when counted per square kilometer.',
     )
   })
   it('same strength under both', () => {
@@ -48,7 +64,7 @@ describe('equityLead — says only what holds under BOTH measures', () => {
   })
   it('weak per resident, strong per area names each measure’s own tier', () => {
     expect(equityLead(c(0.35, 0, 0.7, 0))).toBe(
-      'Higher-income neighborhoods have more street trees. The link is weak when trees are counted per resident and strong when counted per square kilometer.',
+      'Higher-income neighborhoods tend to have more street trees. The link is weak when trees are counted per resident and strong when counted per square kilometer.',
     )
   })
   it('a pattern in the other direction is stated, never reported as no pattern (R7)', () => {
@@ -69,6 +85,47 @@ describe('equityLead — says only what holds under BOTH measures', () => {
     expect(equityLead(c(0.7, 0, -0.35, 0))).toBe(
       'The two measures disagree. Counted per resident, higher-income neighborhoods have more street trees, and the link is strong. ' +
         'Counted per square kilometer, lower-income neighborhoods have more, and the link is weak.',
+    )
+  })
+})
+
+describe('equity tab lines', () => {
+  it('the other measure’s rank, printed small beside a row', () => {
+    expect(otherRankLine(33, 'perKm2')).toBe('No. 33 by area')
+    expect(otherRankLine(6, 'perK')).toBe('No. 6 per resident')
+  })
+  it('pills and chip captions name both measures (captions ≤ 4 words)', () => {
+    expect(EQUITY_MEASURE).toEqual({ perK: 'Per 1,000 residents', perKm2: 'Per square kilometer' })
+    for (const v of Object.values(MEDIAN_CAPTION)) expect(v.split(/\s+/).length).toBeLessThanOrEqual(4)
+  })
+  it('figures: whole numbers with commas, one decimal under ten', () => {
+    expect(equityFigure(448.5)).toBe('449')
+    expect(equityFigure(2770.1)).toBe('2,770')
+    expect(equityFigure(2.5)).toBe('2.5')
+    expect(equityFigure(3)).toBe('3.0')
+  })
+  it('income in thousands, never a dollar zero', () => {
+    expect(incomeShort(105807.78)).toBe('$106K')
+    expect(incomeShort(238958.91)).toBe('$239K')
+    expect(NO_CENSUS).toBe('No census figure')
+  })
+  it('the median chip’s sentence names its denominator and its unflagged scope', () => {
+    expect(medianTip('perK', 164.2, 36)).toBe(
+      'Among the 36 neighborhoods without a flag, the middle one has 164 street trees per 1,000 residents.',
+    )
+    expect(medianTip('perKm2', 1497.9, 36)).toBe(
+      'Among the 36 neighborhoods without a flag, the middle one has 1,498 street trees per square kilometer.',
+    )
+  })
+  it('a row’s sentence: ranked, flagged, and with no census figure', () => {
+    expect(equityRowLabel({ name: 'Tenderloin', value: 51.8, position: 34, otherPosition: 15, medianIncome: 62729.66, flag: null }, 'perK')).toBe(
+      'No. 34, Tenderloin: 52 street trees per 1,000 residents. No. 15 by area. Median household income $63K.',
+    )
+    expect(equityRowLabel({ name: 'Presidio', value: 14.1, position: null, otherPosition: null, medianIncome: 233828.79, flag: 'park' }, 'perKm2')).toBe(
+      'Presidio: 14 street trees per square kilometer. Not ranked: Mostly parkland. Park trees are not in this inventory. Median household income $234K.',
+    )
+    expect(equityRowLabel({ name: 'Lincoln Park', value: 61.5, position: null, otherPosition: null, medianIncome: null, flag: 'park' }, 'perK')).toBe(
+      'Lincoln Park: 62 street trees per 1,000 residents. Not ranked: Mostly parkland. Park trees are not in this inventory. No census figure.',
     )
   })
 })
@@ -168,6 +225,20 @@ describe('jargon ban — statistics words and over-claims never reach a reader',
       equityLead(c(-0.6, 0, 0.1, 0)),
       equityLead(c(0.6, 0, -0.6, 0)), equityLead(c(0.7, 0, -0.35, 0)),
       equityLead(c(0, 0, 0, 0)), equityLead(c(0.1, 0, -0.1, 0)),
+      // the R10 mixed branch, both directions
+      equityLead(c(-0.65, 0.58, -0.33, 0.17)), equityLead(c(-0.35, 0, -0.7, 0)),
+      // equity tab — every exported function, every branch
+      otherRankLine(33, 'perKm2'), otherRankLine(6, 'perK'),
+      ...Object.values(EQUITY_MEASURE), ...Object.values(MEDIAN_CAPTION), ...Object.values(phrase.EQUITY_LEGEND_HEAD), NO_CENSUS,
+      equityFigure(448.5), equityFigure(2.5), incomeShort(105807.78),
+      medianTip('perK', 164.2, 36), medianTip('perKm2', 1497.9, 36),
+      ...(['perK', 'perKm2'] as const).flatMap((by) => [
+        equityRowLabel({ name: 'Tenderloin', value: 51.8, position: 34, otherPosition: 15, medianIncome: 62729.66, flag: null }, by),
+        ...(['park', 'low-coverage', 'small-population'] as const).flatMap((flag) => [
+          equityRowLabel({ name: 'X', value: 2.5, position: null, otherPosition: null, medianIncome: 91750, flag }, by),
+          equityRowLabel({ name: 'X', value: 2.5, position: null, otherPosition: null, medianIncome: null, flag }, by),
+        ]),
+      ]),
       // equityFlagNote — every value
       ...(['park', 'low-coverage', 'small-population', null] as const).map((f) => equityFlagNote(f) ?? ''),
       // leftInventoryNote — every kind

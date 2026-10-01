@@ -52,9 +52,11 @@ interface UseDemographicUnderlayOptions {
 // for demographic comparison" without screaming for attention.
 // ---------------------------------------------------------------------------
 
-const HATCH_IMAGE_ID = 'demographic-hatch'
+// Exported so the Trees equity choropleth hatches its flagged neighborhoods
+// with the SAME image (one hatch idiom site-wide, never a second asset).
+export const HATCH_IMAGE_ID = 'demographic-hatch'
 
-function ensureHatchPattern(map: MapboxMap): void {
+export function ensureHatchPattern(map: MapboxMap): void {
   if (map.hasImage(HATCH_IMAGE_ID)) return
 
   const size = 16

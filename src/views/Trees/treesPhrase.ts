@@ -130,7 +130,10 @@ export function equityLead(c: EquityCorrelations): string {
     }
     const side = cap(incomeSide(aPos))
     if (a === b) return `${side} neighborhoods ${haveMore(a)} street trees, whether trees are counted ${MEASURE.perK} or ${MEASURE.perKm2}.`
-    return `${side} neighborhoods have more street trees. The link is ${a} when trees are counted ${MEASURE.perK} and ${b} when counted ${MEASURE.perKm2}.`
+    // Mixed strengths: the first sentence takes the WEAKER side's wording
+    // (ruling R10), so a quote of it alone never overclaims; the second names
+    // each measure's own strength.
+    return `${side} neighborhoods tend to have more street trees. The link is ${a} when trees are counted ${MEASURE.perK} and ${b} when counted ${MEASURE.perKm2}.`
   }
 
   if (aHolds !== bHolds) {
@@ -151,6 +154,62 @@ export function equityFlagNote(flag: EquityFlag): string | null {
     case 'small-population': return `Fewer than ${apCount(MIN_POPULATION)} residents, so the per-resident figure swings widely.`
     default: return null
   }
+}
+
+// ── Equity tab ───────────────────────────────────────────────────────────────
+// The measure pills, the two median chips, and each row's small lines. Rows
+// rank by one measure and print the other measure's rank beside it, so the
+// flip between the two is visible without switching.
+
+/** The measure pills (`?rank=`). */
+export const EQUITY_MEASURE = { perK: 'Per 1,000 residents', perKm2: 'Per square kilometer' } as const
+/** The median chips' captions (≤ 4 words). */
+export const MEDIAN_CAPTION = { perK: 'Median per 1,000 residents', perKm2: 'Median per square kilometer' } as const
+export const RANK_BY_LABEL = 'Rank neighborhoods by'
+export const NO_CENSUS = 'No census figure'
+export const INCOME_KEY = 'Median household income'
+export const INCOME_KEY_TIP = 'Each dot is a neighborhood’s median household income, placed on the range across neighborhoods without a flag. ' +
+  'The tick marks the middle neighborhood.'
+export const FLAGGED_LEGEND = 'Flagged, not ranked'
+/** The map legend's heading under the Equity lens, per measure. */
+export const EQUITY_LEGEND_HEAD = { perK: 'Street trees per 1,000 residents', perKm2: 'Street trees per square kilometer' } as const
+
+const UNIT = { perK: 'per 1,000 residents', perKm2: 'per square kilometer' } as const
+
+/** A per-resident or per-area figure: whole numbers with commas; one decimal
+ *  under ten, so 2.5 never reads as 3. */
+export function equityFigure(v: number): string {
+  return Math.abs(v) < 10 ? v.toFixed(1) : apCount(Math.round(v))
+}
+
+/** "$106K" — a mark's short label; a null income never reaches here
+ *  (the caller prints NO_CENSUS). */
+export function incomeShort(n: number): string {
+  return `$${apCount(Math.round(n / 1000))}K`
+}
+
+/** "No. 33 by area" / "No. 6 per resident" — the OTHER measure's rank. */
+export function otherRankLine(position: number, other: 'perK' | 'perKm2'): string {
+  return `No. ${position} ${other === 'perKm2' ? 'by area' : 'per resident'}`
+}
+
+/** A median chip's sentence (its InfoTip and aria-label). */
+export function medianTip(by: 'perK' | 'perKm2', value: number, n: number): string {
+  return `Among the ${apCount(n)} neighborhoods without a flag, the middle one has ${equityFigure(value)} street trees ${UNIT[by]}.`
+}
+
+/** A list row's sentence, for its aria-label: the marks it replaces are the
+ *  position, the figure, the other rank and the income dot. */
+export function equityRowLabel(
+  r: { name: string; value: number; position: number | null; otherPosition: number | null; medianIncome: number | null; flag: EquityFlag },
+  by: 'perK' | 'perKm2',
+): string {
+  const figure = `${r.name}: ${equityFigure(r.value)} street trees ${UNIT[by]}.`
+  const head = r.position !== null ? `No. ${r.position}, ${figure}` : figure
+  const other = r.otherPosition !== null ? ` ${otherRankLine(r.otherPosition, by === 'perK' ? 'perKm2' : 'perK')}.` : ''
+  const note = r.flag !== null ? ` Not ranked: ${equityFlagNote(r.flag)}` : ''
+  const income = r.medianIncome !== null ? ` ${INCOME_KEY} ${incomeShort(r.medianIncome)}.` : ` ${NO_CENSUS}.`
+  return `${head}${other}${note}${income}`
 }
 
 // ── Tree card lines ──────────────────────────────────────────────────────────
