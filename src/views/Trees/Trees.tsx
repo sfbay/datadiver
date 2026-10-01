@@ -35,10 +35,10 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { eventFlyToOffset } from '@/utils/cameraPadding'
 import { useAppStore } from '@/stores/appStore'
 import { apDate } from '@/utils/apDate'
-import { TRUNK_CLASSES, TRUNK_LABEL } from '@/lib/trees/trunk'
+import { TRUNK_CLASSES } from '@/lib/trees/trunk'
 import { parseSpecies, speciesLabel } from '@/lib/trees/species'
 import { noticedSitesByKind } from '@/lib/trees/siteNotices'
-import { BOUNDARIES_ERROR, SUBHEAD, STUMP_LEGEND } from './treesPhrase'
+import { BOUNDARIES_ERROR, SUBHEAD } from './treesPhrase'
 import {
   LENSES, LENS_LABEL, liveEdgeRelation, parseEquityRank, parseLens, parseTreeId, resolveNeighborhood, resolveSpecies,
   type EquityRank, type Lens,
@@ -55,6 +55,7 @@ import { snapshotSite } from './treeCardModel'
 import TreesRail from './TreesRail'
 import TreesLegend from './TreesLegend'
 import DataNotesPopover from './DataNotesPopover'
+import { stumpHoverHtml, treeHoverHtml } from './hoverCard'
 import type { NoteSectionId } from './dataNotes'
 
 /** A lens's `?lens=` value: Explore is the default, so it deletes the key. */
@@ -79,9 +80,6 @@ function cardPx(mobile: boolean): number {
 }
 
 interface EdgeRow { edge?: string }
-
-const esc = (s: unknown): string =>
-  String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string)
 
 export default function Trees() {
   useProgressScope()
@@ -342,14 +340,11 @@ export default function Trees() {
   }, [mapInstance, lens, speciesIdx, isDarkMode])
 
   // Hover tooltips (useMapTooltip stands down on no-hover devices itself).
+  // R24: the species as a small display headline + the trunk-size scale mark.
   const tip = useCallback((p: Record<string, unknown>) => {
-    const kind = Number(p.kind)
+    if (Number(p.kind) === 1) return stumpHoverHtml()
     const cls = TRUNK_CLASSES[Number(p.cls)]
-    const name = kind === 1 ? STUMP_LEGEND : speciesLabel(parseSpecies(snap?.species[Number(p.sp)] ?? null))
-    return `
-      <div class="tooltip-label">${esc(name)}</div>
-      ${kind === 0 && cls ? `<div class="tooltip-value">Trunk size as recorded: ${esc(TRUNK_LABEL[cls])}</div>` : ''}
-    `
+    return treeHoverHtml(speciesLabel(parseSpecies(snap?.species[Number(p.sp)] ?? null)), cls)
   }, [snap])
   useMapTooltip(mapInstance, TREE_POINT_LAYER_IDS[0], tip)
   useMapTooltip(mapInstance, TREE_POINT_LAYER_IDS[1], tip)

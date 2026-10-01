@@ -12,7 +12,7 @@ import { MIN_POPULATION, PARK_HEAVY } from '@/lib/trees/equity'
 import { NEARBY_METERS, PLACEABLE_FLOOR } from '@/lib/trees/fallReports'
 import type { NoticeReading, NoticedByKind } from '@/lib/trees/siteNotices'
 import type { RowKind } from '@/lib/trees/species'
-import { TRUNK_LABEL } from '@/lib/trees/trunk'
+import { TRUNK_LABEL, type TrunkClass } from '@/lib/trees/trunk'
 import type { DisappearedLog, FallYear } from '@/lib/trees/types'
 import { apDate } from '@/utils/apDate'
 
@@ -285,6 +285,24 @@ export function plantedLine(plantedYmd: string | null, nowYear: number): string 
 export function trunkLine(inches: number | null, classLabel: string): string {
   if (inches === null) return classLabel
   return `${inches} inch${inches === 1 ? '' : 'es'} (${classLabel})`
+}
+
+const inchesWord = (n: number): string => `${n} inch${n === 1 ? '' : 'es'}`
+
+const SIZE_GROUP: Readonly<Record<Exclude<TrunkClass, 'unmeasured'>, string>> = {
+  small: 'the smallest',
+  medium: 'the middle',
+  large: 'the largest',
+}
+
+/** The trunk-size scale mark's sentence (its aria-label, R24). With inches:
+ *  "Trunk size as recorded: 3 inches, in the smallest of three size groups
+ *  (10 inches or narrower)." Class only (the hover card): "Trunk size as
+ *  recorded: 10 inches or narrower." Unmeasured: "Trunk size not measured." */
+export function trunkScaleSentence(cls: TrunkClass, inches: number | null): string {
+  if (cls === 'unmeasured') return 'Trunk size not measured.'
+  if (inches === null) return `${TRUNK_HEADING}: ${TRUNK_LABEL[cls]}.`
+  return `${TRUNK_HEADING}: ${inchesWord(inches)}, in ${SIZE_GROUP[cls]} of three size groups (${TRUNK_LABEL[cls]}).`
 }
 
 /** "mapped" in both branches (ruling R19): the count sees only reports with a

@@ -79,6 +79,7 @@ describe('buildCardModel', () => {
   })
   it('trunk, planting, rank and nearby reports', () => {
     expect(m.trunk).toBe('3 inches (10 inches or narrower)')
+    expect([m.trunkClass, m.trunkInches]).toEqual(['small', 3])
     expect(m.planted).toBe('Planted May 7')
     expect(m.plantedDate).toBe('May 7')
     expect(m.rankLine).toBe('No. 2 of 544 species names')
@@ -95,6 +96,7 @@ describe('buildCardModel', () => {
     expect(bare.planted).toBe('Planting date not recorded')
     expect(bare.plantedDate).toBeNull()
     expect(bare.trunk).toBe('Not measured')
+    expect([bare.trunkClass, bare.trunkInches]).toEqual(['unmeasured', null])
     expect(bare.rankLine).toBeNull()
     expect(bare.notices).toEqual([])
     expect(bare.address).toBe('Address not recorded')

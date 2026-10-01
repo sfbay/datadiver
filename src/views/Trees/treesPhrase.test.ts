@@ -8,7 +8,7 @@ import {
   disappearedLine, equityFlagNote, equityLead, kindTitle, leftInventoryNote, nearbyFallsLine,
   neighborhoodCountLabel, noAddressLine, noSpeciesMatchLine, noticeLine, plantedLine, shareLine, showAllLine,
   speciesCountTip, speciesPlantedLine, speciesRankLine, speciesRowLabel, streetTreesTip, topFiveLine, trunkLine,
-  trunkMixLabel,
+  trunkMixLabel, trunkScaleSentence,
 } from './treesPhrase'
 
 /** A lead input whose robust tier equals the plain tier of each figure (the
@@ -238,6 +238,14 @@ describe('card lines never claim more than the record', () => {
     expect(trunkLine(1, '10 inches or narrower')).toBe('1 inch (10 inches or narrower)')
     expect(trunkLine(null, 'Not measured')).toBe('Not measured')
   })
+  it('the trunk-size scale sentence (R24) — "as recorded" stays; never a current measurement', () => {
+    expect(trunkScaleSentence('small', 3))
+      .toBe('Trunk size as recorded: 3 inches, in the smallest of three size groups (10 inches or narrower).')
+    expect(trunkScaleSentence('medium', 1)).toBe('Trunk size as recorded: 1 inch, in the middle of three size groups (11 to 20 inches).')
+    expect(trunkScaleSentence('large', 24.5)).toBe('Trunk size as recorded: 24.5 inches, in the largest of three size groups (21 inches or wider).')
+    expect(trunkScaleSentence('small', null)).toBe('Trunk size as recorded: 10 inches or narrower.')
+    expect(trunkScaleSentence('unmeasured', null)).toBe('Trunk size not measured.')
+  })
   it('the disappeared log', () => {
     expect(disappearedLine({ trackingSince: '2026-09-30', runs: [] }, 2026))
       .toBe('DataDiver began recording which sites leave the inventory on Sept. 30.')
@@ -317,6 +325,10 @@ const SAMPLES: Record<string, () => readonly (string | null)[]> = {
     ['Posted 24hr', 'Posted 15 Day', 'Posted 30 Day', 'Other'].map((t) => noticeLine(r, '2018-02-27', t, 2026))),
   kindTitle: () => (['stump', 'site', 'shrub'] as const).map((k) => kindTitle(k)),
   plantedLine: () => [plantedLine('2026-05-07', 2026), plantedLine(null, 2026)],
+  trunkScaleSentence: () => [
+    trunkScaleSentence('small', 3), trunkScaleSentence('medium', 1), trunkScaleSentence('large', 126),
+    trunkScaleSentence('large', null), trunkScaleSentence('unmeasured', null),
+  ],
   trunkLine: () => [trunkLine(3, '10 inches or narrower'), trunkLine(1, '10 inches or narrower'), trunkLine(null, 'Not measured')],
   nearbyFallsLine: () => [nearbyFallsLine(0, 2021), nearbyFallsLine(1, 2021), nearbyFallsLine(3, 2021)],
   leftInventoryNote: () => [leftInventoryNote('2025-03-01', 2026), leftInventoryNote('2026-09-30', 2026)],

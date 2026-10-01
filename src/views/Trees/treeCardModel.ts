@@ -17,7 +17,7 @@
 import { classifyRow, parseSpecies, speciesLabel, type RowKind } from '@/lib/trees/species'
 import { noticeIdForms, noticeSiteId, readNotice } from '@/lib/trees/siteNotices'
 import { FALL_WINDOW_START } from '@/lib/trees/fallReports'
-import { TRUNK_LABEL, trunkClass } from '@/lib/trees/trunk'
+import { TRUNK_LABEL, trunkClass, type TrunkClass } from '@/lib/trees/trunk'
 import type { SpeciesAggregate, TreesSnapshot } from '@/lib/trees/types'
 import { apDate } from '@/utils/apDate'
 import { getDatasetConfig } from '@/cities/registry'
@@ -109,6 +109,9 @@ export interface CardModel {
   species: string | null
   address: string
   trunk: string
+  /** The trunk class and inches behind `trunk` — the scale mark's input (R24). */
+  trunkClass: TrunkClass
+  trunkInches: number | null
   /** The sentence ("Planted May 7" / "Planting date not recorded"). */
   planted: string
   /** The date alone for the fact table ("May 7"), or null. */
@@ -205,6 +208,8 @@ export function buildCardModel(row: InventoryRow, notices: NoticeRow[], extras: 
     species: extras.rank !== null ? row.species ?? null : null,
     address,
     trunk: trunkLine(inches, TRUNK_LABEL[cls]),
+    trunkClass: cls,
+    trunkInches: inches,
     planted: plantedLine(planted, nowYear),
     plantedDate: planted ? apDate(planted.slice(0, 10), nowYear) : null,
     rankLine: extras.rank !== null ? speciesRankLine(extras.rank, extras.ranked) : null,

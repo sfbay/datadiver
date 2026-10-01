@@ -26,6 +26,8 @@ import { BRICK_600, MOSS_500 } from './mapLayers'
 import { cardState, snapshotSite, speciesRank, type CardModel } from './treeCardModel'
 import { CARD_ERROR, NOT_RECORDED, TRUNK_NOTE, TRUNK_NOTE_NOT_TREE, UNKNOWN_SITE, leftInventoryNote } from './treesPhrase'
 import { useTreeCard } from './useTreeCard'
+import TrunkScaleMark from './TrunkScaleMark'
+import { trunkScaleSpec } from './trunkScale'
 
 const OCHRE_500 = '#d4a435'
 /** Rem width of the card (the `w-[20rem]` literal below — a literal so
@@ -103,7 +105,12 @@ function SiteBody({
       </header>
 
       <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 items-baseline">
-        <Fact label={isTree ? 'Trunk size' : 'Trunk on record'}>{model.trunk}</Fact>
+        <Fact label={isTree ? 'Trunk size' : 'Trunk on record'}>
+          {/* R24: the words, then the scale mark on its own line (one line
+              would not fit the card's value column). */}
+          <span className="block">{model.trunk}</span>
+          <TrunkScaleMark spec={trunkScaleSpec(model.trunkClass, model.trunkInches)} className="mt-1 text-ink dark:text-white" />
+        </Fact>
         <Fact label="Planted">{orNot(model.plantedDate)}</Fact>
         <Fact label="Legal status">{orNot(model.legalStatus)}</Fact>
         <Fact label="Planted by">{orNot(model.planter)}</Fact>
