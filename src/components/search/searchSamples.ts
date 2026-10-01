@@ -41,6 +41,7 @@ export const SEARCH_SAMPLES: readonly SearchSample[] = [
     expect: { path: '/crime-incidents', params: { sub: 'Burglary%7CBurglary%20-%20Residential' } },
   },
   { label: 'Evictions', query: 'Evictions', expect: { path: '/housing' } },
+  { label: 'Street trees', query: 'Street trees', expect: { path: '/trees' } },
   { label: 'Parking', query: 'Parking', expect: { path: '/parking-revenue' } },
   { label: 'Response times', query: 'Response times', expect: { path: '/emergency-response' } },
   { label: 'Crashes', query: 'Crashes', expect: { path: '/traffic-safety' } },

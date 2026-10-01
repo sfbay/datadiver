@@ -340,4 +340,34 @@ export const SF_DATASETS_RAW: Record<string, RawDatasetConfig> = {
     dateField: 'inspection_date',
     cacheTTL: 24 * 60 * 60_000, // 24h — historical only, not updated
   },
+
+  // Street trees. Spec docs/superpowers/specs/2026-09-30-trees-design.md §10.
+  // `point` is a TEXT column here and `treeid` a NUMBER: bbox on latitude/
+  // longitude, and unquoted ids. `dbhrange` files unmeasured trees as large —
+  // read mapdbh. The id names a planting SITE (trees are replaced under it).
+  streetTrees: {
+    id: 'tkzw-k3nq',
+    name: 'Street Tree Inventory',
+    description: 'Every street tree, stump and planting site in the city’s inventory, with species, trunk size and planting date',
+    publisher: { short: 'Public Works', full: 'San Francisco Public Works' },
+    category: 'other',
+    hasGeo: true,
+    defaultSort: 'treeid',
+    dateField: 'data_as_of',
+    cacheTTL: 60 * 60_000, // 1 h — republished once a day
+  },
+  // Notices posted on a tree after a removal permit. A notice is not a removal.
+  // 2023+ rows spell the site id "TRE-<n>" (src/lib/trees/siteNotices.ts).
+  streetTreeRemovals: {
+    id: 'qrwx-q4gg',
+    name: 'Street Tree Removal Notifications',
+    description: 'Public notices posted on street trees after a removal permit (24-hour, 15-day, 30-day), since 2017',
+    publisher: { short: 'Public Works', full: 'San Francisco Public Works' },
+    category: 'other',
+    hasGeo: true,
+    geoField: 'point',
+    defaultSort: 'posteddate DESC',
+    dateField: 'posteddate',
+    cacheTTL: 60 * 60_000,
+  },
 }

@@ -843,6 +843,410 @@ the registry publishes them.
 | Same company at many addresses | One entity is registered at each | Anything about closures | "Registered to the same company at 11 storefronts." |
 | Different companies, one mailing address | The registrations share an address | Common ownership | "These 7 companies list the same mailing address on their city registrations." |
 
+## Street trees (`tkzw-k3nq` inventory · `qrwx-q4gg` removal notices · 311 `vw6y-z8j6` fall reports)
+
+The view is **Trees** (`/trees`, masthead "Street trees"). Design:
+`docs/superpowers/specs/2026-09-30-trees-design.md` (§10 supersedes everything
+above it); the build rulings (P1, R1–R20; R17 reverses R16) are in the plan
+`docs/superpowers/plans/2026-09-30-trees.md`, sections "Rulings after the first
+generator run" and "Rulings made during the build". The page reads
+a committed snapshot (`public/data/trees/{trees,aggregates,disappeared}.json`,
+written by `pnpm build:trees` → `scripts/build-trees.ts`, gates G0–G6) and
+exact-pinned in `src/lib/trees/trees.test.ts`; the only live reads are the
+freshness probe and the tree card's one-site reads. **Figures marked (file)
+are from the committed `aggregates.json` (asOf Sept. 30, 2026); figures marked
+(probe) were measured on `data.sf.gov` on Sept. 30, 2026 with the query shown.**
+Regenerating the snapshot = re-pin `trees.test.ts` + About's three notes
+(`sourceNotes.ts`, which `trees.test.ts` also checks) + this section, in the
+SAME commit. **Also re-probe the search box's example address**
+(`SEARCH_PLACEHOLDER`, "1300 Bush" — 3 inventory sites on Sept. 30, 2026;
+probe: `$select=count(*)` `$where=upper(description) like '1300 BUSH%'` on
+`$T`, must be > 0). A live address cannot be unit-pinned; the first example,
+"1330 Bush", was a 311 REPORT address and matched no inventory site. The probes below use `T=https://data.sf.gov/resource/tkzw-k3nq.json`,
+`N=…/qrwx-q4gg.json`, `S=…/vw6y-z8j6.json`, run as
+`curl -sG "$T" --data-urlencode '$select=…' --data-urlencode '$where=…'`.
+
+### Street trees only — parks and the Presidio are not in it
+
+The inventory holds trees on streets. It places **86 street trees in the Golden
+Gate Park neighborhood, 86 in the Presidio and 11 in Lincoln Park** (file) —
+those places have trees the city keeps elsewhere. Every count says "street
+trees"; the Equity lens flags those neighborhoods (below) rather than ranking
+them as treeless. Re-probe: the `trees` field of the three rows in
+`aggregates.json → neighborhoods`, or `$select=analysis_neighborhood,count(*)`
+`$group=analysis_neighborhood` on `$T` (that count includes non-tree rows).
+
+### The inventory holds non-trees, despite its description
+
+The dataset's own summary says it "includes only assets designated
+specifically as trees (excluding empty basins, landscaping areas, and
+potential planting sites)". It does not. Of **144,504 rows: 142,014 street
+trees, 635 stumps, 1,790 empty, paved or potential planting sites, 65 shrubs**
+(file). The class comes from the published `species` string, by an authored
+list in `src/lib/trees/species.ts` (`NON_TREE`, `NON_TREE_EXACT`), the
+`foodPermits.ts` pattern: the generator's gate **G0** fails on any string that
+contains a non-tree word (`NON_TREE_WORD`: stump, site, shrub, vacant, empty,
+basin, pave, potential, other, unknown) and is not classed or on the
+`TREE_DESPITE_WORD` allow-list. `classifyRow` first checks the whole
+case-folded string against `NON_TREE_EXACT`, then looks up the COMMON half
+(after `::`) in `NON_TREE`, then the Latin half. Every string that carries one
+of those words (probe: `$select=species,count(*)` `$group=species` with
+`$where=lower(species) like '%potential%' OR … '%pave%' OR '%basin%' OR
+'%other%' OR '%unknown%' OR '%site%' OR '%stump%' OR '%shrub%'` on `$T`):
+
+| String | Rows | Classed by |
+|---|---|---|
+| `Planting site (plant) :: …` · `Planting site :: …` · `Planting site (cut) :: …` · `Planting site (pave) :: …` | 775 · 295 · 253 · 157 | site (`NON_TREE`) |
+| `Stump (use Grinder) :: …` · `Stump :: Stump` · `Stump (hand Remove) :: …` | 400 · 201 · 34 | stump (`NON_TREE`) |
+| `Shrub :: Shrub` · `Private shrub :: Private Shrub` | 62 · 3 | shrub (`NON_TREE`) |
+| `Potential Site :: Potential Site` | 140 | site (`NON_TREE`, R5) |
+| `Paved Over :: Paved Over` | 125 | site (`NON_TREE`, R5) |
+| `Basin(s) ::` | 20 | site (`NON_TREE` on the Latin half, R5) |
+| `pave :: paved` · `Paved Temp ::` · `Pavedtemp ::` | 13 · 6 · 1 | site (`NON_TREE`, R5) |
+| `Zelkova serrata 'Musashino’l Site :: Potential Site` · `Zelkova 'Village Green' (plant) :: Planting Site (plant)` · `Parrotia persica 'Vannessa'plant) :: Planting Site (plant)` · `Zelkova serrata ‘JFS-KW1’ :: Planting Site (plant)` | 1 each | site, through the COMMON half (`NON_TREE`) |
+| `Lophostemon confertusting Site` | 1 | site — the only string matched WHOLE (`NON_TREE_EXACT`, R5; it has no `::`) |
+| `Other :: Other` | 240 | **tree, species not recorded** (`TREE_DESPITE_WORD`, R4) |
+| `Palm (unknown Genus) :: Palm Spp` · `Phoenix spp :: Date palm (species unknown)` | 17 · 8 | tree, ranked under the published string (`TREE_DESPITE_WORD`, R9) |
+
+Stumps sum to 635 and shrubs to 65, as in the file. The stumps get their own
+mark on the map. Re-probe: the query above, then run `unclassifiedNonTrees()`
+over the strings — or just `pnpm build:trees`, whose G0 line prints any
+unclassed string.
+
+### `treeid` names a planting SITE, not a tree
+
+Of the **5,571** sites with a removal notice, **4,831** are still in the
+inventory, and at **1,022** of them the planting date now on record is LATER
+than the notice (file): the site, under the same number, carries a planting
+date after the notice. (`replantedAfter` counts every listed site whatever it
+holds now — up to 96 of those noticed sites are a stump or an empty site with a
+planting year — so the page speaks of "the planting date now on record", never
+"the tree listed now"; counting `kind === 0` only is a next-regeneration
+change.) So a notice dated before the listed tree's planting date belongs to an earlier
+tree (`readNotice` → `'earlier-tree'`); with no planting date the card says
+only that a notice was posted at this site. A `?tree=` link is a link to a
+site. The disappeared log (`disappeared.json`) records vanished sites AND a
+changed species or planting year at the same site (R3); it began Sept. 30,
+2026 with no runs. Re-probe: `replantedAfter` and `listed` in
+`aggregates.json → notices` (the join runs in the generator).
+
+### Notice ids since July 2023 are written `TRE-<n>`
+
+**503 notice rows (477 distinct ids)** spell the site number `TRE-124769`,
+posted July 21, 2023 through Sept. 28, 2026 (probe:
+`$select=count(*),count(distinct treeid),min(posteddate),max(posteddate)`
+`$where=treeid like 'TRE-%'` on `$N`). Strip the prefix and they join like the
+rest: only **3 of 5,713** notice rows join no site (file, gate G4). The tree
+card's live read asks for both spellings (`noticesWhere`: `treeid
+in('123','TRE-123')`).
+
+### A removal notice is not a removal
+
+A notice is posted on a tree after the city issues a removal permit
+(`postedtype`: Posted 24hr 1,354 · Posted 15 Day 2,492 · Posted 30 Day 1,867;
+5,713 rows since July 5, 2017 — file, probe `min(posteddate)`). Most noticed
+sites are still listed (4,831 of 5,571), but "still listed" is not "still a
+tree": **4,368 are listed as a street tree, 136 as a stump, 325 as an empty
+planting site and 2 as a shrub** (file: `noticedSitesByKind` over `trees.json`
+`nt > 0` by `kind`, pinned in `trees.test.ts`). A site can stay in the
+inventory re-classed, so the bar is never printed without that breakdown (the
+fairness rule: a figure with its confounder beside it), and the page never says
+a tree that comes down "leaves the inventory" — the inventory may drop the row
+or keep the site as a stump or an empty site. The page says "a removal notice
+was posted", never that a tree was taken out. Three notice rows carry no
+readable site number, and the notices line says so. By year (file): 2017 539 · 2018 1,483 · 2019 956 · 2020 567 · 2021
+362 · 2022 466 · 2023 478 · 2024 361 · 2025 301 · 2026 200 (to Sept. 28).
+Whether a notice row's `species` describes the old tree or the site's state is
+unresolved (some read `Planting site (cut)`), so no "former species" is
+printed from it.
+
+The reverse gap: a tree can be taken out with NO notice. The inventory's own
+description (probe: `https://data.sf.gov/api/views/tkzw-k3nq.json` →
+`description`) says "trees removed on an emergency basis (e.g. storm or life
+hazard) may not appear in this dataset or in the Street Trees Removal
+Notifications dataset", and that the notices cover only the formal permit
+process. So stumps, removal notices and DataDiver's log of sites that leave
+the inventory are the records the view uses for former trees — never a
+complete count of trees taken out.
+
+### Species strings: four forms, and the notices use one colon
+
+The inventory writes `"Latin :: Common"`. Probe (all rows, Sept. 30): **1,224
+NULL** (`$where=species IS NULL`); **523 with no `::` at all**, a valid Latin
+name such as `Acer buergerianum` (`species not like '%::%'`); **1,529 with an
+empty common half** (`like '%::'`), of which **940 are the placeholder
+`Tree(s) ::`** and 20 are a bare `::`; **81 `:: To Be Determine`** (empty Latin
+half). A Latin-only row is a RECORDED species and ranks under its Latin name;
+only NULL, `::`, `Tree(s)`, `To Be Determine` and `Other` are "species not
+recorded" — **2,505 street trees** (file; 1,224 + 20 + 940 + 81 + 240). The
+notices separate with ONE colon, `Taxus baccata : Irish Yew` (5,540 rows match
+`like '% : %'`, 0 match `like '%::%'` — probe on `$N`), so `parseSpecies`
+takes both. **639 distinct strings are ranked** (file), verbatim: cultivars
+and misspellings are separate entries, never merged by similarity.
+
+### Top five = 24.6% of street trees — and the prefix-match trap
+
+The five most common published strings hold **34,899 street trees, 24.6% of
+142,014** (file: `topFive`, `topFiveShare`, ruling R2 — the share is of ALL
+street trees): London Plane 8,943 · Brisbane Box 6,973 · New Zealand Xmas Tree
+6,971 · Swamp Myrtle 6,430 · Victorian Box 5,582. A `like 'Latin%'` query for
+the same five returns **17 strings summing 36,487** (probe:
+`$select=species,count(*)` `$where=species like 'Platanus x hispanica%' OR …`
+`$group=species`), because it sweeps in cultivars (`Tristaniopsis laurina
+'Elegant'` 1,144, `Platanus x hispanica 'Columbia'` 347, …), typo'd variants
+and even the corrupt SITE string `Lophostemon confertusting Site`. That is
+where the spec's first "36,487 (25.3%)" came from. Count by exact string.
+
+### `dbhrange` files every unmeasured tree as LARGE — read `mapdbh`
+
+All **9,537 rows with no `mapdbh` are coded `dbhrange` 3**, the largest class
+(probe: `$select=dbhrange,count(*)` `$where=mapdbh IS NULL`
+`$group=dbhrange` → one row, `3`, 9,537). Reading `dbhrange` would call every
+unmeasured tree a 21-inch-plus trunk. The trunk class derives from `mapdbh`
+only (`src/lib/trees/trunk.ts`), with unmeasured trees in their own class:
+**8,633 street trees at 21+ inches, 8,814 unmeasured** (file).
+
+### `mapdbh = 3` looks like a default value, not a measurement
+
+**41,307 rows (28.6% of all 144,504) record a trunk of exactly 3 inches,
+including 1,215 planted before 2000** (probe: `$where=mapdbh='3'`, then
+`mapdbh='3' AND planteddate < '2000-01-01'`; `mapdbh` is a TEXT column). That
+many identical values, on trees planted before 2000 among others, looks like a
+default value rather than a measurement, and no measurement date is published.
+So the label is "trunk size as recorded", never "age", and the Equity lens has
+no small-trunk measure (it would measure record-keeping).
+
+### Planting dates follow who planted the tree
+
+**38,599 of 144,504 rows carry a `planteddate` (26.7%)** (probe:
+`$select=count(planteddate),count(*)`); among street trees, **38,024 of
+142,014 (26.8%)** (file). Coverage by `planter` (probe, all rows:
+`$select=planter,count(*),count(planteddate)` `$group=planter`): **Friends of
+the Urban Forest (`FUF`) 6,004 of 6,580 (91%) · Public Works (`DPW`) 7,231 of
+17,980 (40%) · `Private` 23,419 of 116,904 (20%)** · blank planter 1,310 of
+1,691; a lowercase `fuf` spelling has 2 rows. A planting date says who kept
+records, not how old the tree is, so there is no "planted before" layer; the
+planting year appears on the tree card only.
+
+### `point` is TEXT and `treeid` is a NUMBER in the inventory — shapes that 400
+
+Measured Sept. 30, 2026 on `$T`:
+
+| Query | Result |
+|---|---|
+| `within_circle(point, 37.79, -122.42, 100)` | **400** `type-mismatch … within_circle, is text` |
+| `date_extract_y(planteddate) < 1990` | **400** `type-mismatch … is text` (compare `planteddate` as text) |
+| `treeid like '1%'` | **400** `type-mismatch … #LIKE, is number` |
+| `treeid = 'TRE-1'` | **400** `type-mismatch … op$=, is text` |
+| `treeid in('1','2')` / `treeid in(1,2)` | 200 / 200 (a quoted DIGIT string is coerced today — write it unquoted anyway) |
+| on `$N`: `treeid in(1,2)` | **400** `type-mismatch … #IN, is number` (notices `treeid` is TEXT, two spellings) |
+
+So: place sites by `latitude`/`longitude`; compare `planteddate` and `mapdbh`
+as text; write inventory ids unquoted (`inventoryWhere`) and notice ids
+quoted in both spellings (`noticesWhere`).
+
+### 5,754 sites cannot be mapped
+
+**5,754 rows (4.0%) have no latitude** (file `unmapped`). Probe
+(`$select=count(*),count(xcoord),count(description),count(analysis_neighborhood)`
+`$where=latitude IS NULL`): all 5,754 have an address line (`description`),
+**none has `xcoord`, none has a neighborhood** — nothing to rescue them with.
+They count citywide and are missing from the map, from neighborhood figures
+and from the "within 30 meters" counts (the tree card prints no fall line for
+them — never a false "no fall reports nearby").
+
+### 311 fall reports: zero points, duplicates, a spelling change, storm years
+
+Scope: `service_name='Tree Maintenance' AND lower(service_details)
+in('fallen_tree','about_to_fall') AND requested_datetime >= '2021-01-01'`
+(`FALL_WHERE` in `src/lib/trees/fallReports.ts`). **16,713 rows** (probe,
+`$select=count(*)` on `$S`; equals the file's per-year sums).
+
+- **Reports at latitude 0, longitude 0.** 2,833 rows (probe:
+  `lat::number = 0`), by year 2021 37 · 2022 517 · 2023 2,002 · 2024 277 · none
+  since — phone reports with no point. They carry no neighborhood and are
+  never drawn or counted nearby (`isPlaced`: an SF bounding box). Among
+  non-duplicates the file counts **2,283 unplaced** (2021 35 · 2022 437 · 2023
+  1,561 · 2024 250).
+- **City-marked duplicates.** **2,861** rows carry "Duplicate" in
+  `status_notes` (probe: `sum(case(lower(status_notes) like '%duplicate%',1,true,0))`;
+  file: sum of `duplicates`). Left out everywhere, by the city's own mark;
+  DataDiver does not cluster nearby reports itself.
+- **The spelling changed in June 2024.** `Fallen_tree` 9,442 (Jan. 1, 2021 →
+  June 11, 2024) then `fallen_tree` 4,066 (June 13, 2024 →); `About_to_fall`
+  1,226 (→ June 10, 2024) then `about_to_fall` 1,979 (June 13, 2024 →) (probe:
+  `$select=service_details,count(*),min(requested_datetime),max(requested_datetime)`
+  `$group=service_details`). Always filter on `lower(service_details)`.
+- **Storm years.** Non-duplicate reports (file): 2021 1,384 · 2022 813 · **2023
+  4,826** · 2024 3,014 · 2025 2,344 · 2026 1,471 (to Sept. 29). The busiest day
+  is **March 21, 2023: 467 non-duplicate reports** (file `busiestDay`), 685
+  rows before duplicates are taken out (probe:
+  `$select=date_trunc_ymd(requested_datetime) AS d,count(*)` `$group=d`
+  `$order=count(*) DESC`). Years are drawn side by side, never summed into one
+  figure, with no year-over-year verdict.
+- **Two years cannot be placed by neighborhood (ruling R1).** Placed share of
+  non-duplicate reports (file `placedShare`): 2021 97.5% · **2022 46.2%** ·
+  **2023 67.7%** · 2024 91.7% · 2025 100% · 2026 100%. Below
+  `PLACEABLE_FLOOR = 75`, a year is shown CITYWIDE ONLY; neighborhood fall rows
+  hold placeable years only, and gate G3 requires only the most recent FULL
+  year to be placeable. Because of those years, every "within 30 meters" count
+  is a minimum.
+- **A report is not a tree.** It names an address or a corner, where several
+  street trees can stand within a few meters (the per-report tree count was
+  not re-measured for this section). The card says "N mapped fall reports
+  within 30 meters since 2021." or "No mapped fall reports within 30 meters
+  since 2021." (ruling R19 — "mapped" in both branches: 86,956 mapped sites
+  carry a zero, and 2,283 of the 13,852 non-duplicate reports since 2021,
+  16.5%, have no map point the count could see), measured from the report's
+  point, and nothing stronger; a fall report is never attached to one tree.
+- **No rate per street tree (ruling R17, reversing R16).** A report may concern
+  any tree — park, open-space and private trees included — while the only
+  denominator on hand is street trees in TODAY's inventory. The rate's two
+  highest figures in every offered year were Twin Peaks and Lakeshore, the two
+  park-heavy neighborhoods (flagged since ruling R20; 2024: Twin Peaks 23 reports ÷ 429 street
+  trees = 53.6 per 1,000; Lakeshore 42.0; Mission, the largest count, 28.9).
+  Each Safety row now shows the year's mapped fallen-tree reports and, beside
+  it, the street-tree count as a separate figure, never divided.
+
+### Equity: the finding flips with the denominator
+
+Street trees per 1,000 residents (ACS 2019–2023 `totalPopulation`) and per
+square kilometer of each neighborhood's boundary polygon
+(`featureAreaKm2`), over the **34 unflagged neighborhoods**. Flagged (file):
+Golden Gate Park, Lincoln Park, McLaren Park, Presidio (`park`); Lakeshore and
+Twin Peaks (`park-heavy`, ruling R20 — below); Treasure Island
+(`low-coverage`); under 2,000 residents would be `small-population` (none today
+that is not already flagged). Rank links (file `equity`, Spearman; before R20,
+over 36: +0.66 / −0.59 and +0.35 / −0.19):
+
+| Street trees… | vs median income | vs poverty rate |
+|---|---|---|
+| per 1,000 residents | +0.66 | −0.56 |
+| per square kilometer | +0.33 | −0.11 |
+
+**The lead claims only a link that survives leaving out any one neighborhood
+(ruling R18, `robustLink`).** Leave-one-out range over the 34 (file, computed
+unrounded from `aggregates.json → neighborhoods`, pinned in `trees.test.ts`):
+per 1,000 residents **0.633 (without Seacliff or Visitacion Valley) to 0.739
+(without Bayview Hunters Point)** — strong under every removal (0.664 on all
+34); per km² **0.272 (without Bayview Hunters Point or Visitacion Valley) to
+0.411 (without Japantown)**, 0.327 on all 34. Five single removals each take
+the per-area figure under 0.30 — Bayview Hunters Point, Visitacion Valley
+(0.272), Chinatown (0.290), Seacliff (0.299) and Excelsior — so the lead
+states no per-area pattern; `robustLink.breakers` lists them and the "How the
+summary sentence is decided" data note names them. (Before R20, over 36, the
+per-area figure was 0.348 and only dropping Lakeshore took it under 0.30, to
+0.299; flagging the two park-heavy neighborhoods lowered it, so the lead's
+reading did not change.) A regeneration that moves any leave-one-out value
+across 0.30 or 0.50 flips the lead: expect it, re-read it.
+
+Per resident punishes density by construction. **Tenderloin: 51.8 per 1,000
+residents, 33rd of 34 (tied with Chinatown); 1,631.3 per km², 15th.
+Bayview Hunters Point: 238.2 per 1,000, 7th; 708.2 per km², 33rd** (ranks
+computed from `aggregates.json → neighborhoods`, competition ranking, unflagged
+only; the unflagged medians are 169.05 per 1,000 residents and 1,571.1 per
+km²). So the lens shows both
+(`?rank=perK|perKm2`) and the lead sentence states only what holds under both,
+in the WEAKER measure's words (R10), and only what survives leaving out any one
+neighborhood (R18): today "Counted per resident, higher-income neighborhoods
+have more street trees. Counted per square kilometer, there is no clear
+pattern. The answer depends on the measure." Re-probe: recompute the ranks
+from the file; the full-set links are the generator's `equityCorrelations`
+(rounded, for the record); the lead's input is `robustLink`, computed in the
+browser from the rows.
+
+### Park-heavy neighborhoods (ruling R20)
+
+Lakeshore (Lake Merced, Harding Park, Fort Funston, SF State) and Twin Peaks
+(the Twin Peaks open space) were ranked last per km² (60.6 and 250.0 street
+trees per km², against 693.2 for the next) and supplied the margin of the old
+per-area link. Jesse's ruling, Sept. 30, 2026: "huge parks dominate both
+districts" — both are flagged `park-heavy` (shown, hatched, unranked, out of
+the medians, colour scale and summary sentence, like every flag). The list is
+AUTHORED (`PARK_HEAVY` in `src/lib/trees/equity.ts`), not a threshold rule;
+each value is the measured open-space share below, and the flag note on the
+page quotes it. `NON_RESIDENTIAL_NEIGHBORHOODS` (authored for census underlays:
+who lives there) still supplies the `park` flag.
+
+Open-space share of each neighborhood's land (probe, Sept. 30, 2026):
+
+| Neighborhood | Open space | Flag |
+|---|---|---|
+| Golden Gate Park | 92.8% | park |
+| McLaren Park | 84.5% | park |
+| **Lakeshore** | **61.2%** | **park-heavy** |
+| Lincoln Park | 44.5% | park |
+| Presidio | 21.6% (federal land is under-counted in this file) | park |
+| **Twin Peaks** | **20.2%** | **park-heavy** |
+| Outer Richmond (next ranked) | 14.6% | — |
+
+Re-probe: `https://data.sf.gov/resource/c5ge-t6pj.geojson?$where=open_space=true&$select=the_geom&$limit=20000`
+(the Planning Department's land-use parcels) → the area of each parcel → a
+point-in-polygon of each parcel's centroid against
+`public/data/geo/sf-analysis-neighborhoods.geojson` → open-space area summed by
+neighborhood ÷ the neighborhood's land area from the same boundary file.
+
+**Banked follow-up:** a finer analysis of the residential streets of Lakeshore
+and Twin Peaks — by census tract or per street mile — so those streets can be
+ranked without the parkland (spec §8).
+
+### Lead: the archived list `uzd4-f6yf` (UNVERIFIED)
+
+The "[ARCHIVED] Street Tree List" holds **198,436 rows** (probe:
+`$select=count(*)` on `https://data.sf.gov/resource/uzd4-f6yf.json`). Its
+notice says it was "archived due to system migration (December 2024)"; a
+separate "Known data issue" paragraph says it "contains more rows than
+expected due to historical tree removals and duplicate records that were not
+removed from the legacy feed" (probe: `https://data.sf.gov/api/views/uzd4-f6yf.json`
+→ `description`). The count of archived ids absent from today's inventory was
+not re-measured for this section. It may hold sites that later left the
+inventory, but by the city's own note some rows are duplicates, so a site that
+left cannot yet be told from a duplicate row. Banked; nothing reads it.
+
+### The inventory was rebuilt in place on Sept. 9, 2026
+
+The dataset's own note: "Note 9/9/2026: This dataset was updated in place to
+correct outstanding data issues, following our migration to a new asset
+management system in December 2024" (probe: `https://data.sf.gov/api/views/tkzw-k3nq.json`
+→ `description`). Counts from before and after that date are not comparable;
+the snapshot is stamped `asOf` and the header chip shows the snapshot's date.
+
+### Stumps (banked follow-up)
+
+Ruling R23 (Jesse, Oct. 1, 2026): stump rings are not drawn on the Equity map,
+and no stump-based equity measure is added. Stumps stay on the Safety lens at
+every zoom and on the Explore lens from street zoom. Measured Oct. 1, 2026
+from the committed `public/data/trees/` files (snapshot `asOf` 2026-09-30):
+
+- **635 stump rows**, 626 of them mapped (the other 9 carry no coordinates). By
+  published label: 400 `Stump (use Grinder)`, 201 `Stump`, 34 `Stump (hand Remove)`.
+- **136** stumps sit at a site that has a removal notice (the same 136 the
+  Safety tab's "listed now as" breakdown counts).
+- **4.5 stumps per 1,000 street trees** citywide (635 ÷ 142,014).
+- Among the 34 ranked neighborhoods the stump count runs from **2** (Seacliff)
+  to **51** (Bayview Hunters Point). The seven flagged neighborhoods are
+  listed, not ranked: Lakeshore 5, Twin Peaks 8, the other five 0.
+
+A stump is one moment in the city's work queue: the file records that a stump
+stands where a tree stood, and cannot say how long it has stood. The
+per-neighborhood counts are too small to state a pattern, so the page states
+none.
+
+**Banked follow-up:** once several dated snapshots exist, `disappeared.json`
+(the generator's log of sites that change between saved copies) could measure
+how long a stump stands before its site is replanted or leaves the inventory,
+by neighborhood. What the log records today (`diffSnapshots` in
+`scripts/build-trees.ts`): a site id present in the earlier snapshot and absent
+from the later one goes in `gone` (the id alone); a site present in both with a
+different species string or planting year goes in `changed` (`was`, `now`,
+`plantedWas`, `plantedNow`). So a stump replaced by a tree IS caught — as a
+species-string change, whose `was` is the stump's label — but the log stores no
+site class (stump, tree, empty site) and no neighborhood, so it cannot say that
+a site changed class, and a `gone` id does not say what the site was. The
+follow-up needs the log to record each site's class and neighborhood on both
+sides of a change and for every `gone` site, and its resolution is the spacing
+between snapshots (the log began 2026-09-30 and has no runs yet).
+
 ## Police Incidents — a subcategory's identity is its PAIR with the category
 
 `wg3w-h783` publishes three levels: `incident_category` (49 values),

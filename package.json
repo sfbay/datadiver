@@ -11,6 +11,7 @@
     "build:elections": "tsx scripts/build-election-archive.ts",
     "build:consultants": "tsx scripts/build-consultant-recon.ts",
     "build:storefronts": "tsx scripts/build-storefronts.ts",
+    "build:trees": "tsx scripts/build-trees.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck:api": "tsc --noEmit -p api/tsconfig.json"
